@@ -66,16 +66,24 @@ jobs:
             release/latest.yml
 
       - name: Publish GitHub release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
-          target_commitish: ${{ github.sha }}
-          name: Cupric AI ${{ inputs.tag || github.ref_name }}
-          generate_release_notes: true
-          make_latest: true
-          fail_on_unmatched_files: true
-          files: |
-            release/Cupric AI-Setup-*.exe
-            release/Cupric AI-Setup-*.exe.blockmap
-            release/Cupric AI-*-Portable.exe
-            release/latest.yml
+        # Uploads with the GitHub CLI so asset filenames keep their spaces
+        # (softprops/action-gh-release rewrites spaces to dots, which also
+        # breaks the electron-updater latest.yml path lookup).
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $tag = "${{ inputs.tag || github.ref_name }}"
+          $repo = "${{ github.repository }}"
+          gh release view $tag --repo $repo --json tagName 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --repo $repo --title "Cupric AI $tag" --generate-notes --latest --target ${{ github.sha }}
+          }
+          $files = @(
+            (Get-ChildItem -Path release -Filter 'Cupric AI-Setup-*.exe' -File).FullName
+            (Get-ChildItem -Path release -Filter 'Cupric AI-Setup-*.exe.blockmap' -File).FullName
+            (Get-ChildItem -Path release -Filter 'Cupric AI-*-Portable.exe' -File).FullName
+            (Join-Path (Get-Location) 'release/latest.yml')
+          )
+          foreach ($f in $files) { if (-not (Test-Path $f)) { throw "Missing release file: $f" } }
+          gh release upload $tag --repo $repo --clobber $files
