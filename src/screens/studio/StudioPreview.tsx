@@ -26,6 +26,8 @@ type Props = {
   /** Selected clip, for the transform handles. */
   selected?: StudioClip | null
   onPatchSelected?: (patch: Partial<StudioClip>) => void
+  /** Editing-only title/action safe guides; never painted into exports. */
+  showSafeAreas?: boolean
 }
 
 /**
@@ -44,6 +46,7 @@ export function StudioPreview({
   onEnded,
   selected = null,
   onPatchSelected,
+  showSafeAreas = false,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
@@ -158,6 +161,16 @@ export function StudioPreview({
         aria-label="Studio preview"
         className="h-full w-full rounded-xl border border-line bg-black object-contain shadow-[0_12px_32px_rgb(0_0_0/0.36)]"
       />
+      {showSafeAreas && !playing && (
+        <div className="pointer-events-none absolute inset-0" aria-label="Title and action safe area guides">
+          <div className="absolute inset-[5%] rounded border border-dashed border-white/35">
+            <span className="absolute left-1 top-0.5 text-[9px] font-medium uppercase tracking-wide text-white/55">action safe</span>
+          </div>
+          <div className="absolute inset-[10%] rounded border border-dashed border-accent/60">
+            <span className="absolute left-1 top-0.5 text-[9px] font-medium uppercase tracking-wide text-accent-text/80">title safe</span>
+          </div>
+        </div>
+      )}
       {!playing && selected && onPatchSelected && (
         <TransformHandles clip={selected} time={time} frame={frameRef} onPatch={onPatchSelected} />
       )}

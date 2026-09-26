@@ -384,10 +384,19 @@ function resolveOpenCodeApiKey(baseUrl, model) {
 
 function aiSettings() {
   const settings = readSettings()
-  const provider = settings.aiProvider === 'gemini' ? 'gemini' : 'opencode'
   const openCodeBaseUrl = String(settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1').trim()
   const openCodeModel = String(settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || 'qwen/qwen3-235b-a22b:free').trim()
   const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || '').trim()
+  const explicit = settings.aiProvider === 'gemini' || settings.aiProvider === 'opencode' ? settings.aiProvider : null
+  // A fresh install used to silently select remote OpenRouter with no key. Pick
+  // a provider that can actually authenticate; with neither configured the UI
+  // clearly reports "no live model" and the deterministic planner takes over.
+  const openCodeReady = Boolean(
+    openCodeApiKey ||
+    resolveOpenCodeApiKey(openCodeBaseUrl, openCodeModel) ||
+    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(openCodeBaseUrl)
+  )
+  const provider = explicit || (geminiApiKey() ? 'gemini' : openCodeReady ? 'opencode' : 'gemini')
   return { provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
 }
 
@@ -978,15 +987,19 @@ async function ingestAutomationFootage(job, root, warnings, state) {
 async function openArenaBuilderForPrompt(prompt, extra = {}) {
   const url = 'https://arena.ai/code'
   const text = String(prompt || '').trim()
-  if (text) clipboard.writeText(text)
+  let copied = false
   try {
+    if (!text) throw new Error('No Arena prompt is available to copy')
+    clipboard.writeText(text)
+    copied = clipboard.readText() === text
+    if (!copied) throw new Error('The Arena prompt could not be verified on the clipboard')
     await shell.openExternal(url)
-    logLine('arena-opened', 'Opened Arena builder', { copied: Boolean(text), ...extra })
+    logLine('arena-opened', 'Opened Arena builder', { copied, ...extra })
   } catch (err) {
-    logLine('arena-open-failed', err?.message || String(err), extra)
-    throw new Error(`Could not open Arena in the browser: ${err?.message || err}`)
+    logLine('arena-open-failed', err?.message || String(err), { copied, ...extra })
+    throw new Error(`Could not prepare the manual Arena gate: ${err?.message || err}`)
   }
-  return { url, copied: Boolean(text) }
+  return { url, copied }
 }
 
 async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, warnings, state) {
@@ -1459,18 +1472,41 @@ async function generateOpenCodeRundown(prompt, history, context) {
   return normalizeRundown(parseJsonFromModel(text), prompt)
 }
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function retryableAiError(err) {
+  return /408|409|425|429|500|502|503|504|timeout|timed out|temporar|overload|high demand|network|fetch failed/i.test(err?.message || String(err))
+}
+
 async function generateRundown(prompt, history, context) {
-  const provider = aiSettings().provider
+  const primary = aiSettings().provider
+  const available = {
+    gemini: Boolean(geminiApiKey()),
+    opencode: hasOpenCodeAccess(),
+  }
+  const providers = [primary, primary === 'gemini' ? 'opencode' : 'gemini']
+    .filter((provider, index, all) => all.indexOf(provider) === index && available[provider])
+  if (!providers.length) throw new Error('No live AI provider is configured')
+
   let lastError
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      return provider === 'opencode'
-        ? await generateOpenCodeRundown(prompt, history, context)
-        : await generateGeminiRundown(prompt, history, context)
-    } catch (err) {
-      lastError = err
-      logLine('ai-rundown-retry', err?.message || String(err), { provider })
+  for (const provider of providers) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return provider === 'opencode'
+          ? await generateOpenCodeRundown(prompt, history, context)
+          : await generateGeminiRundown(prompt, history, context)
+      } catch (err) {
+        lastError = err
+        logLine('ai-rundown-retry', err?.message || String(err), { provider, attempt: attempt + 1 })
+        if (!retryableAiError(err) || attempt === 2) break
+        // Short exponential backoff handles transient Gemini/OpenRouter demand
+        // without making an invalid key feel like a frozen button.
+        await delay(400 * (3 ** attempt))
+      }
     }
+    logLine('ai-rundown-provider-fallback', lastError?.message || String(lastError), { from: provider })
   }
   throw lastError
 }
@@ -1961,9 +1997,13 @@ ipcMain.handle('footage:analyze', async (_event, payload) => {
 // Render pipeline
 // ---------------------------------------------------------------------------
 
+function evenInt(n, fallback) {
+  const r = Math.round(Number(n) || fallback)
+  return r % 2 === 0 ? r : r + 1
+}
 function targetSizeForAspect(aspect, size) {
   if (Array.isArray(size) && size.length >= 2) {
-    return { width: Math.round(Number(size[0]) || 1920), height: Math.round(Number(size[1]) || 1080) }
+    return { width: evenInt(size[0], 1920), height: evenInt(size[1], 1080) }
   }
   if (aspect === '9:16') return { width: 1080, height: 1920 }
   if (aspect === '1:1') return { width: 1080, height: 1080 }

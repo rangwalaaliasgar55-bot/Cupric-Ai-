@@ -38,7 +38,7 @@ import type { StudioClip, StudioTextAnim, StudioTransition } from '../../types/p
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { EASE_SOFT } from '../../lib/motion'
 import { useReducedMotion } from '../../lib/use-reduced-motion'
-import { writeDragPayload } from '../../lib/studio/resourceDrop'
+import { resourceDisposition, writeDragPayload } from '../../lib/studio/resourceDrop'
 import { copyText, cx, uid } from '../../lib/utils'
 
 const KIND_ICON = {
@@ -252,20 +252,23 @@ export function PackBrowser() {
       void copyText(data?.file ?? item.id)
       pushToast('info', `“${item.name}” — ${data?.durationSec ?? 0}s at ${data?.fps ?? 30}fps. Path copied; open it from the Render screen.`)
     } else if (item.kind === 'component') {
+      sessionStorage.setItem('cupric:lab-open', item.id)
       setView('lab')
-      pushToast('info', `Opening the Lab at “${item.name}”.`)
-    } else if (item.kind === 'icon' || item.kind === 'block') {
-      const clip = defaultTextClip(nextFreeStart(doc, topTrack, at, 4), topTrack)
-      clip.text = item.name
-      clip.name = `Resource · ${item.name}`
-      clip.anim = 'fade-up'
-      addStudioClip(project.id, clip)
-      const source = (item.data as { source?: string } | undefined)?.source
-      pushToast('success', `“${item.name}” added as an editable Studio cue${source ? ' — source linked in the resource card' : ''}.`)
-    } else if (item.kind === 'font' || item.kind === 'skill' || item.kind === 'provider') {
-      const source = (item.data as { source?: string } | undefined)?.source
+      pushToast('info', `Opening the Lab at “${item.name}” — use “Send to Studio” to capture it.`)
+    } else if (item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider') {
+      const data = item.data as { source?: string; url?: string } | undefined
+      const source = data?.source ?? data?.url
       if (source) window.open(source, '_blank', 'noopener,noreferrer')
-      pushToast('info', `${item.name} is indexed with an editable video/agent adapter. Opening its upstream reference.`)
+      const explanation = item.kind === 'font'
+        ? 'a font catalogue reference, not an embedded clip'
+        : item.kind === 'skill'
+          ? 'an agent skill used while planning renders, not visual media'
+          : item.kind === 'icon'
+            ? 'an icon-set reference; import an exported SVG or image to edit it'
+            : item.kind === 'block'
+              ? 'an upstream UI block; use a capturable Lab component for a clip'
+              : 'a generation-provider reference, not timeline media'
+      pushToast('info', `“${item.name}” is ${explanation}.${source ? ' Opening its upstream source.' : ''}`)
     }
     markUsed(item)
   }
@@ -282,6 +285,11 @@ export function PackBrowser() {
         <div className="min-w-0 flex-1">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
             Resource packs
+            {index && (
+              <span className="font-mono text-xs font-normal text-muted">
+                v{index.version} · {index.packs.reduce((sum, entry) => sum + entry.itemCount, 0).toLocaleString()} items
+              </span>
+            )}
             {!online && (
               <Badge tone="neutral">
                 <WifiOff size={11} /> Offline
@@ -357,6 +365,8 @@ export function PackBrowser() {
           <AnimatePresence mode="popLayout" initial={false}>
             {items.map((item, i) => {
               const Icon = KIND_ICON[item.kind] ?? Layers
+              const disposition = resourceDisposition(item.kind)
+              const dispositionLabel = disposition === 'clip' ? 'Drops as clip' : disposition === 'lab' ? 'Open in Lab' : 'Reference only'
               return (
                 <motion.div
                   key={item.id}
@@ -393,8 +403,13 @@ export function PackBrowser() {
                     <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-line bg-panel-alt text-muted">
                       <Icon size={14} />
                     </span>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{item.name}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1 truncate text-sm font-semibold">{item.name}</div>
+                        <Badge tone={disposition === 'clip' ? 'accent' : disposition === 'lab' ? 'info' : 'neutral'}>
+                          {dispositionLabel}
+                        </Badge>
+                      </div>
                       <p className="line-clamp-2 text-xs text-muted">{item.description}</p>
                     </div>
                   </div>

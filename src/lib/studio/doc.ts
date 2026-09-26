@@ -248,6 +248,23 @@ export function normaliseClip(clip: StudioClip, trackCount: number): StudioClip 
   }
 }
 
+/**
+ * Swap two track layers without changing clip timing. Track numbers are the
+ * compositing z-order (0 is the bottom), so this one pure operation is shared
+ * by preview and export and can be recorded as one undo step.
+ */
+export function reorderTracks(doc: StudioDoc, from: number, to: number): StudioDoc {
+  const a = clamp(Math.round(from), 0, Math.max(0, doc.trackCount - 1))
+  const b = clamp(Math.round(to), 0, Math.max(0, doc.trackCount - 1))
+  if (a === b) return doc
+  return {
+    ...doc,
+    clips: doc.clips.map((clip) =>
+      clip.track === a ? { ...clip, track: b } : clip.track === b ? { ...clip, track: a } : clip,
+    ),
+  }
+}
+
 /** Snap a time to clip edges and the playhead when within `tolerance`. */
 export function snapTime(doc: StudioDoc, time: number, ignoreId: string, extra: number[], tolerance: number): number {
   const candidates = [0, ...extra]

@@ -20,7 +20,7 @@ import { getIpc } from '../lib/bridge'
 import { planWithRemotionCapabilities } from '../lib/remotionResources'
 import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
-import { emptyStudioDoc, normaliseClip, splitClipAt, studioOf } from '../lib/studio/doc'
+import { emptyStudioDoc, normaliseClip, reorderTracks, splitClipAt, studioOf } from '../lib/studio/doc'
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
 import { setSoundEnabled } from '../lib/sound'
 
@@ -184,6 +184,7 @@ type AppState = {
   removeStudioClip: (pid: string, clipId: string) => void
   splitStudioClip: (pid: string, clipId: string, atSec: number) => void
   duplicateStudioClip: (pid: string, clipId: string) => void
+  reorderStudioTracks: (pid: string, from: number, to: number) => void
   addStudioTrack: (pid: string) => void
 
   startRender: (
@@ -552,6 +553,13 @@ export const useProjectStore = create<AppState>()(
             )
             return { ...p, studio: { ...doc, clips: [...doc.clips, copy] } }
           }, 'Duplicate clip'),
+
+        reorderStudioTracks: (pid, from, to) =>
+          updateProject(pid, (p) => {
+            const doc = studioOf(p)
+            const reordered = reorderTracks(doc, from, to)
+            return reordered === doc ? p : { ...p, studio: reordered }
+          }, 'Reorder tracks'),
 
         addStudioTrack: (pid) =>
           updateProject(pid, (p) => {

@@ -35,7 +35,17 @@ export type ResourceDragPayload = {
 export type DropResult =
   | { ok: true; clip: StudioClip; message: string }
   | { ok: true; docPatch: Partial<StudioDoc>; message: string }
+  | { ok: true; action: 'open-lab'; labSlug: string; message: string }
   | { ok: false; reason: string }
+
+export type ResourceDisposition = 'clip' | 'lab' | 'reference'
+
+/** One classification drives every resource badge and drag expectation. */
+export function resourceDisposition(kind: string): ResourceDisposition {
+  if (kind === 'component') return 'lab'
+  if (['glass', 'background', 'animation', 'effect', 'transition', 'saas-template'].includes(kind)) return 'clip'
+  return 'reference'
+}
 
 export function readDragPayload(transfer: DataTransfer): ResourceDragPayload | null {
   const raw = transfer.getData(RESOURCE_MIME)
@@ -111,9 +121,26 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
     case 'transition': {
       const transition = TRANSITIONS.find((t) => t.id === payload.id)
       if (!transition) return { ok: false, reason: `The renderer has no transition called “${payload.id}”.` }
+      if (!doc.clips.length) {
+        return {
+          ok: false,
+          reason: `“${transition.name}” needs a clip. Add media or text first, then drop the transition again.`,
+        }
+      }
+      // Stage drops have no timeline target. Pick the clip edge nearest the
+      // playhead so the action is useful and predictable instead of refusing.
+      const target = [...doc.clips].sort((a, b) => {
+        const distance = (clip: StudioClip) => Math.min(Math.abs(clip.startSec - atSec), Math.abs(clip.startSec + clip.durationSec - atSec))
+        return distance(a) - distance(b) || b.startSec - a.startSec
+      })[0]
       return {
-        ok: false,
-        reason: `“${transition.name}” is a transition — drop it on a clip in the timeline, or set it in the inspector. It has nothing to attach to on an empty stage.`,
+        ok: true,
+        docPatch: {
+          clips: doc.clips.map((clip) =>
+            clip.id === target.id ? { ...clip, transitionIn: transition.id } as StudioClip : clip,
+          ),
+        },
+        message: `“${transition.name}” applied to the nearest clip, “${target.name}”.`,
       }
     }
 
@@ -132,11 +159,13 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
     }
 
     case 'component':
-      // Lab demos are live React, not pixels. The honest answer is to say what
-      // the path actually is rather than drop an empty overlay on the canvas.
+      // Lab demos are live React, not pixels. Route straight to the real
+      // deterministic capture flow rather than dropping an empty placeholder.
       return {
-        ok: false,
-        reason: `“${payload.name}” is a live React demo. Open it in the Lab and use “Send to Studio” to capture it as an overlay frame — the canvas cannot mount React components.`,
+        ok: true,
+        action: 'open-lab',
+        labSlug: payload.id,
+        message: `Opening “${payload.name}” in the Lab. Choose the frame, then use “Send to Studio” to capture it as an overlay.`,
       }
 
     case 'template':
@@ -147,6 +176,24 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
 
     case 'source':
       return { ok: false, reason: `“${payload.name}” is a reference link, not editable material.` }
+
+    case 'skill':
+      return { ok: false, reason: `“${payload.name}” is an agent skill reference for planning renders, not visual material that can become a clip.` }
+
+    case 'font':
+      return { ok: false, reason: `“${payload.name}” is a font catalogue reference. Open its source to install or license the font; it is not embedded clip media.` }
+
+    case 'icon':
+      return { ok: false, reason: `“${payload.name}” is an icon-set reference, not an exported SVG or image. Open the source and import an actual icon file.` }
+
+    case 'provider':
+      return { ok: false, reason: `“${payload.name}” is a service/provider reference for the generation pipeline, not timeline media.` }
+
+    case 'block':
+      return { ok: false, reason: `“${payload.name}” is an upstream UI block reference. Open its source or use a capturable component from the Lab.` }
+
+    case 'voice':
+      return { ok: false, reason: `“${payload.name}” is a voice-command phrase. Copy it and use the Studio Voice control; it is not an audio clip.` }
 
     default:
       return { ok: false, reason: `Cupric does not know how to place a “${payload.kind}” item on the stage yet.` }

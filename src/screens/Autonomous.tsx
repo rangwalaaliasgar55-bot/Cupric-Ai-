@@ -17,10 +17,12 @@ function openOutput(outputPath?: string | null) {
   if (ipc && outputPath) void ipc.invoke('automation:openOutput', { outputPath })
 }
 
-function openArenaForJob(jobId: string) {
+async function openArenaForJob(jobId: string): Promise<{ copied: boolean }> {
   const ipc = getIpc()
-  if (ipc) void ipc.invoke('automation:openArena', { jobId })
-  else window.open('https://arena.ai/code', '_blank', 'noopener,noreferrer')
+  if (ipc) return await ipc.invoke('automation:openArena', { jobId }) as { copied: boolean }
+  const opened = window.open('https://arena.ai/code', '_blank', 'noopener,noreferrer')
+  if (!opened) throw new Error('The browser blocked the Arena tab. Allow pop-ups and try again.')
+  return { copied: false }
 }
 
 export function Autonomous() {
@@ -264,7 +266,17 @@ export function Autonomous() {
                 <div className="text-sm font-semibold text-accent-text">Review gate waiting</div>
                 <p className="mt-1 text-sm text-muted">{job.waitingMessage || currentStep.message || 'Approve this gate to continue.'}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => openArenaForJob(job.id)}>Open Arena in browser</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void openArenaForJob(job.id)
+                      .then((result) => pushToast('success', result.copied
+                        ? 'Arena opened and the prompt was verified on your clipboard. Paste it to continue.'
+                        : 'Arena opened. Copy the prompt from the rundown before continuing.'))
+                      .catch((error) => pushToast('error', error instanceof Error ? error.message : String(error)))}
+                  >
+                    Open Arena & copy prompt
+                  </Button>
                   <Button size="sm" onClick={() => approve(job.id, currentStep.id)}>Approve gate & continue</Button>
                   <Button size="sm" variant="outline" onClick={() => reject(job.id, currentStep.id)}>Reject</Button>
                 </div>

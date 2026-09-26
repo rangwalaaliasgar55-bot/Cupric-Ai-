@@ -16,7 +16,7 @@
  * generated JavaScript to find out what it says would be a security decision,
  * not a convenience.
  */
-import type { StudioClip, StudioDoc, StudioTextAnim, StudioTransition } from '../../types/project'
+import type { SceneRundown, StudioClip, StudioDoc, StudioTextAnim, StudioTransition } from '../../types/project'
 import { uid } from '../utils'
 import { defaultTextClip, nextFreeStart } from './doc'
 
@@ -231,6 +231,23 @@ function sizeFor(copy: string, index: number): number {
  * masks, rotation, the checks panel. Nothing about them remembers they came
  * from a model.
  */
+export function rundownToStudioClips(rundown: SceneRundown, doc: StudioDoc, label = 'Generated'): StudioClip[] {
+  return piecesToStudioClips({
+    scenes: rundown.scenes.map((scene) => ({
+      from: scene.from,
+      to: scene.to,
+      copy: scene.copy,
+      motion: scene.motion,
+      type: scene.type,
+    })),
+    durationSec: rundown.durationSec,
+    fps: rundown.fps === 24 || rundown.fps === 30 || rundown.fps === 60 ? rundown.fps : null,
+    size: rundown.size,
+    sources: ['automation-rundown'],
+    via: 'manifest',
+  }, doc, label)
+}
+
 export function piecesToStudioClips(piece: ImportedPiece, doc: StudioDoc, label = 'Generated'): StudioClip[] {
   const track = Math.min(doc.trackCount - 1, 1)
   const base = nextFreeStart(doc, track, 0, Math.max(1, piece.durationSec))

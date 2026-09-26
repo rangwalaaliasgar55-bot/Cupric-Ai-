@@ -5,6 +5,8 @@ import { getBridge, getIpc } from './lib/bridge'
 import { setSoundEnabled } from './lib/sound'
 import { transitionSoft } from './lib/motion'
 import { useProjectStore } from './state/useProjectStore'
+import { studioOf } from './lib/studio/doc'
+import { rundownToStudioClips } from './lib/studio/importHtml'
 
 export default function App() {
   const theme = useProjectStore((s) => s.theme)
@@ -80,6 +82,24 @@ export default function App() {
           store.patchRundown(job.projectId, job.rundown)
           store.lockRundown(job.projectId)
           if (job.rundown.title) store.renameProject(job.projectId, job.rundown.title)
+          // The autonomous render is not a dead-end MP4: once complete, seed
+          // an empty project's Studio with ordinary editable scene clips. A
+          // non-empty edit is never overwritten, and the one patch is one undo.
+          if (job.status === 'done') {
+            const latestProject = useProjectStore.getState().projects.find((project) => project.id === job.projectId)
+            const doc = studioOf(latestProject)
+            if (latestProject && doc.clips.length === 0) {
+              const clips = rundownToStudioClips(job.rundown, doc, 'Autonomous')
+              store.patchStudio(job.projectId, {
+                clips,
+                aspect: job.aspect,
+                fps: job.fps,
+              })
+              store.pushToast('success', 'Editable generated scenes are ready in Studio.', {
+                action: { label: 'Open Studio', run: () => useProjectStore.getState().setView('studio') },
+              })
+            }
+          }
         }
       } else if (payload?.message) {
         store.updateAutomationJob(id, {

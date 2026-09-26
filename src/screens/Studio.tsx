@@ -66,7 +66,9 @@ export function Studio() {
   const removeStudioClip = useProjectStore((s) => s.removeStudioClip)
   const splitStudioClip = useProjectStore((s) => s.splitStudioClip)
   const duplicateStudioClip = useProjectStore((s) => s.duplicateStudioClip)
+  const reorderStudioTracks = useProjectStore((s) => s.reorderStudioTracks)
   const pushToast = useProjectStore((s) => s.pushToast)
+  const setView = useProjectStore((s) => s.setView)
   const startAutomationJob = useProjectStore((s) => s.startAutomationJob)
 
   const [time, setTime] = useState(0)
@@ -81,6 +83,7 @@ export function Studio() {
   const [heard, setHeard] = useState<string | null>(null)
   const [showVoiceHelp, setShowVoiceHelp] = useState(false)
   const [showChecks, setShowChecks] = useState(false)
+  const [showSafeAreas, setShowSafeAreas] = useState(true)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -321,6 +324,12 @@ export function Studio() {
     const result = resourceToStudio(doc, payload, time)
     if (!result.ok) {
       pushToast('info', result.reason)
+      return
+    }
+    if ('action' in result) {
+      sessionStorage.setItem('cupric:lab-open', result.labSlug)
+      setView('lab')
+      pushToast('info', result.message)
       return
     }
     if ('clip' in result) {
@@ -764,6 +773,7 @@ export function Studio() {
                 time={time}
                 playing={playing}
                 muted={muted}
+                showSafeAreas={showSafeAreas}
                 duration={Math.max(duration, 0.1)}
                 onTimeChange={setTime}
                 onEnded={() => {
@@ -789,6 +799,17 @@ export function Studio() {
             <IconButton label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted((m) => !m)}>
               {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
             </IconButton>
+            <button
+              type="button"
+              aria-pressed={showSafeAreas}
+              onClick={() => setShowSafeAreas((shown) => !shown)}
+              className={cx(
+                'rounded-md border px-2 py-1 text-xs transition-colors',
+                showSafeAreas ? 'border-accent/50 bg-accent/10 text-accent-text' : 'border-line text-muted hover:text-text',
+              )}
+            >
+              Safe areas
+            </button>
             <span className="font-mono text-xs text-muted tabular-nums">
               {fmtClock(time)} / {fmtClock(duration)}
             </span>
@@ -819,6 +840,7 @@ export function Studio() {
                 seek(t)
               }}
               onPatchClip={(id, patch) => updateStudioClip(projectId, id, patch)}
+              onReorderTrack={(from, to) => reorderStudioTracks(projectId, from, to)}
             />
           </div>
         </div>
