@@ -2,7 +2,7 @@
   "id": "effects",
   "name": "Effects",
   "description": "Effect cues shared by the Arena prompt builder and the local renderer.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "source": "Cupric effects registry, mapping notes in resources/kdenlive",
   "license": "MIT",
   "items": [
