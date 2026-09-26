@@ -29,6 +29,14 @@ export type PackItemKind =
   | 'source'
   /** A self-contained HTML scene with `__seek(t)`, rendered locally to MP4. */
   | 'template'
+  /** Self-hosted type, from the external resource catalog. */
+  | 'font'
+  | 'skill'
+  | 'icon'
+  | 'block'
+  | 'provider'
+  /** An editable SaaS-style video template. */
+  | 'saas-template'
 
 export type PackItem = {
   id: string

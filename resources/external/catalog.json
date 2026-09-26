@@ -1,0 +1,1239 @@
+{
+  "schemaVersion": 1,
+  "updated": "2026-09-26",
+  "policy": "Index and adapters only. Resources remain attributed to their authors; only MIT/open-source assets should be vendored after license verification.",
+  "sources": [
+    {
+      "id": "itshover",
+      "name": "Its Hover",
+      "url": "https://www.itshover.com/icons",
+      "license": "verify per icon",
+      "items": [
+        {
+          "id": "itshover-google-ai-studio",
+          "name": "Google AI Studio",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/google-ai-studio",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-anthropic",
+          "name": "Anthropic",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/anthropic",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-cursor",
+          "name": "Cursor",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/cursor",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-gemini",
+          "name": "Gemini",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/gemini",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-grok",
+          "name": "Grok",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/grok",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-lm-studio",
+          "name": "LM Studio",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/lm-studio",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-midjourney",
+          "name": "Midjourney",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/midjourney",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-notion",
+          "name": "Notion",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/notion",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-ollama",
+          "name": "Ollama",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/ollama",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-qwen",
+          "name": "Qwen",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/qwen",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-railway",
+          "name": "Railway",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/railway",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-xai",
+          "name": "xAI",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/xai",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "itshover-facebook",
+          "name": "Facebook",
+          "kind": "icon",
+          "source": "https://www.itshover.com/icons/facebook",
+          "editable": true,
+          "agentUsable": true
+        }
+      ]
+    },
+    {
+      "id": "great-ui",
+      "name": "Great UI",
+      "url": "https://www.great-ui.com/components",
+      "license": "verify per component",
+      "items": [
+        {
+          "id": "great-ui-pixel-swipe-page-transition",
+          "name": "Pixel Swipe Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/pixel-swipe-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-pixel-swipe-text",
+          "name": "Pixel Swipe Text",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/pixel-swipe-text",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-scroll-flying-cards",
+          "name": "Scroll Flying Cards",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/scroll-flying-cards",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-github-card",
+          "name": "Github Card",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/github-card",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-instagram-card",
+          "name": "Instagram Card",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/instagram-card",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-facebook-card",
+          "name": "Facebook Card",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/facebook-card",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-twitter-x-card",
+          "name": "Twitter X Card",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/twitter-x-card",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-linkedin-card",
+          "name": "LinkedIn Card",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/linkedin-card",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-pixel-to-ascii-image",
+          "name": "Pixel To Ascii Image",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/pixel-to-ascii-image",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-image-hover-reveal",
+          "name": "Image Hover Reveal",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/image-hover-reveal",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-terminal-loader",
+          "name": "Terminal Loader",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/terminal-loader",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-animated-link",
+          "name": "Animated Link",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/animated-link",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-floating-menu",
+          "name": "Floating Menu",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/floating-menu",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-macbook-mockup",
+          "name": "Macbook Mockup",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/macbook-mockup",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-mobile-mockup",
+          "name": "Mobile Mockup",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/mobile-mockup",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-floating-dock-menu",
+          "name": "Floating Dock Menu",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/floating-dock-menu",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-radial-gooey-menu",
+          "name": "Radial Gooey Menu",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/radial-gooey-menu",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-animated-path",
+          "name": "Animated Path",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/animated-path",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-word-focus-scroll",
+          "name": "Word Focus Scroll",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/word-focus-scroll",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-blur-scroll-reveal",
+          "name": "Blur Scroll Reveal",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/blur-scroll-reveal",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-split-line-fly-in",
+          "name": "Split Line Fly In",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/split-line-fly-in",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-multilingual-quote",
+          "name": "Multilingual Quote",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/multilingual-quote",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-text-on-path-scroll",
+          "name": "Text On Path Scroll",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/text-on-path-scroll",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-scrambled-install-command",
+          "name": "Scrambled Install Command",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/scrambled-install-command",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-text-reveal",
+          "name": "Text Reveal",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/text-reveal",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-crossblur-page-transition",
+          "name": "CrossBlur Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/crossblur-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-venetian-blinds-page-transition",
+          "name": "Venetian Blinds Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/venetian-blinds-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-cascade-page-transition",
+          "name": "Cascade Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/cascade-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-sine-wave-page-transition",
+          "name": "Sine Wave Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/sine-wave-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-pixel-page-transition",
+          "name": "Pixel Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/pixel-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-sweep-page-transition",
+          "name": "Sweep Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/sweep-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-interlocking-page-transition",
+          "name": "Interlocking Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/interlocking-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-curtain-page-transition",
+          "name": "Curtain Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/curtain-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-color-wipe-page-transition",
+          "name": "Color Wipe Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/color-wipe-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-staggered-page-transition",
+          "name": "Staggered Page Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/staggered-page-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-blur-fade-theme-transition",
+          "name": "Blur Fade Theme Transition",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/blur-fade-theme-transition",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-split-theme-provider",
+          "name": "Split Theme Provider",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/split-theme-provider",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-circular-theme-provider",
+          "name": "Circular Theme Provider",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/circular-theme-provider",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-swipe-theme-provider",
+          "name": "Swipe Theme Provider",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/swipe-theme-provider",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-aceternity-button",
+          "name": "Aceternity Button",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/aceternity-button",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-minimal-buttons",
+          "name": "Minimal Buttons",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/minimal-buttons",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-button",
+          "name": "Button",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/button",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-team-section",
+          "name": "Team Section",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/team-section",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-card",
+          "name": "Card",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/card",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-revision-timeline",
+          "name": "Revision Timeline",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/revision-timeline",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-diagonal-marquee-carousel",
+          "name": "Diagonal Marquee Carousel",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/diagonal-marquee-carousel",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-avatar-stack",
+          "name": "Avatar Stack",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/avatar-stack",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-vinyl-album-card",
+          "name": "Vinyl Album Card",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/vinyl-album-card",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-deployment-checklist",
+          "name": "Deployment Checklist",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/deployment-checklist",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "great-ui-accordion",
+          "name": "Accordion",
+          "kind": "component",
+          "source": "https://www.great-ui.com/components/accordion",
+          "editable": true,
+          "agentUsable": true
+        }
+      ]
+    },
+    {
+      "id": "bencho",
+      "name": "Bencho",
+      "url": "https://bencho.dev/",
+      "license": "verify per block",
+      "items": [
+        {
+          "id": "bencho-magnetic-select",
+          "name": "Magnetic Select",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/magnetic-select",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-particles",
+          "name": "Particles",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/particles",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-wheel",
+          "name": "Wheel",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/wheel",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-palette",
+          "name": "Palette",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/palette",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-progress-ticks",
+          "name": "Progress Ticks",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/progress-ticks",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-drag-stepper",
+          "name": "Drag Stepper",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/drag-stepper",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-selection-list",
+          "name": "Selection List",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/selection-list",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-reorder-list",
+          "name": "Reorder List",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/reorder-list",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-command-bar",
+          "name": "Command Bar",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/command-bar",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-search",
+          "name": "Search",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/search",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-pull-to-refresh",
+          "name": "Pull To Refresh",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/pull-to-refresh",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-image-accordion",
+          "name": "Image Accordion",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/image-accordion",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-inline-confirm",
+          "name": "Inline Confirm",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/inline-confirm",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-checklist",
+          "name": "Checklist",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/checklist",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-tilt-card",
+          "name": "Tilt Card",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/tilt-card",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-notify",
+          "name": "Notify",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/notify",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-dragging-ball",
+          "name": "Dragging Ball",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/dragging-ball",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-create-menu",
+          "name": "Create Menu",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/create-menu",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-action-node",
+          "name": "Action Node",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/action-node",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-range-dial",
+          "name": "Range Dial",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/range-dial",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-one-time-code",
+          "name": "One-Time Code",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/one-time-code",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-todo-tower",
+          "name": "Todo Tower",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/todo-tower",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-aspect-ratio",
+          "name": "Aspect Ratio",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/aspect-ratio",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-label-input",
+          "name": "Label Input",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/label-input",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-icon-bar",
+          "name": "Icon Bar",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/icon-bar",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-step-player",
+          "name": "Step Player",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/step-player",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-canvas-toolbar",
+          "name": "Canvas Toolbar",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/canvas-toolbar",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-radial-menu",
+          "name": "Radial Menu",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/radial-menu",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-carousel",
+          "name": "Carousel",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/carousel",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-now-playing",
+          "name": "Now Playing",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/now-playing",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-magnifying-dock",
+          "name": "Magnifying Dock",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/magnifying-dock",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-slosh-slider",
+          "name": "Slosh Slider",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/slosh-slider",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-assignees",
+          "name": "Assignees",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/assignees",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-generate",
+          "name": "Generate",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/generate",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-liquid-toggle",
+          "name": "Liquid Toggle",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/liquid-toggle",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-slide-to-confirm",
+          "name": "Slide To Confirm",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/slide-to-confirm",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "bencho-glass-bubble",
+          "name": "Glass Bubble",
+          "kind": "block",
+          "source": "https://bencho.dev/blocks/glass-bubble",
+          "editable": true,
+          "agentUsable": true
+        }
+      ]
+    },
+    {
+      "id": "spell",
+      "name": "Spell UI",
+      "url": "https://spell.sh/docs/components",
+      "license": "verify per component",
+      "items": [
+        {
+          "id": "spell-chart",
+          "name": "Chart",
+          "kind": "component",
+          "source": "https://spell.sh/docs/chart",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-perspective-book",
+          "name": "Perspective Book",
+          "kind": "component",
+          "source": "https://spell.sh/docs/perspective-book",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-badge",
+          "name": "Badge",
+          "kind": "component",
+          "source": "https://spell.sh/docs/badge",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-keyboard-shortcuts",
+          "name": "Keyboard Shortcuts",
+          "kind": "component",
+          "source": "https://spell.sh/docs/keyboard-shortcuts",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-marquee",
+          "name": "Marquee",
+          "kind": "component",
+          "source": "https://spell.sh/docs/marquee",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-tweet",
+          "name": "Tweet",
+          "kind": "component",
+          "source": "https://spell.sh/docs/tweet",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-spotify-card",
+          "name": "Spotify Card",
+          "kind": "component",
+          "source": "https://spell.sh/docs/spotify-card",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-logos-carousel",
+          "name": "Logos Carousel",
+          "kind": "component",
+          "source": "https://spell.sh/docs/logos-carousel",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-qr-code",
+          "name": "QR Code",
+          "kind": "component",
+          "source": "https://spell.sh/docs/qr-code",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-fallback-avatar",
+          "name": "Fallback Avatar",
+          "kind": "component",
+          "source": "https://spell.sh/docs/fallback-avatar",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-blur-reveal",
+          "name": "Blur Reveal",
+          "kind": "component",
+          "source": "https://spell.sh/docs/blur-reveal",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-special-text",
+          "name": "Special Text",
+          "kind": "component",
+          "source": "https://spell.sh/docs/special-text",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-shimmer-text",
+          "name": "Shimmer Text",
+          "kind": "component",
+          "source": "https://spell.sh/docs/shimmer-text",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-highlighted-text",
+          "name": "Highlighted Text",
+          "kind": "component",
+          "source": "https://spell.sh/docs/highlighted-text",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-slide-up-text",
+          "name": "Slide Up Text",
+          "kind": "component",
+          "source": "https://spell.sh/docs/slide-up-text",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-text-marquee",
+          "name": "Text Marquee",
+          "kind": "component",
+          "source": "https://spell.sh/docs/text-marquee",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-words-stagger",
+          "name": "Words Stagger",
+          "kind": "component",
+          "source": "https://spell.sh/docs/words-stagger",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-signature",
+          "name": "Signature",
+          "kind": "component",
+          "source": "https://spell.sh/docs/signature",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-randomized-text",
+          "name": "Randomized Text",
+          "kind": "component",
+          "source": "https://spell.sh/docs/randomized-text",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-gradient-wave-text",
+          "name": "Gradient Wave Text",
+          "kind": "component",
+          "source": "https://spell.sh/docs/gradient-wave-text",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-rich-button",
+          "name": "Rich Button",
+          "kind": "component",
+          "source": "https://spell.sh/docs/rich-button",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-flow-button",
+          "name": "Flow Button",
+          "kind": "component",
+          "source": "https://spell.sh/docs/flow-button",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-copy-button",
+          "name": "Copy Button",
+          "kind": "component",
+          "source": "https://spell.sh/docs/copy-button",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-pop-button",
+          "name": "Pop Button",
+          "kind": "component",
+          "source": "https://spell.sh/docs/pop-button",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-color-selector",
+          "name": "Color Selector",
+          "kind": "component",
+          "source": "https://spell.sh/docs/color-selector",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-label-input",
+          "name": "Label Input",
+          "kind": "component",
+          "source": "https://spell.sh/docs/label-input",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-animated-checkbox",
+          "name": "Animated Checkbox",
+          "kind": "component",
+          "source": "https://spell.sh/docs/animated-checkbox",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-exploding-input",
+          "name": "Exploding Input",
+          "kind": "component",
+          "source": "https://spell.sh/docs/exploding-input",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-spinner",
+          "name": "Spinner",
+          "kind": "component",
+          "source": "https://spell.sh/docs/spinner",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-bars-spinner",
+          "name": "Bars Spinner",
+          "kind": "component",
+          "source": "https://spell.sh/docs/bars-spinner",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-light-rays",
+          "name": "Light Rays",
+          "kind": "component",
+          "source": "https://spell.sh/docs/light-rays",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-animated-gradient",
+          "name": "Animated Gradient",
+          "kind": "component",
+          "source": "https://spell.sh/docs/animated-gradient",
+          "editable": true,
+          "agentUsable": true
+        },
+        {
+          "id": "spell-tilt-card",
+          "name": "Tilt Card",
+          "kind": "component",
+          "source": "https://spell.sh/docs/tilt-card",
+          "editable": true,
+          "agentUsable": true
+        }
+      ]
+    },
+    {
+      "id": "designeng",
+      "name": "DesignEng FREE directory",
+      "url": "https://www.designeng.tools/?pricing=FREE",
+      "license": "provider-specific",
+      "items": [
+        {
+          "id": "designeng-forgeui",
+          "name": "ForgeUI",
+          "kind": "provider",
+          "source": "https://forgeui.in/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-bencho",
+          "name": "Bencho",
+          "kind": "provider",
+          "source": "https://bencho.dev/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-uselayouts",
+          "name": "useLayouts",
+          "kind": "provider",
+          "source": "https://uselayouts.com/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-cue-kit",
+          "name": "Cue Kit",
+          "kind": "provider",
+          "source": "https://kit.cuedesign.space/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-spell-ui",
+          "name": "Spell UI",
+          "kind": "provider",
+          "source": "https://spell.sh/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-great-ui",
+          "name": "Great UI",
+          "kind": "provider",
+          "source": "https://great-ui.com/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-cult-ui",
+          "name": "Cult UI",
+          "kind": "provider",
+          "source": "https://www.cult-ui.com/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-toggles.dev",
+          "name": "Toggles.dev",
+          "kind": "provider",
+          "source": "https://toggles.dev/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-keyline-icons",
+          "name": "Keyline Icons",
+          "kind": "provider",
+          "source": "https://keylineicons.com/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-panelui",
+          "name": "PanelUI",
+          "kind": "provider",
+          "source": "https://panelui.dev/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-nexvyn/ui",
+          "name": "Nexvyn/UI",
+          "kind": "provider",
+          "source": "https://ui.nexvyn.dev/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-kokonutui",
+          "name": "KokonutUI",
+          "kind": "provider",
+          "source": "https://kokonutui.com/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-unicorn-studio",
+          "name": "Unicorn Studio",
+          "kind": "provider",
+          "source": "https://www.unicorn.studio/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-tldraw",
+          "name": "tldraw",
+          "kind": "provider",
+          "source": "https://www.tldraw.com/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-excalidraw",
+          "name": "Excalidraw",
+          "kind": "provider",
+          "source": "https://excalidraw.com/",
+          "editable": false,
+          "agentUsable": true
+        },
+        {
+          "id": "designeng-vidstudio",
+          "name": "VidStudio",
+          "kind": "provider",
+          "source": "https://site.vidstudio.live/",
+          "editable": false,
+          "agentUsable": true
+        }
+      ]
+    }
+  ]
+}

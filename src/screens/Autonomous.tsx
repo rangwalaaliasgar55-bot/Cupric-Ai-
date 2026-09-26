@@ -7,6 +7,7 @@ import { getIpc } from '../lib/bridge'
 import { useProjectStore } from '../state/useProjectStore'
 import { isVoiceSupported, shouldAutoStartBrief, speak, stopSpeaking, VoiceListener } from '../lib/voice'
 import type { AutomationMode, VotingMode } from '../types/project'
+import { planWithRemotionCapabilities } from '../lib/remotionResources'
 
 /** Silence after a complete-sounding phrase before hands-free starts a job. */
 const AUTO_START_SETTLE_MS = 1800
@@ -53,6 +54,7 @@ export function Autonomous() {
 
   const job = jobs[0]
   const currentStep = job?.steps.find(step => step.id === job.currentStepId) || job?.steps.find(step => step.status === 'waiting-for-user') || null
+  const capabilityPlan = planWithRemotionCapabilities(brief, aspect, fps)
 
   const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const spokenStatusRef = useRef<string | null>(null)
@@ -224,6 +226,12 @@ export function Autonomous() {
                 <option value="manual-arena">Manual Arena vote</option>
               </select>
             </label>
+          </div>
+          <div className="mt-5 rounded-lg border border-line bg-bg/40 p-3 text-xs">
+            <div className="font-semibold text-text">Remotion capability plan</div>
+            <div className="mt-1 text-muted">Template <span className="text-text">{capabilityPlan.template}</span> · Font <span className="text-text">{capabilityPlan.font}</span> · {capabilityPlan.render.fps}fps</div>
+            <div className="mt-1 text-muted">Skills: {capabilityPlan.skills.join(' · ')}</div>
+            <div className="mt-1 text-muted">Deterministic frames · local asset fallback · preview/export parity</div>
           </div>
           <div className="mt-5 flex justify-end">
             <Button onClick={() => startJob(brief)} disabled={!brief.trim()}>

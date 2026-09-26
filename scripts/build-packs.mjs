@@ -244,6 +244,95 @@ try {
   console.warn('resources/panelui/registry.json not readable — skipping the PanelUI pack')
 }
 
+// SaaS blueprints are first-class editable Studio storyboards.
+try {
+  const saas = JSON.parse(await readFile(path.join(root, 'resources', 'saas', 'templates.json'), 'utf8'))
+  packs.push({
+    id: 'saas-video',
+    name: 'SaaS video templates',
+    description: saas.description,
+    version: VERSION,
+    source: 'Cupric authored templates',
+    license: 'MIT (Cupric authored blueprint)',
+    items: saas.templates.map((template) => ({
+      id: template.id,
+      kind: 'saas-template',
+      name: template.name,
+      description: template.goal,
+      data: { durationSec: template.durationSec, scenes: template.scenes, editable: true, agentUsable: true },
+      tags: ['saas', 'video', 'template', 'editable', 'agent'],
+    })),
+  })
+} catch {
+  console.warn('resources/saas/templates.json not readable — skipping SaaS pack')
+}
+
+// External UI sources are represented as attributed, editable capability entries.
+// We do not silently copy third-party code or assets without a compatible license.
+try {
+  const external = JSON.parse(await readFile(path.join(root, 'resources', 'external', 'catalog.json'), 'utf8'))
+  packs.push({
+    id: 'external-ui',
+    name: 'External UI & motion resources',
+    description: 'Indexed icons, UI blocks, motion components and design tools from Its Hover, Great UI, Bencho, Spell UI and DesignEng. Entries link to the original source and are available to the video/agent adapters.',
+    version: VERSION,
+    source: external.sources.map((s) => s.url).join(', '),
+    license: external.policy,
+    items: external.sources.flatMap((source) => source.items.map((item) => ({
+      ...item,
+      description: `${source.name} ${item.kind} · editable video cue and agent capability`,
+      data: { provider: source.id, source: item.source, editable: item.editable, agentUsable: item.agentUsable },
+      tags: ['external', source.id, item.kind, 'editable', 'agent'],
+    }))),
+  })
+} catch {
+  console.warn('resources/external/catalog.json not readable — skipping external UI pack')
+}
+
+// Remotion is represented as a capability pack rather than copied source. This
+// keeps the app license-safe while making every upstream template, font name and
+// agent skill discoverable to the Library and autonomous planner.
+try {
+  const remotion = JSON.parse(await readFile(path.join(root, 'resources', 'remotion', 'catalog.json'), 'utf8'))
+  const items = [
+    ...remotion.templates.map((t) => ({
+      id: `template-${t.id}`,
+      kind: 'template',
+      name: t.name,
+      description: `Remotion starter template · ${t.package}`,
+      data: { source: t.source, package: t.package },
+      tags: ['remotion', 'template'],
+    })),
+    ...remotion.fonts.names.map((name) => ({
+      id: `font-${name}`,
+      kind: 'font',
+      name,
+      description: 'Remotion Google Fonts catalog entry; loaded lazily with a local fallback.',
+      data: { provider: remotion.fonts.provider },
+      tags: ['remotion', 'font'],
+    })),
+    ...remotion.skills.map((skill) => ({
+      id: `skill-${skill.id}`,
+      kind: 'skill',
+      name: skill.name,
+      description: skill.description,
+      data: { source: `${remotion.source.url}/tree/${remotion.source.ref}/.agents/skills/${skill.id}` },
+      tags: ['remotion', 'skill', 'agent'],
+    })),
+  ]
+  packs.push({
+    id: 'remotion',
+    name: 'Remotion toolkit',
+    description: 'Upstream Remotion templates, Google Fonts catalog and agent skills indexed for autonomous planning. Source metadata only; no upstream code is vendored.',
+    version: VERSION,
+    source: remotion.source.url,
+    license: remotion.source.license,
+    items,
+  })
+} catch {
+  console.warn('resources/remotion/catalog.json not readable — skipping the Remotion pack')
+}
+
 // The vendored lab components are listed from their generated registry.
 try {
   const registry = JSON.parse(await readFile(path.join(root, 'resources', 'ui-lab', 'registry.json'), 'utf8'))

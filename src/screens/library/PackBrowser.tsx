@@ -51,6 +51,12 @@ const KIND_ICON = {
   voice: Mic,
   source: Link2,
   template: Film,
+  font: TypeIcon,
+  skill: Sparkles,
+  icon: Sparkles,
+  block: Layers,
+  provider: Wand2,
+  'saas-template': Film,
 } as const
 
 type Source = 'memory' | 'cache' | 'network' | 'local' | 'none'
@@ -157,6 +163,28 @@ export function PackBrowser() {
     const at = docDuration(doc)
     const topTrack = Math.min(1, doc.trackCount - 1)
 
+    if (item.kind === 'saas-template') {
+      const data = item.data as { scenes?: [string, number, StudioTextAnim][]; editable?: boolean } | undefined
+      const scenes = data?.scenes ?? []
+      let cursor = nextFreeStart(doc, 0, 0, 1)
+      scenes.forEach(([text, duration, anim], index) => {
+        const clip = defaultTextClip(cursor, topTrack)
+        clip.text = text
+        clip.name = `${item.name} · Scene ${index + 1}`
+        clip.durationSec = Math.max(0.2, duration)
+        clip.anim = anim
+        clip.captionStyle = 'standard'
+        clip.fontSizePct = text.length > 28 ? 6.5 : 9
+        clip.highlightWord = text.split(/\s+/)[0] || null
+        addStudioClip(project.id, clip)
+        cursor += duration
+      })
+      patchStudio(project.id, { backgroundId: 'grid-haze' })
+      pushToast('success', `“${item.name}” added as ${scenes.length} editable SaaS scenes. Edit every scene on the Studio timeline.`)
+      markUsed(item)
+      return
+    }
+
     if (item.kind === 'glass') {
       const clip = defaultGlassClip(nextFreeStart(doc, topTrack, at, 3), topTrack, item.id, item.id === 'lens' ? 'lens' : 'panel')
       addStudioClip(project.id, clip)
@@ -226,6 +254,18 @@ export function PackBrowser() {
     } else if (item.kind === 'component') {
       setView('lab')
       pushToast('info', `Opening the Lab at “${item.name}”.`)
+    } else if (item.kind === 'icon' || item.kind === 'block') {
+      const clip = defaultTextClip(nextFreeStart(doc, topTrack, at, 4), topTrack)
+      clip.text = item.name
+      clip.name = `Resource · ${item.name}`
+      clip.anim = 'fade-up'
+      addStudioClip(project.id, clip)
+      const source = (item.data as { source?: string } | undefined)?.source
+      pushToast('success', `“${item.name}” added as an editable Studio cue${source ? ' — source linked in the resource card' : ''}.`)
+    } else if (item.kind === 'font' || item.kind === 'skill' || item.kind === 'provider') {
+      const source = (item.data as { source?: string } | undefined)?.source
+      if (source) window.open(source, '_blank', 'noopener,noreferrer')
+      pushToast('info', `${item.name} is indexed with an editable video/agent adapter. Opening its upstream reference.`)
     }
     markUsed(item)
   }
@@ -383,6 +423,8 @@ export function PackBrowser() {
                           </>
                         ) : item.kind === 'component' ? (
                           'Open in Lab'
+                        ) : item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider' ? (
+                          'Open source'
                         ) : (
                           'Add to Studio'
                         )}

@@ -45,6 +45,14 @@ export type AutomationJob = {
   warnings?: string[]
   manualVoteApproved?: boolean
   candidates?: { file: string; score: number; reasons: string[] }[]
+  /** Deterministic Remotion capability selection used by the autonomous plan. */
+  remotionPlan?: {
+    template: string
+    font: string
+    skills: string[]
+    rationale: string
+    render: { aspect: '16:9' | '9:16' | '1:1'; fps: 30 | 60; deterministic: true; noRemoteAssets: true }
+  }
   footageMeta?: unknown
   arenaOpenedAt?: string | null
 }

@@ -3,6 +3,22 @@
   "updated": "2026-09-26",
   "packs": [
     {
+      "id": "saas-video",
+      "path": "resources/saas",
+      "entries": "templates.json",
+      "use": ["product-launch", "feature-demo", "testimonials", "pricing", "changelog", "onboarding"],
+      "code": "src/screens/library/PackBrowser.tsx"
+    },
+    {
+      "id": "external-ui",
+      "path": "resources/external",
+      "entries": "catalog.json",
+      "url": "https://www.designeng.tools/?pricing=FREE",
+      "use": ["editable-video-cues", "agent-resource-selection", "icons", "components"],
+      "code": "resources/external/catalog.json, scripts/build-packs.mjs",
+      "note": "Attribution-aware index. Third-party code/assets are not copied without license verification."
+    },
+    {
       "id": "ui-lab",
       "path": "resources/ui-lab",
       "entries": "registry.json",
@@ -89,6 +105,19 @@
       ],
       "code": "src/lib/packs.ts",
       "generated": "npm run packs:build"
+    },
+    {
+      "id": "remotion",
+      "path": "resources/remotion",
+      "entries": "catalog.json",
+      "url": "https://github.com/remotion-dev/remotion",
+      "use": [
+        "autonomous-template-selection",
+        "font-catalog",
+        "agent-skills"
+      ],
+      "code": "src/lib/remotionResources.ts",
+      "note": "Metadata index only; upstream source remains under its own MIT and font licenses."
     },
     {
       "id": "voice",
