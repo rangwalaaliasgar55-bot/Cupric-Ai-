@@ -348,19 +348,46 @@ try {
   const reactBits = JSON.parse(await readFile(path.join(root, 'resources', 'react-bits', 'catalog.json'), 'utf8'))
   packs.push({
     id: 'react-bits',
-    name: 'React Bits index',
-    description: `All ${reactBits.items.length} current React Bits entries as attributed design references. Source code is not redistributed because of the Commons Clause.`,
+    name: 'React Bits storyboards',
+    description: `All ${reactBits.items.length} current React Bits ideas as attributed references plus original, editable Cupric-native storyboards. No upstream component source is redistributed.`,
     version: VERSION,
     source: reactBits.source.url,
     license: reactBits.source.license,
-    items: reactBits.items.map((item) => ({
-      id: `react-bits-${item.id}`,
-      kind: 'block',
-      name: item.name,
-      description: `React Bits ${item.category} reference · open upstream to review and adapt under its license`,
-      data: { source: item.source, category: item.category, editable: item.editable, agentUsable: item.agentUsable, intake: item.intake, license: reactBits.source.license },
-      tags: ['react-bits', item.category, 'agent', 'attributed'],
-    })),
+    items: reactBits.items.map((item, index) => {
+      // These are deliberately simple Cupric scenes, not ports of the upstream
+      // implementation. Every resulting clip uses Studio's own renderer and is
+      // therefore editable, keyframeable, agent-readable and safe to export.
+      const animation = item.category === 'text'
+        ? ['word-reveal', 'typewriter', 'shimmer', 'fade-up'][index % 4]
+        : item.category === 'animations'
+          ? ['pop', 'liquid-wave', 'glass-rise', 'slide-left'][index % 4]
+          : item.category === 'background'
+            ? 'fade-up'
+            : ['pop', 'word-reveal', 'fade-up'][index % 3]
+      const categoryLabel = item.category === 'animations' ? 'animation' : item.category
+      const scenes = item.category === 'background'
+        ? [[item.name, 4, animation, 'text'], ['Edit colors, motion and layers', 4, 'shimmer', 'text']]
+        : [[item.name, 3, animation, 'text'], [`Editable ${categoryLabel} state`, 4, 'word-reveal', 'text'], ['Customize every property', 3, 'fade-up', 'text']]
+      return {
+        id: `react-bits-${item.id}`,
+        kind: 'saas-template',
+        name: item.name,
+        description: `Original editable Cupric storyboard using “${item.name}” as attributed visual vocabulary`,
+        data: {
+          durationSec: scenes.reduce((sum, scene) => sum + scene[1], 0),
+          scenes,
+          source: item.source,
+          category: item.category,
+          editable: true,
+          agentUsable: true,
+          sourceCopied: false,
+          intake: 'original-native-storyboard',
+          attribution: 'React Bits · David Haz',
+          license: reactBits.source.license,
+        },
+        tags: ['react-bits', item.category, 'editable', 'agent', 'attributed', 'native-storyboard'],
+      }
+    }),
   })
 } catch {
   console.warn('resources/react-bits/catalog.json not readable — skipping React Bits')

@@ -2,7 +2,7 @@
   "id": "remotion",
   "name": "Remotion toolkit",
   "description": "Upstream Remotion templates, Google Fonts catalog and agent skills indexed for autonomous planning. Source metadata only; no upstream code is vendored.",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "source": "https://github.com/remotion-dev/remotion",
   "license": "Remotion License (package-specific; metadata links only; verify eligibility before use)",
   "items": [

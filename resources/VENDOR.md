@@ -8,7 +8,7 @@
 | React Spectrum | https://github.com/adobe/react-spectrum | Apache-2.0 | **not vendored** — architecture notes only (size + visual language) |
 | Kdenlive | https://invent.kde.org/multimedia/kdenlive · xevrion GSoC widgets | GPL-2.0+ | effect ideas → FFmpeg/Arena mapping only (C++/Qt not portable) |
 | Open Props / Utopia / etc. | design-systems pipeline sites | various | checklist + token rules in DESIGN.md |
-| React Bits | https://github.com/DavidHDev/react-bits | MIT + Commons Clause v1.0 | metadata links only; no source redistribution or ported collection |
+| React Bits | https://github.com/DavidHDev/react-bits | MIT + Commons Clause v1.0 | metadata links + original Cupric-native editable storyboards; no upstream source redistribution or ported collection |
 | Skiper UI | https://skiper-ui.com | free commercial use with required attribution; per-entry credits may also apply | attributed catalog + original editable Cupric Studio storyboards; no upstream assets |
 | Remotion packages | https://github.com/remotion-dev/remotion/tree/main/packages | package-specific Remotion/MIT terms | metadata links only beyond dependencies already declared in `package.json`; license review required |
 
@@ -50,7 +50,7 @@ Patterns and catalogs **are** uploaded under `resources/` so agents and Library 
 
 ## React Bits, Skiper UI, and Remotion intake (0.7.0)
 
-- **React Bits:** all 209 entries discovered from the upstream component registry are indexed in `resources/react-bits/catalog.json`. The Commons Clause forbids redistributing the components themselves, including a bundled or ported collection, so Cupric ships links and design vocabulary—not copied source. The Studio agent may translate a named reference into Cupric-native keyframes and styles.
+- **React Bits:** all 209 entries discovered from the upstream component registry are indexed in `resources/react-bits/catalog.json`. The Commons Clause forbids redistributing the components themselves, including a bundled or ported collection, so Cupric does not copy upstream source. Each reference now also supplies an original Cupric-native Studio storyboard made solely from ordinary editable text clips, local animations, tracks and keyframes. The Studio agent may translate any named reference into the same safe native operations.
 - **Skiper UI:** all 106 entries supplied in the intake list are indexed. Because free use requires attribution, every pack item retains `Skiper UI · gxuri.me`; individual page credits must be checked before using upstream imagery. Cupric's entries are original editable text/media storyboards rendered by the deterministic Studio engine. The scroll-text and video-player references are included as `skiper31` and `skiper67`.
 - **Remotion:** all 137 current `packages/` directories are indexed alongside the existing templates, fonts, and skills. The root Remotion License restricts derivative editor redistribution and some organizations require a company license. Therefore new package entries are metadata with an explicit `license-review` gate; no monorepo source was copied. Existing npm dependencies remain governed by their package terms.
 

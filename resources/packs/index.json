@@ -1,5 +1,5 @@
 {
-  "version": "0.7.0",
+  "version": "0.7.1",
   "updated": "2026-09-26",
   "repo": "rangwalaaliasgar55-bot/Cupric-Ai-",
   "packs": [
@@ -89,10 +89,10 @@
     },
     {
       "id": "react-bits",
-      "name": "React Bits index",
-      "description": "All 209 current React Bits entries as attributed design references. Source code is not redistributed because of the Commons Clause.",
+      "name": "React Bits storyboards",
+      "description": "All 209 current React Bits ideas as attributed references plus original, editable Cupric-native storyboards. No upstream component source is redistributed.",
       "itemCount": 209,
-      "bytes": 120877
+      "bytes": 233083
     },
     {
       "id": "skiper-ui",
