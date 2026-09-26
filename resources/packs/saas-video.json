@@ -2,7 +2,7 @@
   "id": "saas-video",
   "name": "SaaS video templates",
   "description": "Editable, local-first blueprints for product launches, feature demos and growth videos.",
-  "version": "0.7.6",
+  "version": "0.8.0",
   "source": "Cupric authored templates",
   "license": "MIT (Cupric authored blueprint)",
   "items": [

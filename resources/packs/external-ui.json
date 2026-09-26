@@ -2,7 +2,7 @@
   "id": "external-ui",
   "name": "External UI & motion resources",
   "description": "Indexed icons, UI blocks, motion components and design tools from Its Hover, Great UI, Bencho, Spell UI and DesignEng. Entries link to the original source and are available to the video/agent adapters.",
-  "version": "0.7.6",
+  "version": "0.8.0",
   "source": "https://www.itshover.com/icons, https://www.great-ui.com/components, https://bencho.dev/, https://spell.sh/docs/components, https://www.designeng.tools/?pricing=FREE",
   "license": "Index and adapters only. Resources remain attributed to their authors; only MIT/open-source assets should be vendored after license verification.",
   "items": [
