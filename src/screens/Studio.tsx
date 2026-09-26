@@ -339,7 +339,7 @@ export function Studio() {
             opacity: clip.opacity,
             rotation: clip.rotation ?? 0,
             ...('x' in clip ? { x: clip.x, y: clip.y } : {}),
-            ...(clip.kind === 'text' ? { text: clip.text, color: clip.color, fontSizePct: clip.fontSizePct, fontFamily: clip.fontFamily, anim: clip.anim } : {}),
+            ...(clip.kind === 'text' ? { text: clip.text, color: clip.color, fontSizePct: clip.fontSizePct, fontFamily: clip.fontFamily, weight: clip.weight, align: clip.align, highlightWord: clip.highlightWord, anim: clip.anim } : {}),
             keyframes: clip.keyframes ?? [],
           })),
         }
@@ -352,7 +352,18 @@ export function Studio() {
       } else {
         raw = localStudioEditPlan(instruction, doc, selectedId)
       }
-      setAgentPlan(validateStudioEditPlan(raw, doc))
+      try {
+        setAgentPlan(validateStudioEditPlan(raw, doc))
+      } catch (validationError) {
+        // A provider can answer successfully but still omit IDs or invent an
+        // unsupported property. Treat malformed output like a provider outage:
+        // preserve the user's instruction and return a useful local preview.
+        const local = localStudioEditPlan(instruction, doc, selectedId)
+        setAgentPlan(validateStudioEditPlan({
+          ...local,
+          warning: `The live response was unsafe or incomplete, so Cupric rebuilt it locally: ${humanError(validationError, 'invalid edit plan')}`,
+        }, doc))
+      }
     } catch (err) {
       pushToast('error', humanError(err, 'Could not plan that edit'))
     } finally {
@@ -369,7 +380,9 @@ export function Studio() {
       const currentPlan = validateStudioEditPlan(agentPlan, doc)
       const next = applyStudioEditPlan(doc, currentPlan.ops)
       patchStudio(projectId, next)
-      pushToast('success', `Applied ${currentPlan.ops.length} agent edit${currentPlan.ops.length === 1 ? '' : 's'} as one undo step.`)
+      setTime(0)
+      if (docDuration(next) > 0) window.setTimeout(() => setPlaying(true), 60)
+      pushToast('success', `Applied ${currentPlan.ops.length} agent edit${currentPlan.ops.length === 1 ? '' : 's'} as one undo step. Playing the polished result from the start.`)
       setAgentPlan(null)
       setAgentInstruction('')
     } catch (err) {
@@ -851,10 +864,20 @@ export function Studio() {
           type="button"
           variant="ghost"
           disabled={agentPlanning || exporting || doc.clips.length === 0}
-          onClick={() => void planAgentEdit(agentInstruction.trim() || 'Analyze the complete timeline content, pacing, clip names, existing text and duration. Direct a polished automatic edit with context-appropriate bundled typography and colors, purposeful movement, at least two useful keyframes where motion helps, varied native transitions, readable safe-area placement and deliberate multi-track layering. Preserve meaning and do not delete source media unless necessary.')}
-          title="Let the connected model direct an edit from the current timeline content"
+          onClick={() => void planAgentEdit(agentInstruction.trim() || 'Auto edit and polish the complete timeline. Read all clip names, copy, timing and duration. Apply context-appropriate bundled typography, automatic keyword highlighting, purposeful text animation, varied native transitions, safe-area placement, track hierarchy, and subtle two-keyframe motion on visual clips. Preserve meaning and source media.')}
+          title="Analyze the complete timeline and preview an automatic edit"
         >
-          Auto edit
+          Auto polish
+        </Button>
+        <Button
+          size="sm"
+          type="button"
+          variant="ghost"
+          disabled={agentPlanning || exporting || doc.clips.length === 0}
+          onClick={() => void planAgentEdit('Create a cohesive automatic effects pass without deleting or rewriting source content. Choose a different suitable native transition at scene boundaries, animate and highlight the strongest existing word in each important caption, and add subtle start/end keyframes to images and videos. Keep effects restrained and readable.')}
+          title="Automatically choose native effects, then show every change for approval"
+        >
+          Auto effects
         </Button>
         <Button size="sm" type="submit" disabled={!agentInstruction.trim() || agentPlanning || exporting}>
           {agentPlanning ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}

@@ -85,7 +85,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto px-3 font-mono text-xs text-muted/50">v0.7.4</div>
+      <div className="mt-auto px-3 font-mono text-xs text-muted/50">v0.7.5</div>
     </aside>
   )
 }

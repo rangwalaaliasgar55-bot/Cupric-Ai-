@@ -1313,10 +1313,12 @@ DEPTH — USE CSS 3D, NOT A 3D LIBRARY:
 
 IMPLEMENTATION NOTES:
 - At t=0 the first scene must be visible and valid.
-- All scene transitions must happen according to the timeline above.
+- All scene transitions must happen according to the timeline above. Automatically choose a visible but restrained transition for every boundary (mask wipe, depth push, lens sweep, blur-through or dissolve); do not repeat one transition throughout.
+- Automatically identify one meaningful keyword in each short scene and give it a separate span, accent colour, weight or reveal timing. Never highlight filler words.
+- Build a complete effects pass into __seek(t): subtle grain or grid depth, foreground/background parallax, scene-specific text reveals, and entrance/settle/exit states. Effects must be pure functions of clip-local progress and must settle before copy needs to be read.
 - Use safe-area margins and responsive scaling inside the fixed #scene canvas.
-- Expose clear variables for duration, fps, scenes, and sourceManifest.
-- The piece should look like a finished video, not a placeholder: polished typography, motion hierarchy, background design, and a final hold.`
+- Expose clear variables for duration, fps, scenes, sourceManifest, effectForScene(index), and transitionForBoundary(index).
+- The piece should look like a finished video, not a placeholder: polished typography, automatic keyword highlighting, motion hierarchy, background design, coherent effects, and a final hold.`
 }
 
 function normalizeRundown(candidate, briefText) {
@@ -1557,7 +1559,7 @@ OUTPUT:
 
 OPERATIONS:
 - {"type":"patchClip","clipId":string,"patch":{allowed properties}}
-  Allowed patch properties: x, y, scale, rotation, opacity, fontSizePct, color, fontFamily, text, anim, transitionIn, transitionOut, volume.
+  Allowed patch properties: x, y, scale, rotation, opacity, fontSizePct, color, fontFamily, weight, align, highlightWord, text, anim, transitionIn, transitionOut, volume. highlightWord must be an exact word already present in that text clip.
   Fonts: Inter Variable, Manrope Variable, DM Sans Variable, Space Grotesk Variable, Playfair Display Variable, JetBrains Mono Variable.
   Animations: none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
   Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
@@ -1572,7 +1574,8 @@ Track 0 is the bottom layer. x/y are normalized 0..1. Keyframe times are local t
 
 EDITING STANDARD:
 - Read the whole timeline before changing it. Preserve source meaning and maintain readable title/action-safe placement.
-- Pick bundled fonts and hex colors that fit the subject instead of applying the same look every time.
+- Pick bundled fonts and hex colors that fit the subject instead of applying the same look every time. For important text, set highlightWord to the strongest existing keyword and combine it with a readable weight and animation.
+- For broad Auto edit requests, inspect every supplied clip and propose a coherent effect pass: varied scene-boundary transitions, contextual text animation, keyword highlighting, typography hierarchy and subtle two-keyframe visual motion. Do not merely return applyStylePreset.
 - Use moveClip for intentional T1/T2/T3 layering and timing. Use two or more setKeyframe operations when the request calls for movement; animation must have a start and destination.
 - Position, scale, rotation and opacity may be animated on visual clips. Avoid motion with no visual purpose.
 - Use native transitions sparingly at scene boundaries. Keep text concise and on screen long enough to read.

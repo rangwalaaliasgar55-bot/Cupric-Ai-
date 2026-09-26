@@ -13,8 +13,8 @@ export type StudioEditOp =
 
 export type StudioEditPlan = { summary: string; ops: StudioEditOp[]; source: 'live' | 'local'; warning?: string }
 
-const PATCH_KEYS = new Set(['x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume'])
-const TEXT_KEYS = new Set(['fontSizePct', 'color', 'fontFamily', 'text', 'anim'])
+const PATCH_KEYS = new Set(['x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume'])
+const TEXT_KEYS = new Set(['fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim'])
 const FONTS = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
 const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', 'word-reveal', 'shimmer', 'slide-left', 'glass-rise', 'liquid-wave'])
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
@@ -53,6 +53,13 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
         if (key === 'fontFamily' && !FONTS.has(String(item))) throw new Error(`Unknown bundled font “${item}”`)
         if (key === 'color' && !/^#[0-9a-f]{6}$/i.test(String(item))) throw new Error(`Invalid colour “${item}”`)
         if (key === 'text' && (typeof item !== 'string' || item.length > 500)) throw new Error('Text must contain at most 500 characters')
+        if (key === 'highlightWord') {
+          if (typeof item !== 'string' || item.length > 60) throw new Error('Highlight word must contain at most 60 characters')
+          const words = clip.kind === 'text' ? clip.text.match(/[A-Za-z0-9][A-Za-z0-9'-]*/g) ?? [] : []
+          if (item && !words.some((word) => word.toLowerCase() === item.toLowerCase())) throw new Error(`Highlight word “${item}” is not present in the clip text`)
+        }
+        if (key === 'weight' && ![400, 600, 800].includes(Number(item))) throw new Error('Text weight must be 400, 600 or 800')
+        if (key === 'align' && !['left', 'center', 'right'].includes(String(item))) throw new Error(`Unknown text alignment “${item}”`)
         if (key === 'anim' && !ANIMS.has(item as StudioTextAnim)) throw new Error(`Unknown animation “${item}”`)
         if ((key === 'transitionIn' || key === 'transitionOut') && !TRANSITIONS.has(item as StudioTransition)) throw new Error(`Unknown transition “${item}”`)
         const ranges: Record<string, [number, number]> = { x: [0, 1], y: [0, 1], scale: [0.05, 10], rotation: [-3600, 3600], opacity: [0, 1], fontSizePct: [1, 40], volume: [0, 2] }
@@ -161,13 +168,49 @@ function applyStyle(doc: StudioDoc, preset: Extract<StudioEditOp, { type: 'apply
 /** Useful without a model and intentionally conservative: selected clip only. */
 export function localStudioEditPlan(instruction: string, doc: StudioDoc, selectedId: string | null): StudioEditPlan {
   const text = instruction.trim().toLowerCase()
-  if (/analy[sz]e the timeline|automatic edit|auto edit/.test(text)) {
+  if (/analy[sz]e the timeline|automatic edit|auto edit|auto polish|automatic effects|auto effects|effects pass/.test(text)) {
     if (!doc.clips.length) throw new Error('Import or add at least one clip before running Auto edit')
+    const ops: StudioEditOp[] = [{ type: 'applyStylePreset', preset: /social|short|reel|bold/.test(text) ? 'bold-social' : 'editorial' }]
+    const transitionCycle: StudioTransition[] = ['fade', 'push-up', 'blur', 'glass-wipe', 'lens-sweep']
+    const animationCycle: StudioTextAnim[] = ['word-reveal', 'fade-up', 'pop', 'glass-rise', 'shimmer']
+    const editable = doc.clips.filter((item) => item.kind !== 'audio').slice(0, 12)
+    editable.forEach((item, index) => {
+      const transitionIn = index === 0 ? 'fade' : transitionCycle[index % transitionCycle.length]
+      if (item.kind === 'text') {
+        const words = item.text.match(/[A-Za-z0-9][A-Za-z0-9'-]*/g) ?? []
+        const highlightWord = [...words].filter((word) => word.length > 3).sort((a, b) => b.length - a.length)[0] ?? ''
+        const technical = /\b(ai|api|data|software|system|future|digital|tech|code)\b/i.test(item.text)
+        const editorial = words.length > 9 || /\b(story|discover|journey|beautiful|introducing)\b/i.test(item.text)
+        ops.push({
+          type: 'patchClip',
+          clipId: item.id,
+          patch: {
+            transitionIn,
+            anim: animationCycle[index % animationCycle.length],
+            fontFamily: technical ? 'Space Grotesk Variable' : editorial ? 'Playfair Display Variable' : 'DM Sans Variable',
+            weight: index === 0 ? 800 : 600,
+            ...(highlightWord ? { highlightWord } : {}),
+          },
+        })
+      } else {
+        ops.push({ type: 'patchClip', clipId: item.id, patch: { transitionIn } })
+      }
+    })
+    const moving = editable.filter((item) => ['video', 'image', 'overlay', 'sticker'].includes(item.kind)).slice(0, 3)
+    for (const item of moving) {
+      const x = 'x' in item && typeof item.x === 'number' ? item.x : 0.5
+      const y = 'y' in item && typeof item.y === 'number' ? item.y : 0.5
+      const scale = 'scale' in item && typeof item.scale === 'number' ? item.scale : 1
+      ops.push(
+        { type: 'setKeyframe', clipId: item.id, at: 0, values: { x, y: clamp(y + 0.025, 0, 1), scale: scale * 0.96, opacity: 0.75 }, ease: 'ease-out' },
+        { type: 'setKeyframe', clipId: item.id, at: Math.min(0.75, item.durationSec * 0.35), values: { x, y, scale, opacity: 1 }, ease: 'ease-in-out' },
+      )
+    }
     return {
-      summary: 'Apply a polished editorial direction across the timeline',
+      summary: `Auto-polish ${editable.length} timeline layer${editable.length === 1 ? '' : 's'} with typography, highlights, transitions and purposeful motion`,
       source: 'local',
-      ops: [{ type: 'applyStylePreset', preset: 'editorial' }],
-      warning: 'The live model was unavailable, so Cupric prepared a deterministic local editorial pass instead.',
+      ops,
+      warning: 'The live model was unavailable, so Cupric prepared this deterministic effect pass locally. Review the listed changes before accepting them.',
     }
   }
   const clip = doc.clips.find((item) => item.id === selectedId)
@@ -188,9 +231,26 @@ export function localStudioEditPlan(instruction: string, doc: StudioDoc, selecte
     else if (clip.kind === 'overlay' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image') patch.scale = (clip.scale ?? 1) * 0.8
   }
   if (/fade in/.test(text)) patch.transitionIn = 'fade'
-  if (/pop|punch/.test(text) && clip.kind === 'text') patch.anim = 'pop'
-  if (/typewriter/.test(text) && clip.kind === 'text') patch.anim = 'typewriter'
+  const requestedTransition: [RegExp, StudioTransition][] = [
+    [/glass wipe/, 'glass-wipe'], [/liquid dissolve|melt/, 'liquid-dissolve'], [/lens sweep/, 'lens-sweep'],
+    [/wipe/, 'wipe-left'], [/zoom transition|zoom in/, 'zoom-in'], [/blur transition|blur in/, 'blur'],
+    [/iris/, 'iris'], [/push up/, 'push-up'],
+  ]
+  const transition = requestedTransition.find(([pattern]) => pattern.test(text))
+  if (transition) patch.transitionIn = transition[1]
   if (clip.kind === 'text') {
+    const requestedAnimation: [RegExp, StudioTextAnim][] = [
+      [/word reveal|word.by.word/, 'word-reveal'], [/typewriter|typing/, 'typewriter'], [/shimmer|shine/, 'shimmer'],
+      [/glass rise|frost/, 'glass-rise'], [/liquid wave|wave text/, 'liquid-wave'], [/slide left|slide in/, 'slide-left'],
+      [/pop|punch/, 'pop'], [/fade up|rise/, 'fade-up'],
+    ]
+    const animation = requestedAnimation.find(([pattern]) => pattern.test(text))
+    if (animation) patch.anim = animation[1]
+    const highlightRequest = instruction.match(/highlight\s+["“']?([\w'-]+)["”']?/i)?.[1]
+    if (highlightRequest) {
+      const exactWord = clip.text.match(/[A-Za-z0-9][A-Za-z0-9'-]*/g)?.find((word) => word.toLowerCase() === highlightRequest.toLowerCase())
+      if (exactWord) patch.highlightWord = exactWord
+    }
     if (/playfair|serif|cinematic font/.test(text)) patch.fontFamily = 'Playfair Display Variable'
     else if (/manrope|modern font/.test(text)) patch.fontFamily = 'Manrope Variable'
     else if (/dm sans|social font/.test(text)) patch.fontFamily = 'DM Sans Variable'
@@ -205,6 +265,16 @@ export function localStudioEditPlan(instruction: string, doc: StudioDoc, selecte
   if (track) return { summary: `Move “${clip.name}” to track ${track}`, source: 'local', ops: [{ type: 'moveClip', clipId: clip.id, track: Number(track) - 1 }] }
   const rotate = text.match(/rotate(?: it)?\s*(-?\d+)/)?.[1]
   if (rotate) patch.rotation = Number(rotate)
+  if (/add (?:two )?keyframes|animate (?:it|movement)|subtle motion/.test(text) && visualX !== null && visualY !== null) {
+    const canScale = ['overlay', 'sticker', 'video', 'image'].includes(clip.kind)
+    const scale = canScale && 'scale' in clip && typeof clip.scale === 'number' ? clip.scale : 1
+    const ops: StudioEditOp[] = Object.keys(patch).length ? [{ type: 'patchClip', clipId: clip.id, patch }] : []
+    ops.push(
+      { type: 'setKeyframe', clipId: clip.id, at: 0, values: { x: visualX, y: clamp(visualY + 0.03, 0, 1), ...(canScale ? { scale: scale * 0.96 } : {}), opacity: 0.7 }, ease: 'ease-out' },
+      { type: 'setKeyframe', clipId: clip.id, at: Math.min(0.7, clip.durationSec * 0.35), values: { x: visualX, y: visualY, ...(canScale ? { scale } : {}), opacity: 1 }, ease: 'ease-in-out' },
+    )
+    return { summary: `Animate “${clip.name}” with editable entrance and settle keyframes`, source: 'local', ops }
+  }
   if (Object.keys(patch).length) return { summary: `Edit “${clip.name}”`, source: 'local', ops: [{ type: 'patchClip', clipId: clip.id, patch }] }
   throw new Error('That instruction needs a live AI model. Try “move it up”, “make it bigger”, “fade in”, “rotate 15”, or “move to track 3”.')
 }
