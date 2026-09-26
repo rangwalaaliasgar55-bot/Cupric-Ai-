@@ -49,7 +49,7 @@ let ffmpegPath = resolveMediaTool('ffmpeg')
 let ffprobePath = resolveMediaTool('ffprobe')
 
 const DEV_URL = process.env.ELECTRON_START_URL
-const APP_ID = 'app.northframe.studio'
+const APP_ID = 'app.cupric-ai.studio'
 const MAX_RENDER_DURATION_SEC = 120
 const DEFAULT_SILENCE_NOISE_DB = -35
 const DEFAULT_SILENCE_MIN_DURATION = 0.8
