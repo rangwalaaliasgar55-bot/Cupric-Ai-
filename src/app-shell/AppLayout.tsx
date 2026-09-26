@@ -10,10 +10,12 @@ import { HomeProject } from '../screens/HomeProject'
 import { Library } from '../screens/Library'
 import { Render } from '../screens/Render'
 import { Timeline } from '../screens/Timeline'
+import { Autonomous } from '../screens/Autonomous'
 import { useProjectStore } from '../state/useProjectStore'
 
 const SCREENS = {
   home: <HomeProject />,
+  auto: <Autonomous />,
   brief: <Brief />,
   arena: <ArenaDesk />,
   footage: <FootageDesk />,

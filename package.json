@@ -1,8 +1,8 @@
 {
-  "name": "northframe-studio",
+  "name": "cupric-ai",
   "private": true,
   "version": "0.1.0",
-  "description": "Northframe Studio \u2014 desktop creator tool for short-form video with Gemini, Arena import, footage analysis, timeline rendering, and Electron packaging.",
+  "description": "Cupric AI \u2014 desktop creator tool for short-form video with Gemini, Arena import, footage analysis, timeline rendering, and Electron packaging.",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -41,8 +41,8 @@
     "vite": "^6.0.7"
   },
   "build": {
-    "appId": "app.northframe.studio",
-    "productName": "Northframe Studio",
+    "appId": "app.cupric-ai.studio",
+    "productName": "Cupric AI",
     "directories": {
       "output": "release",
       "buildResources": "build"

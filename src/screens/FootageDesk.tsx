@@ -7,6 +7,7 @@ import { EmptyState } from '../components/EmptyState'
 import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
 import { Segmented } from '../components/Segmented'
+import { VideoPreview } from '../components/VideoPreview'
 import type { FootageAsset } from '../types/project'
 import { uploadFootage } from '../lib/arena'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
@@ -289,6 +290,8 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
       </div>
 
       <div className="space-y-6 p-4">
+        <VideoPreview path={asset.localPath} className="mb-5" />
+
         <Waveform
           seed={asset.id}
           duration={asset.durationSec}

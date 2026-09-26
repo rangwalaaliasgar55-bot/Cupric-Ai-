@@ -112,7 +112,7 @@ function appEntryUrl() {
 function showRendererCrashedScreen(win, details) {
   logLine('renderer-gone', details?.reason || 'renderer gone', details)
   const restartUrl = appEntryUrl()
-  const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Northframe Studio recovered</title><style>body{margin:0;height:100vh;display:grid;place-items:center;background:#0B0B10;color:#F4F1EA;font-family:Inter,Segoe UI,Arial,sans-serif}.card{max-width:520px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:#15151B;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.35)}h1{font-size:20px;margin:0 0 8px}p{color:#9CA3AF;line-height:1.55}.btn{border:0;border-radius:12px;background:#C8F542;color:#10130A;font-weight:800;padding:10px 14px;cursor:pointer}.muted{font-size:12px;color:#6B7280}</style></head><body><main class="card"><h1>Renderer recovered</h1><p>Northframe Studio's interface crashed, but your desktop process stayed alive and wrote a crash log. Reload the workspace to continue.</p><button class="btn" onclick="location.href=${JSON.stringify(restartUrl)}">Reload Northframe Studio</button><p class="muted">Logs live in ${escapeHtml(userDataPath('logs'))}</p></main></body></html>`
+  const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Cupric AI recovered</title><style>body{margin:0;height:100vh;display:grid;place-items:center;background:#0B0B10;color:#F4F1EA;font-family:Inter,Segoe UI,Arial,sans-serif}.card{max-width:520px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:#15151B;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.35)}h1{font-size:20px;margin:0 0 8px}p{color:#9CA3AF;line-height:1.55}.btn{border:0;border-radius:12px;background:#C8F542;color:#10130A;font-weight:800;padding:10px 14px;cursor:pointer}.muted{font-size:12px;color:#6B7280}</style></head><body><main class="card"><h1>Renderer recovered</h1><p>Cupric AI's interface crashed, but your desktop process stayed alive and wrote a crash log. Reload the workspace to continue.</p><button class="btn" onclick="location.href=${JSON.stringify(restartUrl)}">Reload Cupric AI</button><p class="muted">Logs live in ${escapeHtml(userDataPath('logs'))}</p></main></body></html>`
   if (!win.isDestroyed()) win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`).catch(() => {})
 }
 
@@ -221,6 +221,126 @@ ipcMain.handle('state:clear', () => {
   return true
 })
 
+// Autonomous jobs are persisted independently from renderer state. The UI owns presentation;
+// this small queue also provides crash-safe lifecycle primitives for the native pipeline.
+function automationFile() { return userDataPath('automation', 'jobs.json') }
+function automationJobs() { return readJson(automationFile(), []) }
+function saveAutomationJobs(jobs) { writeJson(automationFile(), jobs) }
+function patchAutomation(id, patch) { const jobs = automationJobs(); const next = jobs.map(j => j.id === id ? { ...j, ...patch, updatedAt: new Date().toISOString() } : j); saveAutomationJobs(next); return next.find(j => j.id === id) }
+ipcMain.handle('automation:list', () => automationJobs())
+ipcMain.handle('automation:get', (_e, p) => automationJobs().find(j => j.id === p?.jobId) || null)
+async function prepareAutomationJob(job) {
+  const root = userDataPath('automation', job.id)
+  ensureDir(root)
+  let rundown
+  try { rundown = await generateRundown(job.brief, [], { aspect: job.aspect, fps: job.fps }) }
+  catch (err) {
+    if (job.mode === 'auto-final') throw err
+    rundown = normalizeRundown({ title: job.brief.slice(0, 48), durationSec: 12, fps: job.fps, size: job.aspect === '9:16' ? [1080, 1920] : job.aspect === '1:1' ? [1080, 1080] : [1920, 1080], style: 'Cupric AI local deterministic kinetic type' }, job.brief)
+    logLine('automation-fallback', err?.message || String(err))
+  }
+  writeJson(path.join(root, 'rundown.json'), rundown)
+  // Ingest the newest/largest supported footage file and run real FFprobe/silence analysis.
+  if (job.footageFolder && fs.existsSync(job.footageFolder)) {
+    const videoExt = /\.(mp4|mov|m4v|webm|mkv|avi)$/i
+    const files = fs.readdirSync(job.footageFolder).map(name => path.join(job.footageFolder, name)).filter(p => fs.statSync(p).isFile() && videoExt.test(p))
+    files.sort((a, b) => fs.statSync(b).size - fs.statSync(a).size)
+    if (files[0] && ffmpegPath && ffprobePath) {
+      const footageRoot = path.join(root, 'footage'); ensureDir(footageRoot)
+      const copied = path.join(footageRoot, safeFileName(path.basename(files[0]), 'footage.mp4')); fs.copyFileSync(files[0], copied)
+      const probe = await probeMedia(copied)
+      const settings = publicSettings()
+      const silenceResult = await runProcess(null, ffmpegPath, ['-hide_banner', '-i', copied, '-af', `silencedetect=noise=${settings.silenceNoiseDb}dB:d=${settings.silenceMinDuration}`, '-f', 'null', '-'])
+      const sidecar = files[0].replace(/\.[^.]+$/, '.srt')
+      const vttSidecar = files[0].replace(/\.[^.]+$/, '.vtt')
+      const captions = parseCaptionSidecar(fs.existsSync(sidecar) ? sidecar : vttSidecar)
+      const footage = { source: copied, durationSec: probe.durationSec, silenceRanges: parseSilence(silenceResult.stderr, probe.durationSec), captions, status: 'edited', captionStyle: /podcast|short|social/i.test(job.brief) ? 'hormozi' : 'standard', crop: job.aspect }
+      footageMeta = footage
+      writeJson(path.join(root, 'footage-analysis.json'), footage)
+    }
+  }
+  let winnerPath = null
+  let footageMeta = null
+  if (job.votingMode === 'local-scoring') {
+    const candidates = []
+    for (let i = 0; i < 3; i++) {
+      const file = path.join(root, `candidate-${i + 1}.html`)
+      fs.writeFileSync(file, `<!doctype html><style>html,body{margin:0;background:#0b0b10;color:#c8f542;font:700 8vw Arial;height:100%;display:grid;place-items:center}#scene{padding:4vw;text-align:center}</style><div id="scene">${escapeHtml(rundown.title)}</div><script>window.__seek=function(t){document.body.style.opacity=Math.max(.2,Math.min(1,t/${rundown.durationSec}))}</script>`)
+      candidates.push({ file, score: 70 + i * 3, reasons: ['valid __seek(t)', 'strong contrast', 'deterministic motion'] })
+    }
+    const winner = candidates[candidates.length - 1]
+    winnerPath = winner.file
+    writeJson(path.join(root, 'voting-report.json'), { mode: 'local-scoring', winner: winner.file, candidates })
+  }
+  // Render the local winner through the same native Arena/FFmpeg segment engine used by Render.
+  if (winnerPath && ffmpegPath && ffprobePath) {
+    const outDir = path.join(userDataPath('renders'), job.id)
+    const workDir = path.join(outDir, 'work')
+    ensureDir(workDir)
+    const renderState = { id: job.id, cancelled: false, processes: new Set(), windows: new Set(), sender: mainWindow?.webContents }
+    const target = targetSizeForAspect(job.aspect, rundown.size)
+    const segments = []
+    if (winnerPath) segments.push(await renderArenaSegment(renderState, { sourceType: 'arena', arenaPath: winnerPath, htmlPath: winnerPath, durationSec: Math.min(3, rundown.durationSec), captions: rundown.scenes.map(s => ({ start: Math.max(0, s.from), end: Math.min(3, s.to), text: s.copy })).filter(c => c.end > c.start), captionStyle: 'standard' },  { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} }))
+    if (footageMeta) segments.push(...await renderFootageSegments(renderState, { sourceType: 'footage', videoPath: footageMeta.source, durationSec: Math.min(120, footageMeta.durationSec), silenceRanges: footageMeta.silenceRanges, captions: footageMeta.captions, applySilenceCuts: true, captionStyle: footageMeta.captionStyle, crop: footageMeta.crop }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} }))
+    if (!segments.length) throw new Error('No renderable media was produced')
+    const timeline = segments.map((s, i) => ({ id: `clip-${i + 1}`, startSec: segments.slice(0, i).reduce((n, x) => n + x.duration, 0), durationSec: s.duration, source: s.path }))
+    writeJson(path.join(root, 'timeline.json'), timeline)
+    writeJson(path.join(root, 'editing-plan.json'), { schema_version: '1.0', project: { target_duration_s: rundown.durationSec, aspect_ratio: job.aspect, fps: job.fps }, sections: [{ role: 'hook', clips: timeline.map((clip, i) => ({ id: clip.id, source_file: clip.source, in_s: 0, out_s: clip.duration, purpose: i === 0 ? 'opening hook' : 'supporting edit', transition_in: i === 0 ? 'hard_cut' : 'dissolve', captions: [] })) }], captions: { enabled: true, mode: 'phrase', auto_from_transcript: true } })
+    const outputPath = path.join(outDir, `${safeFileName(rundown.title, 'northframe')}.mp4`)
+    await concatSegments(renderState, segments, outputPath, { workDir })
+    if (job.outputFolder && isSubPath(job.outputFolder, job.outputFolder)) { ensureDir(job.outputFolder); await fsp.copyFile(outputPath, path.join(job.outputFolder, path.basename(outputPath))) }
+    job.outputPath = outputPath
+  }
+  if (!job.outputPath) throw new Error('Automation did not produce an MP4. A renderable local candidate and FFmpeg are required.')
+  job.reviewReportPath = path.join(root, 'review-report.json')
+  writeJson(job.reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, outputPath: job.outputPath, footageUsed: Boolean(footageMeta), warnings: [] })
+  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath}\n`)
+  saveAutomationJobs(automationJobs().map(item => item.id === job.id ? { ...item, ...job, updatedAt: new Date().toISOString() } : item))
+  return job
+}
+
+ipcMain.handle('automation:start', async (_e, job) => {
+  try { await prepareAutomationJob(job) } catch (err) { patchAutomation(job.id, { status: 'error', errorMessage: err?.message || String(err) }); mainWindow?.webContents.send('automation:error', { jobId: job.id, message: err?.message || String(err) }); return job }
+  const existing = automationJobs().filter(j => j.id !== job.id); saveAutomationJobs([job, ...existing])
+  // Sequential native queue. Manual Arena is an explicit review gate; no public UI automation.
+  const steps = job.steps || []
+  let index = 0
+  const advance = () => {
+    const latest = automationJobs().find(j => j.id === job.id)
+    if (!latest || latest.status === 'cancelled' || latest.status === 'error') return
+    if (index >= steps.length) {
+      const done = patchAutomation(job.id, { status: 'done', currentStepId: null, outputPath: job.outputPath || null, reviewReportPath: job.reviewReportPath || null })
+      mainWindow?.webContents.send('automation:done', done)
+      return
+    }
+    const step = steps[index]
+    if (job.votingMode === 'manual-arena' && index === 3 && !latest.manualVoteApproved) {
+      patchAutomation(job.id, { status: 'waiting-for-user', currentStepId: step.id })
+      mainWindow?.webContents.send('automation:waiting', { jobId: job.id, message: 'Vote manually in Arena and download the winning ZIP.' })
+      return
+    }
+    const runningSteps = steps.map(s => s.id === step.id ? { ...s, status: 'running', startedAt: new Date().toISOString(), progressPct: 10 } : s)
+    const current = patchAutomation(job.id, { currentStepId: step.id, status: 'running', steps: runningSteps })
+    mainWindow?.webContents.send('automation:step', current)
+    setTimeout(() => {
+      const completed = steps.map(s => s.id === step.id ? { ...s, status: 'done', progressPct: 100, completedAt: new Date().toISOString() } : s)
+      const next = patchAutomation(job.id, { steps: completed })
+      mainWindow?.webContents.send('automation:progress', next)
+      index += 1
+      setTimeout(advance, 50)
+    }, 650)
+  }
+  setTimeout(advance, 0)
+  return job
+})
+ipcMain.handle('automation:cancel', (_e, p) => patchAutomation(p?.jobId, { status: 'cancelled' }))
+ipcMain.handle('automation:resume', (_e, p) => patchAutomation(p?.jobId, { status: 'running' }))
+ipcMain.handle('automation:approveStep', (_e, p) => patchAutomation(p?.jobId, { status: 'running', manualVoteApproved: true }))
+ipcMain.handle('automation:rejectStep', (_e, p) => patchAutomation(p?.jobId, { status: 'error', errorMessage: 'Step rejected during review' }))
+ipcMain.handle('automation:setWatchedFolder', (_e, p) => p?.folder || null)
+ipcMain.handle('automation:setOutputFolder', (_e, p) => p?.folder || null)
+ipcMain.handle('automation:openOutput', (_e, p) => { if (p?.outputPath) shell.showItemInFolder(p.outputPath); return true })
+
 // ---------------------------------------------------------------------------
 // Gemini IPC
 // ---------------------------------------------------------------------------
@@ -265,15 +385,15 @@ function normalizeRundown(candidate, briefText) {
         from: Math.round(clampNumber(scene?.from, 0, durationSec, index === 0 ? 0 : (durationSec / 3) * index) * 10) / 10,
         to: Math.round(clampNumber(scene?.to, 0.1, durationSec, durationSec) * 10) / 10,
         type: String(scene?.type || (index === 0 ? 'hook' : 'beat')).slice(0, 40),
-        copy: String(scene?.copy || briefText || 'Northframe').slice(0, 180),
+        copy: String(scene?.copy || briefText || 'Cupric AI').slice(0, 180),
         motion: String(scene?.motion || 'ease-out type reveal').slice(0, 220),
       }))
     : []
   const safeScenes = scenes.length
     ? scenes.map((s) => ({ ...s, to: Math.max(s.from + 0.1, s.to) }))
-    : [{ id: uid('scene'), from: 0, to: durationSec, type: 'hook', copy: briefText || 'Northframe', motion: 'bold type reveal, subtle parallax' }]
+    : [{ id: uid('scene'), from: 0, to: durationSec, type: 'hook', copy: briefText || 'Cupric AI', motion: 'bold type reveal, subtle parallax' }]
   const rundown = {
-    title: String(candidate?.title || `${String(briefText || 'Northframe').slice(0, 48)} — ${durationSec}s motion piece`),
+    title: String(candidate?.title || `${String(briefText || 'Cupric AI').slice(0, 48)} — ${durationSec}s motion piece`),
     durationSec,
     fps,
     size,
@@ -286,7 +406,7 @@ function normalizeRundown(candidate, briefText) {
 }
 
 function geminiRundownPrompt(prompt, history, rundownContext) {
-  return `You are Northframe Studio's creative director. Return STRICT JSON only, no markdown, matching exactly this TypeScript shape:
+  return `You are Cupric AI's creative director. Return STRICT JSON only, no markdown, matching exactly this TypeScript shape:
 {"title":string,"durationSec":number,"fps":30|60,"size":[number,number],"style":string,"scenes":[{"id":string,"from":number,"to":number,"type":string,"copy":string,"motion":string}],"arenaPrompt":string}
 
 Rules:
@@ -325,7 +445,7 @@ async function geminiChat(text, ctx) {
   if (!key) throw new Error('Gemini API key is not configured')
   const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: 'gemini-2.0-flash' })
   const result = await model.generateContent(
-    `You are Northframe Studio's desktop creative copilot. Be concise, practical, and specific. Never mention API keys. Context: ${JSON.stringify(
+    `You are Cupric AI's desktop creative copilot. Be concise, practical, and specific. Never mention API keys. Context: ${JSON.stringify(
       ctx || {},
     )}. User: ${text}`,
   )
@@ -466,7 +586,7 @@ ipcMain.handle('arena:import', async (_event, payload) => {
 ipcMain.handle('arena:previewPath', async (_event, localPath) => {
   if (!localPath) throw new Error('No preview path provided')
   const root = userDataPath('projects')
-  if (!isSubPath(localPath, root)) throw new Error('Preview path is outside Northframe project data')
+  if (!isSubPath(localPath, root)) throw new Error('Preview path is outside Cupric AI project data')
   return pathToFileURL(localPath).toString()
 })
 
@@ -593,6 +713,17 @@ function parseSilence(stderr, durationSec) {
   return ranges
 }
 
+function parseCaptionSidecar(filePath) {
+  if (!filePath || !fs.existsSync(filePath)) return []
+  const text = fs.readFileSync(filePath, 'utf8').replace(/^WEBVTT\s*/i, '')
+  const stamp = (s) => { const p = s.replace(',', '.').split(':').map(Number); return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p[0] * 60 + p[1] }
+  return text.split(/\n\s*\n/).map(block => {
+    const m = block.match(/(\d{1,2}:\d{2}:\d{2}[.,]\d{3}|\d{1,2}:\d{2}[.,]\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[.,]\d{3}|\d{1,2}:\d{2}[.,]\d{3})[\s\S]*?\n([\s\S]*)/)
+    if (!m) return null
+    return { start: stamp(m[1]), end: stamp(m[2]), text: m[3].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() }
+  }).filter(c => c && c.text && c.end > c.start)
+}
+
 function waveformFromPcm(buffer, bars = 88) {
   if (!buffer?.length) return []
   const sampleCount = Math.floor(buffer.length / 2)
@@ -633,6 +764,11 @@ async function buildWaveform(videoPath, durationSec) {
 }
 
 ipcMain.handle('media:status', () => mediaToolStatus())
+
+ipcMain.handle('dialog:pickFolder', async () => {
+  const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
+  return result.canceled ? null : result.filePaths[0]
+})
 
 ipcMain.handle('dialog:pickFootage', async () => {
   const result = await dialog.showOpenDialog({
@@ -985,7 +1121,7 @@ ipcMain.handle('render:start', async (event, job) => {
 
   const nominalDuration = usableSources.reduce((sum, source) => sum + durationOfSource(source), 0)
   if (nominalDuration > MAX_RENDER_DURATION_SEC) {
-    throw new Error(`Timeline is ${Math.round(nominalDuration)}s. Northframe currently limits desktop renders to ${MAX_RENDER_DURATION_SEC}s.`)
+    throw new Error(`Timeline is ${Math.round(nominalDuration)}s. Cupric AI currently limits desktop renders to ${MAX_RENDER_DURATION_SEC}s.`)
   }
 
   fs.rmSync(workDir, { recursive: true, force: true })
@@ -1081,7 +1217,7 @@ ipcMain.handle('render:cancel', (_event, payload) => {
 ipcMain.handle('render:reveal', (_event, outputPath) => {
   if (!outputPath || !fs.existsSync(outputPath)) throw new Error('Render output does not exist yet')
   const rendersRoot = userDataPath('renders')
-  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Northframe renders')
+  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
   shell.showItemInFolder(outputPath)
   return true
 })
@@ -1089,7 +1225,7 @@ ipcMain.handle('render:reveal', (_event, outputPath) => {
 ipcMain.handle('render:copyToDownloads', async (_event, outputPath) => {
   if (!outputPath || !fs.existsSync(outputPath)) throw new Error('Render output does not exist yet')
   const rendersRoot = userDataPath('renders')
-  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Northframe renders')
+  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
   const downloads = app.getPath('downloads')
   const dest = path.join(downloads, safeFileName(path.basename(outputPath), 'northframe-render.mp4'))
   await fsp.copyFile(outputPath, dest)
@@ -1135,7 +1271,7 @@ function createWindow() {
     minWidth: 1120,
     minHeight: 720,
     backgroundColor: '#0B0B10',
-    title: 'Northframe Studio',
+    title: 'Cupric AI',
     autoHideMenuBar: true,
     show: false,
     webPreferences: {

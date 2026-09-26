@@ -11,6 +11,22 @@ export default function App() {
     document.documentElement.dataset.theme = theme
   }, [theme])
 
+  // Electron is the source of truth for native job progress.
+  useEffect(() => {
+    const ipc = (window as any).northframe?.ipc
+    if (!ipc) return
+    const apply = (payload: any) => {
+      const job = payload?.jobId ? payload : payload
+      const id = job?.id || job?.jobId
+      if (!id) return
+      const store = useProjectStore.getState()
+      if (job?.steps) store.updateAutomationJob(id, job)
+      else if (payload?.message) store.updateAutomationJob(id, { status: 'waiting-for-user' })
+    }
+    const unsubs = ['automation:progress', 'automation:step', 'automation:done', 'automation:waiting', 'automation:error'].map(c => ipc.on(c, apply))
+    return () => unsubs.forEach((off: any) => off?.())
+  }, [])
+
   // ⌘K / Ctrl+K toggles the Ask Gemini slide-over
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

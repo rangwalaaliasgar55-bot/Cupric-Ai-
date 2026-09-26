@@ -44,7 +44,7 @@ const ITEMS: LibraryItem[] = [
       style: 'Kinetic typography, word-by-word reveal, one lime highlight word',
       scenes: [
         { id: 'q1', from: 0, to: 4, type: 'quote', copy: '“Make it obvious.”', motion: 'word-by-word reveal, 9 words/s' },
-        { id: 'q2', from: 4, to: 6, type: 'attribution', copy: '— Northframe', motion: 'fade up' },
+        { id: 'q2', from: 4, to: 6, type: 'attribution', copy: '— Cupric AI', motion: 'fade up' },
       ],
       arenaPrompt:
         'Build a SINGLE FILE index.html motion-graphics piece. HARD CONSTRAINTS: one file, inline CSS/JS, no build step. Root #scene exactly 1080x1920 px. Duration 6s at 30fps. Implement window.__seek(t) — all motion must be a pure function of t, no CSS animations, no setTimeout, no Math.random in the frame loop. Kinetic typography.',
