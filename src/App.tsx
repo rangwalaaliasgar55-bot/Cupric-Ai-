@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { MotionConfig } from 'motion/react'
 import { AppLayout } from './app-shell/AppLayout'
+import { getIpc } from './lib/bridge'
+import { transitionSoft } from './lib/motion'
 import { useProjectStore } from './state/useProjectStore'
 
 export default function App() {
@@ -13,7 +15,7 @@ export default function App() {
 
   // Electron is the source of truth for native job progress.
   useEffect(() => {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (!ipc) return
     const apply = (payload: any) => {
       const job = payload?.id ? payload : payload?.job ? payload.job : payload
@@ -28,14 +30,20 @@ export default function App() {
           if (job.rundown.title) store.renameProject(job.projectId, job.rundown.title)
         }
       } else if (payload?.message) {
-        store.updateAutomationJob(id, { status: payload.status === 'error' ? 'error' : 'waiting-for-user', waitingMessage: payload.message, errorMessage: payload.status === 'error' ? payload.message : undefined })
+        store.updateAutomationJob(id, {
+          status: payload.status === 'error' ? 'error' : 'waiting-for-user',
+          waitingMessage: payload.message,
+          errorMessage: payload.status === 'error' ? payload.message : undefined,
+        })
       }
     }
-    const unsubs = ['automation:progress', 'automation:step', 'automation:done', 'automation:waiting', 'automation:error'].map(c => ipc.on(c, apply))
+    const unsubs = ['automation:progress', 'automation:step', 'automation:done', 'automation:waiting', 'automation:error'].map(
+      (c) => ipc.on(c, apply),
+    )
     return () => unsubs.forEach((off: any) => off?.())
   }, [])
 
-  // ⌘K / Ctrl+K toggles the Ask Gemini slide-over
+  // ⌘K / Ctrl+K toggles the Ask panel
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -48,7 +56,7 @@ export default function App() {
   }, [setAskOpen])
 
   return (
-    <MotionConfig reducedMotion="user" transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}>
+    <MotionConfig reducedMotion="user" transition={transitionSoft}>
       <AppLayout />
     </MotionConfig>
   )

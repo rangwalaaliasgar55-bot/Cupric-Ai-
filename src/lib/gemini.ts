@@ -1,9 +1,12 @@
 import type { SceneRundown, View } from '../types/project'
+import { getIpc } from './bridge'
+import { effectsPromptAppendix } from './effects'
 import { round1, slugify, uid } from './utils'
 
 /**
- * Gemini co-pilot. Desktop calls Gemini when a key is configured; otherwise the
- * same UI uses a deterministic local planner so the editing workflow still runs.
+ * Gemini / OpenCode co-pilot.
+ * Desktop calls live models when a key is configured; otherwise the same UI
+ * uses a deterministic local planner so the editing workflow still runs.
  */
 
 export type RundownPatch = Partial<SceneRundown>
@@ -63,6 +66,15 @@ const FLAVOR_LABEL: Record<Flavor, string> = {
   generic: 'motion piece',
 }
 
+/** Default effect sets per flavor for richer local + Arena prompts */
+const FLAVOR_EFFECTS: Record<Flavor, string[]> = {
+  logo: ['bg-lime-haze', 'tr-scale-overshoot'],
+  quote: ['bg-dot-field', 'mo-word-reveal', 'cap-hormozi'],
+  saas: ['bg-soft-grid', 'mo-counter-tick', 'tr-mask-wipe'],
+  podcast: ['bg-soft-grid', 'cap-hormozi'],
+  generic: ['bg-lime-haze', 'mo-word-reveal'],
+}
+
 function buildScenes(dur: number, flavor: Flavor, topic: string): SceneRundown['scenes'] {
   const mk = (from: number, to: number, type: string, copy: string, motion: string) => ({
     id: uid(),
@@ -93,7 +105,13 @@ function buildScenes(dur: number, flavor: Flavor, topic: string): SceneRundown['
   ]
   if (flavor === 'saas' || flavor === 'podcast') {
     scenes.push(
-      mk(hookEnd, bodyEnd, 'proof', flavor === 'saas' ? 'Edit video with a sentence.' : 'The moment everyone went quiet.', 'line-by-line rise, 80ms stagger'),
+      mk(
+        hookEnd,
+        bodyEnd,
+        'proof',
+        flavor === 'saas' ? 'Edit video with a sentence.' : 'The moment everyone went quiet.',
+        'line-by-line rise, 80ms stagger',
+      ),
     )
   } else {
     scenes.push(mk(hookEnd, bodyEnd, 'body', `${topic} — in motion.`, 'mask wipe left-to-right, ease-out'))
@@ -111,7 +129,10 @@ function sceneSequenceLines(r: Pick<SceneRundown, 'scenes'>): string {
     .join('\n')
 }
 
-function arenaPromptOf(r: Pick<SceneRundown, 'durationSec' | 'fps' | 'size' | 'style' | 'scenes'>): string {
+function arenaPromptOf(
+  r: Pick<SceneRundown, 'durationSec' | 'fps' | 'size' | 'style' | 'scenes'>,
+  effectIds: string[] = [],
+): string {
   return `Build a SINGLE FILE index.html motion-graphics piece for Cupric AI to capture as video.
 
 HARD CONSTRAINTS:
@@ -131,6 +152,7 @@ SOURCE / ASSET PLAN:
 
 STYLE:
 ${r.style}
+${effectsPromptAppendix(effectIds)}
 
 SEQUENCE / TIMELINE:
 ${sceneSequenceLines(r)}
@@ -155,6 +177,7 @@ export async function askGeminiLocal(userText: string, askCount: number): Promis
   const topic = topicOf(userText)
   const dur = parseDuration(t) ?? (flavor === 'logo' ? 3 : flavor === 'quote' ? 6 : 12)
   const seed = userText.length + askCount
+  const effectIds = FLAVOR_EFFECTS[flavor]
 
   const base: SceneRundown = {
     title: `${topic} — ${dur}s ${FLAVOR_LABEL[flavor]}`,
@@ -165,29 +188,28 @@ export async function askGeminiLocal(userText: string, askCount: number): Promis
     scenes: buildScenes(dur, flavor, topic),
     arenaPrompt: '',
   }
-  base.arenaPrompt = arenaPromptOf(base)
+  base.arenaPrompt = arenaPromptOf(base, effectIds)
 
   if (askCount === 0) {
     const openers = [
-      `Love this direction. I sketched a ${dur}s ${FLAVOR_LABEL[flavor]} — ${base.scenes.length} scenes, dark base with one lime accent. I'm filling the rundown on the right field by field. Tweak anything, or tell me to push the copy harder.`,
+      `Love this direction. I sketched a ${dur}s ${FLAVOR_LABEL[flavor]} — ${base.scenes.length} scenes, dark base with one lime accent. Effects: ${effectIds.join(', ')}. I'm filling the rundown on the right field by field. Tweak anything, or tell me to push the copy harder.`,
       `Good brief. Here's a first pass: a ${dur}s ${FLAVOR_LABEL[flavor]} in ${base.scenes.length} beats, opening big and landing on a clean CTA. Watch the rundown fill in — then ask me for revisions or lock it.`,
     ]
     return { text: pick(openers, seed), rundownPatch: { ...base } }
   }
 
-  // Second and later asks: refine + produce the Arena prompt
   base.scenes = base.scenes.map((s) =>
     s.type === 'cta' ? { ...s, motion: 'counter ticks up in tabular numerals, fade to logo' } : s,
   )
-  base.arenaPrompt = arenaPromptOf(base)
+  base.arenaPrompt = arenaPromptOf(base, effectIds)
   const refinements = [
-    `Tightened the timing and punched up the copy — the CTA now ticks in on tabular numerals. I also wrote the Arena prompt at the bottom of the rundown: copy it into arena.ai/code, run the battle, vote, then drop the winning .zip into the Arena Desk.`,
-    `Sharpened it. Every beat now has motion cues a renderer can follow deterministically. The Arena prompt is ready in the rundown — that's the text you paste into arena.ai/code. Win the battle, bring me the .zip.`,
+    `Tightened the timing and punched up the copy — the CTA now ticks in on tabular numerals. Arena prompt includes effect cues (${effectIds.join(', ')}). Copy it into arena.ai/code, run the battle, vote, then drop the winning .zip into the Arena Desk.`,
+    `Sharpened it. Every beat now has motion cues a renderer can follow deterministically. The Arena prompt is ready — paste into arena.ai/code. Win the battle, bring me the .zip.`,
   ]
   return { text: pick(refinements, seed), rundownPatch: { ...base } }
 }
 
-/** Local planner replies for the "Ask Gemini" slide-over panel when no Gemini key is configured. */
+/** Local planner replies for the Ask panel when no live model is configured. */
 export async function geminiChatLocal(
   text: string,
   ctx: { projectName: string | null; view: View },
@@ -208,19 +230,26 @@ export async function geminiChatLocal(
   if (/render|export|mp4/.test(t)) {
     return `Rendering uses the desktop seek-and-FFmpeg pipeline when you run Cupric AI in Electron: Arena pieces are captured frame by frame, footage is trimmed/cropped, and progress streams back into the Render queue. Web preview keeps a local fallback.`
   }
-  return `Noted — I'd start from ${proj} on the ${ctx.view === 'home' ? 'Home' : ctx.view} screen. Without a Gemini key I answer from the local planner; imports, previews, and browser/desktop renders still use real local media where available.`
+  if (/effect|gradient|background|resource/.test(t)) {
+    return `Open Library → Effects / Backgrounds. Those packs feed Arena prompts and local generation — soft grid, lime haze, Hormozi captions, mask wipes, tabular counters. App chrome stays flat; stage backgrounds are for the piece only.`
+  }
+  return `Noted — I'd start from ${proj} on the ${ctx.view === 'home' ? 'Home' : ctx.view} screen. Without a live model I answer from the local planner; imports, previews, and browser/desktop renders still use real local media where available.`
 }
 
 export async function askGemini(userText: string, askCount: number): Promise<GeminiResult> {
-  const api = (window as any).northframe?.ipc
+  const api = getIpc()
   if (api) {
-    try { return await api.invoke('gemini:ask', { prompt: userText, history: [], rundownContext: {} }) } catch { /* demo fallback */ }
+    try {
+      return (await api.invoke('gemini:ask', { prompt: userText, history: [], rundownContext: {} })) as GeminiResult
+    } catch {
+      /* local fallback */
+    }
   }
   return askGeminiLocal(userText, askCount)
 }
 
 export async function askGeminiChat(text: string, ctx: { projectName: string | null; view: View }) {
-  const api = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+  const api = getIpc()
   if (!api) {
     return 'Live chat needs the desktop app so Cupric AI can call Gemini or an OpenCode/OpenAI-compatible model securely. Video creation still works locally from the Brief screen.'
   }

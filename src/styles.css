@@ -4,7 +4,8 @@
 
 /*
  * Cupric AI design tokens — see DESIGN.md (source of truth).
- * Layer 1 of the pipeline: no raw hex, no invented values in JSX.
+ * Layer 1: Open Props-inspired scales + Utopia-fixed type at desktop midpoint.
+ * No raw hex / magic spacing in JSX after this file.
  */
 
 @theme {
@@ -39,9 +40,32 @@
   --text-xl: 1.75rem;
   --text-xl--line-height: 1.15;
 
+  /* Spacing scale (Open Props-style) */
+  --spacing-1: 0.25rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-8: 2rem;
+
+  /* Radius */
+  --radius-1: 0.25rem;
+  --radius-2: 0.5rem;
+  --radius-3: 0.75rem;
+  --radius-4: 1rem;
+
+  /* Shadows — flat elevation preferred; soft only when needed */
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.24);
+  --shadow-2: 0 4px 12px rgb(0 0 0 / 0.28);
+  --shadow-3: 0 12px 32px rgb(0 0 0 / 0.36);
+  --shadow-4: 0 24px 48px rgb(0 0 0 / 0.4);
+
   /* Motion tokens — one ease, one spring. Durations 150–200ms. */
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-3: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring-3: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Optional light mode (default is dark). Surfaces keep the brand lime;
@@ -129,6 +153,24 @@
   }
   .vjs-theme-cupric .vjs-slider {
     background-color: rgb(255 255 255 / 0.18);
+  }
+
+  /* Stage backgrounds — marketing / preview only, never app chrome */
+  .stage-bg-lime-void {
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, rgb(200 245 66 / 0.14), transparent 70%), #0b0b10;
+  }
+  .stage-bg-grid-haze {
+    background-color: #0b0b10;
+    background-image:
+      radial-gradient(ellipse 70% 50% at 50% 30%, rgb(200 245 66 / 0.08), transparent),
+      linear-gradient(rgb(255 255 255 / 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.03) 1px, transparent 1px);
+    background-size: 100% 100%, 48px 48px, 48px 48px;
+  }
+  .stage-bg-dot-field {
+    background-color: #0b0b10;
+    background-image: radial-gradient(rgb(255 255 255 / 0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }
 
