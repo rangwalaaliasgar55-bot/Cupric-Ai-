@@ -11,7 +11,8 @@ import type {
 } from '../../types/project'
 import { audioGainAt, clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
 import { getMedia } from '../../lib/studio/media'
-import { drawStudioFrame } from '../../lib/studio/renderer'
+import { drawStudioFrame, keyframeValuesAt } from '../../lib/studio/renderer'
+import { patchTransformKeyframe } from '../../lib/studio/keyframeEdit'
 import { registrySources } from '../../lib/studio/sources'
 
 type Props = {
@@ -26,6 +27,10 @@ type Props = {
   /** Selected clip, for the transform handles. */
   selected?: StudioClip | null
   onPatchSelected?: (patch: Partial<StudioClip>) => void
+  /** Editing-only title/action safe guides; never painted into exports. */
+  showSafeAreas?: boolean
+  /** Canvas transforms create/update a keyframe at the playhead. */
+  keyframeRecord?: boolean
 }
 
 /**
@@ -44,6 +49,8 @@ export function StudioPreview({
   onEnded,
   selected = null,
   onPatchSelected,
+  showSafeAreas = false,
+  keyframeRecord = false,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
@@ -158,8 +165,24 @@ export function StudioPreview({
         aria-label="Studio preview"
         className="h-full w-full rounded-xl border border-line bg-black object-contain shadow-[0_12px_32px_rgb(0_0_0/0.36)]"
       />
+      {showSafeAreas && !playing && (
+        <div className="pointer-events-none absolute inset-0" aria-label="Title and action safe area guides">
+          <div className="absolute inset-[5%] rounded border border-dashed border-white/35">
+            <span className="absolute left-1 top-0.5 text-[9px] font-medium uppercase tracking-wide text-white/55">action safe</span>
+          </div>
+          <div className="absolute inset-[10%] rounded border border-dashed border-accent/60">
+            <span className="absolute left-1 top-0.5 text-[9px] font-medium uppercase tracking-wide text-accent-text/80">title safe</span>
+          </div>
+        </div>
+      )}
       {!playing && selected && onPatchSelected && (
-        <TransformHandles clip={selected} time={time} frame={frameRef} onPatch={onPatchSelected} />
+        <TransformHandles
+          clip={selected}
+          time={time}
+          frame={frameRef}
+          keyframeRecord={keyframeRecord}
+          onPatch={onPatchSelected}
+        />
       )}
     </div>
   )
@@ -185,6 +208,11 @@ function boxOf(clip: StudioClip): Box | null {
     const h = (text.fontSizePct / 100) * 1.5
     return { x: text.x, y: text.y, w: Math.min(0.92, Math.max(0.3, text.text.length * text.fontSizePct * 0.006)), h }
   }
+  if (clip.kind === 'video' || clip.kind === 'image') {
+    const media = clip as StudioMediaClip
+    const scale = media.scale ?? 1
+    return { x: media.x ?? 0.5, y: media.y ?? 0.5, w: scale, h: scale }
+  }
   if (clip.kind === 'overlay') {
     const overlay = clip as StudioOverlayClip
     return { x: overlay.x, y: overlay.y, w: 0.5 * overlay.scale, h: 0.32 * overlay.scale }
@@ -207,18 +235,28 @@ function TransformHandles({
   clip,
   time,
   frame,
+  keyframeRecord,
   onPatch,
 }: {
   clip: StudioClip
   time: number
   frame: React.RefObject<HTMLDivElement | null>
+  keyframeRecord: boolean
   onPatch: (patch: Partial<StudioClip>) => void
 }) {
   const [drag, setDrag] = useState<
-    { mode: 'move' | 'scale' | 'rotate'; startX: number; startY: number; box: Box; startRotation: number } | null
+    { mode: 'move' | 'scale' | 'rotate'; startX: number; startY: number; box: Box; startRotation: number; startScale: number } | null
   >(null)
   const active = time >= clip.startSec && time < clip.startSec + clip.durationSec
-  const box = boxOf(clip)
+  const values = keyframeValuesAt(clip, time)
+  const baseBox = boxOf(clip)
+  const box = baseBox ? {
+    ...baseBox,
+    x: values?.x ?? baseBox.x,
+    y: values?.y ?? baseBox.y,
+    w: baseBox.w * (values?.scale ?? 1),
+    h: baseBox.h * (values?.scale ?? 1),
+  } : null
 
   useEffect(() => {
     if (!drag) return
@@ -228,6 +266,10 @@ function TransformHandles({
     const onMove = (event: PointerEvent) => {
       const dx = (event.clientX - drag.startX) / rect.width
       const dy = (event.clientY - drag.startY) / rect.height
+      const patchTransform = (
+        keyPatch: Parameters<typeof patchTransformKeyframe>[2],
+        staticPatch: Partial<StudioClip>,
+      ) => onPatch(patchTransformKeyframe(clip, time, keyPatch, keyframeRecord) ?? staticPatch)
       if (drag.mode === 'rotate') {
         const cx = rect.left + drag.box.x * rect.width
         const cy = rect.top + drag.box.y * rect.height
@@ -242,23 +284,38 @@ function TransformHandles({
           const nearest = Math.round(next / 90) * 90
           if (Math.abs(next - nearest) < 3) next = nearest
         }
-        onPatch({ rotation: next === 0 ? undefined : Math.round(next) } as Partial<StudioClip>)
+        patchTransform(
+          { rotation: Math.round(next) },
+          { rotation: next === 0 ? undefined : Math.round(next) } as Partial<StudioClip>,
+        )
         return
       }
       if (drag.mode === 'move') {
         const x = Math.min(1, Math.max(0, drag.box.x + dx))
         const y = Math.min(1, Math.max(0, drag.box.y + dy))
-        onPatch({ x, y } as Partial<StudioClip>)
+        patchTransform({ x, y }, { x, y } as Partial<StudioClip>)
         return
       }
-      // Scale from the centre: the corner drag changes the half-width, so the
-      // layer grows symmetrically and never walks across the frame.
+      // Scale from the centre: keyframed scale is a multiplier; static scale
+      // keeps using each clip kind's native size property.
       const factor = Math.max(0.15, 1 + (dx + dy))
+      const keyframePatch = patchTransformKeyframe(
+        clip,
+        time,
+        { scale: Math.min(4, Math.max(0.1, drag.startScale * factor)) },
+        keyframeRecord,
+      )
+      if (keyframePatch) {
+        onPatch(keyframePatch)
+        return
+      }
       if (clip.kind === 'glass') {
         onPatch({
           w: Math.min(1, Math.max(0.05, drag.box.w * factor)),
           h: Math.min(1, Math.max(0.05, drag.box.h * factor)),
         } as Partial<StudioClip>)
+      } else if (clip.kind === 'video' || clip.kind === 'image') {
+        onPatch({ scale: Math.min(4, Math.max(0.05, ((clip as StudioMediaClip).scale ?? 1) * factor)) } as Partial<StudioClip>)
       } else if (clip.kind === 'overlay') {
         onPatch({ scale: Math.min(3, Math.max(0.1, (clip as StudioOverlayClip).scale * factor)) } as Partial<StudioClip>)
       } else if (clip.kind === 'text') {
@@ -278,11 +335,11 @@ function TransformHandles({
     }
     // `clip` is read fresh on every move through the closure above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drag, clip, onPatch])
+  }, [drag, clip, keyframeRecord, onPatch, time])
 
   if (!active || !box) return null
 
-  const rotation = clip.rotation ?? 0
+  const rotation = values?.rotation ?? clip.rotation ?? 0
   const style: React.CSSProperties = {
     left: `${(box.x - box.w / 2) * 100}%`,
     top: `${(box.y - box.h / 2) * 100}%`,
@@ -300,7 +357,7 @@ function TransformHandles({
       style={style}
       onPointerDown={(event) => {
         event.preventDefault()
-        setDrag({ mode: 'move', startX: event.clientX, startY: event.clientY, box, startRotation: rotation })
+        setDrag({ mode: 'move', startX: event.clientX, startY: event.clientY, box, startRotation: rotation, startScale: values?.scale ?? 1 })
       }}
     >
       <span
@@ -309,7 +366,7 @@ function TransformHandles({
         onPointerDown={(event) => {
           event.stopPropagation()
           event.preventDefault()
-          setDrag({ mode: 'rotate', startX: event.clientX, startY: event.clientY, box, startRotation: rotation })
+          setDrag({ mode: 'rotate', startX: event.clientX, startY: event.clientY, box, startRotation: rotation, startScale: values?.scale ?? 1 })
         }}
         className="absolute -top-7 left-1/2 h-3.5 w-3.5 -translate-x-1/2 cursor-grab rounded-full border border-bg bg-accent"
       />
@@ -325,7 +382,7 @@ function TransformHandles({
         onPointerDown={(event) => {
           event.stopPropagation()
           event.preventDefault()
-          setDrag({ mode: 'scale', startX: event.clientX, startY: event.clientY, box, startRotation: rotation })
+          setDrag({ mode: 'scale', startX: event.clientX, startY: event.clientY, box, startRotation: rotation, startScale: values?.scale ?? 1 })
         }}
         className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-nwse-resize rounded-sm border border-bg bg-accent"
       />

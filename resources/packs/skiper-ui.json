@@ -1,0 +1,4356 @@
+{
+  "id": "skiper-ui",
+  "name": "Skiper UI blueprints",
+  "description": "All 106 supplied Skiper UI ideas as attributed, editable Studio storyboards.",
+  "version": "0.7.3",
+  "source": "https://skiper-ui.com",
+  "license": "Free personal/commercial use with attribution to Skiper UI; individual entries may carry additional upstream attribution.",
+  "items": [
+    {
+      "id": "skiper1",
+      "kind": "saas-template",
+      "name": "Anime js scrollbar",
+      "description": "Original editable storyboard inspired by Anime js scrollbar · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Anime js scrollbar",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper1",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper2",
+      "kind": "saas-template",
+      "name": "Dynamic island",
+      "description": "Original editable storyboard inspired by Dynamic island · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Dynamic island",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper2",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper3",
+      "kind": "saas-template",
+      "name": "Apple play button",
+      "description": "Original editable storyboard inspired by Apple play button · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Apple play button",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper3",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper4",
+      "kind": "saas-template",
+      "name": "Theme toggle buttons",
+      "description": "Original editable storyboard inspired by Theme toggle buttons · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Theme toggle buttons",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper4",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper5",
+      "kind": "saas-template",
+      "name": "Things drag and scroll",
+      "description": "Original editable storyboard inspired by Things drag and scroll · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Things drag and scroll",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper5",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper6",
+      "kind": "saas-template",
+      "name": "Hover members",
+      "description": "Original editable storyboard inspired by Hover members · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Hover members",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper6",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper7",
+      "kind": "saas-template",
+      "name": "Nike preloader",
+      "description": "Original editable storyboard inspired by Nike preloader · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Nike preloader",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper7",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper8",
+      "kind": "saas-template",
+      "name": "Words preloader",
+      "description": "Original editable storyboard inspired by Words preloader · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Words preloader",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper8",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper9",
+      "kind": "saas-template",
+      "name": "Stairs preloader",
+      "description": "Original editable storyboard inspired by Stairs preloader · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Stairs preloader",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper9",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper10",
+      "kind": "saas-template",
+      "name": "Double stairs preloader",
+      "description": "Original editable storyboard inspired by Double stairs preloader · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Double stairs preloader",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper10",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper11",
+      "kind": "saas-template",
+      "name": "Pixel preloader",
+      "description": "Original editable storyboard inspired by Pixel preloader · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Pixel preloader",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper11",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper12",
+      "kind": "saas-template",
+      "name": "Vercel Liquid simulation",
+      "description": "Original editable storyboard inspired by Vercel Liquid simulation · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Vercel Liquid simulation",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper12",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper13",
+      "kind": "saas-template",
+      "name": "Nike menu",
+      "description": "Original editable storyboard inspired by Nike menu · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Nike menu",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper13",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper14",
+      "kind": "saas-template",
+      "name": "Ascii Simulation",
+      "description": "Original editable storyboard inspired by Ascii Simulation · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Ascii Simulation",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper14",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper15",
+      "kind": "saas-template",
+      "name": "Box loading preloader",
+      "description": "Original editable storyboard inspired by Box loading preloader · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Box loading preloader",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper15",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper16",
+      "kind": "saas-template",
+      "name": "Card stack scroll",
+      "description": "Original editable storyboard inspired by Card stack scroll · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Card stack scroll",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper16",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper17",
+      "kind": "saas-template",
+      "name": "Card stack with gsap and rotate",
+      "description": "Original editable storyboard inspired by Card stack with gsap and rotate · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Card stack with gsap and rotate",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper17",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper18",
+      "kind": "saas-template",
+      "name": "Image cursor trail",
+      "description": "Original editable storyboard inspired by Image cursor trail · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Image cursor trail",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper18",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper19",
+      "kind": "saas-template",
+      "name": "Svg follow scroll",
+      "description": "Original editable storyboard inspired by Svg follow scroll · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Svg follow scroll",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper19",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper20",
+      "kind": "saas-template",
+      "name": "UniSwap Country Dialog",
+      "description": "Original editable storyboard inspired by UniSwap Country Dialog · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "UniSwap Country Dialog",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper20",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper21",
+      "kind": "saas-template",
+      "name": "Family wallet",
+      "description": "Original editable storyboard inspired by Family wallet · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Family wallet",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper21",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper22",
+      "kind": "saas-template",
+      "name": "Aave token swap",
+      "description": "Original editable storyboard inspired by Aave token swap · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Aave token swap",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper22",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper23",
+      "kind": "saas-template",
+      "name": "Minimal Card Expand",
+      "description": "Original editable storyboard inspired by Minimal Card Expand · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Minimal Card Expand",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper23",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper24",
+      "kind": "saas-template",
+      "name": "Tik tik color list",
+      "description": "Original editable storyboard inspired by Tik tik color list · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Tik tik color list",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper24",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper25",
+      "kind": "saas-template",
+      "name": "Music toggle btn",
+      "description": "Original editable storyboard inspired by Music toggle btn · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Music toggle btn",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper25",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper26",
+      "kind": "saas-template",
+      "name": "Theme toggle btn",
+      "description": "Original editable storyboard inspired by Theme toggle btn · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Theme toggle btn",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper26",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper27",
+      "kind": "saas-template",
+      "name": "Rolling text",
+      "description": "Original editable storyboard inspired by Rolling text · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Rolling text",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper27",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper28",
+      "kind": "saas-template",
+      "name": "3D perspective text",
+      "description": "Original editable storyboard inspired by 3D perspective text · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "3D perspective text",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper28",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper29",
+      "kind": "saas-template",
+      "name": "Siena parallax",
+      "description": "Original editable storyboard inspired by Siena parallax · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Siena parallax",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper29",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper30",
+      "kind": "saas-template",
+      "name": "Oliver parallax",
+      "description": "Original editable storyboard inspired by Oliver parallax · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Oliver parallax",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper30",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper31",
+      "kind": "saas-template",
+      "name": "Text Scroll animation",
+      "description": "Original editable storyboard inspired by Text Scroll animation · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Text Scroll animation",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper31",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper32",
+      "kind": "saas-template",
+      "name": "Scroll images reveal 001",
+      "description": "Original editable storyboard inspired by Scroll images reveal 001 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Scroll images reveal 001",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper32",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper33",
+      "kind": "saas-template",
+      "name": "Scroll images reveal 002",
+      "description": "Original editable storyboard inspired by Scroll images reveal 002 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Scroll images reveal 002",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper33",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper34",
+      "kind": "saas-template",
+      "name": "Scroll images reveal 003",
+      "description": "Original editable storyboard inspired by Scroll images reveal 003 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Scroll images reveal 003",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper34",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper35",
+      "kind": "saas-template",
+      "name": "Hover expand",
+      "description": "Original editable storyboard inspired by Hover expand · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Hover expand",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper35",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper36",
+      "kind": "saas-template",
+      "name": "Interactive3d Hero",
+      "description": "Original editable storyboard inspired by Interactive3d Hero · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Interactive3d Hero",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper36",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper37",
+      "kind": "saas-template",
+      "name": "Animated number",
+      "description": "Original editable storyboard inspired by Animated number · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Animated number",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper37",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper38",
+      "kind": "saas-template",
+      "name": "Apple Navbar V001",
+      "description": "Original editable storyboard inspired by Apple Navbar V001 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Apple Navbar V001",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper38",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper39",
+      "kind": "saas-template",
+      "name": "Canvas crowd",
+      "description": "Original editable storyboard inspired by Canvas crowd · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Canvas crowd",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper39",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper40",
+      "kind": "saas-template",
+      "name": "CssLink",
+      "description": "Original editable storyboard inspired by CssLink · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "CssLink",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper40",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper41",
+      "kind": "saas-template",
+      "name": "Progressive Blur",
+      "description": "Original editable storyboard inspired by Progressive Blur · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Progressive Blur",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper41",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper42",
+      "kind": "saas-template",
+      "name": "Animated icons 001",
+      "description": "Original editable storyboard inspired by Animated icons 001 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Animated icons 001",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper42",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper43",
+      "kind": "saas-template",
+      "name": "Vercel Tooltip",
+      "description": "Original editable storyboard inspired by Vercel Tooltip · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Vercel Tooltip",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper43",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper44",
+      "kind": "saas-template",
+      "name": "Vercel scroll with blur",
+      "description": "Original editable storyboard inspired by Vercel scroll with blur · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Vercel scroll with blur",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper44",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper45",
+      "kind": "saas-template",
+      "name": "Family Receive button",
+      "description": "Original editable storyboard inspired by Family Receive button · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Family Receive button",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper45",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper46",
+      "kind": "saas-template",
+      "name": "Nextjs gooey menu",
+      "description": "Original editable storyboard inspired by Nextjs gooey menu · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Nextjs gooey menu",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper46",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper47",
+      "kind": "saas-template",
+      "name": "Perspective carousel",
+      "description": "Original editable storyboard inspired by Perspective carousel · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Perspective carousel",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper47",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper48",
+      "kind": "saas-template",
+      "name": "Card swipe carousel",
+      "description": "Original editable storyboard inspired by Card swipe carousel · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Card swipe carousel",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper48",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper49",
+      "kind": "saas-template",
+      "name": "Inverted perspective carousel",
+      "description": "Original editable storyboard inspired by Inverted perspective carousel · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Inverted perspective carousel",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper49",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper50",
+      "kind": "saas-template",
+      "name": "Creative carousel 001",
+      "description": "Original editable storyboard inspired by Creative carousel 001 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Creative carousel 001",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper50",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper51",
+      "kind": "saas-template",
+      "name": "Creative carousel 002",
+      "description": "Original editable storyboard inspired by Creative carousel 002 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Creative carousel 002",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper51",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper52",
+      "kind": "saas-template",
+      "name": "ExpandOnHover",
+      "description": "Original editable storyboard inspired by ExpandOnHover · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "ExpandOnHover",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper52",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper53",
+      "kind": "saas-template",
+      "name": "ExpandOnHover vertical",
+      "description": "Original editable storyboard inspired by ExpandOnHover vertical · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "ExpandOnHover vertical",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper53",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper54",
+      "kind": "saas-template",
+      "name": "Shadcn clipPath Carousal",
+      "description": "Original editable storyboard inspired by Shadcn clipPath Carousal · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Shadcn clipPath Carousal",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper54",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper55",
+      "kind": "saas-template",
+      "name": "Parallax Image",
+      "description": "Original editable storyboard inspired by Parallax Image · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Parallax Image",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper55",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper56",
+      "kind": "saas-template",
+      "name": "Devouring details sign in",
+      "description": "Original editable storyboard inspired by Devouring details sign in · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Devouring details sign in",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper56",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper57",
+      "kind": "saas-template",
+      "name": "Vercel navigation bar",
+      "description": "Original editable storyboard inspired by Vercel navigation bar · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Vercel navigation bar",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper57",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper58",
+      "kind": "saas-template",
+      "name": "Text roll navigation",
+      "description": "Original editable storyboard inspired by Text roll navigation · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Text roll navigation",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper58",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper59",
+      "kind": "saas-template",
+      "name": "Drawing cursor effect",
+      "description": "Original editable storyboard inspired by Drawing cursor effect · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Drawing cursor effect",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper59",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper60",
+      "kind": "saas-template",
+      "name": "Side Scroll Navigation",
+      "description": "Original editable storyboard inspired by Side Scroll Navigation · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Side Scroll Navigation",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper60",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper61",
+      "kind": "saas-template",
+      "name": "Mouse follow animations",
+      "description": "Original editable storyboard inspired by Mouse follow animations · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Mouse follow animations",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper61",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper62",
+      "kind": "saas-template",
+      "name": "Loop animation hook",
+      "description": "Original editable storyboard inspired by Loop animation hook · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Loop animation hook",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper62",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper63",
+      "kind": "saas-template",
+      "name": "Apple squicircle effect",
+      "description": "Original editable storyboard inspired by Apple squicircle effect · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Apple squicircle effect",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper63",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper64",
+      "kind": "saas-template",
+      "name": "Gooey Effect",
+      "description": "Original editable storyboard inspired by Gooey Effect · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Gooey Effect",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper64",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper65",
+      "kind": "saas-template",
+      "name": "Breakpoint indicator",
+      "description": "Original editable storyboard inspired by Breakpoint indicator · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Breakpoint indicator",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper65",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper66",
+      "kind": "saas-template",
+      "name": "SVG clip path mask",
+      "description": "Original editable storyboard inspired by SVG clip path mask · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "SVG clip path mask",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper66",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper67",
+      "kind": "saas-template",
+      "name": "Video player 001",
+      "description": "Original editable storyboard inspired by Video player 001 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Video player 001",
+            2.5,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Replace with your video",
+            5.5,
+            "none",
+            "media"
+          ],
+          [
+            "Close / replay",
+            2,
+            "pop",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper67",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "video"
+      },
+      "tags": [
+        "skiper-ui",
+        "video",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper68",
+      "kind": "saas-template",
+      "name": "Animated number input",
+      "description": "Original editable storyboard inspired by Animated number input · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Animated number input",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper68",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "input"
+      },
+      "tags": [
+        "skiper-ui",
+        "input",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper69",
+      "kind": "saas-template",
+      "name": "Skiper Number flow",
+      "description": "Original editable storyboard inspired by Skiper Number flow · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Skiper Number flow",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper69",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper70",
+      "kind": "saas-template",
+      "name": "Text reveal box",
+      "description": "Original editable storyboard inspired by Text reveal box · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Text reveal box",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper70",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper71",
+      "kind": "saas-template",
+      "name": "Image reveal",
+      "description": "Original editable storyboard inspired by Image reveal · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Image reveal",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper71",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper72",
+      "kind": "saas-template",
+      "name": "Horizontal Text reveal",
+      "description": "Original editable storyboard inspired by Horizontal Text reveal · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Horizontal Text reveal",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper72",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper73",
+      "kind": "saas-template",
+      "name": "Infinite canvas",
+      "description": "Original editable storyboard inspired by Infinite canvas · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Infinite canvas",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper73",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper74",
+      "kind": "saas-template",
+      "name": "Timeline calendar",
+      "description": "Original editable storyboard inspired by Timeline calendar · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Timeline calendar",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper74",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper75",
+      "kind": "saas-template",
+      "name": "Apple Navbar V002",
+      "description": "Original editable storyboard inspired by Apple Navbar V002 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Apple Navbar V002",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper75",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper76",
+      "kind": "saas-template",
+      "name": "Apple Feature Block",
+      "description": "Original editable storyboard inspired by Apple Feature Block · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Apple Feature Block",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper76",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper77",
+      "kind": "saas-template",
+      "name": "Apple carousel",
+      "description": "Original editable storyboard inspired by Apple carousel · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Apple carousel",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper77",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper78",
+      "kind": "saas-template",
+      "name": "Dia Browser's Carousal",
+      "description": "Original editable storyboard inspired by Dia Browser's Carousal · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Dia Browser's Carousal",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper78",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper79",
+      "kind": "saas-template",
+      "name": "Team showcase scroll",
+      "description": "Original editable storyboard inspired by Team showcase scroll · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Team showcase scroll",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper79",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper80",
+      "kind": "saas-template",
+      "name": "Projects Showcase",
+      "description": "Original editable storyboard inspired by Projects Showcase · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Projects Showcase",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper80",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper81",
+      "kind": "saas-template",
+      "name": "AI Input 001",
+      "description": "Original editable storyboard inspired by AI Input 001 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "AI Input 001",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper81",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "input"
+      },
+      "tags": [
+        "skiper-ui",
+        "input",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper82",
+      "kind": "saas-template",
+      "name": "AI Input 002",
+      "description": "Original editable storyboard inspired by AI Input 002 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "AI Input 002",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper82",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "input"
+      },
+      "tags": [
+        "skiper-ui",
+        "input",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper83",
+      "kind": "saas-template",
+      "name": "AI Input 003",
+      "description": "Original editable storyboard inspired by AI Input 003 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "AI Input 003",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper83",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "input"
+      },
+      "tags": [
+        "skiper-ui",
+        "input",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper84",
+      "kind": "saas-template",
+      "name": "AI Input 004",
+      "description": "Original editable storyboard inspired by AI Input 004 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "AI Input 004",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper84",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "input"
+      },
+      "tags": [
+        "skiper-ui",
+        "input",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper85",
+      "kind": "saas-template",
+      "name": "AI Input 005",
+      "description": "Original editable storyboard inspired by AI Input 005 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "AI Input 005",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper85",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "input"
+      },
+      "tags": [
+        "skiper-ui",
+        "input",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper86",
+      "kind": "saas-template",
+      "name": "Apple Ai gradient",
+      "description": "Original editable storyboard inspired by Apple Ai gradient · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Apple Ai gradient",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper86",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper87",
+      "kind": "saas-template",
+      "name": "Scroll with fade effect",
+      "description": "Original editable storyboard inspired by Scroll with fade effect · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Scroll with fade effect",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper87",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper88",
+      "kind": "saas-template",
+      "name": "3D Rolling Text on scroll",
+      "description": "Original editable storyboard inspired by 3D Rolling Text on scroll · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "3D Rolling Text on scroll",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper88",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper89",
+      "kind": "saas-template",
+      "name": "Scroll progress 001",
+      "description": "Original editable storyboard inspired by Scroll progress 001 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Scroll progress 001",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper89",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper90",
+      "kind": "saas-template",
+      "name": "Gradient hover cards",
+      "description": "Original editable storyboard inspired by Gradient hover cards · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Gradient hover cards",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper90",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper91",
+      "kind": "saas-template",
+      "name": "video player 002",
+      "description": "Original editable storyboard inspired by video player 002 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "video player 002",
+            2.5,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Replace with your video",
+            5.5,
+            "none",
+            "media"
+          ],
+          [
+            "Close / replay",
+            2,
+            "pop",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper91",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "video"
+      },
+      "tags": [
+        "skiper-ui",
+        "video",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper92",
+      "kind": "saas-template",
+      "name": "Vercel Command Search",
+      "description": "Original editable storyboard inspired by Vercel Command Search · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Vercel Command Search",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper92",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper93",
+      "kind": "saas-template",
+      "name": "Scroll progress 002",
+      "description": "Original editable storyboard inspired by Scroll progress 002 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Scroll progress 002",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper93",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper94",
+      "kind": "saas-template",
+      "name": "Scroll progress 003",
+      "description": "Original editable storyboard inspired by Scroll progress 003 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Scroll progress 003",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper94",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper95",
+      "kind": "saas-template",
+      "name": "Expandable tabs navigation",
+      "description": "Original editable storyboard inspired by Expandable tabs navigation · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Expandable tabs navigation",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper95",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper96",
+      "kind": "saas-template",
+      "name": "video player 003",
+      "description": "Original editable storyboard inspired by video player 003 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "video player 003",
+            2.5,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Replace with your video",
+            5.5,
+            "none",
+            "media"
+          ],
+          [
+            "Close / replay",
+            2,
+            "pop",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper96",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "video"
+      },
+      "tags": [
+        "skiper-ui",
+        "video",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper97",
+      "kind": "saas-template",
+      "name": "Vertical tooltip menu",
+      "description": "Original editable storyboard inspired by Vertical tooltip menu · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Vertical tooltip menu",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper97",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper98",
+      "kind": "saas-template",
+      "name": "Animated icons 002",
+      "description": "Original editable storyboard inspired by Animated icons 002 · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Animated icons 002",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper98",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper99",
+      "kind": "saas-template",
+      "name": "Draggable snap button",
+      "description": "Original editable storyboard inspired by Draggable snap button · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Draggable snap button",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper99",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper100",
+      "kind": "saas-template",
+      "name": "Custom tooltip",
+      "description": "Original editable storyboard inspired by Custom tooltip · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Custom tooltip",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper100",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper101",
+      "kind": "saas-template",
+      "name": "Debug Pannel",
+      "description": "Original editable storyboard inspired by Debug Pannel · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Debug Pannel",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper101",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper102",
+      "kind": "saas-template",
+      "name": "Bouncy accordion",
+      "description": "Original editable storyboard inspired by Bouncy accordion · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Bouncy accordion",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper102",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper103",
+      "kind": "saas-template",
+      "name": "Scroll reveal grid cards",
+      "description": "Original editable storyboard inspired by Scroll reveal grid cards · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Scroll reveal grid cards",
+            3,
+            "fade-up",
+            "text"
+          ],
+          [
+            "Scroll-driven movement",
+            4,
+            "word-reveal",
+            "media"
+          ],
+          [
+            "Make it yours",
+            3,
+            "shimmer",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper103",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "motion"
+      },
+      "tags": [
+        "skiper-ui",
+        "motion",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper104",
+      "kind": "saas-template",
+      "name": "Auto Scale input",
+      "description": "Original editable storyboard inspired by Auto Scale input · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Auto Scale input",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper104",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "input"
+      },
+      "tags": [
+        "skiper-ui",
+        "input",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper105",
+      "kind": "saas-template",
+      "name": "Smooth caret input",
+      "description": "Original editable storyboard inspired by Smooth caret input · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Smooth caret input",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper105",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "input"
+      },
+      "tags": [
+        "skiper-ui",
+        "input",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    },
+    {
+      "id": "skiper106",
+      "kind": "saas-template",
+      "name": "Knockout bracket",
+      "description": "Original editable storyboard inspired by Knockout bracket · attribution: Skiper UI · gxuri.me",
+      "data": {
+        "durationSec": 10,
+        "scenes": [
+          [
+            "Knockout bracket",
+            3,
+            "pop",
+            "text"
+          ],
+          [
+            "Editable interaction state",
+            4,
+            "word-reveal",
+            "text"
+          ],
+          [
+            "Call to action",
+            3,
+            "fade-up",
+            "text"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true,
+        "source": "https://skiper-ui.com/v1/skiper106",
+        "attribution": "Skiper UI · gxuri.me",
+        "category": "component"
+      },
+      "tags": [
+        "skiper-ui",
+        "component",
+        "editable",
+        "agent",
+        "attributed"
+      ]
+    }
+  ]
+}

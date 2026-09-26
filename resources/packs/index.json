@@ -1,5 +1,5 @@
 {
-  "version": "0.5.0",
+  "version": "0.7.3",
   "updated": "2026-09-26",
   "repo": "rangwalaaliasgar55-bot/Cupric-Ai-",
   "packs": [
@@ -49,8 +49,8 @@
       "id": "sources",
       "name": "Sources",
       "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
-      "itemCount": 76,
-      "bytes": 50116
+      "itemCount": 77,
+      "bytes": 51076
     },
     {
       "id": "templates",
@@ -62,16 +62,16 @@
     {
       "id": "panelui",
       "name": "PanelUI catalogue",
-      "description": "All 135 PanelUI components and 21 chart visualisations, with the upstream behaviour notes. React Native source stays upstream; Cupric mines the behaviour, the copy and the accessibility rules.",
+      "description": "All 135 PanelUI components and 21 chart visualisations as editable Cupric-native Studio storyboards. React Native source stays upstream; Cupric uses its own deterministic renderer.",
       "itemCount": 172,
-      "bytes": 108703
+      "bytes": 191624
     },
     {
       "id": "saas-video",
       "name": "SaaS video templates",
       "description": "Editable, local-first blueprints for product launches, feature demos and growth videos.",
       "itemCount": 8,
-      "bytes": 7170
+      "bytes": 7873
     },
     {
       "id": "external-ui",
@@ -83,9 +83,23 @@
     {
       "id": "remotion",
       "name": "Remotion toolkit",
-      "description": "Upstream Remotion templates, Google Fonts catalog and agent skills indexed for autonomous planning. Source metadata only; no upstream code is vendored.",
-      "itemCount": 1946,
-      "bytes": 655680
+      "description": "Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; the Google Fonts catalog remains an attributed reference until each font is bundled. No upstream source is vendored.",
+      "itemCount": 2083,
+      "bytes": 848499
+    },
+    {
+      "id": "react-bits",
+      "name": "React Bits storyboards",
+      "description": "All 209 current React Bits ideas as attributed references plus original, editable Cupric-native storyboards. No upstream component source is redistributed.",
+      "itemCount": 209,
+      "bytes": 233083
+    },
+    {
+      "id": "skiper-ui",
+      "name": "Skiper UI blueprints",
+      "description": "All 106 supplied Skiper UI ideas as attributed, editable Studio storyboards.",
+      "itemCount": 106,
+      "bytes": 103377
     },
     {
       "id": "components",

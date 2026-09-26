@@ -21,6 +21,7 @@ import {
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { ProgressBar } from '../../components/ProgressBar'
+import { Modal } from '../../components/Modal'
 import { GlassPanel } from '../../components/glass'
 import {
   downloadAllPacks,
@@ -38,7 +39,8 @@ import type { StudioClip, StudioTextAnim, StudioTransition } from '../../types/p
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { EASE_SOFT } from '../../lib/motion'
 import { useReducedMotion } from '../../lib/use-reduced-motion'
-import { writeDragPayload } from '../../lib/studio/resourceDrop'
+import { resourceDisposition, writeDragPayload } from '../../lib/studio/resourceDrop'
+import { planTemplateFill, templateSlots, type TemplateAssignments, type TemplateFillData } from '../../lib/studio/templateFill'
 import { copyText, cx, uid } from '../../lib/utils'
 
 const KIND_ICON = {
@@ -88,6 +90,8 @@ export function PackBrowser() {
   const [offline, setOffline] = useState<{ downloaded: string[]; total: number }>({ downloaded: [], total: 0 })
   const [used, setUsed] = useState<Set<string>>(new Set())
   const [online, setOnline] = useState(isOnline())
+  const [templateFill, setTemplateFill] = useState<PackItem | null>(null)
+  const [templateAssignments, setTemplateAssignments] = useState<TemplateAssignments>({})
 
   useEffect(() => {
     const update = () => setOnline(isOnline())
@@ -143,6 +147,17 @@ export function PackBrowser() {
     )
   }, [pack, query])
 
+  const fillSlots = useMemo(
+    () => templateFill ? templateSlots((templateFill.data ?? {}) as TemplateFillData) : [],
+    [templateFill],
+  )
+  const fillPlan = useMemo(
+    () => templateFill && project
+      ? planTemplateFill(studioOf(project), (templateFill.data ?? {}) as TemplateFillData, templateAssignments, templateFill.name)
+      : null,
+    [project, templateAssignments, templateFill],
+  )
+
   async function download() {
     setDownloading({ pct: 0, label: 'Starting' })
     const result = await downloadAllPacks((pct, label) => setDownloading({ pct, label }))
@@ -164,24 +179,9 @@ export function PackBrowser() {
     const topTrack = Math.min(1, doc.trackCount - 1)
 
     if (item.kind === 'saas-template') {
-      const data = item.data as { scenes?: [string, number, StudioTextAnim][]; editable?: boolean } | undefined
-      const scenes = data?.scenes ?? []
-      let cursor = nextFreeStart(doc, 0, 0, 1)
-      scenes.forEach(([text, duration, anim], index) => {
-        const clip = defaultTextClip(cursor, topTrack)
-        clip.text = text
-        clip.name = `${item.name} · Scene ${index + 1}`
-        clip.durationSec = Math.max(0.2, duration)
-        clip.anim = anim
-        clip.captionStyle = 'standard'
-        clip.fontSizePct = text.length > 28 ? 6.5 : 9
-        clip.highlightWord = text.split(/\s+/)[0] || null
-        addStudioClip(project.id, clip)
-        cursor += duration
-      })
-      patchStudio(project.id, { backgroundId: 'grid-haze' })
-      pushToast('success', `“${item.name}” added as ${scenes.length} editable SaaS scenes. Edit every scene on the Studio timeline.`)
-      markUsed(item)
+      const slots = templateSlots((item.data ?? {}) as TemplateFillData)
+      setTemplateAssignments(Object.fromEntries(slots.map((slot) => [slot.id, { text: slot.defaultText }])))
+      setTemplateFill(item)
       return
     }
 
@@ -252,22 +252,46 @@ export function PackBrowser() {
       void copyText(data?.file ?? item.id)
       pushToast('info', `“${item.name}” — ${data?.durationSec ?? 0}s at ${data?.fps ?? 30}fps. Path copied; open it from the Render screen.`)
     } else if (item.kind === 'component') {
+      sessionStorage.setItem('cupric:lab-open', item.id)
       setView('lab')
-      pushToast('info', `Opening the Lab at “${item.name}”.`)
-    } else if (item.kind === 'icon' || item.kind === 'block') {
-      const clip = defaultTextClip(nextFreeStart(doc, topTrack, at, 4), topTrack)
-      clip.text = item.name
-      clip.name = `Resource · ${item.name}`
-      clip.anim = 'fade-up'
-      addStudioClip(project.id, clip)
-      const source = (item.data as { source?: string } | undefined)?.source
-      pushToast('success', `“${item.name}” added as an editable Studio cue${source ? ' — source linked in the resource card' : ''}.`)
-    } else if (item.kind === 'font' || item.kind === 'skill' || item.kind === 'provider') {
-      const source = (item.data as { source?: string } | undefined)?.source
+      pushToast('info', `Opening the Lab at “${item.name}” — use “Send to Studio” to capture it.`)
+    } else if (item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider') {
+      const data = item.data as { source?: string; url?: string } | undefined
+      const source = data?.source ?? data?.url
       if (source) window.open(source, '_blank', 'noopener,noreferrer')
-      pushToast('info', `${item.name} is indexed with an editable video/agent adapter. Opening its upstream reference.`)
+      const explanation = item.kind === 'font'
+        ? 'a font catalogue reference, not an embedded clip'
+        : item.kind === 'skill'
+          ? 'an agent skill used while planning renders, not visual media'
+          : item.kind === 'icon'
+            ? 'an icon-set reference; import an exported SVG or image to edit it'
+            : item.kind === 'block'
+              ? 'an upstream UI block; use a capturable Lab component for a clip'
+              : 'a generation-provider reference, not timeline media'
+      pushToast('info', `“${item.name}” is ${explanation}.${source ? ' Opening its upstream source.' : ''}`)
     }
     markUsed(item)
+  }
+
+  function applyTemplateFill() {
+    if (!project || !templateFill || !fillPlan) return
+    if (fillPlan.missing.length) {
+      pushToast('info', `Choose media for ${fillPlan.missing.map((slot) => slot.label).join(', ')} before applying.`)
+      return
+    }
+    const doc = studioOf(project)
+    // One patch means the entire auto-fill is one undo step, never N silent
+    // clip mutations. The plan shown in the dialog is exactly what is applied.
+    patchStudio(project.id, {
+      clips: [...doc.clips, ...fillPlan.clips],
+      backgroundId: 'grid-haze',
+    })
+    markUsed(templateFill)
+    pushToast('success', `“${templateFill.name}” auto-filled ${fillPlan.clips.length} slots as one undoable edit.`, {
+      action: { label: 'Open Studio', run: () => setView('studio') },
+    })
+    setTemplateFill(null)
+    setTemplateAssignments({})
   }
 
   function markUsed(item: PackItem) {
@@ -282,6 +306,11 @@ export function PackBrowser() {
         <div className="min-w-0 flex-1">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
             Resource packs
+            {index && (
+              <span className="font-mono text-xs font-normal text-muted">
+                v{index.version} · {index.packs.reduce((sum, entry) => sum + entry.itemCount, 0).toLocaleString()} items
+              </span>
+            )}
             {!online && (
               <Badge tone="neutral">
                 <WifiOff size={11} /> Offline
@@ -289,8 +318,8 @@ export function PackBrowser() {
             )}
           </h2>
           <p className="mt-0.5 text-xs text-muted">
-            Fetched from this repository over the internet ({PACKS_BASE.replace('https://', '')}) — nothing is read from
-            your machine. Download once to keep them without a connection.
+            Bundled with this Cupric AI release so every installed resource is available offline. The stable repository
+            ({PACKS_BASE.replace('https://', '')}) is used only as a fallback.
           </p>
         </div>
         <span className="font-mono text-xs text-muted tabular-nums">
@@ -357,6 +386,14 @@ export function PackBrowser() {
           <AnimatePresence mode="popLayout" initial={false}>
             {items.map((item, i) => {
               const Icon = KIND_ICON[item.kind] ?? Layers
+              const disposition = resourceDisposition(item.kind)
+              const dispositionLabel = disposition === 'clip'
+                ? 'Drops as clip'
+                : disposition === 'lab'
+                  ? 'Open in Lab'
+                  : disposition === 'template'
+                    ? 'Auto-fill'
+                    : 'Reference only'
               return (
                 <motion.div
                   key={item.id}
@@ -393,8 +430,13 @@ export function PackBrowser() {
                     <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-line bg-panel-alt text-muted">
                       <Icon size={14} />
                     </span>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{item.name}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="min-w-0 flex-1 truncate text-sm font-semibold">{item.name}</div>
+                        <Badge tone={disposition === 'clip' ? 'accent' : disposition === 'lab' ? 'info' : 'neutral'}>
+                          {dispositionLabel}
+                        </Badge>
+                      </div>
                       <p className="line-clamp-2 text-xs text-muted">{item.description}</p>
                     </div>
                   </div>
@@ -423,6 +465,8 @@ export function PackBrowser() {
                           </>
                         ) : item.kind === 'component' ? (
                           'Open in Lab'
+                        ) : item.kind === 'saas-template' ? (
+                          'Auto-fill template'
                         ) : item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider' ? (
                           'Open source'
                         ) : (
@@ -437,6 +481,86 @@ export function PackBrowser() {
           </AnimatePresence>
         </motion.div>
       )}
+
+      <Modal
+        open={Boolean(templateFill)}
+        onClose={() => {
+          setTemplateFill(null)
+          setTemplateAssignments({})
+        }}
+        label={templateFill ? `Auto-fill ${templateFill.name}` : 'Auto-fill template'}
+        widthClass="max-w-3xl"
+      >
+        <div className="max-h-[80vh] overflow-y-auto rounded-xl border border-line bg-panel p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="font-mono text-xs uppercase tracking-widest text-accent-text">Template auto-fill</p>
+              <h2 className="mt-1 text-lg font-semibold">{templateFill?.name}</h2>
+              <p className="mt-1 text-xs text-muted">Assign each placeholder, review the exact timeline diff, then accept it as one undoable action.</p>
+            </div>
+            <Badge tone="info">{fillPlan?.durationSec ?? 0}s preview</Badge>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {fillSlots.map((slot) => {
+              const media = project ? studioOf(project).clips.filter((clip) =>
+                clip.kind === 'video' || clip.kind === 'image' || clip.kind === 'overlay' || clip.kind === 'sticker',
+              ) : []
+              return (
+                <label key={slot.id} className="block rounded-lg border border-line bg-panel-alt p-3">
+                  <span className="flex items-center justify-between gap-2 text-xs font-semibold">
+                    {slot.label}
+                    <span className="font-mono font-normal text-muted tabular-nums">{slot.kind} · {slot.durationSec}s</span>
+                  </span>
+                  {slot.kind === 'text' ? (
+                    <input
+                      value={templateAssignments[slot.id]?.text ?? slot.defaultText}
+                      onChange={(event) => setTemplateAssignments((current) => ({
+                        ...current,
+                        [slot.id]: { ...current[slot.id], text: event.target.value },
+                      }))}
+                      className="mt-2 h-9 w-full rounded-lg border border-line bg-bg px-3 text-sm"
+                    />
+                  ) : (
+                    <select
+                      value={templateAssignments[slot.id]?.clipId ?? ''}
+                      onChange={(event) => setTemplateAssignments((current) => ({
+                        ...current,
+                        [slot.id]: { ...current[slot.id], clipId: event.target.value },
+                      }))}
+                      className="mt-2 h-9 w-full rounded-lg border border-line bg-bg px-3 text-sm"
+                    >
+                      <option value="">Choose {slot.kind === 'logo' ? 'a logo/image clip' : 'footage from Studio'}…</option>
+                      {media.map((clip) => <option key={clip.id} value={clip.id}>{clip.name} · {clip.kind}</option>)}
+                    </select>
+                  )}
+                  {slot.kind !== 'text' && media.length === 0 && (
+                    <p className="mt-2 text-xs text-danger">Import media into Studio first. This slot will not silently create a placeholder.</p>
+                  )}
+                </label>
+              )
+            })}
+          </div>
+
+          <div className="mt-5 rounded-lg border border-line bg-bg/40 p-3">
+            <div className="text-xs font-semibold">Proposed timeline diff</div>
+            <ul className="mt-2 space-y-1 text-xs text-muted">
+              {(fillPlan?.changes ?? []).map((change) => <li key={change}>+ {change}</li>)}
+              {(fillPlan?.missing ?? []).map((slot) => <li key={slot.id} className="text-danger">! {slot.label} still needs {slot.kind}</li>)}
+            </ul>
+          </div>
+
+          <div className="mt-5 flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => {
+              setTemplateFill(null)
+              setTemplateAssignments({})
+            }}>Reject</Button>
+            <Button onClick={applyTemplateFill} disabled={!fillPlan || fillPlan.missing.length > 0 || fillPlan.clips.length === 0}>
+              Accept & auto-fill
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </section>
   )
 }

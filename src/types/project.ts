@@ -289,6 +289,10 @@ export type StudioMediaClip = StudioClipCommon & {
   speed: number
   volume: number
   fit: 'cover' | 'contain'
+  /** Normalised centre and scale. Optional for backwards-compatible projects. */
+  x?: number
+  y?: number
+  scale?: number
   posterDataUrl?: string | null
 }
 
@@ -296,6 +300,8 @@ export type StudioTextClip = StudioClipCommon & {
   kind: 'text'
   text: string
   fontSizePct: number
+  /** Bundled font family used identically by preview and export. */
+  fontFamily?: string
   color: string
   weight: 400 | 600 | 800
   align: 'left' | 'center' | 'right'

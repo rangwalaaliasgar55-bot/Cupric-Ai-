@@ -73,10 +73,15 @@ export function AskPanel() {
   const [hasOpenCodeKey, setHasOpenCodeKey] = useState(false)
   const [autoLaunch, setAutoLaunch] = useState(false)
   const [updateStatus, setUpdateStatus] = useState('')
+  const [updateReady, setUpdateReady] = useState(false)
   const [mediaReady, setMediaReady] = useState<boolean | null>(null)
   const [freeModels, setFreeModels] = useState<OpenCodePreset[]>(FREE_OPENCODE_PRESETS)
   const [modelSearch, setModelSearch] = useState('')
   const [modelLoadStatus, setModelLoadStatus] = useState('')
+  const [providerStatus, setProviderStatus] = useState<Record<AiProvider, { state: 'idle' | 'testing' | 'ok' | 'error'; message: string }>>({
+    gemini: { state: 'idle', message: 'Not tested' },
+    opencode: { state: 'idle', message: 'Not tested' },
+  })
 
   useEffect(() => {
     const ipc = getIpc()
@@ -105,6 +110,7 @@ export function AskPanel() {
     if (typeof ipc.on === 'function') {
       return ipc.on('updater:status', (event: { status?: string; version?: string; message?: string }) => {
         setUpdateStatus(event?.version ? `${event.status} ${event.version}` : event?.message || event?.status || '')
+        setUpdateReady(event?.status === 'downloaded')
       })
     }
   }, [])
@@ -177,6 +183,37 @@ export function AskPanel() {
     }
   }
 
+  async function testConnection(provider: AiProvider) {
+    setProviderStatus((current) => ({ ...current, [provider]: { state: 'testing', message: 'Testing…' } }))
+    try {
+      const ipc = getIpc()
+      if (!ipc) {
+        if (provider === 'gemini') throw new Error('Gemini connection tests require the desktop app')
+        const models = await listOpenCodeModelsWeb(openCodeBaseUrl, openCodeKey)
+        setProviderStatus((current) => ({
+          ...current,
+          opencode: { state: 'ok', message: `Connected · ${models.length} model${models.length === 1 ? '' : 's'} visible` },
+        }))
+        return
+      }
+      const result: { ok?: boolean; message?: string; latencyMs?: number } = await ipc.invoke('ai:testConnection', provider === 'gemini'
+        ? { provider, apiKey, model: geminiModel }
+        : { provider, apiKey: openCodeKey, baseUrl: openCodeBaseUrl, model: openCodeModel })
+      setProviderStatus((current) => ({
+        ...current,
+        [provider]: {
+          state: result.ok ? 'ok' : 'error',
+          message: `${result.message || (result.ok ? 'Connected' : 'Connection failed')}${result.latencyMs ? ` · ${result.latencyMs}ms` : ''}`,
+        },
+      }))
+    } catch (err) {
+      setProviderStatus((current) => ({
+        ...current,
+        [provider]: { state: 'error', message: humanError(err, 'Connection failed') },
+      }))
+    }
+  }
+
   async function saveAiSettings() {
     const ipc = getIpc()
     if (!ipc) {
@@ -227,6 +264,14 @@ export function AskPanel() {
     setUpdateStatus(result?.message || result?.status || 'checking')
   }
 
+  async function installUpdate() {
+    const ipc = getIpc()
+    if (!ipc) return
+    setUpdateStatus('installing · Cupric AI will restart')
+    const result = await ipc.invoke('updater:install')
+    if (result?.status !== 'installing') setUpdateStatus(result?.message || result?.status || 'Update could not start')
+  }
+
   async function send(textArg?: string) {
     const text = (textArg ?? input).trim()
     if (!text || busy) return
@@ -255,7 +300,11 @@ export function AskPanel() {
               <Sparkles size={14} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-sm font-semibold">Ask Cupric AI <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{hasKey ? 'LIVE' : 'SETUP'}</span></div>
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                Ask Cupric AI
+                <span className={cx('h-2 w-2 rounded-full', providerStatus[aiProvider].state === 'ok' ? 'bg-accent' : providerStatus[aiProvider].state === 'error' ? 'bg-danger' : providerStatus[aiProvider].state === 'testing' ? 'bg-info' : 'bg-muted')} title={providerStatus[aiProvider].message} />
+                <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{hasKey ? 'LIVE' : 'SETUP'}</span>
+              </div>
               <div className="text-xs text-muted">{hasKey ? (aiProvider === 'opencode' ? `OpenCode · ${openCodeModel}` : `Gemini · ${geminiModel}`) : 'Connect Gemini or OpenCode model'}</div>
             </div>
             <button type="button" aria-label="AI settings" onClick={() => setShowSettings((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-panel-alt hover:text-text"><Settings size={15}/></button>
@@ -308,6 +357,13 @@ export function AskPanel() {
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
                 </label>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg/40 px-2 py-1.5 text-xs">
+                  <span className="flex min-w-0 items-center gap-2 text-muted" title={providerStatus.gemini.message}>
+                    <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.gemini.state === 'ok' ? 'bg-accent' : providerStatus.gemini.state === 'error' ? 'bg-danger' : providerStatus.gemini.state === 'testing' ? 'bg-info' : 'bg-muted')} />
+                    <span className="truncate">Gemini · {providerStatus.gemini.message}</span>
+                  </span>
+                  <button type="button" onClick={() => void testConnection('gemini')} disabled={providerStatus.gemini.state === 'testing'} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
+                </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="text-xs font-semibold text-muted">OpenCode models</div>
@@ -379,6 +435,13 @@ export function AskPanel() {
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
                 </label>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg/40 px-2 py-1.5 text-xs">
+                  <span className="flex min-w-0 items-center gap-2 text-muted" title={providerStatus.opencode.message}>
+                    <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.opencode.state === 'ok' ? 'bg-accent' : providerStatus.opencode.state === 'error' ? 'bg-danger' : providerStatus.opencode.state === 'testing' ? 'bg-info' : 'bg-muted')} />
+                    <span className="truncate">OpenCode · {providerStatus.opencode.message}</span>
+                  </span>
+                  <button type="button" onClick={() => void testConnection('opencode')} disabled={providerStatus.opencode.state === 'testing'} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
+                </div>
                 <button type="submit" className="w-full rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink">
                   Save live AI settings
                 </button>
@@ -399,15 +462,26 @@ export function AskPanel() {
                 */}
               <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
                 <div className="flex items-center justify-between gap-3">
-                  <span>Updates install automatically</span>
-                  <button
-                    type="button"
-                    onClick={checkForUpdates}
-                    className="shrink-0 text-muted underline underline-offset-2 hover:text-text"
-                  >
-                    Check now
-                  </button>
+                  <span>{updateReady ? 'A new release is ready' : 'Automatic app updates'}</span>
+                  {updateReady ? (
+                    <button
+                      type="button"
+                      onClick={() => void installUpdate()}
+                      className="shrink-0 rounded-md bg-accent px-2 py-1 font-semibold text-accent-ink"
+                    >
+                      Update & restart
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void checkForUpdates()}
+                      className="shrink-0 text-muted underline underline-offset-2 hover:text-text"
+                    >
+                      Check now
+                    </button>
+                  )}
                 </div>
+                <div className="mt-1 text-xs text-muted/70">Checks at launch and every four hours. Downloaded releases install on quit, or immediately with the button above.</div>
                 {updateStatus && <div className="mt-1 font-mono text-[11px] text-muted/70">{updateStatus}</div>}
               </div>
             </div>

@@ -40,16 +40,16 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="relative z-10 flex h-full w-16 shrink-0 flex-col items-center border-r border-line bg-panel/80 py-3 backdrop-blur-xl">
-      <img src={logoUrl} alt="Cupric AI" className="mb-4 h-8 w-8 rounded-lg" />
+    <aside className="relative z-10 flex h-full w-44 shrink-0 flex-col border-r border-line bg-panel/80 px-3 py-3 backdrop-blur-xl">
+      <img src={logoUrl} alt="Cupric AI" className="mb-4 h-10 w-full" />
 
-      <nav aria-label="Primary" className="flex flex-col items-center gap-1">
+      <nav aria-label="Primary" className="flex flex-col gap-1">
         {NAV.map((item) => {
           const reason = disabledReason(item)
           const isActive = view === item.view
           const Icon = item.icon
           return (
-            <div key={item.view} className="group relative flex w-full justify-center">
+            <div key={item.view} className="group relative flex w-full">
               <button
                 type="button"
                 aria-label={item.label}
@@ -57,7 +57,7 @@ export function Sidebar() {
                 disabled={!!reason}
                 onClick={() => setView(item.view)}
                 className={cx(
-                  'relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors duration-150',
+                  'relative flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors duration-150',
                   isActive
                     ? 'text-accent-text'
                     : reason
@@ -72,18 +72,20 @@ export function Sidebar() {
                     className="absolute -left-3 h-6 w-[3px] rounded-r-full bg-accent"
                   />
                 )}
-                <Icon size={18} />
+                <Icon size={18} className="shrink-0" />
+                <span className="truncate">{item.label}</span>
               </button>
-              <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-line bg-panel-alt px-2 py-1 text-xs text-text opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                {item.label}
-                {reason && <span className="text-muted">{reason}</span>}
-              </span>
+              {reason && (
+                <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-line bg-panel-alt px-2 py-1 text-xs text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                  {reason.replace(/^ — /, '')}
+                </span>
+              )}
             </div>
           )
         })}
       </nav>
 
-      <div className="mt-auto font-mono text-xs text-muted/50">v0.3.0</div>
+      <div className="mt-auto px-3 font-mono text-xs text-muted/50">v0.7.3</div>
     </aside>
   )
 }

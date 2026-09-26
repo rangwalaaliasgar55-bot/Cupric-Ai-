@@ -28,6 +28,10 @@ resources/
     stage.css               ← copy-paste stage backgrounds
   avatars/
     README.md               ← avatar asset notes (CC0 Notionists remix upstream)
+  react-bits/catalog.json   ← attributed metadata only (Commons Clause)
+  skiper/catalog.json       ← 106 attributed editable-storyboard references
+  remotion/catalog.json     ← templates, fonts, skills, and 137 package capabilities
+  packs/                    ← 15 release-versioned offline Library/Studio packs
 ```
 
 ## Runtime use
@@ -36,7 +40,7 @@ resources/
 |---|---|
 | Library screen | effects + gradients already in `src/lib/*`; expand from `resources/catalog.json` |
 | Arena prompts | `resources/effects/*.html` as structure references |
-| Agents | `resources/ui-lab/registry.json`, `resources/spectrum/index.json` |
+| Agents | UI Lab/Spectrum registries plus React Bits, attributed Skiper UI, and license-gated Remotion capability catalogs |
 | Design edits | `resources/design-systems/*` + root `DESIGN.md` |
 
 ## Sync upstream (optional)

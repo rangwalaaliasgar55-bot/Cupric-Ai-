@@ -31,7 +31,8 @@ stays on buttons. One accent per view — lime leads, blue informs, red warns.
 
 ### Type
 
-- Sans: **Inter Variable** (self-hosted via `@fontsource-variable/inter`); Mono: **JetBrains Mono Variable**.
+- UI sans: **Inter Variable**; Mono: **JetBrains Mono Variable**.
+- Studio title families: **Inter Variable**, **Manrope Variable**, **DM Sans Variable**, **Space Grotesk Variable**, **Playfair Display Variable**, and **JetBrains Mono Variable**. Sans families cover neutral UI, editorial, geometric tech and compact social work; Playfair is reserved for display copy. All are bundled locally through Fontsource so preview/export never depend on a network font.
 - Scale: **12 / 13 / 14 / 16 / 20 / 28 px** (`text-xs → text-xl`). Never below 12 px — including ruler ticks and kbd chips.
 - Mono + `tabular-nums` on anything numeric that updates in place: durations, timecode, percentages, prompt sizes.
 

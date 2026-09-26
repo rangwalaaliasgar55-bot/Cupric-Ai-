@@ -98,7 +98,11 @@ function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
 export function Lab() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>(ALL)
-  const [open, setOpen] = useState<LabEntry | null>(null)
+  const [open, setOpen] = useState<LabEntry | null>(() => {
+    const slug = sessionStorage.getItem('cupric:lab-open')
+    if (slug) sessionStorage.removeItem('cupric:lab-open')
+    return slug ? lab.find((entry) => entry.slug === slug) ?? null : null
+  })
   const [capturing, setCapturing] = useState(false)
   /**
    * The instant the open demo is pinned to, or undefined for "run freely".

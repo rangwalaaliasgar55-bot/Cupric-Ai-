@@ -4,7 +4,7 @@
     "repository": "remotion-dev/remotion",
     "url": "https://github.com/remotion-dev/remotion",
     "ref": "main",
-    "license": "MIT for Remotion source; individual font licenses apply"
+    "license": "Remotion License (package-specific; metadata links only; verify eligibility before use)"
   },
   "integration": {
     "purpose": "Capability catalog for Cupric autonomous video planning. Cupric uses its own renderer and only adopts compatible Remotion APIs; upstream packages are not copied into the app.",
@@ -2354,6 +2354,1104 @@
       "id": "writing-tests",
       "name": "writing-tests",
       "description": "Guidance for explicitly requested new tests and for updating or reviewing existing tests in the Remotion repository."
+    }
+  ],
+  "packages": [
+    {
+      "id": ".cargo",
+      "name": ".cargo",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/.cargo",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": ".monorepo",
+      "name": ".monorepo",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/.monorepo",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "agent-plugin",
+      "name": "Agent Plugin",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/agent-plugin",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "animated-emoji",
+      "name": "Animated Emoji",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/animated-emoji",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "animation-utils",
+      "name": "Animation Utils",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/animation-utils",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "astro-example",
+      "name": "Astro Example",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/astro-example",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "babel-loader",
+      "name": "Babel Loader",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/babel-loader",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "brand",
+      "name": "Brand",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/brand",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "browser-bundler",
+      "name": "Browser Bundler",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/browser-bundler",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "browser-studio",
+      "name": "Browser Studio",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/browser-studio",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "bugs",
+      "name": "Bugs",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/bugs",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "bundler",
+      "name": "Bundler",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/bundler",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "canvas-capture-extension",
+      "name": "Canvas Capture Extension",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/canvas-capture-extension",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "canvas",
+      "name": "Canvas",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/canvas",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "captions",
+      "name": "Captions",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/captions",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "claude-code-plugin",
+      "name": "Claude Code Plugin",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/claude-code-plugin",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "cli",
+      "name": "Cli",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/cli",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "cloudrun",
+      "name": "Cloudrun",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/cloudrun",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "codemods",
+      "name": "Codemods",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/codemods",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "codex-plugin",
+      "name": "Codex Plugin",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/codex-plugin",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "compliance",
+      "name": "Compliance",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/compliance",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "compositor-darwin-arm64",
+      "name": "Compositor Darwin Arm64",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/compositor-darwin-arm64",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "compositor-darwin-x64",
+      "name": "Compositor Darwin X64",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/compositor-darwin-x64",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "compositor-linux-arm64-gnu",
+      "name": "Compositor Linux Arm64 Gnu",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/compositor-linux-arm64-gnu",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "compositor-linux-arm64-musl",
+      "name": "Compositor Linux Arm64 Musl",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/compositor-linux-arm64-musl",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "compositor-linux-x64-gnu",
+      "name": "Compositor Linux X64 Gnu",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/compositor-linux-x64-gnu",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "compositor-linux-x64-musl",
+      "name": "Compositor Linux X64 Musl",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/compositor-linux-x64-musl",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "compositor-win32-x64-msvc",
+      "name": "Compositor Win32 X64 Msvc",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/compositor-win32-x64-msvc",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "compositor",
+      "name": "Compositor",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/compositor",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "convert",
+      "name": "Convert",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/convert",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "core",
+      "name": "Core",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/core",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "create-video",
+      "name": "Create Video",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/create-video",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "design",
+      "name": "Design",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/design",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "discord-poster",
+      "name": "Discord Poster",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/discord-poster",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "dockerfiles",
+      "name": "Dockerfiles",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/dockerfiles",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "docs",
+      "name": "Docs",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/docs",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "docusaurus-plugin",
+      "name": "Docusaurus Plugin",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/docusaurus-plugin",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "effects",
+      "name": "Effects",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/effects",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "elevenlabs",
+      "name": "Elevenlabs",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/elevenlabs",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "enable-scss",
+      "name": "Enable Scss",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/enable-scss",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "eslint-config-flat",
+      "name": "Eslint Config Flat",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/eslint-config-flat",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "eslint-config-internal",
+      "name": "Eslint Config Internal",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/eslint-config-internal",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "eslint-config",
+      "name": "Eslint Config",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/eslint-config",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "eslint-plugin",
+      "name": "Eslint Plugin",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/eslint-plugin",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "example-videos",
+      "name": "Example Videos",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/example-videos",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "example-without-zod",
+      "name": "Example Without Zod",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/example-without-zod",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "example",
+      "name": "Example",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/example",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "fonts",
+      "name": "Fonts",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/fonts",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "gif",
+      "name": "Gif",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/gif",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "google-fonts",
+      "name": "Google Fonts",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/google-fonts",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "gsap",
+      "name": "Gsap",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/gsap",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "install-whisper-cpp",
+      "name": "Install Whisper Cpp",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/install-whisper-cpp",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "it-tests",
+      "name": "It Tests",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/it-tests",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "jonnys-videos",
+      "name": "Jonnys Videos",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/jonnys-videos",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "kimi-code-plugin",
+      "name": "Kimi Code Plugin",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/kimi-code-plugin",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lambda-client",
+      "name": "Lambda Client",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lambda-client",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lambda-go-example",
+      "name": "Lambda Go Example",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lambda-go-example",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lambda-go",
+      "name": "Lambda Go",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lambda-go",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lambda-php-example",
+      "name": "Lambda Php Example",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lambda-php-example",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lambda-php",
+      "name": "Lambda Php",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lambda-php",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lambda-python",
+      "name": "Lambda Python",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lambda-python",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lambda-ruby-example",
+      "name": "Lambda Ruby Example",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lambda-ruby-example",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lambda-ruby",
+      "name": "Lambda Ruby",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lambda-ruby",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lambda",
+      "name": "Lambda",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lambda",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "layout-utils",
+      "name": "Layout Utils",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/layout-utils",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "licensing",
+      "name": "Licensing",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/licensing",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "light-leaks",
+      "name": "Light Leaks",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/light-leaks",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "lottie",
+      "name": "Lottie",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/lottie",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "mac-cursors",
+      "name": "Mac Cursors",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/mac-cursors",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "maptiler",
+      "name": "Maptiler",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/maptiler",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "mcp",
+      "name": "Mcp",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/mcp",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "media-parser",
+      "name": "Media Parser",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/media-parser",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "media-utils",
+      "name": "Media Utils",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/media-utils",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "media",
+      "name": "Media",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/media",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "motion-blur",
+      "name": "Motion Blur",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/motion-blur",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "noise",
+      "name": "Noise",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/noise",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "openai-whisper",
+      "name": "Openai Whisper",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/openai-whisper",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "paths",
+      "name": "Paths",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/paths",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "player-a11y",
+      "name": "Player A11y",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/player-a11y",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "player-example",
+      "name": "Player Example",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/player-example",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "player",
+      "name": "Player",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/player",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "preload",
+      "name": "Preload",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/preload",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "promo-pages",
+      "name": "Promo Pages",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/promo-pages",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "react18-tests",
+      "name": "React18 Tests",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/react18-tests",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "remotion-media",
+      "name": "Remotion Media",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/remotion-media",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "renderer",
+      "name": "Renderer",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/renderer",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "rive",
+      "name": "Rive",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/rive",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "rough-notation",
+      "name": "Rough Notation",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/rough-notation",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "rounded-text-box",
+      "name": "Rounded Text Box",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/rounded-text-box",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "serverless-client",
+      "name": "Serverless Client",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/serverless-client",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "serverless",
+      "name": "Serverless",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/serverless",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "sfx",
+      "name": "Sfx",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/sfx",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "shapes",
+      "name": "Shapes",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/shapes",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "skia",
+      "name": "Skia",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/skia",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "skills-evals",
+      "name": "Skills Evals",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/skills-evals",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "skills",
+      "name": "Skills",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/skills",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "starburst",
+      "name": "Starburst",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/starburst",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "streaming",
+      "name": "Streaming",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/streaming",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "studio-protocol",
+      "name": "Studio Protocol",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/studio-protocol",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "studio-server",
+      "name": "Studio Server",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/studio-server",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "studio-shared",
+      "name": "Studio Shared",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/studio-shared",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "studio",
+      "name": "Studio",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/studio",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "svg-3d-engine",
+      "name": "Svg 3d Engine",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/svg-3d-engine",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "tailwind-v4",
+      "name": "Tailwind V4",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/tailwind-v4",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "tailwind",
+      "name": "Tailwind",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/tailwind",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-audiogram",
+      "name": "Template Audiogram",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-audiogram",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-blank",
+      "name": "Template Blank",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-blank",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-code-hike",
+      "name": "Template Code Hike",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-code-hike",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-electron",
+      "name": "Template Electron",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-electron",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-helloworld",
+      "name": "Template Helloworld",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-helloworld",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-music-visualization",
+      "name": "Template Music Visualization",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-music-visualization",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-next-app-tailwind",
+      "name": "Template Next App Tailwind",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-next-app-tailwind",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-overlay",
+      "name": "Template Overlay",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-overlay",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-prompt-to-motion-graphics",
+      "name": "Template Prompt To Motion Graphics",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-prompt-to-motion-graphics",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-prompt-to-video",
+      "name": "Template Prompt To Video",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-prompt-to-video",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-react-router",
+      "name": "Template React Router",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-react-router",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-recorder",
+      "name": "Template Recorder",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-recorder",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-render-server",
+      "name": "Template Render Server",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-render-server",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-skia",
+      "name": "Template Skia",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-skia",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-stargazer",
+      "name": "Template Stargazer",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-stargazer",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-still",
+      "name": "Template Still",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-still",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-three",
+      "name": "Template Three",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-three",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-tiktok",
+      "name": "Template Tiktok",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-tiktok",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-vercel",
+      "name": "Template Vercel",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-vercel",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "template-vibe-code",
+      "name": "Template Vibe Code",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/template-vibe-code",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "test-utils",
+      "name": "Test Utils",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/test-utils",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "three",
+      "name": "Three",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/three",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "timeline-utils",
+      "name": "Timeline Utils",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/timeline-utils",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "transitions",
+      "name": "Transitions",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/transitions",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "vercel",
+      "name": "Vercel",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/vercel",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "video-matting",
+      "name": "Video Matting",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/video-matting",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "web-renderer",
+      "name": "Web Renderer",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/web-renderer",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "webcodecs",
+      "name": "Webcodecs",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/webcodecs",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "whisper-web",
+      "name": "Whisper Web",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/whisper-web",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "whisper-webgpu",
+      "name": "Whisper Webgpu",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/whisper-webgpu",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "zod-types-v3",
+      "name": "Zod Types V3",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/zod-types-v3",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
+    },
+    {
+      "id": "zod-types",
+      "name": "Zod Types",
+      "source": "https://github.com/remotion-dev/remotion/tree/main/packages/zod-types",
+      "license": "Package-specific; review upstream package.json and Remotion License",
+      "intake": "reference-only",
+      "agentUsable": true
     }
   ]
 }
