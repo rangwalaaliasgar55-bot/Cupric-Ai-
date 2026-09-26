@@ -2,7 +2,7 @@
   "id": "sources",
   "name": "Sources",
   "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "source": "src/lib/sources.ts (links only; nothing third-party is bundled)",
   "license": "Per entry — see each item",
   "items": [

@@ -29,7 +29,7 @@ export type FrameSources = {
   /** Element to draw for a media clip — supplied by the preview or exporter. */
   media: (clip: StudioMediaClip) => CanvasImageSource | null
   /** Decoded overlay images, keyed by clip id. */
-  overlay: (clip: StudioOverlayClip) => CanvasImageSource | null
+  overlay: (clip: StudioOverlayClip, localSec?: number) => CanvasImageSource | null
   /**
    * The sticker's canvas wound to `localSec` (seconds into the clip).
    * Optional so headless callers can leave it out.
@@ -753,7 +753,7 @@ function drawClipContent(
       }
     }
   } else if (clip.kind === 'overlay') {
-    const source = sources.overlay(clip)
+    const source = sources.overlay(clip, Math.max(0, t - clip.startSec))
     if (source) {
       const [sw, sh] = sourceSize(source)
       if (sw && sh) {

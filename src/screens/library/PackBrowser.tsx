@@ -39,9 +39,9 @@ import type { StudioClip, StudioTextAnim, StudioTransition } from '../../types/p
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { EASE_SOFT } from '../../lib/motion'
 import { useReducedMotion } from '../../lib/use-reduced-motion'
-import { resourceDisposition, writeDragPayload } from '../../lib/studio/resourceDrop'
+import { resourceDisposition, resourceToStudio, writeDragPayload } from '../../lib/studio/resourceDrop'
 import { planTemplateFill, templateSlots, type TemplateAssignments, type TemplateFillData } from '../../lib/studio/templateFill'
-import { copyText, cx, uid } from '../../lib/utils'
+import { copyText, uid } from '../../lib/utils'
 
 const KIND_ICON = {
   glass: Sparkles,
@@ -86,6 +86,7 @@ export function PackBrowser() {
   const [source, setSource] = useState<Source>('none')
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const [visibleCount, setVisibleCount] = useState(90)
   const [downloading, setDownloading] = useState<{ pct: number; label: string } | null>(null)
   const [offline, setOffline] = useState<{ downloaded: string[]; total: number }>({ downloaded: [], total: 0 })
   const [used, setUsed] = useState<Set<string>>(new Set())
@@ -146,6 +147,9 @@ export function PackBrowser() {
         (i.tags ?? []).some((tag) => tag.includes(q)),
     )
   }, [pack, query])
+  const visibleItems = useMemo(() => items.slice(0, visibleCount), [items, visibleCount])
+
+  useEffect(() => setVisibleCount(90), [active, query])
 
   const fillSlots = useMemo(
     () => templateFill ? templateSlots((templateFill.data ?? {}) as TemplateFillData) : [],
@@ -234,9 +238,14 @@ export function PackBrowser() {
         pushToast('success', `New caption added with the “${item.name}” animation.`)
       }
     } else if (item.kind === 'effect') {
-      const cue = (item.data as { promptCue?: string } | undefined)?.promptCue ?? item.description
-      void copyText(cue)
-      pushToast('success', `Effect cue “${item.name}” copied.`)
+      const result = resourceToStudio(doc, { kind: item.kind, id: item.id, name: item.name, description: item.description, data: item.data }, at)
+      if (!result.ok) {
+        pushToast('info', result.reason)
+        return
+      }
+      if ('clip' in result) addStudioClip(project.id, result.clip)
+      else if ('docPatch' in result) patchStudio(project.id, result.docPatch)
+      pushToast('success', result.message)
     } else if (item.kind === 'voice') {
       void copyText(item.name.replace(/"/g, ''))
       pushToast('info', 'Phrase copied — press Voice in the Studio and say it.')
@@ -254,7 +263,7 @@ export function PackBrowser() {
     } else if (item.kind === 'component') {
       sessionStorage.setItem('cupric:lab-open', item.id)
       setView('lab')
-      pushToast('info', `Opening the Lab at “${item.name}” — use “Send to Studio” to capture it.`)
+      pushToast('info', `Opening “${item.name}” in Lab — choose “Add animated to Studio” to render its React motion.`)
     } else if (item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider') {
       const data = item.data as { source?: string; url?: string } | undefined
       const source = data?.source ?? data?.url
@@ -338,24 +347,20 @@ export function PackBrowser() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
-        {(index?.packs ?? []).map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            onClick={() => setActive(entry.id)}
-            className={cx(
-              'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-150',
-              entry.id === active
-                ? 'border-accent/60 bg-accent/15 text-accent-text'
-                : 'border-line bg-panel text-muted hover:text-text',
-            )}
+      <div className="sticky top-0 z-20 -mx-2 flex flex-wrap items-center gap-2 rounded-xl border border-line/70 bg-bg/90 p-2 shadow-lg shadow-black/10 backdrop-blur-xl">
+        <label className="flex min-w-56 items-center gap-2 text-xs text-muted">
+          <span className="shrink-0 font-medium">Resource pack</span>
+          <select
+            value={active}
+            onChange={(event) => setActive(event.target.value)}
+            className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel px-2 text-xs font-medium text-text"
           >
-            {entry.name}
-            <span className="ml-1.5 font-mono tabular-nums opacity-70">{entry.itemCount}</span>
-          </button>
-        ))}
-        <div className="relative ml-auto min-w-48">
+            {(index?.packs ?? []).map((entry) => (
+              <option key={entry.id} value={entry.id}>{entry.name} · {entry.itemCount.toLocaleString()}</option>
+            ))}
+          </select>
+        </label>
+        <div className="relative ml-auto min-w-56 flex-1 sm:max-w-80">
           <Search size={13} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
             value={query}
@@ -384,7 +389,7 @@ export function PackBrowser() {
       ) : (
         <motion.div layout className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <AnimatePresence mode="popLayout" initial={false}>
-            {items.map((item, i) => {
+            {visibleItems.map((item, i) => {
               const Icon = KIND_ICON[item.kind] ?? Layers
               const disposition = resourceDisposition(item.kind)
               const dispositionLabel = disposition === 'clip'
@@ -455,10 +460,10 @@ export function PackBrowser() {
                       </Badge>
                     ) : (
                       <Button size="sm" variant="outline" onClick={() => addToStudio(item)}>
-                        {item.kind === 'effect' || item.kind === 'voice' || item.kind === 'template' ? (
-                          <>
-                            <Copy size={12} /> Copy
-                          </>
+                        {item.kind === 'effect' ? (
+                          <><Wand2 size={12} /> Add effect</>
+                        ) : item.kind === 'voice' || item.kind === 'template' ? (
+                          <><Copy size={12} /> Copy</>
                         ) : item.kind === 'source' ? (
                           <>
                             <ExternalLink size={12} /> Open
@@ -479,6 +484,14 @@ export function PackBrowser() {
               )
             })}
           </AnimatePresence>
+          {visibleItems.length < items.length && (
+            <div className="col-span-full flex items-center justify-center gap-3 rounded-xl border border-dashed border-line bg-panel/50 p-4">
+              <span className="text-xs text-muted">Showing {visibleItems.length.toLocaleString()} of {items.length.toLocaleString()}</span>
+              <Button size="sm" variant="outline" onClick={() => setVisibleCount((count) => count + 90)}>
+                Load 90 more
+              </Button>
+            </div>
+          )}
         </motion.div>
       )}
 

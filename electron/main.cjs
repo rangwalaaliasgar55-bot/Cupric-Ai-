@@ -1662,7 +1662,7 @@ ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.tex
 ipcMain.handle('studio:planEdits', async (_event, payload) => {
   const instruction = String(payload?.instruction || '').trim().slice(0, 2000)
   if (!instruction) throw new Error('Describe the edit you want first')
-  return withTimeout(generateStudioEditPlan(instruction, payload?.context || {}), 20_000, 'Studio auto edit')
+  return withTimeout(generateStudioEditPlan(instruction, payload?.context || {}), 10_000, 'Studio auto edit')
 })
 
 // ---------------------------------------------------------------------------

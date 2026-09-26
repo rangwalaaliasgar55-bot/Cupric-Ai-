@@ -62,7 +62,7 @@ assert.match(studio, />\s*Auto polish\s*</, 'Studio must offer content-directed 
 assert.match(studio, />\s*Auto effects\s*</, 'Studio must offer an automatic native effects pass')
 assert.match(studio, /motionReferences:[\s\S]*reactBits[\s\S]*skiperUi[\s\S]*remotionPackages/, 'agent context must expose the attributed motion libraries')
 assert.match(main, /translate every idea into only the native operations/, 'third-party references must resolve to safe editable operations')
-assert.match(main, /withTimeout\(generateStudioEditPlan[\s\S]*20_000/, 'Studio planning must fail over instead of hanging forever')
+assert.match(main, /withTimeout\(generateStudioEditPlan[\s\S]*10_000/, 'Studio planning must fail over quickly instead of hanging forever')
 assert.match(studio, /const relevantNames[\s\S]*slice\(0, limit\)/, 'model context must rank and cap resource names')
 assert.match(studio, /Reading timeline and selected clips[\s\S]*Validating a safe edit plan/, 'Auto edit must show meaningful planning progress')
 const autoLocal = mod.localStudioEditPlan('Analyze the timeline and make an automatic edit', doc, null)

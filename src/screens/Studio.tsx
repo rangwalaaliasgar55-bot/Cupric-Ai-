@@ -103,6 +103,7 @@ export function Studio() {
   const [keyframeRecord, setKeyframeRecord] = useState(false)
   const [showResources, setShowResources] = useState(false)
   const [agentInstruction, setAgentInstruction] = useState('')
+  const [agentRevision, setAgentRevision] = useState('')
   const [agentPlanning, setAgentPlanning] = useState(false)
   const [agentPhase, setAgentPhase] = useState('')
   const [agentPlan, setAgentPlan] = useState<StudioEditPlan | null>(null)
@@ -385,6 +386,7 @@ export function Studio() {
       pushToast('success', `Applied ${currentPlan.ops.length} agent edit${currentPlan.ops.length === 1 ? '' : 's'} as one undo step. Playing the polished result from the start.`)
       setAgentPlan(null)
       setAgentInstruction('')
+      setAgentRevision('')
     } catch (err) {
       pushToast('error', humanError(err, 'The timeline changed; preview this edit again'))
       setAgentPlan(null)
@@ -888,7 +890,7 @@ export function Studio() {
         <div className="flex shrink-0 items-center gap-3 border-b border-line bg-accent/5 px-6 py-2 text-xs text-muted" role="status" aria-live="polite">
           <Loader2 size={13} className="animate-spin text-accent-text" />
           <span className="text-text">{agentPhase}</span>
-          <span>· Gemini/OpenCode has at most 20 seconds, then Cupric switches to a local plan.</span>
+          <span>· Live AI has at most 10 seconds, then Cupric instantly switches to its local editor.</span>
         </div>
       )}
 
@@ -899,9 +901,35 @@ export function Studio() {
               <div className="text-sm font-semibold">{agentPlan.summary}</div>
               <div className="mt-1 text-xs text-muted">{agentPlan.source === 'live' ? 'Planned by your connected AI model' : 'Planned locally'} · preview only until accepted</div>
               {agentPlan.warning && <div className="mt-1 text-xs text-danger">{agentPlan.warning}</div>}
-              <ul className="mt-2 space-y-1 text-xs text-muted">
+              <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto pr-2 text-xs text-muted">
                 {agentPlan.ops.map((op, index) => <li key={index}>+ {describeStudioEditOp(op, doc)}</li>)}
               </ul>
+              <div className="mt-3 rounded-lg border border-line bg-bg/60 p-2.5">
+                <p className="text-xs font-medium text-text">Does anything look wrong?</p>
+                <p className="mt-0.5 text-[11px] text-muted">Tell me what to change—less motion, another font, different highlights, timing, or layout—and I’ll rebuild the preview before applying it.</p>
+                <div className="mt-2 flex gap-2">
+                  <input
+                    value={agentRevision}
+                    onChange={(event) => setAgentRevision(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && agentRevision.trim()) {
+                        event.preventDefault()
+                        void planAgentEdit(`Revise this automatic edit. ${agentRevision.trim()}. Keep every other useful choice and return a complete corrected plan.`)
+                      }
+                    }}
+                    placeholder="Example: keep it calmer and use Space Grotesk"
+                    className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel px-2.5 text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!agentRevision.trim() || agentPlanning}
+                    onClick={() => void planAgentEdit(`Revise this automatic edit. ${agentRevision.trim()}. Keep every other useful choice and return a complete corrected plan.`)}
+                  >
+                    Revise
+                  </Button>
+                </div>
+              </div>
             </div>
             <div className="flex shrink-0 gap-2">
               <Button size="sm" variant="ghost" onClick={() => setAgentPlan(null)}>Reject</Button>

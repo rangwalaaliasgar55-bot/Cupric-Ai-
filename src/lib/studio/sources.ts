@@ -13,7 +13,16 @@ import { drawableElement, type FrameSources } from './renderer'
 /** Preview convenience: resolve media straight from the runtime registry. */
 export const registrySources: FrameSources = {
   media: (clip) => drawableElement(clip.mediaId),
-  overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
+  overlay: (clip, localSec = 0) => {
+    const frames = clip.frames?.length ? clip.frames : null
+    if (!frames) return overlayImage(clip.id, clip.dataUrl)
+    // Warm the whole short frame strip at first sight. Export is synchronous,
+    // so waiting to decode each image until its exact frame would create blank
+    // flashes in the recorded video.
+    frames.forEach((frame, index) => { overlayImage(`${clip.id}:${index}`, frame) })
+    const frameIndex = Math.min(frames.length - 1, Math.max(0, Math.floor(localSec * (clip.frameFps ?? 8))))
+    return overlayImage(`${clip.id}:${frameIndex}`, frames[frameIndex])
+  },
   sticker: (clip, localSec) => stickerFrame(clip, localSec),
 }
 

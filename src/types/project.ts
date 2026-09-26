@@ -320,8 +320,11 @@ export type StudioBackgroundClip = StudioClipCommon & {
 
 export type StudioOverlayClip = StudioClipCommon & {
   kind: 'overlay'
-  /** PNG snapshot (data URL) of a UI Lab demo or any imported image. */
+  /** Still fallback (data URL) of a UI Lab demo or imported image. */
   dataUrl: string
+  /** Optional pre-rendered deterministic animation frames from a React demo. */
+  frames?: string[]
+  frameFps?: number
   source: string
   x: number
   y: number

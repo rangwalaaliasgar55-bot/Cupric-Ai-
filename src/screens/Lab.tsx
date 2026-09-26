@@ -104,6 +104,7 @@ export function Lab() {
     return slug ? lab.find((entry) => entry.slug === slug) ?? null : null
   })
   const [capturing, setCapturing] = useState(false)
+  const [captureProgress, setCaptureProgress] = useState(0)
   /**
    * The instant the open demo is pinned to, or undefined for "run freely".
    * Set while capturing so what lands on the timeline is a chosen moment
@@ -132,48 +133,50 @@ export function Lab() {
 
   const missing = lab.length - lab.filter((e) => availableSlugs.has(e.slug)).length
 
-  /** Rasterise the open demo and drop it on the Studio timeline as an overlay. */
+  /**
+   * Pre-render the React demo into a deterministic frame sequence. Studio can
+   * then scrub and export its real motion instead of flattening the component
+   * into the single screenshot that used to make Lab resources look broken.
+   */
   async function sendToStudio() {
     if (!open || !project || !stageRef.current) return
     setCapturing(true)
+    setCaptureProgress(0)
     try {
-      // Pin the demo to a moment a little way in — past the entrance, into
-      // the part worth looking at — and let React paint it before grabbing.
-      setFreezeAt(1.2)
-      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
-      const canvas = await html2canvas(stageRef.current, {
-        backgroundColor: null,
-        scale: 2,
-        logging: false,
-        useCORS: true,
-      })
-      const dataUrl = canvas.toDataURL('image/png')
+      const frameFps = 8
+      const durationSec = 3
+      const frameCount = frameFps * durationSec
+      const frames: string[] = []
+      for (let frame = 0; frame < frameCount; frame += 1) {
+        setFreezeAt(frame / frameFps)
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+        const canvas = await html2canvas(stageRef.current, {
+          backgroundColor: null,
+          scale: 1,
+          logging: false,
+          useCORS: true,
+        })
+        frames.push(canvas.toDataURL('image/webp', 0.78))
+        setCaptureProgress(Math.round(((frame + 1) / frameCount) * 100))
+      }
       const doc = studioOf(project)
       const track = Math.min(doc.trackCount - 1, 1)
       const clip: StudioOverlayClip = {
-        id: uid(),
-        kind: 'overlay',
-        track,
-        startSec: nextFreeStart(doc, track, 0, 3),
-        durationSec: 3,
-        name: open.name,
-        transitionIn: 'fade',
-        transitionOut: 'fade',
-        opacity: 1,
-        dataUrl,
-        source: `UI Lab · ${open.name}`,
-        x: 0.5,
-        y: 0.5,
-        scale: 0.8,
+        id: uid(), kind: 'overlay', track,
+        startSec: nextFreeStart(doc, track, 0, durationSec), durationSec,
+        name: open.name, transitionIn: 'fade', transitionOut: 'fade', opacity: 1,
+        dataUrl: frames[0], frames, frameFps,
+        source: `UI Lab animated React capture · ${open.name}`,
+        x: 0.5, y: 0.5, scale: 0.8,
       }
       addStudioClip(project.id, clip)
-      pushToast('success', `${open.name} added to the Studio timeline`)
+      pushToast('success', `${open.name} added as ${frames.length} scrub-safe animation frames.`)
       setView('studio')
     } catch (err) {
-      pushToast('error', humanError(err, 'Could not capture this demo'))
+      pushToast('error', humanError(err, 'Could not capture this React animation'))
     } finally {
       setCapturing(false)
-      // Let it run again — a frozen demo in the browser would look broken.
+      setCaptureProgress(0)
       setFreezeAt(undefined)
     }
   }
@@ -211,7 +214,8 @@ export function Lab() {
               Next
             </Button>
             <Button size="sm" variant="primary" onClick={() => void sendToStudio()} disabled={!project || capturing}>
-              {capturing ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />} Send to Studio
+              {capturing ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
+              {capturing ? `Rendering ${captureProgress}%` : 'Add animated to Studio'}
             </Button>
           </div>
         </div>
@@ -230,7 +234,7 @@ export function Lab() {
               'justify-center',
             )}
           >
-            <DemoFrame slug={open.slug} play={null} className="place-items-center" atSeconds={freezeAt} />
+            <DemoFrame slug={open.slug} play={capturing ? true : null} className="place-items-center" atSeconds={freezeAt} />
           </div>
           <p className="mx-auto mt-3 max-w-4xl font-mono text-xs text-muted">
             {open.category} · src/lab/components/{open.slug}.tsx
@@ -250,7 +254,7 @@ export function Lab() {
             <h1 className="text-base font-semibold">UI Lab</h1>
             <p className="text-xs text-muted">
               {entries.length} of {availableSlugs.size} interactions vendored from lab.xevrion.dev — reference them,
-              or snapshot one onto the Studio timeline.
+              or render its real React motion into a scrub-safe Studio clip.
               {missing > 0 && ` (${missing} registry entries have no local file)`}
             </p>
           </div>

@@ -1109,6 +1109,13 @@ function OverlayFields({ clip, onPatch }: { clip: StudioOverlayClip; onPatch: (p
   return (
     <div className="space-y-4 border-t border-line pt-4">
       <p className="truncate text-xs text-muted">From {clip.source}</p>
+      {clip.frames?.length ? (
+        <div className="rounded-lg border border-line bg-panel-alt p-2.5">
+          <p className="text-xs font-medium text-text">Animated React capture · {clip.frames.length} frames</p>
+          <p className="mt-0.5 text-[11px] text-muted">Scrub-safe motion; position, size, effects, keyframes and playback rate remain editable.</p>
+          <Slider label="Motion speed" value={(clip.frameFps ?? 8) / 8} min={0.5} max={2} step={0.25} suffix="×" onChange={(v) => onPatch({ frameFps: 8 * v } as Partial<StudioClip>)} />
+        </div>
+      ) : null}
       <Slider label="Scale" value={clip.scale} min={0.1} max={2} step={0.05} suffix="×" onChange={(v) => onPatch({ scale: v } as Partial<StudioClip>)} />
       <div className="grid grid-cols-2 gap-3">
         <Slider label="X" value={clip.x} min={0} max={1} step={0.01} onChange={(v) => onPatch({ x: v } as Partial<StudioClip>)} />

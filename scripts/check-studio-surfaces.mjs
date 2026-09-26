@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const [inspector, preview, timeline, studio, app, main, css, generatedPackage] = await Promise.all([
+const [inspector, preview, timeline, studio, app, main, css, generatedPackage, lab, sources, projectTypes] = await Promise.all([
   readFile(new URL('../src/screens/studio/StudioInspector.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/screens/studio/StudioPreview.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/screens/studio/StudioTimeline.tsx', import.meta.url), 'utf8'),
@@ -12,6 +12,9 @@ const [inspector, preview, timeline, studio, app, main, css, generatedPackage] =
   readFile(new URL('../electron/main.cjs', import.meta.url), 'utf8'),
   readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
   readFile(new URL('../src/lib/studio/generatedPackage.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../src/screens/Lab.tsx', import.meta.url), 'utf8'),
+  readFile(new URL('../src/lib/studio/sources.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../src/types/project.ts', import.meta.url), 'utf8'),
 ])
 
 for (const [label, pattern] of [
@@ -39,6 +42,9 @@ assert.match(studio, /accept="video\/\*,image\/\*,audio\/\*,\.zip,\.html,\.htm"/
 assert.match(generatedPackage, /mediaReferences[\s\S]*?entry\.async\('blob'\)/, 'zip import must extract referenced package media without executing HTML')
 assert.match(studio, /generated\.assets[\s\S]*?registerFile\(asset\.file\)[\s\S]*?StudioMediaClip/, 'package media must become editable native Studio clips')
 const resourceDrop = await readFile(new URL('../src/lib/studio/resourceDrop.ts', import.meta.url), 'utf8')
+assert.match(projectTypes, /frames\?: string\[\][\s\S]*?frameFps\?: number/, 'Studio overlays must retain deterministic React animation frames')
+assert.match(lab, /frameCount = frameFps \* durationSec[\s\S]*?frames\.push\(canvas\.toDataURL\('image\/webp'/, 'Lab must render React motion rather than capture only a still')
+assert.match(sources, /frames\.forEach[\s\S]*?Math\.floor\(localSec \* \(clip\.frameFps/, 'preview and export must choose component frames from clip progress')
 for (const effect of ['bg-soft-grid', 'bg-dot-field', 'bg-lime-haze', 'bg-noise-paper', 'tr-mask-wipe', 'tr-scale-overshoot', 'cap-hormozi', 'cap-minimal', 'mo-word-reveal', 'mo-counter-tick']) {
   assert.match(resourceDrop, new RegExp(effect), `${effect} must perform a native editable Studio action`)
 }
