@@ -1,0 +1,24 @@
+{
+  "source": "https://ui.spectrumhq.in",
+  "registry": "https://raw.githubusercontent.com/arihantcodes/spectrum-ui/main/registry.json",
+  "note": "Subset index for offline agents. Full registry is large — fetch registry.full.json when needed.",
+  "categories": [
+    "AI Assistants",
+    "Empty States",
+    "Forms",
+    "Navigation",
+    "Feedback",
+    "Data Display",
+    "Blocks"
+  ],
+  "priorityItems": [
+    { "name": "agent-plan", "category": "AI Assistants" },
+    { "name": "agent-steps", "category": "AI Assistants" },
+    { "name": "approval-card", "category": "AI Assistants" },
+    { "name": "chat-empty-state", "category": "AI Assistants" },
+    { "name": "first-project", "category": "Empty States" },
+    { "name": "invite-teammates", "category": "Empty States" },
+    { "name": "connect-source", "category": "Empty States" }
+  ],
+  "installHint": "npx shadcn@latest add @spectrumui/<name> then map to Cupric tokens"
+}

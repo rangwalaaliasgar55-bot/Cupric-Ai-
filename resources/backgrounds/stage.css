@@ -1,0 +1,31 @@
+/* Stage / marketing only — never app chrome (see DESIGN.md) */
+
+.stage-bg-lime-void {
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(200, 245, 66, 0.14), transparent 70%), #0b0b10;
+}
+
+.stage-bg-grid-haze {
+  background-color: #0b0b10;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 50% 30%, rgba(200, 245, 66, 0.08), transparent),
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 48px 48px, 48px 48px;
+}
+
+.stage-bg-dot-field {
+  background-color: #0b0b10;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.stage-bg-blue-orbit {
+  background:
+    radial-gradient(circle at 80% 20%, rgba(79, 182, 232, 0.16), transparent 45%),
+    radial-gradient(circle at 20% 80%, rgba(200, 245, 66, 0.08), transparent 40%),
+    #0b0b10;
+}
+
+.stage-bg-warm-paper {
+  background: linear-gradient(160deg, #1a1410 0%, #0f0c0a 50%, #0b0b10 100%);
+}

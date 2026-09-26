@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cupric effect — logo sting</title>
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  #scene {
+    width: 1080px; height: 1080px; position: relative;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(200,245,66,0.14), transparent 70%), #0B0B10;
+    display: grid; place-items: center;
+    font-family: Inter, system-ui, sans-serif;
+    color: #F4F1EA;
+  }
+  #mark {
+    font-weight: 800; font-size: 72px; letter-spacing: -0.04em;
+    color: #C8F542; transform-origin: center;
+  }
+</style>
+</head>
+<body>
+<div id="scene">
+  <div id="mark">CUPRIC AI</div>
+</div>
+<script>
+const DUR = 3, FPS = 30;
+function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+function overshoot(p) {
+  if (p < 0.6) return 0.92 + (1.04 - 0.92) * (p / 0.6);
+  return 1.04 + (1 - 1.04) * ((p - 0.6) / 0.4);
+}
+window.__seek = function (t) {
+  const p = clamp(t / DUR, 0, 1);
+  const s = overshoot(p);
+  const el = document.getElementById('mark');
+  el.style.transform = 'scale(' + s + ')';
+  el.style.opacity = String(clamp(p * 4, 0, 1));
+};
+window.__cupricSourceManifest = {
+  sources: ['typography', 'radial-gradient'],
+  sequence: [{ from: 0, to: DUR, type: 'logo', copy: 'CUPRIC AI' }],
+  renderSpec: { durationSec: DUR, fps: FPS, size: [1080, 1080] }
+};
+window.__seek(0);
+</script>
+</body>
+</html>

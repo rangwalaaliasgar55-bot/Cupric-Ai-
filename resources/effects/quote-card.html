@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cupric effect — quote card</title>
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  #scene {
+    width: 1080px; height: 1920px; position: relative;
+    background-color: #0B0B10;
+    background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 120px 80px; box-sizing: border-box;
+    font-family: Inter, system-ui, sans-serif; color: #F4F1EA;
+  }
+  #quote { font-size: 64px; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; }
+  #quote .lime { color: #C8F542; }
+  #attr { margin-top: 32px; font-size: 22px; color: #9A9AA5; opacity: 0; }
+</style>
+</head>
+<body>
+<div id="scene">
+  <div id="quote"></div>
+  <div id="attr">— Cupric AI</div>
+</div>
+<script>
+const DUR = 6, FPS = 30;
+const WORDS = ['Make', 'it', 'obvious.'];
+function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+window.__seek = function (t) {
+  const p = clamp(t / DUR, 0, 1);
+  const visible = Math.floor(clamp(p / 0.55, 0, 1) * WORDS.length);
+  const q = document.getElementById('quote');
+  q.innerHTML = WORDS.map(function (w, i) {
+    if (i >= visible) return '';
+    const lime = i === WORDS.length - 1 ? ' class="lime"' : '';
+    return '<span' + lime + '>' + w + '</span> ';
+  }).join('');
+  document.getElementById('attr').style.opacity = String(clamp((p - 0.65) / 0.2, 0, 1));
+};
+window.__cupricSourceManifest = {
+  sources: ['kinetic-type', 'dot-field'],
+  sequence: [
+    { from: 0, to: 4, type: 'quote', copy: 'Make it obvious.' },
+    { from: 4, to: 6, type: 'attribution', copy: '— Cupric AI' }
+  ],
+  renderSpec: { durationSec: DUR, fps: FPS, size: [1080, 1920] }
+};
+window.__seek(0);
+</script>
+</body>
+</html>

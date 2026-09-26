@@ -1,0 +1,47 @@
+{
+  "version": "0.2.3",
+  "updated": "2026-09-26",
+  "packs": [
+    {
+      "id": "ui-lab",
+      "path": "resources/ui-lab",
+      "entries": "registry.json",
+      "url": "https://lab.xevrion.dev",
+      "use": ["interaction-reference", "agent-prompts"]
+    },
+    {
+      "id": "spectrum",
+      "path": "resources/spectrum",
+      "entries": "index.json",
+      "url": "https://ui.spectrumhq.in",
+      "use": ["block-catalog", "empty-states", "ai-blocks"]
+    },
+    {
+      "id": "effects",
+      "path": "resources/effects",
+      "use": ["arena-html", "local-video"]
+    },
+    {
+      "id": "backgrounds",
+      "path": "resources/backgrounds",
+      "use": ["stage-only"]
+    },
+    {
+      "id": "design-systems",
+      "path": "resources/design-systems",
+      "use": ["tokens", "checklist"]
+    },
+    {
+      "id": "kdenlive",
+      "path": "resources/kdenlive",
+      "use": ["effect-mapping"]
+    }
+  ],
+  "pipelineOrder": [
+    "tokens",
+    "layout-target",
+    "building-blocks",
+    "motion",
+    "finish"
+  ]
+}
