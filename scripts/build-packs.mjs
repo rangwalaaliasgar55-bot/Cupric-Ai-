@@ -7,7 +7,7 @@
 
 import { build } from 'esbuild'
 import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import path from 'node:path'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -33,7 +33,9 @@ await build({
   stdin: { contents: entry, resolveDir: root, sourcefile: 'packs-entry.ts', loader: 'ts' },
 })
 
-const mod = await import(`file://${tmp}?t=${Date.now()}`)
+// pathToFileURL, not a `file://` concat: a Windows path like C:\a\b.mjs is
+// not a valid URL and the release build runs on windows-latest.
+const mod = await import(`${pathToFileURL(tmp).href}?t=${Date.now()}`)
 await rm(tmp, { force: true })
 
 const VERSION = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')).version

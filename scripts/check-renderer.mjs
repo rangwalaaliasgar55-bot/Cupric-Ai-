@@ -14,7 +14,7 @@
 import { build } from 'esbuild'
 import { rm } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const tmp = path.join(root, '.renderer-check.mjs')
@@ -122,7 +122,9 @@ await build({
   },
 })
 
-const mod = await import(`file://${tmp}?t=${Date.now()}`)
+// pathToFileURL, not a `file://` concat: a Windows path like C:\a\b.mjs is
+// not a valid URL and the release build runs on windows-latest.
+const mod = await import(`${pathToFileURL(tmp).href}?t=${Date.now()}`)
 await rm(tmp, { force: true })
 
 const W = 480
