@@ -14,7 +14,7 @@
  * refusal, because it looks like the app worked.
  */
 
-import type { StudioClip, StudioDoc } from '../../types/project'
+import type { StudioClip, StudioDoc, StudioKeyframe } from '../../types/project'
 import { uid } from '../utils'
 import { STUDIO_BACKGROUNDS } from './backgrounds'
 import { defaultGlassClip, defaultTextClip, nextFreeStart } from './doc'
@@ -147,17 +147,73 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
     }
 
     case 'effect': {
-      const cue = String((payload.data as { promptCue?: string } | undefined)?.promptCue ?? payload.description ?? '')
-      const clip = defaultTextClip(nextFreeStart(doc, topTrack, atSec, 3), topTrack)
-      clip.text = payload.name
-      clip.fontSizePct = 6
-      return {
-        ok: true,
-        clip,
-        message: cue
-          ? `“${payload.name}” added as a titled beat — its prompt cue is on the clip name for the generator.`
-          : `“${payload.name}” added as a titled beat.`,
+      const backgrounds: Record<string, string> = {
+        'bg-soft-grid': 'grid-haze',
+        'bg-dot-field': 'dot-field',
+        'bg-lime-haze': 'lime-void',
+        'bg-noise-paper': 'noise-veil',
       }
+      const backgroundId = backgrounds[payload.id]
+      if (backgroundId) {
+        const known = STUDIO_BACKGROUNDS.find((item) => item.id === backgroundId)
+        if (!known) return { ok: false, reason: `The native painter for “${payload.name}” is unavailable.` }
+        const clip: StudioClip = {
+          id: uid(), kind: 'background', track: 0, startSec: nextFreeStart(doc, 0, atSec, 4), durationSec: 4,
+          name: known.name, transitionIn: 'fade', transitionOut: 'fade', opacity: 1, backgroundId: known.id,
+        }
+        return { ok: true, clip, message: `Added the editable “${known.name}” background effect.` }
+      }
+      if (payload.id === 'tr-mask-wipe') {
+        if (!doc.clips.length) return { ok: false, reason: 'Mask Wipe needs a clip. Add media or text first.' }
+        const target = [...doc.clips].sort((a, b) => Math.abs(a.startSec - atSec) - Math.abs(b.startSec - atSec))[0]
+        return {
+          ok: true,
+          docPatch: { clips: doc.clips.map((clip) => clip.id === target.id ? { ...clip, transitionIn: 'wipe-left' } as StudioClip : clip) },
+          message: `Applied Mask Wipe to “${target.name}”.`,
+        }
+      }
+      if (payload.id === 'tr-scale-overshoot') {
+        if (!doc.clips.length) return { ok: false, reason: 'Scale Overshoot needs a visual clip first.' }
+        const target = [...doc.clips].reverse().find((clip) => clip.kind !== 'audio' && clip.kind !== 'background')
+        if (!target) return { ok: false, reason: 'Scale Overshoot needs a movable visual clip.' }
+        const keyframes: StudioKeyframe[] = (target.keyframes ?? []).map(({ scale: _oldScale, ...keyframe }) => keyframe)
+        const scaleFrames = [
+          { at: 0, scale: 0.92, ease: 'ease-out' as const },
+          { at: Math.min(0.18, target.durationSec * 0.25), scale: 1.04, ease: 'ease-out' as const },
+          { at: Math.min(0.4, target.durationSec * 0.5), scale: 1, ease: 'ease-in-out' as const },
+        ]
+        for (const scaleFrame of scaleFrames) {
+          const existing = keyframes.find((keyframe) => Math.abs(keyframe.at - scaleFrame.at) < 0.001)
+          if (existing) Object.assign(existing, { scale: scaleFrame.scale, ease: scaleFrame.ease })
+          else keyframes.push(scaleFrame)
+        }
+        keyframes.sort((a, b) => a.at - b.at)
+        return {
+          ok: true,
+          docPatch: { clips: doc.clips.map((clip) => clip.id === target.id ? { ...clip, keyframes } as StudioClip : clip) },
+          message: `Added three editable scale keyframes to “${target.name}”.`,
+        }
+      }
+      const clip = defaultTextClip(nextFreeStart(doc, topTrack, atSec, 3), topTrack)
+      clip.text = payload.id === 'cap-hormozi' ? 'MAKE EVERY WORD COUNT' : payload.id === 'cap-minimal' ? 'A quiet supporting thought' : payload.name
+      if (payload.id === 'cap-hormozi') {
+        clip.fontSizePct = 9
+        clip.fontFamily = 'Space Grotesk Variable'
+        clip.weight = 800
+        clip.highlightWord = 'WORD'
+        clip.anim = 'word-reveal'
+      } else if (payload.id === 'cap-minimal') {
+        clip.fontSizePct = 4
+        clip.y = 0.82
+        clip.anim = 'fade-up'
+      } else if (payload.id === 'mo-word-reveal') {
+        clip.anim = 'word-reveal'
+      } else if (payload.id === 'mo-counter-tick') {
+        clip.anim = 'typewriter'
+      } else {
+        return { ok: false, reason: `“${payload.name}” has no native Studio implementation yet.` }
+      }
+      return { ok: true, clip, message: `Added “${payload.name}” as a fully editable native text effect.` }
     }
 
     case 'component':

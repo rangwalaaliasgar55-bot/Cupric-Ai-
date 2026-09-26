@@ -391,8 +391,41 @@ export function Studio() {
           const clips = piecesToStudioClips(piece, doc, generated.name.replace(/\.html?$/i, ''))
           if (!clips.length) throw new Error(`${file.name} did not contain any editable scenes`)
           for (const clip of clips) addStudioClip(projectId, clip)
+
+          // ZIP media is not left trapped behind HTML. Each referenced asset is
+          // registered through the same media store as a normal file import and
+          // becomes an independently movable, resizable and replaceable clip.
+          let assetCursor = 0
+          let importedAssets = 0
+          const imageDuration = Math.max(1, piece.durationSec / Math.max(1, generated.assets.filter((asset) => asset.file.type.startsWith('image/')).length))
+          for (const asset of generated.assets) {
+            const handle = await registerFile(asset.file)
+            if (handle.kind === 'audio') {
+              const audioTrack = Math.max(0, doc.trackCount - 1)
+              const audioClip = defaultAudioClip(0, audioTrack, {
+                id: handle.id,
+                fileName: handle.fileName,
+                localPath: handle.localPath,
+                durationSec: handle.durationSec,
+              })
+              addStudioClip(projectId, audioClip)
+              importedAssets += 1
+              continue
+            }
+            const assetDuration = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : imageDuration
+            const mediaClip: StudioMediaClip = {
+              id: uid(), kind: handle.kind, track: 0, startSec: assetCursor, durationSec: assetDuration,
+              name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28), transitionIn: 'fade', transitionOut: 'none', opacity: 1,
+              mediaId: handle.id, fileName: handle.fileName, localPath: handle.localPath, trimInSec: 0,
+              sourceDurationSec: handle.kind === 'video' ? handle.durationSec : 0, speed: 1, volume: 1,
+              fit: 'cover', x: 0.5, y: 0.5, scale: 1, posterDataUrl: handle.posterDataUrl,
+            }
+            addStudioClip(projectId, mediaClip)
+            assetCursor += assetDuration
+            importedAssets += 1
+          }
           setSelectedId(clips[0].id)
-          pushToast('success', `Broke ${file.name} into ${clips.length} editable Studio clips (${piece.via}).`)
+          pushToast('success', `Broke ${file.name} into ${clips.length} editable scene clips${importedAssets ? ` plus ${importedAssets} editable media assets` : ''} (${piece.via}).`)
           continue
         }
         const handle = await registerFile(file)

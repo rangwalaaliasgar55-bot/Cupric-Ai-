@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const [inspector, preview, timeline, studio, app, main, css] = await Promise.all([
+const [inspector, preview, timeline, studio, app, main, css, generatedPackage] = await Promise.all([
   readFile(new URL('../src/screens/studio/StudioInspector.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/screens/studio/StudioPreview.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/screens/studio/StudioTimeline.tsx', import.meta.url), 'utf8'),
@@ -11,6 +11,7 @@ const [inspector, preview, timeline, studio, app, main, css] = await Promise.all
   readFile(new URL('../src/App.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../electron/main.cjs', import.meta.url), 'utf8'),
   readFile(new URL('../src/styles.css', import.meta.url), 'utf8'),
+  readFile(new URL('../src/lib/studio/generatedPackage.ts', import.meta.url), 'utf8'),
 ])
 
 for (const [label, pattern] of [
@@ -35,6 +36,12 @@ for (const key of ['j', 'k', 'l', 's']) assert.match(studio, new RegExp(`key ===
 assert.match(studio, /key === 'k'[\s\S]*?patchTransformKeyframe/, 'K must create a keyframe on the selected clip')
 assert.match(studio, /key === 's'[\s\S]*?splitStudioClip/, 'S must split the selected clip')
 assert.match(studio, /accept="video\/\*,image\/\*,audio\/\*,\.zip,\.html,\.htm"/, 'Studio import must accept generated HTML and zip packages')
+assert.match(generatedPackage, /mediaReferences[\s\S]*?entry\.async\('blob'\)/, 'zip import must extract referenced package media without executing HTML')
+assert.match(studio, /generated\.assets[\s\S]*?registerFile\(asset\.file\)[\s\S]*?StudioMediaClip/, 'package media must become editable native Studio clips')
+const resourceDrop = await readFile(new URL('../src/lib/studio/resourceDrop.ts', import.meta.url), 'utf8')
+for (const effect of ['bg-soft-grid', 'bg-dot-field', 'bg-lime-haze', 'bg-noise-paper', 'tr-mask-wipe', 'tr-scale-overshoot', 'cap-hormozi', 'cap-minimal', 'mo-word-reveal', 'mo-counter-tick']) {
+  assert.match(resourceDrop, new RegExp(effect), `${effect} must perform a native editable Studio action`)
+}
 assert.match(preview, /clip\.kind === 'video' \|\| clip\.kind === 'image'[\s\S]*?media\.scale/, 'video and image clips must expose canvas resize handles')
 assert.match(inspector, /label="Scale" value=\{clip\.scale \?\? 1\}/, 'media scale must be editable in the inspector')
 assert.match(studio, /key === 'i' \|\| key === 'o'/, 'I/O shortcuts must stay wired')

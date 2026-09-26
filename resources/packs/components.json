@@ -2,7 +2,7 @@
   "id": "components",
   "name": "Lab components",
   "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "source": "https://lab.xevrion.dev/lab/",
   "license": "MIT (upstream)",
   "items": [
