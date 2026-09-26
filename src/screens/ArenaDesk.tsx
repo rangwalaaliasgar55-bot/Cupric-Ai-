@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, Copy, FileCode2, Loader2, Lock, Play, Swords, Upload } from 'lucide-react'
+import { Check, Copy, ExternalLink, FileCode2, Loader2, Lock, Play, Swords, Upload } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
@@ -54,6 +54,21 @@ export function ArenaDesk() {
       </div>
     )
 
+  async function openArenaBuilder() {
+    const prompt = locked?.arenaPrompt || ''
+    try {
+      const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+      if (ipc) await ipc.invoke('arena:openBuilder', { prompt, source: 'arena-desk' })
+      else {
+        await copyText(prompt)
+        window.open('https://arena.ai/code', '_blank', 'noopener,noreferrer')
+      }
+      pushToast('success', 'Arena opened in your browser — prompt copied')
+    } catch (err) {
+      pushToast('error', err instanceof Error ? err.message : 'Could not open Arena')
+    }
+  }
+
   async function handleDrop(file: File | null) {
     if (!project || importing) return
     setImporting({ name: file?.name ?? 'arena-winner.zip', pct: 0 })
@@ -102,15 +117,63 @@ export function ArenaDesk() {
         <Card className="overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-3">
             <div className="text-xs font-semibold uppercase tracking-wider text-muted">Arena prompt</div>
-            <PromptCopyButton text={locked.arenaPrompt} />
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={openArenaBuilder}>
+                <ExternalLink size={14} />
+                Open Arena
+              </Button>
+              <PromptCopyButton text={locked.arenaPrompt} />
+            </div>
           </div>
           <pre className="max-h-44 overflow-auto whitespace-pre-wrap break-words bg-bg/40 px-4 py-3 font-mono text-xs leading-relaxed text-text/85">
             {locked.arenaPrompt}
           </pre>
         </Card>
+
+        <Card className="space-y-4">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-muted">Sources + generation sequence</div>
+            <p className="mt-1 text-xs text-muted">
+              This is included in the Arena prompt so the model knows what to use and exactly how to build the video.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-lg border border-line bg-bg/40 p-3">
+              <div className="text-xs font-semibold text-text">Source / asset plan</div>
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-muted">
+                <li>Use the locked scene copy as the text source.</li>
+                <li>Generate visuals inside one HTML file: CSS/JS type, grids, gradients, masks, counters, and inline SVG/CSS shapes.</li>
+                <li>No remote images, CDNs, fonts, audio, video, or build step.</li>
+                <li>Expose <span className="font-mono">window.__cupricSourceManifest</span> for inspection.</li>
+              </ul>
+            </div>
+            <div className="rounded-lg border border-line bg-bg/40 p-3">
+              <div className="text-xs font-semibold text-text">Render spec</div>
+              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted">
+                <dt>Canvas</dt><dd className="font-mono text-text/80">{locked.size[0]}×{locked.size[1]}</dd>
+                <dt>Duration</dt><dd className="font-mono text-text/80">{locked.durationSec}s</dd>
+                <dt>FPS</dt><dd className="font-mono text-text/80">{locked.fps}</dd>
+                <dt>Control</dt><dd className="font-mono text-text/80">window.__seek(t)</dd>
+              </dl>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {locked.scenes.map((scene, index) => (
+              <div key={scene.id || index} className="rounded-lg border border-line bg-bg/30 p-3 text-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-semibold text-accent-text">Scene {index + 1} · {scene.type}</span>
+                  <span className="font-mono text-muted">{scene.from}s–{scene.to}s</span>
+                </div>
+                <div className="mt-1 text-text/90">“{scene.copy}”</div>
+                <div className="mt-1 text-muted">Motion: {scene.motion}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+
         <p className="text-xs leading-relaxed text-muted">
-          <Kbd>1</Kbd> Copy this <span aria-hidden>→</span> <Kbd>2</Kbd> Paste into arena.ai/code{' '}
-          <span aria-hidden>→</span> <Kbd>3</Kbd> Vote for a winner <span aria-hidden>→</span>{' '}
+          <Kbd>1</Kbd> Open Arena / copy this <span aria-hidden>→</span> <Kbd>2</Kbd> Paste into arena.ai/code{' '}
+          <span aria-hidden>→</span> <Kbd>3</Kbd> Let Arena build and vote for a winner <span aria-hidden>→</span>{' '}
           <Kbd>4</Kbd> Drop the downloaded .zip below
         </p>
 

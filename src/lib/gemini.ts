@@ -102,16 +102,45 @@ function buildScenes(dur: number, flavor: Flavor, topic: string): SceneRundown['
   return scenes
 }
 
+function sceneSequenceLines(r: Pick<SceneRundown, 'scenes'>): string {
+  return r.scenes
+    .map(
+      (s, index) =>
+        `${index + 1}. ${s.from}-${s.to}s | ${s.type.toUpperCase()} | on-screen copy: "${s.copy}" | motion: ${s.motion}`,
+    )
+    .join('\n')
+}
+
 function arenaPromptOf(r: Pick<SceneRundown, 'durationSec' | 'fps' | 'size' | 'style' | 'scenes'>): string {
-  return (
-    'Build a SINGLE FILE index.html motion-graphics piece. HARD CONSTRAINTS: ' +
-    'one file, inline CSS/JS, no build step. ' +
-    `Root #scene exactly ${r.size[0]}x${r.size[1]} px. ` +
-    `Duration ${r.durationSec}s at ${r.fps}fps. ` +
-    'Implement window.__seek(t) — all motion must be a pure function of t, no CSS animations, no setTimeout, no Math.random in the frame loop. ' +
-    `Style: ${r.style}. Scene copy: ` +
-    r.scenes.map((s) => `[${s.from}-${s.to}s ${s.type}] "${s.copy}" (${s.motion})`).join(' ')
-  )
+  return `Build a SINGLE FILE index.html motion-graphics piece for Cupric AI to capture as video.
+
+HARD CONSTRAINTS:
+- Return only the final index.html code.
+- One file only: inline CSS and inline JavaScript, no build step.
+- Root element must be #scene exactly ${r.size[0]}x${r.size[1]} px.
+- Duration is exactly ${r.durationSec}s at ${r.fps}fps.
+- Implement window.__seek(t). Every frame must be a pure deterministic function of t.
+- No CSS animations, no setTimeout, no request-based randomness, no Math.random in the frame loop.
+- Do not fetch remote assets. Do not rely on external fonts, CDNs, images, audio, or video.
+
+SOURCE / ASSET PLAN:
+- Visual sources are generated inside this HTML: typography, CSS/SVG shapes, gradients, grids, counters, masks, and light texture.
+- Text source is the scene copy below; keep spelling exact unless making tiny line-break changes for layout.
+- If you need icons or marks, draw them with inline SVG/CSS only.
+- Include window.__cupricSourceManifest = { sources, sequence, renderSpec } so Cupric AI can inspect how the video was generated.
+
+STYLE:
+${r.style}
+
+SEQUENCE / TIMELINE:
+${sceneSequenceLines(r)}
+
+IMPLEMENTATION NOTES:
+- At t=0 the first scene must be visible and valid.
+- All scene transitions must happen according to the timeline above.
+- Use safe-area margins and responsive scaling inside the fixed #scene canvas.
+- Expose clear variables for duration, fps, scenes, and sourceManifest.
+- The piece should look like a finished video, not a placeholder: polished typography, motion hierarchy, background design, and a final hold.`
 }
 
 function pick<T>(arr: T[], seed: number): T {
@@ -168,7 +197,7 @@ export async function geminiChatLocal(
   const proj = ctx.projectName ? `“${ctx.projectName}”` : 'a project'
 
   if (/rundown|idea|bumper|sting|quote|concept|12s|short/.test(t)) {
-    return `Happy to. Head to the Brief screen and type the raw idea — I'll draft the scene rundown there, field by field, and you can lock it when it feels right. Add a Gemini key in the desktop settings for live Gemini Flash answers; web preview uses the local fallback.`
+    return `Happy to. Head to the Brief screen and type the raw idea — I'll draft the scene rundown there, field by field, and you can lock it when it feels right. Add a Gemini/OpenCode key or import OpenCode Desktop models in settings for live answers; web preview uses the local fallback.`
   }
   if (/import|zip|arena flow|how does the arena|battle|vote/.test(t)) {
     return `The Arena flow: 1) Lock a rundown in the Brief. 2) Copy the Arena prompt from the Arena Desk. 3) Paste it into arena.ai/code and let two models battle. 4) Vote, download the winner's .zip, and drop it into the Arena Desk — it lands as an imported asset you can preview and render.`

@@ -186,13 +186,16 @@ export const useProjectStore = create<AppState>()(
         startAutomationJob: (input) => {
           const projectId = get().activeProjectId || get().createProject()
           const id = uid()
-          const labels = ['Create project', 'Generate Gemini rundown', 'Lock rundown', 'Generate candidates', 'Ingest footage', 'Build timeline', 'Render MP4', 'Review report']
+          const labels = ['Create project', 'Generate AI rundown', 'Lock rundown', 'Generate candidates', 'Ingest footage', 'Build timeline', 'Render MP4', 'Review report']
           const steps = labels.map((label, i) => ({ id: `${id}-step-${i}`, label, status: i === 0 ? 'running' as const : 'queued' as const, progressPct: 0 }))
           const job: AutomationJob = { ...input, id, projectId, status: 'running', currentStepId: steps[0].id, steps, createdAt: nowIso(), updatedAt: nowIso(), outputPath: null, reviewReportPath: null }
           set((s) => ({ automationJobs: [job, ...s.automationJobs], view: 'auto' }))
           const ipc = (window as any).northframe?.ipc
-          if (ipc) void ipc.invoke('automation:start', job)
-          else {
+          if (ipc) {
+            void ipc.invoke('automation:start', job)
+              .then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
+              .catch((err: Error) => get().updateAutomationJob(id, { status: 'error', errorMessage: err?.message || 'Automation failed' }))
+          } else {
             // Browser preview deliberately simulates progress without touching the filesystem.
             steps.forEach((step, i) => setTimeout(() => get().updateAutomationStep(id, step.id, { status: 'done', progressPct: 100, completedAt: nowIso() }), (i + 1) * 700))
             setTimeout(() => get().updateAutomationJob(id, { status: 'done', currentStepId: null }), labels.length * 700 + 100)
@@ -200,10 +203,24 @@ export const useProjectStore = create<AppState>()(
         },
         updateAutomationJob: (jobId, patch) => set((s) => ({ automationJobs: s.automationJobs.map((j) => j.id === jobId ? { ...j, ...patch, updatedAt: nowIso() } : j) })),
         updateAutomationStep: (jobId, stepId, patch) => set((s) => ({ automationJobs: s.automationJobs.map((j) => j.id === jobId ? { ...j, steps: j.steps.map((x) => x.id === stepId ? { ...x, ...patch } : x), updatedAt: nowIso() } : j) })),
-        cancelAutomationJob: (jobId) => { const ipc = (window as any).northframe?.ipc; if (ipc) void ipc.invoke('automation:cancel', { jobId }); get().updateAutomationJob(jobId, { status: 'cancelled' }) },
-        resumeAutomationJob: (jobId) => { const ipc = (window as any).northframe?.ipc; if (ipc) void ipc.invoke('automation:resume', { jobId }); get().updateAutomationJob(jobId, { status: 'running' }) },
-        approveAutomationStep: (jobId, stepId) => { const ipc = (window as any).northframe?.ipc; if (ipc) void ipc.invoke('automation:approveStep', { jobId, stepId }) },
-        rejectAutomationStep: (jobId, stepId) => { const ipc = (window as any).northframe?.ipc; if (ipc) void ipc.invoke('automation:rejectStep', { jobId, stepId }) },
+        cancelAutomationJob: (jobId) => {
+          const ipc = (window as any).northframe?.ipc
+          if (ipc) void ipc.invoke('automation:cancel', { jobId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
+          get().updateAutomationJob(jobId, { status: 'cancelled' })
+        },
+        resumeAutomationJob: (jobId) => {
+          const ipc = (window as any).northframe?.ipc
+          if (ipc) void ipc.invoke('automation:resume', { jobId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
+          get().updateAutomationJob(jobId, { status: 'running' })
+        },
+        approveAutomationStep: (jobId, stepId) => {
+          const ipc = (window as any).northframe?.ipc
+          if (ipc) void ipc.invoke('automation:approveStep', { jobId, stepId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
+        },
+        rejectAutomationStep: (jobId, stepId) => {
+          const ipc = (window as any).northframe?.ipc
+          if (ipc) void ipc.invoke('automation:rejectStep', { jobId, stepId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
+        },
 
         setView: (view) => set({ view }),
         setTheme: (theme) => set({ theme }),

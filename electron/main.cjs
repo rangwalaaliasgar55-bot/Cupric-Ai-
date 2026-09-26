@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, Menu, shell, ipcMain, dialog, clipboard } = require('electron')
 const fs = require('fs')
 const fsp = fs.promises
 const path = require('path')
@@ -13,12 +13,20 @@ try {
   ;({ autoUpdater } = require('electron-updater'))
 } catch {}
 
+function asarUnpackedSibling(value) {
+  const direct = String(value || '')
+  if (!direct) return null
+  // Electron's fs APIs can see files inside app.asar, but child_process cannot
+  // spawn executables from an archive. Always prefer the asar.unpacked copy.
+  return direct.replace(/([\\/])app\.asar([\\/])/i, '$1app.asar.unpacked$2')
+}
+
 function candidateBinaryPath(value) {
   if (!value) return null
   const direct = String(value)
-  if (fs.existsSync(direct)) return direct
-  const unpacked = direct.replace(`${path.sep}app.asar${path.sep}`, `${path.sep}app.asar.unpacked${path.sep}`)
-  if (unpacked !== direct && fs.existsSync(unpacked)) return unpacked
+  const unpacked = asarUnpackedSibling(direct)
+  if (unpacked && unpacked !== direct && fs.existsSync(unpacked)) return unpacked
+  if (!/[\\/]app\.asar[\\/]/i.test(direct) && fs.existsSync(direct)) return direct
   return null
 }
 
@@ -53,8 +61,11 @@ const APP_ID = 'app.cupric-ai.studio'
 const MAX_RENDER_DURATION_SEC = 120
 const DEFAULT_SILENCE_NOISE_DB = -35
 const DEFAULT_SILENCE_MIN_DURATION = 0.8
+const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
+const GEMINI_FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite']
 
 const renderJobs = new Map()
+const automationRunStates = new Map()
 let mainWindow = null
 let updateDownloaded = false
 let installingUpdate = false
@@ -158,6 +169,219 @@ function geminiApiKey() {
   return String(readSettings().geminiApiKey || process.env.GEMINI_API_KEY || '').trim()
 }
 
+function geminiModel() {
+  return String(readSettings().geminiModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL).trim() || DEFAULT_GEMINI_MODEL
+}
+
+function stripJsonComments(text) {
+  let out = ''
+  let inString = false
+  let quote = ''
+  let escaped = false
+  for (let i = 0; i < String(text || '').length; i += 1) {
+    const ch = text[i]
+    const next = text[i + 1]
+    if (inString) {
+      out += ch
+      if (escaped) escaped = false
+      else if (ch === '\\') escaped = true
+      else if (ch === quote) inString = false
+      continue
+    }
+    if (ch === '"' || ch === "'") {
+      inString = true
+      quote = ch
+      out += ch
+      continue
+    }
+    if (ch === '/' && next === '/') {
+      while (i < text.length && text[i] !== '\n') i += 1
+      out += '\n'
+      continue
+    }
+    if (ch === '/' && next === '*') {
+      i += 2
+      while (i < text.length && !(text[i] === '*' && text[i + 1] === '/')) i += 1
+      i += 1
+      continue
+    }
+    out += ch
+  }
+  return out
+}
+
+function readJsonLoose(file) {
+  try {
+    if (!file || !fs.existsSync(file)) return null
+    const text = fs.readFileSync(file, 'utf8')
+    try { return JSON.parse(text) } catch { return JSON.parse(stripJsonComments(text)) }
+  } catch {
+    return null
+  }
+}
+
+function uniqueExistingFiles(files) {
+  const seen = new Set()
+  return files
+    .filter(Boolean)
+    .map((file) => path.resolve(String(file)))
+    .filter((file) => {
+      const key = file.toLowerCase()
+      if (seen.has(key)) return false
+      seen.add(key)
+      return fs.existsSync(file)
+    })
+}
+
+function opencodeConfigFiles() {
+  const home = os.homedir()
+  const files = []
+  const addDir = (dir) => {
+    if (!dir) return
+    files.push(
+      path.join(dir, 'opencode.json'),
+      path.join(dir, 'opencode.jsonc'),
+      path.join(dir, 'config.json'),
+      path.join(dir, 'config.jsonc'),
+      path.join(dir, 'auth.json'),
+    )
+  }
+  files.push(process.env.OPENCODE_CONFIG, process.env.OPENCODE_AUTH_FILE)
+  if (home) {
+    addDir(path.join(home, '.config', 'opencode'))
+    addDir(path.join(home, '.local', 'share', 'opencode'))
+    files.push(path.join(home, '.opencode.json'), path.join(home, '.opencode.jsonc'))
+  }
+  addDir(path.join(process.env.APPDATA || '', 'opencode'))
+  addDir(path.join(process.env.LOCALAPPDATA || '', 'opencode'))
+  addDir(path.join(process.env.XDG_CONFIG_HOME || '', 'opencode'))
+  addDir(path.join(process.env.XDG_DATA_HOME || '', 'opencode'))
+  // Project-local OpenCode config is useful when Cupric AI is launched from a workspace.
+  files.push(path.join(process.cwd(), 'opencode.json'), path.join(process.cwd(), 'opencode.jsonc'))
+  return uniqueExistingFiles(files)
+}
+
+function normalizedBaseUrl(value) {
+  return String(value || '').trim().replace(/\/+$/, '')
+}
+
+function secretFromConfig(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return ''
+  const envMatch = raw.match(/^\{env:([^}]+)\}$/) || raw.match(/^env:([A-Z0-9_]+)$/i) || raw.match(/^\$([A-Z0-9_]+)$/i)
+  if (envMatch) return String(process.env[envMatch[1]] || '').trim()
+  return raw
+}
+
+function providerSettings(provider) {
+  return { ...(provider?.options || {}), ...(provider?.settings || {}), ...(provider || {}) }
+}
+
+function providerBaseUrl(provider) {
+  const settings = providerSettings(provider)
+  return normalizedBaseUrl(settings.baseURL || settings.baseUrl || settings.base_url || settings.url)
+}
+
+function providerApiKey(provider) {
+  const settings = providerSettings(provider)
+  return secretFromConfig(settings.apiKey || settings.api_key || settings.key || settings.token || settings.authorization?.replace(/^Bearer\s+/i, ''))
+}
+
+function providerModels(provider) {
+  const models = provider?.models || provider?.model || {}
+  return models && typeof models === 'object' && !Array.isArray(models) ? models : {}
+}
+
+function readOpenCodeProviderEntries() {
+  const entries = []
+  for (const file of opencodeConfigFiles()) {
+    const data = readJsonLoose(file)
+    if (!data || typeof data !== 'object') continue
+    const providers = data.providers || data.provider || {}
+    if (providers && typeof providers === 'object') {
+      for (const [providerId, provider] of Object.entries(providers)) {
+        if (!provider || typeof provider !== 'object') continue
+        entries.push({ file, providerId, provider, root: data })
+      }
+    }
+    // Some auth exports are a flat map of provider IDs to credentials.
+    const authProviders = data.auth || data.credentials || {}
+    if (authProviders && typeof authProviders === 'object') {
+      for (const [providerId, provider] of Object.entries(authProviders)) {
+        if (!provider) continue
+        entries.push({ file, providerId, provider: typeof provider === 'object' ? provider : { apiKey: provider }, root: data })
+      }
+    }
+  }
+  return entries
+}
+
+function discoverOpenCodeConfiguredModels() {
+  const presets = []
+  for (const entry of readOpenCodeProviderEntries()) {
+    const { file, providerId, provider, root } = entry
+    const baseUrl = providerBaseUrl(provider)
+    if (!baseUrl) continue
+    const providerName = String(provider?.name || providerId || 'OpenCode')
+    const models = providerModels(provider)
+    for (const [logicalId, modelInfoRaw] of Object.entries(models)) {
+      const modelInfo = modelInfoRaw && typeof modelInfoRaw === 'object' ? modelInfoRaw : {}
+      const model = String(modelInfo.modelID || modelInfo.modelId || modelInfo.id || logicalId || '').trim()
+      if (!model) continue
+      const label = `${providerName} · ${String(modelInfo.name || logicalId || model).trim()}`
+      presets.push({
+        id: `opencode-${providerId}-${model}`.replace(/[^a-z0-9_.:-]+/gi, '-'),
+        label,
+        baseUrl,
+        model,
+        note: `Imported from OpenCode Desktop/config (${path.basename(file)}). API keys stay in OpenCode/env or Cupric settings.`,
+        source: 'opencode-desktop',
+      })
+    }
+    const selected = String(root?.model || '').trim()
+    if (selected && selected.startsWith(`${providerId}/`)) {
+      const model = selected.slice(String(providerId).length + 1)
+      presets.push({
+        id: `opencode-selected-${providerId}-${model}`.replace(/[^a-z0-9_.:-]+/gi, '-'),
+        label: `${providerName} · ${model}`,
+        baseUrl,
+        model,
+        note: `Selected OpenCode model from ${path.basename(file)}.`,
+        source: 'opencode-desktop',
+      })
+    }
+  }
+  const seen = new Set()
+  return presets.filter((preset) => {
+    const key = `${normalizedBaseUrl(preset.baseUrl)}|${preset.model}`.toLowerCase()
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  }).slice(0, 300)
+}
+
+function resolveOpenCodeApiKey(baseUrl, model) {
+  const targetBase = normalizedBaseUrl(baseUrl)
+  const targetModel = String(model || '').trim()
+  const entries = readOpenCodeProviderEntries()
+  for (const { providerId, provider } of entries) {
+    const baseMatches = targetBase && providerBaseUrl(provider) === targetBase
+    const models = providerModels(provider)
+    const modelMatches = !targetModel || Object.entries(models).some(([logicalId, infoRaw]) => {
+      const info = infoRaw && typeof infoRaw === 'object' ? infoRaw : {}
+      return targetModel === logicalId || targetModel === info.modelID || targetModel === info.modelId || targetModel === info.id
+    })
+    if (baseMatches && modelMatches) {
+      const directKey = providerApiKey(provider)
+      if (directKey) return directKey
+      const sibling = entries.find(entry => entry.providerId === providerId && providerApiKey(entry.provider))
+      const siblingKey = sibling ? providerApiKey(sibling.provider) : ''
+      if (siblingKey) return siblingKey
+    }
+  }
+  return ''
+}
+
 function aiSettings() {
   const settings = readSettings()
   const provider = settings.aiProvider === 'gemini' ? 'gemini' : 'opencode'
@@ -169,7 +393,11 @@ function aiSettings() {
 
 function hasOpenCodeAccess() {
   const cfg = aiSettings()
-  return Boolean(cfg.openCodeApiKey || /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(cfg.openCodeBaseUrl))
+  return Boolean(
+    cfg.openCodeApiKey ||
+    resolveOpenCodeApiKey(cfg.openCodeBaseUrl, cfg.openCodeModel) ||
+    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(cfg.openCodeBaseUrl),
+  )
 }
 
 function publicSettings() {
@@ -181,8 +409,10 @@ function publicSettings() {
     hasGeminiKey: Boolean(geminiApiKey()),
     hasOpenCodeKey: hasOpenCodeAccess(),
     aiProvider: ai.provider,
+    geminiModel: geminiModel(),
     openCodeBaseUrl: ai.openCodeBaseUrl,
     openCodeModel: ai.openCodeModel,
+    openCodeImportedKey: Boolean(resolveOpenCodeApiKey(ai.openCodeBaseUrl, ai.openCodeModel)),
     autoLaunch: Boolean(settings.autoLaunch ?? login.openAtLogin),
     silenceNoiseDb: Number.isFinite(Number(settings.silenceNoiseDb)) ? Number(settings.silenceNoiseDb) : DEFAULT_SILENCE_NOISE_DB,
     silenceMinDuration: Number.isFinite(Number(settings.silenceMinDuration))
@@ -201,6 +431,10 @@ function applySettingsPatch(patch) {
   }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiProvider')) {
     settings.aiProvider = patch.aiProvider === 'opencode' ? 'opencode' : 'gemini'
+  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'geminiModel')) {
+    const v = String(patch.geminiModel || '').trim()
+    if (v) settings.geminiModel = v
   }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'openCodeApiKey')) {
     const key = String(patch.openCodeApiKey || '').trim()
@@ -258,129 +492,432 @@ ipcMain.handle('state:clear', () => {
 })
 
 // Autonomous jobs are persisted independently from renderer state. The UI owns presentation;
-// this small queue also provides crash-safe lifecycle primitives for the native pipeline.
+// the native queue now streams real step progress as work happens instead of doing
+// the whole render before the first status update.
 function automationFile() { return userDataPath('automation', 'jobs.json') }
 function automationJobs() { return readJson(automationFile(), []) }
 function saveAutomationJobs(jobs) { writeJson(automationFile(), jobs) }
-function patchAutomation(id, patch) { const jobs = automationJobs(); const next = jobs.map(j => j.id === id ? { ...j, ...patch, updatedAt: new Date().toISOString() } : j); saveAutomationJobs(next); return next.find(j => j.id === id) }
-ipcMain.handle('automation:list', () => automationJobs())
-ipcMain.handle('automation:get', (_e, p) => automationJobs().find(j => j.id === p?.jobId) || null)
-async function prepareAutomationJob(job) {
-  const root = userDataPath('automation', job.id)
-  ensureDir(root)
-  let rundown
-  try { rundown = await generateRundown(job.brief, [], { aspect: job.aspect, fps: job.fps }) }
-  catch (err) {
-    if (job.mode === 'auto-final') throw err
-    rundown = normalizeRundown({ title: job.brief.slice(0, 48), durationSec: 12, fps: job.fps, size: job.aspect === '9:16' ? [1080, 1920] : job.aspect === '1:1' ? [1080, 1080] : [1920, 1080], style: 'Cupric AI local deterministic kinetic type' }, job.brief)
-    logLine('automation-fallback', err?.message || String(err))
+function patchAutomation(id, patch) {
+  const jobs = automationJobs()
+  const next = jobs.map(j => j.id === id ? { ...j, ...patch, updatedAt: new Date().toISOString() } : j)
+  saveAutomationJobs(next)
+  return next.find(j => j.id === id) || null
+}
+function sendAutomation(channel, payload) {
+  try { mainWindow?.webContents.send(channel, payload) } catch {}
+}
+function automationRoot(jobId) { return userDataPath('automation', jobId) }
+function automationStep(job, index) { return job?.steps?.[index] || null }
+function patchAutomationStep(jobId, index, stepPatch, jobPatch = {}, channel = 'automation:progress') {
+  const latest = automationJobs().find(j => j.id === jobId)
+  if (!latest) return null
+  const step = automationStep(latest, index)
+  if (!step) return latest
+  const steps = latest.steps.map((item, i) => i === index ? { ...item, ...stepPatch } : item)
+  const current = patchAutomation(jobId, { ...jobPatch, steps })
+  if (current) sendAutomation(channel, current)
+  return current
+}
+function startAutomationStep(jobId, index, message) {
+  const latest = automationJobs().find(j => j.id === jobId)
+  const step = automationStep(latest, index)
+  if (!step || step.status === 'done') return latest
+  return patchAutomationStep(jobId, index, { status: 'running', progressPct: Math.max(5, step.progressPct || 0), message, startedAt: step.startedAt || new Date().toISOString() }, { status: 'running', currentStepId: step.id, waitingMessage: null }, 'automation:step')
+}
+function finishAutomationStep(jobId, index, message) {
+  const latest = automationJobs().find(j => j.id === jobId)
+  const step = automationStep(latest, index)
+  if (!step) return latest
+  return patchAutomationStep(jobId, index, { status: 'done', progressPct: 100, message, completedAt: new Date().toISOString() }, { status: 'running', currentStepId: step.id }, 'automation:progress')
+}
+function waitAutomationStep(jobId, index, message) {
+  const latest = automationJobs().find(j => j.id === jobId)
+  const step = automationStep(latest, index)
+  if (!step) return latest
+  const current = patchAutomationStep(jobId, index, { status: 'waiting-for-user', progressPct: 100, message }, { status: 'waiting-for-user', currentStepId: step.id, waitingMessage: message }, 'automation:waiting')
+  return current
+}
+function failAutomation(jobId, err, stepIndex) {
+  const message = err?.message || String(err)
+  const latest = automationJobs().find(j => j.id === jobId)
+  const patch = { status: 'error', errorMessage: message, currentStepId: null }
+  if (latest && Number.isInteger(stepIndex) && latest.steps?.[stepIndex]) {
+    patch.steps = latest.steps.map((step, i) => i === stepIndex ? { ...step, status: 'error', progressPct: step.progressPct || 100, errorMessage: message, message } : step)
   }
-  writeJson(path.join(root, 'rundown.json'), rundown)
-  let footageMeta = null
-  // Ingest the newest/largest supported footage file and run real FFprobe/silence analysis.
-  if (job.footageFolder && fs.existsSync(job.footageFolder)) {
-    const videoExt = /\.(mp4|mov|m4v|webm|mkv|avi)$/i
-    const files = fs.readdirSync(job.footageFolder).map(name => path.join(job.footageFolder, name)).filter(p => fs.statSync(p).isFile() && videoExt.test(p))
-    files.sort((a, b) => fs.statSync(b).size - fs.statSync(a).size)
-    if (files[0] && ffmpegPath && ffprobePath) {
-      const footageRoot = path.join(root, 'footage'); ensureDir(footageRoot)
-      const copied = path.join(footageRoot, safeFileName(path.basename(files[0]), 'footage.mp4')); fs.copyFileSync(files[0], copied)
-      const probe = await probeMedia(copied)
-      const settings = publicSettings()
-      const silenceResult = await runProcess(null, ffmpegPath, ['-hide_banner', '-i', copied, '-af', `silencedetect=noise=${settings.silenceNoiseDb}dB:d=${settings.silenceMinDuration}`, '-f', 'null', '-'])
-      const sidecar = files[0].replace(/\.[^.]+$/, '.srt')
-      const vttSidecar = files[0].replace(/\.[^.]+$/, '.vtt')
-      const captions = parseCaptionSidecar(fs.existsSync(sidecar) ? sidecar : vttSidecar)
-      const footage = { source: copied, durationSec: probe.durationSec, silenceRanges: parseSilence(silenceResult.stderr, probe.durationSec), captions, status: 'edited', captionStyle: /podcast|short|social/i.test(job.brief) ? 'hormozi' : 'standard', crop: job.aspect }
-      footageMeta = footage
-      writeJson(path.join(root, 'footage-analysis.json'), footage)
-    }
+  const failed = patchAutomation(jobId, patch) || { id: jobId, status: 'error', errorMessage: message }
+  sendAutomation('automation:error', failed)
+  logLine('automation-error', message, { jobId })
+  return failed
+}
+function automationState(jobId) {
+  let state = automationRunStates.get(jobId)
+  if (!state) {
+    state = { id: jobId, cancelled: false, processes: new Set(), windows: new Set(), sender: mainWindow?.webContents }
+    automationRunStates.set(jobId, state)
   }
-  let winnerPath = null
-  if (job.votingMode === 'manual-arena') {
-    job.reviewReportPath = path.join(root, 'review-report.json')
-    writeJson(job.reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, outputPath: null, footageUsed: Boolean(footageMeta), warnings: ['Manual Arena voting requires importing the winning ZIP before final render.'] })
-    saveAutomationJobs(automationJobs().map(item => item.id === job.id ? { ...item, ...job, updatedAt: new Date().toISOString() } : item))
-    return job
+  state.sender = mainWindow?.webContents
+  return state
+}
+function stopAutomationState(jobId) {
+  const state = automationRunStates.get(jobId)
+  if (!state) return
+  state.cancelled = true
+  for (const child of state.processes) stopChild(child)
+  for (const win of state.windows) {
+    try { if (!win.isDestroyed()) win.destroy() } catch {}
   }
-  if (job.votingMode === 'local-scoring') {
-    const candidates = []
-    for (let i = 0; i < 3; i++) {
-      const file = path.join(root, `candidate-${i + 1}.html`)
-      fs.writeFileSync(file, `<!doctype html><style>html,body{margin:0;background:#0b0b10;color:#c8f542;font:700 8vw Arial;height:100%;display:grid;place-items:center}#scene{padding:4vw;text-align:center}</style><div id="scene">${escapeHtml(rundown.title)}</div><script>window.__seek=function(t){document.body.style.opacity=Math.max(.2,Math.min(1,t/${rundown.durationSec}))}</script>`)
-      candidates.push({ file, score: 70 + i * 3, reasons: ['valid __seek(t)', 'strong contrast', 'deterministic motion'] })
-    }
-    const winner = candidates[candidates.length - 1]
-    winnerPath = winner.file
-    writeJson(path.join(root, 'voting-report.json'), { mode: 'local-scoring', winner: winner.file, candidates })
+}
+function ensureAutomationActive(jobId, state) {
+  const latest = automationJobs().find(j => j.id === jobId)
+  if (state?.cancelled || latest?.status === 'cancelled') throw new Error('Automation cancelled')
+  if (!latest) throw new Error('Automation job disappeared')
+  return latest
+}
+function fallbackRundownForJob(job) {
+  return normalizeRundown({
+    title: String(job.brief || 'Cupric AI').slice(0, 48),
+    durationSec: /\b(\d{1,3})\s*(?:s|sec|second)/i.test(job.brief || '') ? Number((job.brief || '').match(/\b(\d{1,3})\s*(?:s|sec|second)/i)?.[1]) : 12,
+    fps: job.fps,
+    size: job.aspect === '9:16' ? [1080, 1920] : job.aspect === '1:1' ? [1080, 1080] : [1920, 1080],
+    style: 'Cupric AI deterministic kinetic type, near-black canvas, lime accent, clean editorial motion',
+  }, job.brief)
+}
+function candidateHtmlForRundown(rundown, variant = 0) {
+  const width = Array.isArray(rundown.size) ? Number(rundown.size[0]) || 1920 : 1920
+  const height = Array.isArray(rundown.size) ? Number(rundown.size[1]) || 1080 : 1080
+  const safeJson = JSON.stringify(rundown).replace(/</g, '\\u003c')
+  const sourceManifest = {
+    sources: [
+      { id: 'copy', type: 'text', description: 'Scene copy from the locked Cupric AI rundown' },
+      { id: 'procedural-visuals', type: 'generated', description: 'Inline CSS/JS typography, gradients, grids, masks, counters, and SVG/CSS shapes' },
+    ],
+    sequence: (rundown.scenes || []).map((s, index) => ({ index: index + 1, from: s.from, to: s.to, type: s.type, copy: s.copy, motion: s.motion })),
+    renderSpec: { width, height, durationSec: rundown.durationSec, fps: rundown.fps },
   }
-  // Render the local winner through the same native Arena/FFmpeg segment engine used by Render.
-  if (winnerPath && ffmpegPath && ffprobePath) {
-    const outDir = path.join(userDataPath('renders'), job.id)
-    const workDir = path.join(outDir, 'work')
-    ensureDir(workDir)
-    const renderState = { id: job.id, cancelled: false, processes: new Set(), windows: new Set(), sender: mainWindow?.webContents }
-    const target = targetSizeForAspect(job.aspect, rundown.size)
-    const segments = []
-    if (winnerPath) segments.push(await renderArenaSegment(renderState, { sourceType: 'arena', arenaPath: winnerPath, htmlPath: winnerPath, durationSec: Math.min(3, rundown.durationSec), captions: rundown.scenes.map(s => ({ start: Math.max(0, s.from), end: Math.min(3, s.to), text: s.copy })).filter(c => c.end > c.start), captionStyle: 'standard' },  { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} }))
-    if (footageMeta) segments.push(...await renderFootageSegments(renderState, { sourceType: 'footage', videoPath: footageMeta.source, durationSec: Math.min(120, footageMeta.durationSec), silenceRanges: footageMeta.silenceRanges, captions: footageMeta.captions, applySilenceCuts: true, captionStyle: footageMeta.captionStyle, crop: footageMeta.crop }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} }))
-    if (!segments.length) throw new Error('No renderable media was produced')
-    const timeline = segments.map((s, i) => ({ id: `clip-${i + 1}`, startSec: segments.slice(0, i).reduce((n, x) => n + x.duration, 0), durationSec: s.duration, source: s.path }))
-    writeJson(path.join(root, 'timeline.json'), timeline)
-    writeJson(path.join(root, 'editing-plan.json'), { schema_version: '1.0', project: { target_duration_s: rundown.durationSec, aspect_ratio: job.aspect, fps: job.fps }, sections: [{ role: 'hook', clips: timeline.map((clip, i) => ({ id: clip.id, source_file: clip.source, in_s: 0, out_s: clip.duration, purpose: i === 0 ? 'opening hook' : 'supporting edit', transition_in: i === 0 ? 'hard_cut' : 'dissolve', captions: [] })) }], captions: { enabled: true, mode: 'phrase', auto_from_transcript: true } })
-    const outputPath = path.join(outDir, `${safeFileName(rundown.title, 'cupric-ai')}.mp4`)
-    await concatSegments(renderState, segments, outputPath, { workDir })
-    if (job.outputFolder && isSubPath(job.outputFolder, job.outputFolder)) { ensureDir(job.outputFolder); await fsp.copyFile(outputPath, path.join(job.outputFolder, path.basename(outputPath))) }
-    job.outputPath = outputPath
+  const safeManifest = JSON.stringify(sourceManifest).replace(/</g, '\\u003c')
+  const palettes = [
+    { bg: '#0B0B10', fg: '#F4F1EA', accent: '#C8F542', alt: '#4FB6E8' },
+    { bg: '#101014', fg: '#F8F4E8', accent: '#4FB6E8', alt: '#C8F542' },
+    { bg: '#090A0F', fg: '#FFFFFF', accent: '#C8F542', alt: '#A78BFA' },
+  ]
+  const palette = palettes[variant % palettes.length]
+  return `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=${width},height=${height},initial-scale=1"/><title>${escapeHtml(rundown.title)}</title><style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:${palette.bg};font-family:Inter,Segoe UI,Arial,sans-serif;color:${palette.fg}}
+#scene{position:relative;width:${width}px;height:${height}px;overflow:hidden;background:radial-gradient(circle at 18% 20%,${palette.accent}33,transparent 28%),radial-gradient(circle at 88% 82%,${palette.alt}2e,transparent 34%),linear-gradient(135deg,${palette.bg},#171820 58%,#0f1016);transform-origin:top left}
+.grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);background-size:${Math.round(width/16)}px ${Math.round(height/12)}px;mask-image:linear-gradient(180deg,transparent,black 22%,black 78%,transparent);opacity:.38}
+.brand{position:absolute;left:7%;top:9%;font-weight:900;letter-spacing:.22em;color:${palette.accent};font-size:${Math.max(22, Math.round(width*.026))}px}.badge{position:absolute;right:7%;top:9%;border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:.7em 1em;color:${palette.fg};font-weight:800;font-size:${Math.max(16, Math.round(width*.014))}px;background:rgba(255,255,255,.06)}
+.copy{position:absolute;left:7%;right:8%;top:32%;font-weight:950;line-height:.92;letter-spacing:-.06em;text-wrap:balance;font-size:${Math.max(48, Math.round(width*.075))}px}.motion{position:absolute;left:7%;right:19%;top:66%;color:rgba(244,241,234,.72);font-size:${Math.max(22, Math.round(width*.026))}px;line-height:1.25}.bar{position:absolute;left:7%;bottom:9%;height:${Math.max(8, Math.round(height*.01))}px;border-radius:999px;background:${palette.accent};width:0}.orb{position:absolute;width:${Math.round(Math.min(width,height)*.28)}px;height:${Math.round(Math.min(width,height)*.28)}px;border-radius:50%;filter:blur(4px);background:${palette.accent};opacity:.16;right:6%;bottom:16%}</style></head><body><div id="scene"><div class="grid"></div><div class="orb"></div><div class="brand">CUPRIC AI</div><div class="badge" id="badge"></div><div class="copy" id="copy"></div><div class="motion" id="motion"></div><div class="bar" id="bar"></div></div><script>
+const rundown=${safeJson}; const sourceManifest=${safeManifest}; window.__cupricSourceManifest=sourceManifest; const variant=${variant}; const duration=Math.max(.1, Number(rundown.durationSec)||12);
+const copy=document.getElementById('copy'), motion=document.getElementById('motion'), bar=document.getElementById('bar'), badge=document.getElementById('badge'), orb=document.querySelector('.orb'), grid=document.querySelector('.grid');
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))} function ease(x){x=clamp(x,0,1);return 1-Math.pow(1-x,3)}
+function sceneAt(t){return (rundown.scenes||[]).find(s=>t>=Number(s.from||0)&&t<Number(s.to||duration)) || (rundown.scenes||[])[(rundown.scenes||[]).length-1] || {from:0,to:duration,type:'hook',copy:rundown.title,motion:rundown.style}}
+window.__seek=function(t){t=clamp(Number(t)||0,0,duration); const s=sceneAt(t); const from=Number(s.from||0), to=Math.max(from+.1,Number(s.to||duration)); const local=clamp((t-from)/(to-from),0,1); const e=ease(local*2.4); copy.textContent=String(s.copy||rundown.title||'Cupric AI').toUpperCase(); motion.textContent=String(s.motion||rundown.style||'deterministic motion'); badge.textContent=String(s.type||'scene')+' · '+t.toFixed(1)+'s'; copy.style.opacity=e; copy.style.transform='translateY('+((1-e)*70)+'px) scale('+(0.96+e*.04)+')'; motion.style.opacity=clamp((local-.12)*2.2,0,1); motion.style.transform='translateX('+((1-e)*(variant%2?-40:40))+'px)'; bar.style.width=(7+86*(t/duration))+'%'; orb.style.transform='translate('+(Math.sin(t*.9+variant)*60)+'px,'+(Math.cos(t*.7+variant)*50)+'px) scale('+(1+Math.sin(t*1.1)*.08)+')'; grid.style.transform='translateY('+(-t*18)+'px)';}; window.__seek(0);
+</script></body></html>`
+}
+function writeAutomationCandidates(root, rundown) {
+  const candidates = []
+  for (let i = 0; i < 3; i += 1) {
+    const file = path.join(root, `candidate-${i + 1}.html`)
+    fs.writeFileSync(file, candidateHtmlForRundown(rundown, i), 'utf8')
+    const html = fs.readFileSync(file, 'utf8')
+    const score = 50 + (html.includes('window.__seek') ? 20 : 0) + (html.includes(String(rundown.durationSec)) ? 8 : 0) + (i * 4) + (rundown.scenes?.length ? 8 : 0)
+    candidates.push({ file, score, reasons: ['single-file HTML', 'defines window.__seek(t)', 'scene copy mapped to deterministic motion'] })
   }
-  if (!job.outputPath) throw new Error('Automation did not produce an MP4. A renderable local candidate and FFmpeg are required.')
-  job.reviewReportPath = path.join(root, 'review-report.json')
-  writeJson(job.reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, outputPath: job.outputPath, footageUsed: Boolean(footageMeta), warnings: [] })
-  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath}\n`)
-  saveAutomationJobs(automationJobs().map(item => item.id === job.id ? { ...item, ...job, updatedAt: new Date().toISOString() } : item))
-  return job
+  candidates.sort((a, b) => b.score - a.score)
+  writeJson(path.join(root, 'voting-report.json'), { mode: 'local-scoring', winner: candidates[0].file, candidates })
+  return { candidates, winnerPath: candidates[0].file }
+}
+async function ingestAutomationFootage(job, root, warnings, state) {
+  if (!job.footageFolder) return null
+  if (!fs.existsSync(job.footageFolder)) {
+    warnings.push(`Footage folder was not found: ${job.footageFolder}`)
+    return null
+  }
+  ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
+  ffprobePath = candidateBinaryPath(ffprobePath) || resolveMediaTool('ffprobe')
+  if (!ffmpegPath || !ffprobePath) {
+    warnings.push('Footage ingest skipped because FFmpeg/FFprobe is unavailable. Rendering can still use generated motion candidates if FFmpeg is present.')
+    return null
+  }
+  const videoExt = /\.(mp4|mov|m4v|webm|mkv|avi)$/i
+  const files = fs.readdirSync(job.footageFolder).map(name => path.join(job.footageFolder, name)).filter(p => {
+    try { return fs.statSync(p).isFile() && videoExt.test(p) } catch { return false }
+  })
+  files.sort((a, b) => fs.statSync(b).size - fs.statSync(a).size)
+  if (!files[0]) {
+    warnings.push('No supported video file was found in the footage folder.')
+    return null
+  }
+  ensureAutomationActive(job.id, state)
+  const footageRoot = path.join(root, 'footage'); ensureDir(footageRoot)
+  const copied = path.join(footageRoot, safeFileName(path.basename(files[0]), 'footage.mp4'))
+  fs.copyFileSync(files[0], copied)
+  const probe = await probeMedia(copied)
+  const settings = publicSettings()
+  let silenceRanges = []
+  try {
+    const silenceResult = await runProcess(state, ffmpegPath, ['-hide_banner', '-i', copied, '-af', `silencedetect=noise=${settings.silenceNoiseDb}dB:d=${settings.silenceMinDuration}`, '-f', 'null', '-'])
+    silenceRanges = parseSilence(silenceResult.stderr, probe.durationSec)
+  } catch (err) {
+    warnings.push(`Silence detection failed: ${err?.message || err}`)
+  }
+  const sidecar = files[0].replace(/\.[^.]+$/, '.srt')
+  const vttSidecar = files[0].replace(/\.[^.]+$/, '.vtt')
+  const captions = parseCaptionSidecar(fs.existsSync(sidecar) ? sidecar : vttSidecar)
+  const footage = { source: copied, durationSec: probe.durationSec, silenceRanges, captions, status: 'edited', captionStyle: /podcast|short|social/i.test(job.brief) ? 'hormozi' : 'standard', crop: job.aspect }
+  writeJson(path.join(root, 'footage-analysis.json'), footage)
+  return footage
+}
+async function openArenaBuilderForPrompt(prompt, extra = {}) {
+  const url = 'https://arena.ai/code'
+  const text = String(prompt || '').trim()
+  if (text) clipboard.writeText(text)
+  try {
+    await shell.openExternal(url)
+    logLine('arena-opened', 'Opened Arena builder', { copied: Boolean(text), ...extra })
+  } catch (err) {
+    logLine('arena-open-failed', err?.message || String(err), extra)
+    throw new Error(`Could not open Arena in the browser: ${err?.message || err}`)
+  }
+  return { url, copied: Boolean(text) }
 }
 
-ipcMain.handle('automation:start', async (_e, job) => {
-  const initialExisting = automationJobs().filter(j => j.id !== job.id)
-  saveAutomationJobs([job, ...initialExisting])
-  try { job = await prepareAutomationJob(job) } catch (err) { const failed = patchAutomation(job.id, { status: 'error', errorMessage: err?.message || String(err) }) || job; mainWindow?.webContents.send('automation:error', { jobId: job.id, message: err?.message || String(err) }); return failed }
-  const existing = automationJobs().filter(j => j.id !== job.id); saveAutomationJobs([job, ...existing])
-  // Sequential native queue. Manual Arena is an explicit review gate; no public UI automation.
-  const steps = job.steps || []
-  let index = 0
-  const advance = () => {
-    const latest = automationJobs().find(j => j.id === job.id)
-    if (!latest || latest.status === 'cancelled' || latest.status === 'error') return
-    if (index >= steps.length) {
-      const done = patchAutomation(job.id, { status: 'done', currentStepId: null, outputPath: job.outputPath || null, reviewReportPath: job.reviewReportPath || null })
-      mainWindow?.webContents.send('automation:done', done)
-      return
-    }
-    const step = steps[index]
-    if (job.votingMode === 'manual-arena' && index === 3 && !latest.manualVoteApproved) {
-      patchAutomation(job.id, { status: 'waiting-for-user', currentStepId: step.id })
-      mainWindow?.webContents.send('automation:waiting', { jobId: job.id, message: 'Vote manually in Arena and download the winning ZIP.' })
-      return
-    }
-    const runningSteps = steps.map(s => s.id === step.id ? { ...s, status: 'running', startedAt: new Date().toISOString(), progressPct: 10 } : s)
-    const current = patchAutomation(job.id, { currentStepId: step.id, status: 'running', steps: runningSteps })
-    mainWindow?.webContents.send('automation:step', current)
-    setTimeout(() => {
-      const completed = steps.map(s => s.id === step.id ? { ...s, status: 'done', progressPct: 100, completedAt: new Date().toISOString() } : s)
-      const next = patchAutomation(job.id, { steps: completed })
-      mainWindow?.webContents.send('automation:progress', next)
-      index += 1
-      setTimeout(advance, 50)
-    }, 650)
+async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, warnings, state) {
+  ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
+  if (!ffmpegPath) throw new Error('FFmpeg is unavailable in this build, so Cupric AI cannot render MP4. Set CUPRIC_FFMPEG_PATH or install a build with ffmpeg-static unpacked.')
+  const outDir = path.join(userDataPath('renders'), job.id)
+  const workDir = path.join(outDir, 'work')
+  fs.rmSync(workDir, { recursive: true, force: true })
+  ensureDir(workDir); ensureDir(outDir)
+  const target = targetSizeForAspect(job.aspect, rundown.size)
+  const segments = []
+  const arenaDuration = Math.min(MAX_RENDER_DURATION_SEC, Math.max(1, Number(rundown.durationSec) || 12))
+  segments.push(await renderArenaSegment(state, {
+    sourceType: 'arena',
+    arenaPath: winnerPath,
+    htmlPath: winnerPath,
+    durationSec: arenaDuration,
+    captions: rundown.scenes.map(s => ({ start: Math.max(0, Number(s.from) || 0), end: Math.min(arenaDuration, Number(s.to) || arenaDuration), text: s.copy })).filter(c => c.end > c.start),
+    captionStyle: 'standard',
+  }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} }))
+  if (footageMeta) {
+    const footageSegments = await renderFootageSegments(state, {
+      sourceType: 'footage',
+      videoPath: footageMeta.source,
+      durationSec: Math.min(120, footageMeta.durationSec),
+      silenceRanges: footageMeta.silenceRanges,
+      captions: footageMeta.captions,
+      applySilenceCuts: true,
+      captionStyle: footageMeta.captionStyle,
+      crop: footageMeta.crop,
+    }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} })
+    segments.push(...footageSegments)
   }
-  setTimeout(advance, 0)
+  if (!segments.length) throw new Error('No renderable media was produced')
+  const timeline = segments.map((s, i) => ({ id: `clip-${i + 1}`, startSec: segments.slice(0, i).reduce((n, x) => n + x.duration, 0), durationSec: s.duration, source: s.path }))
+  writeJson(path.join(root, 'timeline.json'), timeline)
+  writeJson(path.join(root, 'editing-plan.json'), { schema_version: '1.0', project: { target_duration_s: rundown.durationSec, aspect_ratio: job.aspect, fps: job.fps }, sections: [{ role: 'autonomous-edit', clips: timeline.map((clip, i) => ({ id: clip.id, source_file: clip.source, in_s: 0, out_s: clip.durationSec, purpose: i === 0 ? 'generated motion creative' : 'supporting footage edit', transition_in: i === 0 ? 'hard_cut' : 'dissolve', captions: [] })) }], captions: { enabled: true, mode: 'phrase', auto_from_transcript: true } })
+  const outputPath = path.join(outDir, `${safeFileName(rundown.title, 'cupric-ai')}.mp4`)
+  await concatSegments(state, segments, outputPath, { workDir })
+  fs.rmSync(workDir, { recursive: true, force: true })
+  if (job.outputFolder) {
+    try {
+      ensureDir(job.outputFolder)
+      const copyPath = path.join(job.outputFolder, path.basename(outputPath))
+      await fsp.copyFile(outputPath, copyPath)
+      return copyPath
+    } catch (err) {
+      warnings.push(`Could not copy to output folder: ${err?.message || err}`)
+    }
+  }
+  return outputPath
+}
+function generationGuideFor(job, rundown) {
+  return {
+    renderSpec: { aspect: job.aspect, fps: job.fps, quality: job.quality, durationSec: rundown.durationSec, size: rundown.size },
+    sources: [
+      { id: 'rundown-copy', type: 'text', description: 'Locked Cupric AI scene copy and timing' },
+      { id: 'arena-html', type: 'generated-motion-html', description: 'Single-file HTML with inline CSS/JS and deterministic window.__seek(t)' },
+      ...(job.footageMeta ? [{ id: 'footage', type: 'video', description: 'User-selected footage folder clip analyzed with FFprobe/FFmpeg silence detection' }] : []),
+    ],
+    sequence: (rundown.scenes || []).map((s, index) => ({ index: index + 1, from: s.from, to: s.to, type: s.type, copy: s.copy, motion: s.motion })),
+    generationSteps: [
+      'Generate/lock the creative rundown from the brief.',
+      'Build Arena candidates as single-file deterministic HTML motion pieces.',
+      'Use private local scoring or a manual Arena browser vote gate to select the winner.',
+      'Optionally ingest footage, detect silences, and add captions/crop metadata.',
+      'Render HTML frames and footage segments with FFmpeg, then concatenate into the final MP4.',
+    ],
+  }
+}
+
+function writeAutomationReview(job, root, rundown, warnings) {
+  const reviewReportPath = path.join(root, 'review-report.json')
+  const generationGuide = generationGuideFor(job, rundown)
+  const sequenceMd = generationGuide.sequence.map(s => `- ${s.index}. ${s.from}-${s.to}s **${s.type}** — "${s.copy}"; motion: ${s.motion}`).join('\n')
+  const sourcesMd = generationGuide.sources.map(s => `- ${s.id} (${s.type}): ${s.description}`).join('\n')
+  writeJson(reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, outputPath: job.outputPath || null, footageUsed: Boolean(job.footageMeta), generationGuide, warnings })
+  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath || 'Not rendered yet'}\n\n## Sources\n${sourcesMd}\n\n## Generation sequence\n${sequenceMd}\n\n## How the video is generated\n${generationGuide.generationSteps.map(step => `- ${step}`).join('\n')}\n\nWarnings:\n${warnings.length ? warnings.map(w => `- ${w}`).join('\n') : '- None'}\n`, 'utf8')
+  return reviewReportPath
+}
+async function runAutomationPipeline(jobId) {
+  const state = automationState(jobId)
+  state.cancelled = false
+  let stepIndex = 0
+  let warnings = []
+  try {
+    let job = ensureAutomationActive(jobId, state)
+    warnings = Array.isArray(job.warnings) ? [...job.warnings] : []
+    const root = automationRoot(job.id)
+    ensureDir(root)
+
+    stepIndex = 0
+    if (automationStep(job, 0)?.status !== 'done') {
+      startAutomationStep(job.id, 0, 'Project workspace created')
+      ensureDir(path.join(root, 'assets'))
+      job = finishAutomationStep(job.id, 0, 'Project workspace ready') || job
+    }
+
+    stepIndex = 1
+    job = ensureAutomationActive(job.id, state)
+    let rundown = job.rundown || null
+    if (!rundown) {
+      startAutomationStep(job.id, 1, 'Drafting creative rundown')
+      try {
+        rundown = await generateRundown(job.brief, [], { aspect: job.aspect, fps: job.fps, mode: job.mode })
+      } catch (err) {
+        warnings.push(`Live AI unavailable; used local deterministic rundown. ${err?.message || err}`)
+        rundown = fallbackRundownForJob(job)
+      }
+      writeJson(path.join(root, 'rundown.json'), rundown)
+      job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json'), warnings }) || job
+      sendAutomation('automation:progress', job)
+      job = finishAutomationStep(job.id, 1, 'Rundown generated') || job
+    }
+
+    stepIndex = 2
+    job = ensureAutomationActive(job.id, state)
+    if (automationStep(job, 2)?.status !== 'done') {
+      startAutomationStep(job.id, 2, 'Locking the generated rundown for review and render')
+      writeJson(path.join(root, 'rundown.json'), rundown)
+      job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json') }) || job
+      sendAutomation('automation:progress', job)
+      job = finishAutomationStep(job.id, 2, 'Rundown locked') || job
+    }
+
+    stepIndex = 3
+    job = ensureAutomationActive(job.id, state)
+    if (job.votingMode === 'official-arena-api') {
+      throw new Error('Official Arena API voting is not configured in this build. Use Local model battle scoring for fully autonomous MP4, or Manual Arena for a visible human review gate.')
+    }
+    if (!job.winnerPath || !Array.isArray(job.candidates)) {
+      startAutomationStep(job.id, 3, job.votingMode === 'manual-arena' ? 'Generating review candidates before the manual Arena gate' : 'Generating and locally scoring candidates')
+      const candidateResult = writeAutomationCandidates(root, rundown)
+      job = patchAutomation(job.id, { candidates: candidateResult.candidates, winnerPath: candidateResult.winnerPath }) || job
+      sendAutomation('automation:progress', job)
+    }
+    if (job.votingMode === 'manual-arena' && !job.manualVoteApproved) {
+      const message = 'Manual Arena review gate: Cupric opened arena.ai/code in your browser and copied the Arena prompt. Paste it there, run the battle/build, vote yourself, download the winning ZIP, then approve this gate to continue. Public voting is never automated.'
+      if (!job.arenaOpenedAt) {
+        try {
+          await openArenaBuilderForPrompt(rundown.arenaPrompt || arenaPromptOf(rundown), { jobId: job.id, source: 'automation' })
+          job = patchAutomation(job.id, { arenaOpenedAt: new Date().toISOString() }) || job
+        } catch (err) {
+          warnings.push(err?.message || String(err))
+        }
+      }
+      job.reviewReportPath = writeAutomationReview({ ...job, outputPath: null }, root, rundown, warnings.concat(message))
+      patchAutomation(job.id, { reviewReportPath: job.reviewReportPath, warnings: warnings.concat(message) })
+      waitAutomationStep(job.id, 3, message)
+      return
+    }
+    job = finishAutomationStep(job.id, 3, job.votingMode === 'manual-arena' ? 'Manual gate approved' : 'Candidate selected by local scoring') || job
+
+    stepIndex = 4
+    job = ensureAutomationActive(job.id, state)
+    let footageMeta = job.footageMeta || null
+    if (automationStep(job, 4)?.status !== 'done') {
+      startAutomationStep(job.id, 4, job.footageFolder ? 'Analyzing footage folder' : 'No footage folder supplied; using generated creative')
+      footageMeta = await ingestAutomationFootage(job, root, warnings, state)
+      job = patchAutomation(job.id, { footageMeta, warnings }) || job
+      job = finishAutomationStep(job.id, 4, footageMeta ? 'Footage analyzed' : 'Footage skipped') || job
+    }
+
+    stepIndex = 5
+    job = ensureAutomationActive(job.id, state)
+    if (automationStep(job, 5)?.status !== 'done') {
+      startAutomationStep(job.id, 5, 'Building timeline and edit plan')
+      writeJson(path.join(root, 'timeline-plan.json'), { winnerPath: job.winnerPath, footage: footageMeta, aspect: job.aspect, fps: job.fps, quality: job.quality })
+      job = finishAutomationStep(job.id, 5, 'Timeline built') || job
+    }
+
+    stepIndex = 6
+    job = ensureAutomationActive(job.id, state)
+    if (!job.outputPath) {
+      startAutomationStep(job.id, 6, 'Rendering MP4')
+      const outputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state)
+      job = patchAutomation(job.id, { outputPath, warnings }) || job
+      sendAutomation('automation:progress', job)
+      job = finishAutomationStep(job.id, 6, 'MP4 rendered') || job
+    } else {
+      job = finishAutomationStep(job.id, 6, 'MP4 already rendered') || job
+    }
+
+    stepIndex = 7
+    job = ensureAutomationActive(job.id, state)
+    if (automationStep(job, 7)?.status !== 'done') {
+      startAutomationStep(job.id, 7, 'Writing review report')
+      const reviewReportPath = writeAutomationReview(job, root, rundown, warnings)
+      job = patchAutomation(job.id, { reviewReportPath, warnings }) || job
+      job = finishAutomationStep(job.id, 7, 'Review report ready') || job
+    }
+
+    const done = patchAutomation(job.id, { status: 'done', currentStepId: null, waitingMessage: null, warnings })
+    sendAutomation('automation:done', done)
+  } catch (err) {
+    if (/Automation cancelled/i.test(err?.message || String(err))) {
+      const cancelled = patchAutomation(jobId, { status: 'cancelled', currentStepId: null })
+      sendAutomation('automation:progress', cancelled)
+    } else {
+      failAutomation(jobId, err, stepIndex)
+    }
+  } finally {
+    const latest = automationJobs().find(j => j.id === jobId)
+    if (latest?.status !== 'waiting-for-user') automationRunStates.delete(jobId)
+  }
+}
+
+ipcMain.handle('automation:list', () => automationJobs())
+ipcMain.handle('automation:get', (_e, p) => automationJobs().find(j => j.id === p?.jobId) || null)
+ipcMain.handle('automation:start', async (_e, job) => {
+  const existing = automationJobs().filter(j => j.id !== job.id)
+  const normalized = { ...job, status: 'running', errorMessage: null, waitingMessage: null, warnings: [], updatedAt: new Date().toISOString() }
+  saveAutomationJobs([normalized, ...existing])
+  setTimeout(() => { void runAutomationPipeline(job.id) }, 0)
+  return normalized
+})
+ipcMain.handle('automation:cancel', (_e, p) => {
+  stopAutomationState(p?.jobId)
+  const latest = automationJobs().find(j => j.id === p?.jobId)
+  const steps = latest?.steps?.map(step => step.status === 'running' || step.status === 'waiting-for-user' ? { ...step, status: 'cancelled', message: 'Cancelled' } : step)
+  return patchAutomation(p?.jobId, { status: 'cancelled', currentStepId: null, steps })
+})
+ipcMain.handle('automation:resume', (_e, p) => {
+  const job = patchAutomation(p?.jobId, { status: 'running', errorMessage: null, waitingMessage: null })
+  if (job) setTimeout(() => { void runAutomationPipeline(job.id) }, 0)
   return job
 })
-ipcMain.handle('automation:cancel', (_e, p) => patchAutomation(p?.jobId, { status: 'cancelled' }))
-ipcMain.handle('automation:resume', (_e, p) => patchAutomation(p?.jobId, { status: 'running' }))
-ipcMain.handle('automation:approveStep', (_e, p) => patchAutomation(p?.jobId, { status: 'running', manualVoteApproved: true }))
-ipcMain.handle('automation:rejectStep', (_e, p) => patchAutomation(p?.jobId, { status: 'error', errorMessage: 'Step rejected during review' }))
+ipcMain.handle('automation:approveStep', (_e, p) => {
+  const latest = automationJobs().find(j => j.id === p?.jobId)
+  const steps = latest?.steps?.map(step => step.id === p?.stepId ? { ...step, status: 'done', progressPct: 100, message: 'Approved by reviewer', completedAt: new Date().toISOString() } : step)
+  const job = patchAutomation(p?.jobId, { status: 'running', manualVoteApproved: true, waitingMessage: null, steps })
+  if (job) setTimeout(() => { void runAutomationPipeline(job.id) }, 0)
+  return job
+})
+ipcMain.handle('automation:rejectStep', (_e, p) => {
+  stopAutomationState(p?.jobId)
+  return patchAutomation(p?.jobId, { status: 'error', currentStepId: null, errorMessage: 'Step rejected during review' })
+})
 ipcMain.handle('automation:setWatchedFolder', (_e, p) => p?.folder || null)
 ipcMain.handle('automation:setOutputFolder', (_e, p) => p?.folder || null)
 ipcMain.handle('automation:openOutput', (_e, p) => { if (p?.outputPath) shell.showItemInFolder(p.outputPath); return true })
@@ -405,16 +942,42 @@ function uid(prefix = 'id') {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
+function sceneSequenceLines(rundown) {
+  return (rundown.scenes || [])
+    .map((s, index) => `${index + 1}. ${s.from}-${s.to}s | ${String(s.type || 'scene').toUpperCase()} | on-screen copy: "${s.copy}" | motion: ${s.motion}`)
+    .join('\n')
+}
+
 function arenaPromptOf(rundown) {
-  return (
-    'Build a SINGLE FILE index.html motion-graphics piece. HARD CONSTRAINTS: ' +
-    'one file, inline CSS/JS, no build step. ' +
-    `Root #scene exactly ${rundown.size[0]}x${rundown.size[1]} px. ` +
-    `Duration ${rundown.durationSec}s at ${rundown.fps}fps. ` +
-    'Implement window.__seek(t) — all motion must be a pure function of t, no CSS animations, no setTimeout, no Math.random in the frame loop. ' +
-    `Style: ${rundown.style}. Scene copy: ` +
-    rundown.scenes.map((s) => `[${s.from}-${s.to}s ${s.type}] "${s.copy}" (${s.motion})`).join(' ')
-  )
+  return `Build a SINGLE FILE index.html motion-graphics piece for Cupric AI to capture as video.
+
+HARD CONSTRAINTS:
+- Return only the final index.html code.
+- One file only: inline CSS and inline JavaScript, no build step.
+- Root element must be #scene exactly ${rundown.size[0]}x${rundown.size[1]} px.
+- Duration is exactly ${rundown.durationSec}s at ${rundown.fps}fps.
+- Implement window.__seek(t). Every frame must be a pure deterministic function of t.
+- No CSS animations, no setTimeout, no request-based randomness, no Math.random in the frame loop.
+- Do not fetch remote assets. Do not rely on external fonts, CDNs, images, audio, or video.
+
+SOURCE / ASSET PLAN:
+- Visual sources are generated inside this HTML: typography, CSS/SVG shapes, gradients, grids, counters, masks, and light texture.
+- Text source is the scene copy below; keep spelling exact unless making tiny line-break changes for layout.
+- If you need icons or marks, draw them with inline SVG/CSS only.
+- Include window.__cupricSourceManifest = { sources, sequence, renderSpec } so Cupric AI can inspect how the video was generated.
+
+STYLE:
+${rundown.style}
+
+SEQUENCE / TIMELINE:
+${sceneSequenceLines(rundown)}
+
+IMPLEMENTATION NOTES:
+- At t=0 the first scene must be visible and valid.
+- All scene transitions must happen according to the timeline above.
+- Use safe-area margins and responsive scaling inside the fixed #scene canvas.
+- Expose clear variables for duration, fps, scenes, and sourceManifest.
+- The piece should look like a finished video, not a placeholder: polished typography, motion hierarchy, background design, and a final hold.`
 }
 
 function normalizeRundown(candidate, briefText) {
@@ -457,7 +1020,7 @@ Rules:
 - Total duration must be 1-120 seconds.
 - Prefer 1920x1080 unless the brief asks square or vertical.
 - The scenes must cover the duration in timeline order.
-- The arenaPrompt value must use this exact shape: "Build a SINGLE FILE index.html motion-graphics piece. HARD CONSTRAINTS: one file, inline CSS/JS, no build step. Root #scene exactly WxH px. Duration Ns at 30fps. Implement window.__seek(t) — all motion must be a pure function of t, no CSS animations, no setTimeout, no Math.random in the frame loop. Style: ... Scene copy: ..."
+- The arenaPrompt value must be a complete Arena build brief: hard constraints, source/asset plan, exact sequence/timeline, style, and implementation notes. It must require a single index.html with inline CSS/JS and window.__seek(t).
 
 Brief: ${prompt}
 History: ${JSON.stringify(history || [])}
@@ -479,7 +1042,7 @@ function isFreeModel(model) {
 async function listOpenCodeModels(payload = {}) {
   const cfg = aiSettings()
   const baseUrl = String(payload.baseUrl || cfg.openCodeBaseUrl || '').trim()
-  const apiKey = String(payload.apiKey || cfg.openCodeApiKey || '').trim()
+  const apiKey = String(payload.apiKey || cfg.openCodeApiKey || resolveOpenCodeApiKey(baseUrl, payload.model || cfg.openCodeModel) || '').trim()
   if (!baseUrl) throw new Error('OpenCode/OpenAI-compatible base URL is not configured')
   const headers = {}
   if (apiKey) headers.authorization = `Bearer ${apiKey}`
@@ -504,20 +1067,24 @@ async function listOpenCodeModels(payload = {}) {
 }
 
 ipcMain.handle('opencode:listModels', (_event, payload) => listOpenCodeModels(payload || {}))
+ipcMain.handle('opencode:discoverModels', () => discoverOpenCodeConfiguredModels())
 
 async function callOpenCode(messages, options = {}) {
   const cfg = aiSettings()
   if (!cfg.openCodeBaseUrl) throw new Error('OpenCode/OpenAI-compatible base URL is not configured')
-  if (!cfg.openCodeApiKey && !isLocalModelBase(cfg.openCodeBaseUrl)) {
-    throw new Error('OpenCode/OpenAI-compatible API key is not configured')
+  const inheritedKey = resolveOpenCodeApiKey(cfg.openCodeBaseUrl, cfg.openCodeModel)
+  const apiKey = cfg.openCodeApiKey || inheritedKey
+  if (!apiKey && !isLocalModelBase(cfg.openCodeBaseUrl)) {
+    throw new Error('OpenCode/OpenAI-compatible API key is not configured. Save a key in Cupric AI or import a configured OpenCode Desktop provider.')
   }
-  const url = `${cfg.openCodeBaseUrl.replace(/\/$/, '')}/chat/completions`
+  const baseUrl = normalizedBaseUrl(cfg.openCodeBaseUrl)
+  const url = `${baseUrl}/chat/completions`
   const headers = { 'content-type': 'application/json' }
   if (/openrouter\.ai/i.test(cfg.openCodeBaseUrl)) {
     headers['HTTP-Referer'] = 'https://cupric.ai'
     headers['X-Title'] = 'Cupric AI'
   }
-  if (cfg.openCodeApiKey) headers.authorization = `Bearer ${cfg.openCodeApiKey}`
+  if (apiKey) headers.authorization = `Bearer ${apiKey}`
   const result = await fetch(url, {
     method: 'POST',
     headers,
@@ -535,14 +1102,32 @@ async function callOpenCode(messages, options = {}) {
   return text
 }
 
+function geminiModelCandidates() {
+  const seen = new Set()
+  return [geminiModel(), ...GEMINI_FALLBACK_MODELS]
+    .map((model) => String(model || '').trim())
+    .filter((model) => model && !seen.has(model) && seen.add(model))
+}
+
+async function runGeminiGenerateContent(key, prompt, generationConfig) {
+  let lastError
+  for (const modelName of geminiModelCandidates()) {
+    try {
+      const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: modelName, ...(generationConfig ? { generationConfig } : {}) })
+      return await model.generateContent(prompt)
+    } catch (err) {
+      lastError = err
+      logLine('gemini-model-failed', err?.message || String(err), { model: modelName })
+      if (!/404|not found|no longer available|not available|not supported/i.test(err?.message || String(err))) break
+    }
+  }
+  throw lastError
+}
+
 async function generateGeminiRundown(prompt, history, context) {
   const key = geminiApiKey()
   if (!key) throw new Error('Gemini API key is not configured')
-  const model = new GoogleGenerativeAI(key).getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: { responseMimeType: 'application/json' },
-  })
-  const result = await model.generateContent(geminiRundownPrompt(prompt, history, context))
+  const result = await runGeminiGenerateContent(key, geminiRundownPrompt(prompt, history, context), { responseMimeType: 'application/json' })
   return normalizeRundown(parseJsonFromModel(result.response.text()), prompt)
 }
 
@@ -580,8 +1165,8 @@ async function liveAiChat(text, ctx) {
   }
   const key = geminiApiKey()
   if (!key) throw new Error('Gemini API key is not configured')
-  const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: 'gemini-2.0-flash' })
-  const result = await model.generateContent(
+  const result = await runGeminiGenerateContent(
+    key,
     `You are Cupric AI's desktop creative copilot. Be concise, practical, and specific. Context: ${JSON.stringify(
       ctx || {},
     )}. User: ${text}`,
@@ -590,9 +1175,10 @@ async function liveAiChat(text, ctx) {
 }
 
 ipcMain.handle('gemini:ask', async (_event, payload) => {
+  const providerLabel = aiSettings().provider === 'opencode' ? 'OpenCode' : 'Gemini'
   const rundownPatch = await generateRundown(payload?.prompt || '', payload?.history || [], payload?.rundownContext || {})
   return {
-    text: `Live Gemini drafted a ${rundownPatch.durationSec}s rundown with ${rundownPatch.scenes.length} scene${rundownPatch.scenes.length === 1 ? '' : 's'}. The Arena prompt is ready at the bottom when you lock it.`,
+    text: `Live ${providerLabel} drafted a ${rundownPatch.durationSec}s rundown with ${rundownPatch.scenes.length} scene${rundownPatch.scenes.length === 1 ? '' : 's'}. The Arena prompt is ready at the bottom when you lock it.`,
     rundownPatch,
   }
 })
@@ -725,6 +1311,22 @@ ipcMain.handle('arena:previewPath', async (_event, localPath) => {
   const root = userDataPath('projects')
   if (!isSubPath(localPath, root)) throw new Error('Preview path is outside Cupric AI project data')
   return pathToFileURL(localPath).toString()
+})
+
+ipcMain.handle('arena:openBuilder', async (_event, payload) => {
+  return openArenaBuilderForPrompt(payload?.prompt || '', { source: payload?.source || 'arena-desk' })
+})
+
+ipcMain.handle('automation:openArena', async (_event, payload) => {
+  const job = automationJobs().find(j => j.id === payload?.jobId)
+  if (!job) throw new Error('Automation job was not found')
+  let rundown = job.rundown || null
+  if (!rundown && job.rundownPath && fs.existsSync(job.rundownPath)) rundown = readJson(job.rundownPath, null)
+  const prompt = payload?.prompt || rundown?.arenaPrompt || (rundown ? arenaPromptOf(rundown) : '')
+  if (!prompt) throw new Error('No Arena prompt is available yet')
+  const result = await openArenaBuilderForPrompt(prompt, { jobId: job.id, source: 'automation-button' })
+  patchAutomation(job.id, { arenaOpenedAt: new Date().toISOString() })
+  return result
 })
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,7 @@ export type AutomationMode = 'guided' | 'auto-draft' | 'auto-final'
 export type VotingMode = 'manual-arena' | 'official-arena-api' | 'local-scoring'
 export type AutomationStepStatus = 'queued' | 'running' | 'waiting-for-user' | 'done' | 'error' | 'cancelled'
 export type AutomationStep = { id: string; label: string; status: AutomationStepStatus; progressPct: number; message?: string; startedAt?: string; completedAt?: string; errorMessage?: string }
-export type AutomationJob = { id: string; projectId: string; brief: string; footageFolder?: string | null; outputFolder?: string | null; aspect: '16:9' | '9:16' | '1:1'; fps: 30 | 60; quality: 'draft' | 'final'; mode: AutomationMode; votingMode: VotingMode; status: AutomationStepStatus; currentStepId: string | null; steps: AutomationStep[]; createdAt: string; updatedAt: string; outputPath?: string | null; reviewReportPath?: string | null }
+export type AutomationJob = { id: string; projectId: string; brief: string; footageFolder?: string | null; outputFolder?: string | null; aspect: '16:9' | '9:16' | '1:1'; fps: 30 | 60; quality: 'draft' | 'final'; mode: AutomationMode; votingMode: VotingMode; status: AutomationStepStatus; currentStepId: string | null; steps: AutomationStep[]; createdAt: string; updatedAt: string; outputPath?: string | null; reviewReportPath?: string | null; rundown?: SceneRundown | null; rundownPath?: string | null; winnerPath?: string | null; waitingMessage?: string | null; errorMessage?: string | null; warnings?: string[]; manualVoteApproved?: boolean; candidates?: { file: string; score: number; reasons: string[] }[]; footageMeta?: unknown; arenaOpenedAt?: string | null }
 
 export type View =
   | 'home'
