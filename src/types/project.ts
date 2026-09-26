@@ -26,6 +26,7 @@ export type ArenaAsset = {
   prompt: string
   htmlFileName: string | null
   thumbnailDataUrl: string | null
+  localPath?: string | null
   createdAt: string
 }
 
@@ -33,6 +34,7 @@ export type FootageAsset = {
   id: string
   name: string
   durationSec: number
+  localPath?: string | null
   status: 'uploaded' | 'analyzing' | 'edited'
   silenceRanges: [number, number][]
   captionStyle: 'hormozi' | 'standard' | 'minimal'

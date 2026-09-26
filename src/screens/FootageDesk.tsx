@@ -67,6 +67,7 @@ export function FootageDesk() {
     const id = addFootageAsset(project.id, {
       name,
       durationSec: res.durationSec,
+      localPath: (res as any).videoPath ?? null,
       status: 'uploaded',
       silenceRanges: res.silenceRanges,
       captionStyle: 'standard',

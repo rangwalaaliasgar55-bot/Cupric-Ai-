@@ -10,7 +10,7 @@ import type {
   TimelineClip,
   View,
 } from '../types/project'
-import { fakeStartRender } from '../lib/render'
+import { startRender } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
 
@@ -228,7 +228,7 @@ export const useProjectStore = create<AppState>()(
           }
           updateProject(pid, (proj) => ({ ...proj, renderJobs: [job, ...proj.renderJobs] }))
           get().pushToast('info', `Render started — ${job.outputName}`)
-          fakeStartRender(
+          startRender({ ...job, sources: p.timeline.map((c) => ({ ...c, arenaPath: p.arenaAssets.find((a) => a.id === c.sourceId)?.localPath, footagePath: p.footageAssets.find((f) => f.id === c.sourceId)?.localPath })) },
             (pct) => get().updateRenderJob(pid, job.id, { progressPct: pct, status: 'rendering' }),
             () => {
               get().updateRenderJob(pid, job.id, { progressPct: 100, status: 'done' })
@@ -243,7 +243,7 @@ export const useProjectStore = create<AppState>()(
           if (!p || !job) return
           get().updateRenderJob(pid, jobId, { status: 'rendering', progressPct: 0 })
           get().pushToast('info', `Retry started — ${job.outputName}`)
-          fakeStartRender(
+          startRender({ ...job, sources: p.timeline },
             (pct) => get().updateRenderJob(pid, jobId, { progressPct: pct, status: 'rendering' }),
             () => {
               get().updateRenderJob(pid, jobId, { progressPct: 100, status: 'done' })

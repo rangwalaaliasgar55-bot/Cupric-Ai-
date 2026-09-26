@@ -64,7 +64,8 @@ export function ArenaDesk() {
       status: 'imported',
       prompt: locked!.arenaPrompt,
       htmlFileName: res.htmlFileName,
-      thumbnailDataUrl: null,
+      thumbnailDataUrl: res.thumbnailDataUrl ?? null,
+      localPath: res.localPath ?? null,
     })
     setImporting(null)
     pushToast('success', `Imported ${res.htmlFileName} — ready to preview or render`)
@@ -323,13 +324,13 @@ function PreviewModal({
             </IconButton>
           </div>
           <div className="relative aspect-video overflow-hidden bg-[#08080c]">
-            <div className="nf-drift absolute -left-10 -top-10 h-64 w-64 rounded-full bg-accent/25 blur-3xl" />
+            {asset.localPath && (window as any).northframe ? <iframe title="Arena preview" className="h-full w-full border-0" src={`file://${asset.localPath.replaceAll('\\\\','/')}`} sandbox="allow-scripts" /> : <><div className="nf-drift absolute -left-10 -top-10 h-64 w-64 rounded-full bg-accent/25 blur-3xl" />
             <div className="nf-drift absolute -bottom-16 -right-10 h-72 w-72 rounded-full bg-info/20 blur-3xl" style={{ animationDelay: '-4s' }} />
             <div className="relative flex h-full flex-col items-center justify-center gap-2">
               <FileCode2 size={26} className="text-white/40" />
               <div className="font-mono text-xs text-white/60">{asset.htmlFileName ?? asset.name}</div>
               <Badge tone="accent">sandboxed preview — mocked</Badge>
-            </div>
+            </div></>}
           </div>
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <span className="font-mono text-xs tabular-nums text-muted">
