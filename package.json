@@ -1,8 +1,8 @@
 {
   "name": "cupric-ai",
   "private": true,
-  "version": "0.2.3",
-  "description": "Cupric AI — desktop creator tool for short-form video with Gemini, Arena import, footage analysis, timeline rendering, local effects pack, and Electron packaging.",
+  "version": "0.2.4",
+  "description": "Cupric AI — desktop creator tool for short-form video with Gemini, Arena, effects pack, offline UI resource catalogs, and Electron packaging.",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "preview": "vite preview",
     "desktop": "concurrently -k -s first \"vite\" \"cross-env ELECTRON_START_URL=http://localhost:5173 electron .\"",
-    "dist:win": "npm run build && electron-builder --win"
+    "dist:win": "npm run build && electron-builder --win",
+    "resources:sync": "node scripts/sync-resources.mjs"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.1.0",
@@ -54,6 +55,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "resources/**/*",
+      "public/resources/**/*",
       "package.json",
       "node_modules/**/*"
     ],
