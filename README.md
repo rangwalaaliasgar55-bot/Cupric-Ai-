@@ -176,8 +176,10 @@ updates** action in the Ask Gemini settings area.
 | Script | Purpose |
 |---|---|
 | `npm run dev` | Vite web preview. |
-| `npm run build` | Typecheck + production renderer build to `dist/`. |
+| `npm run build` | Packs + typecheck + renderer check + production build to `dist/`. |
 | `npm run typecheck` | TypeScript only. |
+| `npm run packs:build` | Regenerate `resources/packs/*.json` from the in-app registries. |
+| `npm run check:renderer` | Headless smoke test: every background, transition, animation and glass preset is rendered against a stub canvas and the voice grammar is asserted. |
 | `npm run desktop` | Vite + Electron together for desktop development. |
 | `npm run dist:win` | Build + package Windows NSIS and portable artifacts. |
 
@@ -190,7 +192,13 @@ src/
   screens/           HomeProject · Brief · ArenaDesk · FootageDesk · Studio · Lab · Timeline · Render · Library
   screens/studio/    Preview canvas · multi-track timeline · inspector
   lab/               Vendored lab.xevrion.dev components (MIT) + shims + registry
-  lib/studio/        doc (pure edit ops) · backgrounds · media registry · renderer · exporter
+  lib/studio/        doc (pure edit ops) · backgrounds · transitions · glass · media registry · renderer · exporter · handoff
+  components/glass/  GlassSurface (backdrop-filter + SVG displacement) · GlassPanel/Button/Lens/Dock
+  lib/glass.ts       One glass material: presets + displacement map, shared by DOM and canvas
+  lib/packs.ts       Resource packs fetched from this repo, cached in IndexedDB for offline
+  lib/voice.ts       Voice-command grammar (pure parser) + Web Speech listener
+resources/packs/     Generated pack JSON served to the Library (glass, transitions, animations, backgrounds, effects, voice, components)
+scripts/             build-packs.mjs · check-renderer.mjs
   components/        Shared design-system components
   state/             Zustand store with desktop-aware persistence
   lib/               Gemini, Arena, render wrappers with web fallbacks
@@ -208,12 +216,47 @@ component states, accessibility rules, and finish-pass standards.
 
 1. Open a project, go to **Studio**.
 2. **Import media** (video or images) — they land on track 1.
-3. Add **Text** (six animations, Hormozi / standard / minimal caption styles,
-   optional lime highlight word) and **Background** clips on the tracks above.
+3. Add **Text** (nine animations, Hormozi / standard / minimal caption styles,
+   optional lime highlight word), **Background** (17 presets incl. mesh and
+   liquid gradients) and **Glass** clips on the tracks above.
 4. Drag a clip to move it, drag it up or down to restack, drag its edges to
    trim, press <kbd>Space</kbd> to play, <kbd>⌘/Ctrl+B</kbd> to split at the
    playhead, <kbd>Delete</kbd> to remove.
-5. **Export** records the composition in real time and downloads a WebM.
+5. Pick a transition per clip — ten of them, including `glass-wipe`,
+   `liquid-dissolve` and `lens-sweep`, all drawn by the same canvas code that
+   the export uses.
+6. **Export WebM** records the composition in real time. On desktop,
+   **Export MP4** sends that recording to FFmpeg in the main process
+   (`studio:exportMp4`) and writes a real H.264 file — the browser build only
+   offers WebM rather than renaming one.
+
+### Voice commands
+
+Press **Voice** in the Studio toolbar (Chromium only — the button is hidden
+where the Web Speech API is missing). Say "play", "go to 12 seconds",
+"forward five", "cut here", "add text hello world", "add glass lens",
+"transition liquid dissolve", "zoom out", "export". The grammar is a pure
+function in `src/lib/voice.ts` and is asserted by `npm run check:renderer`;
+what was heard is always shown, including when nothing matched.
+
+### Resource packs
+
+The Library's top section lists packs that live **in this repository** and are
+fetched over the internet from
+`raw.githubusercontent.com/<repo>/<branch>/resources/packs`. Nothing is read
+from your machine. **Download all** copies them into IndexedDB so the Library
+keeps working offline; a same-origin `/resources/packs/...` copy is the last
+fallback. Each item has one honest action — glass, backgrounds, transitions and
+animations add themselves to the Studio, effects and voice phrases copy, lab
+components open in the Lab.
+
+### Hand-offs into the Studio
+
+- **Footage Desk → Edit in Studio** loads the real file into the media registry
+  and drops a video clip (desktop paths resolve through the main process).
+- **Arena Desk → Send to Studio** adds the asset's captured frame as an overlay
+  clip; the label says "(captured frame)" because the canvas cannot execute the
+  Arena HTML.
 
 Two deliberate honesties:
 

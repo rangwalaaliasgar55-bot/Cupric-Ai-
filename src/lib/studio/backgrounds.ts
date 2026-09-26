@@ -13,7 +13,7 @@
 export type StudioBackground = {
   id: string
   name: string
-  group: 'gradient' | 'pattern' | 'solid'
+  group: 'gradient' | 'pattern' | 'solid' | 'mesh'
   css: string
   paint: (ctx: CanvasRenderingContext2D, w: number, h: number, t: number) => void
 }
@@ -170,6 +170,129 @@ export const STUDIO_BACKGROUNDS: StudioBackground[] = [
       g.addColorStop(1, '#0B0B10')
       ctx.fillStyle = g
       ctx.fillRect(0, 0, w, h)
+    },
+  },
+  {
+    id: 'mesh-lagoon',
+    name: 'Mesh Lagoon',
+    group: 'mesh',
+    css: 'background-color:#0B0B10;background-image:radial-gradient(at 18% 22%,rgba(79,182,232,0.30) 0px,transparent 55%),radial-gradient(at 82% 18%,rgba(200,245,66,0.20) 0px,transparent 50%),radial-gradient(at 68% 82%,rgba(120,88,232,0.24) 0px,transparent 55%),radial-gradient(at 22% 78%,rgba(79,182,232,0.16) 0px,transparent 50%);',
+    paint: (ctx, w, h, t) => {
+      fill(ctx, w, h, '#0B0B10')
+      const d = Math.sin(t * 0.35) * 0.04
+      radial(ctx, w, h, 0.18 + d, 0.22, 0.55, 'rgba(79,182,232,0.34)', 'rgba(79,182,232,0)')
+      radial(ctx, w, h, 0.82 - d, 0.18, 0.5, 'rgba(200,245,66,0.22)', 'rgba(200,245,66,0)')
+      radial(ctx, w, h, 0.68, 0.82 + d * 0.6, 0.55, 'rgba(120,88,232,0.26)', 'rgba(120,88,232,0)')
+      radial(ctx, w, h, 0.22, 0.78 - d * 0.6, 0.5, 'rgba(79,182,232,0.18)', 'rgba(79,182,232,0)')
+    },
+  },
+  {
+    id: 'mesh-ember',
+    name: 'Mesh Ember',
+    group: 'mesh',
+    css: 'background-color:#0B0B10;background-image:radial-gradient(at 26% 14%,rgba(255,138,76,0.26) 0px,transparent 52%),radial-gradient(at 78% 30%,rgba(232,74,106,0.22) 0px,transparent 50%),radial-gradient(at 50% 88%,rgba(200,245,66,0.14) 0px,transparent 55%);',
+    paint: (ctx, w, h, t) => {
+      fill(ctx, w, h, '#0B0B10')
+      const d = Math.cos(t * 0.3) * 0.035
+      radial(ctx, w, h, 0.26 + d, 0.14, 0.52, 'rgba(255,138,76,0.30)', 'rgba(255,138,76,0)')
+      radial(ctx, w, h, 0.78 - d, 0.3, 0.5, 'rgba(232,74,106,0.26)', 'rgba(232,74,106,0)')
+      radial(ctx, w, h, 0.5, 0.88, 0.55, 'rgba(200,245,66,0.16)', 'rgba(200,245,66,0)')
+    },
+  },
+  {
+    id: 'liquid-chrome',
+    name: 'Liquid Chrome',
+    group: 'mesh',
+    css: 'background:conic-gradient(from 210deg at 50% 50%,#0B0B10,#1b2430,#3a4757,#0f141b,#2b3542,#0B0B10);',
+    paint: (ctx, w, h, t) => {
+      // Banded conic sheen, approximated with an angular sweep of strips so it
+      // renders identically in the browser canvas and in an offscreen export.
+      const cx = w / 2
+      const cy = h / 2
+      const radius = Math.hypot(w, h)
+      const stops = ['#0B0B10', '#1b2430', '#3a4757', '#0f141b', '#2b3542', '#0B0B10']
+      const steps = 180
+      const base = (210 * Math.PI) / 180 + t * 0.25
+      for (let i = 0; i < steps; i++) {
+        const a0 = base + (i / steps) * Math.PI * 2
+        const a1 = base + ((i + 1.4) / steps) * Math.PI * 2
+        const pos = (i / steps) * (stops.length - 1)
+        ctx.fillStyle = stops[Math.round(pos)]
+        ctx.beginPath()
+        ctx.moveTo(cx, cy)
+        ctx.arc(cx, cy, radius, a0, a1)
+        ctx.closePath()
+        ctx.fill()
+      }
+      radial(ctx, w, h, 0.5, 0.5, 0.75, 'rgba(255,255,255,0.05)', 'rgba(11,11,16,0.55)')
+    },
+  },
+  {
+    id: 'liquid-lime',
+    name: 'Liquid Lime',
+    group: 'mesh',
+    css: 'background-color:#0B0B10;background-image:radial-gradient(at 30% 30%,rgba(200,245,66,0.28) 0px,transparent 50%),radial-gradient(at 70% 70%,rgba(200,245,66,0.12) 0px,transparent 45%),linear-gradient(120deg,rgba(255,255,255,0.03),transparent 60%);',
+    paint: (ctx, w, h, t) => {
+      fill(ctx, w, h, '#0B0B10')
+      // Two blobs orbiting a shared centre — a cheap metaball feel.
+      const a = t * 0.5
+      radial(ctx, w, h, 0.5 + Math.cos(a) * 0.16, 0.5 + Math.sin(a) * 0.12, 0.45, 'rgba(200,245,66,0.30)', 'rgba(200,245,66,0)')
+      radial(ctx, w, h, 0.5 - Math.cos(a) * 0.16, 0.5 - Math.sin(a) * 0.12, 0.4, 'rgba(200,245,66,0.16)', 'rgba(200,245,66,0)')
+      const g = ctx.createLinearGradient(0, 0, w, h)
+      g.addColorStop(0, 'rgba(255,255,255,0.04)')
+      g.addColorStop(0.6, 'rgba(255,255,255,0)')
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, w, h)
+    },
+  },
+  {
+    id: 'noise-veil',
+    name: 'Noise Veil',
+    group: 'pattern',
+    css: 'background-color:#0B0B10;background-image:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(244,241,234,0.10),transparent 60%),repeating-linear-gradient(0deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 1px,transparent 1px,transparent 3px);',
+    paint: (ctx, w, h) => {
+      fill(ctx, w, h, '#0B0B10')
+      radial(ctx, w, h, 0.5, 0, 0.7, 'rgba(244,241,234,0.10)', 'rgba(244,241,234,0)')
+      ctx.save()
+      ctx.strokeStyle = 'rgba(255,255,255,0.025)'
+      ctx.lineWidth = 1
+      const step = Math.max(3, Math.round(h / 360))
+      ctx.beginPath()
+      for (let y = 0; y <= h; y += step) {
+        ctx.moveTo(0, y + 0.5)
+        ctx.lineTo(w, y + 0.5)
+      }
+      ctx.stroke()
+      ctx.restore()
+    },
+  },
+  {
+    id: 'glass-stage',
+    name: 'Glass Stage',
+    group: 'gradient',
+    css: 'background:linear-gradient(180deg,#141821 0%,#0B0B10 60%),radial-gradient(ellipse 60% 30% at 50% 100%,rgba(200,245,66,0.12),transparent 70%);',
+    paint: (ctx, w, h) => {
+      const g = ctx.createLinearGradient(0, 0, 0, h)
+      g.addColorStop(0, '#141821')
+      g.addColorStop(0.6, '#0B0B10')
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, w, h)
+      radial(ctx, w, h, 0.5, 1, 0.5, 'rgba(200,245,66,0.14)', 'rgba(200,245,66,0)')
+    },
+  },
+  {
+    id: 'violet-dusk',
+    name: 'Violet Dusk',
+    group: 'gradient',
+    css: 'background:linear-gradient(160deg,#1b1430 0%,#120f1f 45%,#0B0B10 100%);',
+    paint: (ctx, w, h) => {
+      const g = ctx.createLinearGradient(0, 0, w * 0.5, h)
+      g.addColorStop(0, '#1b1430')
+      g.addColorStop(0.45, '#120f1f')
+      g.addColorStop(1, '#0B0B10')
+      ctx.fillStyle = g
+      ctx.fillRect(0, 0, w, h)
+      radial(ctx, w, h, 0.75, 0.15, 0.45, 'rgba(120,88,232,0.20)', 'rgba(120,88,232,0)')
     },
   },
   {

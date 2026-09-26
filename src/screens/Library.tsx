@@ -9,6 +9,7 @@ import type { LibraryItem } from '../types/project'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { EFFECTS } from '../lib/effects'
 import { GRADIENT_PRESETS } from '../lib/gradients'
+import { PackBrowser } from './library/PackBrowser'
 import { copyText, relTime } from '../lib/utils'
 
 /* Built-in starter library: rundowns, arena, presets, effects, backgrounds. */
@@ -227,9 +228,16 @@ export function Library() {
         <div>
           <h1 className="text-lg font-bold">Library</h1>
           <p className="text-sm text-muted">
-            Rundowns, Arena assets, brand presets, local effects and stage backgrounds — resources for better video
-            generation on-platform.
+            Glass materials, transitions, animations, gradients, effects and voice commands — fetched from the Cupric
+            repository and addable straight to the Studio. Rundowns and brand presets live below.
           </p>
+        </div>
+
+        <PackBrowser />
+
+        <div className="border-t border-line pt-5">
+          <h2 className="text-sm font-semibold">Project starters</h2>
+          <p className="text-xs text-muted">Rundowns, Arena prompts and brand presets that seed a project.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

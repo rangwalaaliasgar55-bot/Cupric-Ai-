@@ -161,8 +161,27 @@ export type LibraryItem =
  * ———————————————————————————————————————————————————————————————— */
 
 export type StudioAspect = '16:9' | '9:16' | '1:1'
-export type StudioTextAnim = 'none' | 'fade-up' | 'word-reveal' | 'pop' | 'typewriter' | 'slide-left'
-export type StudioTransition = 'none' | 'fade' | 'wipe-left' | 'zoom-in'
+export type StudioTextAnim =
+  | 'none'
+  | 'fade-up'
+  | 'word-reveal'
+  | 'pop'
+  | 'typewriter'
+  | 'slide-left'
+  | 'shimmer'
+  | 'glass-rise'
+  | 'liquid-wave'
+export type StudioTransition =
+  | 'none'
+  | 'fade'
+  | 'wipe-left'
+  | 'zoom-in'
+  | 'blur'
+  | 'iris'
+  | 'push-up'
+  | 'glass-wipe'
+  | 'liquid-dissolve'
+  | 'lens-sweep'
 export type StudioCaptionStyle = 'hormozi' | 'standard' | 'minimal'
 
 type StudioClipCommon = {
@@ -223,7 +242,29 @@ export type StudioOverlayClip = StudioClipCommon & {
   scale: number
 }
 
-export type StudioClip = StudioMediaClip | StudioTextClip | StudioBackgroundClip | StudioOverlayClip
+export type StudioGlassClip = StudioClipCommon & {
+  kind: 'glass'
+  /** Preset id from `src/lib/glass.ts`. */
+  presetId: string
+  shape: 'panel' | 'lens'
+  /** Normalised geometry (0–1 of the frame). */
+  x: number
+  y: number
+  w: number
+  h: number
+  radiusPct: number
+  motion: 'static' | 'sweep' | 'drift' | 'pop'
+  /** Optional label drawn on the panel. */
+  label: string
+  labelColor: string
+}
+
+export type StudioClip =
+  | StudioMediaClip
+  | StudioTextClip
+  | StudioBackgroundClip
+  | StudioOverlayClip
+  | StudioGlassClip
 
 export type StudioDoc = {
   aspect: StudioAspect

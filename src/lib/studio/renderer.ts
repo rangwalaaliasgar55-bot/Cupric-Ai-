@@ -9,13 +9,16 @@
 import type {
   StudioClip,
   StudioDoc,
+  StudioGlassClip,
   StudioMediaClip,
   StudioOverlayClip,
   StudioTextClip,
   StudioTransition,
 } from '../../types/project'
+import { glassPreset } from '../glass'
 import { backgroundById } from './backgrounds'
 import { clipProgress, clipsAt } from './doc'
+import { paintGlass, paintGlassLens } from './glass'
 import { getMedia, overlayImage } from './media'
 
 export type FrameSources = {
@@ -77,6 +80,62 @@ function applyTransition(
   if (clip.transitionOut === 'wipe-left' && outP < 1) {
     ctx.beginPath()
     ctx.rect(w - w * easeOut(outP), 0, w * easeOut(outP), h)
+    ctx.clip()
+  }
+
+  // Blur through — focus pull. ctx.filter is supported in Chromium/Electron;
+  // where it is not, the clip simply fades instead of blurring.
+  const blurIn = clip.transitionIn === 'blur' && inP < 1 ? (1 - easeOut(inP)) * 18 : 0
+  const blurOut = clip.transitionOut === 'blur' && outP < 1 ? (1 - easeOut(outP)) * 18 : 0
+  const liquidIn = clip.transitionIn === 'liquid-dissolve' && inP < 1 ? (1 - easeOut(inP)) : 0
+  const liquidOut = clip.transitionOut === 'liquid-dissolve' && outP < 1 ? (1 - easeOut(outP)) : 0
+  const blur = Math.max(blurIn, blurOut, liquidIn * 26, liquidOut * 26)
+  if (blur > 0.2) {
+    ctx.filter = `blur(${blur.toFixed(2)}px)`
+    alpha *= 0.55 + 0.45 * (1 - Math.min(1, blur / 26))
+  }
+  if (liquidIn > 0 || liquidOut > 0) {
+    // The "melt": a slight non-uniform scale that settles as it clears.
+    const amount = Math.max(liquidIn, liquidOut)
+    ctx.translate(w / 2, h / 2)
+    ctx.scale(1 + amount * 0.06, 1 + amount * 0.12)
+    ctx.translate(-w / 2, -h / 2)
+  }
+
+  // Iris — circular reveal from the centre.
+  if (clip.transitionIn === 'iris' && inP < 1) {
+    const radius = easeOut(inP) * Math.hypot(w, h) * 0.55
+    ctx.beginPath()
+    ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2)
+    ctx.clip()
+  }
+  if (clip.transitionOut === 'iris' && outP < 1) {
+    const radius = easeOut(outP) * Math.hypot(w, h) * 0.55
+    ctx.beginPath()
+    ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2)
+    ctx.clip()
+  }
+
+  // Push up.
+  if (clip.transitionIn === 'push-up' && inP < 1) {
+    ctx.translate(0, (1 - easeOut(inP)) * h * 0.33)
+    alpha *= easeOut(inP)
+  }
+  if (clip.transitionOut === 'push-up' && outP < 1) {
+    ctx.translate(0, -(1 - easeOut(outP)) * h * 0.33)
+    alpha *= easeOut(outP)
+  }
+
+  // Glass wipe / lens sweep clip the clip to the area the glass has passed.
+  if (clip.transitionIn === 'glass-wipe' && inP < 1) {
+    ctx.beginPath()
+    ctx.rect(0, 0, w * easeOut(inP), h)
+    ctx.clip()
+  }
+  if (clip.transitionIn === 'lens-sweep' && inP < 1) {
+    const cx = easeOut(inP) * w
+    ctx.beginPath()
+    ctx.arc(cx, h / 2, Math.max(w, h) * easeOut(inP) * 0.9, 0, Math.PI * 2)
     ctx.clip()
   }
   if (clip.transitionOut === 'zoom-in' && outP < 1) {
@@ -169,12 +228,36 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
   } else if (clip.anim === 'typewriter') {
     const chars = Math.round(raw.length * clamp01(progress / 0.6))
     lines = wrapLines(ctx, raw.slice(0, chars), maxWidth)
+  } else if (clip.anim === 'glass-rise') {
+    alpha = easeOut(inP)
+    offsetY = (1 - easeOut(inP)) * fontPx * 0.9
+  } else if (clip.anim === 'shimmer' || clip.anim === 'liquid-wave') {
+    alpha = easeOut(inP)
   }
 
   const lineHeight = fontPx * 1.12
   const totalH = lineHeight * lines.length
   const cx = clip.x * w + (clip.anim === 'slide-left' ? (1 - easeOut(inP)) * w * 0.08 : 0)
   const cy = clip.y * h + offsetY
+
+  if (clip.anim === 'glass-rise') {
+    // Frosted plate rises with the text and clears as it settles.
+    const widest = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0)
+    const padX = fontPx * 0.7
+    const padY = fontPx * 0.45
+    const plateW = widest + padX * 2
+    const plateH = totalH + padY * 2
+    ctx.save()
+    ctx.globalAlpha *= easeOut(inP) * (0.35 + 0.65 * (1 - easeOut(inP)) + 0.35)
+    paintGlass(
+      ctx,
+      { x: cx - plateW / 2, y: cy - plateH / 2, w: plateW, h: plateH, radius: Math.min(plateH / 2, fontPx * 0.5) },
+      glassPreset('frost').params,
+      progress,
+      w / 1080,
+    )
+    ctx.restore()
+  }
 
   ctx.save()
   ctx.globalAlpha *= alpha
@@ -184,7 +267,12 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
   const anchorX = clip.align === 'left' ? -maxWidth / 2 : clip.align === 'right' ? maxWidth / 2 : 0
 
   lines.forEach((line, index) => {
-    const y = -totalH / 2 + lineHeight * (index + 0.5)
+    let y = -totalH / 2 + lineHeight * (index + 0.5)
+    if (clip.anim === 'liquid-wave') {
+      // Each line rides the same wave, offset in phase, settling to zero.
+      const settle = 1 - easeOut(clamp01(progress / 0.5))
+      y += Math.sin(progress * Math.PI * 4 + index * 0.9) * fontPx * 0.35 * settle
+    }
 
     if (preset.boxed) {
       const metrics = ctx.measureText(line)
@@ -239,9 +327,101 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
     }
     ctx.shadowBlur = 0
     ctx.shadowOffsetY = 0
+
+    if (clip.anim === 'shimmer') {
+      // Specular sweep: a moving gradient painted only over the glyphs.
+      const metrics = ctx.measureText(line)
+      const left = clip.align === 'center' ? -metrics.width / 2 : clip.align === 'left' ? anchorX : anchorX - metrics.width
+      const sweepX = left - metrics.width * 0.4 + ((progress * 1.6) % 1.4) * metrics.width * 1.4
+      const grad = ctx.createLinearGradient(sweepX - metrics.width * 0.25, 0, sweepX + metrics.width * 0.25, 0)
+      grad.addColorStop(0, 'rgba(255,255,255,0)')
+      grad.addColorStop(0.5, 'rgba(255,255,255,0.85)')
+      grad.addColorStop(1, 'rgba(255,255,255,0)')
+      const prevOp = ctx.globalCompositeOperation
+      ctx.globalCompositeOperation = 'source-atop'
+      ctx.fillStyle = grad
+      ctx.fillText(line, anchorX, y)
+      ctx.globalCompositeOperation = prevOp
+    }
   })
 
   ctx.restore()
+}
+
+/**
+ * The moving glass used by `glass-wipe` and `lens-sweep`. Drawn *after* the
+ * clip so it refracts the frame the transition has just revealed.
+ */
+function paintTransitionGlass(ctx: CanvasRenderingContext2D, clip: StudioClip, t: number, w: number, h: number) {
+  const inP = edgeProgressIn(clip, t)
+  if (inP >= 1) return
+  const params = glassPreset('hero').params
+  const scale = w / 1080
+
+  if (clip.transitionIn === 'glass-wipe') {
+    const x = easeOut(inP) * w
+    const barWidth = Math.max(40, w * 0.09)
+    paintGlass(
+      ctx,
+      { x: x - barWidth / 2, y: 0, w: barWidth, h, radius: barWidth * 0.2 },
+      params,
+      inP,
+      scale,
+    )
+  } else if (clip.transitionIn === 'lens-sweep') {
+    const radius = Math.max(w, h) * 0.22
+    paintGlassLens(ctx, { x: easeOut(inP) * w, y: h / 2, r: radius }, params, inP, scale)
+  }
+}
+
+/* ——— glass clips ——— */
+
+function drawGlassClip(ctx: CanvasRenderingContext2D, clip: StudioGlassClip, t: number, w: number, h: number) {
+  const progress = clipProgress(clip, t)
+  const params = glassPreset(clip.presetId).params
+  const scale = w / 1080
+
+  // Motion presets are pure functions of progress.
+  let cx = clip.x * w
+  let cy = clip.y * h
+  let sizeScale = 1
+  let sweep = 0
+  if (clip.motion === 'drift') {
+    cx += Math.sin(progress * Math.PI * 2) * w * 0.05
+    cy += Math.cos(progress * Math.PI * 2) * h * 0.025
+  } else if (clip.motion === 'sweep') {
+    cx = (0.15 + 0.7 * easeOut(Math.min(1, progress / 0.85))) * w
+    sweep = progress
+  } else if (clip.motion === 'pop') {
+    const p = easeOut(Math.min(1, progress / 0.22))
+    sizeScale = 0.94 + 0.06 * p + Math.sin(Math.min(1, progress / 0.22) * Math.PI) * 0.03
+  }
+
+  const boxW = clip.w * w * sizeScale
+  const boxH = clip.h * h * sizeScale
+
+  if (clip.shape === 'lens') {
+    paintGlassLens(ctx, { x: cx, y: cy, r: Math.min(boxW, boxH) / 2 }, params, sweep, scale)
+  } else {
+    paintGlass(
+      ctx,
+      { x: cx - boxW / 2, y: cy - boxH / 2, w: boxW, h: boxH, radius: (clip.radiusPct / 100) * Math.min(boxW, boxH) },
+      params,
+      sweep,
+      scale,
+    )
+  }
+
+  if (clip.label.trim()) {
+    ctx.save()
+    const fontPx = Math.max(12, boxH * 0.22)
+    ctx.font = `600 ${fontPx}px 'Inter Variable', Inter, system-ui, sans-serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = clip.labelColor
+    ctx.fillText(clip.label, cx, cy)
+    ctx.restore()
+  }
 }
 
 /* ——— main entry ——— */
@@ -284,6 +464,8 @@ export function drawStudioFrame(
       }
     } else if (clip.kind === 'text') {
       drawTextClip(ctx, clip, t, width, height)
+    } else if (clip.kind === 'glass') {
+      drawGlassClip(ctx, clip, t, width, height)
     } else if (clip.kind === 'overlay') {
       const source = sources.overlay(clip)
       if (source) {
@@ -296,9 +478,12 @@ export function drawStudioFrame(
         }
       }
     }
+    ctx.filter = 'none'
+    paintTransitionGlass(ctx, clip, t, width, height)
     ctx.restore()
   }
 
+  ctx.filter = 'none'
   ctx.restore()
 }
 

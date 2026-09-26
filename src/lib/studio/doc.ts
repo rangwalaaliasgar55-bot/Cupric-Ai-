@@ -8,6 +8,7 @@ import type {
   StudioAspect,
   StudioClip,
   StudioDoc,
+  StudioGlassClip,
   StudioMediaClip,
   StudioTextClip,
 } from '../../types/project'
@@ -137,6 +138,35 @@ export function defaultTextClip(start: number, track: number): StudioTextClip {
     anim: 'fade-up',
     captionStyle: null,
     highlightWord: null,
+  }
+}
+
+export function defaultGlassClip(
+  start: number,
+  track: number,
+  presetId = 'hero',
+  shape: 'panel' | 'lens' = 'panel',
+): StudioGlassClip {
+  return {
+    id: uid(),
+    kind: 'glass',
+    track,
+    startSec: start,
+    durationSec: 3,
+    name: shape === 'lens' ? 'Glass lens' : 'Glass panel',
+    transitionIn: 'fade',
+    transitionOut: 'fade',
+    opacity: 1,
+    presetId,
+    shape,
+    x: 0.5,
+    y: 0.5,
+    w: shape === 'lens' ? 0.26 : 0.56,
+    h: shape === 'lens' ? 0.26 : 0.3,
+    radiusPct: shape === 'lens' ? 50 : 22,
+    motion: shape === 'lens' ? 'drift' : 'sweep',
+    label: '',
+    labelColor: '#F4F1EA',
   }
 }
 

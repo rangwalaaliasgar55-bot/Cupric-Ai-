@@ -1,0 +1,127 @@
+{
+  "id": "animations",
+  "name": "Text animations",
+  "description": "Caption and title animations, all pure functions of clip progress so preview and export match.",
+  "version": "0.4.0",
+  "source": "Cupric Studio renderer",
+  "license": "MIT",
+  "items": [
+    {
+      "id": "none",
+      "kind": "animation",
+      "name": "None",
+      "description": "Static text — nothing moves.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "animation",
+        "core"
+      ]
+    },
+    {
+      "id": "fade-up",
+      "kind": "animation",
+      "name": "Fade up",
+      "description": "Rises half a line while it fades in.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "animation",
+        "core"
+      ]
+    },
+    {
+      "id": "word-reveal",
+      "kind": "animation",
+      "name": "Word reveal",
+      "description": "Word by word, ~9 words a second.",
+      "data": {
+        "family": "kinetic"
+      },
+      "tags": [
+        "animation",
+        "kinetic"
+      ]
+    },
+    {
+      "id": "pop",
+      "kind": "animation",
+      "name": "Pop",
+      "description": "Spring scale with a small overshoot.",
+      "data": {
+        "family": "kinetic"
+      },
+      "tags": [
+        "animation",
+        "kinetic"
+      ]
+    },
+    {
+      "id": "typewriter",
+      "kind": "animation",
+      "name": "Typewriter",
+      "description": "Characters appear over the first 60% of the clip.",
+      "data": {
+        "family": "kinetic"
+      },
+      "tags": [
+        "animation",
+        "kinetic"
+      ]
+    },
+    {
+      "id": "slide-left",
+      "kind": "animation",
+      "name": "Slide",
+      "description": "Enters from 8% of the frame width.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "animation",
+        "core"
+      ]
+    },
+    {
+      "id": "shimmer",
+      "kind": "animation",
+      "name": "Glass shimmer",
+      "description": "A specular highlight sweeps through the letters.",
+      "data": {
+        "family": "glass"
+      },
+      "tags": [
+        "animation",
+        "glass"
+      ]
+    },
+    {
+      "id": "glass-rise",
+      "kind": "animation",
+      "name": "Glass rise",
+      "description": "Frosted plate rises and clears behind the text.",
+      "data": {
+        "family": "glass"
+      },
+      "tags": [
+        "animation",
+        "glass"
+      ]
+    },
+    {
+      "id": "liquid-wave",
+      "kind": "animation",
+      "name": "Liquid wave",
+      "description": "Letters ride a sine wave that settles into place.",
+      "data": {
+        "family": "liquid"
+      },
+      "tags": [
+        "animation",
+        "liquid"
+      ]
+    }
+  ]
+}

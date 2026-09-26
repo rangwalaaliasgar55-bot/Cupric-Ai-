@@ -311,3 +311,25 @@
     animation: none;
   }
 }
+
+/* Ambient app backdrop (src/app-shell/AppBackdrop.tsx). Transform-only so it
+   stays on the compositor, and disabled wholesale under reduced motion. */
+@keyframes cupric-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(2%, -1.5%, 0) scale(1.04);
+  }
+  66% {
+    transform: translate3d(-1.5%, 2%, 0) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*='cupric-drift'],
+  .\[animation\:cupric-drift_46s_ease-in-out_infinite\] {
+    animation: none !important;
+  }
+}

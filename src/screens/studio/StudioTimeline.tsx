@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Image as ImageIcon, Layers, Music, Type as TypeIcon, Video } from 'lucide-react'
+import { Image as ImageIcon, Layers, Music, Sparkles, Type as TypeIcon, Video } from 'lucide-react'
 import type { StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
 import { clamp, cx, fmtClock } from '../../lib/utils'
@@ -30,6 +30,7 @@ function clipIcon(clip: StudioClip) {
   if (clip.kind === 'image') return ImageIcon
   if (clip.kind === 'text') return TypeIcon
   if (clip.kind === 'overlay') return Layers
+  if (clip.kind === 'glass') return Sparkles
   return Music
 }
 
@@ -43,7 +44,9 @@ function clipTint(clip: StudioClip, selected: boolean): string {
           ? 'bg-info/12 border-info/30'
           : clip.kind === 'overlay'
             ? 'bg-[rgb(226_75_74/0.14)] border-[rgb(226_75_74/0.38)]'
-            : 'bg-panel-alt border-line'
+            : clip.kind === 'glass'
+              ? 'bg-[rgb(255_255_255/0.10)] border-[rgb(255_255_255/0.32)] backdrop-blur-sm'
+              : 'bg-panel-alt border-line'
   return cx(base, selected && 'ring-2 ring-accent ring-offset-0')
 }
 

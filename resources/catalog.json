@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.4.0",
   "updated": "2026-09-26",
   "packs": [
     {
@@ -67,6 +67,36 @@
         "webm-export"
       ],
       "note": "The Studio renderer is the single source of truth for preview and export."
+    },
+    {
+      "id": "glass",
+      "path": "resources/glass",
+      "entries": "README.md",
+      "use": [
+        "app-chrome",
+        "studio-canvas",
+        "library"
+      ],
+      "code": "src/lib/glass.ts, src/components/glass, src/lib/studio/glass.ts"
+    },
+    {
+      "id": "packs",
+      "path": "resources/packs",
+      "entries": "index.json",
+      "use": [
+        "library",
+        "offline-cache"
+      ],
+      "code": "src/lib/packs.ts",
+      "generated": "npm run packs:build"
+    },
+    {
+      "id": "voice",
+      "path": "resources/packs/voice.json",
+      "use": [
+        "studio-voice-commands"
+      ],
+      "code": "src/lib/voice.ts"
     }
   ],
   "pipelineOrder": [

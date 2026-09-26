@@ -138,6 +138,55 @@ export async function registerFile(file: File, existingId?: string): Promise<Med
 }
 
 /**
+ * Register media that already has a URL — a desktop `file://` path resolved by
+ * the main process, a blob URL, or a data URL. Used by the one-click hand-offs
+ * from the Footage Desk and Arena Desk, which have a path but no `File`.
+ *
+ * `url` must already be loadable by the renderer; nothing here touches disk.
+ */
+export async function registerUrl(
+  url: string,
+  fileName: string,
+  kind: 'video' | 'image',
+  localPath: string | null = null,
+  existingId?: string,
+): Promise<MediaHandle> {
+  const id = existingId ?? uid()
+  if (kind === 'video') {
+    const element = await loadVideo(url)
+    const handle: MediaHandle = {
+      id,
+      kind: 'video',
+      fileName,
+      localPath,
+      url,
+      durationSec: Number.isFinite(element.duration) && element.duration > 0 ? element.duration : 0,
+      width: element.videoWidth,
+      height: element.videoHeight,
+      element,
+      posterDataUrl: posterFrom(element, element.videoWidth, element.videoHeight),
+    }
+    registry.set(id, handle)
+    return handle
+  }
+  const element = await loadImage(url)
+  const handle: MediaHandle = {
+    id,
+    kind: 'image',
+    fileName,
+    localPath,
+    url,
+    durationSec: 0,
+    width: element.naturalWidth,
+    height: element.naturalHeight,
+    element,
+    posterDataUrl: posterFrom(element, element.naturalWidth, element.naturalHeight),
+  }
+  registry.set(id, handle)
+  return handle
+}
+
+/**
  * Seek a video element to an exact time and wait for the frame to be ready.
  * Used by the frame-accurate exporter; preview playback never blocks on this.
  */

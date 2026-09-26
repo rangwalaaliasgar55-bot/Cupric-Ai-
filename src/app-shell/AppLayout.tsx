@@ -15,6 +15,7 @@ import { Studio } from '../screens/Studio'
 import { Lab } from '../screens/Lab'
 import { Autonomous } from '../screens/Autonomous'
 import { useProjectStore } from '../state/useProjectStore'
+import { AppBackdrop } from './AppBackdrop'
 
 const SCREENS = {
   home: <HomeProject />,
@@ -34,9 +35,12 @@ export function AppLayout() {
   const view = useProjectStore((s) => s.view)
 
   return (
-    <div className="flex h-full overflow-hidden bg-bg text-text">
+    <div className="relative flex h-full overflow-hidden text-text">
+      {/* The backdrop is a sibling behind the chrome, not a parent background,
+          so panels can be translucent over it. */}
+      <AppBackdrop />
       <Sidebar />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <TopBar />
         <main className="min-h-0 flex-1 overflow-hidden">
           <AnimatePresence mode="wait" initial={false}>

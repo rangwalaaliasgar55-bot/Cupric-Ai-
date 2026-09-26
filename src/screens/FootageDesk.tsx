@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Check, ChevronRight, Film, Loader2, Square, RectangleHorizontal, RectangleVertical, Upload, X } from 'lucide-react'
+import { Check, ChevronRight, Clapperboard, Film, Loader2, Square, RectangleHorizontal, RectangleVertical, Upload, X } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
@@ -10,6 +10,7 @@ import { Segmented } from '../components/Segmented'
 import { VideoPreview } from '../components/VideoPreview'
 import type { FootageAsset } from '../types/project'
 import { uploadFootage } from '../lib/arena'
+import { footageToStudioClip } from '../lib/studio/handoff'
 import { getIpc } from '../lib/bridge'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, hashStr, mulberry32, round1 } from '../lib/utils'
@@ -267,10 +268,13 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
   const project = useActiveProject()
   const updateFootageAsset = useProjectStore((s) => s.updateFootageAsset)
   const addTimelineClip = useProjectStore((s) => s.addTimelineClip)
+  const addStudioClip = useProjectStore((s) => s.addStudioClip)
+  const patchStudio = useProjectStore((s) => s.patchStudio)
   const setView = useProjectStore((s) => s.setView)
   const pushToast = useProjectStore((s) => s.pushToast)
   const [caption, setCaption] = useState(asset.captionStyle)
   const [crop, setCrop] = useState(asset.crop)
+  const [sending, setSending] = useState(false)
   if (!project) return null
 
   const cuts = asset.silenceRanges
@@ -291,6 +295,24 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
     }
     pushToast('success', 'Edit applied and added to the Timeline')
     setView('timeline')
+  }
+
+  /** Load the real file into the Studio media registry and drop a clip on it. */
+  async function sendToStudio() {
+    if (!project || sending) return
+    setSending(true)
+    try {
+      const clip = await footageToStudioClip(project, asset)
+      // Keep the crop choice: the Studio aspect follows what was picked here.
+      patchStudio(project.id, { aspect: crop })
+      addStudioClip(project.id, clip)
+      pushToast('success', `${asset.name} opened in the Studio`)
+      setView('studio')
+    } catch (err) {
+      pushToast('error', err instanceof Error ? err.message : 'Could not open that footage in the Studio')
+    } finally {
+      setSending(false)
+    }
   }
 
   return (
@@ -368,6 +390,10 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
             <span className="text-xs tabular-nums text-muted">
               {cuts.length} cut{cuts.length === 1 ? '' : 's'} → −{round1(cutTotal)}s
             </span>
+            <Button variant="outline" onClick={() => void sendToStudio()} disabled={sending || !asset.localPath}>
+              {sending ? <Loader2 size={13} className="animate-spin" /> : <Clapperboard size={13} />}
+              Edit in Studio
+            </Button>
             <Button variant="primary" onClick={apply}>
               Apply edit
             </Button>

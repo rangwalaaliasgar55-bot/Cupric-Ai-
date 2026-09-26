@@ -4,12 +4,15 @@ import type {
   StudioBackgroundClip,
   StudioClip,
   StudioDoc,
+  StudioGlassClip,
   StudioMediaClip,
   StudioOverlayClip,
   StudioTextClip,
 } from '../../types/project'
 import { Button } from '../../components/Button'
 import { STUDIO_BACKGROUNDS } from '../../lib/studio/backgrounds'
+import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/transitions'
+import { GLASS_PRESETS } from '../../lib/glass'
 import { hasMedia, registerFile } from '../../lib/studio/media'
 import { cx } from '../../lib/utils'
 
@@ -209,10 +212,11 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
             onChange={(e) => onPatch({ transitionIn: e.target.value as StudioClip['transitionIn'] })}
             className={inputCx}
           >
-            <option value="none">None</option>
-            <option value="fade">Fade</option>
-            <option value="wipe-left">Wipe</option>
-            <option value="zoom-in">Zoom</option>
+            {TRANSITIONS.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
           </select>
         </Field>
         <Field label="Transition out">
@@ -221,13 +225,16 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
             onChange={(e) => onPatch({ transitionOut: e.target.value as StudioClip['transitionOut'] })}
             className={inputCx}
           >
-            <option value="none">None</option>
-            <option value="fade">Fade</option>
-            <option value="wipe-left">Wipe</option>
-            <option value="zoom-in">Zoom</option>
+            {/* Glass transitions are entrances only — they have no reverse. */}
+            {TRANSITIONS.filter((t) => t.family !== 'glass').map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
           </select>
         </Field>
       </div>
+      <p className="-mt-1 text-xs leading-relaxed text-muted/70">{transitionInfo(clip.transitionIn).description}</p>
 
       {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
       {(clip.kind === 'video' || clip.kind === 'image') && (
@@ -235,6 +242,7 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
       )}
       {clip.kind === 'background' && <BackgroundFields clip={clip as StudioBackgroundClip} onPatch={onPatch} />}
       {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
+      {clip.kind === 'glass' && <GlassFields clip={clip as StudioGlassClip} onPatch={onPatch} />}
     </div>
   )
 }
@@ -258,12 +266,11 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
             onChange={(e) => onPatch({ anim: e.target.value as StudioTextClip['anim'] } as Partial<StudioClip>)}
             className={inputCx}
           >
-            <option value="none">None</option>
-            <option value="fade-up">Fade up</option>
-            <option value="word-reveal">Word reveal</option>
-            <option value="pop">Pop</option>
-            <option value="typewriter">Typewriter</option>
-            <option value="slide-left">Slide</option>
+            {TEXT_ANIMATIONS.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
           </select>
         </Field>
         <Field label="Caption style">
@@ -445,6 +452,78 @@ function BackgroundFields({ clip, onPatch }: { clip: StudioBackgroundClip; onPat
             </option>
           ))}
         </select>
+      </Field>
+    </div>
+  )
+}
+
+function GlassFields({ clip, onPatch }: { clip: StudioGlassClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const preset = GLASS_PRESETS.find((p) => p.id === clip.presetId) ?? GLASS_PRESETS[0]
+  return (
+    <div className="space-y-4 border-t border-line pt-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Material">
+          <select
+            value={clip.presetId}
+            onChange={(e) => onPatch({ presetId: e.target.value } as Partial<StudioClip>)}
+            className={inputCx}
+          >
+            {GLASS_PRESETS.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Shape">
+          <select
+            value={clip.shape}
+            onChange={(e) => onPatch({ shape: e.target.value as StudioGlassClip['shape'] } as Partial<StudioClip>)}
+            className={inputCx}
+          >
+            <option value="panel">Panel</option>
+            <option value="lens">Lens</option>
+          </select>
+        </Field>
+      </div>
+      <p className="-mt-1 text-xs leading-relaxed text-muted/70">{preset.description}</p>
+
+      <Field label="Motion">
+        <select
+          value={clip.motion}
+          onChange={(e) => onPatch({ motion: e.target.value as StudioGlassClip['motion'] } as Partial<StudioClip>)}
+          className={inputCx}
+        >
+          <option value="static">Static</option>
+          <option value="sweep">Sweep across</option>
+          <option value="drift">Drift</option>
+          <option value="pop">Pop in</option>
+        </select>
+      </Field>
+
+      <div className="grid grid-cols-2 gap-3">
+        <Slider label="X" value={clip.x} min={0} max={1} step={0.01} onChange={(v) => onPatch({ x: v } as Partial<StudioClip>)} />
+        <Slider label="Y" value={clip.y} min={0} max={1} step={0.01} onChange={(v) => onPatch({ y: v } as Partial<StudioClip>)} />
+        <Slider label="Width" value={clip.w} min={0.05} max={1} step={0.01} onChange={(v) => onPatch({ w: v } as Partial<StudioClip>)} />
+        <Slider label="Height" value={clip.h} min={0.05} max={1} step={0.01} onChange={(v) => onPatch({ h: v } as Partial<StudioClip>)} />
+      </div>
+      <Slider
+        label="Corner radius"
+        value={clip.radiusPct}
+        min={0}
+        max={50}
+        step={1}
+        suffix="%"
+        onChange={(v) => onPatch({ radiusPct: v } as Partial<StudioClip>)}
+      />
+
+      <Field label="Label" hint="Optional text drawn on the glass.">
+        <input
+          value={clip.label}
+          onChange={(e) => onPatch({ label: e.target.value } as Partial<StudioClip>)}
+          className={inputCx}
+          placeholder="e.g. Cupric AI"
+        />
       </Field>
     </div>
   )

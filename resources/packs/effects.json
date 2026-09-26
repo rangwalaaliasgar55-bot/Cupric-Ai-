@@ -1,0 +1,150 @@
+{
+  "id": "effects",
+  "name": "Effects",
+  "description": "Effect cues shared by the Arena prompt builder and the local renderer.",
+  "version": "0.4.0",
+  "source": "Cupric effects registry, mapping notes in resources/kdenlive",
+  "license": "MIT",
+  "items": [
+    {
+      "id": "bg-soft-grid",
+      "kind": "effect",
+      "name": "Soft Grid",
+      "description": "Subtle dark grid with soft radial vignette — marketing / stage only.",
+      "data": {
+        "effectKind": "background",
+        "promptCue": "Dark near-black base (#0B0B10) with a soft 48px grid at 3% white and a faint lime radial glow at center."
+      },
+      "tags": [
+        "effect",
+        "background"
+      ]
+    },
+    {
+      "id": "bg-dot-field",
+      "kind": "effect",
+      "name": "Dot Field",
+      "description": "Sparse dot field — good for kinetic type and quote cards.",
+      "data": {
+        "effectKind": "background",
+        "promptCue": "Near-black field with sparse 1px dots every 24px at 8% white opacity."
+      },
+      "tags": [
+        "effect",
+        "background"
+      ]
+    },
+    {
+      "id": "bg-lime-haze",
+      "kind": "effect",
+      "name": "Lime Haze",
+      "description": "Two soft lime orbs, pointer-events none — brand energy without noise.",
+      "data": {
+        "effectKind": "background",
+        "promptCue": "Two soft orbs: lime at 20% 30% (12% opacity) and blue at 80% 70% (8% opacity) over #0B0B10."
+      },
+      "tags": [
+        "effect",
+        "background"
+      ]
+    },
+    {
+      "id": "bg-noise-paper",
+      "kind": "effect",
+      "name": "Noise Paper",
+      "description": "SVG noise grain overlay for paper-cut and editorial looks.",
+      "data": {
+        "effectKind": "texture",
+        "promptCue": "Very light film-grain overlay (4% opacity, overlay blend) using SVG turbulence noise."
+      },
+      "tags": [
+        "effect",
+        "texture"
+      ]
+    },
+    {
+      "id": "tr-mask-wipe",
+      "kind": "effect",
+      "name": "Mask Wipe L→R",
+      "description": "Hard mask wipe left to right driven by t.",
+      "data": {
+        "effectKind": "transition",
+        "promptCue": "Scene transition: clip-path mask wipe left-to-right as a pure function of t between scene from/to."
+      },
+      "tags": [
+        "effect",
+        "transition"
+      ]
+    },
+    {
+      "id": "tr-scale-overshoot",
+      "kind": "effect",
+      "name": "Scale Overshoot",
+      "description": "Spring-like scale 0.92 → 1.04 → 1.0 for logo stings.",
+      "data": {
+        "effectKind": "motion",
+        "promptCue": "Logo enters with scale overshoot: 0.92 → 1.04 → 1.0, no CSS animation — pure function of t."
+      },
+      "tags": [
+        "effect",
+        "motion"
+      ]
+    },
+    {
+      "id": "cap-hormozi",
+      "kind": "effect",
+      "name": "Hormozi Caption",
+      "description": "Big bold captions, one lime highlight word, safe margins.",
+      "data": {
+        "effectKind": "caption",
+        "promptCue": "Hormozi-style captions: 64px bold uppercase, warm white, one lime accent word, 80px safe margins."
+      },
+      "tags": [
+        "effect",
+        "caption"
+      ]
+    },
+    {
+      "id": "cap-minimal",
+      "kind": "effect",
+      "name": "Minimal Chip",
+      "description": "Quiet lower-third chip.",
+      "data": {
+        "effectKind": "caption",
+        "promptCue": "Minimal lower-third: 18px medium, panel glass background, 8px radius, hairline border."
+      },
+      "tags": [
+        "effect",
+        "caption"
+      ]
+    },
+    {
+      "id": "mo-word-reveal",
+      "kind": "effect",
+      "name": "Word-by-Word Reveal",
+      "description": "Kinetic type at ~9 words/s driven by t.",
+      "data": {
+        "effectKind": "motion",
+        "promptCue": "Word-by-word kinetic reveal at ~9 words per second; visibility is floor(progress * wordCount)."
+      },
+      "tags": [
+        "effect",
+        "motion"
+      ]
+    },
+    {
+      "id": "mo-counter-tick",
+      "kind": "effect",
+      "name": "Tabular Counter",
+      "description": "CTA number ticks with tabular-nums.",
+      "data": {
+        "effectKind": "motion",
+        "promptCue": "Counter ticks with font-variant-numeric: tabular-nums; value is pure lerp of t."
+      },
+      "tags": [
+        "effect",
+        "motion"
+      ]
+    }
+  ]
+}

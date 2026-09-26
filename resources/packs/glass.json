@@ -1,0 +1,142 @@
+{
+  "id": "glass",
+  "name": "Liquid Glass",
+  "description": "Refracting glass materials for the app chrome and for the Studio canvas. One parameter set drives the DOM (backdrop-filter + SVG displacement) and the exported video (canvas).",
+  "version": "0.4.0",
+  "source": "Cupric implementation, technique after agpallav.com/liquid-glass, glass-lens-react and liquefy-ui",
+  "license": "MIT (this implementation)",
+  "items": [
+    {
+      "id": "hero",
+      "kind": "glass",
+      "name": "Hero",
+      "description": "Crisp and dispersive — the loud one, made for footage behind it.",
+      "data": {
+        "blur": 6,
+        "strength": 0.85,
+        "chroma": 0.6,
+        "bezel": 0.35,
+        "curvature": 1.6,
+        "edge": 0.9,
+        "glow": 0.5,
+        "specularAngle": 130,
+        "tint": "rgba(255,255,255,0.06)",
+        "saturate": 1.5
+      },
+      "tags": [
+        "glass",
+        "material"
+      ]
+    },
+    {
+      "id": "portfolio",
+      "kind": "glass",
+      "name": "Portfolio",
+      "description": "Subtle refraction over stills; reads as a pane, not an effect.",
+      "data": {
+        "blur": 12,
+        "strength": 0.45,
+        "chroma": 0.22,
+        "bezel": 0.35,
+        "curvature": 1.6,
+        "edge": 0.55,
+        "glow": 0.25,
+        "specularAngle": 130,
+        "tint": "rgba(255,255,255,0.06)",
+        "saturate": 1.5
+      },
+      "tags": [
+        "glass",
+        "material"
+      ]
+    },
+    {
+      "id": "plaque",
+      "kind": "glass",
+      "name": "Plaque",
+      "description": "A thick slab of glass — heavy blur, wide bezel, quiet rim.",
+      "data": {
+        "blur": 22,
+        "strength": 0.5,
+        "chroma": 0.18,
+        "bezel": 0.5,
+        "curvature": 2.2,
+        "edge": 0.4,
+        "glow": 0.2,
+        "specularAngle": 130,
+        "tint": "rgba(255,255,255,0.06)",
+        "saturate": 1.5
+      },
+      "tags": [
+        "glass",
+        "material"
+      ]
+    },
+    {
+      "id": "liquid",
+      "kind": "glass",
+      "name": "Liquid",
+      "description": "Maximum surface tension: deep bend, strong chroma, hot rim.",
+      "data": {
+        "blur": 8,
+        "strength": 1,
+        "chroma": 0.8,
+        "bezel": 0.45,
+        "curvature": 1.3,
+        "edge": 1,
+        "glow": 0.6,
+        "specularAngle": 130,
+        "tint": "rgba(255,255,255,0.06)",
+        "saturate": 1.5
+      },
+      "tags": [
+        "glass",
+        "material"
+      ]
+    },
+    {
+      "id": "frost",
+      "kind": "glass",
+      "name": "Frost",
+      "description": "No bend at all — plain frosted panel for text-heavy surfaces.",
+      "data": {
+        "blur": 18,
+        "strength": 0,
+        "chroma": 0,
+        "bezel": 0.35,
+        "curvature": 1.6,
+        "edge": 0.4,
+        "glow": 0.15,
+        "specularAngle": 130,
+        "tint": "rgba(255,255,255,0.06)",
+        "saturate": 1.2
+      },
+      "tags": [
+        "glass",
+        "material"
+      ]
+    },
+    {
+      "id": "lens",
+      "kind": "glass",
+      "name": "Lens",
+      "description": "Small circular magnifier — the draggable one.",
+      "data": {
+        "blur": 2,
+        "strength": 1,
+        "chroma": 0.7,
+        "bezel": 0.6,
+        "curvature": 1.1,
+        "edge": 0.85,
+        "glow": 0.4,
+        "specularAngle": 130,
+        "tint": "rgba(255,255,255,0.06)",
+        "saturate": 1.5
+      },
+      "tags": [
+        "glass",
+        "material"
+      ]
+    }
+  ]
+}

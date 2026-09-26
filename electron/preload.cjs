@@ -19,6 +19,7 @@ const invokeChannels = new Set([
   'dialog:pickFootage', 'dialog:pickFolder',
   'footage:analyze',
   'media:status',
+  'studio:exportMp4',
   'render:start',
   'render:cancel',
   'render:reveal',

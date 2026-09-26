@@ -12,6 +12,7 @@
  */
 
 import type { StudioDoc, StudioMediaClip } from '../../types/project'
+import { getIpc, isDesktop } from '../bridge'
 import { clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
 import { getMedia, overlayImage } from './media'
 import { drawStudioFrame, type FrameSources } from './renderer'
@@ -204,6 +205,32 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   const fileName = options.fileName ? `${options.fileName}.${extension}` : `cupric-studio.${extension}`
 
   return { blob, url: URL.createObjectURL(blob), fileName, durationSec: duration, mimeType: mimeType || 'video/webm', cancelled }
+}
+
+/**
+ * Desktop only: hand the recorded blob to FFmpeg in the main process and get a
+ * real H.264 MP4 back. In the browser there is no FFmpeg, so callers keep the
+ * WebM — we never rename a WebM to .mp4.
+ */
+export async function convertToMp4(
+  blob: Blob,
+  fileName: string,
+  fps: number,
+): Promise<{ outputPath: string; bytes: number }> {
+  const ipc = getIpc()
+  if (!isDesktop() || !ipc) throw new Error('MP4 conversion needs the desktop app (FFmpeg runs in the main process).')
+  const buffer = await blob.arrayBuffer()
+  const result: { outputPath: string; bytes: number } = await ipc.invoke('studio:exportMp4', {
+    bytes: new Uint8Array(buffer),
+    fileName,
+    fps,
+  })
+  return result
+}
+
+/** True when the Export-as-MP4 button should be offered. */
+export function canExportMp4(): boolean {
+  return isDesktop() && getIpc() !== null
 }
 
 /** Single PNG still of the composition at `t` — used for thumbnails/posters. */
