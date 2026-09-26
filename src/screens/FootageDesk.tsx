@@ -8,7 +8,7 @@ import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
 import { Segmented } from '../components/Segmented'
 import type { FootageAsset } from '../types/project'
-import { fakeUploadFootage } from '../lib/arena'
+import { uploadFootage } from '../lib/arena'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, hashStr, mulberry32, round1 } from '../lib/utils'
 
@@ -63,7 +63,7 @@ export function FootageDesk() {
     if (!project || uploading) return
     const name = file?.name ?? `raw-clip-${Math.floor(Math.random() * 900 + 100)}.mp4`
     setUploading({ name, pct: 0 })
-    const res = await fakeUploadFootage(file, (pct) => setUploading((cur) => (cur ? { ...cur, pct } : cur)))
+    const res = await uploadFootage(file, project.id, (pct) => setUploading((cur) => (cur ? { ...cur, pct } : cur)))
     const id = addFootageAsset(project.id, {
       name,
       durationSec: res.durationSec,

@@ -41,3 +41,26 @@ export async function fakeUploadFootage(
   }
   return { durationSec, silenceRanges: ranges }
 }
+
+export async function importArenaZip(file: File | null, projectId: string, onProgress: (pct: number) => void) {
+  const ipc = (window as any).northframe?.ipc
+  if (!ipc) return { ...(await fakeImportArenaZip(file, onProgress)), thumbnailDataUrl: null, localPath: null }
+  onProgress(12)
+  const picked = file ? (file as any).path : await ipc.invoke('dialog:pickArena')
+  if (!picked) throw new Error('No Arena file selected')
+  onProgress(35)
+  const result = await ipc.invoke('arena:import', { filePath: picked, projectId })
+  onProgress(100)
+  return result
+}
+
+export async function uploadFootage(file: File | null, projectId: string, onProgress: (pct: number) => void) {
+  const ipc = (window as any).northframe?.ipc
+  if (!ipc) return fakeUploadFootage(file, onProgress)
+  const srcPath = file && (file as any).path
+  if (!srcPath) return fakeUploadFootage(file, onProgress)
+  onProgress(10)
+  const result = await ipc.invoke('footage:analyze', { srcPath, projectId })
+  onProgress(100)
+  return result
+}

@@ -10,7 +10,7 @@ import { Modal } from '../components/Modal'
 import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
 import type { ArenaAsset, Project } from '../types/project'
-import { fakeImportArenaZip } from '../lib/arena'
+import { importArenaZip } from '../lib/arena'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { copyText, cx, deriveAspect, gradientFor, relTime } from '../lib/utils'
 
@@ -56,7 +56,7 @@ export function ArenaDesk() {
   async function handleDrop(file: File | null) {
     if (!project || importing) return
     setImporting({ name: file?.name ?? 'arena-winner.zip', pct: 0 })
-    const res = await fakeImportArenaZip(file, (pct) =>
+    const res = await importArenaZip(file, project.id, (pct) =>
       setImporting((cur) => (cur ? { ...cur, pct } : cur)),
     )
     addArenaAsset(project.id, {
