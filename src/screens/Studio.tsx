@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import {
+  Boxes,
   Clapperboard,
   Download,
   Image as ImageIcon,
@@ -31,6 +32,7 @@ import { ProgressBar } from '../components/ProgressBar'
 import { StudioInspector } from './studio/StudioInspector'
 import { StudioPreview } from './studio/StudioPreview'
 import { StudioTimeline } from './studio/StudioTimeline'
+import { PackBrowser } from './library/PackBrowser'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../types/project'
 import {
   defaultAudioClip,
@@ -85,6 +87,7 @@ export function Studio() {
   const [showChecks, setShowChecks] = useState(false)
   const [showSafeAreas, setShowSafeAreas] = useState(true)
   const [keyframeRecord, setKeyframeRecord] = useState(false)
+  const [showResources, setShowResources] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -598,6 +601,14 @@ export function Studio() {
         {!selectedId && (
           <span className="text-xs text-muted">Select a clip to split it</span>
         )}
+        <Button
+          size="sm"
+          variant={showResources ? 'primary' : 'outline'}
+          onClick={() => setShowResources((shown) => !shown)}
+          disabled={exporting}
+        >
+          <Boxes size={13} /> Resources
+        </Button>
 
         {voiceSupported && (
           <Button
@@ -731,8 +742,17 @@ export function Studio() {
         </div>
       )}
 
-      {/* Stage + inspector */}
+      {/* Shared resources + stage + inspector */}
       <div className="flex min-h-0 flex-1">
+        {showResources && (
+          <aside className="w-[420px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio resources">
+            <div className="mb-3">
+              <h2 className="text-sm font-semibold">All Library resources</h2>
+              <p className="mt-1 text-xs text-muted">The same 13 bundled packs available in Library. Drag compatible items directly onto the stage.</p>
+            </div>
+            <PackBrowser />
+          </aside>
+        )}
         <div className="flex min-w-0 flex-1 flex-col">
           <div
             className={cx(

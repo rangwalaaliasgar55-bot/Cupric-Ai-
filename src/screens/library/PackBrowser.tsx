@@ -318,8 +318,8 @@ export function PackBrowser() {
             )}
           </h2>
           <p className="mt-0.5 text-xs text-muted">
-            Fetched from this repository over the internet ({PACKS_BASE.replace('https://', '')}) — nothing is read from
-            your machine. Download once to keep them without a connection.
+            Bundled with this Cupric AI release so every installed resource is available offline. The stable repository
+            ({PACKS_BASE.replace('https://', '')}) is used only as a fallback.
           </p>
         </div>
         <span className="font-mono text-xs text-muted tabular-nums">
