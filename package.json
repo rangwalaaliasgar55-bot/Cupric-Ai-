@@ -116,7 +116,7 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "Cupric-AI-Setup-${version}.${ext}"
     },
     "publish": {
       "provider": "github",
