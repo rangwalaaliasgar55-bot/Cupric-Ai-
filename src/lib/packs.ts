@@ -17,7 +17,7 @@
  * user downloaded the packs once, and a fresh online start works with no cache.
  */
 
-export type PackItemKind = 'glass' | 'transition' | 'animation' | 'background' | 'effect' | 'component' | 'voice'
+export type PackItemKind = 'glass' | 'transition' | 'animation' | 'background' | 'effect' | 'component' | 'voice' | 'template' | 'font' | 'skill' | 'icon' | 'block' | 'provider'
 
 export type PackItem = {
   id: string

@@ -46,6 +46,20 @@
       "bytes": 2716
     },
     {
+      "id": "external-ui",
+      "name": "External UI & motion resources",
+      "description": "Indexed icons, UI blocks, motion components and design tools from Its Hover, Great UI, Bencho, Spell UI and DesignEng. Entries link to the original source and are available to the video/agent adapters.",
+      "itemCount": 149,
+      "bytes": 89303
+    },
+    {
+      "id": "remotion",
+      "name": "Remotion toolkit",
+      "description": "Upstream Remotion templates, Google Fonts catalog and agent skills indexed for autonomous planning. Source metadata only; no upstream code is vendored.",
+      "itemCount": 1946,
+      "bytes": 655680
+    },
+    {
       "id": "components",
       "name": "Lab components",
       "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",

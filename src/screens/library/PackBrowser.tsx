@@ -45,6 +45,12 @@ const KIND_ICON = {
   effect: Wand2,
   component: Layers,
   voice: Mic,
+  template: Layers,
+  font: TypeIcon,
+  skill: Sparkles,
+  icon: Sparkles,
+  block: Layers,
+  provider: Wand2,
 } as const
 
 type Source = 'memory' | 'cache' | 'network' | 'local' | 'none'
@@ -209,6 +215,18 @@ export function PackBrowser() {
     } else if (item.kind === 'component') {
       setView('lab')
       pushToast('info', `Opening the Lab at “${item.name}”.`)
+    } else if (item.kind === 'icon' || item.kind === 'block') {
+      const clip = defaultTextClip(nextFreeStart(doc, topTrack, at, 4), topTrack)
+      clip.text = item.name
+      clip.name = `Resource · ${item.name}`
+      clip.anim = 'fade-up'
+      addStudioClip(project.id, clip)
+      const source = (item.data as { source?: string } | undefined)?.source
+      pushToast('success', `“${item.name}” added as an editable Studio cue${source ? ' — source linked in the resource card' : ''}.`)
+    } else if (item.kind === 'template' || item.kind === 'font' || item.kind === 'skill' || item.kind === 'provider') {
+      const source = (item.data as { source?: string } | undefined)?.source
+      if (source) window.open(source, '_blank', 'noopener,noreferrer')
+      pushToast('info', `${item.name} is indexed with an editable video/agent adapter. Opening its upstream reference.`)
     }
     markUsed(item)
   }
@@ -343,6 +361,8 @@ export function PackBrowser() {
                           </>
                         ) : item.kind === 'component' ? (
                           'Open in Lab'
+                        ) : item.kind === 'template' || item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider' ? (
+                          'Open source'
                         ) : (
                           'Add to Studio'
                         )}

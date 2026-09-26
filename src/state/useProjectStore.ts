@@ -17,6 +17,7 @@ import type {
   StudioDoc,
 } from '../types/project'
 import { getIpc } from '../lib/bridge'
+import { planWithRemotionCapabilities } from '../lib/remotionResources'
 import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
 import { emptyStudioDoc, normaliseClip, splitClipAt, studioOf } from '../lib/studio/doc'
@@ -201,7 +202,19 @@ export const useProjectStore = create<AppState>()(
           const id = uid()
           const labels = ['Create project', 'Generate AI rundown', 'Lock rundown', 'Generate candidates', 'Ingest footage', 'Build timeline', 'Render MP4', 'Review report']
           const steps = labels.map((label, i) => ({ id: `${id}-step-${i}`, label, status: i === 0 ? 'running' as const : 'queued' as const, progressPct: 0 }))
-          const job: AutomationJob = { ...input, id, projectId, status: 'running', currentStepId: steps[0].id, steps, createdAt: nowIso(), updatedAt: nowIso(), outputPath: null, reviewReportPath: null }
+          const job: AutomationJob = {
+            ...input,
+            remotionPlan: planWithRemotionCapabilities(input.brief, input.aspect, input.fps),
+            id,
+            projectId,
+            status: 'running',
+            currentStepId: steps[0].id,
+            steps,
+            createdAt: nowIso(),
+            updatedAt: nowIso(),
+            outputPath: null,
+            reviewReportPath: null,
+          }
           set((s) => ({ automationJobs: [job, ...s.automationJobs], view: 'auto' }))
           const ipc = getIpc()
           if (ipc) {

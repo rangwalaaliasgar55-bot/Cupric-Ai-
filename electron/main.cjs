@@ -784,7 +784,10 @@ async function runAutomationPipeline(jobId) {
     if (!rundown) {
       startAutomationStep(job.id, 1, 'Drafting creative rundown')
       try {
-        rundown = await generateRundown(job.brief, [], { aspect: job.aspect, fps: job.fps, mode: job.mode })
+        const capabilityContext = job.remotionPlan
+          ? `\n\nREMOTION CAPABILITY PLAN (follow this deterministic plan): template=${job.remotionPlan.template}; font=${job.remotionPlan.font}; skills=${(job.remotionPlan.skills || []).join(', ')}; no remote assets; preview and export must match.`
+          : ''
+        rundown = await generateRundown(`${job.brief}${capabilityContext}`, [], { aspect: job.aspect, fps: job.fps, mode: job.mode })
       } catch (err) {
         warnings.push(`Live AI unavailable; used local deterministic rundown. ${err?.message || err}`)
         rundown = fallbackRundownForJob(job)
