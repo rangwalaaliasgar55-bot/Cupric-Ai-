@@ -9,9 +9,12 @@
 import type {
   StudioClip,
   StudioDoc,
+  StudioGradeNode,
+  StudioMask,
   StudioGlassClip,
   StudioMediaClip,
   StudioOverlayClip,
+  StudioStickerClip,
   StudioTextClip,
   StudioTransition,
 } from '../../types/project'
@@ -26,6 +29,11 @@ export type FrameSources = {
   media: (clip: StudioMediaClip) => CanvasImageSource | null
   /** Decoded overlay images, keyed by clip id. */
   overlay: (clip: StudioOverlayClip) => CanvasImageSource | null
+  /**
+   * The sticker's canvas wound to `localSec` (seconds into the clip).
+   * Optional so headless callers can leave it out.
+   */
+  sticker?: (clip: StudioStickerClip, localSec: number) => CanvasImageSource | null
 }
 
 const easeOut = (p: number) => 1 - Math.pow(1 - p, 3)
@@ -462,6 +470,202 @@ function drawGlassClip(ctx: CanvasRenderingContext2D, clip: StudioGlassClip, t: 
   }
 }
 
+
+/* ——— rotation, grade and matte ———
+ *
+ * These three apply to any clip, so they live outside the per-kind draw code:
+ * the frame loop rotates, filters and mattes whatever the clip happens to be.
+ */
+
+/** Where a clip pivots. Positioned clips turn about themselves, full-frame ones about the frame. */
+function clipCentre(clip: StudioClip, w: number, h: number): { cx: number; cy: number } {
+  if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker') {
+    return { cx: clip.x * w, cy: clip.y * h }
+  }
+  return { cx: w / 2, cy: h / 2 }
+}
+
+/**
+ * CSS filter string for a grade chain.
+ *
+ * Canvas filters are the same primitives CSS has, so the grade is expressed in
+ * them and costs nothing extra — the GPU applies it during the draw. Two
+ * approximations are deliberate and documented rather than hidden:
+ * temperature is a sepia/hue-rotate pair (there is no white-balance
+ * primitive), and `fade` lifts the blacks by trading contrast for brightness.
+ */
+export function gradeFilter(nodes: StudioGradeNode[] | null | undefined): string {
+  if (!nodes || !nodes.length) return ''
+  const parts: string[] = []
+  for (const node of nodes) {
+    if (!node.enabled) continue
+    if (node.id === 'balance') {
+      if (node.exposure) parts.push(`brightness(${(1 + node.exposure / 100).toFixed(4)})`)
+      if (node.temperature) {
+        const k = Math.min(Math.abs(node.temperature), 100) / 100
+        parts.push(`sepia(${(k * 0.55).toFixed(4)})`)
+        // Cool is the same tint rotated to the other side of the wheel.
+        parts.push(`hue-rotate(${node.temperature >= 0 ? 0 : 175}deg)`)
+        parts.push(`saturate(${(1 + k * 0.25).toFixed(4)})`)
+      }
+    } else if (node.id === 'contrast') {
+      if (node.contrast) parts.push(`contrast(${(1 + node.contrast / 100).toFixed(4)})`)
+      if (node.fade > 0) {
+        parts.push(`contrast(${(1 - node.fade / 250).toFixed(4)})`)
+        parts.push(`brightness(${(1 + node.fade / 400).toFixed(4)})`)
+      }
+    } else if (node.id === 'look') {
+      if (node.saturation) parts.push(`saturate(${(1 + node.saturation / 100).toFixed(4)})`)
+      if (node.hue) parts.push(`hue-rotate(${Math.round(node.hue * 1.8)}deg)`)
+    }
+  }
+  return parts.join(' ')
+}
+
+/** Compose a new filter onto whatever the context already has. */
+function composeFilter(existing: string, extra: string): string {
+  if (!extra) return existing || 'none'
+  if (!existing || existing === 'none') return extra
+  return `${existing} ${extra}`
+}
+
+/** Scratch canvas for matted clips. One per size, reused across frames. */
+let maskScratch: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null = null
+function scratchFor(w: number, h: number) {
+  if (typeof document === 'undefined') return null
+  if (!maskScratch) {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    maskScratch = { canvas, ctx }
+  }
+  if (maskScratch.canvas.width !== w || maskScratch.canvas.height !== h) {
+    maskScratch.canvas.width = w
+    maskScratch.canvas.height = h
+  }
+  maskScratch.ctx.setTransform(1, 0, 0, 1, 0, 0)
+  maskScratch.ctx.filter = 'none'
+  maskScratch.ctx.globalAlpha = 1
+  maskScratch.ctx.globalCompositeOperation = 'source-over'
+  maskScratch.ctx.clearRect(0, 0, w, h)
+  return maskScratch
+}
+
+/**
+ * Punch the matte out of an already-drawn scratch layer.
+ *
+ * Everything is done with compositing rather than per-pixel work, except the
+ * luma key, which genuinely needs the pixels. Feathering is a blur on the
+ * shape fill — the same edge the eye expects from a feathered mask in a real
+ * NLE, and free on the GPU.
+ */
+function applyMask(ctx: CanvasRenderingContext2D, mask: StudioMask, w: number, h: number) {
+  const feather = (mask.featherPct / 100) * Math.min(w, h)
+
+  if (mask.shape === 'luma') {
+    const image = ctx.getImageData(0, 0, w, h)
+    const data = image.data
+    const lo = Math.max(0, mask.threshold - mask.softness / 2)
+    const hi = Math.min(1, mask.threshold + mask.softness / 2)
+    const span = Math.max(0.0001, hi - lo)
+    for (let i = 0; i < data.length; i += 4) {
+      // Rec. 709 luma, so colour weighting matches what the eye reads as bright.
+      const luma = (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]) / 255
+      let keep = (luma - lo) / span
+      keep = keep < 0 ? 0 : keep > 1 ? 1 : keep
+      if (mask.invert) keep = 1 - keep
+      data[i + 3] = Math.round(data[i + 3] * keep)
+    }
+    ctx.putImageData(image, 0, 0)
+    return
+  }
+
+  if (mask.shape === 'matte') {
+    const matte = mask.matteDataUrl ? overlayImage(`matte-${mask.matteDataUrl.slice(-32)}`, mask.matteDataUrl) : null
+    if (!matte) return
+    ctx.save()
+    ctx.globalCompositeOperation = mask.invert ? 'destination-out' : 'destination-in'
+    if (feather > 0) ctx.filter = `blur(${feather.toFixed(2)}px)`
+    ctx.drawImage(matte, 0, 0, w, h)
+    ctx.restore()
+    return
+  }
+
+  ctx.save()
+  ctx.globalCompositeOperation = mask.invert ? 'destination-out' : 'destination-in'
+  if (feather > 0) ctx.filter = `blur(${feather.toFixed(2)}px)`
+  ctx.fillStyle = '#fff'
+  const bx = mask.x * w
+  const by = mask.y * h
+  const bw = mask.w * w
+  const bh = mask.h * h
+  if (mask.shape === 'ellipse') {
+    ctx.beginPath()
+    ctx.ellipse(bx + bw / 2, by + bh / 2, Math.abs(bw) / 2, Math.abs(bh) / 2, 0, 0, Math.PI * 2)
+    ctx.fill()
+  } else {
+    ctx.fillRect(bx, by, bw, bh)
+  }
+  ctx.restore()
+}
+
+/** Everything a single clip paints, on whatever context it is given. */
+function drawClipContent(
+  ctx: CanvasRenderingContext2D,
+  clip: StudioClip,
+  t: number,
+  width: number,
+  height: number,
+  sources: FrameSources,
+) {
+  if (clip.kind === 'background') {
+    backgroundById(clip.backgroundId).paint(ctx, width, height, t)
+  } else if (clip.kind === 'video' || clip.kind === 'image') {
+    const source = sources.media(clip)
+    if (source) {
+      const [sw, sh] = sourceSize(source)
+      drawFit(ctx, source, sw, sh, width, height, clip.fit)
+    } else {
+      // Honest placeholder: the clip exists, its media handle does not.
+      ctx.fillStyle = 'rgba(226,75,74,0.10)'
+      ctx.fillRect(0, 0, width, height)
+      ctx.fillStyle = 'rgba(244,241,234,0.72)'
+      ctx.font = `600 ${Math.round(height * 0.028)}px 'Inter Variable', Inter, system-ui, sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.fillText(`Relink “${clip.fileName}”`, width / 2, height / 2)
+    }
+  } else if (clip.kind === 'text') {
+    drawTextClip(ctx, clip, t, width, height)
+  } else if (clip.kind === 'glass') {
+    drawGlassClip(ctx, clip, t, width, height)
+  } else if (clip.kind === 'sticker') {
+    const source = sources.sticker?.(clip, Math.max(0, t - clip.startSec)) ?? null
+    if (source) {
+      const [sw, sh] = sourceSize(source)
+      if (sw && sh) {
+        // Scale 1 means "a quarter of the shorter edge", which is a sticker,
+        // not a background element.
+        const base = (Math.min(width, height) * 0.25) / Math.max(sw, sh)
+        const dw = sw * base * clip.scale
+        const dh = sh * base * clip.scale
+        ctx.drawImage(source, clip.x * width - dw / 2, clip.y * height - dh / 2, dw, dh)
+      }
+    }
+  } else if (clip.kind === 'overlay') {
+    const source = sources.overlay(clip)
+    if (source) {
+      const [sw, sh] = sourceSize(source)
+      if (sw && sh) {
+        const base = Math.min(width / sw, height / sh)
+        const dw = sw * base * clip.scale
+        const dh = sh * base * clip.scale
+        ctx.drawImage(source, clip.x * width - dw / 2, clip.y * height - dh / 2, dw, dh)
+      }
+    }
+  }
+}
+
 /* ——— main entry ——— */
 
 export function drawStudioFrame(
@@ -497,39 +701,33 @@ export function drawStudioFrame(
     const alpha = applyTransition(ctx, clip, t, width, height)
     ctx.globalAlpha = alpha
 
-    if (clip.kind === 'background') {
-      backgroundById(clip.backgroundId).paint(ctx, width, height, t)
-    } else if (clip.kind === 'video' || clip.kind === 'image') {
-      const source = sources.media(clip)
-      if (source) {
-        const [sw, sh] = sourceSize(source)
-        drawFit(ctx, source, sw, sh, width, height, clip.fit)
-      } else {
-        // Honest placeholder: the clip exists, its media handle does not.
-        ctx.fillStyle = 'rgba(226,75,74,0.10)'
-        ctx.fillRect(0, 0, width, height)
-        ctx.fillStyle = 'rgba(244,241,234,0.72)'
-        ctx.font = `600 ${Math.round(height * 0.028)}px 'Inter Variable', Inter, system-ui, sans-serif`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillText(`Relink “${clip.fileName}”`, width / 2, height / 2)
-      }
-    } else if (clip.kind === 'text') {
-      drawTextClip(ctx, clip, t, width, height)
-    } else if (clip.kind === 'glass') {
-      drawGlassClip(ctx, clip, t, width, height)
-    } else if (clip.kind === 'overlay') {
-      const source = sources.overlay(clip)
-      if (source) {
-        const [sw, sh] = sourceSize(source)
-        if (sw && sh) {
-          const base = Math.min(width / sw, height / sh)
-          const dw = sw * base * clip.scale
-          const dh = sh * base * clip.scale
-          ctx.drawImage(source, clip.x * width - dw / 2, clip.y * height - dh / 2, dw, dh)
-        }
-      }
+    // Rotation is about the clip's own centre, so a rotated title still sits
+    // where the user put it rather than swinging off round the frame origin.
+    const rotation = clip.rotation ?? 0
+    if (rotation) {
+      const { cx, cy } = clipCentre(clip, width, height)
+      ctx.translate(cx, cy)
+      ctx.rotate((rotation * Math.PI) / 180)
+      ctx.translate(-cx, -cy)
     }
+
+    const grade = gradeFilter(clip.grade)
+    const mask = clip.mask
+    const scratch = mask ? scratchFor(width, height) : null
+
+    if (mask && scratch) {
+      // Matted clips are drawn to a scratch layer first: the matte has to cut
+      // the clip alone, not everything already on the frame.
+      scratch.ctx.filter = grade || 'none'
+      drawClipContent(scratch.ctx, clip, t, width, height, sources)
+      scratch.ctx.filter = 'none'
+      applyMask(scratch.ctx, mask, width, height)
+      ctx.drawImage(scratch.canvas, 0, 0, width, height)
+    } else {
+      ctx.filter = composeFilter(ctx.filter, grade)
+      drawClipContent(ctx, clip, t, width, height, sources)
+    }
+
     ctx.filter = 'none'
     paintTransitionGlass(ctx, clip, t, width, height)
     ctx.restore()
@@ -549,8 +747,4 @@ export function drawableElement(mediaId: string): CanvasImageSource | null {
   return el
 }
 
-/** Preview convenience: resolve media straight from the runtime registry. */
-export const registrySources: FrameSources = {
-  media: (clip) => drawableElement(clip.mediaId),
-  overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
-}
+

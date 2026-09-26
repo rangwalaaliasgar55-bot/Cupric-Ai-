@@ -11,6 +11,7 @@ import type {
   StudioDoc,
   StudioGlassClip,
   StudioMediaClip,
+  StudioStickerClip,
   StudioTextClip,
 } from '../../types/project'
 import { clamp, uid } from '../utils'
@@ -183,6 +184,27 @@ export function defaultTextClip(start: number, track: number): StudioTextClip {
     anim: 'fade-up',
     captionStyle: null,
     highlightWord: null,
+  }
+}
+
+export function defaultStickerClip(start: number, track: number, stickerId = 'pulse-ring'): StudioStickerClip {
+  return {
+    id: uid(),
+    kind: 'sticker',
+    track,
+    startSec: start,
+    durationSec: 2,
+    name: 'Sticker',
+    transitionIn: 'none',
+    transitionOut: 'none',
+    opacity: 1,
+    stickerId,
+    json: null,
+    x: 0.5,
+    y: 0.5,
+    scale: 1,
+    loop: true,
+    speed: 1,
   }
 }
 

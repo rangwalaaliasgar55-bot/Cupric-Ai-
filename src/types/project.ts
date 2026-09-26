@@ -192,6 +192,44 @@ export type StudioTransition =
   | 'lens-sweep'
 export type StudioCaptionStyle = 'hormozi' | 'standard' | 'minimal'
 
+/**
+ * One stage of the colour grade.
+ *
+ * Three nodes, in a fixed order, because that is the order a colourist works
+ * in: balance the image, set the contrast, then put a look on top. Every
+ * parameter is -100..100 with 0 meaning "do nothing", so a node that has never
+ * been touched costs nothing and can be skipped entirely.
+ */
+export type StudioGradeNode =
+  | { id: 'balance'; enabled: boolean; exposure: number; temperature: number }
+  | { id: 'contrast'; enabled: boolean; contrast: number; fade: number }
+  | { id: 'look'; enabled: boolean; saturation: number; hue: number }
+
+/**
+ * Per-clip matte.
+ *
+ * `rect` and `ellipse` are drawn here. `luma` keys on brightness. `matte` uses
+ * an image the user supplies — that is the object-aware path, because nothing
+ * in this app segments a subject on its own: a matte rendered by an external
+ * tool (or by the automation pipeline) is imported and used as the alpha.
+ */
+export type StudioMask = {
+  shape: 'rect' | 'ellipse' | 'luma' | 'matte'
+  /** Normalised geometry for the shape masks. */
+  x: number
+  y: number
+  w: number
+  h: number
+  /** Edge softness as a percentage of the smaller frame dimension. */
+  featherPct: number
+  invert: boolean
+  /** Luma key: the brightness that becomes opaque, and how soft the ramp is. */
+  threshold: number
+  softness: number
+  /** Greyscale or alpha image used as the matte, for `shape: 'matte'`. */
+  matteDataUrl?: string | null
+}
+
 type StudioClipCommon = {
   id: string
   /** 0 = bottom-most track. Higher tracks draw on top. */
@@ -203,6 +241,12 @@ type StudioClipCommon = {
   transitionOut: StudioTransition
   /** 0–1 */
   opacity: number
+  /** Degrees clockwise about the clip's own centre. Absent means 0. */
+  rotation?: number
+  /** Up to three grade nodes, applied in array order. Absent means ungraded. */
+  grade?: StudioGradeNode[] | null
+  /** Absent means the clip fills its own bounds with no matte. */
+  mask?: StudioMask | null
 }
 
 export type StudioMediaClip = StudioClipCommon & {
@@ -289,6 +333,28 @@ export type StudioGlassClip = StudioClipCommon & {
   labelColor: string
 }
 
+/**
+ * A Lottie sticker.
+ *
+ * The animation is played by frame number, never by wall clock, so the frame
+ * shown at time `t` is the same in the preview, in a re-scrub, and in the
+ * export — the same rule the rest of the renderer follows.
+ */
+export type StudioStickerClip = StudioClipCommon & {
+  kind: 'sticker'
+  /** Built-in sticker id, or 'custom' when `json` carries an imported file. */
+  stickerId: string
+  json?: string | null
+  /** Normalised centre. */
+  x: number
+  y: number
+  /** 1 = the sticker's natural size against the shorter frame edge. */
+  scale: number
+  loop: boolean
+  /** Playback rate through the Lottie timeline. */
+  speed: number
+}
+
 export type StudioClip =
   | StudioMediaClip
   | StudioAudioClip
@@ -296,6 +362,7 @@ export type StudioClip =
   | StudioBackgroundClip
   | StudioOverlayClip
   | StudioGlassClip
+  | StudioStickerClip
 
 /**
  * Stage background that is not one of the shipped presets.

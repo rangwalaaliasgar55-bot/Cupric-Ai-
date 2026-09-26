@@ -10,7 +10,8 @@ import type {
 } from '../../types/project'
 import { audioGainAt, clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
 import { getMedia } from '../../lib/studio/media'
-import { drawStudioFrame, registrySources } from '../../lib/studio/renderer'
+import { drawStudioFrame } from '../../lib/studio/renderer'
+import { registrySources } from '../../lib/studio/sources'
 
 type Props = {
   doc: StudioDoc

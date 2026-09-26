@@ -109,7 +109,7 @@ await build({
   loader: { '.css': 'empty', '.svg': 'dataurl', '.json': 'json' },
   stdin: {
     contents: `
-      export { drawStudioFrame, clampToSafeArea, SAFE_MARGIN } from './src/lib/studio/renderer'
+      export { drawStudioFrame, clampToSafeArea, SAFE_MARGIN, gradeFilter } from './src/lib/studio/renderer'
       export { audioGainAt } from './src/lib/studio/doc'
       export { emptyStudioDoc, defaultGlassClip, defaultTextClip } from './src/lib/studio/doc'
       export { TRANSITIONS, TEXT_ANIMATIONS } from './src/lib/studio/transitions'
@@ -269,6 +269,57 @@ if (mod.parseVoiceCommand('add text hello world')?.text !== 'hello world') failu
   const short = { kind: 'audio', startSec: 0, durationSec: 1, volume: 1, fadeInSec: 2, fadeOutSec: 2 }
   for (let t = 0; t < 1; t += 0.05) {
     if (mod.audioGainAt(short, t) > 1.0001) { failures.push('audio gain: overlapping fades exceeded unity'); break }
+  }
+}
+
+// 9. Colour grade — the filter string handed to the canvas.
+{
+  const eq = (label, got, want) => {
+    checks += 1
+    if (got !== want) failures.push(`grade: ${label} → "${got}", expected "${want}"`)
+  }
+  eq('no nodes', mod.gradeFilter(null), '')
+  eq('empty chain', mod.gradeFilter([]), '')
+  eq('untouched nodes cost nothing', mod.gradeFilter([
+    { id: 'balance', enabled: true, exposure: 0, temperature: 0 },
+    { id: 'contrast', enabled: true, contrast: 0, fade: 0 },
+    { id: 'look', enabled: true, saturation: 0, hue: 0 },
+  ]), '')
+  eq('a disabled node is skipped', mod.gradeFilter([{ id: 'look', enabled: false, saturation: 80, hue: 0 }]), '')
+  eq('exposure', mod.gradeFilter([{ id: 'balance', enabled: true, exposure: 20, temperature: 0 }]), 'brightness(1.2000)')
+  eq('contrast', mod.gradeFilter([{ id: 'contrast', enabled: true, contrast: 50, fade: 0 }]), 'contrast(1.5000)')
+  eq('saturation', mod.gradeFilter([{ id: 'look', enabled: true, saturation: -100, hue: 0 }]), 'saturate(0.0000)')
+  checks += 1
+  const warm = mod.gradeFilter([{ id: 'balance', enabled: true, exposure: 0, temperature: 60 }])
+  const cool = mod.gradeFilter([{ id: 'balance', enabled: true, exposure: 0, temperature: -60 }])
+  if (warm === cool || !warm.includes('sepia') || !cool.includes('hue-rotate(175deg)')) failures.push('grade: warm and cool must differ')
+  // Node order is the chain order: balance, then contrast, then look.
+  checks += 1
+  const chain = mod.gradeFilter([
+    { id: 'balance', enabled: true, exposure: 10, temperature: 0 },
+    { id: 'contrast', enabled: true, contrast: 10, fade: 0 },
+    { id: 'look', enabled: true, saturation: 10, hue: 0 },
+  ])
+  if (!/^brightness.*contrast.*saturate/.test(chain)) failures.push(`grade: chain out of order → ${chain}`)
+}
+
+// 10. Rotation and masks must not leak transform or composite state.
+{
+  const doc = mod.emptyStudioDoc('9:16')
+  const text = mod.defaultTextClip(0, 1)
+  doc.clips = [
+    { ...text, rotation: 30 },
+    { ...mod.defaultTextClip(0, 2), mask: { shape: 'ellipse', x: 0.1, y: 0.1, w: 0.8, h: 0.8, featherPct: 4, invert: false, threshold: 0.5, softness: 0.2 } },
+    { ...mod.defaultTextClip(0, 0), mask: { shape: 'luma', x: 0, y: 0, w: 1, h: 1, featherPct: 0, invert: true, threshold: 0.4, softness: 0.3 } },
+    { ...mod.defaultGlassClip(0, 1), rotation: -15, grade: [{ id: 'look', enabled: true, saturation: 40, hue: 10 }] },
+  ]
+  for (const t of [0, 0.5, 1.2]) {
+    checks += 1
+    const probe = makeCtx(1080, 1920)
+    mod.drawStudioFrame(probe.ctx, doc, t, 1080, 1920, { media: () => null, overlay: () => null })
+    if (probe.depth !== 0) failures.push(`rotation/mask: unbalanced save/restore at t=${t} (depth ${probe.depth})`)
+    if (probe.ctx.globalCompositeOperation !== 'source-over') failures.push(`rotation/mask: composite op left as ${probe.ctx.globalCompositeOperation} at t=${t}`)
+    if (probe.ctx.filter !== 'none') failures.push(`rotation/mask: filter left as ${probe.ctx.filter} at t=${t}`)
   }
 }
 

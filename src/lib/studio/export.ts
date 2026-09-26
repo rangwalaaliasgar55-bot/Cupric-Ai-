@@ -15,6 +15,7 @@ import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/pr
 import { getIpc, isDesktop } from '../bridge'
 import { audioGainAt, clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
 import { getMedia, overlayImage } from './media'
+import { stickerFrame } from './lottie'
 import { drawableElement, drawStudioFrame, type FrameSources } from './renderer'
 
 export type ExportOptions = {
@@ -133,6 +134,7 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   const sources: FrameSources = {
     media: (clip) => drawableElement(clip.mediaId),
     overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
+    sticker: (clip, localSec) => stickerFrame(clip, localSec),
   }
 
   // Reset every audio clip to its trim-in as well, so a music bed that was
@@ -284,6 +286,7 @@ export function captureStill(doc: StudioDoc, t: number, maxWidth = 640): string 
   drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, {
     media: (clip) => drawableElement(clip.mediaId),
     overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
+    sticker: (clip, localSec) => stickerFrame(clip, localSec),
   })
   try {
     return canvas.toDataURL('image/jpeg', 0.7)

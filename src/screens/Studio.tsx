@@ -14,6 +14,7 @@ import {
   Scissors,
   Sparkles,
   SkipBack,
+  Sticker,
   Square,
   Type as TypeIcon,
   Volume2,
@@ -32,6 +33,7 @@ import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '..
 import {
   defaultAudioClip,
   defaultGlassClip,
+  defaultStickerClip,
   defaultTextClip,
   docDuration,
   nextFreeStart,
@@ -273,6 +275,13 @@ export function Studio() {
     setSelectedId(clip.id)
   }
 
+  function addSticker() {
+    const track = Math.min(1, doc.trackCount - 1)
+    const clip = defaultStickerClip(nextFreeStart(doc, track, time, 2), track)
+    addStudioClip(projectId, clip)
+    setSelectedId(clip.id)
+  }
+
   function addGlassClip(shape: 'panel' | 'lens' = 'panel', presetId = 'hero') {
     const clip = defaultGlassClip(nextFreeStart(doc, Math.min(1, doc.trackCount - 1), time, 3), Math.min(1, doc.trackCount - 1), presetId, shape)
     addStudioClip(projectId, clip)
@@ -481,6 +490,9 @@ export function Studio() {
         </Button>
         <Button size="sm" variant="outline" onClick={() => addGlassClip('panel')} disabled={exporting}>
           <Sparkles size={13} /> Glass
+        </Button>
+        <Button size="sm" variant="outline" onClick={addSticker} disabled={exporting}>
+          <Sticker size={13} /> Sticker
         </Button>
         <Button
           size="sm"
