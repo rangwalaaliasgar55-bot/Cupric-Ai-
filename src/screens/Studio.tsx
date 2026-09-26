@@ -274,6 +274,16 @@ export function Studio() {
       const ipc = getIpc()
       let raw: unknown
       if (ipc) {
+        // Hundreds of full catalogue names made small local models crawl and
+        // could leave the button spinning for minutes. Send the best matching
+        // references plus a compact fallback sample instead.
+        const terms = instruction.toLowerCase().split(/[^a-z0-9]+/).filter((term) => term.length > 2)
+        const relevantNames = (items: Array<{ name: string }>, limit = 36) => {
+          const ranked = items
+            .map((item, index) => ({ name: item.name, index, score: terms.reduce((sum, term) => sum + (item.name.toLowerCase().includes(term) ? 1 : 0), 0) }))
+            .sort((a, b) => b.score - a.score || a.index - b.index)
+          return ranked.slice(0, limit).map((item) => item.name)
+        }
         const context = {
           aspect: doc.aspect,
           fps: doc.fps,
@@ -283,9 +293,9 @@ export function Studio() {
           // vocabulary, then translates the idea into Cupric's safe native
           // operations. Third-party source is never sent, copied or executed.
           motionReferences: {
-            reactBits: reactBitsCatalog.items.map((item) => item.name),
-            skiperUi: skiperCatalog.items.map((item) => item.name),
-            remotionPackages: (remotionCatalog.packages ?? []).map((item) => item.name),
+            reactBits: relevantNames(reactBitsCatalog.items),
+            skiperUi: relevantNames(skiperCatalog.items),
+            remotionPackages: relevantNames(remotionCatalog.packages ?? []),
           },
           clips: doc.clips.map((clip) => ({
             id: clip.id,

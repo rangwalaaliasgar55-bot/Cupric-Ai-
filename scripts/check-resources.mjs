@@ -26,7 +26,10 @@ assert.equal(skiper.items.length, 106, 'all supplied Skiper UI entries must be i
 assert.ok(skiper.items.every((item) => item.data?.attribution?.includes('Skiper UI')), 'Skiper adaptations must retain attribution')
 assert.ok(skiper.items.every((item) => item.data?.editable && item.data?.agentUsable), 'Skiper storyboards must be editable and agent-usable')
 assert.equal(remotion.items.filter((item) => item.id.startsWith('package-')).length, 137, 'all current Remotion packages must be indexed')
-assert.ok(remotion.items.filter((item) => item.id.startsWith('package-')).every((item) => item.tags?.includes('license-review')), 'Remotion packages must retain the license-review gate')
+assert.ok(remotion.items.filter((item) => item.id.startsWith('package-')).every((item) => item.kind === 'saas-template' && item.data?.editable && item.tags?.includes('license-review')), 'Remotion packages must be usable native storyboards and retain the license-review gate')
+assert.ok(remotion.items.filter((item) => item.id.startsWith('template-')).every((item) => item.kind === 'saas-template' && item.data?.editable), 'Remotion templates must be usable in Studio instead of copy-only cards')
+const panel = JSON.parse(await readFile(new URL('resources/packs/panelui.json', root), 'utf8'))
+assert.ok(panel.items.every((item) => item.kind === 'saas-template' && item.data?.editable && item.data?.agentUsable), 'PanelUI entries must create editable native storyboards')
 
 const packsSource = await readFile(new URL('src/lib/packs.ts', root), 'utf8')
 assert.match(packsSource, /PACKS_BRANCH = 'main'/, 'network fallback must use the stable branch')

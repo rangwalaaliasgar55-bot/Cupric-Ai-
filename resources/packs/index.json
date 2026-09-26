@@ -1,5 +1,5 @@
 {
-  "version": "0.7.1",
+  "version": "0.7.2",
   "updated": "2026-09-26",
   "repo": "rangwalaaliasgar55-bot/Cupric-Ai-",
   "packs": [
@@ -62,9 +62,9 @@
     {
       "id": "panelui",
       "name": "PanelUI catalogue",
-      "description": "All 135 PanelUI components and 21 chart visualisations, with the upstream behaviour notes. React Native source stays upstream; Cupric mines the behaviour, the copy and the accessibility rules.",
+      "description": "All 135 PanelUI components and 21 chart visualisations as editable Cupric-native Studio storyboards. React Native source stays upstream; Cupric uses its own deterministic renderer.",
       "itemCount": 172,
-      "bytes": 108703
+      "bytes": 191624
     },
     {
       "id": "saas-video",
@@ -83,9 +83,9 @@
     {
       "id": "remotion",
       "name": "Remotion toolkit",
-      "description": "Upstream Remotion templates, Google Fonts catalog and agent skills indexed for autonomous planning. Source metadata only; no upstream code is vendored.",
+      "description": "Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; the Google Fonts catalog remains an attributed reference until each font is bundled. No upstream source is vendored.",
       "itemCount": 2083,
-      "bytes": 738938
+      "bytes": 848499
     },
     {
       "id": "react-bits",

@@ -54,5 +54,9 @@ assert.match(studio, /Accept all/, 'agent batch must require explicit acceptance
 assert.match(studio, />\s*Auto edit\s*</, 'Studio must offer content-directed automatic editing')
 assert.match(studio, /motionReferences:[\s\S]*reactBits[\s\S]*skiperUi[\s\S]*remotionPackages/, 'agent context must expose the attributed motion libraries')
 assert.match(main, /translate every idea into only the native operations/, 'third-party references must resolve to safe editable operations')
+assert.match(main, /withTimeout\(generateStudioEditPlan[\s\S]*20_000/, 'Studio planning must fail over instead of hanging forever')
+assert.match(studio, /const relevantNames[\s\S]*slice\(0, limit\)/, 'model context must rank and cap resource names')
+const autoLocal = mod.localStudioEditPlan('Analyze the timeline and make an automatic edit', doc, null)
+assert.equal(autoLocal.ops[0].type, 'applyStylePreset', 'Auto edit must have a deterministic provider-free fallback')
 
 console.log('agent edit check passed — strict allowlist, local/live planning, preview and atomic apply are wired')

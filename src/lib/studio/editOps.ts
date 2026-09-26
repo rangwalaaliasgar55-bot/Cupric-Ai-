@@ -160,6 +160,15 @@ function applyStyle(doc: StudioDoc, preset: Extract<StudioEditOp, { type: 'apply
 /** Useful without a model and intentionally conservative: selected clip only. */
 export function localStudioEditPlan(instruction: string, doc: StudioDoc, selectedId: string | null): StudioEditPlan {
   const text = instruction.trim().toLowerCase()
+  if (/analy[sz]e the timeline|automatic edit|auto edit/.test(text)) {
+    if (!doc.clips.length) throw new Error('Import or add at least one clip before running Auto edit')
+    return {
+      summary: 'Apply a polished editorial direction across the timeline',
+      source: 'local',
+      ops: [{ type: 'applyStylePreset', preset: 'editorial' }],
+      warning: 'The live model was unavailable, so Cupric prepared a deterministic local editorial pass instead.',
+    }
+  }
   const clip = doc.clips.find((item) => item.id === selectedId)
   if (!clip) throw new Error('Select a clip first so Cupric knows what to edit')
   const patch: Record<string, string | number> = {}

@@ -1449,6 +1449,7 @@ async function callOpenCode(messages, options = {}) {
   const result = await fetch(url, {
     method: 'POST',
     headers,
+    signal: AbortSignal.timeout(options.timeoutMs ?? 18_000),
     body: JSON.stringify({
       model: cfg.openCodeModel,
       messages,
@@ -1502,6 +1503,14 @@ async function generateOpenCodeRundown(prompt, history, context) {
 
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function withTimeout(promise, ms, label) {
+  let timer
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)} seconds`)), ms)
+  })
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer))
 }
 
 function retryableAiError(err) {
@@ -1638,7 +1647,11 @@ ipcMain.handle('gemini:ask', async (_event, payload) => {
   }
 })
 ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.text || '', payload?.ctx || {}))
-ipcMain.handle('studio:planEdits', async (_event, payload) => generateStudioEditPlan(payload?.instruction || '', payload?.context || {}))
+ipcMain.handle('studio:planEdits', async (_event, payload) => {
+  const instruction = String(payload?.instruction || '').trim().slice(0, 2000)
+  if (!instruction) throw new Error('Describe the edit you want first')
+  return withTimeout(generateStudioEditPlan(instruction, payload?.context || {}), 20_000, 'Studio auto edit')
+})
 
 // ---------------------------------------------------------------------------
 // Arena import / preview
