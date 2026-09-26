@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowUp, ChevronRight, Lock } from 'lucide-react'
+import { ArrowUp, ChevronRight, Lock, Video } from 'lucide-react'
 import { motion } from 'motion/react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Kbd } from '../components/Kbd'
 import { NoProject } from '../components/NoProject'
 import type { BriefMessage, SceneRundown } from '../types/project'
-import { askGemini } from '../lib/gemini'
+import { askGemini, askGeminiLocal } from '../lib/gemini'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
-import { cx, nowIso } from '../lib/utils'
+import { cx, deriveAspect, nowIso } from '../lib/utils'
 
 const SUGGESTIONS = ['12s SaaS launch bumper', '3s logo reveal', 'kinetic-type quote card']
 
@@ -27,6 +27,7 @@ export function Brief() {
   const addBriefMessage = useProjectStore((s) => s.addBriefMessage)
   const patchRundown = useProjectStore((s) => s.patchRundown)
   const lockRundown = useProjectStore((s) => s.lockRundown)
+  const startRender = useProjectStore((s) => s.startRender)
   const pushToast = useProjectStore((s) => s.pushToast)
   const setView = useProjectStore((s) => s.setView)
 
@@ -82,6 +83,39 @@ export function Brief() {
     pushToast('success', 'Rundown locked — Arena Desk unlocked')
   }
 
+  async function createVideoNow() {
+    if (!project || busy) return
+    let rundown = (project.brief.lockedRundown ?? shown) as SceneRundown
+    if (!rundown?.title || !rundown.scenes?.length || !rundown.size) {
+      const text = input.trim() || project.name || 'Cupric AI launch video'
+      setBusy(true)
+      const res = await askGeminiLocal(text, messages.filter((m) => m.role === 'user').length)
+      rundown = res.rundownPatch as SceneRundown
+      addBriefMessage(project.id, { role: 'user', text, at: nowIso() })
+      addBriefMessage(project.id, { role: 'gemini', text: 'Cupric AI generated a renderable scene plan and is creating the video file now.', at: nowIso() })
+      patchRundown(project.id, rundown)
+      setInput('')
+      setBusy(false)
+    }
+    if (!rundown?.title || !rundown.scenes?.length || !rundown.size) return
+    lockRundown(project.id)
+    startRender(project.id, {
+      aspect: deriveAspect(rundown.size),
+      fps: rundown.fps === 60 ? 60 : 30,
+      quality: 'draft',
+      label: rundown.title,
+      sources: [{
+        id: `${project.id}-generated-rundown`,
+        sourceType: 'rundown',
+        label: rundown.title,
+        durationSec: rundown.durationSec,
+        rundown,
+      }],
+    })
+    setView('render')
+    pushToast('success', 'Creating a real video file now')
+  }
+
   return (
     <div className="flex h-full">
       {/* Chat — left ~60% */}
@@ -89,7 +123,7 @@ export function Brief() {
         <div className="px-6 pt-5">
           <h1 className="text-lg font-bold">Brief</h1>
           <p className="text-sm text-muted">
-            Describe the video you want. Gemini drafts a scene rundown you can lock.
+            Describe the video you want. Cupric AI drafts a rundown and can create a real video file from it.
           </p>
         </div>
 
@@ -146,14 +180,20 @@ export function Brief() {
               type="submit"
               variant="primary"
               disabled={!input.trim() || busy}
-              aria-label="Send to Gemini"
+              aria-label="Generate rundown"
               className="h-10 w-10 p-0"
             >
               <ArrowUp size={16} />
             </Button>
           </form>
-          <div className="mt-1.5 text-xs text-muted">
-            Press <Kbd>⌘</Kbd> <Kbd>↵</Kbd> to send
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+            <div className="text-xs text-muted">
+              Press <Kbd>⌘</Kbd> <Kbd>↵</Kbd> to send
+            </div>
+            <Button size="sm" variant="primary" disabled={busy || (!input.trim() && !locked && !canLock)} onClick={createVideoNow}>
+              <Video size={14} />
+              Create video file
+            </Button>
           </div>
         </div>
       </section>
@@ -163,7 +203,7 @@ export function Brief() {
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <div>
             <div className="text-sm font-semibold">Rundown</div>
-            <div className="text-xs text-muted">Fills in as Gemini drafts</div>
+            <div className="text-xs text-muted">Fills in as Cupric AI drafts</div>
           </div>
           {locked ? (
             <Badge tone="accent">
@@ -180,13 +220,19 @@ export function Brief() {
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {Object.keys(shown).length === 0 ? (
             <div className="rounded-lg border border-dashed border-line p-4 text-xs leading-relaxed text-muted">
-              Nothing yet — ask Gemini for a rundown and watch it fill in here, field by field.
+              Nothing yet — describe the video and Cupric AI will build a rundown here.
             </div>
           ) : (
             <RundownJson r={shown} flash={flash} />
           )}
+          {(locked || canLock) && (
+            <Button variant="primary" size="sm" className="mt-4 w-full" onClick={createVideoNow}>
+              <Video size={14} />
+              Create video file
+            </Button>
+          )}
           {locked && (
-            <Button variant="outline" size="sm" className="mt-4 w-full" onClick={() => setView('arena')}>
+            <Button variant="outline" size="sm" className="mt-2 w-full" onClick={() => setView('arena')}>
               Open Arena Desk
               <ChevronRight size={14} />
             </Button>
@@ -208,7 +254,7 @@ function ChatMessage({ msg }: { msg: BriefMessage }) {
     >
       {gem && (
         <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent font-mono text-xs font-bold text-accent-ink">
-          G
+          C
         </div>
       )}
       <div
@@ -217,7 +263,7 @@ function ChatMessage({ msg }: { msg: BriefMessage }) {
           gem ? 'border border-line bg-panel text-text' : 'bg-panel-alt text-text',
         )}
       >
-        {gem && <div className="mb-1 text-xs font-semibold text-accent-text">Gemini</div>}
+        {gem && <div className="mb-1 text-xs font-semibold text-accent-text">Cupric AI</div>}
         {msg.text}
       </div>
     </motion.div>
@@ -228,9 +274,9 @@ function TypingIndicator() {
   return (
     <div className="flex gap-2.5">
       <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent font-mono text-xs font-bold text-accent-ink">
-        G
+        C
       </div>
-      <div className="flex items-center gap-1 rounded-xl border border-line bg-panel px-4 py-3.5" aria-label="Gemini is typing">
+      <div className="flex items-center gap-1 rounded-xl border border-line bg-panel px-4 py-3.5" aria-label="Cupric AI is drafting">
         <span className="nf-typing flex gap-1">
           <span className="h-1.5 w-1.5 rounded-full bg-muted" />
           <span className="h-1.5 w-1.5 rounded-full bg-muted" />

@@ -22,6 +22,16 @@ export type Toast = { id: string; kind: 'success' | 'info' | 'error'; text: stri
 
 const activeRenderCancels = new Map<string, () => void>()
 
+function downloadBrowserRender(result: { outputPath?: string; outputName?: string } | undefined) {
+  if (!result?.outputPath || !/^(blob|data):/i.test(result.outputPath)) return
+  const a = document.createElement('a')
+  a.href = result.outputPath
+  a.download = result.outputName || 'cupric-render.webm'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+}
+
 const desktopAwareStorage: StateStorage = {
   getItem: async (name) => {
     const ipc = (window as any).northframe?.ipc
@@ -55,11 +65,22 @@ const desktopAwareStorage: StateStorage = {
 }
 
 function renderSourcesForProject(project: Project): RenderSource[] {
+  if (project.timeline.length === 0 && project.brief.lockedRundown) {
+    const rundown = project.brief.lockedRundown
+    return [{
+      id: `${project.id}-rundown`,
+      label: rundown.title || project.name,
+      sourceType: 'rundown',
+      durationSec: rundown.durationSec,
+      rundown,
+    }]
+  }
   return project.timeline.map((clip) => {
     if (clip.sourceType === 'arena') {
       const asset = project.arenaAssets.find((a) => a.id === clip.sourceId)
       return {
         id: clip.id,
+        label: asset?.name ?? 'Arena asset',
         sourceType: 'arena',
         durationSec: clip.durationSec,
         htmlPath: asset?.localPath ?? null,
@@ -69,6 +90,7 @@ function renderSourcesForProject(project: Project): RenderSource[] {
     const asset = project.footageAssets.find((f) => f.id === clip.sourceId)
     return {
       id: clip.id,
+      label: asset?.name ?? 'Footage clip',
       sourceType: 'footage',
       durationSec: clip.durationSec,
       videoPath: asset?.localPath ?? null,
@@ -121,14 +143,14 @@ type AppState = {
   addFootageAsset: (pid: string, f: Omit<FootageAsset, 'id'>) => string
   updateFootageAsset: (pid: string, id: string, patch: Partial<FootageAsset>) => void
 
-  addTimelineClip: (pid: string, clip: Omit<TimelineClip, 'id' | 'startSec'>) => void
+  addTimelineClip: (pid: string, clip: Omit<TimelineClip, 'id' | 'startSec'>, insertIndex?: number) => void
   removeTimelineClip: (pid: string, clipId: string) => void
   moveTimelineClip: (pid: string, from: number, to: number) => void
   setClipDuration: (pid: string, clipId: string, dur: number) => void
 
   startRender: (
     pid: string,
-    opts: { aspect: RenderJob['aspect']; fps: RenderJob['fps']; quality: RenderJob['quality']; label?: string },
+    opts: { aspect: RenderJob['aspect']; fps: RenderJob['fps']; quality: RenderJob['quality']; label?: string; sources?: RenderSource[] },
   ) => void
   retryRender: (pid: string, jobId: string) => void
   cancelRender: (pid: string, jobId: string) => void
@@ -275,11 +297,13 @@ export const useProjectStore = create<AppState>()(
             footageAssets: p.footageAssets.map((f) => (f.id === id ? { ...f, ...patch } : f)),
           })),
 
-        addTimelineClip: (pid, clip) =>
-          updateProject(pid, (p) => ({
-            ...p,
-            timeline: relayout([...p.timeline, { ...clip, id: uid(), startSec: 0 }]),
-          })),
+        addTimelineClip: (pid, clip, insertIndex) =>
+          updateProject(pid, (p) => {
+            const next = [...p.timeline]
+            const at = Number.isFinite(insertIndex) ? clamp(Number(insertIndex), 0, next.length) : next.length
+            next.splice(at, 0, { ...clip, id: uid(), startSec: 0 })
+            return { ...p, timeline: relayout(next) }
+          }),
         removeTimelineClip: (pid, clipId) =>
           updateProject(pid, (p) => ({
             ...p,
@@ -324,11 +348,13 @@ export const useProjectStore = create<AppState>()(
             outputPath: null,
             errorMessage: null,
             createdAt: nowIso(),
+            sources: opts.sources,
           }
           updateProject(pid, (proj) => ({ ...proj, renderJobs: [job, ...proj.renderJobs] }))
           get().pushToast('info', `Render started — ${job.outputName}`)
+          const renderSources = opts.sources ?? renderSourcesForProject(p)
           const cancel = launchRender(
-            { ...job, sources: renderSourcesForProject(p) },
+            { ...job, sources: renderSources },
             (pct) => get().updateRenderJob(pid, job.id, { progressPct: pct, status: 'rendering' }),
             (result) => {
               activeRenderCancels.delete(job.id)
@@ -337,8 +363,9 @@ export const useProjectStore = create<AppState>()(
                 get().pushToast('error', `Render failed — ${result.error}`)
                 return
               }
-              get().updateRenderJob(pid, job.id, { progressPct: 100, status: 'done', outputPath: result?.outputPath ?? null, errorMessage: null })
-              get().pushToast('success', `Render complete — ${job.outputName}`)
+              downloadBrowserRender(result)
+              get().updateRenderJob(pid, job.id, { progressPct: 100, status: 'done', outputPath: result?.outputPath ?? null, outputName: result?.outputName ?? job.outputName, errorMessage: null })
+              get().pushToast('success', `Render complete — ${result?.outputName ?? job.outputName}`)
             },
           )
           activeRenderCancels.set(job.id, cancel)
@@ -350,8 +377,9 @@ export const useProjectStore = create<AppState>()(
           if (!p || !job) return
           get().updateRenderJob(pid, jobId, { status: 'rendering', progressPct: 0, errorMessage: null })
           get().pushToast('info', `Retry started — ${job.outputName}`)
+          const renderSources = (job.sources as RenderSource[] | undefined) ?? renderSourcesForProject(p)
           const cancel = launchRender(
-            { ...job, sources: renderSourcesForProject(p) },
+            { ...job, sources: renderSources },
             (pct) => get().updateRenderJob(pid, jobId, { progressPct: pct, status: 'rendering' }),
             (result) => {
               activeRenderCancels.delete(jobId)
@@ -360,8 +388,9 @@ export const useProjectStore = create<AppState>()(
                 get().pushToast('error', `Render failed — ${result.error}`)
                 return
               }
-              get().updateRenderJob(pid, jobId, { progressPct: 100, status: 'done', outputPath: result?.outputPath ?? null, errorMessage: null })
-              get().pushToast('success', `Render complete — ${job.outputName}`)
+              downloadBrowserRender(result)
+              get().updateRenderJob(pid, jobId, { progressPct: 100, status: 'done', outputPath: result?.outputPath ?? null, outputName: result?.outputName ?? job.outputName, errorMessage: null })
+              get().pushToast('success', `Render complete — ${result?.outputName ?? job.outputName}`)
             },
           )
           activeRenderCancels.set(jobId, cancel)
@@ -377,7 +406,27 @@ export const useProjectStore = create<AppState>()(
     },
     {
       name: 'northframe-v1',
+      version: 1,
       storage: createJSONStorage(() => desktopAwareStorage),
+      migrate: (persisted) => {
+        const state = persisted as Partial<AppState>
+        const starterNames = new Set(['Aurora Launch Teaser', 'Podcast Clip — Ep. 12', 'Logo Sting v2'])
+        return {
+          ...state,
+          projects: (state.projects ?? [])
+            .filter((project) => !starterNames.has(project.name))
+            .map((project) => ({
+              ...project,
+              timeline: (project.timeline ?? []).filter((clip) => Boolean(clip.sourceId)),
+              renderJobs: (project.renderJobs ?? []).filter((job) => Boolean(job.outputPath)),
+              arenaAssets: (project.arenaAssets ?? []).map((asset) =>
+                !asset.localPath && (asset.status === 'imported' || asset.status === 'rendered')
+                  ? { ...asset, status: 'awaiting-vote' as const }
+                  : asset,
+              ),
+            })),
+        }
+      },
       partialize: (s) => ({
         projects: s.projects,
         activeProjectId: s.activeProjectId,

@@ -8,6 +8,7 @@ import { IconButton } from '../components/IconButton'
 import { Kbd } from '../components/Kbd'
 import { Modal } from '../components/Modal'
 import { NoProject } from '../components/NoProject'
+import { MotionCompositionPlayer } from '../components/MotionCompositionPlayer'
 import { ProgressBar } from '../components/ProgressBar'
 import type { ArenaAsset, Project } from '../types/project'
 import { importArenaZip } from '../lib/arena'
@@ -85,6 +86,17 @@ export function ArenaDesk() {
             Battle two models in arena.ai/code, then import the winning motion piece here.
           </p>
         </div>
+
+        <Card className="overflow-hidden p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted">Remotion preview</div>
+              <p className="mt-1 text-xs text-muted">A live React/Remotion composition generated from the locked rundown.</p>
+            </div>
+            <Badge tone="info">@remotion/player</Badge>
+          </div>
+          <MotionCompositionPlayer rundown={locked} />
+        </Card>
 
         {/* 1. Copy this → 2. Paste → 3. Vote → 4. Drop the zip */}
         <Card className="overflow-hidden">
@@ -180,6 +192,7 @@ export function ArenaDesk() {
                     fps: locked.fps === 60 ? 60 : 30,
                     quality: 'draft',
                     label: a.htmlFileName ?? a.name,
+                    sources: [{ id: a.id, label: a.name, sourceType: 'arena', durationSec: locked.durationSec, htmlPath: a.localPath ?? null, arenaPath: a.localPath ?? null }],
                   })
                 }}
               />
@@ -199,6 +212,7 @@ export function ArenaDesk() {
             fps: locked.fps === 60 ? 60 : 30,
             quality: 'draft',
             label: preview.htmlFileName ?? preview.name,
+            sources: [{ id: preview.id, label: preview.name, sourceType: 'arena', durationSec: locked.durationSec, htmlPath: preview.localPath ?? null, arenaPath: preview.localPath ?? null }],
           })
           setPreview(null)
         }}
@@ -295,8 +309,8 @@ function ArenaCard({
                 <Play size={13} />
                 Preview
               </Button>
-              <Button size="sm" variant="primary" onClick={onRender}>
-                Render to MP4
+              <Button size="sm" variant="primary" onClick={onRender} disabled={!asset.localPath}>
+                {asset.localPath ? 'Render video' : 'Import file first'}
               </Button>
             </>
           )}
@@ -306,7 +320,7 @@ function ArenaCard({
   )
 }
 
-/** Live "iframe-style" mock preview of the imported Arena piece. */
+/** Live sandboxed iframe preview of the imported Arena piece. */
 function PreviewModal({
   asset,
   project,
@@ -326,9 +340,13 @@ function PreviewModal({
     let alive = true
     setPreviewUrl(null)
     const localPath = asset?.localPath
-    const northframe = (window as any).northframe
-    if (!localPath || !northframe?.ipc) return
-    northframe.ipc
+    const bridge = (window as any).cupric || (window as any).northframe
+    if (!localPath) return
+    if (/^(blob|data|https?):/i.test(localPath) || !bridge?.ipc) {
+      setPreviewUrl(localPath)
+      return
+    }
+    bridge.ipc
       .invoke('arena:previewPath', localPath)
       .then((url: string) => alive && setPreviewUrl(url))
       .catch(() => alive && setPreviewUrl(null))
@@ -368,8 +386,8 @@ function PreviewModal({
             <span className="font-mono text-xs tabular-nums text-muted">
               {size[0]}×{size[1]} · {fps}fps · __seek(t) verified
             </span>
-            <Button size="sm" variant="primary" onClick={onRender}>
-              Render to MP4
+            <Button size="sm" variant="primary" onClick={onRender} disabled={!asset.localPath}>
+              {asset.localPath ? 'Render video' : 'Import file first'}
             </Button>
           </div>
         </Card>

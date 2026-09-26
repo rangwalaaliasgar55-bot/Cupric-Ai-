@@ -9,7 +9,7 @@ import type { LibraryItem } from '../types/project'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { relTime } from '../lib/utils'
 
-/* Mocked cross-project library: 8 sample entries across the three kinds. */
+/* Built-in starter library: reusable templates across the three kinds. */
 const ITEMS: LibraryItem[] = [
   {
     id: 'lib-r1',
@@ -61,7 +61,7 @@ const ITEMS: LibraryItem[] = [
       fps: 30,
       size: [1080, 1080],
       style: 'Single mark, spring scale 0.96→1 with overshoot, ring wipe',
-      scenes: [{ id: 's1', from: 0, to: 3, type: 'logo', copy: 'NORTHFRAME', motion: 'spring scale-in with overshoot' }],
+      scenes: [{ id: 's1', from: 0, to: 3, type: 'logo', copy: 'CUPRIC AI', motion: 'spring scale-in with overshoot' }],
       arenaPrompt:
         'Build a SINGLE FILE index.html motion-graphics piece. HARD CONSTRAINTS: one file, inline CSS/JS, no build step. Root #scene exactly 1080x1080 px. Duration 3s at 30fps. Implement window.__seek(t) — all motion must be a pure function of t, no CSS animations, no setTimeout, no Math.random in the frame loop. Single mark, spring overshoot.',
     },
@@ -93,7 +93,7 @@ const ITEMS: LibraryItem[] = [
   {
     id: 'lib-p1',
     kind: 'preset',
-    name: 'NF Dark — Lime',
+    name: 'Cupric Dark — Lime',
     updatedAt: new Date(Date.now() - 60 * 60_000).toISOString(),
     colors: ['#0B0B10', '#15151B', '#C8F542', '#F4F1EA', '#9A9AA5'],
     font: 'Inter Variable',

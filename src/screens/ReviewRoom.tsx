@@ -1,0 +1,255 @@
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Camera, CameraOff, Copy, Mic, MicOff, Phone, PhoneOff, RefreshCw, Video } from 'lucide-react'
+import { Badge } from '../components/Badge'
+import { Button } from '../components/Button'
+import { Card } from '../components/Card'
+import { copyText } from '../lib/utils'
+
+type RoomState = 'idle' | 'previewing' | 'connecting' | 'connected' | 'error'
+
+type TwilioRoomLike = {
+  name?: string
+  disconnect: () => void
+  on: (event: string, callback: (value: unknown) => void) => void
+  participants?: Map<string, unknown>
+}
+
+type TwilioTrackLike = {
+  attach?: () => HTMLElement
+  detach?: () => HTMLElement[]
+}
+
+function roomFromUrl() {
+  try {
+    return new URLSearchParams(window.location.search).get('room') || `cupric-${Math.random().toString(36).slice(2, 7)}`
+  } catch {
+    return `cupric-${Math.random().toString(36).slice(2, 7)}`
+  }
+}
+
+function attachPublication(publication: unknown, target: HTMLElement | null) {
+  const pub = publication as { track?: TwilioTrackLike; on?: (event: string, callback: (track: TwilioTrackLike) => void) => void }
+  const attachTrack = (track: TwilioTrackLike) => {
+    const element = track.attach?.()
+    if (element && target) {
+      element.classList.add('h-full', 'w-full', 'rounded-lg', 'object-cover')
+      target.appendChild(element)
+    }
+  }
+  if (pub.track) attachTrack(pub.track)
+  pub.on?.('subscribed', attachTrack)
+}
+
+function wireParticipant(participant: unknown, target: HTMLElement | null) {
+  const p = participant as { tracks?: Map<string, unknown>; on?: (event: string, callback: (publication: unknown) => void) => void; identity?: string }
+  p.tracks?.forEach((publication) => attachPublication(publication, target))
+  p.on?.('trackSubscribed', (track) => attachPublication({ track }, target))
+}
+
+export function ReviewRoom() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const remoteRef = useRef<HTMLDivElement>(null)
+  const roomRef = useRef<TwilioRoomLike | null>(null)
+  const [stream, setStream] = useState<MediaStream | null>(null)
+  const [state, setState] = useState<RoomState>('idle')
+  const [error, setError] = useState<string | null>(null)
+  const [roomName, setRoomName] = useState(roomFromUrl)
+  const [token, setToken] = useState('')
+  const [cameraOff, setCameraOff] = useState(false)
+  const [micOff, setMicOff] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [remoteCount, setRemoteCount] = useState(0)
+
+  const inviteUrl = useMemo(() => {
+    const url = new URL(window.location.href)
+    url.searchParams.set('room', roomName)
+    return url.toString()
+  }, [roomName])
+
+  useEffect(() => {
+    if (!videoRef.current) return
+    videoRef.current.srcObject = stream
+  }, [stream])
+
+  useEffect(() => {
+    stream?.getVideoTracks().forEach((track) => {
+      track.enabled = !cameraOff
+    })
+    const local = (roomRef.current as { localParticipant?: { videoTracks?: Map<string, { track?: { enable?: () => void; disable?: () => void } }> } } | null)?.localParticipant
+    local?.videoTracks?.forEach((publication) => cameraOff ? publication.track?.disable?.() : publication.track?.enable?.())
+  }, [cameraOff, stream])
+
+  useEffect(() => {
+    stream?.getAudioTracks().forEach((track) => {
+      track.enabled = !micOff
+    })
+    const local = (roomRef.current as { localParticipant?: { audioTracks?: Map<string, { track?: { enable?: () => void; disable?: () => void } }> } } | null)?.localParticipant
+    local?.audioTracks?.forEach((publication) => micOff ? publication.track?.disable?.() : publication.track?.enable?.())
+  }, [micOff, stream])
+
+  useEffect(() => () => {
+    roomRef.current?.disconnect()
+    stream?.getTracks().forEach((track) => track.stop())
+  }, [stream])
+
+  async function startPreview() {
+    setError(null)
+    try {
+      const media = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      setStream(media)
+      setState('previewing')
+    } catch (err) {
+      setState('error')
+      setError(err instanceof Error ? err.message : 'Camera and microphone are unavailable')
+    }
+  }
+
+  function stopPreview() {
+    roomRef.current?.disconnect()
+    roomRef.current = null
+    stream?.getTracks().forEach((track) => track.stop())
+    setStream(null)
+    setRemoteCount(0)
+    if (remoteRef.current) remoteRef.current.innerHTML = ''
+    setState('idle')
+  }
+
+  async function connectTwilio() {
+    if (!token.trim() || !roomName.trim()) return
+    setError(null)
+    setState('connecting')
+    try {
+      const twilio = await import('twilio-video')
+      const room = (await twilio.connect(token.trim(), {
+        name: roomName.trim(),
+        audio: !micOff,
+        video: !cameraOff,
+      })) as TwilioRoomLike
+      roomRef.current = room
+      room.participants?.forEach((participant) => {
+        wireParticipant(participant, remoteRef.current)
+        setRemoteCount((count) => count + 1)
+      })
+      room.on('participantConnected', (participant) => {
+        wireParticipant(participant, remoteRef.current)
+        setRemoteCount((count) => count + 1)
+      })
+      room.on('participantDisconnected', () => setRemoteCount((count) => Math.max(0, count - 1)))
+      room.on('disconnected', () => setState('previewing'))
+      setState('connected')
+    } catch (err) {
+      setState('error')
+      setError(err instanceof Error ? err.message : 'Twilio room connection failed')
+    }
+  }
+
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-5 px-6 py-6 lg:grid-cols-[1fr_360px]">
+        <div className="space-y-5">
+          <div>
+            <h1 className="text-lg font-bold">Review Room</h1>
+            <p className="text-sm text-muted">Twilio-compatible live review: camera check, room invites, and optional token-based video rooms.</p>
+          </div>
+
+          <Card className="overflow-hidden">
+            <div className="relative aspect-video bg-black">
+              {stream ? (
+                <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-3 text-muted">
+                  <Video size={30} />
+                  <div className="text-sm">Start camera preview to verify devices before a client review.</div>
+                </div>
+              )}
+              <div className="absolute left-3 top-3 flex gap-2">
+                <Badge tone={state === 'connected' ? 'accent' : state === 'error' ? 'danger' : state === 'idle' ? 'neutral' : 'info'}>{state}</Badge>
+                {stream && <Badge tone="neutral">local preview</Badge>}
+              </div>
+              <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2 rounded-full border border-line bg-panel/85 p-2 backdrop-blur">
+                <Button size="sm" variant={micOff ? 'danger' : 'outline'} onClick={() => setMicOff((value) => !value)} disabled={!stream}>
+                  {micOff ? <MicOff size={14} /> : <Mic size={14} />}
+                  {micOff ? 'Muted' : 'Mic'}
+                </Button>
+                <Button size="sm" variant={cameraOff ? 'danger' : 'outline'} onClick={() => setCameraOff((value) => !value)} disabled={!stream}>
+                  {cameraOff ? <CameraOff size={14} /> : <Camera size={14} />}
+                  {cameraOff ? 'Hidden' : 'Camera'}
+                </Button>
+                {stream ? (
+                  <Button size="sm" variant="ghost" onClick={stopPreview}>
+                    <PhoneOff size={14} /> Stop
+                  </Button>
+                ) : (
+                  <Button size="sm" variant="primary" onClick={startPreview}>
+                    <Camera size={14} /> Start preview
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          <Card className="p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold">Remote participants</div>
+                <div className="text-xs text-muted">Tracks attach here after a valid Twilio access token connects.</div>
+              </div>
+              <Badge tone={remoteCount > 0 ? 'accent' : 'neutral'}>{remoteCount} remote</Badge>
+            </div>
+            <div ref={remoteRef} className="grid min-h-48 grid-cols-1 gap-3 rounded-lg border border-line bg-bg/60 p-3 md:grid-cols-2">
+              {remoteCount === 0 && <div className="grid min-h-40 place-items-center text-center text-xs text-muted">No remote video yet. Paste a Twilio Video access token and connect.</div>}
+            </div>
+          </Card>
+        </div>
+
+        <div className="space-y-5">
+          <Card className="space-y-4 p-4">
+            <div>
+              <div className="text-sm font-semibold">Room setup</div>
+              <p className="mt-1 text-xs text-muted">Local preview works without credentials. Multi-party calls need a Twilio Video access token from your own token server.</p>
+            </div>
+            <label className="block text-xs font-medium text-muted">
+              Room name
+              <input value={roomName} onChange={(event) => setRoomName(event.target.value)} className="mt-1 h-10 w-full rounded-lg border border-line bg-panel-alt px-3 text-sm text-text" />
+            </label>
+            <label className="block text-xs font-medium text-muted">
+              Twilio access token
+              <textarea value={token} onChange={(event) => setToken(event.target.value)} placeholder="Paste a short-lived Video token…" className="mt-1 min-h-24 w-full rounded-lg border border-line bg-panel-alt px-3 py-2 text-sm text-text" />
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={startPreview}>
+                <RefreshCw size={14} /> Check devices
+              </Button>
+              <Button variant="primary" disabled={!token.trim() || !roomName.trim()} onClick={connectTwilio}>
+                <Phone size={14} /> Connect
+              </Button>
+            </div>
+            {error && <div className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
+          </Card>
+
+          <Card className="space-y-3 p-4">
+            <div className="text-sm font-semibold">Invite link</div>
+            <div className="break-all rounded-lg bg-bg/70 p-3 font-mono text-xs text-muted">{inviteUrl}</div>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                if (await copyText(inviteUrl)) {
+                  setCopied(true)
+                  window.setTimeout(() => setCopied(false), 1500)
+                }
+              }}
+            >
+              <Copy size={14} /> {copied ? 'Copied' : 'Copy invite'}
+            </Button>
+          </Card>
+
+          <Card className="space-y-2 p-4 text-xs leading-relaxed text-muted">
+            <div className="font-semibold text-text">What is implemented</div>
+            <p>Device preview, mute/camera toggles, shareable room names, and Twilio Video connection are live. Cupric AI requires a real short-lived Twilio token from your own backend for multi-party calls.</p>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}

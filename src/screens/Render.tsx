@@ -39,7 +39,7 @@ export function Render() {
 
   const jobs = [...project.renderJobs].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
   const total = project.timeline.reduce((acc, c) => acc + c.durationSec, 0)
-  const canRender = project.timeline.length > 0
+  const canRender = project.timeline.length > 0 || Boolean(project.brief.lockedRundown)
 
   function applyPreset(id: string) {
     setPresetId(id)
@@ -158,7 +158,10 @@ export function Render() {
             Start render
           </Button>
           {!canRender && (
-            <p className="-mt-3 text-xs text-muted">Add at least one clip on the Timeline first.</p>
+            <p className="-mt-3 text-xs text-muted">Add a Timeline clip or lock a Brief rundown first.</p>
+          )}
+          {project.timeline.length === 0 && project.brief.lockedRundown && (
+            <p className="-mt-3 text-xs text-accent-text">No timeline clips yet — this will create a real generated video from the locked rundown.</p>
           )}
         </Card>
 
@@ -182,14 +185,22 @@ export function Render() {
                 onRetry={() => retryRender(project.id, job.id)}
                 onCancel={() => cancelRender(project.id, job.id)}
                 onDownload={async () => {
-                  if (job.outputPath && (window as any).northframe?.ipc) {
+                  if (job.outputPath?.startsWith('blob:') || job.outputPath?.startsWith('data:')) {
+                    const a = document.createElement('a')
+                    a.href = job.outputPath
+                    a.download = job.outputName || 'cupric-render.webm'
+                    a.click()
+                    pushToast('success', `Downloaded ${job.outputName || 'browser render'}`)
+                  }
+                  else if (job.outputPath && (window as any).northframe?.ipc) {
                     const result = await (window as any).northframe.ipc.invoke('render:copyToDownloads', job.outputPath)
                     pushToast('success', `Copied to Downloads — ${result?.outputPath ? 'opened in Explorer' : 'ready'}`)
                   }
-                  else pushToast('info', 'Finish a desktop render to reveal the MP4')
+                  else pushToast('info', 'Finish a render before downloading')
                 }}
                 onReveal={async () => {
                   if (job.outputPath && (window as any).northframe?.ipc) await (window as any).northframe.ipc.invoke('render:reveal', job.outputPath)
+                  else if (job.outputPath?.startsWith('blob:')) window.open(job.outputPath, '_blank', 'noopener,noreferrer')
                   else pushToast('info', 'This render has no desktop output yet')
                 }}
               />

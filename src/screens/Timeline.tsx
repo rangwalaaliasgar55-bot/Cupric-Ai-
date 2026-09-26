@@ -37,7 +37,7 @@ export function Timeline() {
   const clips = project?.timeline ?? []
   const total = clips.reduce((acc, c) => acc + c.durationSec, 0)
 
-  // Mock playback: playhead advances in real time, loops.
+  // Timeline preview playback: playhead advances in real time and loops.
   useEffect(() => {
     if (!playing || total <= 0) return
     let raf = 0
@@ -282,7 +282,7 @@ export function Timeline() {
           target={insert}
           onClose={() => setInsert(null)}
           onPick={(sourceType, sourceId, dur) => {
-            useProjectStore.getState().addTimelineClip(project.id, { sourceType, sourceId, durationSec: dur })
+            useProjectStore.getState().addTimelineClip(project.id, { sourceType, sourceId, durationSec: dur }, insert.index)
             setInsert(null)
           }}
         />
@@ -325,11 +325,8 @@ function InsertPopover({
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const clips = project?.timeline ?? []
-  const usedArena = new Set(clips.filter((c) => c.sourceType === 'arena').map((c) => c.sourceId))
-  const usedFootage = new Set(clips.filter((c) => c.sourceType === 'footage').map((c) => c.sourceId))
-  const arena = (project?.arenaAssets ?? []).filter((a) => !usedArena.has(a.id))
-  const footage = (project?.footageAssets ?? []).filter((f) => !usedFootage.has(f.id))
+  const arena = project?.arenaAssets ?? []
+  const footage = project?.footageAssets ?? []
   const empty = arena.length === 0 && footage.length === 0
 
   const x = Math.min(target.x, window.innerWidth - 292)
@@ -359,7 +356,7 @@ function InsertPopover({
               >
                 <Swords size={13} className="text-accent-text" />
                 <span className="min-w-0 flex-1 truncate text-xs font-medium">{a.name}</span>
-                <span className="font-mono text-xs tabular-nums text-muted">4.0s</span>
+                <span className="font-mono text-xs tabular-nums text-muted">{fmtDur(project?.brief.lockedRundown?.durationSec ?? 4)}</span>
                 <Plus size={12} className="text-muted" />
               </button>
             ))}
