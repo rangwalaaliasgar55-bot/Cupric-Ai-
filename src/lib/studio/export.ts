@@ -15,7 +15,7 @@ import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/pr
 import { getIpc, isDesktop } from '../bridge'
 import { audioGainAt, clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
 import { getMedia, overlayImage } from './media'
-import { drawStudioFrame, type FrameSources } from './renderer'
+import { drawableElement, drawStudioFrame, type FrameSources } from './renderer'
 
 export type ExportOptions = {
   fileName?: string
@@ -63,6 +63,16 @@ function audioGraph(ctx: AudioContext, el: HTMLMediaElement) {
     audioNodes.set(el, node)
   }
   return node
+}
+
+
+/** Move a clip's gain to `value` over one frame, avoiding zipper noise. */
+function rampGain(ctx: AudioContext, el: HTMLMediaElement, value: number) {
+  const { gain } = audioGraph(ctx, el)
+  const now = ctx.currentTime
+  gain.gain.cancelScheduledValues(now)
+  gain.gain.setValueAtTime(gain.gain.value, now)
+  gain.gain.linearRampToValueAtTime(value, now + 0.02)
 }
 
 export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}): Promise<ExportResult> {
@@ -121,12 +131,7 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   }
 
   const sources: FrameSources = {
-    media: (clip) => {
-      const handle = getMedia(clip.mediaId)
-      if (!handle) return null
-      if (handle.element instanceof HTMLVideoElement && handle.element.readyState < 2) return null
-      return handle.element
-    },
+    media: (clip) => drawableElement(clip.mediaId),
     overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
   }
 
@@ -193,9 +198,11 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
           const want = sourceTimeFor(clip, elapsed)
           if (Math.abs(el.currentTime - want) > 0.25) el.currentTime = want
           if (el.paused) void el.play().catch(() => undefined)
-          if (audioCtx) audioGraph(audioCtx, el).gain.gain.value = audioGainAt(clip, elapsed)
+          // Ramp instead of assign: stepping gain once per frame is audible as
+          // zipper noise, and a fade is exactly where it would be heard.
+          if (audioCtx) rampGain(audioCtx, el, audioGainAt(clip, elapsed))
         } else {
-          if (audioCtx) audioGraph(audioCtx, el).gain.gain.value = 0
+          if (audioCtx) rampGain(audioCtx, el, 0)
           if (!el.paused) el.pause()
         }
       }
@@ -275,7 +282,7 @@ export function captureStill(doc: StudioDoc, t: number, maxWidth = 640): string 
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
   drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, {
-    media: (clip) => getMedia(clip.mediaId)?.element ?? null,
+    media: (clip) => drawableElement(clip.mediaId),
     overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
   })
   try {

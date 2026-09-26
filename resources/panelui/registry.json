@@ -4,7 +4,7 @@
   "upstreamVersion": "0.102.1",
   "package": "panelui-native",
   "platform": "react-native",
-  "note": "PanelUI is a React Native / Expo library (reanimated, expo-blur, uniwind). Its source cannot run in Cupric\u2019s DOM renderer, so the catalogue is vendored as reference + prompt material, not as code. Behaviour and copy are what we mine; the React Native implementation stays upstream.",
+  "note": "PanelUI is a React Native / Expo library (reanimated, expo-blur, uniwind). Its source cannot run in Cupric\u2019s DOM renderer, so the catalogue is vendored as reference + prompt material, not as code. Behaviour and copy are what we mine; the React Native implementation stays upstream. Descriptions come from upstream doc frontmatter; 14 gesture/physics entries were additionally read against the component source and are marked \"verified\": \"source\".",
   "counts": {
     "componentModules": 135,
     "packageComponentExports": 135,
@@ -439,7 +439,8 @@
       "slug": "carousel",
       "group": "components",
       "name": "Carousel",
-      "description": "A run of slides, one at a time, dragged with a finger."
+      "description": "A run of slides dragged with a finger \u2014 variants default, interactive, coverflow and stack, horizontal or vertical, optional looping.",
+      "verified": "source"
     },
     {
       "slug": "checkbox",
@@ -481,7 +482,8 @@
       "slug": "compare",
       "group": "components",
       "name": "Compare",
-      "description": "Two versions of one picture, with a seam you drag across it."
+      "description": "Two versions of one picture with a seam you drag across it (pan gesture).",
+      "verified": "source"
     },
     {
       "slug": "context-menu",
@@ -553,7 +555,8 @@
       "slug": "flow",
       "group": "components",
       "name": "Flow",
-      "description": "Pan-and-zoom canvas of draggable nodes joined by animated edges."
+      "description": "Pan-and-zoom canvas of draggable nodes joined by animated edges; pan and pinch run simultaneously, with dots, lines, cross or no background.",
+      "verified": "source"
     },
     {
       "slug": "frame",
@@ -613,7 +616,8 @@
       "slug": "loader",
       "group": "components",
       "name": "Loader",
-      "description": "Nine loading animations behind one variant prop."
+      "description": "Nine loading animations behind one variant prop: pulse-dots, bounce-dots, pulsating-dots, liquid-dots, bar-cascade, bouncing-bars, symmetric-wave, morph-ring, wave-physics.",
+      "verified": "source"
     },
     {
       "slug": "map",
@@ -751,7 +755,8 @@
       "slug": "scroll-canvas",
       "group": "components",
       "name": "ScrollCanvas",
-      "description": "Image frame whose contents move as you scroll."
+      "description": "Image frame whose contents move as you scroll, scrubbed not triggered: parallax, zoom, reveal, or a frame sequence.",
+      "verified": "source"
     },
     {
       "slug": "scroll-fade",
@@ -769,7 +774,8 @@
       "slug": "scroll-text",
       "group": "components",
       "name": "ScrollText",
-      "description": "Text that resolves word by word as you scroll."
+      "description": "Text that resolves word by word as you scroll, reversible because the effect is scrubbed rather than triggered.",
+      "verified": "source"
     },
     {
       "slug": "search-bar",
@@ -781,7 +787,8 @@
       "slug": "section-progress",
       "group": "components",
       "name": "SectionProgress",
-      "description": "Floating pill with a scroll ring and the section being read."
+      "description": "Floating pill with a scroll-filled ring and the section being read; pressed, it opens into the section list and jumps.",
+      "verified": "source"
     },
     {
       "slug": "section-rail",
@@ -823,7 +830,8 @@
       "slug": "slide-button",
       "group": "components",
       "name": "SlideButton",
-      "description": "Drag across to confirm, with the distance drawn on the button."
+      "description": "Drag across to confirm: a neutral thumb on a rail that carries the colour variant, with the travelled distance drawn on the button.",
+      "verified": "source"
     },
     {
       "slug": "slider",
@@ -835,7 +843,8 @@
       "slug": "sortable",
       "group": "components",
       "name": "Sortable",
-      "description": "A list whose rows can be dragged into a different order."
+      "description": "A list whose rows can be dragged into a different order, with a spring lift under the dragged row and the others displacing around it.",
+      "verified": "source"
     },
     {
       "slug": "spinner",
@@ -847,13 +856,15 @@
       "slug": "split-view",
       "group": "components",
       "name": "SplitView",
-      "description": "Two resizable stacked panes that settle on one of a few named heights."
+      "description": "Two resizable stacked panes that settle on one of a few named heights (snapPoints), spring-animated; variants \"panes\" and \"seam\".",
+      "verified": "source"
     },
     {
       "slug": "splitter",
       "group": "components",
       "name": "Splitter",
-      "description": "Panes that share a container, with a seam between them you can drag."
+      "description": "Panes sharing a container with a draggable seam between them; a double-tap resets the split.",
+      "verified": "source"
     },
     {
       "slug": "stack-card",
@@ -883,7 +894,8 @@
       "slug": "swipe",
       "group": "components",
       "name": "Swipe",
-      "description": "A row that slides aside to reveal the things you can do to it."
+      "description": "A row that slides aside on a pan gesture to reveal the actions on it, springing back or latching open.",
+      "verified": "source"
     },
     {
       "slug": "switch",
@@ -913,7 +925,8 @@
       "slug": "text-animation",
       "group": "components",
       "name": "TextAnimation",
-      "description": "Five ways a piece of text or a number arrives."
+      "description": "Five ways a piece of text or a number arrives: Typing, Rotating, Counting, Sliding, Scrolling.",
+      "verified": "source"
     },
     {
       "slug": "textarea",
@@ -931,7 +944,8 @@
       "slug": "time-picker",
       "group": "components",
       "name": "TimePicker",
-      "description": "A time of day, as a wheel, a clock or a swipeable scale."
+      "description": "A time of day as a wheel, a clock face with a spring-driven hand, or a swipeable scale.",
+      "verified": "source"
     },
     {
       "slug": "timeline",

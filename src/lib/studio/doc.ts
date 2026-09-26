@@ -114,7 +114,8 @@ export function splitClipAt(clip: StudioClip, t: number): [StudioClip, StudioCli
   left.transitionOut = 'none'
 
   if (right.kind === 'video' || right.kind === 'audio') {
-    const speed = right.speed > 0 ? right.speed : 1
+    // Audio has no speed control, so it always advances 1:1 with the timeline.
+    const speed = right.kind === 'video' && right.speed > 0 ? right.speed : 1
     ;(right as StudioMediaClip).trimInSec = (clip as StudioMediaClip).trimInSec + offset * speed
   }
   return [left, right]

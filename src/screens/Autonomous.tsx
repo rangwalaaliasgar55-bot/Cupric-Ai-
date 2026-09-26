@@ -5,8 +5,11 @@ import { Button } from '../components/Button'
 import { ProgressBar } from '../components/ProgressBar'
 import { getIpc } from '../lib/bridge'
 import { useProjectStore } from '../state/useProjectStore'
-import { isVoiceSupported, speak, stopSpeaking, VoiceListener } from '../lib/voice'
+import { isVoiceSupported, shouldAutoStartBrief, speak, stopSpeaking, VoiceListener } from '../lib/voice'
 import type { AutomationMode, VotingMode } from '../types/project'
+
+/** Silence after a complete-sounding phrase before hands-free starts a job. */
+const AUTO_START_SETTLE_MS = 1800
 
 function openOutput(outputPath?: string | null) {
   const ipc = getIpc()
@@ -51,6 +54,7 @@ export function Autonomous() {
   const job = jobs[0]
   const currentStep = job?.steps.find(step => step.id === job.currentStepId) || job?.steps.find(step => step.status === 'waiting-for-user') || null
 
+  const settleRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const spokenStatusRef = useRef<string | null>(null)
   useEffect(() => {
     if (!job || !speakBack) return
@@ -67,6 +71,8 @@ export function Autonomous() {
     return () => {
       listenerRef.current?.stop()
       listenerRef.current = null
+      if (settleRef.current) clearTimeout(settleRef.current)
+      settleRef.current = null
       stopSpeaking()
     }
   }, [])
@@ -83,6 +89,8 @@ export function Autonomous() {
     if (listenerRef.current?.active) {
       listenerRef.current.stop()
       listenerRef.current = null
+      if (settleRef.current) clearTimeout(settleRef.current)
+      settleRef.current = null
       setListening(false)
       return
     }
@@ -92,16 +100,26 @@ export function Autonomous() {
           if (!text) return
           setHeard(isFinal ? text : `${text}\u2026`)
           setBrief((prev) => (isFinal ? `${prev ? `${prev} ` : ''}${text}`.trim() : prev))
+          if (settleRef.current) {
+            clearTimeout(settleRef.current)
+            settleRef.current = null
+          }
           if (!isFinal) return
           const cfg = settingsRef.current
           if (!cfg.handsFree) return
           const spoken = text.trim()
-          // One sensible guard: a two-word mumble is not a brief.
-          if (spoken.split(/\s+/).length < 4) return
-          listener.stop()
-          listenerRef.current = null
-          setListening(false)
-          startJob(spoken)
+          if (!shouldAutoStartBrief(spoken)) return
+          // Two gates, not one: the phrase must look complete AND the speaker
+          // must stay quiet afterwards. A pause mid-thought produces a final
+          // phrase too, so silence is what actually separates "done" from
+          // "still talking".
+          settleRef.current = setTimeout(() => {
+            settleRef.current = null
+            listener.stop()
+            listenerRef.current = null
+            setListening(false)
+            startJob(spoken)
+          }, AUTO_START_SETTLE_MS)
         },
         onCommand: () => {},
         onError: (message) => {

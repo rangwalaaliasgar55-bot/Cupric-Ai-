@@ -42,8 +42,8 @@
       "id": "voice",
       "name": "Voice commands",
       "description": "The Studio voice grammar. Each entry is a phrase the parser in src/lib/voice.ts accepts.",
-      "itemCount": 13,
-      "bytes": 2716
+      "itemCount": 14,
+      "bytes": 2935
     },
     {
       "id": "sources",
@@ -60,18 +60,18 @@
       "bytes": 3934
     },
     {
+      "id": "panelui",
+      "name": "PanelUI catalogue",
+      "description": "All 135 PanelUI components and 21 chart visualisations, with the upstream behaviour notes. React Native source stays upstream; Cupric mines the behaviour, the copy and the accessibility rules.",
+      "itemCount": 172,
+      "bytes": 108703
+    },
+    {
       "id": "components",
       "name": "Lab components",
       "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
       "itemCount": 190,
       "bytes": 63695
-    },
-    {
-      "id": "panelui",
-      "name": "PanelUI catalogue",
-      "description": "All 135 PanelUI components and 21 chart visualisations, with the upstream behaviour notes. React Native source stays upstream; Cupric mines the behaviour, the copy and the accessibility rules.",
-      "itemCount": 172,
-      "bytes": 107025
     }
   ]
 }

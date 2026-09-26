@@ -1050,7 +1050,7 @@
       "id": "panelui-carousel",
       "kind": "source",
       "name": "Carousel",
-      "description": "A run of slides, one at a time, dragged with a finger.",
+      "description": "A run of slides dragged with a finger — variants default, interactive, coverflow and stack, horizontal or vertical, optional looping.",
       "data": {
         "url": "https://panelui.dev/docs/components/carousel",
         "sourceKind": "components",
@@ -1058,7 +1058,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "A run of slides, one at a time, dragged with a finger."
+        "promptCue": "A run of slides dragged with a finger — variants default, interactive, coverflow and stack, horizontal or vertical, optional looping."
       },
       "tags": [
         "source",
@@ -1190,7 +1190,7 @@
       "id": "panelui-compare",
       "kind": "source",
       "name": "Compare",
-      "description": "Two versions of one picture, with a seam you drag across it.",
+      "description": "Two versions of one picture with a seam you drag across it (pan gesture).",
       "data": {
         "url": "https://panelui.dev/docs/components/compare",
         "sourceKind": "components",
@@ -1198,7 +1198,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Two versions of one picture, with a seam you drag across it."
+        "promptCue": "Two versions of one picture with a seam you drag across it (pan gesture)."
       },
       "tags": [
         "source",
@@ -1430,7 +1430,7 @@
       "id": "panelui-flow",
       "kind": "source",
       "name": "Flow",
-      "description": "Pan-and-zoom canvas of draggable nodes joined by animated edges.",
+      "description": "Pan-and-zoom canvas of draggable nodes joined by animated edges; pan and pinch run simultaneously, with dots, lines, cross or no background.",
       "data": {
         "url": "https://panelui.dev/docs/components/flow",
         "sourceKind": "components",
@@ -1438,7 +1438,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Pan-and-zoom canvas of draggable nodes joined by animated edges."
+        "promptCue": "Pan-and-zoom canvas of draggable nodes joined by animated edges; pan and pinch run simultaneously, with dots, lines, cross or no background."
       },
       "tags": [
         "source",
@@ -1630,7 +1630,7 @@
       "id": "panelui-loader",
       "kind": "source",
       "name": "Loader",
-      "description": "Nine loading animations behind one variant prop.",
+      "description": "Nine loading animations behind one variant prop: pulse-dots, bounce-dots, pulsating-dots, liquid-dots, bar-cascade, bouncing-bars, symmetric-wave, morph-ring, wave-physics.",
       "data": {
         "url": "https://panelui.dev/docs/components/loader",
         "sourceKind": "components",
@@ -1638,7 +1638,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Nine loading animations behind one variant prop."
+        "promptCue": "Nine loading animations behind one variant prop: pulse-dots, bounce-dots, pulsating-dots, liquid-dots, bar-cascade, bouncing-bars, symmetric-wave, morph-ring, wave-physics."
       },
       "tags": [
         "source",
@@ -2090,7 +2090,7 @@
       "id": "panelui-scroll-canvas",
       "kind": "source",
       "name": "ScrollCanvas",
-      "description": "Image frame whose contents move as you scroll.",
+      "description": "Image frame whose contents move as you scroll, scrubbed not triggered: parallax, zoom, reveal, or a frame sequence.",
       "data": {
         "url": "https://panelui.dev/docs/components/scroll-canvas",
         "sourceKind": "components",
@@ -2098,7 +2098,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Image frame whose contents move as you scroll."
+        "promptCue": "Image frame whose contents move as you scroll, scrubbed not triggered: parallax, zoom, reveal, or a frame sequence."
       },
       "tags": [
         "source",
@@ -2150,7 +2150,7 @@
       "id": "panelui-scroll-text",
       "kind": "source",
       "name": "ScrollText",
-      "description": "Text that resolves word by word as you scroll.",
+      "description": "Text that resolves word by word as you scroll, reversible because the effect is scrubbed rather than triggered.",
       "data": {
         "url": "https://panelui.dev/docs/components/scroll-text",
         "sourceKind": "components",
@@ -2158,7 +2158,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Text that resolves word by word as you scroll."
+        "promptCue": "Text that resolves word by word as you scroll, reversible because the effect is scrubbed rather than triggered."
       },
       "tags": [
         "source",
@@ -2190,7 +2190,7 @@
       "id": "panelui-section-progress",
       "kind": "source",
       "name": "SectionProgress",
-      "description": "Floating pill with a scroll ring and the section being read.",
+      "description": "Floating pill with a scroll-filled ring and the section being read; pressed, it opens into the section list and jumps.",
       "data": {
         "url": "https://panelui.dev/docs/components/section-progress",
         "sourceKind": "components",
@@ -2198,7 +2198,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Floating pill with a scroll ring and the section being read."
+        "promptCue": "Floating pill with a scroll-filled ring and the section being read; pressed, it opens into the section list and jumps."
       },
       "tags": [
         "source",
@@ -2330,7 +2330,7 @@
       "id": "panelui-slide-button",
       "kind": "source",
       "name": "SlideButton",
-      "description": "Drag across to confirm, with the distance drawn on the button.",
+      "description": "Drag across to confirm: a neutral thumb on a rail that carries the colour variant, with the travelled distance drawn on the button.",
       "data": {
         "url": "https://panelui.dev/docs/components/slide-button",
         "sourceKind": "components",
@@ -2338,7 +2338,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Drag across to confirm, with the distance drawn on the button."
+        "promptCue": "Drag across to confirm: a neutral thumb on a rail that carries the colour variant, with the travelled distance drawn on the button."
       },
       "tags": [
         "source",
@@ -2370,7 +2370,7 @@
       "id": "panelui-sortable",
       "kind": "source",
       "name": "Sortable",
-      "description": "A list whose rows can be dragged into a different order.",
+      "description": "A list whose rows can be dragged into a different order, with a spring lift under the dragged row and the others displacing around it.",
       "data": {
         "url": "https://panelui.dev/docs/components/sortable",
         "sourceKind": "components",
@@ -2378,7 +2378,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "A list whose rows can be dragged into a different order."
+        "promptCue": "A list whose rows can be dragged into a different order, with a spring lift under the dragged row and the others displacing around it."
       },
       "tags": [
         "source",
@@ -2410,7 +2410,7 @@
       "id": "panelui-split-view",
       "kind": "source",
       "name": "SplitView",
-      "description": "Two resizable stacked panes that settle on one of a few named heights.",
+      "description": "Two resizable stacked panes that settle on one of a few named heights (snapPoints), spring-animated; variants \"panes\" and \"seam\".",
       "data": {
         "url": "https://panelui.dev/docs/components/split-view",
         "sourceKind": "components",
@@ -2418,7 +2418,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Two resizable stacked panes that settle on one of a few named heights."
+        "promptCue": "Two resizable stacked panes that settle on one of a few named heights (snapPoints), spring-animated; variants \"panes\" and \"seam\"."
       },
       "tags": [
         "source",
@@ -2430,7 +2430,7 @@
       "id": "panelui-splitter",
       "kind": "source",
       "name": "Splitter",
-      "description": "Panes that share a container, with a seam between them you can drag.",
+      "description": "Panes sharing a container with a draggable seam between them; a double-tap resets the split.",
       "data": {
         "url": "https://panelui.dev/docs/components/splitter",
         "sourceKind": "components",
@@ -2438,7 +2438,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Panes that share a container, with a seam between them you can drag."
+        "promptCue": "Panes sharing a container with a draggable seam between them; a double-tap resets the split."
       },
       "tags": [
         "source",
@@ -2530,7 +2530,7 @@
       "id": "panelui-swipe",
       "kind": "source",
       "name": "Swipe",
-      "description": "A row that slides aside to reveal the things you can do to it.",
+      "description": "A row that slides aside on a pan gesture to reveal the actions on it, springing back or latching open.",
       "data": {
         "url": "https://panelui.dev/docs/components/swipe",
         "sourceKind": "components",
@@ -2538,7 +2538,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "A row that slides aside to reveal the things you can do to it."
+        "promptCue": "A row that slides aside on a pan gesture to reveal the actions on it, springing back or latching open."
       },
       "tags": [
         "source",
@@ -2630,7 +2630,7 @@
       "id": "panelui-text-animation",
       "kind": "source",
       "name": "TextAnimation",
-      "description": "Five ways a piece of text or a number arrives.",
+      "description": "Five ways a piece of text or a number arrives: Typing, Rotating, Counting, Sliding, Scrolling.",
       "data": {
         "url": "https://panelui.dev/docs/components/text-animation",
         "sourceKind": "components",
@@ -2638,7 +2638,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "Five ways a piece of text or a number arrives."
+        "promptCue": "Five ways a piece of text or a number arrives: Typing, Rotating, Counting, Sliding, Scrolling."
       },
       "tags": [
         "source",
@@ -2690,7 +2690,7 @@
       "id": "panelui-time-picker",
       "kind": "source",
       "name": "TimePicker",
-      "description": "A time of day, as a wheel, a clock or a swipeable scale.",
+      "description": "A time of day as a wheel, a clock face with a spring-driven hand, or a swipeable scale.",
       "data": {
         "url": "https://panelui.dev/docs/components/time-picker",
         "sourceKind": "components",
@@ -2698,7 +2698,7 @@
         "intake": "reference",
         "license": "MIT — Copyright (c) 2026 Khalid Abdi",
         "platform": "react-native",
-        "promptCue": "A time of day, as a wheel, a clock or a swipeable scale."
+        "promptCue": "A time of day as a wheel, a clock face with a spring-driven hand, or a swipeable scale."
       },
       "tags": [
         "source",

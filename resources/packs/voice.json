@@ -122,6 +122,15 @@
       "tags": [
         "voice"
       ]
+    },
+    {
+      "id": "voice-13",
+      "kind": "voice",
+      "name": "\"make a video about …\"",
+      "description": "Hand the whole sentence to the autonomous pipeline",
+      "tags": [
+        "voice"
+      ]
     }
   ]
 }

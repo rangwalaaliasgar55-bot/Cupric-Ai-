@@ -198,6 +198,39 @@ function captionPreset(style: StudioTextClip['captionStyle']) {
   return { uppercase: false, stroke: 0, shadow: 0, boxed: false }
 }
 
+
+/** Fraction of the frame kept clear of text on every edge. */
+export const SAFE_MARGIN = 0.05
+
+/**
+ * Pull a text block back inside the title-safe area.
+ *
+ * Returns the block's anchor point, honouring the clip's alignment (the anchor
+ * is the left/centre/right of the box, so each case clamps a different edge).
+ * If the block is simply wider than the safe area it stays centred instead of
+ * being shoved to one side.
+ */
+export function clampToSafeArea(
+  x: number,
+  y: number,
+  blockW: number,
+  blockH: number,
+  align: 'left' | 'center' | 'right',
+  w: number,
+  h: number,
+): { x: number; y: number } {
+  const mx = w * SAFE_MARGIN
+  const my = h * SAFE_MARGIN
+  const left = align === 'left' ? x : align === 'right' ? x - blockW : x - blockW / 2
+  let nextLeft = left
+  if (blockW >= w - mx * 2) nextLeft = (w - blockW) / 2
+  else nextLeft = Math.min(Math.max(left, mx), w - mx - blockW)
+  const dx = nextLeft - left
+  const top = y - blockH / 2
+  const nextTop = blockH >= h - my * 2 ? (h - blockH) / 2 : Math.min(Math.max(top, my), h - my - blockH)
+  return { x: x + dx, y: nextTop + blockH / 2 }
+}
+
 function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: number, w: number, h: number) {
   const progress = clipProgress(clip, t)
   const preset = captionPreset(clip.captionStyle)
@@ -237,8 +270,13 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
 
   const lineHeight = fontPx * 1.12
   const totalH = lineHeight * lines.length
-  const cx = clip.x * w + (clip.anim === 'slide-left' ? (1 - easeOut(inP)) * w * 0.08 : 0)
-  const cy = clip.y * h + offsetY
+  const rawCx = clip.x * w + (clip.anim === 'slide-left' ? (1 - easeOut(inP)) * w * 0.08 : 0)
+  const rawCy = clip.y * h + offsetY
+  // Title-safe margin. Broadcast convention is 5%; phones crop the very edge
+  // and social UI eats the bottom, so text is nudged back inside rather than
+  // clipped. Measured off the real line box, not a guess.
+  const widestLine = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0)
+  const { x: cx, y: cy } = clampToSafeArea(rawCx, rawCy, widestLine, totalH, clip.align, w, h)
 
   if (clip.anim === 'glass-rise') {
     // Frosted plate rises with the text and clears as it settles.
@@ -501,13 +539,18 @@ export function drawStudioFrame(
   ctx.restore()
 }
 
+/** Canvas-drawable element for a media clip, or null. Audio is never drawable. */
+export function drawableElement(mediaId: string): CanvasImageSource | null {
+  const handle = getMedia(mediaId)
+  if (!handle) return null
+  const el = handle.element
+  if (el instanceof HTMLAudioElement) return null
+  if (el instanceof HTMLVideoElement && el.readyState < 2) return null
+  return el
+}
+
 /** Preview convenience: resolve media straight from the runtime registry. */
 export const registrySources: FrameSources = {
-  media: (clip) => {
-    const handle = getMedia(clip.mediaId)
-    if (!handle) return null
-    if (handle.element instanceof HTMLVideoElement && handle.element.readyState < 2) return null
-    return handle.element
-  },
+  media: (clip) => drawableElement(clip.mediaId),
   overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
 }

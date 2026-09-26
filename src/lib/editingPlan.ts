@@ -24,7 +24,27 @@ export function validateEditingPlan(plan: EditingPlan): PlanIssue[] {
     if (!clip.sourceFile) issues.push({ path: `${section.id}.${clip.id}.sourceFile`, message: 'Source file is required' })
     if (!(clip.outSec > clip.inSec)) issues.push({ path: `${section.id}.${clip.id}`, message: 'outSec must be greater than inSec' })
     total += Math.max(0, clip.outSec - clip.inSec)
-    for (const caption of clip.captions ?? []) if (!(caption.end > caption.start)) issues.push({ path: `${section.id}.${clip.id}.captions`, message: 'Caption end must be after start' })
+    const captions = [...(clip.captions ?? [])].sort((a, b) => a.start - b.start)
+    const clipLength = Math.max(0, clip.outSec - clip.inSec)
+    captions.forEach((caption, index) => {
+      if (!(caption.end > caption.start)) issues.push({ path: `${section.id}.${clip.id}.captions`, message: 'Caption end must be after start' })
+      // Captions share one layer, so two on screen at once is a collision the
+      // renderer cannot resolve — it would draw them straight through each other.
+      const prev = captions[index - 1]
+      if (prev && caption.start < prev.end - 0.001) {
+        issues.push({
+          path: `${section.id}.${clip.id}.captions[${index}]`,
+          message: `Captions overlap: "${prev.text.slice(0, 24)}" is still on screen at ${caption.start.toFixed(2)}s`,
+        })
+      }
+      if (caption.end > clipLength + 0.001) {
+        issues.push({
+          path: `${section.id}.${clip.id}.captions[${index}]`,
+          message: `Caption runs ${(caption.end - clipLength).toFixed(2)}s past the end of its clip`,
+        })
+      }
+      if (caption.start < -0.001) issues.push({ path: `${section.id}.${clip.id}.captions[${index}]`, message: 'Caption starts before its clip' })
+    })
   }
   if (total > 120.001) issues.push({ path: 'sections', message: 'Timeline exceeds the 120 second render limit' })
   return issues

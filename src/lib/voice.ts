@@ -289,3 +289,37 @@ export class VoiceListener {
     this.rec = null
   }
 }
+
+/** Minimum words before a dictated phrase is allowed to launch a job by itself. */
+export const AUTO_START_MIN_WORDS = 6
+
+/** Words that mean the speaker was mid-thought, whatever the pause suggested. */
+const TRAILING_INCOMPLETE =
+  /\b(a|an|the|and|or|but|so|then|with|without|for|to|of|in|on|at|about|that|this|like|plus|because|while|where|which|who|if|when|um|uh|erm|hmm)$/i
+
+/** Phrases that are a request to start, not a brief worth starting. */
+const BARE_REQUEST = /^(ok(ay)?\s+)?(hey\s+)?(cupric\s+)?(please\s+)?(make|create|build|generate|do)\s+(me\s+)?(a|an|the)?\s*(short|quick|new)?\s*(video|clip|promo|reel|ad)?\s*$/i
+
+/**
+ * Gate for hands-free dictation: should this settled phrase start a job?
+ *
+ * A false positive here is the worst failure mode in the product — the app
+ * would run off and spend model budget on half a sentence — so every doubtful
+ * case answers no and waits for the user to press the button.
+ */
+export function shouldAutoStartBrief(phrase: string, minWords = AUTO_START_MIN_WORDS): boolean {
+  const spoken = phrase.trim().replace(/[\s,;:\u2026]+$/, '')
+  if (!spoken) return false
+  // Trailing comma/ellipsis in the raw phrase means the recogniser itself heard
+  // an unfinished clause.
+  if (/[,;:\u2026]$/.test(phrase.trim())) return false
+  const words = spoken.split(/\s+/).filter(Boolean)
+  if (words.length < minWords) return false
+  if (BARE_REQUEST.test(spoken)) return false
+  if (TRAILING_INCOMPLETE.test(words[words.length - 1] ?? '')) return false
+  // A phrase that is exactly an editor command ("add text hello there please")
+  // is a command, not a brief.
+  const parsed = parseVoiceCommand(spoken)
+  if (parsed && parsed.type !== 'make-video') return false
+  return true
+}
