@@ -116,3 +116,52 @@ Both honour `useReducedMotion` and are registered in `src/lab/registry.ts`.
 ```bash
 npm run packs:build   # rewrites resources/packs/*.json from the TS registries
 ```
+
+## v0.4.2 — PanelUI catalogue, 30 more sources, speak-a-brief
+
+### PanelUI pack (172 entries)
+
+`resources/panelui/registry.json` → `resources/packs/panelui.json`.
+Every component and chart from <https://github.com/panel-ui/PanelUI> (MIT), with
+the upstream behaviour notes, grouped as `components`, `ai-components`,
+`charts`, `form`, `hooks`, `utilities`, `integrations`, `customization`,
+`reference`. Their `theme.upstream.css` token sheet is vendored next to it.
+
+**The source code is deliberately not copied.** PanelUI is React Native / Expo
+(reanimated, expo-blur, uniwind); it cannot mount in Cupric's DOM renderer. What
+is useful — the behaviour rules, the accessibility modes, the copy — is what we
+took. See `resources/VENDOR.md`.
+
+### Sources pack: 46 → 76 entries
+
+Added: PanelUI, React Bits, LottieFiles, Rive, Iconify, unDraw, Blush, Storyset,
+Pexels Videos, Pixabay Videos, Mixkit, Coverr, Uppbeat, Freesound, Fontsource,
+Coolors, mesh-gradient generators, Three.js, React Three Fiber, **CSS 3D
+transforms**, Poly Haven, Kenney, Sketchfab, reactvideoeditor/remotion-templates,
+designcombo/react-video-editor, OpenCut, OpusClip, Web Speech API, Pipecat,
+LiveKit Agents.
+
+Two entries carry a deliberate *negative* recommendation, because the catalogue
+is only useful if it says what not to use:
+
+- **Three.js** — in-app only. A model cannot author a 150KB library into a
+  self-contained Arena HTML file, so generated scenes use **CSS 3D transforms**
+  instead: `perspective` + `rotateX/Y/Z` + `translateZ` are pure functions of
+  `t`, weigh nothing, and stay inside the deterministic `__seek(t)` contract.
+- **Pipecat / LiveKit Agents** — recorded as "not adopted, and why": they solve
+  duplex conversation (~450–600ms round trips). Cupric records one instruction
+  and renders; the Web Speech API already covers that.
+
+### Speak a brief, get a video
+
+`VoiceListener` gained a `dictation` mode (no grammar parsing — a brief is prose,
+and the command grammar would discard it) plus `speak()` / `stopSpeaking()`
+helpers over `SpeechSynthesisUtterance`. On the Autonomous screen: **Speak the
+brief** dictates into the brief box, "start as soon as I stop speaking" fires
+`startAutomationJob()` on the first final phrase of four words or more, and
+status is spoken back on each job transition (done / error / waiting-for-user).
+
+The command grammar also learned `make a video about …`, so the Studio mic can
+hand a whole sentence to the same pipeline.
+
+Files: `src/lib/voice.ts`, `src/screens/Autonomous.tsx`, `src/screens/Studio.tsx`.

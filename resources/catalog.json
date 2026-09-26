@@ -122,6 +122,20 @@
       "code": "src/lib/videoTemplates.ts",
       "generated": "npm run packs:build",
       "note": "Self-contained HTML scenes exposing window.__seek(t) and __cupricSourceManifest."
+    },
+    {
+      "id": "panelui",
+      "path": "resources/panelui",
+      "entries": "registry.json",
+      "url": "https://github.com/panel-ui/PanelUI",
+      "use": [
+        "ui-references",
+        "behaviour-notes",
+        "prompt-cues"
+      ],
+      "license": "MIT \u2014 Copyright (c) 2026 Khalid Abdi",
+      "note": "React Native / Expo library. 135 components + 21 chart visualisations vendored as catalogue + upstream theme tokens; the RN source cannot run in Cupric's DOM renderer and is not copied.",
+      "generated": "npm run packs:build"
     }
   ],
   "pipelineOrder": [

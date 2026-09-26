@@ -49,8 +49,8 @@
       "id": "sources",
       "name": "Sources",
       "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
-      "itemCount": 46,
-      "bytes": 29691
+      "itemCount": 76,
+      "bytes": 50116
     },
     {
       "id": "templates",
@@ -65,6 +65,13 @@
       "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
       "itemCount": 190,
       "bytes": 63695
+    },
+    {
+      "id": "panelui",
+      "name": "PanelUI catalogue",
+      "description": "All 135 PanelUI components and 21 chart visualisations, with the upstream behaviour notes. React Native source stays upstream; Cupric mines the behaviour, the copy and the accessibility rules.",
+      "itemCount": 172,
+      "bytes": 107025
     }
   ]
 }

@@ -1,0 +1,3450 @@
+{
+  "id": "panelui",
+  "name": "PanelUI catalogue",
+  "description": "All 135 PanelUI components and 21 chart visualisations, with the upstream behaviour notes. React Native source stays upstream; Cupric mines the behaviour, the copy and the accessibility rules.",
+  "version": "0.4.0",
+  "source": "https://github.com/panel-ui/PanelUI (panelui-native 0.102.1, react-native)",
+  "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+  "items": [
+    {
+      "id": "panelui-api-route",
+      "kind": "source",
+      "name": "API route",
+      "description": "The server handler that streams from the model.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai/api-route",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The server handler that streams from the model."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai"
+      ]
+    },
+    {
+      "id": "panelui-chat-ui",
+      "kind": "source",
+      "name": "Chat UI",
+      "description": "A transcript and composer built from PanelUI components.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai/chat-ui",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A transcript and composer built from PanelUI components."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai"
+      ]
+    },
+    {
+      "id": "panelui-index",
+      "kind": "source",
+      "name": "AI",
+      "description": "Building AI chat interfaces in React Native with PanelUI.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai/index",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Building AI chat interfaces in React Native with PanelUI."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai"
+      ]
+    },
+    {
+      "id": "panelui-setup",
+      "kind": "source",
+      "name": "Setup",
+      "description": "Dependencies, polyfills and getting the API URL right on a device.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai/setup",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Dependencies, polyfills and getting the API URL right on a device."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai"
+      ]
+    },
+    {
+      "id": "panelui-streaming-performance",
+      "kind": "source",
+      "name": "Streaming performance",
+      "description": "Why token-by-token rendering drops frames on native, and what to do.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai/streaming-performance",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Why token-by-token rendering drops frames on native, and what to do."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai"
+      ]
+    },
+    {
+      "id": "panelui-tools",
+      "kind": "source",
+      "name": "Tools",
+      "description": "Letting the model call your code, and showing it in the conversation.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai/tools",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Letting the model call your code, and showing it in the conversation."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai"
+      ]
+    },
+    {
+      "id": "panelui-voice",
+      "kind": "source",
+      "name": "Voice",
+      "description": "A level from the microphone, an assistant that talks back, and voice notes in a transcript.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai/voice",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A level from the microphone, an assistant that talks back, and voice notes in a transcript."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai"
+      ]
+    },
+    {
+      "id": "panelui-ai-input",
+      "kind": "source",
+      "name": "aiInput",
+      "description": "A prompt composer: a field that grows to five lines, a row of controls, and the sheet they open.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/ai-input",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A prompt composer: a field that grows to five lines, a row of controls, and the sheet they open."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-code-block",
+      "kind": "source",
+      "name": "CodeBlock",
+      "description": "A fenced snippet, syntax-coloured and scrolled sideways.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/code-block",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A fenced snippet, syntax-coloured and scrolled sideways."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-image-generation",
+      "kind": "source",
+      "name": "ImageGeneration",
+      "description": "The place an image will be, while it is being made.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/image-generation",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The place an image will be, while it is being made."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-panelside",
+      "kind": "source",
+      "name": "Panelside",
+      "description": "Navigation panel that moves the app aside instead of covering it.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/panelside",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Navigation panel that moves the app aside instead of covering it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-plan",
+      "kind": "source",
+      "name": "Plan",
+      "description": "What an agent intends to do, before it does it.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/plan",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "What an agent intends to do, before it does it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-reasoning",
+      "kind": "source",
+      "name": "Reasoning",
+      "description": "The model's working, shown while it happens and folded away after.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/reasoning",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The model's working, shown while it happens and folded away after."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-response",
+      "kind": "source",
+      "name": "Response",
+      "description": "A model's answer, rendered as markdown while it is still arriving.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/response",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A model's answer, rendered as markdown while it is still arriving."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-shimmer",
+      "kind": "source",
+      "name": "Shimmer",
+      "description": "Animated highlight sweeping across content.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/shimmer",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Animated highlight sweeping across content."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-soundwave",
+      "kind": "source",
+      "name": "Soundwave",
+      "description": "What a voice looks like while an app listens.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/soundwave",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "What a voice looks like while an app listens."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-sources",
+      "kind": "source",
+      "name": "Sources",
+      "description": "Where an answer came from, folded under a count.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/sources",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Where an answer came from, folded under a count."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-task",
+      "kind": "source",
+      "name": "Task",
+      "description": "One step an agent took, and what it did while it was there.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/task",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "One step an agent took, and what it did while it was there."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-thinking-orb",
+      "kind": "source",
+      "name": "ThinkingOrb",
+      "description": "Dotted orb saying which kind of busy an agent is.",
+      "data": {
+        "url": "https://panelui.dev/docs/ai-components/thinking-orb",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Dotted orb saying which kind of busy an agent is."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "ai-components"
+      ]
+    },
+    {
+      "id": "panelui-area-chart",
+      "kind": "source",
+      "name": "AreaChart",
+      "description": "Filled bands over time, stacked or overlaid.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/area-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Filled bands over time, stacked or overlaid."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-bar-chart",
+      "kind": "source",
+      "name": "BarChart",
+      "description": "Categories compared by length, grouped or stacked.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/bar-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Categories compared by length, grouped or stacked."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-bubble-chart",
+      "kind": "source",
+      "name": "BubbleChart",
+      "description": "Named circles on two axes, with a third quantity on their area.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/bubble-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Named circles on two axes, with a third quantity on their area."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-bump-chart",
+      "kind": "source",
+      "name": "BumpChart",
+      "description": "How a set of things ranked against each other over time.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/bump-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "How a set of things ranked against each other over time."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-candlestick-chart",
+      "kind": "source",
+      "name": "CandlestickChart",
+      "description": "Open, high, low and close for a period, drawn as one mark.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/candlestick-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Open, high, low and close for a period, drawn as one mark."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-funnel-chart",
+      "kind": "source",
+      "name": "FunnelChart",
+      "description": "Where a population drained away, one step at a time.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/funnel-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Where a population drained away, one step at a time."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-heatmap-chart",
+      "kind": "source",
+      "name": "HeatmapChart",
+      "description": "Contribution grid with a themed colour ramp and a readout.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/heatmap-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Contribution grid with a themed colour ramp and a readout."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-hex-chart",
+      "kind": "source",
+      "name": "HexChart",
+      "description": "A whole broken into parts, counted out in cells.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/hex-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A whole broken into parts, counted out in cells."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-line-chart",
+      "kind": "source",
+      "name": "LineChart",
+      "description": "Animated time series, drawn on the UI thread.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/line-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Animated time series, drawn on the UI thread."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-live-line-chart",
+      "kind": "source",
+      "name": "LiveLineChart",
+      "description": "A reading that keeps arriving, against a window that keeps moving.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/live-line-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A reading that keeps arriving, against a window that keeps moving."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-mirror-area-chart",
+      "kind": "source",
+      "name": "MirrorAreaChart",
+      "description": "Two readings of one timeline, one above a baseline and one below it.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/mirror-area-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Two readings of one timeline, one above a baseline and one below it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-pie-chart",
+      "kind": "source",
+      "name": "PieChart",
+      "description": "One whole, divided between its parts.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/pie-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "One whole, divided between its parts."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-plot",
+      "kind": "source",
+      "name": "Plot",
+      "description": "A chart you assemble out of its marks.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/plot",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A chart you assemble out of its marks."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-polar-area-chart",
+      "kind": "source",
+      "name": "PolarAreaChart",
+      "description": "Several readings on one scale, compared as wedges.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/polar-area-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Several readings on one scale, compared as wedges."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-pyramid-chart",
+      "kind": "source",
+      "name": "PyramidChart",
+      "description": "Two series mirrored about a centre, on one shared scale.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/pyramid-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Two series mirrored about a centre, on one shared scale."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-radar-chart",
+      "kind": "source",
+      "name": "RadarChart",
+      "description": "Several measures of one thing, drawn as one shape.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/radar-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Several measures of one thing, drawn as one shape."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-ring-chart",
+      "kind": "source",
+      "name": "RingChart",
+      "description": "Concentric arcs, each measured against its own target.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/ring-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Concentric arcs, each measured against its own target."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-sankey-chart",
+      "kind": "source",
+      "name": "SankeyChart",
+      "description": "Where a quantity came from and where it ended up.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/sankey-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Where a quantity came from and where it ended up."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-scatter-chart",
+      "kind": "source",
+      "name": "ScatterChart",
+      "description": "Two quantities against each other, to show how they relate.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/scatter-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Two quantities against each other, to show how they relate."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-treemap-chart",
+      "kind": "source",
+      "name": "TreemapChart",
+      "description": "A total, cut into the parts it is made of, sized by area.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/treemap-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A total, cut into the parts it is made of, sized by area."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-waterfall-chart",
+      "kind": "source",
+      "name": "WaterfallChart",
+      "description": "How a run of changes carried one total to another.",
+      "data": {
+        "url": "https://panelui.dev/docs/charts/waterfall-chart",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "How a run of changes carried one total to another."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "charts"
+      ]
+    },
+    {
+      "id": "panelui-accordion",
+      "kind": "source",
+      "name": "Accordion",
+      "description": "Collapsible sections with single or multiple selection.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/accordion",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Collapsible sections with single or multiple selection."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-alert",
+      "kind": "source",
+      "name": "Alert",
+      "description": "Status message with a built-in icon.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/alert",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Status message with a built-in icon."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-animated-badge",
+      "kind": "source",
+      "name": "AnimatedBadge",
+      "description": "Status pill whose icon and label roll over when the status changes.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/animated-badge",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Status pill whose icon and label roll over when the status changes."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-attachment",
+      "kind": "source",
+      "name": "Attachment",
+      "description": "File row with upload states, built on Item.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/attachment",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "File row with upload states, built on Item."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-avatar",
+      "kind": "source",
+      "name": "Avatar",
+      "description": "User image with an initials fallback, a badge overlay, and a stack for a group of them.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/avatar",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "User image with an initials fallback, a badge overlay, and a stack for a group of them."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-badge",
+      "kind": "source",
+      "name": "Badge",
+      "description": "Compact status label, dot, or notification count.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/badge",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Compact status label, dot, or notification count."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-bottom-sheet",
+      "kind": "source",
+      "name": "BottomSheet",
+      "description": "Draggable sheet anchored to the bottom of the screen.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/bottom-sheet",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Draggable sheet anchored to the bottom of the screen."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-breadcrumb",
+      "kind": "source",
+      "name": "Breadcrumb",
+      "description": "The trail of links back up the hierarchy to the current page.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/breadcrumb",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The trail of links back up the hierarchy to the current page."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-button",
+      "kind": "source",
+      "name": "Button",
+      "description": "Pressable action with variants, sizes, loading state and icon slots.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/button",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Pressable action with variants, sizes, loading state and icon slots."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-button-group",
+      "kind": "source",
+      "name": "ButtonGroup",
+      "description": "Several buttons drawn as one control — a segmented run, a split action, a toolbar.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/button-group",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Several buttons drawn as one control — a segmented run, a split action, a toolbar."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-calendar",
+      "kind": "source",
+      "name": "Calendar",
+      "description": "A month of days, for picking one, several, or a range.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/calendar",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A month of days, for picking one, several, or a range."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-card",
+      "kind": "source",
+      "name": "Card",
+      "description": "Content surface with header, body and footer.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/card",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Content surface with header, body and footer."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-carousel",
+      "kind": "source",
+      "name": "Carousel",
+      "description": "A run of slides, one at a time, dragged with a finger.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/carousel",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A run of slides, one at a time, dragged with a finger."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-checkbox",
+      "kind": "source",
+      "name": "Checkbox",
+      "description": "Animated checkbox, as a row or a selectable card.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/checkbox",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Animated checkbox, as a row or a selectable card."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-chip",
+      "kind": "source",
+      "name": "Chip",
+      "description": "Interactive pill — a filter, a tag, or a removable token.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/chip",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Interactive pill — a filter, a tag, or a removable token."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-circular-text",
+      "kind": "source",
+      "name": "CircularText",
+      "description": "Text set around a circle, turning.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/circular-text",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Text set around a circle, turning."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-collapsible",
+      "kind": "source",
+      "name": "Collapsible",
+      "description": "One section of content, shown and hidden by its own header.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/collapsible",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "One section of content, shown and hidden by its own header."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-color-picker",
+      "kind": "source",
+      "name": "ColorPicker",
+      "description": "A colour chosen by dragging — a saturation square or a wheel, a hue scale, and opacity.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/color-picker",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A colour chosen by dragging — a saturation square or a wheel, a hue scale, and opacity."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-combobox",
+      "kind": "source",
+      "name": "Combobox",
+      "description": "A text field that filters a list of options as you type.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/combobox",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A text field that filters a list of options as you type."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-compare",
+      "kind": "source",
+      "name": "Compare",
+      "description": "Two versions of one picture, with a seam you drag across it.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/compare",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Two versions of one picture, with a seam you drag across it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-context-menu",
+      "kind": "source",
+      "name": "ContextMenu",
+      "description": "Actions for a piece of content, opened by holding it.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/context-menu",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Actions for a piece of content, opened by holding it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-date-picker",
+      "kind": "source",
+      "name": "DatePicker",
+      "description": "A calendar behind a button.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/date-picker",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A calendar behind a button."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-date-time-picker",
+      "kind": "source",
+      "name": "DateTimePicker",
+      "description": "A day and a time of day, picked in one panel.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/date-time-picker",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A day and a time of day, picked in one panel."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-dialog",
+      "kind": "source",
+      "name": "Dialog",
+      "description": "Modal dialog with a backdrop and footer actions.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/dialog",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Modal dialog with a backdrop and footer actions."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-direction",
+      "kind": "source",
+      "name": "Direction",
+      "description": "Reading direction for everything below it.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/direction",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Reading direction for everything below it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-drawer",
+      "kind": "source",
+      "name": "Drawer",
+      "description": "A panel that comes in from an edge of the screen and covers the app until dismissed.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/drawer",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A panel that comes in from an edge of the screen and covers the app until dismissed."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-empty-state",
+      "kind": "source",
+      "name": "EmptyState",
+      "description": "Placeholder for a list or screen with no content.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/empty-state",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Placeholder for a list or screen with no content."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-fab",
+      "kind": "source",
+      "name": "Fab",
+      "description": "The floating action button — one action pinned over the content, with an optional dial of others behind it.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/fab",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The floating action button — one action pinned over the content, with an optional dial of others behind it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-feedback",
+      "kind": "source",
+      "name": "Feedback",
+      "description": "Dialog whose body is a well to write in, with the actions in the band around it.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/feedback",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Dialog whose body is a well to write in, with the actions in the band around it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-field",
+      "kind": "source",
+      "name": "Field",
+      "description": "Layout and validation-state kit a form control composes into.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/field",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Layout and validation-state kit a form control composes into."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-flip-card",
+      "kind": "source",
+      "name": "FlipCard",
+      "description": "Two faces of one card, and a turn between them.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/flip-card",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Two faces of one card, and a turn between them."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-flow",
+      "kind": "source",
+      "name": "Flow",
+      "description": "Pan-and-zoom canvas of draggable nodes joined by animated edges.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/flow",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Pan-and-zoom canvas of draggable nodes joined by animated edges."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-frame",
+      "kind": "source",
+      "name": "Frame",
+      "description": "Widget shell — a card of rows sitting in a titled tray.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/frame",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Widget shell — a card of rows sitting in a titled tray."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-grid-item",
+      "kind": "source",
+      "name": "GridItem",
+      "description": "Bento tiles, and the grid that places them.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/grid-item",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Bento tiles, and the grid that places them."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-image-viewer",
+      "kind": "source",
+      "name": "ImageViewer",
+      "description": "An image that opens out of the page over a blur, to zoom into and swipe through.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/image-viewer",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "An image that opens out of the page over a blur, to zoom into and swipe through."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-index",
+      "kind": "source",
+      "name": "Components",
+      "description": "Every component module in PanelUI, by what it is for — 135 component modules, each with its anatomy, props and variants.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/index",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Every component module in PanelUI, by what it is for — 135 component modules, each with its anatomy, props and variants."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-input",
+      "kind": "source",
+      "name": "Input",
+      "description": "Text field with label, description and error message.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/input",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Text field with label, description and error message."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-input-group",
+      "kind": "source",
+      "name": "InputGroup",
+      "description": "Input with leading and trailing decorators.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/input-group",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Input with leading and trailing decorators."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-item",
+      "kind": "source",
+      "name": "Item",
+      "description": "Row of media, text and actions for lists and settings.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/item",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Row of media, text and actions for lists and settings."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-kpi",
+      "kind": "source",
+      "name": "Kpi",
+      "description": "One number, what it is doing, and the shape it made getting there.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/kpi",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "One number, what it is doing, and the shape it made getting there."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-label",
+      "kind": "source",
+      "name": "Label",
+      "description": "Form field label with required, invalid and disabled states.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/label",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Form field label with required, invalid and disabled states."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-loader",
+      "kind": "source",
+      "name": "Loader",
+      "description": "Nine loading animations behind one variant prop.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/loader",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Nine loading animations behind one variant prop."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-map",
+      "kind": "source",
+      "name": "Map",
+      "description": "Vector map whose basemap is drawn from your theme tokens.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/map",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Vector map whose basemap is drawn from your theme tokens."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-markdown-editor",
+      "kind": "source",
+      "name": "MarkdownEditor",
+      "description": "A field for writing markdown, with a formatting toolbar and a rendered preview.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/markdown-editor",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A field for writing markdown, with a formatting toolbar and a rendered preview."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-marker",
+      "kind": "source",
+      "name": "Marker",
+      "description": "Inline note between conversation turns.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/marker",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Inline note between conversation turns."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-marquee",
+      "kind": "source",
+      "name": "Marquee",
+      "description": "Content that travels across its container on a loop.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/marquee",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Content that travels across its container on a loop."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-menu",
+      "kind": "source",
+      "name": "Menu",
+      "description": "The list of things you can do to something.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/menu",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The list of things you can do to something."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-message",
+      "kind": "source",
+      "name": "Message",
+      "description": "Chat turn with avatar, bubble, header and footer.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/message",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Chat turn with avatar, bubble, header and footer."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-message-scroller",
+      "kind": "source",
+      "name": "MessageScroller",
+      "description": "Scroll behaviour a chat transcript needs.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/message-scroller",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Scroll behaviour a chat transcript needs."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-meter",
+      "kind": "source",
+      "name": "Meter",
+      "description": "A measurement on a fixed scale, coloured by where it falls.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/meter",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A measurement on a fixed scale, coloured by where it falls."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-number-input",
+      "kind": "source",
+      "name": "NumberInput",
+      "description": "Numeric field stepped by buttons or typed by hand.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/number-input",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Numeric field stepped by buttons or typed by hand."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-otp-input",
+      "kind": "source",
+      "name": "OtpInput",
+      "description": "One-time-code field drawn as a row of separate cells.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/otp-input",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "One-time-code field drawn as a row of separate cells."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-page-header",
+      "kind": "source",
+      "name": "PageHeader",
+      "description": "Cover, face and actions at the top of a profile.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/page-header",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Cover, face and actions at the top of a profile."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-pagination",
+      "kind": "source",
+      "name": "Pagination",
+      "description": "Paged navigation over a long result set.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/pagination",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Paged navigation over a long result set."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-planner",
+      "kind": "source",
+      "name": "Planner",
+      "description": "A month of days, each carrying what falls on it.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/planner",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A month of days, each carrying what falls on it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-popover",
+      "kind": "source",
+      "name": "Popover",
+      "description": "Panel anchored to the element that opened it.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/popover",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Panel anchored to the element that opened it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-post",
+      "kind": "source",
+      "name": "Post",
+      "description": "A social card — author, body, media and the counts underneath, with the votes animated.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/post",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A social card — author, body, media and the counts underneath, with the votes animated."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-progress",
+      "kind": "source",
+      "name": "Progress",
+      "description": "Determinate and indeterminate progress bar.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/progress",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Determinate and indeterminate progress bar."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-progress-button",
+      "kind": "source",
+      "name": "ProgressButton",
+      "description": "Press and hold to confirm, with the wait drawn on the button.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/progress-button",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Press and hold to confirm, with the wait drawn on the button."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-qr-code",
+      "kind": "source",
+      "name": "QRCode",
+      "description": "A string a camera can read — framed, titled, or folded away behind a button.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/qr-code",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A string a camera can read — framed, titled, or folded away behind a button."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-questionnaire",
+      "kind": "source",
+      "name": "Questionnaire",
+      "description": "One question at a time, with progress, validation and a way back.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/questionnaire",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "One question at a time, with progress, validation and a way back."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-radio-group",
+      "kind": "source",
+      "name": "RadioGroup",
+      "description": "Single-select list of options.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/radio-group",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Single-select list of options."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-rating",
+      "kind": "source",
+      "name": "Rating",
+      "description": "A row of stars to read or set a score.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/rating",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A row of stars to read or set a score."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-scroll-blur",
+      "kind": "source",
+      "name": "ScrollBlur",
+      "description": "Blurs the edges of a scroll container.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/scroll-blur",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Blurs the edges of a scroll container."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-scroll-canvas",
+      "kind": "source",
+      "name": "ScrollCanvas",
+      "description": "Image frame whose contents move as you scroll.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/scroll-canvas",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Image frame whose contents move as you scroll."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-scroll-fade",
+      "kind": "source",
+      "name": "ScrollFade",
+      "description": "Fades the edges of a scroll container.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/scroll-fade",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Fades the edges of a scroll container."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-scroll-header",
+      "kind": "source",
+      "name": "ScrollHeader",
+      "description": "A screen title that hands over to a compact bar as the page scrolls.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/scroll-header",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A screen title that hands over to a compact bar as the page scrolls."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-scroll-text",
+      "kind": "source",
+      "name": "ScrollText",
+      "description": "Text that resolves word by word as you scroll.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/scroll-text",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Text that resolves word by word as you scroll."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-search-bar",
+      "kind": "source",
+      "name": "SearchBar",
+      "description": "Search field with a clear button, a Cancel button and a panel of results.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/search-bar",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Search field with a clear button, a Cancel button and a panel of results."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-section-progress",
+      "kind": "source",
+      "name": "SectionProgress",
+      "description": "Floating pill with a scroll ring and the section being read.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/section-progress",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Floating pill with a scroll ring and the section being read."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-section-rail",
+      "kind": "source",
+      "name": "SectionRail",
+      "description": "Floating section navigator for a long screen.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/section-rail",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Floating section navigator for a long screen."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-select",
+      "kind": "source",
+      "name": "Select",
+      "description": "Picker shown in a bottom sheet, expanded in place, or floating over the page.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/select",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Picker shown in a bottom sheet, expanded in place, or floating over the page."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-selection-mode",
+      "kind": "source",
+      "name": "SelectionMode",
+      "description": "Pick several things at once, on a screen or in a sheet.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/selection-mode",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Pick several things at once, on a screen or in a sheet."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-separator",
+      "kind": "source",
+      "name": "Separator",
+      "description": "Horizontal or vertical rule between content, optionally labelled.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/separator",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Horizontal or vertical rule between content, optionally labelled."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-signature",
+      "kind": "source",
+      "name": "Signature",
+      "description": "Sign with a finger, and get the result back out as SVG or PNG.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/signature",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Sign with a finger, and get the result back out as SVG or PNG."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-skeleton",
+      "kind": "source",
+      "name": "Skeleton",
+      "description": "Shimmer placeholder for loading content.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/skeleton",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Shimmer placeholder for loading content."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-slide-button",
+      "kind": "source",
+      "name": "SlideButton",
+      "description": "Drag across to confirm, with the distance drawn on the button.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/slide-button",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Drag across to confirm, with the distance drawn on the button."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-slider",
+      "kind": "source",
+      "name": "Slider",
+      "description": "Pick a value, or a span, by dragging a thumb along a track.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/slider",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Pick a value, or a span, by dragging a thumb along a track."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-sortable",
+      "kind": "source",
+      "name": "Sortable",
+      "description": "A list whose rows can be dragged into a different order.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/sortable",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A list whose rows can be dragged into a different order."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-spinner",
+      "kind": "source",
+      "name": "Spinner",
+      "description": "Indeterminate loading indicator.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/spinner",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Indeterminate loading indicator."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-split-view",
+      "kind": "source",
+      "name": "SplitView",
+      "description": "Two resizable stacked panes that settle on one of a few named heights.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/split-view",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Two resizable stacked panes that settle on one of a few named heights."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-splitter",
+      "kind": "source",
+      "name": "Splitter",
+      "description": "Panes that share a container, with a seam between them you can drag.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/splitter",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Panes that share a container, with a seam between them you can drag."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-stack-card",
+      "kind": "source",
+      "name": "StackCard",
+      "description": "A pile of cards, taken one at a time by throwing the top one off.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/stack-card",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A pile of cards, taken one at a time by throwing the top one off."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-steps",
+      "kind": "source",
+      "name": "Steps",
+      "description": "Stepper for multi-step flows.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/steps",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Stepper for multi-step flows."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-support",
+      "kind": "source",
+      "name": "Support",
+      "description": "The screen a person arrives on when they need help.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/support",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The screen a person arrives on when they need help."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-surface",
+      "kind": "source",
+      "name": "Surface",
+      "description": "Elevated container with a variant ladder.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/surface",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Elevated container with a variant ladder."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-swipe",
+      "kind": "source",
+      "name": "Swipe",
+      "description": "A row that slides aside to reveal the things you can do to it.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/swipe",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A row that slides aside to reveal the things you can do to it."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-switch",
+      "kind": "source",
+      "name": "Switch",
+      "description": "Animated on/off toggle.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/switch",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Animated on/off toggle."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-table",
+      "kind": "source",
+      "name": "Table",
+      "description": "Rows and columns that stay lined up, with sortable headers.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/table",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Rows and columns that stay lined up, with sortable headers."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-tabs",
+      "kind": "source",
+      "name": "Tabs",
+      "description": "Segmented navigation with an animated indicator.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/tabs",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Segmented navigation with an animated indicator."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-tag-input",
+      "kind": "source",
+      "name": "TagInput",
+      "description": "A field whose value is a list of tokens rather than a string.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/tag-input",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A field whose value is a list of tokens rather than a string."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-text-animation",
+      "kind": "source",
+      "name": "TextAnimation",
+      "description": "Five ways a piece of text or a number arrives.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/text-animation",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Five ways a piece of text or a number arrives."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-textarea",
+      "kind": "source",
+      "name": "Textarea",
+      "description": "Text field that runs to several lines, sized in rows.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/textarea",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Text field that runs to several lines, sized in rows."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-theme-selector",
+      "kind": "source",
+      "name": "ThemeSelector",
+      "description": "Light, dark or the device's setting, drawn as three miniature screens.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/theme-selector",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Light, dark or the device's setting, drawn as three miniature screens."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-time-picker",
+      "kind": "source",
+      "name": "TimePicker",
+      "description": "A time of day, as a wheel, a clock or a swipeable scale.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/time-picker",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A time of day, as a wheel, a clock or a swipeable scale."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-timeline",
+      "kind": "source",
+      "name": "Timeline",
+      "description": "A sequence of events, vertical or swiped sideways.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/timeline",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A sequence of events, vertical or swiped sideways."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-toast",
+      "kind": "source",
+      "name": "Toast",
+      "description": "Transient notification queue with swipe to dismiss.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/toast",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Transient notification queue with swipe to dismiss."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-toggle-button",
+      "kind": "source",
+      "name": "ToggleButton",
+      "description": "A button that stays down, on its own or in a group.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/toggle-button",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A button that stays down, on its own or in a group."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-tooltip",
+      "kind": "source",
+      "name": "Tooltip",
+      "description": "A small label that names the control under your finger.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/tooltip",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A small label that names the control under your finger."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-tour",
+      "kind": "source",
+      "name": "Tour",
+      "description": "A walkthrough that introduces a screen one control at a time.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/tour",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A walkthrough that introduces a screen one control at a time."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-tree",
+      "kind": "source",
+      "name": "Tree",
+      "description": "A hierarchy you can open a level at a time.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/tree",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A hierarchy you can open a level at a time."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-typography",
+      "kind": "source",
+      "name": "Typography",
+      "description": "Semantic text presets.",
+      "data": {
+        "url": "https://panelui.dev/docs/components/typography",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Semantic text presets."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "components"
+      ]
+    },
+    {
+      "id": "panelui-charts",
+      "kind": "source",
+      "name": "Charts",
+      "description": "The five-colour series ramp every chart draws from, how a series picks its colour, what to change to put a whole app's charts on brand, and how to build a chart the library does not ship.",
+      "data": {
+        "url": "https://panelui.dev/docs/customization/charts",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The five-colour series ramp every chart draws from, how a series picks its colour, what to change to put a whole app's charts on brand, and how to build a chart the library does not ship."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "customization"
+      ]
+    },
+    {
+      "id": "panelui-colors",
+      "kind": "source",
+      "name": "Colors",
+      "description": "The semantic colour tokens every component draws from, what each one is for, and how to change them.",
+      "data": {
+        "url": "https://panelui.dev/docs/customization/colors",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The semantic colour tokens every component draws from, what each one is for, and how to change them."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "customization"
+      ]
+    },
+    {
+      "id": "panelui-fonts",
+      "kind": "source",
+      "name": "Fonts",
+      "description": "Load a font and point five tokens at it. Every component in the library follows.",
+      "data": {
+        "url": "https://panelui.dev/docs/customization/fonts",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Load a font and point five tokens at it. Every component in the library follows."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "customization"
+      ]
+    },
+    {
+      "id": "panelui-icons",
+      "kind": "source",
+      "name": "Icons",
+      "description": "Every icon in the library, what to import, and how they take their colour and size.",
+      "data": {
+        "url": "https://panelui.dev/docs/customization/icons",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Every icon in the library, what to import, and how they take their colour and size."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "customization"
+      ]
+    },
+    {
+      "id": "panelui-styling",
+      "kind": "source",
+      "name": "Styling",
+      "description": "className on every component, when to reach for style instead, and how to build your own components on top.",
+      "data": {
+        "url": "https://panelui.dev/docs/customization/styling",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "className on every component, when to reach for style instead, and how to build your own components on top."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "customization"
+      ]
+    },
+    {
+      "id": "panelui-theming",
+      "kind": "source",
+      "name": "Theming",
+      "description": "Six built-in themes across three families, how to switch at runtime, and how to write a theme of your own.",
+      "data": {
+        "url": "https://panelui.dev/docs/customization/theming",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Six built-in themes across three families, how to switch at runtime, and how to write a theme of your own."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "customization"
+      ]
+    },
+    {
+      "id": "panelui-form",
+      "kind": "source",
+      "name": "Form",
+      "description": "Form state — values, validation and submission — with no form library underneath.",
+      "data": {
+        "url": "https://panelui.dev/docs/form/form",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Form state — values, validation and submission — with no form library underneath."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "form"
+      ]
+    },
+    {
+      "id": "panelui-use-back-handler",
+      "kind": "source",
+      "name": "useBackHandler",
+      "description": "Run a handler when the Android hardware back button is pressed.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-back-handler",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Run a handler when the Android hardware back button is pressed."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-breakpoint",
+      "kind": "source",
+      "name": "useBreakpoint",
+      "description": "Responsive state derived from the window size.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-breakpoint",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Responsive state derived from the window size."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-copy-to-clipboard",
+      "kind": "source",
+      "name": "useCopyToClipboard",
+      "description": "Copy text to the clipboard with a temporary copied state.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-copy-to-clipboard",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Copy text to the clipboard with a temporary copied state."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-debounced-value",
+      "kind": "source",
+      "name": "useDebouncedValue",
+      "description": "A copy of a value that settles after changes stop.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-debounced-value",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "A copy of a value that settles after changes stop."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-direction",
+      "kind": "source",
+      "name": "useDirection and useDirectionSign",
+      "description": "Read the nearest LTR or RTL direction for layout and gesture maths.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-direction",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Read the nearest LTR or RTL direction for layout and gesture maths."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-disclosure",
+      "kind": "source",
+      "name": "useDisclosure",
+      "description": "Open and closed state for an overlay.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-disclosure",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Open and closed state for an overlay."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-keyboard",
+      "kind": "source",
+      "name": "useKeyboard",
+      "description": "Keyboard height and visibility.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-keyboard",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Keyboard height and visibility."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-keyboard-avoidance",
+      "kind": "source",
+      "name": "useKeyboardAvoidance",
+      "description": "Keep an element clear of the software keyboard.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-keyboard-avoidance",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Keep an element clear of the software keyboard."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-previous",
+      "kind": "source",
+      "name": "usePrevious",
+      "description": "The value from the previous render.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-previous",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The value from the previous render."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-reveal-progress",
+      "kind": "source",
+      "name": "useRevealProgress",
+      "description": "Derive a shared reveal value from an element's travel through a scroll viewport.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-reveal-progress",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Derive a shared reveal value from an element's travel through a scroll viewport."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-scroll-sections",
+      "kind": "source",
+      "name": "useScrollSections",
+      "description": "Track which section of a scroll view is being read.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-scroll-sections",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Track which section of a scroll view is being read."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-skeleton-handoff",
+      "kind": "source",
+      "name": "useSkeletonHandoff",
+      "description": "Keep a placeholder on screen through a fade while the real content arrives.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-skeleton-handoff",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Keep a placeholder on screen through a fade while the real content arrives."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-use-theme",
+      "kind": "source",
+      "name": "useTheme and useThemeMode",
+      "description": "Read and change the active theme.",
+      "data": {
+        "url": "https://panelui.dev/docs/hooks/use-theme",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Read and change the active theme."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "hooks"
+      ]
+    },
+    {
+      "id": "panelui-logo-maker",
+      "kind": "source",
+      "name": "Logo Maker",
+      "description": "An agent skill that designs an original app logo — a compact mark that stays readable at 32 × 32, as a vector file or through an image model.",
+      "data": {
+        "url": "https://panelui.dev/docs/integrations/logo-maker",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "An agent skill that designs an original app logo — a compact mark that stays readable at 32 × 32, as a vector file or through an image model."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "integrations"
+      ]
+    },
+    {
+      "id": "panelui-neon",
+      "kind": "source",
+      "name": "Neon",
+      "description": "We recommend using Neon — serverless Postgres for the API routes behind a PanelUI app, with the connection string kept off the device.",
+      "data": {
+        "url": "https://panelui.dev/docs/integrations/neon",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "We recommend using Neon — serverless Postgres for the API routes behind a PanelUI app, with the connection string kept off the device."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "integrations"
+      ]
+    },
+    {
+      "id": "panelui-panelwind",
+      "kind": "source",
+      "name": "panelwind",
+      "description": "An ESLint plugin that checks how a screen uses the design system — and catches the classes that compile and then do nothing on a device.",
+      "data": {
+        "url": "https://panelui.dev/docs/integrations/panelwind",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "An ESLint plugin that checks how a screen uses the design system — and catches the classes that compile and then do nothing on a device."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "integrations"
+      ]
+    },
+    {
+      "id": "panelui-components",
+      "kind": "source",
+      "name": "Component API",
+      "description": "135 public component modules, linked to their guides and per-module export tables.",
+      "data": {
+        "url": "https://panelui.dev/docs/reference/components",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "135 public component modules, linked to their guides and per-module export tables."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "reference"
+      ]
+    },
+    {
+      "id": "panelui-foundations",
+      "kind": "source",
+      "name": "Foundations API",
+      "description": "Providers, themes, primitives and optional native bridges.",
+      "data": {
+        "url": "https://panelui.dev/docs/reference/foundations",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Providers, themes, primitives and optional native bridges."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "reference"
+      ]
+    },
+    {
+      "id": "panelui-hooks",
+      "kind": "source",
+      "name": "Hooks API",
+      "description": "Standalone public hooks, their values and option/result types.",
+      "data": {
+        "url": "https://panelui.dev/docs/reference/hooks",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Standalone public hooks, their values and option/result types."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "reference"
+      ]
+    },
+    {
+      "id": "panelui-icons",
+      "kind": "source",
+      "name": "Icons API",
+      "description": "Every icon and icon support export available from the package root.",
+      "data": {
+        "url": "https://panelui.dev/docs/reference/icons",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Every icon and icon support export available from the package root."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "reference"
+      ]
+    },
+    {
+      "id": "panelui-index",
+      "kind": "source",
+      "name": "Public API",
+      "description": "Every supported root export from panelui-native — 1398 symbols across 162 modules.",
+      "data": {
+        "url": "https://panelui.dev/docs/reference/index",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Every supported root export from panelui-native — 1398 symbols across 162 modules."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "reference"
+      ]
+    },
+    {
+      "id": "panelui-utilities",
+      "kind": "source",
+      "name": "Utilities API",
+      "description": "The complete public cn, color and time utility surface.",
+      "data": {
+        "url": "https://panelui.dev/docs/reference/utilities",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "The complete public cn, color and time utility surface."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "reference"
+      ]
+    },
+    {
+      "id": "panelui-cn",
+      "kind": "source",
+      "name": "cn",
+      "description": "Merge Tailwind classes with conflicts resolved.",
+      "data": {
+        "url": "https://panelui.dev/docs/utilities/cn",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "platform": "react-native",
+        "promptCue": "Merge Tailwind classes with conflicts resolved."
+      },
+      "tags": [
+        "source",
+        "panelui",
+        "utilities"
+      ]
+    }
+  ]
+}

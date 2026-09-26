@@ -1,0 +1,1159 @@
+{
+  "source": "https://github.com/panel-ui/PanelUI",
+  "license": "MIT \u2014 Copyright (c) 2026 Khalid Abdi",
+  "upstreamVersion": "0.102.1",
+  "package": "panelui-native",
+  "platform": "react-native",
+  "note": "PanelUI is a React Native / Expo library (reanimated, expo-blur, uniwind). Its source cannot run in Cupric\u2019s DOM renderer, so the catalogue is vendored as reference + prompt material, not as code. Behaviour and copy are what we mine; the React Native implementation stays upstream.",
+  "counts": {
+    "componentModules": 135,
+    "packageComponentExports": 135,
+    "documentedComponents": 135,
+    "exampleEntries": 135,
+    "registry": {
+      "componentItems": 135,
+      "supportItems": 36,
+      "totalItems": 171,
+      "byType": {
+        "registry:ui": 150,
+        "registry:hook": 13,
+        "registry:lib": 7,
+        "registry:theme": 1
+      }
+    },
+    "visualizations": {
+      "total": 21,
+      "sharedData": 13,
+      "summaries": 1,
+      "interactiveItems": 7
+    },
+    "registrySupport": {
+      "primitives": 13,
+      "icons": 1,
+      "providers": 1,
+      "hooks": 13,
+      "libraries": 7,
+      "themes": 1
+    }
+  },
+  "visualizations": [
+    {
+      "name": "area-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "bar-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "bubble-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "bump-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "candlestick-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "funnel-chart",
+      "accessibilityMode": "interactive-items"
+    },
+    {
+      "name": "heatmap-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "hex-chart",
+      "accessibilityMode": "interactive-items"
+    },
+    {
+      "name": "line-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "live-line-chart",
+      "accessibilityMode": "summary"
+    },
+    {
+      "name": "mirror-area-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "pie-chart",
+      "accessibilityMode": "interactive-items"
+    },
+    {
+      "name": "plot",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "polar-area-chart",
+      "accessibilityMode": "interactive-items"
+    },
+    {
+      "name": "pyramid-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "radar-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "ring-chart",
+      "accessibilityMode": "interactive-items"
+    },
+    {
+      "name": "sankey-chart",
+      "accessibilityMode": "interactive-items"
+    },
+    {
+      "name": "scatter-chart",
+      "accessibilityMode": "shared-data"
+    },
+    {
+      "name": "treemap-chart",
+      "accessibilityMode": "interactive-items"
+    },
+    {
+      "name": "waterfall-chart",
+      "accessibilityMode": "shared-data"
+    }
+  ],
+  "entries": [
+    {
+      "slug": "api-route",
+      "group": "ai",
+      "name": "API route",
+      "description": "The server handler that streams from the model."
+    },
+    {
+      "slug": "chat-ui",
+      "group": "ai",
+      "name": "Chat UI",
+      "description": "A transcript and composer built from PanelUI components."
+    },
+    {
+      "slug": "index",
+      "group": "ai",
+      "name": "AI",
+      "description": "Building AI chat interfaces in React Native with PanelUI."
+    },
+    {
+      "slug": "setup",
+      "group": "ai",
+      "name": "Setup",
+      "description": "Dependencies, polyfills and getting the API URL right on a device."
+    },
+    {
+      "slug": "streaming-performance",
+      "group": "ai",
+      "name": "Streaming performance",
+      "description": "Why token-by-token rendering drops frames on native, and what to do."
+    },
+    {
+      "slug": "tools",
+      "group": "ai",
+      "name": "Tools",
+      "description": "Letting the model call your code, and showing it in the conversation."
+    },
+    {
+      "slug": "voice",
+      "group": "ai",
+      "name": "Voice",
+      "description": "A level from the microphone, an assistant that talks back, and voice notes in a transcript."
+    },
+    {
+      "slug": "ai-input",
+      "group": "ai-components",
+      "name": "aiInput",
+      "description": "A prompt composer: a field that grows to five lines, a row of controls, and the sheet they open."
+    },
+    {
+      "slug": "code-block",
+      "group": "ai-components",
+      "name": "CodeBlock",
+      "description": "A fenced snippet, syntax-coloured and scrolled sideways."
+    },
+    {
+      "slug": "image-generation",
+      "group": "ai-components",
+      "name": "ImageGeneration",
+      "description": "The place an image will be, while it is being made."
+    },
+    {
+      "slug": "panelside",
+      "group": "ai-components",
+      "name": "Panelside",
+      "description": "Navigation panel that moves the app aside instead of covering it."
+    },
+    {
+      "slug": "plan",
+      "group": "ai-components",
+      "name": "Plan",
+      "description": "What an agent intends to do, before it does it."
+    },
+    {
+      "slug": "reasoning",
+      "group": "ai-components",
+      "name": "Reasoning",
+      "description": "The model's working, shown while it happens and folded away after."
+    },
+    {
+      "slug": "response",
+      "group": "ai-components",
+      "name": "Response",
+      "description": "A model's answer, rendered as markdown while it is still arriving."
+    },
+    {
+      "slug": "shimmer",
+      "group": "ai-components",
+      "name": "Shimmer",
+      "description": "Animated highlight sweeping across content."
+    },
+    {
+      "slug": "soundwave",
+      "group": "ai-components",
+      "name": "Soundwave",
+      "description": "What a voice looks like while an app listens."
+    },
+    {
+      "slug": "sources",
+      "group": "ai-components",
+      "name": "Sources",
+      "description": "Where an answer came from, folded under a count."
+    },
+    {
+      "slug": "task",
+      "group": "ai-components",
+      "name": "Task",
+      "description": "One step an agent took, and what it did while it was there."
+    },
+    {
+      "slug": "thinking-orb",
+      "group": "ai-components",
+      "name": "ThinkingOrb",
+      "description": "Dotted orb saying which kind of busy an agent is."
+    },
+    {
+      "slug": "area-chart",
+      "group": "charts",
+      "name": "AreaChart",
+      "description": "Filled bands over time, stacked or overlaid."
+    },
+    {
+      "slug": "bar-chart",
+      "group": "charts",
+      "name": "BarChart",
+      "description": "Categories compared by length, grouped or stacked."
+    },
+    {
+      "slug": "bubble-chart",
+      "group": "charts",
+      "name": "BubbleChart",
+      "description": "Named circles on two axes, with a third quantity on their area."
+    },
+    {
+      "slug": "bump-chart",
+      "group": "charts",
+      "name": "BumpChart",
+      "description": "How a set of things ranked against each other over time."
+    },
+    {
+      "slug": "candlestick-chart",
+      "group": "charts",
+      "name": "CandlestickChart",
+      "description": "Open, high, low and close for a period, drawn as one mark."
+    },
+    {
+      "slug": "funnel-chart",
+      "group": "charts",
+      "name": "FunnelChart",
+      "description": "Where a population drained away, one step at a time."
+    },
+    {
+      "slug": "heatmap-chart",
+      "group": "charts",
+      "name": "HeatmapChart",
+      "description": "Contribution grid with a themed colour ramp and a readout."
+    },
+    {
+      "slug": "hex-chart",
+      "group": "charts",
+      "name": "HexChart",
+      "description": "A whole broken into parts, counted out in cells."
+    },
+    {
+      "slug": "line-chart",
+      "group": "charts",
+      "name": "LineChart",
+      "description": "Animated time series, drawn on the UI thread."
+    },
+    {
+      "slug": "live-line-chart",
+      "group": "charts",
+      "name": "LiveLineChart",
+      "description": "A reading that keeps arriving, against a window that keeps moving."
+    },
+    {
+      "slug": "mirror-area-chart",
+      "group": "charts",
+      "name": "MirrorAreaChart",
+      "description": "Two readings of one timeline, one above a baseline and one below it."
+    },
+    {
+      "slug": "pie-chart",
+      "group": "charts",
+      "name": "PieChart",
+      "description": "One whole, divided between its parts."
+    },
+    {
+      "slug": "plot",
+      "group": "charts",
+      "name": "Plot",
+      "description": "A chart you assemble out of its marks."
+    },
+    {
+      "slug": "polar-area-chart",
+      "group": "charts",
+      "name": "PolarAreaChart",
+      "description": "Several readings on one scale, compared as wedges."
+    },
+    {
+      "slug": "pyramid-chart",
+      "group": "charts",
+      "name": "PyramidChart",
+      "description": "Two series mirrored about a centre, on one shared scale."
+    },
+    {
+      "slug": "radar-chart",
+      "group": "charts",
+      "name": "RadarChart",
+      "description": "Several measures of one thing, drawn as one shape."
+    },
+    {
+      "slug": "ring-chart",
+      "group": "charts",
+      "name": "RingChart",
+      "description": "Concentric arcs, each measured against its own target."
+    },
+    {
+      "slug": "sankey-chart",
+      "group": "charts",
+      "name": "SankeyChart",
+      "description": "Where a quantity came from and where it ended up."
+    },
+    {
+      "slug": "scatter-chart",
+      "group": "charts",
+      "name": "ScatterChart",
+      "description": "Two quantities against each other, to show how they relate."
+    },
+    {
+      "slug": "treemap-chart",
+      "group": "charts",
+      "name": "TreemapChart",
+      "description": "A total, cut into the parts it is made of, sized by area."
+    },
+    {
+      "slug": "waterfall-chart",
+      "group": "charts",
+      "name": "WaterfallChart",
+      "description": "How a run of changes carried one total to another."
+    },
+    {
+      "slug": "accordion",
+      "group": "components",
+      "name": "Accordion",
+      "description": "Collapsible sections with single or multiple selection."
+    },
+    {
+      "slug": "alert",
+      "group": "components",
+      "name": "Alert",
+      "description": "Status message with a built-in icon."
+    },
+    {
+      "slug": "animated-badge",
+      "group": "components",
+      "name": "AnimatedBadge",
+      "description": "Status pill whose icon and label roll over when the status changes."
+    },
+    {
+      "slug": "attachment",
+      "group": "components",
+      "name": "Attachment",
+      "description": "File row with upload states, built on Item."
+    },
+    {
+      "slug": "avatar",
+      "group": "components",
+      "name": "Avatar",
+      "description": "User image with an initials fallback, a badge overlay, and a stack for a group of them."
+    },
+    {
+      "slug": "badge",
+      "group": "components",
+      "name": "Badge",
+      "description": "Compact status label, dot, or notification count."
+    },
+    {
+      "slug": "bottom-sheet",
+      "group": "components",
+      "name": "BottomSheet",
+      "description": "Draggable sheet anchored to the bottom of the screen."
+    },
+    {
+      "slug": "breadcrumb",
+      "group": "components",
+      "name": "Breadcrumb",
+      "description": "The trail of links back up the hierarchy to the current page."
+    },
+    {
+      "slug": "button",
+      "group": "components",
+      "name": "Button",
+      "description": "Pressable action with variants, sizes, loading state and icon slots."
+    },
+    {
+      "slug": "button-group",
+      "group": "components",
+      "name": "ButtonGroup",
+      "description": "Several buttons drawn as one control \u2014 a segmented run, a split action, a toolbar."
+    },
+    {
+      "slug": "calendar",
+      "group": "components",
+      "name": "Calendar",
+      "description": "A month of days, for picking one, several, or a range."
+    },
+    {
+      "slug": "card",
+      "group": "components",
+      "name": "Card",
+      "description": "Content surface with header, body and footer."
+    },
+    {
+      "slug": "carousel",
+      "group": "components",
+      "name": "Carousel",
+      "description": "A run of slides, one at a time, dragged with a finger."
+    },
+    {
+      "slug": "checkbox",
+      "group": "components",
+      "name": "Checkbox",
+      "description": "Animated checkbox, as a row or a selectable card."
+    },
+    {
+      "slug": "chip",
+      "group": "components",
+      "name": "Chip",
+      "description": "Interactive pill \u2014 a filter, a tag, or a removable token."
+    },
+    {
+      "slug": "circular-text",
+      "group": "components",
+      "name": "CircularText",
+      "description": "Text set around a circle, turning."
+    },
+    {
+      "slug": "collapsible",
+      "group": "components",
+      "name": "Collapsible",
+      "description": "One section of content, shown and hidden by its own header."
+    },
+    {
+      "slug": "color-picker",
+      "group": "components",
+      "name": "ColorPicker",
+      "description": "A colour chosen by dragging \u2014 a saturation square or a wheel, a hue scale, and opacity."
+    },
+    {
+      "slug": "combobox",
+      "group": "components",
+      "name": "Combobox",
+      "description": "A text field that filters a list of options as you type."
+    },
+    {
+      "slug": "compare",
+      "group": "components",
+      "name": "Compare",
+      "description": "Two versions of one picture, with a seam you drag across it."
+    },
+    {
+      "slug": "context-menu",
+      "group": "components",
+      "name": "ContextMenu",
+      "description": "Actions for a piece of content, opened by holding it."
+    },
+    {
+      "slug": "date-picker",
+      "group": "components",
+      "name": "DatePicker",
+      "description": "A calendar behind a button."
+    },
+    {
+      "slug": "date-time-picker",
+      "group": "components",
+      "name": "DateTimePicker",
+      "description": "A day and a time of day, picked in one panel."
+    },
+    {
+      "slug": "dialog",
+      "group": "components",
+      "name": "Dialog",
+      "description": "Modal dialog with a backdrop and footer actions."
+    },
+    {
+      "slug": "direction",
+      "group": "components",
+      "name": "Direction",
+      "description": "Reading direction for everything below it."
+    },
+    {
+      "slug": "drawer",
+      "group": "components",
+      "name": "Drawer",
+      "description": "A panel that comes in from an edge of the screen and covers the app until dismissed."
+    },
+    {
+      "slug": "empty-state",
+      "group": "components",
+      "name": "EmptyState",
+      "description": "Placeholder for a list or screen with no content."
+    },
+    {
+      "slug": "fab",
+      "group": "components",
+      "name": "Fab",
+      "description": "The floating action button \u2014 one action pinned over the content, with an optional dial of others behind it."
+    },
+    {
+      "slug": "feedback",
+      "group": "components",
+      "name": "Feedback",
+      "description": "Dialog whose body is a well to write in, with the actions in the band around it."
+    },
+    {
+      "slug": "field",
+      "group": "components",
+      "name": "Field",
+      "description": "Layout and validation-state kit a form control composes into."
+    },
+    {
+      "slug": "flip-card",
+      "group": "components",
+      "name": "FlipCard",
+      "description": "Two faces of one card, and a turn between them."
+    },
+    {
+      "slug": "flow",
+      "group": "components",
+      "name": "Flow",
+      "description": "Pan-and-zoom canvas of draggable nodes joined by animated edges."
+    },
+    {
+      "slug": "frame",
+      "group": "components",
+      "name": "Frame",
+      "description": "Widget shell \u2014 a card of rows sitting in a titled tray."
+    },
+    {
+      "slug": "grid-item",
+      "group": "components",
+      "name": "GridItem",
+      "description": "Bento tiles, and the grid that places them."
+    },
+    {
+      "slug": "image-viewer",
+      "group": "components",
+      "name": "ImageViewer",
+      "description": "An image that opens out of the page over a blur, to zoom into and swipe through."
+    },
+    {
+      "slug": "index",
+      "group": "components",
+      "name": "Components",
+      "description": "Every component module in PanelUI, by what it is for \u2014 135 component modules, each with its anatomy, props and variants."
+    },
+    {
+      "slug": "input",
+      "group": "components",
+      "name": "Input",
+      "description": "Text field with label, description and error message."
+    },
+    {
+      "slug": "input-group",
+      "group": "components",
+      "name": "InputGroup",
+      "description": "Input with leading and trailing decorators."
+    },
+    {
+      "slug": "item",
+      "group": "components",
+      "name": "Item",
+      "description": "Row of media, text and actions for lists and settings."
+    },
+    {
+      "slug": "kpi",
+      "group": "components",
+      "name": "Kpi",
+      "description": "One number, what it is doing, and the shape it made getting there."
+    },
+    {
+      "slug": "label",
+      "group": "components",
+      "name": "Label",
+      "description": "Form field label with required, invalid and disabled states."
+    },
+    {
+      "slug": "loader",
+      "group": "components",
+      "name": "Loader",
+      "description": "Nine loading animations behind one variant prop."
+    },
+    {
+      "slug": "map",
+      "group": "components",
+      "name": "Map",
+      "description": "Vector map whose basemap is drawn from your theme tokens."
+    },
+    {
+      "slug": "markdown-editor",
+      "group": "components",
+      "name": "MarkdownEditor",
+      "description": "A field for writing markdown, with a formatting toolbar and a rendered preview."
+    },
+    {
+      "slug": "marker",
+      "group": "components",
+      "name": "Marker",
+      "description": "Inline note between conversation turns."
+    },
+    {
+      "slug": "marquee",
+      "group": "components",
+      "name": "Marquee",
+      "description": "Content that travels across its container on a loop."
+    },
+    {
+      "slug": "menu",
+      "group": "components",
+      "name": "Menu",
+      "description": "The list of things you can do to something."
+    },
+    {
+      "slug": "message",
+      "group": "components",
+      "name": "Message",
+      "description": "Chat turn with avatar, bubble, header and footer."
+    },
+    {
+      "slug": "message-scroller",
+      "group": "components",
+      "name": "MessageScroller",
+      "description": "Scroll behaviour a chat transcript needs."
+    },
+    {
+      "slug": "meter",
+      "group": "components",
+      "name": "Meter",
+      "description": "A measurement on a fixed scale, coloured by where it falls."
+    },
+    {
+      "slug": "number-input",
+      "group": "components",
+      "name": "NumberInput",
+      "description": "Numeric field stepped by buttons or typed by hand."
+    },
+    {
+      "slug": "otp-input",
+      "group": "components",
+      "name": "OtpInput",
+      "description": "One-time-code field drawn as a row of separate cells."
+    },
+    {
+      "slug": "page-header",
+      "group": "components",
+      "name": "PageHeader",
+      "description": "Cover, face and actions at the top of a profile."
+    },
+    {
+      "slug": "pagination",
+      "group": "components",
+      "name": "Pagination",
+      "description": "Paged navigation over a long result set."
+    },
+    {
+      "slug": "planner",
+      "group": "components",
+      "name": "Planner",
+      "description": "A month of days, each carrying what falls on it."
+    },
+    {
+      "slug": "popover",
+      "group": "components",
+      "name": "Popover",
+      "description": "Panel anchored to the element that opened it."
+    },
+    {
+      "slug": "post",
+      "group": "components",
+      "name": "Post",
+      "description": "A social card \u2014 author, body, media and the counts underneath, with the votes animated."
+    },
+    {
+      "slug": "progress",
+      "group": "components",
+      "name": "Progress",
+      "description": "Determinate and indeterminate progress bar."
+    },
+    {
+      "slug": "progress-button",
+      "group": "components",
+      "name": "ProgressButton",
+      "description": "Press and hold to confirm, with the wait drawn on the button."
+    },
+    {
+      "slug": "qr-code",
+      "group": "components",
+      "name": "QRCode",
+      "description": "A string a camera can read \u2014 framed, titled, or folded away behind a button."
+    },
+    {
+      "slug": "questionnaire",
+      "group": "components",
+      "name": "Questionnaire",
+      "description": "One question at a time, with progress, validation and a way back."
+    },
+    {
+      "slug": "radio-group",
+      "group": "components",
+      "name": "RadioGroup",
+      "description": "Single-select list of options."
+    },
+    {
+      "slug": "rating",
+      "group": "components",
+      "name": "Rating",
+      "description": "A row of stars to read or set a score."
+    },
+    {
+      "slug": "scroll-blur",
+      "group": "components",
+      "name": "ScrollBlur",
+      "description": "Blurs the edges of a scroll container."
+    },
+    {
+      "slug": "scroll-canvas",
+      "group": "components",
+      "name": "ScrollCanvas",
+      "description": "Image frame whose contents move as you scroll."
+    },
+    {
+      "slug": "scroll-fade",
+      "group": "components",
+      "name": "ScrollFade",
+      "description": "Fades the edges of a scroll container."
+    },
+    {
+      "slug": "scroll-header",
+      "group": "components",
+      "name": "ScrollHeader",
+      "description": "A screen title that hands over to a compact bar as the page scrolls."
+    },
+    {
+      "slug": "scroll-text",
+      "group": "components",
+      "name": "ScrollText",
+      "description": "Text that resolves word by word as you scroll."
+    },
+    {
+      "slug": "search-bar",
+      "group": "components",
+      "name": "SearchBar",
+      "description": "Search field with a clear button, a Cancel button and a panel of results."
+    },
+    {
+      "slug": "section-progress",
+      "group": "components",
+      "name": "SectionProgress",
+      "description": "Floating pill with a scroll ring and the section being read."
+    },
+    {
+      "slug": "section-rail",
+      "group": "components",
+      "name": "SectionRail",
+      "description": "Floating section navigator for a long screen."
+    },
+    {
+      "slug": "select",
+      "group": "components",
+      "name": "Select",
+      "description": "Picker shown in a bottom sheet, expanded in place, or floating over the page."
+    },
+    {
+      "slug": "selection-mode",
+      "group": "components",
+      "name": "SelectionMode",
+      "description": "Pick several things at once, on a screen or in a sheet."
+    },
+    {
+      "slug": "separator",
+      "group": "components",
+      "name": "Separator",
+      "description": "Horizontal or vertical rule between content, optionally labelled."
+    },
+    {
+      "slug": "signature",
+      "group": "components",
+      "name": "Signature",
+      "description": "Sign with a finger, and get the result back out as SVG or PNG."
+    },
+    {
+      "slug": "skeleton",
+      "group": "components",
+      "name": "Skeleton",
+      "description": "Shimmer placeholder for loading content."
+    },
+    {
+      "slug": "slide-button",
+      "group": "components",
+      "name": "SlideButton",
+      "description": "Drag across to confirm, with the distance drawn on the button."
+    },
+    {
+      "slug": "slider",
+      "group": "components",
+      "name": "Slider",
+      "description": "Pick a value, or a span, by dragging a thumb along a track."
+    },
+    {
+      "slug": "sortable",
+      "group": "components",
+      "name": "Sortable",
+      "description": "A list whose rows can be dragged into a different order."
+    },
+    {
+      "slug": "spinner",
+      "group": "components",
+      "name": "Spinner",
+      "description": "Indeterminate loading indicator."
+    },
+    {
+      "slug": "split-view",
+      "group": "components",
+      "name": "SplitView",
+      "description": "Two resizable stacked panes that settle on one of a few named heights."
+    },
+    {
+      "slug": "splitter",
+      "group": "components",
+      "name": "Splitter",
+      "description": "Panes that share a container, with a seam between them you can drag."
+    },
+    {
+      "slug": "stack-card",
+      "group": "components",
+      "name": "StackCard",
+      "description": "A pile of cards, taken one at a time by throwing the top one off."
+    },
+    {
+      "slug": "steps",
+      "group": "components",
+      "name": "Steps",
+      "description": "Stepper for multi-step flows."
+    },
+    {
+      "slug": "support",
+      "group": "components",
+      "name": "Support",
+      "description": "The screen a person arrives on when they need help."
+    },
+    {
+      "slug": "surface",
+      "group": "components",
+      "name": "Surface",
+      "description": "Elevated container with a variant ladder."
+    },
+    {
+      "slug": "swipe",
+      "group": "components",
+      "name": "Swipe",
+      "description": "A row that slides aside to reveal the things you can do to it."
+    },
+    {
+      "slug": "switch",
+      "group": "components",
+      "name": "Switch",
+      "description": "Animated on/off toggle."
+    },
+    {
+      "slug": "table",
+      "group": "components",
+      "name": "Table",
+      "description": "Rows and columns that stay lined up, with sortable headers."
+    },
+    {
+      "slug": "tabs",
+      "group": "components",
+      "name": "Tabs",
+      "description": "Segmented navigation with an animated indicator."
+    },
+    {
+      "slug": "tag-input",
+      "group": "components",
+      "name": "TagInput",
+      "description": "A field whose value is a list of tokens rather than a string."
+    },
+    {
+      "slug": "text-animation",
+      "group": "components",
+      "name": "TextAnimation",
+      "description": "Five ways a piece of text or a number arrives."
+    },
+    {
+      "slug": "textarea",
+      "group": "components",
+      "name": "Textarea",
+      "description": "Text field that runs to several lines, sized in rows."
+    },
+    {
+      "slug": "theme-selector",
+      "group": "components",
+      "name": "ThemeSelector",
+      "description": "Light, dark or the device's setting, drawn as three miniature screens."
+    },
+    {
+      "slug": "time-picker",
+      "group": "components",
+      "name": "TimePicker",
+      "description": "A time of day, as a wheel, a clock or a swipeable scale."
+    },
+    {
+      "slug": "timeline",
+      "group": "components",
+      "name": "Timeline",
+      "description": "A sequence of events, vertical or swiped sideways."
+    },
+    {
+      "slug": "toast",
+      "group": "components",
+      "name": "Toast",
+      "description": "Transient notification queue with swipe to dismiss."
+    },
+    {
+      "slug": "toggle-button",
+      "group": "components",
+      "name": "ToggleButton",
+      "description": "A button that stays down, on its own or in a group."
+    },
+    {
+      "slug": "tooltip",
+      "group": "components",
+      "name": "Tooltip",
+      "description": "A small label that names the control under your finger."
+    },
+    {
+      "slug": "tour",
+      "group": "components",
+      "name": "Tour",
+      "description": "A walkthrough that introduces a screen one control at a time."
+    },
+    {
+      "slug": "tree",
+      "group": "components",
+      "name": "Tree",
+      "description": "A hierarchy you can open a level at a time."
+    },
+    {
+      "slug": "typography",
+      "group": "components",
+      "name": "Typography",
+      "description": "Semantic text presets."
+    },
+    {
+      "slug": "charts",
+      "group": "customization",
+      "name": "Charts",
+      "description": "The five-colour series ramp every chart draws from, how a series picks its colour, what to change to put a whole app's charts on brand, and how to build a chart the library does not ship."
+    },
+    {
+      "slug": "colors",
+      "group": "customization",
+      "name": "Colors",
+      "description": "The semantic colour tokens every component draws from, what each one is for, and how to change them."
+    },
+    {
+      "slug": "fonts",
+      "group": "customization",
+      "name": "Fonts",
+      "description": "Load a font and point five tokens at it. Every component in the library follows."
+    },
+    {
+      "slug": "icons",
+      "group": "customization",
+      "name": "Icons",
+      "description": "Every icon in the library, what to import, and how they take their colour and size."
+    },
+    {
+      "slug": "styling",
+      "group": "customization",
+      "name": "Styling",
+      "description": "className on every component, when to reach for style instead, and how to build your own components on top."
+    },
+    {
+      "slug": "theming",
+      "group": "customization",
+      "name": "Theming",
+      "description": "Six built-in themes across three families, how to switch at runtime, and how to write a theme of your own."
+    },
+    {
+      "slug": "form",
+      "group": "form",
+      "name": "Form",
+      "description": "Form state \u2014 values, validation and submission \u2014 with no form library underneath."
+    },
+    {
+      "slug": "use-back-handler",
+      "group": "hooks",
+      "name": "useBackHandler",
+      "description": "Run a handler when the Android hardware back button is pressed."
+    },
+    {
+      "slug": "use-breakpoint",
+      "group": "hooks",
+      "name": "useBreakpoint",
+      "description": "Responsive state derived from the window size."
+    },
+    {
+      "slug": "use-copy-to-clipboard",
+      "group": "hooks",
+      "name": "useCopyToClipboard",
+      "description": "Copy text to the clipboard with a temporary copied state."
+    },
+    {
+      "slug": "use-debounced-value",
+      "group": "hooks",
+      "name": "useDebouncedValue",
+      "description": "A copy of a value that settles after changes stop."
+    },
+    {
+      "slug": "use-direction",
+      "group": "hooks",
+      "name": "useDirection and useDirectionSign",
+      "description": "Read the nearest LTR or RTL direction for layout and gesture maths."
+    },
+    {
+      "slug": "use-disclosure",
+      "group": "hooks",
+      "name": "useDisclosure",
+      "description": "Open and closed state for an overlay."
+    },
+    {
+      "slug": "use-keyboard",
+      "group": "hooks",
+      "name": "useKeyboard",
+      "description": "Keyboard height and visibility."
+    },
+    {
+      "slug": "use-keyboard-avoidance",
+      "group": "hooks",
+      "name": "useKeyboardAvoidance",
+      "description": "Keep an element clear of the software keyboard."
+    },
+    {
+      "slug": "use-previous",
+      "group": "hooks",
+      "name": "usePrevious",
+      "description": "The value from the previous render."
+    },
+    {
+      "slug": "use-reveal-progress",
+      "group": "hooks",
+      "name": "useRevealProgress",
+      "description": "Derive a shared reveal value from an element's travel through a scroll viewport."
+    },
+    {
+      "slug": "use-scroll-sections",
+      "group": "hooks",
+      "name": "useScrollSections",
+      "description": "Track which section of a scroll view is being read."
+    },
+    {
+      "slug": "use-skeleton-handoff",
+      "group": "hooks",
+      "name": "useSkeletonHandoff",
+      "description": "Keep a placeholder on screen through a fade while the real content arrives."
+    },
+    {
+      "slug": "use-theme",
+      "group": "hooks",
+      "name": "useTheme and useThemeMode",
+      "description": "Read and change the active theme."
+    },
+    {
+      "slug": "logo-maker",
+      "group": "integrations",
+      "name": "Logo Maker",
+      "description": "An agent skill that designs an original app logo \u2014 a compact mark that stays readable at 32 \u00d7 32, as a vector file or through an image model."
+    },
+    {
+      "slug": "neon",
+      "group": "integrations",
+      "name": "Neon",
+      "description": "We recommend using Neon \u2014 serverless Postgres for the API routes behind a PanelUI app, with the connection string kept off the device."
+    },
+    {
+      "slug": "panelwind",
+      "group": "integrations",
+      "name": "panelwind",
+      "description": "An ESLint plugin that checks how a screen uses the design system \u2014 and catches the classes that compile and then do nothing on a device."
+    },
+    {
+      "slug": "components",
+      "group": "reference",
+      "name": "Component API",
+      "description": "135 public component modules, linked to their guides and per-module export tables."
+    },
+    {
+      "slug": "foundations",
+      "group": "reference",
+      "name": "Foundations API",
+      "description": "Providers, themes, primitives and optional native bridges."
+    },
+    {
+      "slug": "hooks",
+      "group": "reference",
+      "name": "Hooks API",
+      "description": "Standalone public hooks, their values and option/result types."
+    },
+    {
+      "slug": "icons",
+      "group": "reference",
+      "name": "Icons API",
+      "description": "Every icon and icon support export available from the package root."
+    },
+    {
+      "slug": "index",
+      "group": "reference",
+      "name": "Public API",
+      "description": "Every supported root export from panelui-native \u2014 1398 symbols across 162 modules."
+    },
+    {
+      "slug": "utilities",
+      "group": "reference",
+      "name": "Utilities API",
+      "description": "The complete public cn, color and time utility surface."
+    },
+    {
+      "slug": "cn",
+      "group": "utilities",
+      "name": "cn",
+      "description": "Merge Tailwind classes with conflicts resolved."
+    }
+  ]
+}

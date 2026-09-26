@@ -210,6 +210,40 @@ packs.push({
   })),
 })
 
+// PanelUI: catalogue only. The library is React Native, so its source cannot
+// run in Cupric's DOM renderer — what we vendor is the behaviour catalogue that
+// the prompt builder and our own components learn from.
+try {
+  const panel = JSON.parse(await readFile(path.join(root, 'resources', 'panelui', 'registry.json'), 'utf8'))
+  packs.push({
+    id: 'panelui',
+    name: 'PanelUI catalogue',
+    description:
+      'All 135 PanelUI components and 21 chart visualisations, with the upstream behaviour notes. React Native source stays upstream; Cupric mines the behaviour, the copy and the accessibility rules.',
+    version: VERSION,
+    source: `${panel.source} (${panel.package} ${panel.upstreamVersion}, ${panel.platform})`,
+    license: panel.license,
+    items: panel.entries.map((entry) => ({
+      id: `panelui-${entry.slug}`,
+      kind: 'source',
+      name: entry.name,
+      description: entry.description || `PanelUI ${entry.group} entry`,
+      data: {
+        url: `https://panelui.dev/docs/${entry.group}/${entry.slug}`,
+        sourceKind: 'components',
+        use: 'ui',
+        intake: 'reference',
+        license: panel.license,
+        platform: panel.platform,
+        promptCue: entry.description || '',
+      },
+      tags: ['source', 'panelui', entry.group],
+    })),
+  })
+} catch {
+  console.warn('resources/panelui/registry.json not readable — skipping the PanelUI pack')
+}
+
 // The vendored lab components are listed from their generated registry.
 try {
   const registry = JSON.parse(await readFile(path.join(root, 'resources', 'ui-lab', 'registry.json'), 'utf8'))

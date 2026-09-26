@@ -1003,6 +1003,665 @@
         "moodboard",
         "curation"
       ]
+    },
+    {
+      "id": "panelui",
+      "kind": "source",
+      "name": "PanelUI",
+      "description": "135 accessible React Native components (plus 21 chart visualisations) with unusually well-written behaviour docs. Catalogue vendored offline under resources/panelui.",
+      "data": {
+        "url": "https://github.com/panel-ui/PanelUI",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT — Copyright (c) 2026 Khalid Abdi",
+        "promptCue": "PanelUI behaviour rule: never fake a material that the platform does not have — draw a finished solid surface instead. Motion runs on the UI thread; every state has a real, reachable end state."
+      },
+      "tags": [
+        "source",
+        "components",
+        "ui",
+        "react-native",
+        "accessible",
+        "charts",
+        "catalogue",
+        "vendored"
+      ]
+    },
+    {
+      "id": "react-bits",
+      "kind": "source",
+      "name": "React Bits",
+      "description": "Animated text effects, backgrounds and buttons, filed by animation type — the closest match to Studio text animations.",
+      "data": {
+        "url": "https://reactbits.dev",
+        "sourceKind": "motion",
+        "use": "both",
+        "intake": "copy",
+        "license": "MIT",
+        "promptCue": "React Bits style: one idea per effect, the whole animation expressible as a function of a single 0–1 progress value."
+      },
+      "tags": [
+        "source",
+        "motion",
+        "both",
+        "text",
+        "background",
+        "animation"
+      ]
+    },
+    {
+      "id": "lottiefiles",
+      "kind": "source",
+      "name": "LottieFiles",
+      "description": "Free animated stickers as Lottie JSON. The one asset class that needs no retrofit: lottie-web exposes goToAndStop(frame), so it is seekable by construction — exactly the Studio rule.",
+      "data": {
+        "url": "https://lottiefiles.com",
+        "sourceKind": "illustrations",
+        "use": "both",
+        "intake": "export",
+        "license": "Free tier (per-asset licences vary)",
+        "promptCue": "Sticker beat: a small looping Lottie mark in a corner, entering on the cut and settling within 0.5s."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "both",
+        "lottie",
+        "sticker",
+        "seekable",
+        "animation"
+      ]
+    },
+    {
+      "id": "rive",
+      "kind": "source",
+      "name": "Rive",
+      "description": "Interactive vector animations with state machines — heavier than Lottie, but the stickers can react.",
+      "data": {
+        "url": "https://rive.app",
+        "sourceKind": "illustrations",
+        "use": "both",
+        "intake": "export",
+        "license": "Free tier",
+        "promptCue": "Rive-style mark: one state machine with idle → hover → active, each transition under 300ms."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "both",
+        "vector",
+        "state-machine",
+        "interactive"
+      ]
+    },
+    {
+      "id": "iconify",
+      "kind": "source",
+      "name": "Iconify",
+      "description": "200,000+ icons from every major set behind one component — no per-set dependency bloat.",
+      "data": {
+        "url": "https://iconify.design",
+        "sourceKind": "icons",
+        "use": "both",
+        "intake": "export",
+        "license": "Per icon set (mostly MIT/CC)",
+        "promptCue": "Icons: single-weight line icons at 1.5px stroke on a 24px grid, one family throughout."
+      },
+      "tags": [
+        "source",
+        "icons",
+        "both",
+        "icons",
+        "svg"
+      ]
+    },
+    {
+      "id": "undraw",
+      "kind": "source",
+      "name": "unDraw",
+      "description": "Free recolourable SVG illustrations — empty states in the app, explainer art in video.",
+      "data": {
+        "url": "https://undraw.co",
+        "sourceKind": "illustrations",
+        "use": "both",
+        "intake": "export",
+        "license": "Open (unDraw licence, no attribution)",
+        "promptCue": "Illustration: flat vector scene recoloured to a single brand accent on a near-black field."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "both",
+        "svg",
+        "illustration",
+        "empty-state"
+      ]
+    },
+    {
+      "id": "blush",
+      "kind": "source",
+      "name": "Blush",
+      "description": "Mix-and-match illustration sets, recolourable to the brand palette.",
+      "data": {
+        "url": "https://blush.design",
+        "sourceKind": "illustrations",
+        "use": "both",
+        "intake": "export",
+        "license": "Free tier (per-artist licences)",
+        "promptCue": "Character art: one figure, brand-palette fills, no gradients, generous negative space."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "both",
+        "illustration",
+        "character"
+      ]
+    },
+    {
+      "id": "storyset",
+      "kind": "source",
+      "name": "Storyset",
+      "description": "Animated SVG illustration sets, exportable as Lottie or plain SVG.",
+      "data": {
+        "url": "https://storyset.com",
+        "sourceKind": "illustrations",
+        "use": "video",
+        "intake": "export",
+        "license": "Free with attribution",
+        "promptCue": "Animated illustration: loop under 4s, motion confined to two or three elements, the rest static."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "video",
+        "lottie",
+        "svg",
+        "animated"
+      ]
+    },
+    {
+      "id": "pexels-videos",
+      "kind": "source",
+      "name": "Pexels Videos",
+      "description": "Free stock footage, no attribution required — the default pool for suggested B-roll.",
+      "data": {
+        "url": "https://pexels.com/videos",
+        "sourceKind": "templates",
+        "use": "video",
+        "intake": "export",
+        "license": "Pexels licence (free, no attribution)",
+        "promptCue": "B-roll: one continuous shot, slow camera move, subject off-centre so captions have room."
+      },
+      "tags": [
+        "source",
+        "templates",
+        "video",
+        "footage",
+        "b-roll",
+        "stock"
+      ]
+    },
+    {
+      "id": "pixabay-videos",
+      "kind": "source",
+      "name": "Pixabay Videos",
+      "description": "Free stock footage and stills under a permissive licence.",
+      "data": {
+        "url": "https://pixabay.com/videos",
+        "sourceKind": "templates",
+        "use": "video",
+        "intake": "export",
+        "license": "Pixabay content licence",
+        "promptCue": "Stock shot: neutral colour, no on-screen text, room at the top third for a headline."
+      },
+      "tags": [
+        "source",
+        "templates",
+        "video",
+        "footage",
+        "stock"
+      ]
+    },
+    {
+      "id": "mixkit",
+      "kind": "source",
+      "name": "Mixkit",
+      "description": "Free footage, music and SFX in one place — the quickest single source to wire up for background music.",
+      "data": {
+        "url": "https://mixkit.co",
+        "sourceKind": "templates",
+        "use": "video",
+        "intake": "export",
+        "license": "Mixkit free licence",
+        "promptCue": "Music bed: instrumental, steady tempo, no vocal in the first 3 seconds so the hook lands clean."
+      },
+      "tags": [
+        "source",
+        "templates",
+        "video",
+        "music",
+        "sfx",
+        "footage",
+        "audio"
+      ]
+    },
+    {
+      "id": "coverr",
+      "kind": "source",
+      "name": "Coverr",
+      "description": "Free cinematic/lifestyle stock footage.",
+      "data": {
+        "url": "https://coverr.co",
+        "sourceKind": "templates",
+        "use": "video",
+        "intake": "export",
+        "license": "Coverr licence (free)",
+        "promptCue": "Cinematic plate: shallow depth of field, warm key light, slow push-in."
+      },
+      "tags": [
+        "source",
+        "templates",
+        "video",
+        "footage",
+        "cinematic"
+      ]
+    },
+    {
+      "id": "uppbeat",
+      "kind": "source",
+      "name": "Uppbeat",
+      "description": "Creator-focused music library, free with credit — a direct answer to the background-music gap.",
+      "data": {
+        "url": "https://uppbeat.io",
+        "sourceKind": "templates",
+        "use": "video",
+        "intake": "export",
+        "license": "Free with credit",
+        "promptCue": "Track choice: name the tempo, the mood in one word, and where the drop should land relative to the CTA."
+      },
+      "tags": [
+        "source",
+        "templates",
+        "video",
+        "music",
+        "audio",
+        "soundtrack"
+      ]
+    },
+    {
+      "id": "freesound",
+      "kind": "source",
+      "name": "Freesound",
+      "description": "Huge SFX library — whooshes, clicks and risers for transition sound design.",
+      "data": {
+        "url": "https://freesound.org",
+        "sourceKind": "templates",
+        "use": "video",
+        "intake": "export",
+        "license": "CC0 / CC-BY per sound",
+        "promptCue": "Transition SFX: a 300ms whoosh landing exactly on the cut, 6dB under the music bed."
+      },
+      "tags": [
+        "source",
+        "templates",
+        "video",
+        "sfx",
+        "audio",
+        "transition"
+      ]
+    },
+    {
+      "id": "fontsource",
+      "kind": "source",
+      "name": "Fontsource",
+      "description": "Google Fonts as npm packages — self-hosted, so generated HTML stays inside the no-CDN rule. Cupric already ships Inter and JetBrains Mono this way.",
+      "data": {
+        "url": "https://fontsource.org",
+        "sourceKind": "generators",
+        "use": "both",
+        "intake": "registry",
+        "license": "Per font (mostly OFL)",
+        "promptCue": "Type: self-hosted variable font only; never reference fonts.googleapis.com from a generated file."
+      },
+      "tags": [
+        "source",
+        "generators",
+        "both",
+        "fonts",
+        "self-hosted",
+        "no-cdn"
+      ]
+    },
+    {
+      "id": "coolors",
+      "kind": "source",
+      "name": "Coolors",
+      "description": "Palette generator with CSS-variable export — seeds new brand kits.",
+      "data": {
+        "url": "https://coolors.co",
+        "sourceKind": "generators",
+        "use": "both",
+        "intake": "export",
+        "license": "Free tier",
+        "promptCue": "Palette: one near-black base, one saturated accent, two neutrals. Nothing else."
+      },
+      "tags": [
+        "source",
+        "generators",
+        "both",
+        "palette",
+        "colour"
+      ]
+    },
+    {
+      "id": "meshgradient",
+      "kind": "source",
+      "name": "Mesh gradient generators",
+      "description": "Mesh gradient presets to seed the Studio mesh background group.",
+      "data": {
+        "url": "https://meshgradient.in",
+        "sourceKind": "backgrounds",
+        "use": "both",
+        "intake": "export",
+        "license": "Free",
+        "promptCue": "Mesh preset: four stops max, all within 40° of hue of each other, over the near-black base."
+      },
+      "tags": [
+        "source",
+        "backgrounds",
+        "both",
+        "mesh",
+        "gradient",
+        "preset"
+      ]
+    },
+    {
+      "id": "threejs",
+      "kind": "source",
+      "name": "Three.js",
+      "description": "WebGL for the app itself. Deliberately NOT for Arena-generated HTML: those files must be self-contained and deterministic, and a model cannot author a 150KB library into one.",
+      "data": {
+        "url": "https://threejs.org",
+        "sourceKind": "shaders",
+        "use": "ui",
+        "intake": "registry",
+        "license": "MIT",
+        "promptCue": "In-app 3D only. For generated scenes use CSS 3D transforms instead — see the css-3d entry."
+      },
+      "tags": [
+        "source",
+        "shaders",
+        "ui",
+        "3d",
+        "webgl",
+        "in-app"
+      ]
+    },
+    {
+      "id": "react-three-fiber",
+      "kind": "source",
+      "name": "React Three Fiber + drei",
+      "description": "Declarative Three.js, matching the rest of the component model if 3D lands in the app shell.",
+      "data": {
+        "url": "https://docs.pmnd.rs/react-three-fiber",
+        "sourceKind": "shaders",
+        "use": "ui",
+        "intake": "registry",
+        "license": "MIT",
+        "promptCue": "Declarative scene: one camera, one key light, one rim light, everything else is material."
+      },
+      "tags": [
+        "source",
+        "shaders",
+        "ui",
+        "3d",
+        "react",
+        "webgl"
+      ]
+    },
+    {
+      "id": "css-3d",
+      "kind": "source",
+      "name": "CSS 3D transforms",
+      "description": "The 3D that actually fits the generated-HTML contract: perspective + rotateX/Y/Z + translateZ are pure functions of t, weigh nothing, and need no library.",
+      "data": {
+        "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/transform-function",
+        "sourceKind": "motion",
+        "use": "video",
+        "intake": "copy",
+        "license": "Web standard",
+        "promptCue": "3D beat without WebGL: set perspective on #scene, then drive rotateY/translateZ from t. Card flips, cube turns and parallax depth, all deterministic."
+      },
+      "tags": [
+        "source",
+        "motion",
+        "video",
+        "3d",
+        "css",
+        "deterministic",
+        "seek"
+      ]
+    },
+    {
+      "id": "polyhaven",
+      "kind": "source",
+      "name": "Poly Haven",
+      "description": "Fully free HDRIs, textures and models, no attribution required.",
+      "data": {
+        "url": "https://polyhaven.com",
+        "sourceKind": "illustrations",
+        "use": "both",
+        "intake": "export",
+        "license": "CC0",
+        "promptCue": "Lighting: studio HDRI, single dominant source, soft falloff."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "both",
+        "3d",
+        "hdri",
+        "texture"
+      ]
+    },
+    {
+      "id": "kenney",
+      "kind": "source",
+      "name": "Kenney",
+      "description": "Free low-poly asset packs — closer to motion-graphics shapes than to realistic models.",
+      "data": {
+        "url": "https://kenney.nl",
+        "sourceKind": "illustrations",
+        "use": "both",
+        "intake": "export",
+        "license": "CC0",
+        "promptCue": "Prop: low-poly, flat-shaded, two-tone, no texture maps."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "both",
+        "3d",
+        "low-poly",
+        "props"
+      ]
+    },
+    {
+      "id": "sketchfab",
+      "kind": "source",
+      "name": "Sketchfab",
+      "description": "Large free-with-attribution 3D model library.",
+      "data": {
+        "url": "https://sketchfab.com",
+        "sourceKind": "illustrations",
+        "use": "both",
+        "intake": "export",
+        "license": "Mostly CC-BY (per model)",
+        "promptCue": "Hero model: single object, neutral pose, centred, no environment."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "both",
+        "3d",
+        "models"
+      ]
+    },
+    {
+      "id": "remotion-templates",
+      "kind": "source",
+      "name": "reactvideoeditor/remotion-templates",
+      "description": "Free Remotion video templates meant to be copied into an existing React + Remotion app — directly minable, since Cupric already ships @remotion/player.",
+      "data": {
+        "url": "https://github.com/reactvideoeditor/remotion-templates",
+        "sourceKind": "templates",
+        "use": "video",
+        "intake": "copy",
+        "license": "MIT",
+        "promptCue": "Remotion pattern: every animation is interpolate(frame, …) — a pure function of the frame, like __seek(t)."
+      },
+      "tags": [
+        "source",
+        "templates",
+        "video",
+        "remotion",
+        "template",
+        "transitions"
+      ]
+    },
+    {
+      "id": "designcombo-react-video-editor",
+      "kind": "source",
+      "name": "designcombo/react-video-editor",
+      "description": "React + Remotion CapCut/Canva-style editor — the closest architectural sibling to Cupric. Read for timeline state shape and effect-registry structure.",
+      "data": {
+        "url": "https://github.com/designcombo/react-video-editor",
+        "sourceKind": "inspiration",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT",
+        "promptCue": "Editor architecture: one normalised timeline store, effects registered by id, preview and export share the renderer."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "ui",
+        "editor",
+        "timeline",
+        "architecture"
+      ]
+    },
+    {
+      "id": "opencut",
+      "kind": "source",
+      "name": "OpenCut",
+      "description": "Open-source CapCut alternative (Next.js + Zustand, multi-track, real-time preview). Its own notes flag stickers/effects rendering and export as the unsolved part — useful calibration.",
+      "data": {
+        "url": "https://github.com/OpenCut-app/OpenCut",
+        "sourceKind": "inspiration",
+        "use": "ui",
+        "intake": "reference",
+        "license": "MIT",
+        "promptCue": "Editor architecture: Zustand slices per concern (timeline, playback, media), preview panel decoupled from export."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "ui",
+        "editor",
+        "zustand",
+        "multi-track"
+      ]
+    },
+    {
+      "id": "opusclip",
+      "kind": "source",
+      "name": "OpusClip",
+      "description": "Long-to-short repurposing with content-aware clipping, dynamic captions and AI reframing — the reference if Cupric adds a \"drop in raw footage, get a short\" mode.",
+      "data": {
+        "url": "https://opus.pro",
+        "sourceKind": "inspiration",
+        "use": "video",
+        "intake": "reference",
+        "license": "Commercial (reference only)",
+        "promptCue": "Repurposing pass: find the hook, cut to the payoff, reframe to 9:16 keeping the speaker on the thirds."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "video",
+        "repurposing",
+        "captions",
+        "reframe"
+      ]
+    },
+    {
+      "id": "web-speech-api",
+      "kind": "source",
+      "name": "Web Speech API",
+      "description": "Built-in speech recognition and synthesis. Cupric uses it for voice commands and for speak-a-brief; no dependency, no audio leaves the machine.",
+      "data": {
+        "url": "https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API",
+        "sourceKind": "generators",
+        "use": "ui",
+        "intake": "reference",
+        "license": "Web standard",
+        "promptCue": "Voice: one utterance in, one job out. Speak status back with SpeechSynthesisUtterance, never block on it."
+      },
+      "tags": [
+        "source",
+        "generators",
+        "ui",
+        "voice",
+        "stt",
+        "tts"
+      ]
+    },
+    {
+      "id": "pipecat",
+      "kind": "source",
+      "name": "Pipecat",
+      "description": "Frame-based realtime voice-agent pipeline (VAD → STT → LLM → TTS). Deliberately not adopted: Cupric records one instruction and renders, it does not hold a conversation.",
+      "data": {
+        "url": "https://github.com/pipecat-ai/pipecat",
+        "sourceKind": "inspiration",
+        "use": "ui",
+        "intake": "reference",
+        "license": "BSD-2-Clause",
+        "promptCue": "Only worth its weight once mid-render conversation (\"make the intro punchier\") is a real requirement."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "ui",
+        "voice",
+        "agent",
+        "realtime"
+      ]
+    },
+    {
+      "id": "livekit-agents",
+      "kind": "source",
+      "name": "LiveKit Agents",
+      "description": "WebRTC voice agents with ~450–600ms end-to-end targets — same verdict as Pipecat: a different problem than one-shot briefs.",
+      "data": {
+        "url": "https://github.com/livekit/agents",
+        "sourceKind": "inspiration",
+        "use": "ui",
+        "intake": "reference",
+        "license": "Apache-2.0",
+        "promptCue": "Reference only until Cupric needs duplex audio."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "ui",
+        "voice",
+        "webrtc",
+        "agent"
+      ]
     }
   ]
 }

@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Mic, MicOff, Volume2 } from 'lucide-react'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { ProgressBar } from '../components/ProgressBar'
 import { getIpc } from '../lib/bridge'
 import { useProjectStore } from '../state/useProjectStore'
+import { isVoiceSupported, speak, stopSpeaking, VoiceListener } from '../lib/voice'
 import type { AutomationMode, VotingMode } from '../types/project'
 
 function openOutput(outputPath?: string | null) {
@@ -24,6 +26,7 @@ export function Autonomous() {
   const resume = useProjectStore(s => s.resumeAutomationJob)
   const approve = useProjectStore(s => s.approveAutomationStep)
   const reject = useProjectStore(s => s.rejectAutomationStep)
+  const pushToast = useProjectStore(s => s.pushToast)
   const [brief, setBrief] = useState('')
   const [mode, setMode] = useState<AutomationMode>('auto-draft')
   const [vote, setVote] = useState<VotingMode>('local-scoring')
@@ -36,8 +39,104 @@ export function Autonomous() {
     const ipc = getIpc()
     if (ipc) setter(await ipc.invoke('dialog:pickFolder'))
   }
+  const voiceSupported = useMemo(() => isVoiceSupported(), [])
+  const [listening, setListening] = useState(false)
+  const [heard, setHeard] = useState<string | null>(null)
+  const [handsFree, setHandsFree] = useState(true)
+  const [speakBack, setSpeakBack] = useState(true)
+  const listenerRef = useRef<VoiceListener | null>(null)
+  const settingsRef = useRef({ aspect, fps, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack })
+  settingsRef.current = { aspect, fps, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack }
+
   const job = jobs[0]
   const currentStep = job?.steps.find(step => step.id === job.currentStepId) || job?.steps.find(step => step.status === 'waiting-for-user') || null
+
+  const spokenStatusRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!job || !speakBack) return
+    // One announcement per state change, never per render.
+    const key = `${job.id}:${job.status}`
+    if (spokenStatusRef.current === key) return
+    spokenStatusRef.current = key
+    if (job.status === 'done') speak('Your video is finished and saved.', { interrupt: true })
+    else if (job.status === 'error') speak(`The job stopped: ${job.errorMessage ?? 'unknown error'}.`, { interrupt: true })
+    else if (job.status === 'waiting-for-user') speak('I need you: there is a review gate waiting.', { interrupt: true })
+  }, [job?.id, job?.status, job?.errorMessage, speakBack, job])
+
+  useEffect(() => {
+    return () => {
+      listenerRef.current?.stop()
+      listenerRef.current = null
+      stopSpeaking()
+    }
+  }, [])
+
+  /**
+   * Speak one brief, get a video.
+   *
+   * The Studio mic parses a command grammar; this one is in dictation mode, so
+   * the whole sentence survives as prose and becomes `job.brief`. With
+   * hands-free on, the first final phrase starts the pipeline immediately —
+   * no further clicks, which is the whole point.
+   */
+  function toggleDictation() {
+    if (listenerRef.current?.active) {
+      listenerRef.current.stop()
+      listenerRef.current = null
+      setListening(false)
+      return
+    }
+    const listener = new VoiceListener(
+      {
+        onTranscript: (text, isFinal) => {
+          if (!text) return
+          setHeard(isFinal ? text : `${text}\u2026`)
+          setBrief((prev) => (isFinal ? `${prev ? `${prev} ` : ''}${text}`.trim() : prev))
+          if (!isFinal) return
+          const cfg = settingsRef.current
+          if (!cfg.handsFree) return
+          const spoken = text.trim()
+          // One sensible guard: a two-word mumble is not a brief.
+          if (spoken.split(/\s+/).length < 4) return
+          listener.stop()
+          listenerRef.current = null
+          setListening(false)
+          startJob(spoken)
+        },
+        onCommand: () => {},
+        onError: (message) => {
+          pushToast('error', message)
+          setListening(false)
+        },
+        onEnd: () => setListening(false),
+      },
+      'en-US',
+      'dictation',
+    )
+    if (listener.start()) {
+      listenerRef.current = listener
+      setListening(true)
+      setHeard('Listening\u2026 describe the video you want.')
+      if (settingsRef.current.speakBack) speak('Listening. Describe the video you want.', { interrupt: true })
+    }
+  }
+
+  function startJob(text: string) {
+    const cfg = settingsRef.current
+    const finalBrief = text.trim() || brief.trim()
+    if (!finalBrief) return
+    start({
+      brief: finalBrief,
+      footageFolder: cfg.footageFolder,
+      outputFolder: cfg.outputFolder,
+      aspect: cfg.aspect,
+      fps: cfg.fps,
+      quality: cfg.quality,
+      mode: cfg.mode,
+      votingMode: cfg.vote,
+    })
+    if (cfg.speakBack) speak(`Starting. ${finalBrief.slice(0, 90)}. I will tell you when the render is done.`, { interrupt: true })
+  }
 
   return (
     <div className="h-full overflow-y-auto p-8">
@@ -49,7 +148,25 @@ export function Autonomous() {
         </div>
 
         <Card>
-          <label className="text-sm font-medium">Project goal / brief</label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label className="text-sm font-medium">Project goal / brief</label>
+            {voiceSupported && (
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-1.5 text-xs text-muted">
+                  <input type="checkbox" checked={handsFree} onChange={(e) => setHandsFree(e.target.checked)} />
+                  Start as soon as I stop speaking
+                </label>
+                <label className="flex items-center gap-1.5 text-xs text-muted">
+                  <input type="checkbox" checked={speakBack} onChange={(e) => setSpeakBack(e.target.checked)} />
+                  <Volume2 size={12} /> Speak status back
+                </label>
+                <Button size="sm" variant={listening ? 'primary' : 'outline'} onClick={toggleDictation}>
+                  {listening ? <Mic size={13} /> : <MicOff size={13} />} {listening ? 'Listening' : 'Speak the brief'}
+                </Button>
+              </div>
+            )}
+          </div>
+          {heard && <p className="mt-2 text-xs text-muted">{heard}</p>}
           <textarea
             value={brief}
             onChange={e => setBrief(e.target.value)}
@@ -91,7 +208,7 @@ export function Autonomous() {
             </label>
           </div>
           <div className="mt-5 flex justify-end">
-            <Button onClick={() => start({ brief, footageFolder, outputFolder, aspect, fps, quality, mode, votingMode: vote })} disabled={!brief.trim()}>
+            <Button onClick={() => startJob(brief)} disabled={!brief.trim()}>
               Start autonomous job
             </Button>
           </div>

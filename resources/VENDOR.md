@@ -44,3 +44,17 @@ Nothing was copied verbatim; the presets (`hero`, `portfolio`, `plaque`,
 - **Full Spectrum UI app**: Next.js docs site + registry — we store the **index** and copy blocks on demand into tokens.
 
 Patterns and catalogs **are** uploaded under `resources/` so agents and Library have them offline.
+
+## PanelUI (panel-ui/PanelUI)
+
+- Upstream: <https://github.com/panel-ui/PanelUI> — `panelui-native`, MIT,
+  Copyright (c) 2026 Khalid Abdi (licence copied to
+  `resources/panelui/LICENSE.upstream.txt`).
+- **Why the code is not vendored:** PanelUI is React Native / Expo
+  (`react-native-reanimated`, `expo-blur`, `uniwind`). None of it renders in
+  Cupric's DOM + canvas renderer, so copying the source would produce 135 files
+  that cannot be imported. Pretending otherwise would be the worst outcome.
+- **What is vendored:** `resources/panelui/registry.json` — all 135 components
+  and 21 chart visualisations with the upstream behaviour descriptions, plus
+  `theme.upstream.css`, their semantic token sheet. Both feed the Library's
+  PanelUI pack and the generation prompt.

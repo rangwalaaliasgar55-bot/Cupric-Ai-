@@ -39,7 +39,7 @@ import {
 } from '../lib/studio/doc'
 import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
 import { TRANSITIONS } from '../lib/studio/transitions'
-import { isVoiceSupported, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
+import { isVoiceSupported, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
 import { registerFile } from '../lib/studio/media'
 import { readDragPayload, resourceToStudio } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
@@ -57,6 +57,7 @@ export function Studio() {
   const splitStudioClip = useProjectStore((s) => s.splitStudioClip)
   const duplicateStudioClip = useProjectStore((s) => s.duplicateStudioClip)
   const pushToast = useProjectStore((s) => s.pushToast)
+  const startAutomationJob = useProjectStore((s) => s.startAutomationJob)
 
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -375,6 +376,23 @@ export function Studio() {
       case 'export':
         void runExport()
         break
+      case 'make-video': {
+        // Same store action the Autonomous screen calls — speaking a brief in
+        // the Studio hands the whole sentence to the pipeline rather than
+        // trying to build it clip by clip.
+        startAutomationJob({
+          brief: command.brief,
+          footageFolder: null,
+          outputFolder: null,
+          aspect: doc.aspect,
+          fps: doc.fps === 60 ? 60 : 30,
+          quality: 'draft',
+          mode: 'auto-draft',
+          votingMode: 'local-scoring',
+        })
+        speak(`Starting an autonomous job for ${command.brief}.`, { interrupt: true })
+        break
+      }
       case 'undo':
         pushToast('info', 'Undo is on the keyboard only for now.')
         break
