@@ -15,6 +15,7 @@ const invokeChannels = new Set([
   'arena:previewPath',
   'dialog:pickFootage',
   'footage:analyze',
+  'media:status',
   'render:start',
   'render:cancel',
   'render:reveal',

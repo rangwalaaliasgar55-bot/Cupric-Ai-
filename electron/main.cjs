@@ -13,14 +13,40 @@ try {
   ;({ autoUpdater } = require('electron-updater'))
 } catch {}
 
-let ffmpegPath
-let ffprobePath
-try {
-  ffmpegPath = require('ffmpeg-static')
-} catch {}
-try {
-  ffprobePath = require('ffprobe-static').path
-} catch {}
+function candidateBinaryPath(value) {
+  if (!value) return null
+  const direct = String(value)
+  if (fs.existsSync(direct)) return direct
+  const unpacked = direct.replace(`${path.sep}app.asar${path.sep}`, `${path.sep}app.asar.unpacked${path.sep}`)
+  if (unpacked !== direct && fs.existsSync(unpacked)) return unpacked
+  return null
+}
+
+function findOnPath(binName) {
+  const suffixes = process.platform === 'win32' ? ['.exe', '.cmd', '.bat', ''] : ['']
+  for (const dir of String(process.env.PATH || '').split(path.delimiter)) {
+    for (const suffix of suffixes) {
+      const candidate = path.join(dir, `${binName}${suffix}`)
+      if (fs.existsSync(candidate)) return candidate
+    }
+  }
+  return null
+}
+
+function resolveMediaTool(kind) {
+  const envName = kind === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH'
+  const envCandidate = candidateBinaryPath(process.env[`NORTHFRAME_${envName}`] || process.env[envName])
+  if (envCandidate) return envCandidate
+  try {
+    const moduleCandidate = kind === 'ffmpeg' ? require('ffmpeg-static') : require('ffprobe-static').path
+    const resolved = candidateBinaryPath(moduleCandidate)
+    if (resolved) return resolved
+  } catch {}
+  return findOnPath(kind)
+}
+
+let ffmpegPath = resolveMediaTool('ffmpeg')
+let ffprobePath = resolveMediaTool('ffprobe')
 
 const DEV_URL = process.env.ELECTRON_START_URL
 const APP_ID = 'app.northframe.studio'
@@ -448,9 +474,20 @@ ipcMain.handle('arena:previewPath', async (_event, localPath) => {
 // Footage ingest / FFmpeg analysis
 // ---------------------------------------------------------------------------
 
+function mediaToolStatus() {
+  ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
+  ffprobePath = candidateBinaryPath(ffprobePath) || resolveMediaTool('ffprobe')
+  return {
+    ffmpeg: ffmpegPath || null,
+    ffprobe: ffprobePath || null,
+    ready: Boolean(ffmpegPath && ffprobePath),
+  }
+}
+
 function assertMediaTools() {
-  if (!ffmpegPath || !ffprobePath) {
-    throw new Error('FFmpeg/FFprobe binaries are unavailable in this build. Run a clean install so ffmpeg-static and ffprobe-static can download their native binaries.')
+  const status = mediaToolStatus()
+  if (!status.ready) {
+    throw new Error('FFmpeg/FFprobe binaries are unavailable in this build. Run a clean install so ffmpeg-static and ffprobe-static can download their native binaries, or set NORTHFRAME_FFMPEG_PATH and NORTHFRAME_FFPROBE_PATH.')
   }
 }
 
@@ -594,6 +631,8 @@ async function buildWaveform(videoPath, durationSec) {
   ])
   return waveformFromPcm(buffer)
 }
+
+ipcMain.handle('media:status', () => mediaToolStatus())
 
 ipcMain.handle('dialog:pickFootage', async () => {
   const result = await dialog.showOpenDialog({
@@ -941,7 +980,7 @@ ipcMain.handle('render:start', async (event, job) => {
   const workDir = path.join(outDir, 'work')
   const outputPath = path.join(outDir, renderOutputName(job?.outputName))
 
-  const usableSources = sources.filter((source) => source && source.sourceType && mediaPathFromSource(source))
+  const usableSources = sources.filter((source) => source && (source.sourceType || source.type) && mediaPathFromSource(source))
   if (usableSources.length === 0) throw new Error('Add an imported Arena asset or analyzed footage clip before rendering')
 
   const nominalDuration = usableSources.reduce((sum, source) => sum + durationOfSource(source), 0)

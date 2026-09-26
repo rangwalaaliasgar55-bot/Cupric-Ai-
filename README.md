@@ -1,18 +1,17 @@
 # Northframe Studio
 
-A desktop creator tool for short-form video — from rough idea to exported cut:
+Northframe Studio is a desktop creator tool for short-form video — from rough
+idea to exported cut:
+
 **Brief → Arena battle → Footage auto-edit → Timeline → Render.**
 
-This repository contains a **UI prototype** in which every async operation
-(Gemini calls, Arena zip imports, footage analysis, MP4 rendering) is mocked
-with realistic delays and canned responses. There is no backend and no network
-use — everything runs locally and persists to `localStorage`. The same
-components become the renderer of the real Electron app later: swap the three
-mocks (`src/lib/gemini.ts`, `src/lib/arena.ts`, `src/lib/render.ts`) for real
-implementations and nothing in the UI changes.
+The original prototype UI is preserved, but the Electron desktop build now wires
+real functionality behind the same stable renderer signatures in
+`src/lib/gemini.ts`, `src/lib/arena.ts`, and `src/lib/render.ts`.
 
-The Electron shell is configured for **Windows** (NSIS installer + portable
-x64 build).
+The Arena workflow intentionally stays human-in-the-loop: Northframe generates
+the prompt, you paste it into `arena.ai/code`, vote in Arena yourself, download
+the winning export, then import that winner back into Northframe.
 
 ---
 
@@ -20,116 +19,152 @@ x64 build).
 
 ```bash
 npm install
-npm run dev        # web prototype at http://localhost:5173
+npm run dev        # web preview at http://localhost:5173
 ```
 
-### Run it as a Windows desktop app (dev)
+The web preview keeps local fallbacks for operations that require desktop
+filesystem/media access. To use the real filesystem, Gemini key storage,
+footage analysis, and rendering pipeline, run Electron:
 
 ```bash
 npm run desktop
 ```
-
-Starts Vite and an Electron window pointed at it (`ELECTRON_START_URL`).
-First `npm install` on Windows downloads the Electron binary automatically.
 
 ### Build the Windows installer
 
 On a Windows machine:
 
 ```bash
+npm install
 npm run dist:win
 ```
 
 Outputs into `release/`:
 
-- `Northframe Studio-Setup-0.1.0.exe` — NSIS installer (choose install dir)
-- `Northframe Studio-0.1.0-x64-Portable.exe` — portable single-file exe
+- `Northframe Studio-Setup-0.1.0.exe` — NSIS installer.
+- `Northframe Studio-0.1.0-x64-Portable.exe` — portable executable.
 
-The app loads the built `dist/` over `file://` (Vite `base: './'`), so the
-packaged app is fully offline — fonts included (`@fontsource`, no CDN).
+The packaged app loads the built `dist/` over `file://` and self-hosts fonts, so
+it can run offline after installation. Gemini requires either a saved key or a
+`GEMINI_API_KEY` environment variable.
 
 ---
 
-## The seven screens
+## Desktop features implemented
 
-| Screen | What it does | Status |
-|---|---|---|
-| **Home** | Project grid — open / duplicate / delete (inline confirm), new project | ✔ full |
-| **Brief** | Chat with a mocked Gemini co-pilot; the scene rundown fills in **field by field** in a syntax-highlighted JSON panel; suggestion chips; **Lock rundown** gates the Arena Desk | ✔ full |
-| **Arena Desk** | Locked `arenaPrompt` card → copy → paste into arena.ai/code → vote → drop the winning `.zip`; import zone with progress; asset grid with status badges, mock preview modal, "Render to MP4" | ✔ full |
-| **Footage Desk** | Drop raw video (mocked analyzing), deterministic **waveform + silence map** with excludable cuts, Hormozi/Standard/Minimal caption cards, 16:9 / 9:16 / 1:1 crop, Apply edit | ✔ full |
-| **Timeline** | Single-track editor: drag to reorder, drag right edge to resize (floating duration label), `+` insert pickers, click-to-seek ruler, real-time looping playhead | ✔ full |
-| **Render** | Aspect/fps/quality cards + presets (YouTube, Shorts, X), start render → 0–100 % progress over ~6 s, queue with Download / Reveal / Retry | ✔ full |
-| **Library** | Searchable, filterable sample library (rundowns, Arena assets, brand presets) with a wired **"Use in current project"** | ✔ full |
+| Area | Desktop behavior |
+|---|---|
+| **Gemini** | API key is stored in Electron `settings.json` or read from `GEMINI_API_KEY`; the renderer only receives key presence. Brief and Ask Gemini call `gemini-2.0-flash` and fall back locally if the live call fails. |
+| **Arena import** | ZIP/HTML is imported into project app data, extracted safely, checked for `window.__seek(t)`, loaded in a hidden BrowserWindow, and captured as a PNG thumbnail. |
+| **Arena preview** | Imported Arena HTML previews in a sandboxed iframe through an IPC-approved `file://` path under the project data folder. |
+| **Footage analysis** | Video is copied into project app data, duration is read by FFprobe, silences are detected with FFmpeg `silencedetect`, and waveform peaks are returned to the existing waveform UI. |
+| **Timeline render** | Timeline clips render to MP4 under app data. Arena clips are captured frame-by-frame through `window.__seek(t)`; footage clips are trimmed, cropped/scaled, optional silence cuts are applied, and segments are concatenated in timeline order. |
+| **Progress/cancel** | Render progress streams over IPC. Cancel kills active FFmpeg processes and closes hidden capture windows. |
+| **Persistence** | Zustand state mirrors to `%APPDATA%/northframe-studio/projects.json` in Electron; browser localStorage remains the web-preview fallback. |
+| **Desktop hardening** | Single-instance lock, crash logs under `logs/`, renderer-crash reload screen, optional launch-on-login, GitHub updater check, and optional code signing docs. |
 
-Plus the shell: 64 px icon rail with gated navigation (Arena Desk is dimmed
-until a rundown is locked), top bar with inline-editable project name and a
-`saving…/all changes saved` indicator, an **Ask Gemini** slide-over (⌘K), and
-bottom-right toasts that auto-dismiss after 4 s.
+## Screens
 
-## What's mocked (and where to plug reality in)
+| Screen | What it does |
+|---|---|
+| **Home** | Project grid with open / duplicate / delete and first Arena thumbnail as the project preview when available. |
+| **Brief** | Chat with Gemini; the scene rundown fills in field by field; lock the rundown to unlock the Arena Desk. |
+| **Arena Desk** | Copy prompt → paste into Arena → vote manually → import the winning ZIP/HTML → preview/import thumbnail/render. |
+| **Footage Desk** | Drop or browse raw video, scan for silences, view real waveform peaks, exclude proposed cuts, pick caption style/crop, apply edit. |
+| **Timeline** | Single-track editor with insert pickers, reorder, resize, seek ruler, and looping preview playhead. |
+| **Render** | Pick aspect/fps/quality, start a real desktop render, see progress, cancel, retry, copy to Downloads, or reveal output. |
+| **Library** | Searchable sample library of rundowns, Arena prompts, and brand presets. |
 
-| Mock | File | Real implementation (Electron/Tauri) |
-|---|---|---|
-| Gemini co-pilot | `src/lib/gemini.ts` → `fakeAskGemini`, `fakeGeminiChat` | Gemini API (Flash) with the same signature |
-| Arena zip import | `src/lib/arena.ts` → `fakeImportArenaZip` | `dialog`/`fs` reads of the downloaded zip |
-| Footage analysis | `src/lib/arena.ts` → `fakeUploadFootage` | Whisper/VAD silence scan + ffprobe duration |
-| Render worker | `src/lib/render.ts` → `fakeStartRender` | Puppeteer `__seek(t)`-screenshot loop + ffmpeg, same progress-callback shape |
-| Arena battle view | — | Desktop-shell webview aimed at arena.ai/code |
+## Data locations
 
-## Stack
+Electron uses `app.getPath('userData')`. On Windows this resolves to:
 
-React 18 · TypeScript · Vite · Tailwind CSS v4 · Zustand (+`persist` → localStorage) ·
-Motion (`motion/react`, reduced-motion aware) · lucide-react · Inter Variable + JetBrains Mono Variable (self-hosted).
-
+```text
+%APPDATA%/northframe-studio/
 ```
-electron/            main.cjs (window, navigation guards) · preload.cjs (contextBridge)
-src/
-  app-shell/         Sidebar · TopBar · AppLayout · AskPanel
-  screens/           HomeProject · Brief · ArenaDesk · FootageDesk · Timeline · Render · Library
-  components/        Button · IconButton · Badge · Card · Kbd · Modal · Toasts ·
-                     EmptyState · ProgressBar · Segmented · NoProject
-  state/             useProjectStore.ts (Zustand + persist, single source of truth)
-  lib/               gemini.ts · arena.ts · render.ts (mocks) · utils.ts · seed.ts
-  types/             project.ts (the full data model)
-  styles.css         design tokens (@theme) — see DESIGN.md
-build/icon.png       Windows app icon (electron-builder converts to .ico)
+
+Important files/folders:
+
+- `settings.json` — local settings, including the Gemini key if saved.
+- `projects.json` — persisted project state mirror.
+- `projects/<projectId>/arena/<assetId>/` — imported Arena exports.
+- `projects/<projectId>/footage/` — copied raw footage.
+- `renders/<jobId>/` — MP4 outputs and temporary render work folders.
+- `logs/` — crash and render/update logs.
+
+## Gemini key
+
+Set the key in the Ask Gemini settings panel or set `GEMINI_API_KEY` before
+launching the desktop app. The key is never sent to the renderer and is never
+logged; renderer code only sees `hasKey: true/false`.
+
+## FFmpeg / FFprobe
+
+Northframe depends on `ffmpeg-static` and `ffprobe-static`; a normal clean
+`npm install` downloads the native binaries. The desktop app also supports
+explicit paths for constrained environments:
+
+```bash
+NORTHFRAME_FFMPEG_PATH=C:\path\to\ffmpeg.exe
+NORTHFRAME_FFPROBE_PATH=C:\path\to\ffprobe.exe
 ```
+
+If those variables are not set, Northframe checks the packaged static modules
+and then falls back to `ffmpeg` / `ffprobe` on `PATH`.
+
+## Windows signing and SmartScreen
+
+Personal builds can remain unsigned. Windows SmartScreen may show an unsigned
+app warning; choose **More info → Run anyway**.
+
+For signed builds, set these environment variables before `npm run dist:win`:
+
+```bash
+CSC_LINK=path-or-base64-pfx
+CSC_KEY_PASSWORD=your-certificate-password
+```
+
+## Auto-update
+
+`electron-updater` is configured for GitHub Releases:
+
+```json
+{
+  "provider": "github",
+  "owner": "rangwalaaliasgar55-bot",
+  "repo": "Cupric-Ai-"
+}
+```
+
+The app checks for updates in packaged builds and exposes a manual **Check for
+updates** action in the Ask Gemini settings area.
 
 ## Scripts
 
 | Script | Purpose |
 |---|---|
-| `npm run dev` | Vite dev server (the web prototype / Arena-preview renderer) |
-| `npm run build` | Typecheck + production build to `dist/` |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run desktop` | Vite + Electron together (dev) |
-| `npm run dist:win` | Build + package for Windows (NSIS + portable) |
+| `npm run dev` | Vite web preview. |
+| `npm run build` | Typecheck + production renderer build to `dist/`. |
+| `npm run typecheck` | TypeScript only. |
+| `npm run desktop` | Vite + Electron together for desktop development. |
+| `npm run dist:win` | Build + package Windows NSIS and portable artifacts. |
+
+## Project structure
+
+```text
+electron/            main.cjs desktop backend · preload.cjs safe IPC bridge
+src/
+  app-shell/         Sidebar · TopBar · AppLayout · AskPanel
+  screens/           HomeProject · Brief · ArenaDesk · FootageDesk · Timeline · Render · Library
+  components/        Shared design-system components
+  state/             Zustand store with desktop-aware persistence
+  lib/               Gemini, Arena, render wrappers with web fallbacks
+  types/             Project data model
+  styles.css         Design tokens — see DESIGN.md
+build/icon.png       Windows app icon
+```
 
 ## Design system
 
-`DESIGN.md` is the single source of truth: palette, 12/13/14/16/20/28 type
-scale, radii, motion tokens (one ease, one spring, 150–200 ms), component
-states, and the a11y/finish rules every screen follows (focus rings via
-box-shadow, press-scale 0.96, 44 px targets, `tabular-nums` on timecode,
-inline-copy checkmarks, one accent per view, `prefers-reduced-motion`
-honored everywhere).
-
-## Desktop installation
-
-Build the Windows installer on a Windows machine with:
-
-```bash
-npm install
-npm run dist:win
-```
-
-Install the generated `Northframe Studio-Setup-*.exe`. Windows SmartScreen may
-show an unsigned-app warning for personal builds; choose **More info → Run
-anyway**. Code signing is optional. Set `CSC_LINK` and `CSC_KEY_PASSWORD` in
-the build environment when a Windows signing certificate is available.
-
-Desktop data is stored in `%APPDATA%/northframe-studio/`, including settings,
-projects, Arena assets, footage, and renders. The Gemini API key can be set in
-the Ask Gemini settings panel or with `GEMINI_API_KEY`; it is kept in the
-Electron main process and never exposed to the renderer.
+`DESIGN.md` is the source of truth for palette, type scale, radii, motion,
+component states, accessibility rules, and finish-pass standards.

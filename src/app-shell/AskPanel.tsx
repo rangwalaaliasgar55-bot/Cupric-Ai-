@@ -29,6 +29,7 @@ export function AskPanel() {
   const [hasKey, setHasKey] = useState(false)
   const [autoLaunch, setAutoLaunch] = useState(false)
   const [updateStatus, setUpdateStatus] = useState('')
+  const [mediaReady, setMediaReady] = useState<boolean | null>(null)
 
   useEffect(() => {
     const ipc = (window as any).northframe?.ipc
@@ -37,6 +38,7 @@ export function AskPanel() {
       setHasKey(Boolean(settings?.hasKey))
       setAutoLaunch(Boolean(settings?.autoLaunch))
     })
+    ipc.invoke('media:status').then((status: { ready?: boolean }) => setMediaReady(Boolean(status?.ready))).catch(() => setMediaReady(false))
     if (typeof ipc.on === 'function') {
       return ipc.on('updater:status', (event: { status?: string; version?: string; message?: string }) => {
         setUpdateStatus(event?.version ? `${event.status} ${event.version}` : event?.message || event?.status || '')
@@ -131,6 +133,9 @@ export function AskPanel() {
                   </button>
                 </div>
               </form>
+              <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
+                Media engine: <span className={mediaReady ? 'text-accent-text' : 'text-danger'}>{mediaReady === null ? 'checking' : mediaReady ? 'ready' : 'FFmpeg missing'}</span>
+              </div>
               <label className="flex items-center justify-between gap-3 rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
                 <span>Open Northframe on login</span>
                 <input type="checkbox" checked={autoLaunch} onChange={(e) => toggleAutoLaunch(e.target.checked)} />

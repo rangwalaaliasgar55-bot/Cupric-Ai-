@@ -2,7 +2,7 @@
   "name": "northframe-studio",
   "private": true,
   "version": "0.1.0",
-  "description": "Northframe Studio \u2014 desktop creator tool for short-form video. UI prototype with a fully mocked AI/render pipeline; Electron shell for Windows.",
+  "description": "Northframe Studio \u2014 desktop creator tool for short-form video with Gemini, Arena import, footage analysis, timeline rendering, and Electron packaging.",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -50,7 +50,8 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "package.json"
+      "package.json",
+      "node_modules/**/*"
     ],
     "win": {
       "target": [
@@ -80,6 +81,10 @@
       "provider": "github",
       "owner": "rangwalaaliasgar55-bot",
       "repo": "Cupric-Ai-"
-    }
+    },
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**/*",
+      "node_modules/ffprobe-static/**/*"
+    ]
   }
 }
