@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+    branches:
+      - '**'
+    # A versioned release request allows a release to be started from a
+    # protected branch without granting a developer token workflow-dispatch access.
+    paths:
+      - '.github/release.json'
   workflow_dispatch:
     inputs:
       tag:
@@ -36,6 +42,25 @@ jobs:
           node-version: 22
           cache: npm
 
+      - name: Resolve and validate release tag
+        id: release
+        shell: bash
+        env:
+          REQUESTED_TAG: ${{ inputs.tag }}
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            tag="$REQUESTED_TAG"
+          elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            tag="$GITHUB_REF_NAME"
+          else
+            tag="$(node -p "require('./.github/release.json').tag")"
+          fi
+
+          package_version="$(node -p "require('./package.json').version")"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]] || { echo "Invalid release tag: $tag"; exit 1; }
+          [[ "$tag" == "v$package_version" ]] || { echo "$tag does not match package version $package_version"; exit 1; }
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
       - name: Install locked dependencies
         run: npm ci
 
@@ -57,7 +82,7 @@ jobs:
       - name: Preserve release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Cupric-AI-Windows-${{ inputs.tag || github.ref_name }}
+          name: Cupric-AI-Windows-${{ steps.release.outputs.tag }}
           if-no-files-found: error
           path: |
             release/Cupric AI-Setup-*.exe
@@ -68,9 +93,9 @@ jobs:
       - name: Publish GitHub release assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag || github.ref_name }}
+          tag_name: ${{ steps.release.outputs.tag }}
           target_commitish: ${{ github.sha }}
-          name: Cupric AI ${{ inputs.tag || github.ref_name }}
+          name: Cupric AI ${{ steps.release.outputs.tag }}
           generate_release_notes: true
           make_latest: true
           fail_on_unmatched_files: true
