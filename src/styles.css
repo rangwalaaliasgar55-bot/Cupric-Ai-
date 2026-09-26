@@ -143,6 +143,20 @@
   body {
     @apply bg-bg font-sans text-base text-text antialiased;
   }
+  /*
+   * macOS vibrancy. The window material is supplied by AppKit (see
+   * `vibrancy: 'under-window'` in electron/main.cjs); our job is simply to get
+   * out of its way, and to tint rather than cover it. Panels keep a little
+   * opacity so text stays legible over a busy desktop.
+   */
+  html[data-vibrancy='on'],
+  html[data-vibrancy='on'] body {
+    background: color-mix(in srgb, var(--color-bg) 62%, transparent);
+  }
+  html[data-vibrancy='on'] {
+    /* Room for the inset traffic lights. */
+    --titlebar-inset: 22px;
+  }
   ::selection {
     background: var(--color-accent);
     color: var(--color-accent-ink);

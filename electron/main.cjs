@@ -759,6 +759,75 @@ async function generateCandidateHtml(prompt) {
 
 const CANDIDATE_COUNT = 3
 
+/** How many times a candidate may be sent back for repair. */
+const REPAIR_ROUNDS = 2
+
+/**
+ * Critique → repair.
+ *
+ * A model that fails the render contract has usually got 90% of a good piece
+ * and one mechanical mistake — a remote font link, a rAF loop, a missing
+ * `__seek`. Throwing that away and re-rolling wastes the good 90%, so the file
+ * goes back with the exact list of failures and a demand for the smallest fix
+ * that clears them.
+ *
+ * Two rules keep this honest:
+ *  - a repair is only accepted if it scores *better* than what went in, so a
+ *    model that "fixes" the file into something worse is ignored;
+ *  - the loop is bounded, and every round is recorded in the voting report.
+ */
+async function critiqueAndRepair(html, verdict, rundown, label) {
+  let bestHtml = html
+  let bestVerdict = verdict
+  const history = []
+
+  for (let round = 1; round <= REPAIR_ROUNDS; round += 1) {
+    if (bestVerdict.valid && !bestVerdict.failures.length) break
+
+    const critique = [
+      'You wrote this single-file motion-graphics HTML for Cupric AI. It did not pass the renderer contract.',
+      '',
+      'FAILED CHECKS — every one of these must be fixed:',
+      ...bestVerdict.failures.map((f) => `- ${f}`),
+      '',
+      'RULES (unchanged):',
+      '- One self-contained file. No CDN, no remote font, no external asset of any kind.',
+      '- All motion must be a pure function of t via window.__seek(t). No requestAnimationFrame, no setInterval, no Date.now, no performance.now, no Math.random.',
+      '- Keep the #scene root and call __seek(0) once so the file paints a valid first frame.',
+      '- Keep the existing design. Change as little as possible: fix the failures, keep everything that already works.',
+      '',
+      'Return ONLY the corrected complete HTML file.',
+      '',
+      'CURRENT FILE:',
+      bestHtml,
+    ].join('\n')
+
+    try {
+      const repaired = await generateCandidateHtml(critique)
+      const repairedVerdict = validateCandidateHtml(repaired, rundown)
+      const improved = repairedVerdict.score > bestVerdict.score || (repairedVerdict.valid && !bestVerdict.valid)
+      history.push({
+        round,
+        addressed: bestVerdict.failures,
+        scoreBefore: bestVerdict.score,
+        scoreAfter: repairedVerdict.score,
+        accepted: improved,
+        remaining: repairedVerdict.failures,
+      })
+      if (!improved) break
+      bestHtml = repaired
+      bestVerdict = repairedVerdict
+    } catch (err) {
+      history.push({ round, error: err?.message || String(err) })
+      logLine('automation-repair-failed', err?.message || String(err), { candidate: label, round })
+      break
+    }
+  }
+
+  return { html: bestHtml, verdict: bestVerdict, history }
+}
+
+
 /**
  * The real model battle.
  *
@@ -793,15 +862,36 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
       'Direction C: atmosphere-led. Gradient/field background with depth and a restrained, confident type layer.',
     ][i % 3]
     try {
-      const html = await generateCandidateHtml(`${prompt}\n\nCREATIVE DIRECTION FOR THIS CANDIDATE:\n${angle}`)
-      const verdict = validateCandidateHtml(html, rundown)
-      attempts.push({ candidate: i + 1, generated: true, valid: verdict.valid, failures: verdict.failures })
+      const first = await generateCandidateHtml(`${prompt}\n\nCREATIVE DIRECTION FOR THIS CANDIDATE:\n${angle}`)
+      const firstVerdict = validateCandidateHtml(first, rundown)
+      // Anything short of a clean pass goes back to the model with its own
+      // failures quoted at it, rather than being binned.
+      const { html, verdict, history } = await critiqueAndRepair(first, firstVerdict, rundown, i + 1)
+      attempts.push({
+        candidate: i + 1,
+        generated: true,
+        valid: verdict.valid,
+        failures: verdict.failures,
+        scoreBeforeRepair: firstVerdict.score,
+        score: verdict.score,
+        repairRounds: history,
+      })
       if (!verdict.valid) {
-        logLine('automation-candidate-invalid', `Candidate ${i + 1} failed the render contract`, verdict.failures)
+        logLine('automation-candidate-invalid', `Candidate ${i + 1} failed the render contract even after repair`, verdict.failures)
         continue
       }
+      if (history.some((h) => h.accepted)) {
+        warnings.push(`Candidate ${i + 1} needed ${history.filter((h) => h.accepted).length} repair round(s) before it met the render contract.`)
+      }
       fs.writeFileSync(file, html, 'utf8')
-      candidates.push({ file, score: verdict.score, generatedBy: aiSettings().provider, reasons: verdict.reasons, failures: verdict.failures })
+      candidates.push({
+        file,
+        score: verdict.score,
+        generatedBy: aiSettings().provider,
+        reasons: verdict.reasons,
+        failures: verdict.failures,
+        repaired: history.some((h) => h.accepted),
+      })
     } catch (err) {
       attempts.push({ candidate: i + 1, generated: false, error: err?.message || String(err) })
       logLine('automation-candidate-failed', err?.message || String(err), { candidate: i + 1 })
@@ -829,6 +919,7 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
   candidates.sort((a, b) => b.score - a.score)
   writeJson(path.join(root, 'voting-report.json'), {
     mode: fallbackUsed ? 'builtin-template-fallback' : 'ai-generated-local-scoring',
+    repairRoundsAllowed: REPAIR_ROUNDS,
     provider: aiSettings().provider,
     fallbackUsed,
     resourcesUsed: {
@@ -1190,6 +1281,13 @@ ${rundown.style}
 
 SEQUENCE / TIMELINE:
 ${sceneSequenceLines(rundown)}
+
+DEPTH — USE CSS 3D, NOT A 3D LIBRARY:
+- There is no WebGL and no Three.js here: one file, no bundler, nothing to import. Depth comes from CSS 3D transforms, which cost nothing and stay deterministic.
+- Put \`perspective: 1200px\` on a wrapper and \`transform-style: preserve-3d\` on the group you are moving.
+- Compose depth with translate3d/rotateX/rotateY/rotateZ driven by t — e.g. cards that turn as they enter, a title plane that settles from rotateX(12deg), layers parallaxing at different translateZ.
+- Every transform must be written from inside __seek(t). Do not use CSS @keyframes or transitions: they run on the wall clock and will tear when the renderer steps frame by frame.
+- Sort overlapping 3D layers explicitly with translateZ; do not rely on z-index alone once preserve-3d is on.
 
 IMPLEMENTATION NOTES:
 - At t=0 the first scene must be visible and valid.
@@ -2288,12 +2386,26 @@ ipcMain.handle('updater:check', async () => {
 // ---------------------------------------------------------------------------
 
 function createWindow() {
+  // Real vibrancy, not a CSS imitation: on macOS the window background is the
+  // system material, so it samples the desktop behind it the way every native
+  // app does. `backgroundColor` must be transparent for the material to show,
+  // which is why it is set per-platform.
+  const isMac = process.platform === 'darwin'
   const win = new BrowserWindow({
     width: 1440,
     height: 900,
     minWidth: 1120,
     minHeight: 720,
-    backgroundColor: '#0B0B10',
+    backgroundColor: isMac ? '#00000000' : '#0B0B10',
+    ...(isMac
+      ? {
+          vibrancy: 'under-window',
+          visualEffectState: 'followWindow',
+          transparent: true,
+          titleBarStyle: 'hiddenInset',
+          trafficLightPosition: { x: 16, y: 18 },
+        }
+      : {}),
     title: 'Cupric AI',
     autoHideMenuBar: true,
     show: false,
