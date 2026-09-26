@@ -1,5 +1,6 @@
 export type RenderUpdate = (pct: number) => void
 import type { SceneRundown } from '../types/project'
+import { getIpc } from './bridge'
 
 export type RenderSource = {
   sourceType?: 'arena' | 'footage' | 'rundown'
@@ -448,7 +449,7 @@ function streamStop(stream?: MediaStream) {
 }
 
 export function startRender(job: RenderJobInput, onUpdate: RenderUpdate, onDone: (result?: RenderResult) => void): () => void {
-  const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+  const ipc = getIpc()
   if (ipc && !hasBrowserOnlySources(job)) {
     let finished = false
     let cancelled = false

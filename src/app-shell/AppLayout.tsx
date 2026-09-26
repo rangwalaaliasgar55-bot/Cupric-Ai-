@@ -11,6 +11,8 @@ import { Library } from '../screens/Library'
 import { Render } from '../screens/Render'
 import { ReviewRoom } from '../screens/ReviewRoom'
 import { Timeline } from '../screens/Timeline'
+import { Studio } from '../screens/Studio'
+import { Lab } from '../screens/Lab'
 import { Autonomous } from '../screens/Autonomous'
 import { useProjectStore } from '../state/useProjectStore'
 
@@ -22,6 +24,8 @@ const SCREENS = {
   arena: <ArenaDesk />,
   footage: <FootageDesk />,
   timeline: <Timeline />,
+  studio: <Studio />,
+  lab: <Lab />,
   render: <Render />,
   library: <Library />,
 } as const

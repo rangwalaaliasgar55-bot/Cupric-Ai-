@@ -1,0 +1,1990 @@
+{
+  "source": "https://lab.xevrion.dev/lab",
+  "repo": "https://github.com/xevrion/ui-lab",
+  "license": "MIT",
+  "vendoredAt": "2026-09-26",
+  "vendoredInto": "src/lab/components",
+  "total": 190,
+  "vendoredCount": 190,
+  "categories": [
+    {
+      "id": "buttons",
+      "label": "Buttons"
+    },
+    {
+      "id": "inputs",
+      "label": "Inputs"
+    },
+    {
+      "id": "navigation",
+      "label": "Navigation"
+    },
+    {
+      "id": "feedback",
+      "label": "Feedback"
+    },
+    {
+      "id": "data",
+      "label": "Data"
+    },
+    {
+      "id": "cards",
+      "label": "Cards & media"
+    },
+    {
+      "id": "objects",
+      "label": "Objects"
+    },
+    {
+      "id": "playground",
+      "label": "Playground"
+    },
+    {
+      "id": "text",
+      "label": "Text"
+    }
+  ],
+  "entries": [
+    {
+      "slug": "odometer",
+      "name": "Odometer",
+      "category": "data",
+      "description": "Rolls forward like a mechanical counter and wraps from 999 back to 000.",
+      "keywords": "counter number digits rolling increment",
+      "vendored": true,
+      "file": "src/lab/components/odometer.tsx"
+    },
+    {
+      "slug": "hold-to-delete",
+      "name": "Hold to delete",
+      "category": "buttons",
+      "description": "Fills slowly while you commit to it, snaps back the moment you let go.",
+      "keywords": "button long press confirm destructive clip-path",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/hold-to-delete.tsx"
+    },
+    {
+      "slug": "segmented-control",
+      "name": "Segmented control",
+      "category": "navigation",
+      "description": "The pill stretches toward your pick like an inchworm, recoloring each label as its edge crosses.",
+      "keywords": "tabs toggle switcher radio",
+      "vendored": true,
+      "file": "src/lab/components/segmented-control.tsx"
+    },
+    {
+      "slug": "tilt-card",
+      "name": "Tilt card",
+      "category": "cards",
+      "description": "Leans toward your cursor with a glare that follows the light.",
+      "keywords": "3d hover parallax glare reflection",
+      "previewScale": 0.95,
+      "vendored": true,
+      "file": "src/lab/components/tilt-card.tsx"
+    },
+    {
+      "slug": "dock",
+      "name": "Dock",
+      "category": "navigation",
+      "description": "Icons swell as your cursor nears them, and launch with a macOS-style bounce.",
+      "keywords": "macos magnify icons hover spring toolbar",
+      "vendored": true,
+      "file": "src/lab/components/dock.tsx"
+    },
+    {
+      "slug": "sheet",
+      "name": "Sheet",
+      "category": "feedback",
+      "description": "Drag it down or flick it away; pull it up and it pushes back.",
+      "keywords": "drawer bottom sheet modal drag swipe dismiss gesture",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/sheet.tsx"
+    },
+    {
+      "slug": "toast-stack",
+      "name": "Toast stack",
+      "category": "feedback",
+      "description": "Stacks with depth, fans out on hover, and each toast's edge drains as its timer.",
+      "keywords": "notification toast sonner swipe drag stack",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/toast-stack.tsx"
+    },
+    {
+      "slug": "elastic-slider",
+      "name": "Elastic slider",
+      "category": "inputs",
+      "description": "Stretches like rubber when you drag past the end, then springs back.",
+      "keywords": "volume slider rubber band drag mute range",
+      "previewScale": 0.95,
+      "vendored": true,
+      "file": "src/lab/components/elastic-slider.tsx"
+    },
+    {
+      "slug": "magnetic-button",
+      "name": "Magnetic button",
+      "category": "buttons",
+      "description": "Stretches toward your cursor like soft rubber on a magnet, then wobbles home.",
+      "keywords": "button hover cursor pull spring",
+      "previewScale": 0.8,
+      "vendored": true,
+      "file": "src/lab/components/magnetic-button.tsx"
+    },
+    {
+      "slug": "text-scramble",
+      "name": "Text scramble",
+      "category": "text",
+      "description": "Hover a word and a block cursor reads it in, one letter at a time.",
+      "keywords": "text hover decode glitch letters",
+      "vendored": true,
+      "file": "src/lab/components/text-scramble.tsx"
+    },
+    {
+      "slug": "swipe-deck",
+      "name": "Swipe deck",
+      "category": "cards",
+      "description": "Fling a card away and the rest of the deck steps forward.",
+      "keywords": "cards drag swipe fling tinder gesture stack",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/swipe-deck.tsx"
+    },
+    {
+      "slug": "scroll-reveal",
+      "name": "Scroll reveal",
+      "category": "text",
+      "description": "Words light up one by one as you scroll through them.",
+      "keywords": "scroll text words reveal scroll-driven",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/scroll-reveal.tsx"
+    },
+    {
+      "slug": "copy-button",
+      "name": "Copy button",
+      "category": "buttons",
+      "description": "The two pages merge into one before a check draws itself in.",
+      "keywords": "clipboard copy button icon feedback",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/copy-button.tsx"
+    },
+    {
+      "slug": "expanding-search",
+      "name": "Expanding search",
+      "category": "inputs",
+      "description": "Opens from a circle into a search field, and closes faster than it opens.",
+      "keywords": "search input morph expand shortcut",
+      "vendored": true,
+      "file": "src/lab/components/expanding-search.tsx"
+    },
+    {
+      "slug": "accordion",
+      "name": "Accordion",
+      "category": "navigation",
+      "description": "Answers unfold from under their question like a folded flap, and the row you clicked never moves.",
+      "keywords": "disclosure faq collapse expand",
+      "previewScale": 0.65,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/accordion.tsx"
+    },
+    {
+      "slug": "expanding-card",
+      "name": "Expanding card",
+      "category": "cards",
+      "description": "Grows from its slot into a detail view and folds back when you are done.",
+      "keywords": "shared layout morph modal dialog layoutid",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/expanding-card.tsx"
+    },
+    {
+      "slug": "otp-input",
+      "name": "OTP input",
+      "category": "inputs",
+      "description": "Six slots mirror one real input, so paste and SMS autofill just work.",
+      "keywords": "code one-time password input verification pin",
+      "vendored": true,
+      "file": "src/lab/components/otp-input.tsx"
+    },
+    {
+      "slug": "toggle-switch",
+      "name": "Toggle switch",
+      "category": "buttons",
+      "description": "Leans into the move when pressed, then springs across and squashes on landing.",
+      "keywords": "switch toggle checkbox squash stretch drag",
+      "previewScale": 0.8,
+      "vendored": true,
+      "file": "src/lab/components/toggle-switch.tsx"
+    },
+    {
+      "slug": "command-palette",
+      "name": "Command palette",
+      "category": "navigation",
+      "description": "Opens on ⌘K and filters commands as you type.",
+      "keywords": "cmdk command menu search keyboard shortcut",
+      "vendored": true,
+      "file": "src/lab/components/command-palette.tsx"
+    },
+    {
+      "slug": "marquee",
+      "name": "Marquee",
+      "category": "text",
+      "description": "Drifts endlessly past a reading lens, and brakes gently when you hover.",
+      "keywords": "ticker scroll loop infinite",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/marquee.tsx"
+    },
+    {
+      "slug": "reorder-list",
+      "name": "Reorder list",
+      "category": "cards",
+      "description": "Picks rows up by the handle and slides the rest out of the way.",
+      "keywords": "drag reorder sortable list",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/reorder-list.tsx"
+    },
+    {
+      "slug": "compare-slider",
+      "name": "Compare slider",
+      "category": "cards",
+      "description": "Drag the line to see what polish actually changes.",
+      "keywords": "before after compare drag clip-path",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/compare-slider.tsx"
+    },
+    {
+      "slug": "multi-step-form",
+      "name": "Multi-step form",
+      "category": "inputs",
+      "description": "Slides between steps while the card grows around each one.",
+      "keywords": "wizard steps form onboarding",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/multi-step-form.tsx"
+    },
+    {
+      "slug": "upload-button",
+      "name": "Upload button",
+      "category": "buttons",
+      "description": "Shrinks into a progress ring, fills, then checks off.",
+      "keywords": "upload progress ring button loading",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/upload-button.tsx"
+    },
+    {
+      "slug": "tooltip-group",
+      "name": "Tooltip group",
+      "category": "feedback",
+      "description": "One tooltip slides from button to button and reshapes around each label.",
+      "keywords": "tooltip toolbar delay hover",
+      "vendored": true,
+      "file": "src/lab/components/tooltip-group.tsx"
+    },
+    {
+      "slug": "dropdown-menu",
+      "name": "Dropdown menu",
+      "category": "navigation",
+      "description": "Grows out of its trigger, and press, drag, release picks an item like a native menu.",
+      "keywords": "menu popover dropdown options",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/dropdown-menu.tsx"
+    },
+    {
+      "slug": "dynamic-island",
+      "name": "Dynamic island",
+      "category": "feedback",
+      "description": "Morphs between live states with a springy, Apple-style bounce.",
+      "keywords": "iphone island morph pill notification music",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/dynamic-island.tsx"
+    },
+    {
+      "slug": "scrub-input",
+      "name": "Scrub input",
+      "category": "inputs",
+      "description": "Drag the label and a tape measure runs under the needle, or just type.",
+      "keywords": "number input drag scrub figma",
+      "previewScale": 0.8,
+      "vendored": true,
+      "file": "src/lab/components/scrub-input.tsx"
+    },
+    {
+      "slug": "star-rating",
+      "name": "Star rating",
+      "category": "inputs",
+      "description": "Hover to preview, click to commit with a little pop.",
+      "keywords": "rating stars review",
+      "vendored": true,
+      "file": "src/lab/components/star-rating.tsx"
+    },
+    {
+      "slug": "like-button",
+      "name": "Like button",
+      "category": "buttons",
+      "description": "Pops, bursts and rolls the count when you like.",
+      "keywords": "heart like particles burst",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/like-button.tsx"
+    },
+    {
+      "slug": "sliding-tabs",
+      "name": "Sliding tabs",
+      "category": "navigation",
+      "description": "An underline stretches toward the tab you pick while a soft pill follows your pointer.",
+      "keywords": "tabs underline navigation layoutid",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/sliding-tabs.tsx"
+    },
+    {
+      "slug": "page-dots",
+      "name": "Page dots",
+      "category": "navigation",
+      "description": "A pill that inches between pages like a worm and counts down to the next.",
+      "keywords": "pagination carousel dots autoplay indicator",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/page-dots.tsx"
+    },
+    {
+      "slug": "collapsible-sidebar",
+      "name": "Collapsible sidebar",
+      "category": "navigation",
+      "description": "Folds down to an icon rail, with labels that step aside before it closes.",
+      "keywords": "sidebar navigation collapse nav rail",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/collapsible-sidebar.tsx"
+    },
+    {
+      "slug": "snap-carousel",
+      "name": "Snap carousel",
+      "category": "cards",
+      "description": "Snaps cards to center, drags with the mouse, and each card acts out its motion principle.",
+      "keywords": "carousel slider scroll snap drag gallery",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/snap-carousel.tsx"
+    },
+    {
+      "slug": "skeleton-loader",
+      "name": "Skeleton loader",
+      "category": "feedback",
+      "description": "Holds the exact shape of what is coming, so nothing jumps.",
+      "keywords": "loading placeholder shimmer skeleton",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/skeleton-loader.tsx"
+    },
+    {
+      "slug": "context-menu",
+      "name": "Context menu",
+      "category": "navigation",
+      "description": "Opens at your cursor and grows from it.",
+      "keywords": "right click menu contextmenu long press",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/context-menu.tsx"
+    },
+    {
+      "slug": "notification-bell",
+      "name": "Notification bell",
+      "category": "feedback",
+      "description": "Rings when something new arrives, and the badge rolls up with each one.",
+      "keywords": "notifications badge bell alert inbox",
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/notification-bell.tsx"
+    },
+    {
+      "slug": "avatar-stack",
+      "name": "Avatar stack",
+      "category": "cards",
+      "description": "Fans open when you reach for it, with a name above each face.",
+      "keywords": "avatars people users team faces",
+      "vendored": true,
+      "file": "src/lab/components/avatar-stack.tsx"
+    },
+    {
+      "slug": "morphing-button",
+      "name": "Morphing button",
+      "category": "buttons",
+      "description": "Shrinks into a spinner while it saves, then answers with a check or a shake.",
+      "keywords": "button loading success error submit save",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/morphing-button.tsx"
+    },
+    {
+      "slug": "kanban-board",
+      "name": "Kanban board",
+      "category": "data",
+      "description": "Lift a card and the others slide aside to make room for it.",
+      "keywords": "kanban drag board columns tasks trello",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/kanban-board.tsx"
+    },
+    {
+      "slug": "color-swatches",
+      "name": "Color swatches",
+      "category": "inputs",
+      "description": "The ring glides to the color you pick and the color floods the preview from that side.",
+      "keywords": "color picker palette swatch theme",
+      "previewScale": 0.8,
+      "vendored": true,
+      "file": "src/lab/components/color-swatches.tsx"
+    },
+    {
+      "slug": "mini-calendar",
+      "name": "Mini calendar",
+      "category": "inputs",
+      "description": "Months slide past in the direction you travel.",
+      "keywords": "calendar date picker month",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/mini-calendar.tsx"
+    },
+    {
+      "slug": "floating-label",
+      "name": "Floating label",
+      "category": "inputs",
+      "description": "The label peels up letter by letter, and never covers what you wrote.",
+      "keywords": "input label form field validation",
+      "previewScale": 0.8,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/floating-label.tsx"
+    },
+    {
+      "slug": "password-field",
+      "name": "Password field",
+      "category": "inputs",
+      "description": "Reveals the password with a wave of dots turning into letters; the meter fills as it gets stronger.",
+      "keywords": "password strength meter input form",
+      "previewScale": 0.8,
+      "vendored": true,
+      "file": "src/lab/components/password-field.tsx"
+    },
+    {
+      "slug": "filter-list",
+      "name": "Filter list",
+      "category": "data",
+      "description": "Rows fade out of the way while the rest slide up to close the gap.",
+      "keywords": "search filter list chips",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/filter-list.tsx"
+    },
+    {
+      "slug": "gauge",
+      "name": "Gauge",
+      "category": "data",
+      "description": "Ticks light up as the value sweeps in, and a peak marker holds where it was before falling.",
+      "keywords": "meter dial chart progress",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/gauge.tsx"
+    },
+    {
+      "slug": "sparkline",
+      "name": "Sparkline",
+      "category": "data",
+      "description": "Draws itself in, then scrubs to the nearest point under your cursor.",
+      "keywords": "line chart graph data",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/sparkline.tsx"
+    },
+    {
+      "slug": "bar-chart",
+      "name": "Bar chart",
+      "category": "data",
+      "description": "Grows its bars from the baseline and springs them between two weeks.",
+      "keywords": "bar chart graph data",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/bar-chart.tsx"
+    },
+    {
+      "slug": "stacked-drawer",
+      "name": "Stacked drawer",
+      "category": "feedback",
+      "description": "Stacks iOS sheets that push the page back and drag down to dismiss.",
+      "keywords": "ios sheet modal stack drawer drag",
+      "previewScale": 0.35,
+      "vendored": true,
+      "file": "src/lab/components/stacked-drawer.tsx"
+    },
+    {
+      "slug": "confetti-button",
+      "name": "Confetti button",
+      "category": "buttons",
+      "description": "A click pops confetti; hold it and the fuse burns until the whole thing blows.",
+      "keywords": "celebrate confetti particles canvas",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/confetti-button.tsx"
+    },
+    {
+      "slug": "typewriter",
+      "name": "Typewriter",
+      "category": "text",
+      "description": "Types, pauses and rewrites the last word with a human rhythm.",
+      "keywords": "typing text animation cursor",
+      "vendored": true,
+      "file": "src/lab/components/typewriter.tsx"
+    },
+    {
+      "slug": "tag-input",
+      "name": "Tag input",
+      "category": "inputs",
+      "description": "Your typed words stay put while a chip forms around them.",
+      "keywords": "tags chips input multi",
+      "previewScale": 0.7,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/tag-input.tsx"
+    },
+    {
+      "slug": "range-slider",
+      "name": "Range slider",
+      "category": "inputs",
+      "description": "Two thumbs that glide, stop at each other, and show their value as you drag.",
+      "keywords": "range slider dual price filter drag",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/range-slider.tsx"
+    },
+    {
+      "slug": "number-stepper",
+      "name": "Number stepper",
+      "category": "inputs",
+      "description": "Rolls each digit the way the count moves, and speeds up the longer you hold.",
+      "keywords": "quantity stepper counter cart increment",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/number-stepper.tsx"
+    },
+    {
+      "slug": "select-menu",
+      "name": "Select menu",
+      "category": "inputs",
+      "description": "Opens with your current choice sitting exactly on the button, macOS style.",
+      "keywords": "select dropdown listbox picker",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/select-menu.tsx"
+    },
+    {
+      "slug": "undo-toast",
+      "name": "Undo toast",
+      "category": "feedback",
+      "description": "Deletes instantly and gives you five seconds to change your mind.",
+      "keywords": "undo snackbar delete countdown",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/undo-toast.tsx"
+    },
+    {
+      "slug": "file-dropzone",
+      "name": "File dropzone",
+      "category": "inputs",
+      "description": "Its dashed edge marches when a file enters the window and seals solid when it is overhead.",
+      "keywords": "upload drag drop files",
+      "previewScale": 0.6,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/file-dropzone.tsx"
+    },
+    {
+      "slug": "chat-thread",
+      "name": "Chat thread",
+      "category": "cards",
+      "description": "Replies arrive after a beat of typing, and the thread follows only if you are.",
+      "keywords": "chat messages bubbles typing",
+      "previewScale": 0.45,
+      "vendored": true,
+      "file": "src/lab/components/chat-thread.tsx"
+    },
+    {
+      "slug": "loader-set",
+      "name": "Loader set",
+      "category": "feedback",
+      "description": "Four loaders that each know how to finish: leapfrog dots, an inchworm bar, a ring that closes into a check.",
+      "keywords": "loading spinner progress indicator",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/loader-set.tsx"
+    },
+    {
+      "slug": "wheel-picker",
+      "name": "Wheel picker",
+      "category": "inputs",
+      "description": "Spins through the hours on a curved drum, just like iOS.",
+      "keywords": "time picker ios wheel drum scroll",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/wheel-picker.tsx"
+    },
+    {
+      "slug": "slide-to-confirm",
+      "name": "Slide to confirm",
+      "category": "buttons",
+      "description": "Drag the knob all the way across to confirm.",
+      "keywords": "slide unlock drag confirm",
+      "previewScale": 0.85,
+      "vendored": true,
+      "file": "src/lab/components/slide-to-confirm.tsx"
+    },
+    {
+      "slug": "pull-to-refresh",
+      "name": "Pull to refresh",
+      "category": "feedback",
+      "description": "Pull the feed down and new posts slide in at the top.",
+      "keywords": "refresh feed drag mobile",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/pull-to-refresh.tsx"
+    },
+    {
+      "slug": "hover-card",
+      "name": "Hover card",
+      "category": "feedback",
+      "description": "One card travels between names as you hover them.",
+      "keywords": "profile preview popover hover",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/hover-card.tsx"
+    },
+    {
+      "slug": "tree-view",
+      "name": "Tree view",
+      "category": "navigation",
+      "description": "Folders unfold in place while the selection glides to the file you pick.",
+      "keywords": "file tree folders explorer",
+      "previewScale": 0.6,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/tree-view.tsx"
+    },
+    {
+      "slug": "pricing-toggle",
+      "name": "Pricing toggle",
+      "category": "inputs",
+      "description": "Each digit rolls to its new price on its own, and new digits grow in.",
+      "keywords": "pricing plans billing numbers",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/pricing-toggle.tsx"
+    },
+    {
+      "slug": "reading-progress",
+      "name": "Reading progress",
+      "category": "feedback",
+      "description": "A progress bar fills as you read while the time left counts down.",
+      "keywords": "scroll progress article reading",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/reading-progress.tsx"
+    },
+    {
+      "slug": "code-block",
+      "name": "Code block",
+      "category": "cards",
+      "description": "Switch files with a sliding underline and copy with one click.",
+      "keywords": "code syntax copy tabs",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/code-block.tsx"
+    },
+    {
+      "slug": "wave-text",
+      "name": "Wave text",
+      "category": "text",
+      "description": "Letters rise in a wave that follows your cursor.",
+      "keywords": "text hover wave letters",
+      "vendored": true,
+      "file": "src/lab/components/wave-text.tsx"
+    },
+    {
+      "slug": "dot-grid",
+      "name": "Dot grid",
+      "category": "playground",
+      "description": "Dots swell and part around your cursor, and a click sends a shockwave.",
+      "keywords": "canvas dots grid cursor interactive",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/dot-grid.tsx"
+    },
+    {
+      "slug": "spotlight-card",
+      "name": "Spotlight card",
+      "category": "cards",
+      "description": "The cursor is a lamp: cards catch its glow and their icons cast shadows away from it.",
+      "keywords": "spotlight glow hover cards",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/spotlight-card.tsx"
+    },
+    {
+      "slug": "story-progress",
+      "name": "Story progress",
+      "category": "feedback",
+      "description": "Tap through stories, hold to pause.",
+      "keywords": "stories instagram progress autoplay",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/story-progress.tsx"
+    },
+    {
+      "slug": "data-table",
+      "name": "Data table",
+      "category": "data",
+      "description": "Sorts, selects and bulk-acts on rows without losing its place.",
+      "keywords": "grid sort checkbox bulk rows spreadsheet list select",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/data-table.tsx"
+    },
+    {
+      "slug": "combobox",
+      "name": "Combobox",
+      "category": "inputs",
+      "description": "The person you pick flies out of the list and into the field.",
+      "keywords": "autocomplete typeahead search assign people dropdown select mention",
+      "previewScale": 0.85,
+      "vendored": true,
+      "file": "src/lab/components/combobox.tsx"
+    },
+    {
+      "slug": "date-range-picker",
+      "name": "Date range picker",
+      "category": "inputs",
+      "description": "Paints the range as you hover, then commits it on the second click.",
+      "keywords": "calendar dates range booking hover filter period schedule",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/date-range-picker.tsx"
+    },
+    {
+      "slug": "inline-edit",
+      "name": "Inline edit",
+      "category": "inputs",
+      "description": "Edits your name and bio in place without moving a pixel.",
+      "keywords": "editable text profile rename click form field input",
+      "previewScale": 0.75,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/inline-edit.tsx"
+    },
+    {
+      "slug": "dialog",
+      "name": "Dialog",
+      "category": "feedback",
+      "description": "Opens a modal over the page, with a confirmation that stacks on top of it.",
+      "keywords": "modal popup overlay confirm nested alertdialog focus trap",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/dialog.tsx"
+    },
+    {
+      "slug": "pagination",
+      "name": "Pagination",
+      "category": "navigation",
+      "description": "Numbers roll in place like an odometer; the one you click never moves.",
+      "keywords": "pager pages next previous ellipsis table navigation",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/pagination.tsx"
+    },
+    {
+      "slug": "announcement-banner",
+      "name": "Announcement banner",
+      "category": "feedback",
+      "description": "Dismissing folds the bar away and the page slides up to fill the gap.",
+      "keywords": "alert bar notice top bar dismiss close collapse notification",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/announcement-banner.tsx"
+    },
+    {
+      "slug": "shortcut-sheet",
+      "name": "Shortcut sheet",
+      "category": "navigation",
+      "description": "Press ? anywhere to see every shortcut, then press one to watch it light up.",
+      "keywords": "hotkeys keybindings cheatsheet help kbd keyboard search",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/shortcut-sheet.tsx"
+    },
+    {
+      "slug": "spring-playground",
+      "name": "Spring playground",
+      "category": "playground",
+      "description": "Tune a spring and watch its overshoot and settle, plotted live.",
+      "keywords": "physics stiffness damping bounce drag throw chart",
+      "previewScale": 0.5,
+      "previewCrop": true,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/spring-playground.tsx"
+    },
+    {
+      "slug": "easing-editor",
+      "name": "Easing editor",
+      "category": "playground",
+      "description": "Drag a cubic-bezier into shape and see it move.",
+      "keywords": "curve bezier timing function drag handles preview css",
+      "previewScale": 0.55,
+      "previewCrop": true,
+      "vendored": true,
+      "file": "src/lab/components/easing-editor.tsx"
+    },
+    {
+      "slug": "stagger-visualizer",
+      "name": "Stagger visualizer",
+      "category": "playground",
+      "description": "Shows what per-item delay actually does to a list entrance.",
+      "keywords": "cascade sequence ripple entrance grid timeline delay",
+      "previewScale": 0.6,
+      "previewCrop": true,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/stagger-visualizer.tsx"
+    },
+    {
+      "slug": "onboarding-checklist",
+      "name": "Onboarding checklist",
+      "category": "feedback",
+      "description": "A setup checklist that counts up as you go and celebrates the finish.",
+      "keywords": "todo tasks progress ring checkbox getting started",
+      "previewScale": 0.45,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/onboarding-checklist.tsx"
+    },
+    {
+      "slug": "flip-card",
+      "name": "Flip card",
+      "category": "cards",
+      "description": "Turns over in 3D to show what is on the back.",
+      "keywords": "rotate 3d membership reveal tilt hover card flip",
+      "previewScale": 0.45,
+      "vendored": true,
+      "file": "src/lab/components/flip-card.tsx"
+    },
+    {
+      "slug": "icon-morph",
+      "name": "Icon morph",
+      "category": "buttons",
+      "description": "Icons reshape themselves between states instead of swapping.",
+      "keywords": "toggle svg path hamburger play pause animated icon",
+      "previewScale": 0.85,
+      "vendored": true,
+      "file": "src/lab/components/icon-morph.tsx"
+    },
+    {
+      "slug": "sticky-stack",
+      "name": "Sticky stack",
+      "category": "cards",
+      "description": "Cards pile up and sink back as you scroll.",
+      "keywords": "scroll sticky stacking cards parallax progress",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/sticky-stack.tsx"
+    },
+    {
+      "slug": "infinite-canvas",
+      "name": "Infinite canvas",
+      "category": "playground",
+      "description": "Pan, pinch and zoom around a board of notes.",
+      "keywords": "pan zoom pinch drag whiteboard figma momentum",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/infinite-canvas.tsx"
+    },
+    {
+      "slug": "drag-select",
+      "name": "Drag select",
+      "category": "cards",
+      "description": "Draw a box across files to select them, like the desktop.",
+      "keywords": "marquee lasso multi-select rubber band finder files grid drag",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/drag-select.tsx"
+    },
+    {
+      "slug": "sortable-grid",
+      "name": "Sortable grid",
+      "category": "cards",
+      "description": "Drag an app tile and the others slide out of its way.",
+      "keywords": "reorder drag and drop sortable rearrange home screen icons long-press",
+      "previewScale": 0.45,
+      "vendored": true,
+      "file": "src/lab/components/sortable-grid.tsx"
+    },
+    {
+      "slug": "magnet-lines",
+      "name": "Magnet lines",
+      "category": "playground",
+      "description": "Lines turn toward your cursor like iron filings near a magnet.",
+      "keywords": "canvas field compass hover follow pointer background interactive",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/magnet-lines.tsx"
+    },
+    {
+      "slug": "morphing-nav",
+      "name": "Morphing nav",
+      "category": "navigation",
+      "description": "One dropdown panel reshapes and slides as you move between menu items.",
+      "keywords": "mega menu dropdown navigation navbar hover header stripe",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/morphing-nav.tsx"
+    },
+    {
+      "slug": "color-picker",
+      "name": "Color picker",
+      "category": "inputs",
+      "description": "Drag a color out of the square, then fine-tune hue and opacity.",
+      "keywords": "swatch eyedropper hex hsv palette alpha drag",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/color-picker.tsx"
+    },
+    {
+      "slug": "card-input",
+      "name": "Card input",
+      "category": "inputs",
+      "description": "Formats as you type, spots the card brand, and flips to show the CVC.",
+      "keywords": "credit payment checkout luhn 3d flip form validation",
+      "previewScale": 0.75,
+      "previewCrop": true,
+      "vendored": true,
+      "file": "src/lab/components/card-input.tsx"
+    },
+    {
+      "slug": "radio-cards",
+      "name": "Radio cards",
+      "category": "inputs",
+      "description": "The selection ring glides to the plan you pick.",
+      "keywords": "plan pricing tier radio select option subscription",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/radio-cards.tsx"
+    },
+    {
+      "slug": "checkbox-group",
+      "name": "Checkbox group",
+      "category": "inputs",
+      "description": "Check marks draw themselves in, and Shift-click fills a range.",
+      "keywords": "checkbox select all indeterminate bulk settings notifications toggle",
+      "previewScale": 0.45,
+      "vendored": true,
+      "file": "src/lab/components/checkbox-group.tsx"
+    },
+    {
+      "slug": "progress-stepper",
+      "name": "Progress stepper",
+      "category": "feedback",
+      "description": "Fills the line toward the next step and unfills it in reverse.",
+      "keywords": "steps wizard checkout progress breadcrumb onboarding",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/progress-stepper.tsx"
+    },
+    {
+      "slug": "promise-toast",
+      "name": "Promise toast",
+      "category": "feedback",
+      "description": "One toast that morphs from saving to saved, or to an error with retry.",
+      "keywords": "toast notification loading spinner async snackbar sonner",
+      "previewScale": 1.4,
+      "vendored": true,
+      "file": "src/lab/components/promise-toast.tsx"
+    },
+    {
+      "slug": "confirm-popover",
+      "name": "Confirm popover",
+      "category": "feedback",
+      "description": "Asks before deleting, from a popover that grows out of the button.",
+      "keywords": "confirm delete destructive dialog popconfirm danger alert",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/confirm-popover.tsx"
+    },
+    {
+      "slug": "activity-timeline",
+      "name": "Activity timeline",
+      "category": "data",
+      "description": "New events slide in at the top as the line grows to meet them.",
+      "keywords": "feed log history events notifications changelog list",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/activity-timeline.tsx"
+    },
+    {
+      "slug": "breadcrumbs",
+      "name": "Breadcrumbs",
+      "category": "navigation",
+      "description": "Folds the middle of a deep path into a menu when space runs out.",
+      "keywords": "path overflow collapse ellipsis resize navigation trail",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/breadcrumbs.tsx"
+    },
+    {
+      "slug": "overflow-tabs",
+      "name": "Overflow tabs",
+      "category": "navigation",
+      "description": "Scrolls a long row of tabs, fading whichever edge still hides more.",
+      "keywords": "scroll horizontal arrows fade tablist navigation overflow",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/overflow-tabs.tsx"
+    },
+    {
+      "slug": "tab-bar",
+      "name": "Tab bar",
+      "category": "navigation",
+      "description": "A phone tab bar whose pill slides over and fills in the icon it lands on.",
+      "keywords": "mobile bottom navigation ios pill icons tap",
+      "previewScale": 0.35,
+      "vendored": true,
+      "file": "src/lab/components/tab-bar.tsx"
+    },
+    {
+      "slug": "selection-toolbar",
+      "name": "Selection toolbar",
+      "category": "feedback",
+      "description": "A formatting toolbar that grows out of whatever text you select.",
+      "keywords": "highlight bold editor popover floating format text select",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/selection-toolbar.tsx"
+    },
+    {
+      "slug": "carousel-3d",
+      "name": "Carousel 3d",
+      "category": "cards",
+      "description": "Spin a ring of cards and flick it to land on the one you were aiming for.",
+      "keywords": "3d rotate drag flick coverflow gallery slider momentum",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/carousel-3d.tsx"
+    },
+    {
+      "slug": "lens-reveal",
+      "name": "Lens reveal",
+      "category": "cards",
+      "description": "A lens follows your cursor and shows the specs hidden under a card.",
+      "keywords": "magnifier spotlight x-ray hover inspect reveal mask blueprint",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/lens-reveal.tsx"
+    },
+    {
+      "slug": "elastic-string",
+      "name": "Elastic string",
+      "category": "playground",
+      "description": "Pull a string and let go to watch it ring back to rest.",
+      "keywords": "guitar pluck spring drag pull rubber band svg physics",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/elastic-string.tsx"
+    },
+    {
+      "slug": "particle-text",
+      "name": "Particle text",
+      "category": "text",
+      "description": "A word made of dots that part around your cursor and burst when clicked.",
+      "keywords": "canvas particles scatter explode hover typography interactive physics",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/particle-text.tsx"
+    },
+    {
+      "slug": "theme-toggle",
+      "name": "Theme toggle",
+      "category": "buttons",
+      "description": "A sun that folds its rays away and turns into a crescent moon.",
+      "keywords": "dark mode light mode night switch icon morph sun moon",
+      "previewScale": 0.85,
+      "vendored": true,
+      "file": "src/lab/components/theme-toggle.tsx"
+    },
+    {
+      "slug": "bookmark-button",
+      "name": "Bookmark button",
+      "category": "buttons",
+      "description": "Fills from the bottom up and lands with a small squash.",
+      "keywords": "save favorite bookmark toggle counter read later",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/bookmark-button.tsx"
+    },
+    {
+      "slug": "send-button",
+      "name": "Send button",
+      "category": "buttons",
+      "description": "The plane takes off along a curve, and a check lands in its place.",
+      "keywords": "submit message paper plane chat success confirm",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/send-button.tsx"
+    },
+    {
+      "slug": "download-button",
+      "name": "Download button",
+      "category": "buttons",
+      "description": "The arrow drops into the tray while the button fills with progress.",
+      "keywords": "progress file save loading export cancel",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/download-button.tsx"
+    },
+    {
+      "slug": "contribution-heatmap",
+      "name": "Contribution heatmap",
+      "category": "data",
+      "description": "A year of activity at a glance, sweeping in week by week.",
+      "keywords": "github graph calendar activity grid hover streak",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/contribution-heatmap.tsx"
+    },
+    {
+      "slug": "donut-chart",
+      "name": "Donut chart",
+      "category": "data",
+      "description": "Draws itself in, then lifts whichever slice you point at.",
+      "keywords": "pie chart ring hover legend breakdown percent",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/donut-chart.tsx"
+    },
+    {
+      "slug": "stat-counter",
+      "name": "Stat counter",
+      "category": "data",
+      "description": "Numbers count up to their value; scrub a sparkline and the figure rolls back through its history.",
+      "keywords": "kpi metrics dashboard cards sparkline trend refresh",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/stat-counter.tsx"
+    },
+    {
+      "slug": "leaderboard",
+      "name": "Leaderboard",
+      "category": "data",
+      "description": "Players glide past each other to their new ranks.",
+      "keywords": "ranking scores list reorder sort game standings",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/leaderboard.tsx"
+    },
+    {
+      "slug": "rotary-dial",
+      "name": "Rotary dial",
+      "category": "objects",
+      "description": "Drag a hole to the finger stop and each digit lands as the disc unwinds.",
+      "keywords": "rotary phone pin drag rotate keypad retro telephone",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/rotary-dial.tsx"
+    },
+    {
+      "slug": "tape-measure",
+      "name": "Tape measure",
+      "category": "objects",
+      "description": "Pull the blade out to measure; release the lock and it reels itself back in.",
+      "keywords": "ruler slider length drag centimeters measure range",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/tape-measure.tsx"
+    },
+    {
+      "slug": "pull-cord-switch",
+      "name": "Pull cord switch",
+      "category": "objects",
+      "description": "Pull the ball chain to switch the site's lights; light pours from the bulb as a cone.",
+      "keywords": "theme toggle dark mode light lamp pull chain physics view transition",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/pull-cord-switch.tsx"
+    },
+    {
+      "slug": "combination-lock",
+      "name": "Combination lock",
+      "category": "objects",
+      "description": "Spin right, left, right to fill each number, then turn the handle to open.",
+      "keywords": "safe dial code knob rotate password vault",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/combination-lock.tsx"
+    },
+    {
+      "slug": "rubber-stamp",
+      "name": "Rubber stamp",
+      "category": "objects",
+      "description": "Stamps a document approved or rejected, with ink that looks pressed in.",
+      "keywords": "approve reject review verdict badge keyboard shortcut",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/rubber-stamp.tsx"
+    },
+    {
+      "slug": "sticky-note-peel",
+      "name": "Sticky note peel",
+      "category": "objects",
+      "description": "Peel the top reminder off by its corner to mark it done.",
+      "keywords": "drag dismiss todo reminders stack swipe checklist",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/sticky-note-peel.tsx"
+    },
+    {
+      "slug": "receipt-printer",
+      "name": "Receipt printer",
+      "category": "objects",
+      "description": "Feeds a receipt out of the slot line by line; twist it against the cutter to tear it off.",
+      "keywords": "receipt checkout order invoice print tear drag thermal pos",
+      "previewScale": 0.9,
+      "previewCrop": true,
+      "vendored": true,
+      "file": "src/lab/components/receipt-printer.tsx"
+    },
+    {
+      "slug": "tear-off-calendar",
+      "name": "Tear off calendar",
+      "category": "objects",
+      "description": "Tear a day off to move forward, pull one back to go back.",
+      "keywords": "date picker calendar day drag flick spinbutton",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/tear-off-calendar.tsx"
+    },
+    {
+      "slug": "balance-scale",
+      "name": "Balance scale",
+      "category": "objects",
+      "description": "Weighs your pros against your cons on a balance that tips and slowly settles.",
+      "keywords": "decision pros cons list weight tilt verdict compare physics",
+      "previewScale": 0.35,
+      "vendored": true,
+      "file": "src/lab/components/balance-scale.tsx"
+    },
+    {
+      "slug": "tally-counter",
+      "name": "Tally counter",
+      "category": "objects",
+      "description": "Counts in hand-drawn tally marks, one pen stroke at a time.",
+      "keywords": "counter stepper spinbutton increment score handwriting marks",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/tally-counter.tsx"
+    },
+    {
+      "slug": "ink-well",
+      "name": "Ink well",
+      "category": "objects",
+      "description": "Drains a glass inkwell as you spend your character limit.",
+      "keywords": "textarea character count limit remaining liquid meter form",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/ink-well.tsx"
+    },
+    {
+      "slug": "typing-seismograph",
+      "name": "Typing seismograph",
+      "category": "objects",
+      "description": "Records the rhythm of your typing on a scrolling seismograph.",
+      "keywords": "textarea wpm typing speed canvas waveform rhythm trace",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/typing-seismograph.tsx"
+    },
+    {
+      "slug": "envelope-send",
+      "name": "Envelope send",
+      "category": "objects",
+      "description": "Folds your note into an envelope, seals it and sends it off.",
+      "keywords": "feedback form textarea submit mail letter message",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/envelope-send.tsx"
+    },
+    {
+      "slug": "paper-shredder",
+      "name": "Paper shredder",
+      "category": "objects",
+      "description": "Drag a file into the shredder and it comes out in strips.",
+      "keywords": "delete trash remove drag drop undo file list",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/paper-shredder.tsx"
+    },
+    {
+      "slug": "tip-jar",
+      "name": "Tip jar",
+      "category": "objects",
+      "description": "Coins drop into a glass jar and pile up as the total counts.",
+      "keywords": "tip donate payment amount coins physics drag",
+      "previewScale": 0.45,
+      "vendored": true,
+      "file": "src/lab/components/tip-jar.tsx"
+    },
+    {
+      "slug": "zipper-reveal",
+      "name": "Zipper reveal",
+      "category": "objects",
+      "description": "Unzip the pouch to reveal the code inside.",
+      "keywords": "reveal secret promo coupon spoiler slider drag hidden",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/zipper-reveal.tsx"
+    },
+    {
+      "slug": "cassette-scrubber",
+      "name": "Cassette scrubber",
+      "category": "objects",
+      "description": "Scrub audio by dragging the tape, with reels that spin like the real thing.",
+      "keywords": "audio player seek timeline drag momentum tape slider",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/cassette-scrubber.tsx"
+    },
+    {
+      "slug": "bubble-wrap",
+      "name": "Bubble wrap",
+      "category": "objects",
+      "description": "Pop every bubble to clear the list, one click or one long swipe.",
+      "keywords": "pop clear progress drag fidget checklist notifications",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/bubble-wrap.tsx"
+    },
+    {
+      "slug": "sundial-picker",
+      "name": "Sundial picker",
+      "category": "objects",
+      "description": "Pick a time by dragging the sun across the sky.",
+      "keywords": "time clock picker drag day schedule slider",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/sundial-picker.tsx"
+    },
+    {
+      "slug": "folded-map",
+      "name": "Folded map",
+      "category": "objects",
+      "description": "An itinerary that unfolds panel by panel like a paper road map, recentring as it opens.",
+      "keywords": "accordion 3d fold reveal trip itinerary disclosure",
+      "previewScale": 0.5,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/folded-map.tsx"
+    },
+    {
+      "slug": "scroll-spine",
+      "name": "Scroll spine",
+      "category": "navigation",
+      "description": "Maps the article as a spine of bands, each as long as its section, filling in as you read.",
+      "keywords": "table of contents toc scrollspy article nav reading position headings minimap",
+      "previewScale": 0.45,
+      "vendored": true,
+      "file": "src/lab/components/scroll-spine.tsx"
+    },
+    {
+      "slug": "availability-badge",
+      "name": "Availability badge",
+      "category": "feedback",
+      "description": "Shows when the owner is working, and when that overlaps with your day.",
+      "keywords": "availability status timezone working hours portfolio hire me local time",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/availability-badge.tsx"
+    },
+    {
+      "slug": "sidenotes",
+      "name": "Sidenotes",
+      "category": "text",
+      "description": "Slides footnotes into the margin beside their sentence, and folds them inline on narrow screens.",
+      "keywords": "footnotes sidenotes margin notes tufte blog annotations references",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/sidenotes.tsx"
+    },
+    {
+      "slug": "footer-signature",
+      "name": "Footer signature",
+      "category": "cards",
+      "description": "Signs the footer by hand when it scrolls into view, slowing through every loop.",
+      "keywords": "signature footer handwriting svg path stroke animation draw on scroll portfolio",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/footer-signature.tsx"
+    },
+    {
+      "slug": "changelog-stack",
+      "name": "Changelog stack",
+      "category": "data",
+      "description": "Files each release card behind the stack like a hand riffling index cards.",
+      "keywords": "changelog release notes whats new version card stack swipe timeline",
+      "previewScale": 0.45,
+      "vendored": true,
+      "file": "src/lab/components/changelog-stack.tsx"
+    },
+    {
+      "slug": "pricing-calculator",
+      "name": "Pricing calculator",
+      "category": "data",
+      "description": "Itemizes your bill like an invoice and upgrades the plan the moment your team crosses a seat threshold.",
+      "keywords": "pricing calculator saas seats slider billing invoice plans",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/pricing-calculator.tsx"
+    },
+    {
+      "slug": "feature-spotlight",
+      "name": "Feature spotlight",
+      "category": "cards",
+      "description": "A camera zooms into the part of the product screenshot each feature describes as you scroll past it.",
+      "keywords": "landing page features scroll spotlight product tour zoom sticky screenshot",
+      "previewScale": 0.35,
+      "vendored": true,
+      "file": "src/lab/components/feature-spotlight.tsx"
+    },
+    {
+      "slug": "testimonial-highlight",
+      "name": "Testimonial highlight",
+      "category": "cards",
+      "description": "Swipes a highlighter across the line that sold the customer, one line at a time.",
+      "keywords": "testimonials quotes reviews highlighter marker carousel social proof",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/testimonial-highlight.tsx"
+    },
+    {
+      "slug": "waitlist-join",
+      "name": "Waitlist join",
+      "category": "inputs",
+      "description": "Drops your face into a real queue and rolls out your place in line.",
+      "keywords": "waitlist signup queue referral early access launch position email",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/waitlist-join.tsx"
+    },
+    {
+      "slug": "cookie-consent",
+      "name": "Cookie consent",
+      "category": "feedback",
+      "description": "Bakes a bite back into the cookie for every category you allow.",
+      "keywords": "cookie consent gdpr privacy banner switch toggle preferences",
+      "previewScale": 0.35,
+      "vendored": true,
+      "file": "src/lab/components/cookie-consent.tsx"
+    },
+    {
+      "slug": "email-typo-fix",
+      "name": "Email typo fix",
+      "category": "inputs",
+      "description": "Catches gmial.com and fixes it by moving only the letters that were wrong.",
+      "keywords": "email typo suggestion signup validation autocorrect domain input",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/email-typo-fix.tsx"
+    },
+    {
+      "slug": "coupon-code",
+      "name": "Coupon code",
+      "category": "inputs",
+      "description": "Stamps your promo code onto the order and strikes out the price it beat.",
+      "keywords": "coupon promo code discount checkout order summary cart",
+      "previewScale": 0.4,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/coupon-code.tsx"
+    },
+    {
+      "slug": "code-morph",
+      "name": "Code morph",
+      "category": "cards",
+      "description": "Glides every surviving token to its new spot as a tutorial moves to the next step.",
+      "keywords": "code diff tutorial magic move syntax steps blog",
+      "previewScale": 0.5,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/code-morph.tsx"
+    },
+    {
+      "slug": "image-hotspots",
+      "name": "Image hotspots",
+      "category": "cards",
+      "description": "Draws a leader line to one label card that travels between a watch's features, never covering the product.",
+      "keywords": "hotspots product callout annotation leader line tour ecommerce",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/image-hotspots.tsx"
+    },
+    {
+      "slug": "quote-share",
+      "name": "Quote share",
+      "category": "text",
+      "description": "Lifts the words you select out of the paragraph and into a shareable quote card.",
+      "keywords": "quote share selection highlight text fragment blog article",
+      "previewScale": 0.35,
+      "vendored": true,
+      "file": "src/lab/components/quote-share.tsx"
+    },
+    {
+      "slug": "waveform-player",
+      "name": "Waveform player",
+      "category": "cards",
+      "description": "Inks in a podcast's waveform, with chapter markers and a ghost playhead.",
+      "keywords": "audio podcast waveform player scrubber chapters media",
+      "previewScale": 0.55,
+      "vendored": true,
+      "file": "src/lab/components/waveform-player.tsx"
+    },
+    {
+      "slug": "size-picker",
+      "name": "Size picker",
+      "category": "inputs",
+      "description": "Pulls a tee over a body outline so you see the fit before you pick the size.",
+      "keywords": "size picker clothing fit apparel ecommerce sizing product page",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/size-picker.tsx"
+    },
+    {
+      "slug": "order-tracker",
+      "name": "Order tracker",
+      "category": "data",
+      "description": "Drives a parcel across a street map to your door and stamps each stop as it arrives.",
+      "keywords": "order tracking delivery shipping parcel status timeline ecommerce",
+      "previewScale": 0.4,
+      "vendored": true,
+      "file": "src/lab/components/order-tracker.tsx"
+    },
+    {
+      "slug": "gift-wrap",
+      "name": "Gift wrap",
+      "category": "cards",
+      "description": "Folds kraft paper over the cart item, ties a ribbon and bow, and asks who it's for.",
+      "keywords": "gift wrap cart checkout gift message ecommerce toggle bag",
+      "previewScale": 0.55,
+      "anchor": "top",
+      "vendored": true,
+      "file": "src/lab/components/gift-wrap.tsx"
+    },
+    {
+      "slug": "store-hours",
+      "name": "Store hours",
+      "category": "data",
+      "description": "Draws the week's hours on a 24-hour scale and can redraw them in your own time zone.",
+      "keywords": "store hours opening hours open now business hours timezone local business schedule",
+      "previewScale": 0.35,
+      "vendored": true,
+      "file": "src/lab/components/store-hours.tsx"
+    },
+    {
+      "slug": "word-rotator",
+      "isNew": true,
+      "name": "Word rotator",
+      "category": "text",
+      "description": "Keeps the letters two words share and glides them into place as the rest trade out.",
+      "keywords": "text headline rotate morph flip letters hero",
+      "previewScale": 0.85,
+      "vendored": true,
+      "file": "src/lab/components/word-rotator.tsx"
+    },
+    {
+      "slug": "keycap-hint",
+      "isNew": true,
+      "name": "Keycap hint",
+      "category": "navigation",
+      "description": "Keycaps that sink when you press the real keys.",
+      "keywords": "keyboard shortcut kbd keycap hint command",
+      "previewScale": 1.6,
+      "vendored": true,
+      "file": "src/lab/components/keycap-hint.tsx"
+    },
+    {
+      "slug": "caps-lock-warning",
+      "isNew": true,
+      "name": "Caps lock warning",
+      "category": "inputs",
+      "description": "A small caps lock key with its light on slides into the field when caps is on.",
+      "keywords": "password input caps lock warning form keycap",
+      "previewScale": 0.95,
+      "vendored": true,
+      "file": "src/lab/components/caps-lock-warning.tsx"
+    },
+    {
+      "slug": "eye-toggle",
+      "isNew": true,
+      "name": "Eye toggle",
+      "category": "inputs",
+      "description": "The eye shuts when your password is hidden and watches while you type.",
+      "keywords": "password eye toggle reveal show hide input",
+      "previewScale": 0.95,
+      "vendored": true,
+      "file": "src/lab/components/eye-toggle.tsx"
+    },
+    {
+      "slug": "relative-time",
+      "isNew": true,
+      "name": "Relative time",
+      "category": "text",
+      "description": "Says \"4 min ago\" and changes only at the moment the words would change.",
+      "keywords": "time relative timestamp tooltip digits roll ticker",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/relative-time.tsx"
+    },
+    {
+      "slug": "copy-email",
+      "isNew": true,
+      "name": "Copy email",
+      "category": "text",
+      "description": "Click the address and its letters flip, one by one, into \"Copied to clipboard\".",
+      "keywords": "email copy clipboard flip cascade portfolio mailto",
+      "previewScale": 0.9,
+      "vendored": true,
+      "file": "src/lab/components/copy-email.tsx"
+    },
+    {
+      "slug": "directional-underline",
+      "isNew": true,
+      "name": "Directional underline",
+      "category": "text",
+      "description": "The underline comes in from the side your cursor entered and leaves toward the side it left.",
+      "keywords": "link underline hover direction nav clip-path",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/directional-underline.tsx"
+    },
+    {
+      "slug": "hover-preview-link",
+      "isNew": true,
+      "name": "Hover preview link",
+      "category": "text",
+      "description": "Hover a link to get a preview card that trails your cursor and leans as it moves.",
+      "keywords": "link preview hover card spring tilt velocity",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/hover-preview-link.tsx"
+    },
+    {
+      "slug": "scribble-checkbox",
+      "isNew": true,
+      "name": "Scribble checkbox",
+      "category": "inputs",
+      "description": "Checks itself off with a quick pen stroke and strikes the words through.",
+      "keywords": "checkbox todo hand-drawn strikethrough svg pen checklist",
+      "previewScale": 0.95,
+      "vendored": true,
+      "file": "src/lab/components/scribble-checkbox.tsx"
+    },
+    {
+      "slug": "focus-paragraph",
+      "isNew": true,
+      "name": "Focus paragraph",
+      "category": "text",
+      "description": "Brings the sentence you're reading forward and lets the rest step back.",
+      "keywords": "reading paragraph focus hover blur dim text",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/focus-paragraph.tsx"
+    },
+    {
+      "slug": "text-progress",
+      "isNew": true,
+      "name": "Text progress",
+      "category": "text",
+      "description": "Fills the label itself with ink as the upload runs.",
+      "keywords": "progress upload clip-path text loader percent rolling",
+      "previewScale": 1.6,
+      "vendored": true,
+      "file": "src/lab/components/text-progress.tsx"
+    },
+    {
+      "slug": "spoiler-text",
+      "isNew": true,
+      "name": "Spoiler text",
+      "category": "text",
+      "description": "Hides a spoiler under shimmering grain that blows away from your click.",
+      "keywords": "spoiler reveal canvas particles noise inline text",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/spoiler-text.tsx"
+    },
+    {
+      "slug": "badge-counter",
+      "isNew": true,
+      "name": "Badge counter",
+      "category": "feedback",
+      "description": "Rolls its digits the way the count moved and bumps each time it changes.",
+      "keywords": "badge notification counter inbox unread rolling digits",
+      "previewScale": 1.6,
+      "vendored": true,
+      "file": "src/lab/components/badge-counter.tsx"
+    },
+    {
+      "slug": "star-button",
+      "isNew": true,
+      "name": "Star button",
+      "category": "buttons",
+      "description": "Spins once and throws off tiny sparks when starred, then rolls the count.",
+      "keywords": "star github split button count sparks",
+      "previewScale": 1.6,
+      "vendored": true,
+      "file": "src/lab/components/star-button.tsx"
+    },
+    {
+      "slug": "follow-button",
+      "isNew": true,
+      "name": "Follow button",
+      "category": "buttons",
+      "description": "Turns its plus into a check as you follow, and warns before you unfollow.",
+      "keywords": "follow button morph unfollow avatar stack social",
+      "previewScale": 1.2,
+      "vendored": true,
+      "file": "src/lab/components/follow-button.tsx"
+    },
+    {
+      "slug": "live-indicator",
+      "isNew": true,
+      "name": "Live indicator",
+      "category": "feedback",
+      "description": "Breathes while live, lets the viewer count drift, and blinks hollow while reconnecting.",
+      "keywords": "live status pill viewers realtime presence",
+      "previewScale": 1.6,
+      "vendored": true,
+      "file": "src/lab/components/live-indicator.tsx"
+    },
+    {
+      "slug": "mini-clock",
+      "isNew": true,
+      "name": "Mini clock",
+      "category": "data",
+      "description": "A tiny analog clock that sweeps in its city's time and turns dark after sundown.",
+      "keywords": "clock time timezone analog footer night hover",
+      "previewScale": 1.6,
+      "vendored": true,
+      "file": "src/lab/components/mini-clock.tsx"
+    },
+    {
+      "slug": "pixel-loader",
+      "isNew": true,
+      "name": "Pixel loader",
+      "category": "feedback",
+      "description": "A tiny pixel grid that cycles spiral, snake, pulse and checker, then draws a check when done.",
+      "keywords": "loader spinner pixel grid progress status check",
+      "previewScale": 1.6,
+      "vendored": true,
+      "file": "src/lab/components/pixel-loader.tsx"
+    },
+    {
+      "slug": "greeting",
+      "isNew": true,
+      "name": "Greeting",
+      "category": "text",
+      "description": "Greets by time of day, with a sun or moon that rises into place along an arc.",
+      "keywords": "greeting time sun moon phase welcome crossfade",
+      "previewScale": 1.6,
+      "vendored": true,
+      "file": "src/lab/components/greeting.tsx"
+    },
+    {
+      "slug": "arrow-callout",
+      "isNew": true,
+      "name": "Arrow callout",
+      "category": "cards",
+      "description": "A handwritten note whose arrow draws itself to whatever it points at.",
+      "keywords": "annotation arrow callout handwritten onboarding hint marker",
+      "previewScale": 0.85,
+      "vendored": true,
+      "file": "src/lab/components/arrow-callout.tsx"
+    },
+    {
+      "slug": "voice-orb",
+      "isNew": true,
+      "name": "Voice orb",
+      "category": "cards",
+      "description": "A glassy orb of drifting mist that listens to your real mic, thinks in a slow swirl and breathes as it speaks.",
+      "keywords": "ai agent voice assistant orb audio mic speaking listening",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/voice-orb.tsx"
+    },
+    {
+      "slug": "call-widget",
+      "isNew": true,
+      "name": "Call widget",
+      "category": "feedback",
+      "description": "Accept turns into hang-up as the call controls unfold out of it, one by one.",
+      "keywords": "call video zoom phone accept decline mute camera widget",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/call-widget.tsx"
+    },
+    {
+      "slug": "logo-orbit",
+      "isNew": true,
+      "name": "Logo orbit",
+      "category": "cards",
+      "description": "Logos orbit a heading on tilted rings, passing behind it, and brake to a stop when you point.",
+      "keywords": "logos brands orbit landing trusted by stack integrations 3d",
+      "previewScale": 0.5,
+      "vendored": true,
+      "file": "src/lab/components/logo-orbit.tsx"
+    },
+    {
+      "slug": "now-playing",
+      "isNew": true,
+      "name": "Now playing",
+      "category": "cards",
+      "description": "A listening-to pill whose record slides out from behind the cover and spins while it plays.",
+      "keywords": "spotify music now playing vinyl record equalizer portfolio status",
+      "previewScale": 0.95,
+      "vendored": true,
+      "file": "src/lab/components/now-playing.tsx"
+    },
+    {
+      "slug": "uptime-bar",
+      "isNew": true,
+      "name": "Uptime bar",
+      "category": "data",
+      "description": "Point at any day and the row's own caption tells you what happened.",
+      "keywords": "uptime status page incidents monitoring history tooltip",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/uptime-bar.tsx"
+    },
+    {
+      "slug": "helpful-prompt",
+      "isNew": true,
+      "name": "Helpful prompt",
+      "category": "feedback",
+      "description": "Asks if the page helped, and on a no opens into a field right where the question was.",
+      "keywords": "feedback helpful docs rating survey thumbs yes no",
+      "previewScale": 0.8,
+      "vendored": true,
+      "file": "src/lab/components/helpful-prompt.tsx"
+    },
+    {
+      "slug": "back-to-top",
+      "isNew": true,
+      "name": "Back to top",
+      "category": "navigation",
+      "description": "Fills its ring as you read, and when you press it the arrow lifts off while the page glides back up.",
+      "keywords": "back to top scroll progress ring button article reading",
+      "previewScale": 0.45,
+      "vendored": true,
+      "file": "src/lab/components/back-to-top.tsx"
+    },
+    {
+      "slug": "share-button",
+      "isNew": true,
+      "name": "Share button",
+      "category": "buttons",
+      "description": "Opens in place into copy, X and email, and the link turns into a check when it is copied.",
+      "keywords": "share link copy social x twitter email native",
+      "previewScale": 1.05,
+      "vendored": true,
+      "file": "src/lab/components/share-button.tsx"
+    },
+    {
+      "slug": "autosave-status",
+      "isNew": true,
+      "name": "Autosave status",
+      "category": "feedback",
+      "description": "A dot for unsaved changes splits into three while saving, then gathers into a check.",
+      "keywords": "autosave saving saved status editor indicator draft",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/autosave-status.tsx"
+    },
+    {
+      "slug": "reactions",
+      "isNew": true,
+      "name": "Reactions",
+      "category": "cards",
+      "description": "Tap a reaction to add yours, or pick one and watch it fly into its pill as the count rolls.",
+      "keywords": "reactions emoji picker chat message like count slack",
+      "previewScale": 0.7,
+      "vendored": true,
+      "file": "src/lab/components/reactions.tsx"
+    },
+    {
+      "slug": "shortcut-recorder",
+      "isNew": true,
+      "name": "Shortcut recorder",
+      "category": "inputs",
+      "description": "Press keys to set a shortcut: keycaps appear as you hold them, and it tells you when a combo is taken.",
+      "keywords": "shortcut hotkey keybinding recorder keyboard settings keycap",
+      "previewScale": 0.75,
+      "vendored": true,
+      "file": "src/lab/components/shortcut-recorder.tsx"
+    },
+    {
+      "slug": "storage-meter",
+      "isNew": true,
+      "name": "Storage meter",
+      "category": "data",
+      "description": "Point at any slice to read its size, then clear the cache and watch the total count down.",
+      "keywords": "storage usage disk meter bar legend quota clean",
+      "previewScale": 0.6,
+      "vendored": true,
+      "file": "src/lab/components/storage-meter.tsx"
+    },
+    {
+      "slug": "status-picker",
+      "isNew": true,
+      "name": "Status picker",
+      "category": "inputs",
+      "description": "Pick a status and the badge on your avatar turns into its shape: a dot, a moon, a stop sign or a ring.",
+      "keywords": "status presence away do not disturb avatar badge menu online",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/status-picker.tsx"
+    },
+    {
+      "slug": "mood-slider",
+      "isNew": true,
+      "name": "Mood slider",
+      "category": "inputs",
+      "description": "The thumb is a face that frowns, grins and leans into the drag as you rate your day.",
+      "keywords": "mood slider emoji face rating feedback range feelings",
+      "previewScale": 0.8,
+      "vendored": true,
+      "file": "src/lab/components/mood-slider.tsx"
+    },
+    {
+      "slug": "signature-pad",
+      "isNew": true,
+      "name": "Signature pad",
+      "category": "inputs",
+      "description": "Ink that swells where you slow down, and wipes away the way you wrote it.",
+      "keywords": "signature sign draw pen ink canvas pad handwriting form",
+      "previewScale": 0.65,
+      "vendored": true,
+      "file": "src/lab/components/signature-pad.tsx"
+    }
+  ]
+}

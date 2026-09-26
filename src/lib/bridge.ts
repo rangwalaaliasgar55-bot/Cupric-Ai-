@@ -3,9 +3,16 @@
  * Prefer `window.cupric`; keep `northframe` as legacy alias from preload.
  */
 
+/**
+ * IPC payloads cross a process boundary, so their shape is only known to the
+ * handler in electron/main.cjs. Callers annotate what they expect at the call
+ * site; the bridge itself stays deliberately untyped rather than pretending to
+ * validate anything.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type CupricIpc = {
-  invoke: (channel: string, payload?: unknown) => Promise<unknown>
-  on: (channel: string, callback: (payload: unknown) => void) => () => void
+  invoke: (channel: string, payload?: unknown) => Promise<any>
+  on: (channel: string, callback: (payload: any) => void) => () => void
 }
 
 export type CupricBridge = {

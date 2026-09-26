@@ -1,5 +1,5 @@
 {
-  "version": "0.2.3",
+  "version": "0.3.0",
   "updated": "2026-09-26",
   "packs": [
     {
@@ -7,34 +7,66 @@
       "path": "resources/ui-lab",
       "entries": "registry.json",
       "url": "https://lab.xevrion.dev",
-      "use": ["interaction-reference", "agent-prompts"]
+      "use": [
+        "interaction-reference",
+        "agent-prompts",
+        "studio-overlays",
+        "in-app-browser"
+      ],
+      "vendored": "src/lab/components (190 React components, MIT)"
     },
     {
       "id": "spectrum",
       "path": "resources/spectrum",
       "entries": "index.json",
       "url": "https://ui.spectrumhq.in",
-      "use": ["block-catalog", "empty-states", "ai-blocks"]
+      "use": [
+        "block-catalog",
+        "empty-states",
+        "ai-blocks"
+      ]
     },
     {
       "id": "effects",
       "path": "resources/effects",
-      "use": ["arena-html", "local-video"]
+      "use": [
+        "arena-html",
+        "local-video"
+      ]
     },
     {
       "id": "backgrounds",
       "path": "resources/backgrounds",
-      "use": ["stage-only"]
+      "use": [
+        "stage-only",
+        "studio-canvas"
+      ],
+      "code": "src/lib/studio/backgrounds.ts"
     },
     {
       "id": "design-systems",
       "path": "resources/design-systems",
-      "use": ["tokens", "checklist"]
+      "use": [
+        "tokens",
+        "checklist"
+      ]
     },
     {
       "id": "kdenlive",
       "path": "resources/kdenlive",
-      "use": ["effect-mapping"]
+      "use": [
+        "effect-mapping"
+      ]
+    },
+    {
+      "id": "studio",
+      "path": "src/lib/studio",
+      "use": [
+        "in-app-editing",
+        "canvas-render",
+        "webm-export"
+      ],
+      "note": "The Studio renderer is the single source of truth for preview and export."
     }
   ],
   "pipelineOrder": [

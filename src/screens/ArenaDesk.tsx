@@ -14,6 +14,7 @@ import type { ArenaAsset, Project } from '../types/project'
 import { importArenaZip } from '../lib/arena'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { copyText, cx, deriveAspect, gradientFor, relTime } from '../lib/utils'
+import { getIpc, getBridge } from '../lib/bridge'
 
 const STATUS_TONE = {
   'prompt-ready': 'neutral',
@@ -57,7 +58,7 @@ export function ArenaDesk() {
   async function openArenaBuilder() {
     const prompt = locked?.arenaPrompt || ''
     try {
-      const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+      const ipc = getIpc()
       if (ipc) await ipc.invoke('arena:openBuilder', { prompt, source: 'arena-desk' })
       else {
         await copyText(prompt)
@@ -403,7 +404,7 @@ function PreviewModal({
     let alive = true
     setPreviewUrl(null)
     const localPath = asset?.localPath
-    const bridge = (window as any).cupric || (window as any).northframe
+    const bridge = getBridge()
     if (!localPath) return
     if (/^(blob|data|https?):/i.test(localPath) || !bridge?.ipc) {
       setPreviewUrl(localPath)

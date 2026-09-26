@@ -1,7 +1,7 @@
 {
   "name": "cupric-ai",
   "private": true,
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Cupric AI — desktop creator tool for short-form video with Gemini, Arena import, footage analysis, timeline rendering, local effects pack, and Electron packaging.",
   "type": "module",
   "main": "electron/main.cjs",
@@ -19,22 +19,25 @@
     "@google/generative-ai": "^0.24.1",
     "@remotion/player": "^4.0.529",
     "adm-zip": "^0.6.1",
+    "clsx": "^2.1.1",
     "electron-updater": "^6.8.9",
     "html2canvas": "^1.4.1",
     "jszip": "^3.10.2",
     "lucide-react": "^0.469.0",
     "motion": "^12.0.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "remotion": "^4.0.529",
+    "simple-icons": "^16.32.0",
+    "tailwind-merge": "^3.7.0",
     "twilio-video": "^2.36.0",
     "video.js": "^8.24.1",
     "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
-    "@types/react": "^18.3.18",
-    "@types/react-dom": "^18.3.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4.3.4",
     "concurrently": "^9.1.0",
     "cross-env": "^7.0.3",
@@ -61,11 +64,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build/icon.png",

@@ -13,9 +13,13 @@ import type {
   AutomationStep,
   AutomationMode,
   VotingMode,
+  StudioClip,
+  StudioDoc,
 } from '../types/project'
+import { getIpc } from '../lib/bridge'
 import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
+import { emptyStudioDoc, normaliseClip, splitClipAt, studioOf } from '../lib/studio/doc'
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
 
 export type Toast = { id: string; kind: 'success' | 'info' | 'error'; text: string }
@@ -34,7 +38,7 @@ function downloadBrowserRender(result: { outputPath?: string; outputName?: strin
 
 const desktopAwareStorage: StateStorage = {
   getItem: async (name) => {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (!ipc) return window.localStorage.getItem(name)
     const value = await ipc.invoke('state:load', { key: name })
     if (typeof value === 'string') {
@@ -47,7 +51,7 @@ const desktopAwareStorage: StateStorage = {
     return value ? JSON.stringify(value) : null
   },
   setItem: (name, value) => {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (!ipc) {
       window.localStorage.setItem(name, value)
       return
@@ -55,7 +59,7 @@ const desktopAwareStorage: StateStorage = {
     void ipc.invoke('state:save', { key: name, value })
   },
   removeItem: (name) => {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (!ipc) {
       window.localStorage.removeItem(name)
       return
@@ -148,6 +152,15 @@ type AppState = {
   moveTimelineClip: (pid: string, from: number, to: number) => void
   setClipDuration: (pid: string, clipId: string, dur: number) => void
 
+  /* Studio — the in-app editor */
+  patchStudio: (pid: string, patch: Partial<StudioDoc>) => void
+  addStudioClip: (pid: string, clip: StudioClip) => void
+  updateStudioClip: (pid: string, clipId: string, patch: Partial<StudioClip>) => void
+  removeStudioClip: (pid: string, clipId: string) => void
+  splitStudioClip: (pid: string, clipId: string, atSec: number) => void
+  duplicateStudioClip: (pid: string, clipId: string) => void
+  addStudioTrack: (pid: string) => void
+
   startRender: (
     pid: string,
     opts: { aspect: RenderJob['aspect']; fps: RenderJob['fps']; quality: RenderJob['quality']; label?: string; sources?: RenderSource[] },
@@ -190,35 +203,41 @@ export const useProjectStore = create<AppState>()(
           const steps = labels.map((label, i) => ({ id: `${id}-step-${i}`, label, status: i === 0 ? 'running' as const : 'queued' as const, progressPct: 0 }))
           const job: AutomationJob = { ...input, id, projectId, status: 'running', currentStepId: steps[0].id, steps, createdAt: nowIso(), updatedAt: nowIso(), outputPath: null, reviewReportPath: null }
           set((s) => ({ automationJobs: [job, ...s.automationJobs], view: 'auto' }))
-          const ipc = (window as any).northframe?.ipc
+          const ipc = getIpc()
           if (ipc) {
             void ipc.invoke('automation:start', job)
               .then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
               .catch((err: Error) => get().updateAutomationJob(id, { status: 'error', errorMessage: err?.message || 'Automation failed' }))
           } else {
-            // Browser preview deliberately simulates progress without touching the filesystem.
-            steps.forEach((step, i) => setTimeout(() => get().updateAutomationStep(id, step.id, { status: 'done', progressPct: 100, completedAt: nowIso() }), (i + 1) * 700))
-            setTimeout(() => get().updateAutomationJob(id, { status: 'done', currentStepId: null }), labels.length * 700 + 100)
+            // No Electron: the pipeline needs the filesystem, FFmpeg and the
+            // model bridge, so say so instead of animating a fake success.
+            get().updateAutomationJob(id, {
+              status: 'error',
+              currentStepId: null,
+              errorMessage:
+                'Autonomous runs need the desktop app (filesystem + FFmpeg). In the browser, build the video by hand in Studio or use Brief → Arena.',
+            })
+            get().pushToast('info', 'Autonomous runs are desktop-only — Studio works right here in the browser.')
           }
         },
         updateAutomationJob: (jobId, patch) => set((s) => ({ automationJobs: s.automationJobs.map((j) => j.id === jobId ? { ...j, ...patch, updatedAt: nowIso() } : j) })),
         updateAutomationStep: (jobId, stepId, patch) => set((s) => ({ automationJobs: s.automationJobs.map((j) => j.id === jobId ? { ...j, steps: j.steps.map((x) => x.id === stepId ? { ...x, ...patch } : x), updatedAt: nowIso() } : j) })),
         cancelAutomationJob: (jobId) => {
-          const ipc = (window as any).northframe?.ipc
+          const ipc = getIpc()
           if (ipc) void ipc.invoke('automation:cancel', { jobId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
           get().updateAutomationJob(jobId, { status: 'cancelled' })
         },
         resumeAutomationJob: (jobId) => {
-          const ipc = (window as any).northframe?.ipc
+          const ipc = getIpc()
           if (ipc) void ipc.invoke('automation:resume', { jobId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
           get().updateAutomationJob(jobId, { status: 'running' })
         },
         approveAutomationStep: (jobId, stepId) => {
-          const ipc = (window as any).northframe?.ipc
+          const ipc = getIpc()
           if (ipc) void ipc.invoke('automation:approveStep', { jobId, stepId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
         },
         rejectAutomationStep: (jobId, stepId) => {
-          const ipc = (window as any).northframe?.ipc
+          const ipc = getIpc()
           if (ipc) void ipc.invoke('automation:rejectStep', { jobId, stepId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
         },
 
@@ -245,6 +264,7 @@ export const useProjectStore = create<AppState>()(
             footageAssets: [],
             timeline: [],
             renderJobs: [],
+            studio: emptyStudioDoc(),
             brandKit: { colors: ['#0B0B10', '#C8F542', '#F4F1EA'], font: 'Inter Variable', logoDataUrl: null },
           }
           set((s) => ({ projects: [...s.projects, project], activeProjectId: id, view: 'brief' }))
@@ -350,6 +370,72 @@ export const useProjectStore = create<AppState>()(
             renderJobs: p.renderJobs.map((j) => (j.id === jobId ? { ...j, ...patch } : j)),
           })),
 
+        /* ——— Studio ——— */
+
+        patchStudio: (pid, patch) =>
+          updateProject(pid, (p) => ({ ...p, studio: { ...studioOf(p), ...patch } })),
+
+        addStudioClip: (pid, clip) =>
+          updateProject(pid, (p) => {
+            const doc = studioOf(p)
+            const trackCount = Math.max(doc.trackCount, clip.track + 1)
+            return {
+              ...p,
+              studio: { ...doc, trackCount, clips: [...doc.clips, normaliseClip(clip, trackCount)] },
+            }
+          }),
+
+        updateStudioClip: (pid, clipId, patch) =>
+          updateProject(pid, (p) => {
+            const doc = studioOf(p)
+            return {
+              ...p,
+              studio: {
+                ...doc,
+                clips: doc.clips.map((c) =>
+                  c.id === clipId ? normaliseClip({ ...c, ...patch } as StudioClip, doc.trackCount) : c,
+                ),
+              },
+            }
+          }),
+
+        removeStudioClip: (pid, clipId) =>
+          updateProject(pid, (p) => {
+            const doc = studioOf(p)
+            return { ...p, studio: { ...doc, clips: doc.clips.filter((c) => c.id !== clipId) } }
+          }),
+
+        splitStudioClip: (pid, clipId, atSec) =>
+          updateProject(pid, (p) => {
+            const doc = studioOf(p)
+            const clip = doc.clips.find((c) => c.id === clipId)
+            if (!clip) return p
+            const halves = splitClipAt(clip, atSec)
+            if (!halves) return p
+            return {
+              ...p,
+              studio: { ...doc, clips: doc.clips.flatMap((c) => (c.id === clipId ? halves : [c])) },
+            }
+          }),
+
+        duplicateStudioClip: (pid, clipId) =>
+          updateProject(pid, (p) => {
+            const doc = studioOf(p)
+            const clip = doc.clips.find((c) => c.id === clipId)
+            if (!clip) return p
+            const copy = normaliseClip(
+              { ...clip, id: uid(), startSec: clip.startSec + clip.durationSec },
+              doc.trackCount,
+            )
+            return { ...p, studio: { ...doc, clips: [...doc.clips, copy] } }
+          }),
+
+        addStudioTrack: (pid) =>
+          updateProject(pid, (p) => {
+            const doc = studioOf(p)
+            return { ...p, studio: { ...doc, trackCount: Math.min(8, doc.trackCount + 1) } }
+          }),
+
         startRender: (pid, opts) => {
           const p = get().projects.find((x) => x.id === pid)
           if (!p) return
@@ -434,6 +520,7 @@ export const useProjectStore = create<AppState>()(
             .filter((project) => !starterNames.has(project.name))
             .map((project) => ({
               ...project,
+              studio: project.studio ?? emptyStudioDoc(),
               timeline: (project.timeline ?? []).filter((clip) => Boolean(clip.sourceId)),
               renderJobs: (project.renderJobs ?? []).filter((job) => Boolean(job.outputPath)),
               arenaAssets: (project.arenaAssets ?? []).map((asset) =>

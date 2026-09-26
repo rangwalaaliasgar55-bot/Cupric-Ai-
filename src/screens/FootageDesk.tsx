@@ -10,6 +10,7 @@ import { Segmented } from '../components/Segmented'
 import { VideoPreview } from '../components/VideoPreview'
 import type { FootageAsset } from '../types/project'
 import { uploadFootage } from '../lib/arena'
+import { getIpc } from '../lib/bridge'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, hashStr, mulberry32, round1 } from '../lib/utils'
 
@@ -59,7 +60,7 @@ export function FootageDesk() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (!ipc) return
     ipc.invoke('settings:get').then((settings: { silenceNoiseDb?: number; silenceMinDuration?: number }) => {
       if (typeof settings?.silenceNoiseDb === 'number') setNoiseDb(settings.silenceNoiseDb)
@@ -68,7 +69,7 @@ export function FootageDesk() {
   }, [])
 
   async function saveAdvancedSettings() {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (!ipc) return
     await ipc.invoke('settings:set', { silenceNoiseDb: noiseDb, silenceMinDuration: minSilence })
     pushToast('success', 'Footage analysis settings saved')
@@ -81,7 +82,9 @@ export function FootageDesk() {
 
   async function handleDrop(file: File | null) {
     if (!project || uploading) return
-    const name = file?.name ?? `raw-clip-${Math.floor(Math.random() * 900 + 100)}.mp4`
+    // With no File in hand the desktop picker supplies the real name; show a
+    // neutral label until it comes back rather than inventing one.
+    const name = file?.name ?? 'Selecting footage…'
     setUploading({ name, pct: 0 })
     try {
       const res = await uploadFootage(file, project.id, (pct) => setUploading((cur) => (cur ? { ...cur, pct } : cur)))

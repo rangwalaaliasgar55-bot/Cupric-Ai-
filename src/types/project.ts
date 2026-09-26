@@ -49,6 +49,8 @@ export type View =
   | 'arena'
   | 'footage'
   | 'timeline'
+  | 'studio'
+  | 'lab'
   | 'render'
   | 'library'
 
@@ -124,6 +126,8 @@ export type Project = {
   footageAssets: FootageAsset[]
   timeline: TimelineClip[]
   renderJobs: RenderJob[]
+  /** In-app editor document. Optional on projects created before 0.3.0. */
+  studio?: StudioDoc
   brandKit: { colors: string[]; font: string; logoDataUrl: string | null }
 }
 
@@ -148,5 +152,84 @@ export type LibraryItem =
       updatedAt: string
       gradientId: string
       css: string
-      className: string
     }
+
+/* ————————————————————————————————————————————————————————————————
+ * Studio — the in-app CapCut-style editor.
+ * A StudioDoc is the full edit: stacked tracks of clips over a background,
+ * rendered deterministically to a canvas by src/lib/studio/renderer.ts.
+ * ———————————————————————————————————————————————————————————————— */
+
+export type StudioAspect = '16:9' | '9:16' | '1:1'
+export type StudioTextAnim = 'none' | 'fade-up' | 'word-reveal' | 'pop' | 'typewriter' | 'slide-left'
+export type StudioTransition = 'none' | 'fade' | 'wipe-left' | 'zoom-in'
+export type StudioCaptionStyle = 'hormozi' | 'standard' | 'minimal'
+
+type StudioClipCommon = {
+  id: string
+  /** 0 = bottom-most track. Higher tracks draw on top. */
+  track: number
+  startSec: number
+  durationSec: number
+  name: string
+  transitionIn: StudioTransition
+  transitionOut: StudioTransition
+  /** 0–1 */
+  opacity: number
+}
+
+export type StudioMediaClip = StudioClipCommon & {
+  kind: 'video' | 'image'
+  /** Runtime handle into the media registry (object URLs are never persisted). */
+  mediaId: string
+  fileName: string
+  localPath: string | null
+  /** Seconds into the source file where this clip starts. */
+  trimInSec: number
+  sourceDurationSec: number
+  speed: number
+  volume: number
+  fit: 'cover' | 'contain'
+  posterDataUrl?: string | null
+}
+
+export type StudioTextClip = StudioClipCommon & {
+  kind: 'text'
+  text: string
+  fontSizePct: number
+  color: string
+  weight: 400 | 600 | 800
+  align: 'left' | 'center' | 'right'
+  /** Normalised 0–1 position of the text box centre. */
+  x: number
+  y: number
+  anim: StudioTextAnim
+  captionStyle: StudioCaptionStyle | null
+  highlightWord: string | null
+}
+
+export type StudioBackgroundClip = StudioClipCommon & {
+  kind: 'background'
+  backgroundId: string
+}
+
+export type StudioOverlayClip = StudioClipCommon & {
+  kind: 'overlay'
+  /** PNG snapshot (data URL) of a UI Lab demo or any imported image. */
+  dataUrl: string
+  source: string
+  x: number
+  y: number
+  scale: number
+}
+
+export type StudioClip = StudioMediaClip | StudioTextClip | StudioBackgroundClip | StudioOverlayClip
+
+export type StudioDoc = {
+  aspect: StudioAspect
+  fps: 24 | 30 | 60
+  /** Background painted under every clip. */
+  backgroundId: string
+  clips: StudioClip[]
+  trackCount: number
+}

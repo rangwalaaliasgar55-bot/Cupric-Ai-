@@ -129,7 +129,6 @@ function buildResourceItems(): LibraryItem[] {
     updatedAt: now,
     gradientId: g.id,
     css: g.css,
-    className: g.className,
   }))
   return [...effects, ...backgrounds]
 }
@@ -148,6 +147,7 @@ export function Library() {
   const project = useActiveProject()
   const patchRundown = useProjectStore((s) => s.patchRundown)
   const addArenaAsset = useProjectStore((s) => s.addArenaAsset)
+  const patchStudio = useProjectStore((s) => s.patchStudio)
   const pushToast = useProjectStore((s) => s.pushToast)
 
   const [filter, setFilter] = useState<Filter>('all')
@@ -175,8 +175,14 @@ export function Library() {
       return
     }
     if (item.kind === 'background') {
-      const ok = await copyText(item.css)
-      pushToast(ok ? 'success' : 'info', ok ? `Background CSS “${item.name}” copied` : 'Could not copy CSS')
+      if (project) {
+        // Backgrounds are real Studio presets, so apply instead of just copying.
+        patchStudio(project.id, { backgroundId: item.gradientId })
+        pushToast('success', `“${item.name}” set as the Studio background for “${project.name}”`)
+      } else {
+        const ok = await copyText(item.css)
+        pushToast(ok ? 'success' : 'info', ok ? `Background CSS “${item.name}” copied` : 'Could not copy CSS')
+      }
       setApplied((s) => new Set(s).add(item.id))
       return
     }
@@ -290,7 +296,15 @@ function LibraryCard({ item, used, onUse }: { item: LibraryItem; used: boolean; 
       </div>
 
       {item.kind === 'background' && (
-        <div className={`h-16 w-full rounded-lg border border-line ${item.className}`} aria-hidden />
+        <div
+          className="h-16 w-full rounded-lg border border-line"
+          aria-hidden
+          ref={(node) => {
+            // The preset ships raw CSS (the same string the Studio paints and
+            // the copy button hands over), so it is applied directly.
+            if (node) node.setAttribute('style', item.css)
+          }}
+        />
       )}
 
       <div>

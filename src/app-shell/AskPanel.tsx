@@ -2,8 +2,16 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Send, Sparkles, X, Settings } from 'lucide-react'
 import { askGeminiChat } from '../lib/gemini'
+import {
+  discoverLocalModels,
+  isConfigured as isOpenCodeConfigured,
+  listModels as listOpenCodeModelsWeb,
+  loadSettings as loadOpenCodeSettings,
+  saveSettings as saveOpenCodeSettings,
+} from '../lib/opencode'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx } from '../lib/utils'
+import { getIpc } from '../lib/bridge'
 
 type ChatMsg = { role: 'user' | 'ai'; text: string }
 
@@ -70,8 +78,18 @@ export function AskPanel() {
   const [modelLoadStatus, setModelLoadStatus] = useState('')
 
   useEffect(() => {
-    const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
-    if (!ipc) return
+    const ipc = getIpc()
+    if (!ipc) {
+      // Web build: settings live in localStorage, not the Electron main process.
+      const web = loadOpenCodeSettings()
+      setAiProvider('opencode')
+      setOpenCodeBaseUrl(web.baseUrl)
+      setOpenCodeModel(web.model)
+      setHasOpenCodeKey(Boolean(web.apiKey))
+      setHasKey(isOpenCodeConfigured(web))
+      setMediaReady(false)
+      return
+    }
     ipc.invoke('settings:get').then((settings: { hasKey?: boolean; hasGeminiKey?: boolean; hasOpenCodeKey?: boolean; aiProvider?: AiProvider; geminiModel?: string; openCodeBaseUrl?: string; openCodeModel?: string; autoLaunch?: boolean }) => {
       setHasKey(Boolean(settings?.hasKey))
       setHasGeminiKey(Boolean(settings?.hasGeminiKey))
@@ -105,8 +123,24 @@ export function AskPanel() {
   async function loadOpenCodeDesktopModels() {
     setModelLoadStatus('reading OpenCode Desktop config')
     try {
-      const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
-      if (!ipc) throw new Error('OpenCode Desktop import is available in the desktop app')
+      const ipc = getIpc()
+      if (!ipc) {
+        // No Electron here — probe the local servers OpenCode usually exposes.
+        const local = await discoverLocalModels()
+        const merged = [...local, ...freeModels]
+        const seen = new Set<string>()
+        setFreeModels(
+          merged.filter((model) =>
+            seen.has(`${model.baseUrl}|${model.model}`) ? false : (seen.add(`${model.baseUrl}|${model.model}`), true),
+          ),
+        )
+        setModelLoadStatus(
+          local.length
+            ? `${local.length} local model${local.length === 1 ? '' : 's'} found (free)`
+            : 'No local model server answered on ports 4096 / 11434 / 1234 / 8080.',
+        )
+        return
+      }
       const models: OpenCodePreset[] = await ipc.invoke('opencode:discoverModels')
       const merged = [...models, ...freeModels]
       const seen = new Set<string>()
@@ -120,16 +154,15 @@ export function AskPanel() {
   async function loadFreeOpenCodeModels() {
     setModelLoadStatus('loading')
     try {
-      const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+      const ipc = getIpc()
       let models: OpenCodePreset[] = []
       if (ipc) {
         models = await ipc.invoke('opencode:listModels', { baseUrl: openCodeBaseUrl, apiKey: openCodeKey })
       } else {
-        const res = await fetch(`${openCodeBaseUrl.replace(/\/$/, '')}/models`)
-        const data = await res.json()
-        models = (data?.data ?? [])
-          .filter((model: any) => String(model?.id || '').includes(':free'))
-          .map((model: any) => ({ id: `live-${model.id}`, label: String(model.name || model.id).replace(/\s*\(free\)/i, ''), baseUrl: openCodeBaseUrl, model: model.id, note: 'Live free model discovered from the configured model endpoint.' }))
+        const discovered = await listOpenCodeModelsWeb(openCodeBaseUrl, openCodeKey)
+        // Remote catalogues are huge; keep the free tier unless this is a local server.
+        const local = /localhost|127\.0\.0\.1/.test(openCodeBaseUrl)
+        models = local ? discovered : discovered.filter((model) => model.model.includes(':free'))
       }
       const merged = [...models, ...FREE_OPENCODE_PRESETS]
       const seen = new Set<string>()
@@ -144,8 +177,24 @@ export function AskPanel() {
   }
 
   async function saveAiSettings() {
-    const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
-    if (!ipc) return
+    const ipc = getIpc()
+    if (!ipc) {
+      const saved = saveOpenCodeSettings({
+        baseUrl: openCodeBaseUrl,
+        // Blank keeps whatever was stored before, matching the desktop behaviour.
+        apiKey: openCodeKey.trim() || loadOpenCodeSettings().apiKey,
+        model: openCodeModel,
+      })
+      setHasOpenCodeKey(Boolean(saved.apiKey))
+      setHasKey(isOpenCodeConfigured(saved))
+      setOpenCodeKey('')
+      setModelLoadStatus(
+        isOpenCodeConfigured(saved)
+          ? `Saved in this browser — chatting with ${saved.model}`
+          : 'Set both a base URL and a model to enable live chat.',
+      )
+      return
+    }
     const patch: Record<string, string> = {
       aiProvider,
       geminiModel,
@@ -163,14 +212,14 @@ export function AskPanel() {
   }
 
   async function toggleAutoLaunch(next: boolean) {
-    const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (!ipc) return
     const result = await ipc.invoke('settings:set', { autoLaunch: next })
     setAutoLaunch(Boolean(result?.autoLaunch))
   }
 
   async function checkForUpdates() {
-    const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (!ipc) return
     setUpdateStatus('checking')
     const result = await ipc.invoke('updater:check')
@@ -184,7 +233,7 @@ export function AskPanel() {
     setMsgs((m) => [...m, { role: 'user', text }])
     setBusy(true)
     const reply = await askGeminiChat(text, { projectName: active?.name ?? null, view })
-    setMsgs((m) => [...m, { role: 'ai', text: reply }])
+    setMsgs((m) => [...m, { role: 'ai', text: reply } satisfies ChatMsg])
     setBusy(false)
   }
 
