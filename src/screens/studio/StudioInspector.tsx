@@ -766,6 +766,19 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
         />
       </Field>
 
+      <Field label="Font" hint="Bundled locally so exports match the preview on every machine.">
+        <select
+          value={clip.fontFamily ?? 'Inter Variable'}
+          onChange={(e) => onPatch({ fontFamily: e.target.value } as Partial<StudioClip>)}
+          className={inputCx}
+        >
+          <option value="Inter Variable">Inter — versatile sans</option>
+          <option value="Manrope Variable">Manrope — modern editorial</option>
+          <option value="Playfair Display Variable">Playfair Display — cinematic serif</option>
+          <option value="JetBrains Mono Variable">JetBrains Mono — technical</option>
+        </select>
+      </Field>
+
       <div className="grid grid-cols-2 gap-3">
         <Field label="Animation">
           <select

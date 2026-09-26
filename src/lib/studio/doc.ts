@@ -176,6 +176,7 @@ export function defaultTextClip(start: number, track: number): StudioTextClip {
     opacity: 1,
     text: 'Your headline',
     fontSizePct: 9,
+    fontFamily: 'Inter Variable',
     color: '#F4F1EA',
     weight: 800,
     align: 'center',

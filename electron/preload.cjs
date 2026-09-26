@@ -21,6 +21,7 @@ const invokeChannels = new Set([
   'footage:analyze',
   'media:status',
   'studio:exportMp4',
+  'studio:planEdits',
   'render:start',
   'render:cancel',
   'render:reveal',

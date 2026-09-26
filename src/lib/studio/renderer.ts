@@ -244,7 +244,8 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
   const progress = clipProgress(clip, t)
   const preset = captionPreset(clip.captionStyle)
   const fontPx = Math.max(12, (clip.fontSizePct / 100) * h)
-  ctx.font = `${clip.weight} ${fontPx}px 'Inter Variable', Inter, system-ui, sans-serif`
+  const family = clip.fontFamily || 'Inter Variable'
+  ctx.font = `${clip.weight} ${fontPx}px '${family}', Inter, system-ui, sans-serif`
   ctx.textBaseline = 'middle'
   ctx.textAlign = clip.align
 

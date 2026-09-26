@@ -1539,6 +1539,61 @@ async function generateRundown(prompt, history, context) {
   throw lastError
 }
 
+async function generateStudioEditPlan(instruction, studioContext) {
+  const schemaPrompt = `You are the edit-planning agent inside Cupric AI Studio. Return STRICT JSON only.
+The user instruction must become a small batch of allowlisted, non-destructive edit operations. Never invent clip IDs.
+
+OUTPUT:
+{"summary":string,"ops":[operation]}
+
+OPERATIONS:
+- {"type":"patchClip","clipId":string,"patch":{allowed properties}}
+  Allowed patch properties: x, y, scale, rotation, opacity, fontSizePct, color, fontFamily, text, anim, transitionIn, transitionOut, volume.
+  Fonts: Inter Variable, Manrope Variable, Playfair Display Variable, JetBrains Mono Variable.
+  Animations: none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
+  Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
+- {"type":"moveClip","clipId":string,"track":number?,"startSec":number?}
+- {"type":"deleteClip","clipId":string}
+- {"type":"addText","text":string,"track":number,"startSec":number,"durationSec":number,"color":string?,"fontFamily":string?,"anim":string?}
+- {"type":"setKeyframe","clipId":string,"at":number,"values":{"x":number?,"y":number?,"scale":number?,"rotation":number?,"opacity":number?},"ease":"linear"|"ease-in"|"ease-out"|"ease-in-out"?}
+- {"type":"reorderTrack","from":number,"to":number}
+- {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
+
+Track 0 is the bottom layer. x/y are normalized 0..1. Keyframe times are local to the clip. Prefer 2–6 precise operations. Do not return prose outside JSON.
+
+STUDIO CONTEXT:
+${JSON.stringify(studioContext)}
+
+USER INSTRUCTION:
+${instruction}`
+  const primary = aiSettings().provider
+  const available = { gemini: Boolean(geminiApiKey()), opencode: hasOpenCodeAccess() }
+  const providers = [primary, primary === 'gemini' ? 'opencode' : 'gemini'].filter((provider, index, all) => all.indexOf(provider) === index && available[provider])
+  if (!providers.length) throw new Error('No live AI provider is configured')
+  let lastError
+  for (const provider of providers) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        if (provider === 'opencode') {
+          const text = await callOpenCode([
+            { role: 'system', content: 'Return only valid JSON edit operations for Cupric AI Studio.' },
+            { role: 'user', content: schemaPrompt },
+          ], { json: true, temperature: 0.2 })
+          return { ...parseJsonFromModel(text), source: 'live' }
+        }
+        const result = await runGeminiGenerateContent(geminiApiKey(), schemaPrompt, { responseMimeType: 'application/json', temperature: 0.2 })
+        return { ...parseJsonFromModel(result.response.text()), source: 'live' }
+      } catch (err) {
+        lastError = err
+        logLine('studio-edit-plan-retry', err?.message || String(err), { provider, attempt: attempt + 1 })
+        if (!retryableAiError(err) || attempt === 2) break
+        await delay(400 * (3 ** attempt))
+      }
+    }
+  }
+  throw lastError
+}
+
 async function liveAiChat(text, ctx) {
   const provider = aiSettings().provider
   if (provider === 'opencode') {
@@ -1583,6 +1638,7 @@ ipcMain.handle('gemini:ask', async (_event, payload) => {
   }
 })
 ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.text || '', payload?.ctx || {}))
+ipcMain.handle('studio:planEdits', async (_event, payload) => generateStudioEditPlan(payload?.instruction || '', payload?.context || {}))
 
 // ---------------------------------------------------------------------------
 // Arena import / preview

@@ -296,6 +296,8 @@ export type StudioTextClip = StudioClipCommon & {
   kind: 'text'
   text: string
   fontSizePct: number
+  /** Bundled font family used identically by preview and export. */
+  fontFamily?: string
   color: string
   weight: 400 | 600 | 800
   align: 'left' | 'center' | 'right'

@@ -55,6 +55,14 @@ import { lintStudioDoc } from '../lib/studio/lint'
 import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
+import { getIpc } from '../lib/bridge'
+import {
+  applyStudioEditPlan,
+  describeStudioEditOp,
+  localStudioEditPlan,
+  validateStudioEditPlan,
+  type StudioEditPlan,
+} from '../lib/studio/editOps'
 
 const ZOOM_STEPS = [12, 20, 32, 48, 72, 110, 160]
 
@@ -88,6 +96,9 @@ export function Studio() {
   const [showSafeAreas, setShowSafeAreas] = useState(true)
   const [keyframeRecord, setKeyframeRecord] = useState(false)
   const [showResources, setShowResources] = useState(false)
+  const [agentInstruction, setAgentInstruction] = useState('')
+  const [agentPlanning, setAgentPlanning] = useState(false)
+  const [agentPlan, setAgentPlan] = useState<StudioEditPlan | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -250,6 +261,67 @@ export function Studio() {
   if (!project || !pid) return <NoProject />
 
   const projectId: string = pid
+
+  async function planAgentEdit(request?: string) {
+    const instruction = (request ?? agentInstruction).trim()
+    if (!instruction || agentPlanning) return
+    setAgentPlanning(true)
+    setAgentPlan(null)
+    try {
+      const ipc = getIpc()
+      let raw: unknown
+      if (ipc) {
+        const context = {
+          aspect: doc.aspect,
+          fps: doc.fps,
+          trackCount: doc.trackCount,
+          selectedId,
+          clips: doc.clips.map((clip) => ({
+            id: clip.id,
+            kind: clip.kind,
+            name: clip.name,
+            track: clip.track,
+            startSec: clip.startSec,
+            durationSec: clip.durationSec,
+            opacity: clip.opacity,
+            rotation: clip.rotation ?? 0,
+            ...('x' in clip ? { x: clip.x, y: clip.y } : {}),
+            ...(clip.kind === 'text' ? { text: clip.text, color: clip.color, fontSizePct: clip.fontSizePct, fontFamily: clip.fontFamily, anim: clip.anim } : {}),
+            keyframes: clip.keyframes ?? [],
+          })),
+        }
+        try {
+          raw = await ipc.invoke('studio:planEdits', { instruction, context })
+        } catch (err) {
+          const local = localStudioEditPlan(instruction, doc, selectedId)
+          raw = { ...local, warning: `Live agent unavailable: ${humanError(err, 'AI connection')}` }
+        }
+      } else {
+        raw = localStudioEditPlan(instruction, doc, selectedId)
+      }
+      setAgentPlan(validateStudioEditPlan(raw, doc))
+    } catch (err) {
+      pushToast('error', humanError(err, 'Could not plan that edit'))
+    } finally {
+      setAgentPlanning(false)
+    }
+  }
+
+  function acceptAgentPlan() {
+    if (!agentPlan) return
+    try {
+      // Validate again against the current timeline in case it changed while the plan was visible.
+      const currentPlan = validateStudioEditPlan(agentPlan, doc)
+      const next = applyStudioEditPlan(doc, currentPlan.ops)
+      patchStudio(projectId, next)
+      pushToast('success', `Applied ${currentPlan.ops.length} agent edit${currentPlan.ops.length === 1 ? '' : 's'} as one undo step.`)
+      setAgentPlan(null)
+      setAgentInstruction('')
+    } catch (err) {
+      pushToast('error', humanError(err, 'The timeline changed; preview this edit again'))
+      setAgentPlan(null)
+    }
+  }
 
   async function onFiles(files: FileList | null) {
     if (!files?.length) return
@@ -654,6 +726,56 @@ export function Studio() {
           )}
         </div>
       </div>
+
+      <form
+        className="flex shrink-0 items-center gap-2 border-b border-line bg-panel-alt/50 px-6 py-2"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void planAgentEdit()
+        }}
+      >
+        <Sparkles size={14} className="shrink-0 text-accent-text" />
+        <input
+          value={agentInstruction}
+          onChange={(event) => setAgentInstruction(event.target.value)}
+          placeholder="Tell the editing agent what to change — e.g. move the title up, animate it, use Playfair, put it on track 3…"
+          aria-label="Editing agent instruction"
+          className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-bg px-3 text-sm placeholder:text-muted/70"
+        />
+        <Button
+          size="sm"
+          type="button"
+          variant="ghost"
+          disabled={agentPlanning || exporting || doc.clips.length === 0}
+          onClick={() => void planAgentEdit('Analyze the timeline content, pacing, clip names, and existing text. Propose a polished automatic edit with purposeful motion, typography, transitions, and track layering.')}
+          title="Let the connected model direct an edit from the current timeline content"
+        >
+          Auto edit
+        </Button>
+        <Button size="sm" type="submit" disabled={!agentInstruction.trim() || agentPlanning || exporting}>
+          {agentPlanning ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
+          {agentPlanning ? 'Planning…' : 'Preview edit'}
+        </Button>
+      </form>
+
+      {agentPlan && (
+        <div className="shrink-0 border-b border-line bg-panel px-6 py-3">
+          <div className="flex items-start gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold">{agentPlan.summary}</div>
+              <div className="mt-1 text-xs text-muted">{agentPlan.source === 'live' ? 'Planned by your connected AI model' : 'Planned locally'} · preview only until accepted</div>
+              {agentPlan.warning && <div className="mt-1 text-xs text-danger">{agentPlan.warning}</div>}
+              <ul className="mt-2 space-y-1 text-xs text-muted">
+                {agentPlan.ops.map((op, index) => <li key={index}>+ {describeStudioEditOp(op, doc)}</li>)}
+              </ul>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setAgentPlan(null)}>Reject</Button>
+              <Button size="sm" variant="primary" onClick={acceptAgentPlan}>Accept all</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {voiceSupported && (listening || heard) && (
         <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-line bg-panel px-6 py-2">
