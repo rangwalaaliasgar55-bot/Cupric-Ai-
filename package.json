@@ -110,7 +110,7 @@
         }
       ],
       "icon": "build/icon.png",
-      "artifactName": "${productName}-${version}-${arch}-Portable.${ext}"
+      "artifactName": "Cupric-AI-${version}-${arch}-Portable.${ext}"
     },
     "nsis": {
       "oneClick": false,

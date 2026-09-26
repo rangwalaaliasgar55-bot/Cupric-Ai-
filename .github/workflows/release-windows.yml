@@ -45,7 +45,7 @@ jobs:
       - name: Verify installer artifacts
         shell: pwsh
         run: |
-          $setup = Get-ChildItem -Path release -Filter 'Cupric AI-Setup-*.exe' -File
+          $setup = Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe' -File
           if ($setup.Count -ne 1) {
             throw "Expected exactly one NSIS setup executable; found $($setup.Count)."
           }
@@ -60,15 +60,16 @@ jobs:
           name: Cupric-AI-Windows-${{ inputs.tag || github.ref_name }}
           if-no-files-found: error
           path: |
-            release/Cupric AI-Setup-*.exe
-            release/Cupric AI-Setup-*.exe.blockmap
-            release/Cupric AI-*-Portable.exe
+            release/Cupric-AI-Setup-*.exe
+            release/Cupric-AI-Setup-*.exe.blockmap
+            release/Cupric-AI-*-Portable.exe
             release/latest.yml
 
       - name: Publish GitHub release assets
-        # Uploads with the GitHub CLI so asset filenames keep their spaces
-        # (softprops/action-gh-release rewrites spaces to dots, which also
-        # breaks the electron-updater latest.yml path lookup).
+        # Uploads with the GitHub CLI (no third-party action). Artifact names
+        # use dashes instead of spaces because the GitHub release API rewrites
+        # spaces to dots, while electron-updater maps latest.yml spaces to
+        # dashes when resolving downloads — dashes keep both sides identical.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
@@ -80,9 +81,9 @@ jobs:
             gh release create $tag --repo $repo --title "Cupric AI $tag" --generate-notes --latest --target ${{ github.sha }}
           }
           $files = @(
-            (Get-ChildItem -Path release -Filter 'Cupric AI-Setup-*.exe' -File).FullName
-            (Get-ChildItem -Path release -Filter 'Cupric AI-Setup-*.exe.blockmap' -File).FullName
-            (Get-ChildItem -Path release -Filter 'Cupric AI-*-Portable.exe' -File).FullName
+            (Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe' -File).FullName
+            (Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe.blockmap' -File).FullName
+            (Get-ChildItem -Path release -Filter 'Cupric-AI-*-Portable.exe' -File).FullName
             (Join-Path (Get-Location) 'release/latest.yml')
           )
           foreach ($f in $files) { if (-not (Test-Path $f)) { throw "Missing release file: $f" } }
