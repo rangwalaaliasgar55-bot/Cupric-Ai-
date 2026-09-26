@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import type {
   ArenaAsset,
   BriefMessage,
@@ -10,11 +10,72 @@ import type {
   TimelineClip,
   View,
 } from '../types/project'
-import { startRender } from '../lib/render'
+import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
 
 export type Toast = { id: string; kind: 'success' | 'info' | 'error'; text: string }
+
+const activeRenderCancels = new Map<string, () => void>()
+
+const desktopAwareStorage: StateStorage = {
+  getItem: async (name) => {
+    const ipc = (window as any).northframe?.ipc
+    if (!ipc) return window.localStorage.getItem(name)
+    const value = await ipc.invoke('state:load', { key: name })
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value)
+        if (parsed && !parsed.state && Array.isArray(parsed.projects)) return JSON.stringify({ state: parsed, version: 0 })
+      } catch {}
+      return value
+    }
+    return value ? JSON.stringify(value) : null
+  },
+  setItem: (name, value) => {
+    const ipc = (window as any).northframe?.ipc
+    if (!ipc) {
+      window.localStorage.setItem(name, value)
+      return
+    }
+    void ipc.invoke('state:save', { key: name, value })
+  },
+  removeItem: (name) => {
+    const ipc = (window as any).northframe?.ipc
+    if (!ipc) {
+      window.localStorage.removeItem(name)
+      return
+    }
+    void ipc.invoke('state:clear', { key: name })
+  },
+}
+
+function renderSourcesForProject(project: Project): RenderSource[] {
+  return project.timeline.map((clip) => {
+    if (clip.sourceType === 'arena') {
+      const asset = project.arenaAssets.find((a) => a.id === clip.sourceId)
+      return {
+        id: clip.id,
+        sourceType: 'arena',
+        durationSec: clip.durationSec,
+        htmlPath: asset?.localPath ?? null,
+        arenaPath: asset?.localPath ?? null,
+      }
+    }
+    const asset = project.footageAssets.find((f) => f.id === clip.sourceId)
+    return {
+      id: clip.id,
+      sourceType: 'footage',
+      durationSec: clip.durationSec,
+      videoPath: asset?.localPath ?? null,
+      footagePath: asset?.localPath ?? null,
+      silenceRanges: asset?.silenceRanges ?? [],
+      applySilenceCuts: asset?.status === 'edited',
+      captionStyle: asset?.captionStyle ?? 'standard',
+      crop: asset?.crop ?? '9:16',
+    }
+  })
+}
 
 type AppState = {
   projects: Project[]
@@ -57,6 +118,7 @@ type AppState = {
     opts: { aspect: RenderJob['aspect']; fps: RenderJob['fps']; quality: RenderJob['quality']; label?: string },
   ) => void
   retryRender: (pid: string, jobId: string) => void
+  cancelRender: (pid: string, jobId: string) => void
   updateRenderJob: (pid: string, jobId: string, patch: Partial<RenderJob>) => void
 }
 
@@ -224,37 +286,63 @@ export const useProjectStore = create<AppState>()(
             status: 'rendering',
             progressPct: 0,
             outputName: `${base}-${opts.aspect.replace(':', 'x')}-${opts.quality}.mp4`,
+            outputPath: null,
+            errorMessage: null,
             createdAt: nowIso(),
           }
           updateProject(pid, (proj) => ({ ...proj, renderJobs: [job, ...proj.renderJobs] }))
           get().pushToast('info', `Render started — ${job.outputName}`)
-          startRender({ ...job, sources: p.timeline.map((c) => ({ ...c, arenaPath: p.arenaAssets.find((a) => a.id === c.sourceId)?.localPath, footagePath: p.footageAssets.find((f) => f.id === c.sourceId)?.localPath })) },
+          const cancel = launchRender(
+            { ...job, sources: renderSourcesForProject(p) },
             (pct) => get().updateRenderJob(pid, job.id, { progressPct: pct, status: 'rendering' }),
             (result) => {
-              get().updateRenderJob(pid, job.id, { progressPct: 100, status: 'done', outputPath: result?.outputPath })
+              activeRenderCancels.delete(job.id)
+              if (result?.error) {
+                get().updateRenderJob(pid, job.id, { status: 'error', errorMessage: result.error })
+                get().pushToast('error', `Render failed — ${result.error}`)
+                return
+              }
+              get().updateRenderJob(pid, job.id, { progressPct: 100, status: 'done', outputPath: result?.outputPath ?? null, errorMessage: null })
               get().pushToast('success', `Render complete — ${job.outputName}`)
             },
           )
+          activeRenderCancels.set(job.id, cancel)
         },
 
         retryRender: (pid, jobId) => {
           const p = get().projects.find((x) => x.id === pid)
           const job = p?.renderJobs.find((j) => j.id === jobId)
           if (!p || !job) return
-          get().updateRenderJob(pid, jobId, { status: 'rendering', progressPct: 0 })
+          get().updateRenderJob(pid, jobId, { status: 'rendering', progressPct: 0, errorMessage: null })
           get().pushToast('info', `Retry started — ${job.outputName}`)
-          startRender({ ...job, sources: p.timeline },
+          const cancel = launchRender(
+            { ...job, sources: renderSourcesForProject(p) },
             (pct) => get().updateRenderJob(pid, jobId, { progressPct: pct, status: 'rendering' }),
-            () => {
-              get().updateRenderJob(pid, jobId, { progressPct: 100, status: 'done' })
+            (result) => {
+              activeRenderCancels.delete(jobId)
+              if (result?.error) {
+                get().updateRenderJob(pid, jobId, { status: 'error', errorMessage: result.error })
+                get().pushToast('error', `Render failed — ${result.error}`)
+                return
+              }
+              get().updateRenderJob(pid, jobId, { progressPct: 100, status: 'done', outputPath: result?.outputPath ?? null, errorMessage: null })
               get().pushToast('success', `Render complete — ${job.outputName}`)
             },
           )
+          activeRenderCancels.set(jobId, cancel)
+        },
+
+        cancelRender: (pid, jobId) => {
+          activeRenderCancels.get(jobId)?.()
+          activeRenderCancels.delete(jobId)
+          get().updateRenderJob(pid, jobId, { status: 'error', errorMessage: 'Render cancelled' })
+          get().pushToast('info', 'Render cancelled')
         },
       }
     },
     {
       name: 'northframe-studio-v1',
+      storage: createJSONStorage(() => desktopAwareStorage),
       partialize: (s) => ({
         projects: s.projects,
         activeProjectId: s.activeProjectId,

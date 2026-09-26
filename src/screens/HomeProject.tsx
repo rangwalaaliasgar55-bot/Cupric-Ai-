@@ -104,13 +104,18 @@ function ProjectCard({
   onDelete: () => void
 }) {
   const hasRender = project.renderJobs.some((j) => j.status === 'done')
+  const thumbnail = project.arenaAssets.find((a) => a.thumbnailDataUrl)?.thumbnailDataUrl ?? null
   return (
     <Card className="group flex flex-col overflow-hidden transition-colors duration-150 hover:border-text/20">
       <button type="button" onClick={onOpen} aria-label={`Open ${project.name}`} className="block text-left">
-        <div className={cx('relative aspect-video w-full', gradientFor(project.id))}>
-          <span className="absolute inset-0 flex items-center justify-center text-xl font-bold tracking-wide text-white/85">
-            {initials(project.name)}
-          </span>
+        <div className={cx('relative aspect-video w-full overflow-hidden', thumbnail ? 'bg-bg' : gradientFor(project.id))}>
+          {thumbnail ? (
+            <img src={thumbnail} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span className="absolute inset-0 flex items-center justify-center text-xl font-bold tracking-wide text-white/85">
+              {initials(project.name)}
+            </span>
+          )}
           {hasRender && (
             <Badge tone="accent" className="absolute right-2 top-2">
               rendered

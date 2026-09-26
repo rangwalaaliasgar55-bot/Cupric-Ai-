@@ -37,6 +37,7 @@ export type FootageAsset = {
   localPath?: string | null
   status: 'uploaded' | 'analyzing' | 'edited'
   silenceRanges: [number, number][]
+  waveform?: number[]
   captionStyle: 'hormozi' | 'standard' | 'minimal'
   crop: '16:9' | '9:16' | '1:1'
 }
@@ -58,6 +59,7 @@ export type RenderJob = {
   progressPct: number
   outputName: string | null
   outputPath?: string | null
+  errorMessage?: string | null
   createdAt: string
 }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Send, Sparkles, X, Settings } from 'lucide-react'
 import { fakeGeminiChat } from '../lib/gemini'
@@ -19,7 +19,7 @@ export function AskPanel() {
   const [msgs, setMsgs] = useState<ChatMsg[]>([
     {
       role: 'gemini',
-      text: "Hey — I'm the Gemini co-pilot. Ask me for rundown ideas, tighter copy, or how the Arena flow works. (Prototype: my replies are mocked.)",
+      text: "Hey — I'm the Gemini co-pilot. Ask me for rundown ideas, tighter copy, or how the Arena flow works. Add a Gemini key in settings for live answers; otherwise I keep the local fallback ready.",
     },
   ])
   const [input, setInput] = useState('')
@@ -27,12 +27,44 @@ export function AskPanel() {
   const [showSettings, setShowSettings] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [hasKey, setHasKey] = useState(false)
+  const [autoLaunch, setAutoLaunch] = useState(false)
+  const [updateStatus, setUpdateStatus] = useState('')
+
+  useEffect(() => {
+    const ipc = (window as any).northframe?.ipc
+    if (!ipc) return
+    ipc.invoke('settings:get').then((settings: { hasKey?: boolean; autoLaunch?: boolean }) => {
+      setHasKey(Boolean(settings?.hasKey))
+      setAutoLaunch(Boolean(settings?.autoLaunch))
+    })
+    if (typeof ipc.on === 'function') {
+      return ipc.on('updater:status', (event: { status?: string; version?: string; message?: string }) => {
+        setUpdateStatus(event?.version ? `${event.status} ${event.version}` : event?.message || event?.status || '')
+      })
+    }
+  }, [])
 
   async function saveKey() {
     const ipc = (window as any).northframe?.ipc
     if (!ipc) return
     const result = await ipc.invoke('settings:set', { geminiApiKey: apiKey })
-    setHasKey(Boolean(result?.hasKey)); setApiKey(''); setShowSettings(false)
+    setHasKey(Boolean(result?.hasKey))
+    setApiKey('')
+  }
+
+  async function toggleAutoLaunch(next: boolean) {
+    const ipc = (window as any).northframe?.ipc
+    if (!ipc) return
+    const result = await ipc.invoke('settings:set', { autoLaunch: next })
+    setAutoLaunch(Boolean(result?.autoLaunch))
+  }
+
+  async function checkForUpdates() {
+    const ipc = (window as any).northframe?.ipc
+    if (!ipc) return
+    setUpdateStatus('checking')
+    const result = await ipc.invoke('updater:check')
+    setUpdateStatus(result?.message || result?.status || 'checking')
   }
 
   async function send(textArg?: string) {
@@ -77,7 +109,41 @@ export function AskPanel() {
             </button>
           </div>
 
-          {showSettings && <form onSubmit={(e) => { e.preventDefault(); saveKey() }} className="border-b border-line bg-panel-alt p-3"><label className="mb-1 block text-xs text-muted">Gemini API key</label><div className="flex gap-2"><input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="Paste key — stored locally" className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-bg px-2 text-xs"/><button type="submit" className="rounded-lg bg-accent px-3 text-xs font-semibold text-accent-ink">Save</button></div></form>}
+          {showSettings && (
+            <div className="space-y-3 border-b border-line bg-panel-alt p-3">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  saveKey()
+                }}
+              >
+                <label className="mb-1 block text-xs text-muted">Gemini API key</label>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    placeholder={hasKey ? 'Key saved — paste a new one to replace' : 'Paste key — stored locally'}
+                    className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-bg px-2 text-xs"
+                  />
+                  <button type="submit" className="rounded-lg bg-accent px-3 text-xs font-semibold text-accent-ink">
+                    Save
+                  </button>
+                </div>
+              </form>
+              <label className="flex items-center justify-between gap-3 rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
+                <span>Open Northframe on login</span>
+                <input type="checkbox" checked={autoLaunch} onChange={(e) => toggleAutoLaunch(e.target.checked)} />
+              </label>
+              <button
+                type="button"
+                onClick={checkForUpdates}
+                className="w-full rounded-lg border border-line bg-bg/40 px-3 py-2 text-left text-xs text-muted hover:text-text"
+              >
+                Check for updates{updateStatus ? ` — ${updateStatus}` : ''}
+              </button>
+            </div>
+          )}
           <div className="flex-1 space-y-3 overflow-y-auto p-4">
             {msgs.map((m, i) => (
               <motion.div

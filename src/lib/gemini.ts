@@ -168,7 +168,7 @@ export async function fakeGeminiChatLocal(
   const proj = ctx.projectName ? `“${ctx.projectName}”` : 'a project'
 
   if (/rundown|idea|bumper|sting|quote|concept|12s|short/.test(t)) {
-    return `Happy to. Head to the Brief screen and type the raw idea — I'll draft the scene rundown there, field by field, and you can lock it when it feels right. (This prototype mocks my answers; in the desktop build I'm a real Gemini Flash call.)`
+    return `Happy to. Head to the Brief screen and type the raw idea — I'll draft the scene rundown there, field by field, and you can lock it when it feels right. Add a Gemini key in the desktop settings for live Gemini Flash answers; web preview uses the local fallback.`
   }
   if (/import|zip|arena flow|how does the arena|battle|vote/.test(t)) {
     return `The Arena flow: 1) Lock a rundown in the Brief. 2) Copy the Arena prompt from the Arena Desk. 3) Paste it into arena.ai/code and let two models battle. 4) Vote, download the winner's .zip, and drop it into the Arena Desk — it lands as an imported asset you can preview and render.`
@@ -177,7 +177,7 @@ export async function fakeGeminiChatLocal(
     return `Captions live on the Footage Desk. Pick a style per clip — Hormozi (big, punched, one lime word), Standard (clean white), or Minimal (quiet chip) — mark the silence cuts to drop, then Apply. The edit shows up on the Timeline.`
   }
   if (/render|export|mp4/.test(t)) {
-    return `Rendering is mocked in this prototype: set aspect, fps and quality on the Render screen and a fake worker streams progress for ~6s. In the Electron build that swaps for the real Puppeteer-seek + ffmpeg pipeline with the same progress callback.`
+    return `Rendering uses the desktop seek-and-FFmpeg pipeline when you run Northframe in Electron: Arena pieces are captured frame by frame, footage is trimmed/cropped, and progress streams back into the Render queue. Web preview keeps a local fallback.`
   }
   return `Noted — I'd start from ${proj} on the ${ctx.view === 'home' ? 'Home' : ctx.view} screen. Everything I do here is mocked in the prototype, so try the Brief screen for a full walkthrough of the flow.`
 }

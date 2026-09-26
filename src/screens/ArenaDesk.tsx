@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, Copy, FileCode2, Loader2, Lock, Play, Swords, Upload } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
@@ -56,19 +56,24 @@ export function ArenaDesk() {
   async function handleDrop(file: File | null) {
     if (!project || importing) return
     setImporting({ name: file?.name ?? 'arena-winner.zip', pct: 0 })
-    const res = await importArenaZip(file, project.id, (pct) =>
-      setImporting((cur) => (cur ? { ...cur, pct } : cur)),
-    )
-    addArenaAsset(project.id, {
-      name: res.htmlFileName,
-      status: 'imported',
-      prompt: locked!.arenaPrompt,
-      htmlFileName: res.htmlFileName,
-      thumbnailDataUrl: res.thumbnailDataUrl ?? null,
-      localPath: res.localPath ?? null,
-    })
-    setImporting(null)
-    pushToast('success', `Imported ${res.htmlFileName} — ready to preview or render`)
+    try {
+      const res = await importArenaZip(file, project.id, (pct) =>
+        setImporting((cur) => (cur ? { ...cur, pct } : cur)),
+      )
+      addArenaAsset(project.id, {
+        name: res.htmlFileName,
+        status: 'imported',
+        prompt: locked!.arenaPrompt,
+        htmlFileName: res.htmlFileName,
+        thumbnailDataUrl: res.thumbnailDataUrl ?? null,
+        localPath: res.localPath ?? null,
+      })
+      pushToast('success', `Imported ${res.htmlFileName} — ready to preview or render`)
+    } catch (err) {
+      pushToast('error', err instanceof Error ? err.message : 'Arena import failed')
+    } finally {
+      setImporting(null)
+    }
   }
 
   return (
@@ -137,7 +142,7 @@ export function ArenaDesk() {
             <>
               <Upload size={18} className="text-muted" />
               <div className="text-sm font-medium">Drop the Arena .zip / .html here</div>
-              <div className="text-xs text-muted">or click to browse — import runs locally (mocked)</div>
+              <div className="text-xs text-muted">or click to browse — import, validation and thumbnail capture run locally</div>
             </>
           )}
         </div>
@@ -245,8 +250,12 @@ function ArenaCard({
 
   return (
     <Card className="flex flex-col overflow-hidden">
-      <div className={cx('relative flex aspect-video w-full items-center justify-center', gradientFor(asset.id))}>
-        <FileCode2 size={22} className="text-white/70" />
+      <div className={cx('relative flex aspect-video w-full items-center justify-center overflow-hidden', asset.thumbnailDataUrl ? 'bg-bg' : gradientFor(asset.id))}>
+        {asset.thumbnailDataUrl ? (
+          <img src={asset.thumbnailDataUrl} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <FileCode2 size={22} className="text-white/70" />
+        )}
         <Badge tone={STATUS_TONE[asset.status]} className="absolute right-2 top-2">
           {asset.status === 'rendered' && <Check size={11} />}
           {asset.status}
@@ -311,6 +320,23 @@ function PreviewModal({
 }) {
   const size = project.brief.lockedRundown?.size ?? [1920, 1080]
   const fps = project.brief.lockedRundown?.fps ?? 30
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    setPreviewUrl(null)
+    const localPath = asset?.localPath
+    const northframe = (window as any).northframe
+    if (!localPath || !northframe?.ipc) return
+    northframe.ipc
+      .invoke('arena:previewPath', localPath)
+      .then((url: string) => alive && setPreviewUrl(url))
+      .catch(() => alive && setPreviewUrl(null))
+    return () => {
+      alive = false
+    }
+  }, [asset?.localPath])
+
   return (
     <Modal open={!!asset} onClose={onClose} label={asset ? `Preview ${asset.name}` : 'Preview'}>
       {asset && (
@@ -324,13 +350,19 @@ function PreviewModal({
             </IconButton>
           </div>
           <div className="relative aspect-video overflow-hidden bg-[#08080c]">
-            {asset.localPath && (window as any).northframe ? <iframe title="Arena preview" className="h-full w-full border-0" src={`file://${asset.localPath.replaceAll('\\\\','/')}`} sandbox="allow-scripts" /> : <><div className="nf-drift absolute -left-10 -top-10 h-64 w-64 rounded-full bg-accent/25 blur-3xl" />
-            <div className="nf-drift absolute -bottom-16 -right-10 h-72 w-72 rounded-full bg-info/20 blur-3xl" style={{ animationDelay: '-4s' }} />
-            <div className="relative flex h-full flex-col items-center justify-center gap-2">
-              <FileCode2 size={26} className="text-white/40" />
-              <div className="font-mono text-xs text-white/60">{asset.htmlFileName ?? asset.name}</div>
-              <Badge tone="accent">sandboxed preview — mocked</Badge>
-            </div></>}
+            {previewUrl ? (
+              <iframe title="Arena preview" className="h-full w-full border-0" src={previewUrl} sandbox="allow-scripts" />
+            ) : (
+              <>
+                <div className="nf-drift absolute -left-10 -top-10 h-64 w-64 rounded-full bg-accent/25 blur-3xl" />
+                <div className="nf-drift absolute -bottom-16 -right-10 h-72 w-72 rounded-full bg-info/20 blur-3xl" style={{ animationDelay: '-4s' }} />
+                <div className="relative flex h-full flex-col items-center justify-center gap-2">
+                  <FileCode2 size={26} className="text-white/40" />
+                  <div className="font-mono text-xs text-white/60">{asset.htmlFileName ?? asset.name}</div>
+                  <Badge tone="accent">sandboxed preview</Badge>
+                </div>
+              </>
+            )}
           </div>
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <span className="font-mono text-xs tabular-nums text-muted">
