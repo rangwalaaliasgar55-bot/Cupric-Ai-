@@ -114,3 +114,22 @@ states, and the a11y/finish rules every screen follows (focus rings via
 box-shadow, press-scale 0.96, 44 px targets, `tabular-nums` on timecode,
 inline-copy checkmarks, one accent per view, `prefers-reduced-motion`
 honored everywhere).
+
+## Desktop installation
+
+Build the Windows installer on a Windows machine with:
+
+```bash
+npm install
+npm run dist:win
+```
+
+Install the generated `Northframe Studio-Setup-*.exe`. Windows SmartScreen may
+show an unsigned-app warning for personal builds; choose **More info → Run
+anyway**. Code signing is optional. Set `CSC_LINK` and `CSC_KEY_PASSWORD` in
+the build environment when a Windows signing certificate is available.
+
+Desktop data is stored in `%APPDATA%/northframe-studio/`, including settings,
+projects, Arena assets, footage, and renders. The Gemini API key can be set in
+the Ask Gemini settings panel or with `GEMINI_API_KEY`; it is kept in the
+Electron main process and never exposed to the renderer.
