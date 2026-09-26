@@ -14,6 +14,7 @@ import { Timeline } from '../screens/Timeline'
 import { Studio } from '../screens/Studio'
 import { Lab } from '../screens/Lab'
 import { Autonomous } from '../screens/Autonomous'
+import { MotionEngine } from '../screens/MotionEngine'
 import { useProjectStore } from '../state/useProjectStore'
 import { AppBackdrop } from './AppBackdrop'
 
@@ -26,6 +27,7 @@ const SCREENS = {
   footage: <FootageDesk />,
   timeline: <Timeline />,
   studio: <Studio />,
+  motion: <MotionEngine />,
   lab: <Lab />,
   render: <Render />,
   library: <Library />,

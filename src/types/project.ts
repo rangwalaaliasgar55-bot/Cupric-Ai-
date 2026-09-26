@@ -66,6 +66,7 @@ export type View =
   | 'footage'
   | 'timeline'
   | 'studio'
+  | 'motion'
   | 'lab'
   | 'render'
   | 'library'

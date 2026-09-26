@@ -60,6 +60,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      'next/link': fileURLToPath(new URL('./src/shims/next/link.tsx', import.meta.url)),
+      'next/navigation': fileURLToPath(new URL('./src/shims/next/navigation.ts', import.meta.url)),
+      'next/server': fileURLToPath(new URL('./src/shims/next/server.ts', import.meta.url)),
+      'next': fileURLToPath(new URL('./src/shims/next/index.ts', import.meta.url)),
+      'vitest': fileURLToPath(new URL('./src/shims/vitest.ts', import.meta.url)),
+      'mediabunny': fileURLToPath(new URL('./src/shims/mediabunny.ts', import.meta.url)),
+      'radix-ui': fileURLToPath(new URL('./src/shims/radix-ui.tsx', import.meta.url)),
     },
   },
   server: {
