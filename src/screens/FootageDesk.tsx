@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronRight, Film, Loader2, Square, RectangleHorizontal, RectangleVertical, Upload, X } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
@@ -8,7 +8,7 @@ import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
 import { Segmented } from '../components/Segmented'
 import type { FootageAsset } from '../types/project'
-import { fakeUploadFootage } from '../lib/arena'
+import { uploadFootage } from '../lib/arena'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, hashStr, mulberry32, round1 } from '../lib/utils'
 
@@ -52,7 +52,26 @@ export function FootageDesk() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [dragOver, setDragOver] = useState(false)
   const [uploading, setUploading] = useState<{ name: string; pct: number } | null>(null)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [noiseDb, setNoiseDb] = useState(-35)
+  const [minSilence, setMinSilence] = useState(0.8)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const ipc = (window as any).northframe?.ipc
+    if (!ipc) return
+    ipc.invoke('settings:get').then((settings: { silenceNoiseDb?: number; silenceMinDuration?: number }) => {
+      if (typeof settings?.silenceNoiseDb === 'number') setNoiseDb(settings.silenceNoiseDb)
+      if (typeof settings?.silenceMinDuration === 'number') setMinSilence(settings.silenceMinDuration)
+    })
+  }, [])
+
+  async function saveAdvancedSettings() {
+    const ipc = (window as any).northframe?.ipc
+    if (!ipc) return
+    await ipc.invoke('settings:set', { silenceNoiseDb: noiseDb, silenceMinDuration: minSilence })
+    pushToast('success', 'Footage analysis settings saved')
+  }
 
   if (!project) return <NoProject />
 
@@ -63,18 +82,25 @@ export function FootageDesk() {
     if (!project || uploading) return
     const name = file?.name ?? `raw-clip-${Math.floor(Math.random() * 900 + 100)}.mp4`
     setUploading({ name, pct: 0 })
-    const res = await fakeUploadFootage(file, (pct) => setUploading((cur) => (cur ? { ...cur, pct } : cur)))
-    const id = addFootageAsset(project.id, {
-      name,
-      durationSec: res.durationSec,
-      status: 'uploaded',
-      silenceRanges: res.silenceRanges,
-      captionStyle: 'standard',
-      crop: '9:16',
-    })
-    setUploading(null)
-    setSelectedId(id)
-    pushToast('success', `${name} scanned — ${res.silenceRanges.length} silence cut${res.silenceRanges.length === 1 ? '' : 's'} found`)
+    try {
+      const res = await uploadFootage(file, project.id, (pct) => setUploading((cur) => (cur ? { ...cur, pct } : cur)))
+      const id = addFootageAsset(project.id, {
+        name,
+        durationSec: res.durationSec,
+        localPath: (res as any).videoPath ?? null,
+        status: 'uploaded',
+        silenceRanges: res.silenceRanges,
+        waveform: res.waveform ?? [],
+        captionStyle: 'standard',
+        crop: '9:16',
+      })
+      setSelectedId(id)
+      pushToast('success', `${name} scanned — ${res.silenceRanges.length} silence cut${res.silenceRanges.length === 1 ? '' : 's'} found`)
+    } catch (err) {
+      pushToast('error', err instanceof Error ? err.message : 'Footage analysis failed')
+    } finally {
+      setUploading(null)
+    }
   }
 
   return (
@@ -127,8 +153,49 @@ export function FootageDesk() {
             <>
               <Upload size={18} className="text-muted" />
               <div className="text-sm font-medium">Drop raw video here</div>
-              <div className="text-xs text-muted">MP4 / MOV — audio is scanned locally (mocked)</div>
+              <div className="text-xs text-muted">MP4 / MOV — FFmpeg scans audio locally for silence and waveform peaks</div>
             </>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-line bg-panel/40 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="flex w-full items-center justify-between text-left text-xs font-semibold uppercase tracking-wider text-muted"
+          >
+            Advanced silence detection
+            <span className="font-mono normal-case">{noiseDb}dB · {minSilence.toFixed(1)}s</span>
+          </button>
+          {showAdvanced && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+              <label className="text-xs text-muted">
+                Noise threshold (dB)
+                <input
+                  type="number"
+                  min={-90}
+                  max={-5}
+                  value={noiseDb}
+                  onChange={(e) => setNoiseDb(Number(e.target.value))}
+                  className="mt-1 h-9 w-full rounded-lg border border-line bg-panel-alt px-2 text-sm text-text"
+                />
+              </label>
+              <label className="text-xs text-muted">
+                Minimum silence (seconds)
+                <input
+                  type="number"
+                  min={0.1}
+                  max={10}
+                  step={0.1}
+                  value={minSilence}
+                  onChange={(e) => setMinSilence(Number(e.target.value))}
+                  className="mt-1 h-9 w-full rounded-lg border border-line bg-panel-alt px-2 text-sm text-text"
+                />
+              </label>
+              <Button size="sm" variant="outline" onClick={saveAdvancedSettings}>
+                Save
+              </Button>
+            </div>
           )}
         </div>
         <input
@@ -226,6 +293,7 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
           seed={asset.id}
           duration={asset.durationSec}
           cuts={cuts}
+          waveform={asset.waveform}
           onExclude={(i) =>
             updateFootageAsset(project.id, asset.id, {
               silenceRanges: cuts.filter((_, idx) => idx !== i),
@@ -298,17 +366,20 @@ function Waveform({
   seed,
   duration,
   cuts,
+  waveform,
   onExclude,
 }: {
   seed: string
   duration: number
   cuts: [number, number][]
+  waveform?: number[]
   onExclude: (i: number) => void
 }) {
   const bars = useMemo(() => {
+    if (waveform?.length) return waveform.map((v) => Math.max(0.04, Math.min(1, v)))
     const rnd = mulberry32(hashStr(seed))
     return Array.from({ length: 88 }, () => 0.12 + rnd() * 0.88)
-  }, [seed])
+  }, [seed, waveform])
 
   return (
     <div>

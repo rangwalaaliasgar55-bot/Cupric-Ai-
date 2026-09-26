@@ -26,6 +26,7 @@ export type ArenaAsset = {
   prompt: string
   htmlFileName: string | null
   thumbnailDataUrl: string | null
+  localPath?: string | null
   createdAt: string
 }
 
@@ -33,8 +34,10 @@ export type FootageAsset = {
   id: string
   name: string
   durationSec: number
+  localPath?: string | null
   status: 'uploaded' | 'analyzing' | 'edited'
   silenceRanges: [number, number][]
+  waveform?: number[]
   captionStyle: 'hormozi' | 'standard' | 'minimal'
   crop: '16:9' | '9:16' | '1:1'
 }
@@ -55,6 +58,8 @@ export type RenderJob = {
   status: 'queued' | 'rendering' | 'done' | 'error'
   progressPct: number
   outputName: string | null
+  outputPath?: string | null
+  errorMessage?: string | null
   createdAt: string
 }
 

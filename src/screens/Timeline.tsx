@@ -354,7 +354,7 @@ function InsertPopover({
                 key={a.id}
                 type="button"
                 role="menuitem"
-                onClick={() => onPick('arena', a.id, 4)}
+                onClick={() => onPick('arena', a.id, project?.brief.lockedRundown?.durationSec ?? 4)}
                 className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-colors duration-150 hover:bg-panel"
               >
                 <Swords size={13} className="text-accent-text" />

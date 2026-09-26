@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, FolderOpen, Rocket, Square, RectangleHorizontal, RectangleVertical } from 'lucide-react'
+import { Download, FolderOpen, Rocket, Square, RectangleHorizontal, RectangleVertical, X } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
@@ -27,6 +27,7 @@ export function Render() {
   const project = useActiveProject()
   const startRender = useProjectStore((s) => s.startRender)
   const retryRender = useProjectStore((s) => s.retryRender)
+  const cancelRender = useProjectStore((s) => s.cancelRender)
   const pushToast = useProjectStore((s) => s.pushToast)
 
   const [aspect, setAspect] = useState<RenderJob['aspect']>('9:16')
@@ -121,7 +122,7 @@ export function Render() {
                 { value: 'final', label: 'Final' },
               ]}
             />
-            <p className="mt-1.5 text-xs text-muted">Draft ≈ fast proxy · Final = full quality (mocked).</p>
+            <p className="mt-1.5 text-xs text-muted">Draft ≈ fast proxy · Final = slower, higher quality H.264.</p>
           </div>
 
           <div>
@@ -179,10 +180,18 @@ export function Render() {
                 key={job.id}
                 job={job}
                 onRetry={() => retryRender(project.id, job.id)}
-                onDownload={() =>
-                  pushToast('success', `Saved to ~/Downloads/${job.outputName ?? 'export.mp4'} (mock)`)
-                }
-                onReveal={() => pushToast('info', 'Revealed in Explorer (mock)')}
+                onCancel={() => cancelRender(project.id, job.id)}
+                onDownload={async () => {
+                  if (job.outputPath && (window as any).northframe?.ipc) {
+                    const result = await (window as any).northframe.ipc.invoke('render:copyToDownloads', job.outputPath)
+                    pushToast('success', `Copied to Downloads — ${result?.outputPath ? 'opened in Explorer' : 'ready'}`)
+                  }
+                  else pushToast('info', 'Finish a desktop render to reveal the MP4')
+                }}
+                onReveal={async () => {
+                  if (job.outputPath && (window as any).northframe?.ipc) await (window as any).northframe.ipc.invoke('render:reveal', job.outputPath)
+                  else pushToast('info', 'This render has no desktop output yet')
+                }}
               />
             ))
           )}
@@ -195,11 +204,13 @@ export function Render() {
 function JobRow({
   job,
   onRetry,
+  onCancel,
   onDownload,
   onReveal,
 }: {
   job: RenderJob
   onRetry: () => void
+  onCancel: () => void
   onDownload: () => void
   onReveal: () => void
 }) {
@@ -223,6 +234,10 @@ function JobRow({
           <span className="w-10 shrink-0 text-right font-mono text-xs tabular-nums text-muted">
             {Math.round(job.progressPct)}%
           </span>
+          <Button size="sm" variant="ghost" onClick={onCancel}>
+            <X size={13} />
+            Cancel
+          </Button>
         </div>
       )}
 
@@ -241,7 +256,7 @@ function JobRow({
 
       {job.status === 'error' && (
         <div className="flex items-center justify-between gap-3">
-          <span className="text-xs text-danger">Worker died at {Math.round(job.progressPct)}% — frame seek timeout (mock).</span>
+          <span className="text-xs text-danger">{job.errorMessage ?? `Worker stopped at ${Math.round(job.progressPct)}%.`}</span>
           <Button size="sm" variant="outline" onClick={onRetry}>
             Retry
           </Button>
