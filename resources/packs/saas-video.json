@@ -1,0 +1,345 @@
+{
+  "id": "saas-video",
+  "name": "SaaS video templates",
+  "description": "Editable, local-first blueprints for product launches, feature demos and growth videos.",
+  "version": "0.4.0",
+  "source": "Cupric authored templates",
+  "license": "MIT (Cupric authored blueprint)",
+  "items": [
+    {
+      "id": "launch-announcement",
+      "kind": "saas-template",
+      "name": "Launch announcement",
+      "description": "Announce a new SaaS product",
+      "data": {
+        "durationSec": 15,
+        "scenes": [
+          [
+            "THE NEW WAY TO WORK",
+            3,
+            "pop"
+          ],
+          [
+            "One workspace. Every workflow.",
+            5,
+            "word-reveal"
+          ],
+          [
+            "Try it free today",
+            4,
+            "fade-up"
+          ],
+          [
+            "yourproduct.com",
+            3,
+            "shimmer"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true
+      },
+      "tags": [
+        "saas",
+        "video",
+        "template",
+        "editable",
+        "agent"
+      ]
+    },
+    {
+      "id": "feature-drop",
+      "kind": "saas-template",
+      "name": "Feature drop",
+      "description": "Show one feature with a clear payoff",
+      "data": {
+        "durationSec": 12,
+        "scenes": [
+          [
+            "NEW FEATURE",
+            2.5,
+            "pop"
+          ],
+          [
+            "Turn busywork into momentum.",
+            3.5,
+            "word-reveal"
+          ],
+          [
+            "Automate the handoff in one click.",
+            3.5,
+            "fade-up"
+          ],
+          [
+            "Ship faster.",
+            2.5,
+            "shimmer"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true
+      },
+      "tags": [
+        "saas",
+        "video",
+        "template",
+        "editable",
+        "agent"
+      ]
+    },
+    {
+      "id": "product-demo",
+      "kind": "saas-template",
+      "name": "Product demo",
+      "description": "Explain a workflow with screen-recording placeholders",
+      "data": {
+        "durationSec": 20,
+        "scenes": [
+          [
+            "See it in action",
+            3,
+            "fade-up"
+          ],
+          [
+            "1. Capture the request",
+            5,
+            "word-reveal"
+          ],
+          [
+            "2. Collaborate in context",
+            5,
+            "word-reveal"
+          ],
+          [
+            "3. Deliver with confidence",
+            5,
+            "word-reveal"
+          ],
+          [
+            "Start your workflow",
+            2,
+            "shimmer"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true
+      },
+      "tags": [
+        "saas",
+        "video",
+        "template",
+        "editable",
+        "agent"
+      ]
+    },
+    {
+      "id": "problem-solution",
+      "kind": "saas-template",
+      "name": "Problem to solution",
+      "description": "Convert pain into a product promise",
+      "data": {
+        "durationSec": 15,
+        "scenes": [
+          [
+            "Still losing hours to busywork?",
+            4,
+            "fade-up"
+          ],
+          [
+            "Meet your calm control center.",
+            4,
+            "word-reveal"
+          ],
+          [
+            "Less chasing. More creating.",
+            4,
+            "pop"
+          ],
+          [
+            "Make work flow.",
+            3,
+            "shimmer"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true
+      },
+      "tags": [
+        "saas",
+        "video",
+        "template",
+        "editable",
+        "agent"
+      ]
+    },
+    {
+      "id": "testimonial",
+      "kind": "saas-template",
+      "name": "Customer testimonial",
+      "description": "Turn a customer quote into social proof",
+      "data": {
+        "durationSec": 15,
+        "scenes": [
+          [
+            "“We got our time back.”",
+            5,
+            "word-reveal"
+          ],
+          [
+            "— Alex, Head of Operations",
+            3,
+            "fade-up"
+          ],
+          [
+            "3x faster launch cycles",
+            4,
+            "pop"
+          ],
+          [
+            "Join teams moving forward.",
+            3,
+            "shimmer"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true
+      },
+      "tags": [
+        "saas",
+        "video",
+        "template",
+        "editable",
+        "agent"
+      ]
+    },
+    {
+      "id": "pricing-cta",
+      "kind": "saas-template",
+      "name": "Pricing CTA",
+      "description": "Make a simple pricing or trial invitation",
+      "data": {
+        "durationSec": 12,
+        "scenes": [
+          [
+            "Built for your next stage",
+            3,
+            "fade-up"
+          ],
+          [
+            "Simple plans. No surprises.",
+            3,
+            "word-reveal"
+          ],
+          [
+            "Start free · Upgrade when ready",
+            3,
+            "pop"
+          ],
+          [
+            "Get started",
+            3,
+            "shimmer"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true
+      },
+      "tags": [
+        "saas",
+        "video",
+        "template",
+        "editable",
+        "agent"
+      ]
+    },
+    {
+      "id": "changelog",
+      "kind": "saas-template",
+      "name": "Changelog release",
+      "description": "Publish a polished product update",
+      "data": {
+        "durationSec": 15,
+        "scenes": [
+          [
+            "WHAT’S NEW · 2.4",
+            3,
+            "pop"
+          ],
+          [
+            "Faster search",
+            3,
+            "word-reveal"
+          ],
+          [
+            "Smarter automations",
+            3,
+            "word-reveal"
+          ],
+          [
+            "A calmer daily workflow",
+            3,
+            "fade-up"
+          ],
+          [
+            "Available now",
+            3,
+            "shimmer"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true
+      },
+      "tags": [
+        "saas",
+        "video",
+        "template",
+        "editable",
+        "agent"
+      ]
+    },
+    {
+      "id": "onboarding",
+      "kind": "saas-template",
+      "name": "Onboarding walkthrough",
+      "description": "Teach a first-run flow",
+      "data": {
+        "durationSec": 18,
+        "scenes": [
+          [
+            "Welcome to your new workspace",
+            4,
+            "fade-up"
+          ],
+          [
+            "Create your first project",
+            4,
+            "word-reveal"
+          ],
+          [
+            "Invite your team",
+            4,
+            "word-reveal"
+          ],
+          [
+            "Make progress visible",
+            3,
+            "word-reveal"
+          ],
+          [
+            "You’re ready to go",
+            3,
+            "shimmer"
+          ]
+        ],
+        "editable": true,
+        "agentUsable": true
+      },
+      "tags": [
+        "saas",
+        "video",
+        "template",
+        "editable",
+        "agent"
+      ]
+    }
+  ]
+}
