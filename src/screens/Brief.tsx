@@ -6,7 +6,7 @@ import { Button } from '../components/Button'
 import { Kbd } from '../components/Kbd'
 import { NoProject } from '../components/NoProject'
 import type { BriefMessage, SceneRundown } from '../types/project'
-import { fakeAskGemini } from '../lib/gemini'
+import { askGemini } from '../lib/gemini'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, nowIso } from '../lib/utils'
 
@@ -55,7 +55,7 @@ export function Brief() {
     addBriefMessage(project.id, { role: 'user', text, at: nowIso() })
     setBusy(true)
     const askCount = messages.filter((m) => m.role === 'user').length
-    const res = await fakeAskGemini(text, askCount)
+    const res = await askGemini(text, askCount)
     addBriefMessage(project.id, { role: 'gemini', text: res.text, at: nowIso() })
     setBusy(false)
 

@@ -119,7 +119,7 @@ function pick<T>(arr: T[], seed: number): T {
   return arr[seed % arr.length]
 }
 
-export async function fakeAskGemini(userText: string, askCount: number): Promise<GeminiResult> {
+export async function askGeminiLocal(userText: string, askCount: number): Promise<GeminiResult> {
   await wait(800 + Math.random() * 700)
 
   const t = userText.toLowerCase()
@@ -159,7 +159,7 @@ export async function fakeAskGemini(userText: string, askCount: number): Promise
 }
 
 /** Mocked chat replies for the "Ask Gemini" slide-over panel. */
-export async function fakeGeminiChat(
+export async function fakeGeminiChatLocal(
   text: string,
   ctx: { projectName: string | null; view: View },
 ): Promise<string> {
@@ -180,6 +180,21 @@ export async function fakeGeminiChat(
     return `Rendering is mocked in this prototype: set aspect, fps and quality on the Render screen and a fake worker streams progress for ~6s. In the Electron build that swaps for the real Puppeteer-seek + ffmpeg pipeline with the same progress callback.`
   }
   return `Noted — I'd start from ${proj} on the ${ctx.view === 'home' ? 'Home' : ctx.view} screen. Everything I do here is mocked in the prototype, so try the Brief screen for a full walkthrough of the flow.`
+}
+
+export async function askGemini(userText: string, askCount: number): Promise<GeminiResult> {
+  const api = (window as any).northframe?.ipc
+  if (api) {
+    try { return await api.invoke('gemini:ask', { prompt: userText, history: [], rundownContext: {} }) } catch { /* demo fallback */ }
+  }
+  return askGeminiLocal(userText, askCount)
+}
+
+export async function fakeAskGemini(userText: string, askCount: number) { return askGeminiLocal(userText, askCount) }
+export async function fakeGeminiChat(text: string, ctx: { projectName: string | null; view: View }) {
+  const api = (window as any).northframe?.ipc
+  if (api) { try { return await api.invoke('gemini:chat', { text, ctx }) } catch { /* demo fallback */ } }
+  return fakeGeminiChatLocal(text, ctx)
 }
 
 export { arenaPromptOf, slugify }
