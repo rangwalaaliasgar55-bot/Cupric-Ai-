@@ -35,27 +35,29 @@ stays on buttons. One accent per view — lime leads, blue informs, red warns.
 - Scale: **12 / 13 / 14 / 16 / 20 / 28 px** (`text-xs → text-xl`). Never below 12 px — including ruler ticks and kbd chips.
 - Mono + `tabular-nums` on anything numeric that updates in place: durations, timecode, percentages, prompt sizes.
 
-### Radius
+### Radius & spacing
 
-- 12 px (`rounded-xl`) cards/panels · 8 px (`rounded-lg`) buttons/inputs · pill (`rounded-full`) badges.
-- Concentric where nested: thumb inside card uses `rounded-xl` flush or `rounded-lg` with padding.
+- Radius: `--radius-1…4` (4 / 8 / 12 / 16 px). Cards `rounded-xl` (12), buttons/inputs `rounded-lg` (8), badges pill.
+- Spacing: `--spacing-1…8` (4→32 px). Screen gutters 24 px; content max-width 1152 px except full-bleed Timeline.
 
-### Spacing
+### Motion — one language (`src/lib/motion.ts`)
 
-4 / 8 / 12 / 16 / 24 / 32 (`p-1 … p-8` halves). Screen gutters: 24 px, content max-width 1152 px (`max-w-6xl`) except full-bleed surfaces (Timeline).
-
-### Motion — one language
-
-- Everyday ease: `cubic-bezier(0.22, 1, 0.36, 1)`, 150–200 ms.
-- The one spring: `cubic-bezier(0.34, 1.56, 0.64, 1)` — used only on the six *moments*:
+- Everyday ease: `cubic-bezier(0.22, 1, 0.36, 1)`, 150–200 ms (`EASE_SOFT`).
+- The one spring: `cubic-bezier(0.34, 1.56, 0.64, 1)` — only on the six *moments*:
   1. sidebar active-indicator glide (layoutId),
   2. toast enter/exit,
   3. modal enter (from **scale 0.96**, never 0),
   4. rundown field fill flash (Brief),
   5. Ask-panel slide,
   6. button press (`active:scale-[0.96]`, CSS).
-- Playhead/render progress run on linear/ease-out — springs don't animate data.
-- Every animation is skipped under `prefers-reduced-motion` (`MotionConfig reducedMotion="user"` + media-gated CSS keyframes).
+- Playhead/render progress: linear/ease-out — springs don't animate data.
+- Every animation is skipped under `prefers-reduced-motion`.
+
+### Effects & stage backgrounds
+
+- Local pack: `src/lib/effects.ts` + `src/lib/gradients.ts`.
+- Stage backgrounds (grid, dots, lime haze) are for **preview / Arena / marketing only**.
+- App chrome stays flat surface tokens — no stacked page backgrounds.
 
 ---
 
@@ -67,35 +69,43 @@ Icon-only buttons go through `IconButton` (enforces `aria-label`).
 
 Every data surface defines: **default / hover / focus-visible / disabled / empty /
 loading(skeleton or progress) / error**. Disabled buttons explain themselves with
-helper text below (never tooltips) — e.g. Render's "Add at least one clip…" hint.
+helper text below (never tooltips).
 
-Shared: `Badge` (status pills), `Card`, `Kbd`, `Modal` (Esc + backdrop close,
-focus in/out), `Toasts` (bottom-right, 4 s auto-dismiss), `EmptyState`
-(**exactly one action**), `ProgressBar`, `Segmented`, `NoProject`.
+Shared: `Badge`, `Card`, `Kbd`, `Modal`, `Toasts`, `EmptyState` (**exactly one action**),
+`ProgressBar`, `Segmented`, `NoProject`.
+
+Bridge: `src/lib/bridge.ts` — prefer `window.cupric`, legacy alias `window.northframe`.
+
+---
 
 ## 3. Finish rules (per screen, last pass)
 
 - Labels/inputs: text inputs live in a `<form>` (Enter submits); composer also accepts ⌘↵.
-- Hover styles only under `@media (hover: hover)` (Tailwind v4 default).
-- Copy feedback is an **inline check**, not a toast (Arena prompt).
-- Press scale ~0.96; dialogs enter at 0.96 → 1; nothing scales to 0.8.
+- Hover styles only under `@media (hover: hover)`.
+- Copy feedback is an **inline check**, not a toast where possible (Arena prompt).
+- Press scale ~0.96; dialogs enter at 0.96 → 1.
 - Focus ring via box-shadow double ring, never `outline`.
 - `::selection` is lime.
 - Aspect-ratio boxes for thumbnails/waveform/stage — no layout jump.
-- Decorative orbs in the preview stage have no pointer interaction (backdrop layer).
+- Decorative orbs have `pointer-events: none`.
 - Timecode, percentages, durations: `font-mono tabular-nums`.
-- Skeletons/progress match real layout (import/analyze use the same drop-zone box).
+- Skeletons/progress match real layout.
 
-## 4. Deliberate omissions (pipeline notes)
+---
 
-- **No page backgrounds** (bg.ibelick-style): this is app chrome — flat surface tokens only; backgrounds belong on marketing pages.
-- **No fluid Utopia scale**: fixed desktop viewport (Electron, min 1120×720) — a fluid type scale would add breakpoint soup for zero benefit. The 6-step fixed scale is the Utopia output at its 1240 px midpoint.
-- **One kit**: all primitives are local (`src/components/ui`-equivalent). No second component library — no mixed visual languages.
-- **Icons**: lucide only, 18/16/13 px rhythm, stroke weight consistent. The logo mark (`src/assets/logo.svg`) is the single custom glyph.
+## 4. Deliberate omissions
+
+- **No page backgrounds on chrome** — flat tokens only; stage packs are opt-in resources.
+- **No fluid Utopia scale** — fixed desktop viewport (Electron, min 1120×720).
+- **One kit** — local primitives only; no second component library.
+- **Icons** — lucide only; logo mark is the single custom glyph.
+
+---
 
 ## 5. Extending
 
 1. Add/extend tokens here → `@theme` in `styles.css`.
 2. New component → `src/components/`, states included.
-3. New screen → `src/screens/`, one exported root, register in `AppLayout` + `Sidebar` `NAV`.
-4. Anything async → a mock in `src/lib/` first, same signature as the future real call.
+3. New screen → `src/screens/`, register in `AppLayout` + `Sidebar` `NAV`.
+4. Effects / gradients → `src/lib/effects.ts` / `gradients.ts`, surface in Library.
+5. Anything async → same signature in `src/lib/` for web + desktop paths.

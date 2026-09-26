@@ -1,8 +1,8 @@
 {
   "name": "cupric-ai",
   "private": true,
-  "version": "0.2.2",
-  "description": "Cupric AI — desktop creator tool for short-form video with Gemini, Arena import, footage analysis, timeline rendering, and Electron packaging.",
+  "version": "0.2.3",
+  "description": "Cupric AI — desktop creator tool for short-form video with Gemini, Arena import, footage analysis, timeline rendering, local effects pack, and Electron packaging.",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -61,15 +61,11 @@
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         },
         {
           "target": "portable",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
       ],
       "icon": "build/icon.png",

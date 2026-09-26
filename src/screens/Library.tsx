@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Boxes, Check, FileText, Palette, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Boxes, Check, Copy, FileText, Palette, Search, Sparkles, Layers } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
@@ -7,10 +7,12 @@ import { EmptyState } from '../components/EmptyState'
 import { Segmented } from '../components/Segmented'
 import type { LibraryItem } from '../types/project'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
-import { relTime } from '../lib/utils'
+import { EFFECTS } from '../lib/effects'
+import { GRADIENT_PRESETS } from '../lib/gradients'
+import { copyText, relTime } from '../lib/utils'
 
-/* Built-in starter library: reusable templates across the three kinds. */
-const ITEMS: LibraryItem[] = [
+/* Built-in starter library: rundowns, arena, presets, effects, backgrounds. */
+const STATIC_ITEMS: LibraryItem[] = [
   {
     id: 'lib-r1',
     kind: 'rundown',
@@ -108,12 +110,38 @@ const ITEMS: LibraryItem[] = [
   },
 ]
 
-type Filter = 'all' | 'rundown' | 'arena' | 'preset'
+function buildResourceItems(): LibraryItem[] {
+  const now = new Date().toISOString()
+  const effects: LibraryItem[] = EFFECTS.map((e) => ({
+    id: `fx-${e.id}`,
+    kind: 'effect' as const,
+    name: e.name,
+    updatedAt: now,
+    effectId: e.id,
+    effectKind: e.kind,
+    description: e.description,
+    promptCue: e.promptCue,
+  }))
+  const backgrounds: LibraryItem[] = GRADIENT_PRESETS.map((g) => ({
+    id: `bg-${g.id}`,
+    kind: 'background' as const,
+    name: g.name,
+    updatedAt: now,
+    gradientId: g.id,
+    css: g.css,
+    className: g.className,
+  }))
+  return [...effects, ...backgrounds]
+}
+
+type Filter = 'all' | 'rundown' | 'arena' | 'preset' | 'effect' | 'background'
 
 const KIND_LABEL: Record<LibraryItem['kind'], string> = {
   rundown: 'Rundown',
   arena: 'Arena asset',
   preset: 'Preset',
+  effect: 'Effect',
+  background: 'Background',
 }
 
 export function Library() {
@@ -126,17 +154,33 @@ export function Library() {
   const [query, setQuery] = useState('')
   const [applied, setApplied] = useState<Set<string>>(new Set())
 
+  const ITEMS = useMemo(() => [...STATIC_ITEMS, ...buildResourceItems()], [])
+
   const items = ITEMS.filter((i) => (filter === 'all' ? true : i.kind === filter)).filter((i) => {
     if (!query.trim()) return true
     const q = query.toLowerCase()
-    return (
-      i.name.toLowerCase().includes(q) ||
-      (i.kind === 'arena' && i.style.toLowerCase().includes(q)) ||
-      (i.kind === 'preset' && i.font.toLowerCase().includes(q))
-    )
+    if (i.name.toLowerCase().includes(q)) return true
+    if (i.kind === 'arena' && i.style.toLowerCase().includes(q)) return true
+    if (i.kind === 'preset' && i.font.toLowerCase().includes(q)) return true
+    if (i.kind === 'effect' && (i.description.toLowerCase().includes(q) || i.effectKind.includes(q))) return true
+    if (i.kind === 'background' && i.gradientId.includes(q)) return true
+    return false
   })
 
-  function use(item: LibraryItem) {
+  async function use(item: LibraryItem) {
+    if (item.kind === 'effect') {
+      const ok = await copyText(item.promptCue)
+      pushToast(ok ? 'success' : 'info', ok ? `Effect cue “${item.name}” copied` : 'Could not copy — select and copy manually')
+      setApplied((s) => new Set(s).add(item.id))
+      return
+    }
+    if (item.kind === 'background') {
+      const ok = await copyText(item.css)
+      pushToast(ok ? 'success' : 'info', ok ? `Background CSS “${item.name}” copied` : 'Could not copy CSS')
+      setApplied((s) => new Set(s).add(item.id))
+      return
+    }
+
     if (!project) {
       pushToast('info', 'Create or open a project first')
       useProjectStore.getState().setView('home')
@@ -154,12 +198,15 @@ export function Library() {
         thumbnailDataUrl: null,
       })
       pushToast('success', `${item.name} added to “${project.name}” (prompt-ready)`)
-    } else {
-      // Brand kit preset — applied through the store's project update path.
+    } else if (item.kind === 'preset') {
       useProjectStore.setState((s) => ({
         projects: s.projects.map((p) =>
           p.id === project.id
-            ? { ...p, brandKit: { ...p.brandKit, colors: item.colors, font: item.font }, updatedAt: new Date().toISOString() }
+            ? {
+                ...p,
+                brandKit: { ...p.brandKit, colors: item.colors, font: item.font },
+                updatedAt: new Date().toISOString(),
+              }
             : p,
         ),
       }))
@@ -174,7 +221,8 @@ export function Library() {
         <div>
           <h1 className="text-lg font-bold">Library</h1>
           <p className="text-sm text-muted">
-            Rundowns, Arena assets and brand presets across all projects — drop one into the active project.
+            Rundowns, Arena assets, brand presets, local effects and stage backgrounds — resources for better video
+            generation on-platform.
           </p>
         </div>
 
@@ -196,8 +244,10 @@ export function Library() {
             options={[
               { value: 'all', label: 'All' },
               { value: 'rundown', label: 'Rundowns' },
-              { value: 'arena', label: 'Arena assets' },
+              { value: 'arena', label: 'Arena' },
               { value: 'preset', label: 'Presets' },
+              { value: 'effect', label: 'Effects' },
+              { value: 'background', label: 'Backgrounds' },
             ]}
           />
         </div>
@@ -217,15 +267,32 @@ export function Library() {
 }
 
 function LibraryCard({ item, used, onUse }: { item: LibraryItem; used: boolean; onUse: () => void }) {
-  const Icon = item.kind === 'rundown' ? FileText : item.kind === 'arena' ? Boxes : Palette
+  const Icon =
+    item.kind === 'rundown'
+      ? FileText
+      : item.kind === 'arena'
+        ? Boxes
+        : item.kind === 'preset'
+          ? Palette
+          : item.kind === 'effect'
+            ? Sparkles
+            : Layers
+
   return (
     <Card className="flex flex-col gap-3 p-4 transition-colors duration-150 hover:border-text/20">
       <div className="flex items-center justify-between">
         <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel-alt text-muted">
           <Icon size={16} />
         </div>
-        <Badge tone={item.kind === 'preset' ? 'info' : 'neutral'}>{KIND_LABEL[item.kind]}</Badge>
+        <Badge tone={item.kind === 'preset' || item.kind === 'background' ? 'info' : item.kind === 'effect' ? 'accent' : 'neutral'}>
+          {KIND_LABEL[item.kind]}
+        </Badge>
       </div>
+
+      {item.kind === 'background' && (
+        <div className={`h-16 w-full rounded-lg border border-line ${item.className}`} aria-hidden />
+      )}
+
       <div>
         <div className="truncate text-sm font-semibold">{item.name}</div>
         {item.kind === 'rundown' && (
@@ -244,17 +311,35 @@ function LibraryCard({ item, used, onUse }: { item: LibraryItem; used: boolean; 
             <span className="text-xs text-muted">{item.font}</span>
           </div>
         )}
+        {item.kind === 'effect' && (
+          <div className="mt-0.5 space-y-1">
+            <div className="text-xs capitalize text-muted">{item.effectKind}</div>
+            <p className="line-clamp-2 text-xs text-muted">{item.description}</p>
+          </div>
+        )}
+        {item.kind === 'background' && (
+          <div className="mt-0.5 text-xs text-muted">Stage / thumbnail only — chrome stays flat</div>
+        )}
       </div>
+
       <div className="mt-auto flex items-center justify-between gap-2 pt-1">
-        <span className="text-xs text-muted">Updated {relTime(item.updatedAt)}</span>
+        <span className="text-xs text-muted">
+          {item.kind === 'effect' || item.kind === 'background' ? 'Resource' : `Updated ${relTime(item.updatedAt)}`}
+        </span>
         {used ? (
           <Badge tone="accent">
             <Check size={11} />
-            Added
+            {item.kind === 'effect' || item.kind === 'background' ? 'Copied' : 'Added'}
           </Badge>
         ) : (
           <Button size="sm" variant="outline" onClick={onUse}>
-            Use in current project
+            {item.kind === 'effect' || item.kind === 'background' ? (
+              <>
+                <Copy size={12} /> Copy
+              </>
+            ) : (
+              'Use in current project'
+            )}
           </Button>
         )}
       </div>

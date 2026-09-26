@@ -56,7 +56,11 @@ export function Sidebar() {
                 onClick={() => setView(item.view)}
                 className={cx(
                   'relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors duration-150',
-                  isActive ? 'text-accent-text' : reason ? 'cursor-not-allowed text-muted/35' : 'text-muted hover:bg-panel-alt hover:text-text',
+                  isActive
+                    ? 'text-accent-text'
+                    : reason
+                      ? 'cursor-not-allowed text-muted/35'
+                      : 'text-muted hover:bg-panel-alt hover:text-text',
                 )}
               >
                 {isActive && (
@@ -77,7 +81,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto font-mono text-xs text-muted/50">v0.2.1</div>
+      <div className="mt-auto font-mono text-xs text-muted/50">v0.2.3</div>
     </aside>
   )
 }
