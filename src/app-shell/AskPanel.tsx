@@ -12,6 +12,7 @@ import {
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx } from '../lib/utils'
 import { getIpc } from '../lib/bridge'
+import { humanError } from '../lib/humanError'
 
 type ChatMsg = { role: 'user' | 'ai'; text: string }
 
@@ -147,7 +148,7 @@ export function AskPanel() {
       setFreeModels(merged.filter((model) => (seen.has(`${model.baseUrl}|${model.model}`) ? false : (seen.add(`${model.baseUrl}|${model.model}`), true))))
       setModelLoadStatus(models.length ? `${models.length} OpenCode Desktop model${models.length === 1 ? '' : 's'} loaded` : 'No OpenCode Desktop models found yet')
     } catch (err) {
-      setModelLoadStatus(err instanceof Error ? err.message : 'Could not read OpenCode Desktop models')
+      setModelLoadStatus(humanError(err, 'Could not read OpenCode Desktop models'))
     }
   }
 
@@ -172,7 +173,7 @@ export function AskPanel() {
       }))
       setModelLoadStatus(`${models.length} free models loaded`)
     } catch (err) {
-      setModelLoadStatus(err instanceof Error ? err.message : 'Could not load free models')
+      setModelLoadStatus(humanError(err, 'Could not load free models'))
     }
   }
 

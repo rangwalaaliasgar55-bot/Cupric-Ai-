@@ -230,6 +230,24 @@ export type StudioMask = {
   matteDataUrl?: string | null
 }
 
+/**
+ * One keyframe on a clip's own timeline.
+ *
+ * `at` is seconds from the clip's start, not from the document — so moving or
+ * trimming a clip carries its animation with it. Only the properties present
+ * are animated; anything omitted keeps the clip's static value.
+ */
+export type StudioKeyframe = {
+  at: number
+  x?: number
+  y?: number
+  scale?: number
+  rotation?: number
+  opacity?: number
+  /** Easing from this keyframe to the next. */
+  ease: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+}
+
 type StudioClipCommon = {
   id: string
   /** 0 = bottom-most track. Higher tracks draw on top. */
@@ -247,6 +265,8 @@ type StudioClipCommon = {
   grade?: StudioGradeNode[] | null
   /** Absent means the clip fills its own bounds with no matte. */
   mask?: StudioMask | null
+  /** Property animation, sorted by `at`. Absent means the clip is static. */
+  keyframes?: StudioKeyframe[] | null
 }
 
 export type StudioMediaClip = StudioClipCommon & {

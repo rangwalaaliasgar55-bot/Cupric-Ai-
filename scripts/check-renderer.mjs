@@ -109,7 +109,7 @@ await build({
   loader: { '.css': 'empty', '.svg': 'dataurl', '.json': 'json' },
   stdin: {
     contents: `
-      export { drawStudioFrame, clampToSafeArea, SAFE_MARGIN, gradeFilter } from './src/lib/studio/renderer'
+      export { drawStudioFrame, clampToSafeArea, SAFE_MARGIN, gradeFilter, keyframeValuesAt } from './src/lib/studio/renderer'
       export { audioGainAt } from './src/lib/studio/doc'
       export { lintStudioDoc } from './src/lib/studio/lint'
       export { validateEditingPlan } from './src/lib/editingPlan'
@@ -393,6 +393,59 @@ if (mod.parseVoiceCommand('add text hello world')?.text !== 'hello world') failu
   checks += 1
   if (!mod.validateEditingPlan(plan([{ text: 'one', start: 0, end: 9 }])).some((i) => /past the end/.test(i.message))) {
     failures.push('plan: a caption outliving its clip was not caught')
+  }
+}
+
+// 13. Keyframes — interpolation, holds and easing.
+{
+  const base = { ...mod.defaultTextClip(0, 1), startSec: 2, durationSec: 4 }
+  const clip = {
+    ...base,
+    keyframes: [
+      { at: 0, x: 0.2, opacity: 0, ease: 'linear' },
+      { at: 2, x: 0.8, opacity: 1, ease: 'linear' },
+    ],
+  }
+  const near = (label, got, want) => {
+    checks += 1
+    if (got === undefined || Math.abs(got - want) > 0.001) failures.push(`keyframes: ${label} → ${got}, expected ${want}`)
+  }
+  near('holds the first value before the first key', mod.keyframeValuesAt(clip, 1).x, 0.2)
+  near('at the first key', mod.keyframeValuesAt(clip, 2).x, 0.2)
+  near('half way, linear', mod.keyframeValuesAt(clip, 3).x, 0.5)
+  near('at the last key', mod.keyframeValuesAt(clip, 4).x, 0.8)
+  near('holds the last value after it', mod.keyframeValuesAt(clip, 5.9).x, 0.8)
+  near('a second property tracks along', mod.keyframeValuesAt(clip, 3).opacity, 0.5)
+
+  checks += 1
+  if (mod.keyframeValuesAt({ ...base, keyframes: [] }, 3) !== null) failures.push('keyframes: an empty list must mean "not animated"')
+  checks += 1
+  if (mod.keyframeValuesAt(base, 3) !== null) failures.push('keyframes: a clip with no keyframes must mean "not animated"')
+
+  // One keyframe pins a value everywhere.
+  checks += 1
+  const pinned = { ...base, keyframes: [{ at: 1, x: 0.33, ease: 'linear' }] }
+  if ([2, 3, 5].some((t) => Math.abs(mod.keyframeValuesAt(pinned, t).x - 0.33) > 0.0001)) failures.push('keyframes: a single keyframe should hold')
+
+  // Easing must actually differ from linear, and stay inside the endpoints.
+  checks += 1
+  const eased = { ...base, keyframes: [{ at: 0, x: 0, ease: 'ease-in' }, { at: 2, x: 1, ease: 'linear' }] }
+  const mid = mod.keyframeValuesAt(eased, 3).x
+  if (!(mid > 0 && mid < 0.5)) failures.push(`keyframes: ease-in at the midpoint should lag linear, got ${mid}`)
+
+  // Unsorted input must not produce nonsense.
+  checks += 1
+  const messy = { ...base, keyframes: [{ at: 2, x: 1, ease: 'linear' }, { at: 0, x: 0, ease: 'linear' }] }
+  if (Math.abs(mod.keyframeValuesAt(messy, 3).x - 0.5) > 0.001) failures.push('keyframes: out-of-order keyframes were not sorted')
+
+  // And the frame renderer must survive an animated document.
+  checks += 1
+  const doc = mod.emptyStudioDoc('16:9')
+  doc.clips = [clip, { ...mod.defaultGlassClip(0, 1), keyframes: [{ at: 0, scale: 0.5, rotation: 0, ease: 'ease-out' }, { at: 2, scale: 1.4, rotation: 90, ease: 'linear' }] }]
+  for (const t of [0, 1.5, 3, 4.5]) {
+    const probe = makeCtx(1920, 1080)
+    mod.drawStudioFrame(probe.ctx, doc, t, 1920, 1080, { media: () => null, overlay: () => null })
+    if (probe.depth !== 0) failures.push(`keyframes: unbalanced save/restore at t=${t}`)
   }
 }
 

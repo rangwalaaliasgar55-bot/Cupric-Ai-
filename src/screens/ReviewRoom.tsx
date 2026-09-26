@@ -4,6 +4,7 @@ import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { copyText } from '../lib/utils'
+import { humanError } from '../lib/humanError'
 
 type RoomState = 'idle' | 'previewing' | 'connecting' | 'connected' | 'error'
 
@@ -100,7 +101,7 @@ export function ReviewRoom() {
       setState('previewing')
     } catch (err) {
       setState('error')
-      setError(err instanceof Error ? err.message : 'Camera and microphone are unavailable')
+      setError(humanError(err, 'Camera and microphone are unavailable'))
     }
   }
 
@@ -139,7 +140,7 @@ export function ReviewRoom() {
       setState('connected')
     } catch (err) {
       setState('error')
-      setError(err instanceof Error ? err.message : 'Twilio room connection failed')
+      setError(humanError(err, 'Twilio room connection'))
     }
   }
 

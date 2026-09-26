@@ -16,6 +16,7 @@ import { arenaToStudioClip } from '../lib/studio/handoff'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { copyText, cx, deriveAspect, gradientFor, relTime } from '../lib/utils'
 import { getIpc, getBridge } from '../lib/bridge'
+import { humanError } from '../lib/humanError'
 
 const STATUS_TONE = {
   'prompt-ready': 'neutral',
@@ -68,7 +69,7 @@ export function ArenaDesk() {
       }
       pushToast('success', 'Arena opened in your browser — prompt copied')
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Could not open Arena')
+      pushToast('error', humanError(err, 'Could not open Arena'))
     }
   }
 
@@ -89,7 +90,7 @@ export function ArenaDesk() {
       })
       pushToast('success', `Imported ${res.htmlFileName} — ready to preview or render`)
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Arena import failed')
+      pushToast('error', humanError(err, 'Arena import'))
     } finally {
       setImporting(null)
     }
@@ -258,7 +259,7 @@ export function ArenaDesk() {
                     pushToast('success', `${a.name} added to the Studio timeline`)
                     setView('studio')
                   } catch (err) {
-                    pushToast('error', err instanceof Error ? err.message : 'Could not send that asset to the Studio')
+                    pushToast('error', humanError(err, 'Could not send that asset to the Studio'))
                   }
                 }}
                 onRender={() => {

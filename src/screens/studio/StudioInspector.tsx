@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { Copy, Link2, Scissors, Trash2 } from 'lucide-react'
+import { Copy, Link2, Plus, Scissors, Trash2 } from 'lucide-react'
 import type {
   StudioAudioClip,
   StudioBackgroundClip,
@@ -7,6 +7,7 @@ import type {
   StudioDoc,
   StudioGlassClip,
   StudioGradeNode,
+  StudioKeyframe,
   StudioMask,
   StudioMediaClip,
   StudioCustomBackground,
@@ -24,6 +25,8 @@ import { cx } from '../../lib/utils'
 
 type Props = {
   doc: StudioDoc
+  /** Playhead, in document seconds — keyframes are recorded where it stands. */
+  time: number
   clip: StudioClip | null
   onPatch: (patch: Partial<StudioClip>) => void
   onDelete: () => void
@@ -116,7 +119,7 @@ function Slider({
   )
 }
 
-export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onSplit, onPatchDoc }: Props) {
+export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicate, onSplit, onPatchDoc }: Props) {
   const bgFileRef = useRef<HTMLInputElement>(null)
   if (!clip) {
     return (
@@ -339,6 +342,7 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
         onChange={(v) => onPatch({ rotation: v === 0 ? undefined : v })}
       />
 
+      <KeyframeFields clip={clip} time={time} onPatch={onPatch} />
       <GradeFields clip={clip} onPatch={onPatch} />
       <MaskFields clip={clip} onPatch={onPatch} />
 
@@ -386,6 +390,115 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
   )
 }
 
+
+
+/**
+ * Keyframes, recorded at the playhead.
+ *
+ * No curve editor: pressing Record captures where the clip *is* right now, so
+ * the workflow is "move it, record, move the playhead, move it, record" —
+ * which is how people actually animate, and it needs no new mental model.
+ */
+function KeyframeFields({
+  clip,
+  time,
+  onPatch,
+}: {
+  clip: StudioClip
+  time: number
+  onPatch: (p: Partial<StudioClip>) => void
+}) {
+  const keys = clip.keyframes ?? []
+  const local = Math.round((time - clip.startSec) * 100) / 100
+  const withinClip = local >= 0 && local <= clip.durationSec + 0.001
+  const positioned = clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker'
+
+  const currentScale =
+    clip.kind === 'overlay' || clip.kind === 'sticker' ? 1 : clip.kind === 'text' ? 1 : clip.kind === 'glass' ? 1 : 1
+
+  function record() {
+    const next: StudioKeyframe = {
+      at: Math.max(0, local),
+      ease: 'ease-in-out',
+      ...(positioned ? { x: (clip as { x: number }).x, y: (clip as { y: number }).y } : {}),
+      rotation: clip.rotation ?? 0,
+      opacity: 1,
+      scale: currentScale,
+    }
+    // Recording twice at the same instant replaces, rather than stacking two
+    // keyframes a hundredth of a second apart.
+    const rest = keys.filter((k) => Math.abs(k.at - next.at) > 0.02)
+    onPatch({ keyframes: [...rest, next].sort((a, b) => a.at - b.at) })
+  }
+
+  return (
+    <Disclosure
+      label="Keyframes"
+      summary={keys.length ? `${keys.length} on this clip` : 'None'}
+      active={keys.length > 0}
+    >
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={record} disabled={!withinClip}>
+          <Plus size={13} /> Record at {Math.max(0, local).toFixed(2)}s
+        </Button>
+        {keys.length > 0 && (
+          <Button size="sm" variant="ghost" onClick={() => onPatch({ keyframes: null })}>
+            Clear
+          </Button>
+        )}
+      </div>
+      {!withinClip && <p className="text-xs text-muted/80">Move the playhead over this clip to record a keyframe.</p>}
+
+      {keys.length === 1 && (
+        <p className="text-xs text-muted/80">
+          One keyframe just pins a value. Add a second somewhere else in the clip to get movement.
+        </p>
+      )}
+
+      {keys.map((key, index) => (
+        <div key={`${key.at}-${index}`} className="space-y-2 border-t border-line pt-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-xs text-text tabular-nums">{key.at.toFixed(2)}s</span>
+            <div className="flex items-center gap-2">
+              <select
+                value={key.ease}
+                onChange={(e) =>
+                  onPatch({
+                    keyframes: keys.map((k, i) => (i === index ? { ...k, ease: e.target.value as StudioKeyframe['ease'] } : k)),
+                  })
+                }
+                className="rounded-md border border-line bg-panel-alt px-1.5 py-1 text-xs text-text"
+              >
+                <option value="linear">Linear</option>
+                <option value="ease-in">Ease in</option>
+                <option value="ease-out">Ease out</option>
+                <option value="ease-in-out">Ease in and out</option>
+              </select>
+              <button
+                type="button"
+                className="text-xs text-muted underline underline-offset-2"
+                onClick={() => onPatch({ keyframes: keys.filter((_, i) => i !== index) })}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Slider label="Opacity" value={key.opacity ?? 1} min={0} max={1} step={0.05} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, opacity: v } : k)) })} />
+            <Slider label="Size" value={key.scale ?? 1} min={0.1} max={3} step={0.05} suffix="×" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, scale: v } : k)) })} />
+            <Slider label="Rotation" value={key.rotation ?? 0} min={-180} max={180} step={1} suffix="°" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, rotation: v } : k)) })} />
+            {positioned && (
+              <Slider label="X" value={key.x ?? 0.5} min={0} max={1} step={0.01} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, x: v } : k)) })} />
+            )}
+            {positioned && (
+              <Slider label="Y" value={key.y ?? 0.5} min={0} max={1} step={0.01} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, y: v } : k)) })} />
+            )}
+          </div>
+        </div>
+      ))}
+    </Disclosure>
+  )
+}
 
 const DEFAULT_GRADE: StudioGradeNode[] = [
   { id: 'balance', enabled: true, exposure: 0, temperature: 0 },

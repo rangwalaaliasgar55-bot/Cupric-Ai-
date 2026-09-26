@@ -10,6 +10,7 @@ import type {
   StudioClip,
   StudioDoc,
   StudioGradeNode,
+  StudioKeyframe,
   StudioMask,
   StudioGlassClip,
   StudioMediaClip,
@@ -471,6 +472,92 @@ function drawGlassClip(ctx: CanvasRenderingContext2D, clip: StudioGlassClip, t: 
 }
 
 
+
+/* ——— keyframes ——— */
+
+const EASES: Record<StudioKeyframe['ease'], (p: number) => number> = {
+  linear: (p) => p,
+  'ease-in': (p) => p * p * p,
+  'ease-out': (p) => 1 - Math.pow(1 - p, 3),
+  'ease-in-out': (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2),
+}
+
+/** The animated properties, resolved at time `t`. */
+export type KeyframeValues = { x?: number; y?: number; scale?: number; rotation?: number; opacity?: number }
+
+/**
+ * Interpolate a clip's keyframes at document time `t`.
+ *
+ * Before the first keyframe the first value holds; after the last, the last
+ * holds — the same convention every NLE uses, and the one that makes a single
+ * keyframe mean "set this value" rather than "animate from nothing".
+ */
+export function keyframeValuesAt(clip: StudioClip, t: number): KeyframeValues | null {
+  const keys = clip.keyframes
+  if (!keys || keys.length === 0) return null
+  const local = t - clip.startSec
+  const sorted = keys.length > 1 ? [...keys].sort((a, b) => a.at - b.at) : keys
+
+  if (local <= sorted[0].at) return pick(sorted[0])
+  const last = sorted[sorted.length - 1]
+  if (local >= last.at) return pick(last)
+
+  for (let i = 0; i < sorted.length - 1; i += 1) {
+    const a = sorted[i]
+    const b = sorted[i + 1]
+    if (local < a.at || local > b.at) continue
+    const span = b.at - a.at
+    const raw = span <= 0 ? 1 : (local - a.at) / span
+    const p = (EASES[a.ease] ?? EASES.linear)(clamp01(raw))
+    return {
+      x: mix(a.x, b.x, p),
+      y: mix(a.y, b.y, p),
+      scale: mix(a.scale, b.scale, p),
+      rotation: mix(a.rotation, b.rotation, p),
+      opacity: mix(a.opacity, b.opacity, p),
+    }
+  }
+  return pick(last)
+}
+
+function pick(key: StudioKeyframe): KeyframeValues {
+  return { x: key.x, y: key.y, scale: key.scale, rotation: key.rotation, opacity: key.opacity }
+}
+
+/** Interpolate two optional numbers: a missing end holds the start, and vice versa. */
+function mix(a: number | undefined, b: number | undefined, p: number): number | undefined {
+  if (a === undefined) return b === undefined ? undefined : b
+  if (b === undefined) return a
+  return a + (b - a) * p
+}
+
+/**
+ * A copy of the clip with its keyframed values applied.
+ *
+ * Returning a patched clip rather than mutating the context means every draw
+ * path — text, glass, stickers, overlays — gets animation for free, without
+ * each one having to know keyframes exist.
+ */
+function animatedClip(clip: StudioClip, t: number): StudioClip {
+  const values = keyframeValuesAt(clip, t)
+  if (!values) return clip
+  const next = { ...clip } as StudioClip & { x?: number; y?: number; scale?: number; fontSizePct?: number }
+  if (values.x !== undefined && 'x' in clip) next.x = values.x
+  if (values.y !== undefined && 'y' in clip) next.y = values.y
+  if (values.rotation !== undefined) next.rotation = values.rotation
+  if (values.opacity !== undefined) next.opacity = clip.opacity * values.opacity
+  if (values.scale !== undefined) {
+    // "Scale" means whatever size means for this kind of clip.
+    if (clip.kind === 'overlay' || clip.kind === 'sticker') next.scale = clip.scale * values.scale
+    else if (clip.kind === 'text') next.fontSizePct = clip.fontSizePct * values.scale
+    else if (clip.kind === 'glass') {
+      ;(next as unknown as { w: number; h: number }).w = clip.w * values.scale
+      ;(next as unknown as { w: number; h: number }).h = clip.h * values.scale
+    }
+  }
+  return next
+}
+
 /* ——— rotation, grade and matte ———
  *
  * These three apply to any clip, so they live outside the per-kind draw code:
@@ -696,7 +783,10 @@ export function drawStudioFrame(
     backgroundById(doc.backgroundId).paint(ctx, width, height, t)
   }
 
-  for (const clip of clipsAt(doc, t)) {
+  for (const raw of clipsAt(doc, t)) {
+    // Keyframes are resolved once, up front, so everything below — transitions,
+    // rotation, the matte, the draw itself — sees the animated clip.
+    const clip = animatedClip(raw, t)
     ctx.save()
     const alpha = applyTransition(ctx, clip, t, width, height)
     ctx.globalAlpha = alpha

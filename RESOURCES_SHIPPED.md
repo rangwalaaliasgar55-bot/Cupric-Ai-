@@ -165,3 +165,42 @@ The command grammar also learned `make a video about …`, so the Studio mic can
 hand a whole sentence to the same pipeline.
 
 Files: `src/lib/voice.ts`, `src/screens/Autonomous.tsx`, `src/screens/Studio.tsx`.
+
+## v0.4.3 — Studio motion, checks and history
+
+**Lottie stickers.** `lottie-web` 5.13, canvas renderer, driven by
+`goToAndStop(frame)` so a sticker is a pure function of the timeline and the
+export cannot drift from the preview. Four built-in stickers are authored in
+`scripts/build-stickers.mjs` (readable source, generated JSON in
+`resources/lottie/`): Pulse ring, Check pop, Arrow nudge, Live dot. Imported
+`.json` files are supported; images and expressions are not.
+
+**Per-clip motion.** Rotation (with a preview handle that snaps to 15° on
+Shift and to right angles within 3°), keyframes on position/size/rotation/
+opacity with four easings, a three-node colour grade (balance → contrast →
+look, five presets), and masks: rectangle, ellipse, luma key, and an imported
+matte for object-aware work.
+
+**Document checks.** `src/lib/studio/lint.ts` runs next to the Export button:
+text outside the title-safe area, captions colliding on one track, unreadable
+type sizes, lost media, empty masks, unusable imported stickers, holes in the
+timeline, over-length projects. Each one has a one-click fix where a fix exists.
+
+**Undo and redo.** Every project mutation, not only timeline edits — the store
+funnels them all through one place, so coverage is structural rather than a
+list someone has to maintain. Drags coalesce into one step; ⌘Z / ⇧⌘Z.
+
+**Editor shortcuts.** J/K/L shuttle, I/O trim to the playhead, space, arrows
+(frame) and shift-arrows (second), ⌘B split, delete.
+
+**Critique → repair.** A generated candidate that fails the render contract is
+sent back to the model with its own failures quoted at it, up to two rounds, and
+a repair is only accepted if it scores better. Recorded in `voting-report.json`.
+
+**macOS vibrancy.** A real `vibrancy: 'under-window'` material with inset
+traffic lights, not a CSS imitation.
+
+**Checks in the build.** `npm run build` now runs the renderer check (326
+assertions), the voice and error-copy check (34), and a scrub performance
+profile that fails if per-frame renderer work exceeds its budget or starts
+growing faster than the clip count.

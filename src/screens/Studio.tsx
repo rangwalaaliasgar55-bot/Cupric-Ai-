@@ -51,6 +51,7 @@ import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
+import { humanError } from '../lib/humanError'
 
 const ZOOM_STEPS = [12, 20, 32, 48, 72, 110, 160]
 
@@ -290,7 +291,7 @@ export function Studio() {
       }
       pushToast('success', `Imported ${files.length} file${files.length > 1 ? 's' : ''}`)
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Import failed')
+      pushToast('error', humanError(err, 'Import'))
     } finally {
       setImporting(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -522,7 +523,7 @@ export function Studio() {
         pushToast('success', `Exported ${result.fileName}`)
       }
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Export failed')
+      pushToast('error', humanError(err, 'Export'))
     } finally {
       setExportPct(null)
       cancelRef.current = null
@@ -821,6 +822,7 @@ export function Studio() {
         <aside className={cx('w-80 shrink-0 overflow-y-auto border-l border-line bg-panel px-5 py-4')}>
           <StudioInspector
             doc={doc}
+            time={time}
             clip={selected}
             onPatch={(patch) => selectedId && updateStudioClip(projectId, selectedId, patch)}
             onPatchDoc={(patch) => patchStudio(projectId, patch)}

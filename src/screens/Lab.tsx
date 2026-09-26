@@ -10,6 +10,7 @@ import type { StudioOverlayClip } from '../types/project'
 import { nextFreeStart, studioOf } from '../lib/studio/doc'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, uid } from '../lib/utils'
+import { humanError } from '../lib/humanError'
 
 /**
  * UI Lab — the vendored lab.xevrion.dev catalogue running locally.
@@ -138,7 +139,7 @@ export function Lab() {
       pushToast('success', `${open.name} added to the Studio timeline`)
       setView('studio')
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Could not capture this demo')
+      pushToast('error', humanError(err, 'Could not capture this demo'))
     } finally {
       setCapturing(false)
     }
