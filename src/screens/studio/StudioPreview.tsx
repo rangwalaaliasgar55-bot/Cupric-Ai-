@@ -6,6 +6,7 @@ import type {
   StudioGlassClip,
   StudioMediaClip,
   StudioOverlayClip,
+  StudioStickerClip,
   StudioTextClip,
 } from '../../types/project'
 import { audioGainAt, clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
@@ -192,6 +193,13 @@ function boxOf(clip: StudioClip): Box | null {
     const glass = clip as StudioGlassClip
     return { x: glass.x, y: glass.y, w: glass.w, h: glass.h }
   }
+  if (clip.kind === 'sticker') {
+    const sticker = clip as StudioStickerClip
+    // Stickers draw at a quarter of the shorter edge, so the grab box follows
+    // the same rule the renderer uses.
+    const size = 0.25 * sticker.scale
+    return { x: sticker.x, y: sticker.y, w: size, h: size }
+  }
   return null
 }
 
@@ -206,7 +214,9 @@ function TransformHandles({
   frame: React.RefObject<HTMLDivElement | null>
   onPatch: (patch: Partial<StudioClip>) => void
 }) {
-  const [drag, setDrag] = useState<{ mode: 'move' | 'scale'; startX: number; startY: number; box: Box } | null>(null)
+  const [drag, setDrag] = useState<
+    { mode: 'move' | 'scale' | 'rotate'; startX: number; startY: number; box: Box; startRotation: number } | null
+  >(null)
   const active = time >= clip.startSec && time < clip.startSec + clip.durationSec
   const box = boxOf(clip)
 
@@ -218,6 +228,23 @@ function TransformHandles({
     const onMove = (event: PointerEvent) => {
       const dx = (event.clientX - drag.startX) / rect.width
       const dy = (event.clientY - drag.startY) / rect.height
+      if (drag.mode === 'rotate') {
+        const cx = rect.left + drag.box.x * rect.width
+        const cy = rect.top + drag.box.y * rect.height
+        // Angle from the clip's centre to the pointer, measured from straight
+        // up, which is where the handle sits when the clip is unrotated.
+        const raw = (Math.atan2(event.clientY - cy, event.clientX - cx) * 180) / Math.PI + 90
+        let next = ((raw + 180) % 360) - 180
+        // Shift snaps to 15°, and everything snaps within 3° of a right angle
+        // so "straight" is reachable without a steady hand.
+        if (event.shiftKey) next = Math.round(next / 15) * 15
+        else {
+          const nearest = Math.round(next / 90) * 90
+          if (Math.abs(next - nearest) < 3) next = nearest
+        }
+        onPatch({ rotation: next === 0 ? undefined : Math.round(next) } as Partial<StudioClip>)
+        return
+      }
       if (drag.mode === 'move') {
         const x = Math.min(1, Math.max(0, drag.box.x + dx))
         const y = Math.min(1, Math.max(0, drag.box.y + dy))
@@ -238,6 +265,8 @@ function TransformHandles({
         onPatch({
           fontSizePct: Math.min(28, Math.max(2, (clip as StudioTextClip).fontSizePct * factor)),
         } as Partial<StudioClip>)
+      } else if (clip.kind === 'sticker') {
+        onPatch({ scale: Math.min(4, Math.max(0.2, (clip as StudioStickerClip).scale * factor)) } as Partial<StudioClip>)
       }
     }
     const onUp = () => setDrag(null)
@@ -253,11 +282,15 @@ function TransformHandles({
 
   if (!active || !box) return null
 
+  const rotation = clip.rotation ?? 0
   const style: React.CSSProperties = {
     left: `${(box.x - box.w / 2) * 100}%`,
     top: `${(box.y - box.h / 2) * 100}%`,
     width: `${box.w * 100}%`,
     height: `${box.h * 100}%`,
+    // The outline turns with the layer, so the handles stay on the corners the
+    // user can actually see.
+    transform: rotation ? `rotate(${rotation}deg)` : undefined,
   }
 
   return (
@@ -267,16 +300,32 @@ function TransformHandles({
       style={style}
       onPointerDown={(event) => {
         event.preventDefault()
-        setDrag({ mode: 'move', startX: event.clientX, startY: event.clientY, box })
+        setDrag({ mode: 'move', startX: event.clientX, startY: event.clientY, box, startRotation: rotation })
       }}
     >
+      <span
+        role="presentation"
+        title="Drag to rotate · hold Shift for 15° steps"
+        onPointerDown={(event) => {
+          event.stopPropagation()
+          event.preventDefault()
+          setDrag({ mode: 'rotate', startX: event.clientX, startY: event.clientY, box, startRotation: rotation })
+        }}
+        className="absolute -top-7 left-1/2 h-3.5 w-3.5 -translate-x-1/2 cursor-grab rounded-full border border-bg bg-accent"
+      />
+      <span className="absolute -top-[1.1rem] left-1/2 h-4 w-px -translate-x-1/2 bg-accent/70" />
+      {rotation !== 0 && (
+        <span className="absolute -top-14 left-1/2 -translate-x-1/2 rounded bg-bg/90 px-1.5 py-0.5 font-mono text-[10px] text-muted tabular-nums">
+          {rotation}°
+        </span>
+      )}
       <span
         role="presentation"
         title="Drag to scale"
         onPointerDown={(event) => {
           event.stopPropagation()
           event.preventDefault()
-          setDrag({ mode: 'scale', startX: event.clientX, startY: event.clientY, box })
+          setDrag({ mode: 'scale', startX: event.clientX, startY: event.clientY, box, startRotation: rotation })
         }}
         className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-nwse-resize rounded-sm border border-bg bg-accent"
       />

@@ -14,6 +14,8 @@ import {
   Scissors,
   Sparkles,
   SkipBack,
+  AlertTriangle,
+  CheckCircle2,
   Sticker,
   Square,
   Type as TypeIcon,
@@ -42,10 +44,11 @@ import {
 import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
 import { TRANSITIONS } from '../lib/studio/transitions'
 import { isVoiceSupported, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
-import { registerFile } from '../lib/studio/media'
+import { hasMedia, registerFile } from '../lib/studio/media'
 import { readDragPayload, resourceToStudio } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
+import { lintStudioDoc } from '../lib/studio/lint'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
 
 const ZOOM_STEPS = [12, 20, 32, 48, 72, 110, 160]
@@ -72,6 +75,7 @@ export function Studio() {
   const [listening, setListening] = useState(false)
   const [heard, setHeard] = useState<string | null>(null)
   const [showVoiceHelp, setShowVoiceHelp] = useState(false)
+  const [showChecks, setShowChecks] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -80,9 +84,11 @@ export function Studio() {
   const commandRef = useRef<(command: VoiceCommand) => void>(() => {})
   const voiceSupported = useMemo(() => isVoiceSupported(), [])
   const mp4Supported = useMemo(() => canExportMp4(), [])
-
   const doc: StudioDoc = studioOf(project)
   const duration = docDuration(doc)
+  // Recomputed from the document, never stored: a stale warning is worse than
+  // no warning.
+  const issues = useMemo(() => lintStudioDoc(doc, { hasMedia }), [doc])
   const pid = project?.id ?? null
   const selected = useMemo(() => doc.clips.find((c) => c.id === selectedId) ?? null, [doc.clips, selectedId])
 
@@ -529,6 +535,16 @@ export function Studio() {
           >
             <ZoomIn size={15} />
           </IconButton>
+          <Button
+            size="sm"
+            variant={issues.some((i) => i.severity === 'error') ? 'danger' : 'outline'}
+            onClick={() => setShowChecks((v) => !v)}
+            disabled={exporting}
+            title="Things worth fixing before you export"
+          >
+            {issues.length === 0 ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
+            {issues.length === 0 ? 'Checks' : `${issues.length} check${issues.length === 1 ? '' : 's'}`}
+          </Button>
           <Button size="sm" variant="outline" onClick={() => void runExport(false)} disabled={exporting || duration <= 0}>
             {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
             {exporting ? 'Recording…' : 'Export WebM'}
@@ -563,6 +579,49 @@ export function Studio() {
               <span className="truncate text-muted">{phrase.does}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {showChecks && (
+        <div className="shrink-0 space-y-2 border-b border-line bg-panel px-6 py-3">
+          {issues.length === 0 ? (
+            <p className="text-xs text-muted">
+              Nothing to flag. Text is inside the safe area, every clip has its media, and the timeline has no holes.
+            </p>
+          ) : (
+            issues.map((issue) => (
+              <div key={issue.id} className="flex items-start gap-3 text-xs">
+                <span
+                  className={cx(
+                    'mt-1 h-1.5 w-1.5 shrink-0 rounded-full',
+                    issue.severity === 'error' ? 'bg-[rgb(226_75_74)]' : 'bg-[rgb(255_196_92)]',
+                  )}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-text">{issue.message}</p>
+                  {issue.hint && <p className="text-muted/80">{issue.hint}</p>}
+                </div>
+                {issue.clipId && (
+                  <button
+                    type="button"
+                    className="shrink-0 text-accent-text underline underline-offset-2"
+                    onClick={() => setSelectedId(issue.clipId ?? null)}
+                  >
+                    Show me
+                  </button>
+                )}
+                {issue.fix && issue.clipId && (
+                  <button
+                    type="button"
+                    className="shrink-0 text-accent-text underline underline-offset-2"
+                    onClick={() => updateStudioClip(projectId, issue.clipId as string, issue.fix!.patch)}
+                  >
+                    {issue.fix.label}
+                  </button>
+                )}
+              </div>
+            ))
+          )}
         </div>
       )}
 

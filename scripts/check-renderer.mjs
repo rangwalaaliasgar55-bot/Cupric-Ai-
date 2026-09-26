@@ -111,6 +111,8 @@ await build({
     contents: `
       export { drawStudioFrame, clampToSafeArea, SAFE_MARGIN, gradeFilter } from './src/lib/studio/renderer'
       export { audioGainAt } from './src/lib/studio/doc'
+      export { lintStudioDoc } from './src/lib/studio/lint'
+      export { validateEditingPlan } from './src/lib/editingPlan'
       export { emptyStudioDoc, defaultGlassClip, defaultTextClip } from './src/lib/studio/doc'
       export { TRANSITIONS, TEXT_ANIMATIONS } from './src/lib/studio/transitions'
       export { STUDIO_BACKGROUNDS } from './src/lib/studio/backgrounds'
@@ -320,6 +322,77 @@ if (mod.parseVoiceCommand('add text hello world')?.text !== 'hello world') failu
     if (probe.depth !== 0) failures.push(`rotation/mask: unbalanced save/restore at t=${t} (depth ${probe.depth})`)
     if (probe.ctx.globalCompositeOperation !== 'source-over') failures.push(`rotation/mask: composite op left as ${probe.ctx.globalCompositeOperation} at t=${t}`)
     if (probe.ctx.filter !== 'none') failures.push(`rotation/mask: filter left as ${probe.ctx.filter} at t=${t}`)
+  }
+}
+
+// 11. Document checks — the warnings shown next to Export.
+{
+  const has = (issues, prefix) => issues.some((i) => i.id.startsWith(prefix))
+  const doc = mod.emptyStudioDoc('9:16')
+  const clean = { ...mod.defaultTextClip(0, 1), text: 'Readable headline', x: 0.5, y: 0.5, fontSizePct: 8 }
+  doc.clips = [clean]
+  checks += 1
+  if (mod.lintStudioDoc(doc).length) failures.push(`lint: a clean document should be silent, got ${JSON.stringify(mod.lintStudioDoc(doc))}`)
+
+  checks += 1
+  doc.clips = [{ ...clean, x: 0.02 }]
+  if (!has(mod.lintStudioDoc(doc), 'safe:')) failures.push('lint: text in the outer margin was not flagged')
+
+  checks += 1
+  doc.clips = [{ ...clean, fontSizePct: 2 }]
+  if (!has(mod.lintStudioDoc(doc), 'tiny:')) failures.push('lint: unreadable text size was not flagged')
+
+  checks += 1
+  doc.clips = [clean, { ...mod.defaultTextClip(0, 1), id: 'second', text: 'Readable headline', x: 0.5, y: 0.5, fontSizePct: 8 }]
+  if (!has(mod.lintStudioDoc(doc), 'collide:')) failures.push('lint: two overlapping captions were not flagged')
+
+  checks += 1
+  doc.clips = [clean, { ...mod.defaultTextClip(0, 2), id: 'other-track', text: 'Readable headline', x: 0.5, y: 0.5, fontSizePct: 8 }]
+  if (has(mod.lintStudioDoc(doc), 'collide:')) failures.push('lint: clips on different tracks must not count as a collision')
+
+  checks += 1
+  doc.clips = [{ ...clean, startSec: 3 }]
+  if (!has(mod.lintStudioDoc(doc), 'gap:')) failures.push('lint: a hole at the head of the timeline was not flagged')
+
+  checks += 1
+  doc.clips = [{ ...clean, mask: { shape: 'rect', x: 0.5, y: 0.5, w: 0.001, h: 0.001, featherPct: 0, invert: false, threshold: 0.5, softness: 0.2 } }]
+  if (!has(mod.lintStudioDoc(doc), 'mask-empty:')) failures.push('lint: an all-but-empty mask was not flagged')
+
+  checks += 1
+  doc.clips = [{ ...clean, kind: 'sticker', stickerId: 'custom', json: 'not json', x: 0.5, y: 0.5, scale: 1, loop: true, speed: 1 }]
+  if (!has(mod.lintStudioDoc(doc), 'sticker:')) failures.push('lint: an unreadable imported sticker was not flagged')
+
+  // Every message reads as a sentence, because these are shown to a person.
+  checks += 1
+  doc.clips = [{ ...clean, x: 0.02, fontSizePct: 2 }]
+  for (const issue of mod.lintStudioDoc(doc)) {
+    if (!/[.!?]$/.test(issue.message) || /undefined|NaN|\[object/.test(issue.message)) {
+      failures.push(`lint: unhelpful message "${issue.message}"`)
+    }
+  }
+}
+
+// 12. Editing plan validator — captions share a layer, so overlap is an error.
+{
+  const plan = (captions) => ({
+    schemaVersion: '1.0',
+    targetDurationSec: 20,
+    aspect: '9:16',
+    fps: 30,
+    captions: { enabled: true, mode: 'phrase', maxWords: 6 },
+    sections: [{ id: 's1', role: 'hook', clips: [{ id: 'c1', sourceFile: 'a.mp4', inSec: 0, outSec: 5, purpose: 'hook', transition: 'hard_cut', captions }] }],
+  })
+  checks += 1
+  if (mod.validateEditingPlan(plan([{ text: 'one', start: 0, end: 2 }, { text: 'two', start: 2, end: 4 }])).length) {
+    failures.push('plan: sequential captions should validate')
+  }
+  checks += 1
+  if (!mod.validateEditingPlan(plan([{ text: 'one', start: 0, end: 3 }, { text: 'two', start: 2, end: 4 }])).some((i) => /overlap/i.test(i.message))) {
+    failures.push('plan: overlapping captions were not caught')
+  }
+  checks += 1
+  if (!mod.validateEditingPlan(plan([{ text: 'one', start: 0, end: 9 }])).some((i) => /past the end/.test(i.message))) {
+    failures.push('plan: a caption outliving its clip was not caught')
   }
 }
 
