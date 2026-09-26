@@ -15,7 +15,13 @@ const TONES: Record<Toast['kind'], string> = {
   error: 'text-danger',
 }
 
-/** Bottom-right toasts, auto-dismiss after 4s (design-system rule). */
+/**
+ * Bottom-right toasts, auto-dismissed after 4s (design-system rule).
+ *
+ * A sticky toast opts out of the timer and waits — used only where missing
+ * the message would cost the user something, and still dismissible by
+ * clicking it, so it never becomes an obstacle.
+ */
 export function Toasts() {
   const toasts = useProjectStore((s) => s.toasts)
   const dismiss = useProjectStore((s) => s.dismissToast)
@@ -38,7 +44,24 @@ export function Toasts() {
               transition={{ type: 'spring', stiffness: 520, damping: 34 }}
             >
               <Icon size={16} className={cx('mt-0.5 shrink-0', TONES[t.kind])} />
-              <span className="text-sm leading-snug text-text">{t.text}</span>
+              <div className="min-w-0 flex-1">
+                <span className="text-sm leading-snug text-text">{t.text}</span>
+                {t.action && (
+                  <button
+                    type="button"
+                    className="mt-1.5 block text-sm font-medium text-accent-text underline underline-offset-2"
+                    onClick={(event) => {
+                      // The toast itself dismisses on click; the action must
+                      // not be swallowed by that.
+                      event.stopPropagation()
+                      t.action?.run()
+                      dismiss(t.id)
+                    }}
+                  >
+                    {t.action.label}
+                  </button>
+                )}
+              </div>
             </motion.div>
           )
         })}

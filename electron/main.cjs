@@ -2394,11 +2394,74 @@ function wireUpdater() {
   })
 }
 
+/**
+ * How often a running app looks for a new version.
+ *
+ * Updates should arrive the way they do in OpenCode: on their own, without
+ * anyone pressing anything. The launch check alone misses the case that
+ * matters most — an app left open for days — so it repeats.
+ */
+const UPDATE_CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
+let updateCheckTimer = null
+
+function startPeriodicUpdateChecks() {
+  if (!autoUpdater || DEV_URL || updateCheckTimer) return
+  updateCheckTimer = setInterval(() => {
+    // `checkForUpdates`, not `checkForUpdatesAndNotify`: the renderer's own
+    // "ready to restart" banner is the notification now, and an OS toast on
+    // top of it every four hours would be exactly the nagging this is meant
+    // to avoid. The launch check keeps the notifier for the case where the
+    // window is not up yet.
+    autoUpdater.checkForUpdates().catch((err) => logLine('updater-periodic-failed', err?.message || String(err)))
+  }, UPDATE_CHECK_INTERVAL_MS)
+  // Never hold the process open just to check for updates.
+  if (typeof updateCheckTimer.unref === 'function') updateCheckTimer.unref()
+}
+
+function stopPeriodicUpdateChecks() {
+  if (!updateCheckTimer) return
+  clearInterval(updateCheckTimer)
+  updateCheckTimer = null
+}
+
 ipcMain.handle('updater:check', async () => {
   if (!autoUpdater) return { status: 'unavailable', message: 'electron-updater is unavailable in this build' }
   if (DEV_URL) return { status: 'dev', message: 'Updates are disabled in development mode' }
   await autoUpdater.checkForUpdatesAndNotify()
   return { status: 'checking' }
+})
+
+/**
+ * Apply a downloaded update now, instead of at the next natural quit.
+ *
+ * The update installs on quit either way; this only exists so someone who has
+ * seen the banner and wants it immediately does not have to close the app by
+ * hand and reopen it.
+ */
+ipcMain.handle('updater:install', async () => {
+  if (!autoUpdater) return { status: 'unavailable', message: 'electron-updater is unavailable in this build' }
+  if (DEV_URL) return { status: 'dev', message: 'Updates are disabled in development mode' }
+  if (!updateDownloaded) return { status: 'not-ready', message: 'No update has finished downloading yet' }
+  if (installingUpdate) return { status: 'installing' }
+  installingUpdate = true
+  stopPeriodicUpdateChecks()
+  try {
+    // Deferred a tick so this IPC call can return before the app goes away —
+    // otherwise the renderer sees a dead channel rather than an answer.
+    setTimeout(() => {
+      try {
+        autoUpdater.quitAndInstall(false, true)
+      } catch (err) {
+        installingUpdate = false
+        logLine('updater-install-failed', err?.message || String(err))
+      }
+    }, 120)
+    return { status: 'installing' }
+  } catch (err) {
+    installingUpdate = false
+    logLine('updater-install-failed', err?.message || String(err))
+    return { status: 'error', message: err?.message || String(err) }
+  }
 })
 
 // ---------------------------------------------------------------------------
@@ -2456,11 +2519,13 @@ wireUpdater()
 app.whenReady().then(() => {
   createWindow()
   if (autoUpdater && !DEV_URL) autoUpdater.checkForUpdatesAndNotify().catch((err) => logLine('updater-launch-failed', err?.message || String(err)))
+  startPeriodicUpdateChecks()
   app.on('activate', () => {
     if (!BrowserWindow.getAllWindows().length) createWindow()
   })
 })
 app.on('before-quit', () => {
+  stopPeriodicUpdateChecks()
   if (autoUpdater && updateDownloaded && !installingUpdate) {
     installingUpdate = true
     try {

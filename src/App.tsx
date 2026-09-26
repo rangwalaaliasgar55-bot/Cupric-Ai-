@@ -30,6 +30,41 @@ export default function App() {
     else delete document.documentElement.dataset.vibrancy
   }, [])
 
+  /**
+   * Updates announce themselves once, quietly, and only when there is
+   * something to act on.
+   *
+   * The main process checks at launch and every four hours after that, so
+   * nobody has to go looking for a "check for updates" button. "checking" and
+   * "current" stay silent — they are not news. Only a finished download says
+   * anything, and even then it is a toast that waits rather than a dialog
+   * that interrupts: the update installs on the next quit regardless, so the
+   * button is a shortcut, not a demand.
+   */
+  useEffect(() => {
+    const ipc = getIpc()
+    if (!ipc || typeof ipc.on !== 'function') return
+    return ipc.on('updater:status', (event: { status?: string; version?: string }) => {
+      if (event?.status !== 'downloaded') return
+      const version = event.version ? ` ${event.version}` : ''
+      useProjectStore.getState().pushToast('info', `Cupric${version} is ready — it installs next time you quit.`, {
+        // One banner per version, however many times the event arrives.
+        id: `update-${event.version ?? 'ready'}`,
+        sticky: true,
+        action: {
+          label: 'Restart now',
+          run: () => {
+            void ipc.invoke('updater:install').catch(() => {
+              useProjectStore
+                .getState()
+                .pushToast('error', 'That update could not be applied right now. It will install when you next quit.')
+            })
+          },
+        },
+      })
+    })
+  }, [])
+
   // Electron is the source of truth for native job progress.
   useEffect(() => {
     const ipc = getIpc()

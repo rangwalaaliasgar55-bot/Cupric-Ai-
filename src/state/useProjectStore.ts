@@ -24,7 +24,21 @@ import { emptyStudioDoc, normaliseClip, splitClipAt, studioOf } from '../lib/stu
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
 import { setSoundEnabled } from '../lib/sound'
 
-export type Toast = { id: string; kind: 'success' | 'info' | 'error'; text: string }
+export type Toast = {
+  id: string
+  kind: 'success' | 'info' | 'error'
+  text: string
+  /**
+   * Stays until it is dismissed or acted on. For the rare message that is
+   * worth missing nothing — an update waiting to be applied — rather than the
+   * usual four-second acknowledgement.
+   */
+  sticky?: boolean
+  /** One optional action, shown as a link on the toast. */
+  action?: { label: string; run: () => void }
+}
+
+export type ToastOptions = { sticky?: boolean; action?: Toast['action']; id?: string }
 
 const activeRenderCancels = new Map<string, () => void>()
 
@@ -139,7 +153,7 @@ type AppState = {
   toggleTheme: () => void
   setSoundCues: (on: boolean) => void
   setAskOpen: (open: boolean) => void
-  pushToast: (kind: Toast['kind'], text: string) => void
+  pushToast: (kind: Toast['kind'], text: string, options?: ToastOptions) => void
   dismissToast: (id: string) => void
 
   createProject: (name?: string) => string
@@ -344,10 +358,16 @@ export const useProjectStore = create<AppState>()(
           set({ soundCues: on })
         },
         setAskOpen: (askOpen) => set({ askOpen }),
-        pushToast: (kind, text) => {
-          const id = uid()
-          set((s) => ({ toasts: [...s.toasts.slice(-3), { id, kind, text }] }))
-          setTimeout(() => get().dismissToast(id), 4000)
+        pushToast: (kind, text, options) => {
+          // A caller-supplied id makes a message idempotent — the updater can
+          // announce the same downloaded version twice without stacking two
+          // identical banners.
+          const id = options?.id ?? uid()
+          set((s) => {
+            const without = s.toasts.filter((t) => t.id !== id)
+            return { toasts: [...without.slice(-3), { id, kind, text, sticky: options?.sticky, action: options?.action }] }
+          })
+          if (!options?.sticky) setTimeout(() => get().dismissToast(id), 4000)
         },
         dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 

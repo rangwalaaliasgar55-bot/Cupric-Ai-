@@ -227,3 +227,29 @@ if a converted one regresses.
 **Sound.** Two synthesised cues — export finished, export failed — at roughly
 -28 dBFS, silent under `prefers-reduced-motion`, with a speaker toggle in the
 top bar. No audio files, nothing to 404, and no click on every button.
+
+## v0.4.5 — updates that look after themselves
+
+Modelled on how OpenCode does it: the app keeps itself current and only speaks
+when there is something to act on.
+
+- **Periodic checks.** `startPeriodicUpdateChecks()` re-checks every four hours
+  while the app runs, guarded the same way the launch check is
+  (`autoUpdater && !DEV_URL`), `unref`'d so it never holds the process open,
+  and cleared on `before-quit`. The periodic call is `checkForUpdates()` rather
+  than `checkForUpdatesAndNotify()` — the in-app banner is the notification
+  now, and an OS toast on top of it every four hours is the nagging this is
+  meant to avoid. Launch keeps the notifier, for when no window is up yet.
+- **One quiet banner.** `updater:status → downloaded` raises a sticky toast:
+  "Cupric x.y.z is ready — it installs next time you quit", with a Restart now
+  action. Keyed by version, so repeated events never stack. `checking` and
+  `current` stay silent; nothing anywhere opens a dialog for them.
+- **`updater:install`.** New IPC channel (`preload.cjs` + `main.cjs`) calling
+  `quitAndInstall(false, true)`, deferred a tick so the call can return before
+  the app exits. Refuses politely if nothing has downloaded yet.
+- **The manual button is now a fallback.** The Ask panel reads "Updates install
+  automatically" with a small "Check now" link beside it, instead of a button
+  the workflow depends on.
+
+Not touched: `.github/workflows/release-windows.yml`, and the `publish` config
+in `package.json`.
