@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Image as ImageIcon, Layers, Music, Sparkles, Sticker, Type as TypeIcon, Video } from 'lucide-react'
+import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, Type as TypeIcon, Video } from 'lucide-react'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
+import { moveKeyframeTime } from '../../lib/studio/keyframeEdit'
+import { getMedia } from '../../lib/studio/media'
 import { clamp, cx, fmtClock } from '../../lib/utils'
 
 const ROW_H = 56
@@ -17,12 +19,14 @@ type Props = {
   onSelect: (id: string | null) => void
   onSeek: (t: number) => void
   onPatchClip: (id: string, patch: Partial<StudioClip>) => void
+  onReorderTrack: (from: number, to: number) => void
 }
 
 type Drag =
   | { mode: 'move'; id: string; grabOffsetSec: number; startTrack: number; pointerStartY: number }
   | { mode: 'trim-start'; id: string; originStart: number; originDuration: number; originTrimIn: number }
   | { mode: 'trim-end'; id: string; originDuration: number }
+  | { mode: 'keyframe'; id: string; index: number }
   | { mode: 'scrub' }
 
 function clipIcon(clip: StudioClip) {
@@ -55,6 +59,22 @@ function clipTint(clip: StudioClip, selected: boolean): string {
   return cx(base, selected && 'ring-2 ring-accent ring-offset-0')
 }
 
+function AudioWaveform({ clip }: { clip: StudioAudioClip }) {
+  const samples = getMedia(clip.mediaId)?.waveform ?? []
+  if (!samples.length) return null
+  const step = samples.length > 96 ? Math.ceil(samples.length / 96) : 1
+  const visible = samples.filter((_, index) => index % step === 0)
+  return (
+    <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-55" viewBox="0 0 100 40" preserveAspectRatio="none" aria-hidden>
+      {visible.map((sample, index) => {
+        const x = ((index + 0.5) / visible.length) * 100
+        const half = Math.max(1, Math.min(18, sample * 18))
+        return <line key={index} x1={x} x2={x} y1={20 - half} y2={20 + half} stroke="currentColor" strokeWidth={Math.max(0.35, 70 / visible.length)} />
+      })}
+    </svg>
+  )
+}
+
 /** Ruler tick spacing that stays readable at every zoom level. */
 function tickStep(pps: number): number {
   if (pps >= 160) return 0.5
@@ -64,7 +84,7 @@ function tickStep(pps: number): number {
   return 10
 }
 
-export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, onSeek, onPatchClip }: Props) {
+export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, onSeek, onPatchClip, onReorderTrack }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const laneRef = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
@@ -102,6 +122,14 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       }
       const clip = doc.clips.find((c) => c.id === drag.id)
       if (!clip) return
+
+      if (drag.mode === 'keyframe') {
+        const keys = clip.keyframes ?? []
+        const nextKeys = moveKeyframeTime(keys, drag.index, t - clip.startSec, clip.durationSec, doc.fps)
+        onPatchClip(clip.id, { keyframes: nextKeys })
+        onSeek(clip.startSec + (nextKeys[drag.index]?.at ?? 0))
+        return
+      }
 
       if (drag.mode === 'move') {
         const rawStart = t - drag.grabOffsetSec
@@ -173,6 +201,28 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                 style={{ height: ROW_H + ROW_GAP }}
               >
                 <span>T{track + 1}</span>
+                <span className="flex items-center" aria-label={`Reorder track ${track + 1}`}>
+                  <button
+                    type="button"
+                    title="Move track up (raise layer)"
+                    aria-label={`Move track ${track + 1} up`}
+                    disabled={track >= doc.trackCount - 1}
+                    onClick={() => onReorderTrack(track, track + 1)}
+                    className="rounded p-0.5 hover:bg-panel-alt hover:text-text disabled:cursor-not-allowed disabled:opacity-25"
+                  >
+                    <ChevronUp size={12} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Move track down (lower layer)"
+                    aria-label={`Move track ${track + 1} down`}
+                    disabled={track <= 0}
+                    onClick={() => onReorderTrack(track, track - 1)}
+                    className="rounded p-0.5 hover:bg-panel-alt hover:text-text disabled:cursor-not-allowed disabled:opacity-25"
+                  >
+                    <ChevronDown size={12} />
+                  </button>
+                </span>
               </div>
             ))}
           </div>
@@ -265,6 +315,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                               className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30"
                             />
                           )}
+                          {clip.kind === 'audio' && <AudioWaveform clip={clip as StudioAudioClip} />}
                           <span className="relative flex min-w-0 items-center gap-1.5">
                             <Icon size={13} className="shrink-0 opacity-80" />
                             <span className="truncate font-medium text-text">{clip.name}</span>
@@ -272,6 +323,24 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                           <span className="relative ml-auto hidden font-mono text-xs text-muted tabular-nums sm:inline">
                             {clip.durationSec.toFixed(1)}s
                           </span>
+
+                          {selected && (clip.keyframes ?? []).map((keyframe, index) => (
+                            <button
+                              key={`${keyframe.at}-${index}`}
+                              type="button"
+                              title={`Keyframe at ${keyframe.at.toFixed(2)}s — drag to retime`}
+                              aria-label={`Keyframe ${index + 1} at ${keyframe.at.toFixed(2)} seconds`}
+                              onPointerDown={(event) => {
+                                event.stopPropagation()
+                                event.preventDefault()
+                                onSelect(clip.id)
+                                onSeek(clip.startSec + keyframe.at)
+                                setDrag({ mode: 'keyframe', id: clip.id, index })
+                              }}
+                              className="absolute bottom-1 z-10 h-2.5 w-2.5 -translate-x-1/2 rotate-45 cursor-ew-resize border border-accent-ink bg-accent shadow-sm"
+                              style={{ left: `${clamp(keyframe.at / clip.durationSec, 0, 1) * 100}%` }}
+                            />
+                          ))}
 
                           {/* Trim handles */}
                           <span

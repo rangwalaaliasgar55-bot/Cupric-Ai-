@@ -14,11 +14,12 @@
  * refusal, because it looks like the app worked.
  */
 
-import type { StudioClip, StudioDoc } from '../../types/project'
+import type { StudioClip, StudioDoc, StudioKeyframe } from '../../types/project'
 import { uid } from '../utils'
 import { STUDIO_BACKGROUNDS } from './backgrounds'
 import { defaultGlassClip, defaultTextClip, nextFreeStart } from './doc'
 import { TEXT_ANIMATIONS, TRANSITIONS } from './transitions'
+import { planTemplateFill, templateSlots, type TemplateFillData } from './templateFill'
 
 /** Custom MIME so a drag from the Library can never be confused with a file. */
 export const RESOURCE_MIME = 'application/x-cupric-resource'
@@ -35,7 +36,18 @@ export type ResourceDragPayload = {
 export type DropResult =
   | { ok: true; clip: StudioClip; message: string }
   | { ok: true; docPatch: Partial<StudioDoc>; message: string }
+  | { ok: true; action: 'open-lab'; labSlug: string; message: string }
   | { ok: false; reason: string }
+
+export type ResourceDisposition = 'clip' | 'lab' | 'template' | 'reference'
+
+/** One classification drives every resource badge and drag expectation. */
+export function resourceDisposition(kind: string): ResourceDisposition {
+  if (kind === 'component') return 'lab'
+  if (kind === 'saas-template') return 'template'
+  if (['glass', 'background', 'animation', 'effect', 'transition'].includes(kind)) return 'clip'
+  return 'reference'
+}
 
 export function readDragPayload(transfer: DataTransfer): ResourceDragPayload | null {
   const raw = transfer.getData(RESOURCE_MIME)
@@ -111,32 +123,107 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
     case 'transition': {
       const transition = TRANSITIONS.find((t) => t.id === payload.id)
       if (!transition) return { ok: false, reason: `The renderer has no transition called “${payload.id}”.` }
+      if (!doc.clips.length) {
+        return {
+          ok: false,
+          reason: `“${transition.name}” needs a clip. Add media or text first, then drop the transition again.`,
+        }
+      }
+      // Stage drops have no timeline target. Pick the clip edge nearest the
+      // playhead so the action is useful and predictable instead of refusing.
+      const target = [...doc.clips].sort((a, b) => {
+        const distance = (clip: StudioClip) => Math.min(Math.abs(clip.startSec - atSec), Math.abs(clip.startSec + clip.durationSec - atSec))
+        return distance(a) - distance(b) || b.startSec - a.startSec
+      })[0]
       return {
-        ok: false,
-        reason: `“${transition.name}” is a transition — drop it on a clip in the timeline, or set it in the inspector. It has nothing to attach to on an empty stage.`,
+        ok: true,
+        docPatch: {
+          clips: doc.clips.map((clip) =>
+            clip.id === target.id ? { ...clip, transitionIn: transition.id } as StudioClip : clip,
+          ),
+        },
+        message: `“${transition.name}” applied to the nearest clip, “${target.name}”.`,
       }
     }
 
     case 'effect': {
-      const cue = String((payload.data as { promptCue?: string } | undefined)?.promptCue ?? payload.description ?? '')
-      const clip = defaultTextClip(nextFreeStart(doc, topTrack, atSec, 3), topTrack)
-      clip.text = payload.name
-      clip.fontSizePct = 6
-      return {
-        ok: true,
-        clip,
-        message: cue
-          ? `“${payload.name}” added as a titled beat — its prompt cue is on the clip name for the generator.`
-          : `“${payload.name}” added as a titled beat.`,
+      const backgrounds: Record<string, string> = {
+        'bg-soft-grid': 'grid-haze',
+        'bg-dot-field': 'dot-field',
+        'bg-lime-haze': 'lime-void',
+        'bg-noise-paper': 'noise-veil',
       }
+      const backgroundId = backgrounds[payload.id]
+      if (backgroundId) {
+        const known = STUDIO_BACKGROUNDS.find((item) => item.id === backgroundId)
+        if (!known) return { ok: false, reason: `The native painter for “${payload.name}” is unavailable.` }
+        const clip: StudioClip = {
+          id: uid(), kind: 'background', track: 0, startSec: nextFreeStart(doc, 0, atSec, 4), durationSec: 4,
+          name: known.name, transitionIn: 'fade', transitionOut: 'fade', opacity: 1, backgroundId: known.id,
+        }
+        return { ok: true, clip, message: `Added the editable “${known.name}” background effect.` }
+      }
+      if (payload.id === 'tr-mask-wipe') {
+        if (!doc.clips.length) return { ok: false, reason: 'Mask Wipe needs a clip. Add media or text first.' }
+        const target = [...doc.clips].sort((a, b) => Math.abs(a.startSec - atSec) - Math.abs(b.startSec - atSec))[0]
+        return {
+          ok: true,
+          docPatch: { clips: doc.clips.map((clip) => clip.id === target.id ? { ...clip, transitionIn: 'wipe-left' } as StudioClip : clip) },
+          message: `Applied Mask Wipe to “${target.name}”.`,
+        }
+      }
+      if (payload.id === 'tr-scale-overshoot') {
+        if (!doc.clips.length) return { ok: false, reason: 'Scale Overshoot needs a visual clip first.' }
+        const target = [...doc.clips].reverse().find((clip) => clip.kind !== 'audio' && clip.kind !== 'background')
+        if (!target) return { ok: false, reason: 'Scale Overshoot needs a movable visual clip.' }
+        const keyframes: StudioKeyframe[] = (target.keyframes ?? []).map(({ scale: _oldScale, ...keyframe }) => keyframe)
+        const scaleFrames = [
+          { at: 0, scale: 0.92, ease: 'ease-out' as const },
+          { at: Math.min(0.18, target.durationSec * 0.25), scale: 1.04, ease: 'ease-out' as const },
+          { at: Math.min(0.4, target.durationSec * 0.5), scale: 1, ease: 'ease-in-out' as const },
+        ]
+        for (const scaleFrame of scaleFrames) {
+          const existing = keyframes.find((keyframe) => Math.abs(keyframe.at - scaleFrame.at) < 0.001)
+          if (existing) Object.assign(existing, { scale: scaleFrame.scale, ease: scaleFrame.ease })
+          else keyframes.push(scaleFrame)
+        }
+        keyframes.sort((a, b) => a.at - b.at)
+        return {
+          ok: true,
+          docPatch: { clips: doc.clips.map((clip) => clip.id === target.id ? { ...clip, keyframes } as StudioClip : clip) },
+          message: `Added three editable scale keyframes to “${target.name}”.`,
+        }
+      }
+      const clip = defaultTextClip(nextFreeStart(doc, topTrack, atSec, 3), topTrack)
+      clip.text = payload.id === 'cap-hormozi' ? 'MAKE EVERY WORD COUNT' : payload.id === 'cap-minimal' ? 'A quiet supporting thought' : payload.name
+      if (payload.id === 'cap-hormozi') {
+        clip.fontSizePct = 9
+        clip.fontFamily = 'Space Grotesk Variable'
+        clip.weight = 800
+        clip.highlightWord = 'WORD'
+        clip.anim = 'word-reveal'
+      } else if (payload.id === 'cap-minimal') {
+        clip.fontSizePct = 4
+        clip.y = 0.82
+        clip.anim = 'fade-up'
+      } else if (payload.id === 'mo-word-reveal') {
+        clip.anim = 'word-reveal'
+      } else if (payload.id === 'mo-counter-tick') {
+        clip.anim = 'typewriter'
+      } else {
+        return { ok: false, reason: `“${payload.name}” has no native Studio implementation yet.` }
+      }
+      return { ok: true, clip, message: `Added “${payload.name}” as a fully editable native text effect.` }
     }
 
     case 'component':
-      // Lab demos are live React, not pixels. The honest answer is to say what
-      // the path actually is rather than drop an empty overlay on the canvas.
+      // Lab demos are live React, not pixels. Route straight to the real
+      // deterministic capture flow rather than dropping an empty placeholder.
       return {
-        ok: false,
-        reason: `“${payload.name}” is a live React demo. Open it in the Lab and use “Send to Studio” to capture it as an overlay frame — the canvas cannot mount React components.`,
+        ok: true,
+        action: 'open-lab',
+        labSlug: payload.id,
+        message: `Opening “${payload.name}” in the Lab. Choose the frame, then use “Send to Studio” to capture it as an overlay.`,
       }
 
     case 'template':
@@ -145,8 +232,46 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
         reason: `“${payload.name}” is an HTML scene rendered by the desktop pipeline, not a canvas clip. Use it from the Render screen.`,
       }
 
+    case 'saas-template': {
+      const data = (payload.data ?? {}) as TemplateFillData
+      const slots = templateSlots(data)
+      if (!slots.length) return { ok: false, reason: `“${payload.name}” has no editable scenes.` }
+      if (slots.some((slot) => slot.kind !== 'text')) {
+        return {
+          ok: false,
+          reason: `“${payload.name}” needs media assignments. Click its Auto-fill button so Cupric can ask which footage belongs in each slot.`,
+        }
+      }
+      const assignments = Object.fromEntries(slots.map((slot) => [slot.id, { text: slot.defaultText }]))
+      const plan = planTemplateFill(doc, data, assignments, payload.name)
+      if (!plan.clips.length) return { ok: false, reason: `“${payload.name}” did not produce any clips.` }
+      return {
+        ok: true,
+        docPatch: { clips: [...doc.clips, ...plan.clips] },
+        message: `Added “${payload.name}” as ${plan.clips.length} editable clips.`,
+      }
+    }
+
     case 'source':
       return { ok: false, reason: `“${payload.name}” is a reference link, not editable material.` }
+
+    case 'skill':
+      return { ok: false, reason: `“${payload.name}” is an agent skill reference for planning renders, not visual material that can become a clip.` }
+
+    case 'font':
+      return { ok: false, reason: `“${payload.name}” is a font catalogue reference. Open its source to install or license the font; it is not embedded clip media.` }
+
+    case 'icon':
+      return { ok: false, reason: `“${payload.name}” is an icon-set reference, not an exported SVG or image. Open the source and import an actual icon file.` }
+
+    case 'provider':
+      return { ok: false, reason: `“${payload.name}” is a service/provider reference for the generation pipeline, not timeline media.` }
+
+    case 'block':
+      return { ok: false, reason: `“${payload.name}” is an upstream UI block reference. Open its source or use a capturable component from the Lab.` }
+
+    case 'voice':
+      return { ok: false, reason: `“${payload.name}” is a voice-command phrase. Copy it and use the Studio Voice control; it is not an audio clip.` }
 
     default:
       return { ok: false, reason: `Cupric does not know how to place a “${payload.kind}” item on the stage yet.` }

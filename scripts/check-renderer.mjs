@@ -112,9 +112,10 @@ await build({
       export { drawStudioFrame, clampToSafeArea, SAFE_MARGIN, gradeFilter, keyframeValuesAt } from './src/lib/studio/renderer'
       export { audioGainAt } from './src/lib/studio/doc'
       export { lintStudioDoc } from './src/lib/studio/lint'
-      export { parseGeneratedHtml, piecesToStudioClips, animForMotion } from './src/lib/studio/importHtml'
+      export { parseGeneratedHtml, piecesToStudioClips, rundownToStudioClips, animForMotion } from './src/lib/studio/importHtml'
       export { validateEditingPlan } from './src/lib/editingPlan'
-      export { emptyStudioDoc, defaultGlassClip, defaultTextClip } from './src/lib/studio/doc'
+      export { resourceToStudio, resourceDisposition } from './src/lib/studio/resourceDrop'
+      export { emptyStudioDoc, defaultGlassClip, defaultTextClip, reorderTracks } from './src/lib/studio/doc'
       export { TRANSITIONS, TEXT_ANIMATIONS } from './src/lib/studio/transitions'
       export { STUDIO_BACKGROUNDS } from './src/lib/studio/backgrounds'
       export { GLASS_PRESETS } from './src/lib/glass'
@@ -533,6 +534,47 @@ if (mod.parseVoiceCommand('add text hello world')?.text !== 'hello world') failu
     mod.drawStudioFrame(probe.ctx, doc, t, 1080, 1920, { media: () => null, overlay: () => null })
     if (probe.depth !== 0) failures.push(`import: unbalanced save/restore at t=${t}`)
   }
+}
+
+// Resource drops advertise their real behavior and stage-dropped transitions
+// target the nearest existing clip instead of becoming a dead drag.
+{
+  const clip = { ...mod.defaultTextClip(3, 1), id: 'target', transitionIn: 'none' }
+  const doc = { ...mod.emptyStudioDoc(), clips: [clip] }
+  const result = mod.resourceToStudio(doc, { kind: 'transition', id: 'fade', name: 'Fade' }, 3.2)
+  checks += 3
+  if (!result.ok || !('docPatch' in result)) failures.push('resources: transition stage drop was refused with a clip available')
+  else if (result.docPatch.clips?.[0]?.transitionIn !== 'fade') failures.push('resources: transition did not target the nearest clip')
+  if (mod.resourceDisposition('component') !== 'lab' || mod.resourceDisposition('font') !== 'reference') failures.push('resources: disposition badges do not match drop behavior')
+}
+
+// Autonomous output must hand back editable clips, not stop at an MP4.
+{
+  const doc = mod.emptyStudioDoc()
+  const clips = mod.rundownToStudioClips({
+    title: 'Automated edit', durationSec: 4, fps: 30, size: [1080, 1920], style: 'test', arenaPrompt: '',
+    scenes: [
+      { id: 'one', from: 0, to: 2, type: 'hook', copy: 'Editable hook', motion: 'pop' },
+      { id: 'two', from: 2, to: 4, type: 'cta', copy: 'Editable CTA', motion: 'fade up' },
+    ],
+  }, doc, 'Autonomous')
+  checks += 2
+  if (clips.length !== 2 || clips.some((clip) => clip.kind !== 'text')) failures.push('automation: rundown did not become editable text clips')
+  if (clips[1]?.startSec !== 2 || clips[1]?.durationSec !== 2) failures.push('automation: editable clip timing was not preserved')
+}
+
+// Track reordering swaps whole compositing layers without touching timing and
+// returns a fresh document, so one store mutation can undo it atomically.
+{
+  const lower = { ...mod.defaultTextClip(1, 0), id: 'lower' }
+  const upper = { ...mod.defaultGlassClip(2, 2), id: 'upper' }
+  const doc = { ...mod.emptyStudioDoc(), clips: [lower, upper] }
+  const moved = mod.reorderTracks(doc, 0, 2)
+  checks += 3
+  if (moved === doc) failures.push('tracks: reorder did not produce a document change')
+  if (moved.clips.find((c) => c.id === 'lower')?.track !== 2) failures.push('tracks: lower layer was not raised')
+  if (moved.clips.find((c) => c.id === 'upper')?.track !== 0) failures.push('tracks: upper layer was not lowered')
+  if (moved.clips.some((c) => c.startSec !== doc.clips.find((old) => old.id === c.id)?.startSec)) failures.push('tracks: reorder changed clip timing')
 }
 
 if (failures.length) {

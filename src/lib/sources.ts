@@ -50,6 +50,18 @@ export type SourceEntry = {
 }
 
 export const SOURCES: SourceEntry[] = [
+  {
+    id: 'html-video',
+    name: 'html-video',
+    url: 'https://github.com/nexu-io/html-video',
+    kind: 'templates',
+    use: 'video',
+    description: 'Apache-2.0 content-graph and multi-frame HTML-to-MP4 architecture: source ingestion, agent storyboard, deterministic browser capture and FFmpeg concat.',
+    promptCue: 'Plan the video as a content graph: extract source facts, order them into explicit frames, give every frame editable text/data inputs, render deterministic HTML at a fixed fps, then concatenate and mux audio with FFmpeg.',
+    intake: 'reference',
+    license: 'Apache-2.0; architecture referenced, no upstream runtime bundled',
+    tags: ['html', 'video', 'content-graph', 'chromium', 'ffmpeg', 'agent'],
+  },
   /* ——— Component libraries ——— */
   {
     id: 'forge-ui',

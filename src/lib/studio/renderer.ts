@@ -29,7 +29,7 @@ export type FrameSources = {
   /** Element to draw for a media clip — supplied by the preview or exporter. */
   media: (clip: StudioMediaClip) => CanvasImageSource | null
   /** Decoded overlay images, keyed by clip id. */
-  overlay: (clip: StudioOverlayClip) => CanvasImageSource | null
+  overlay: (clip: StudioOverlayClip, localSec?: number) => CanvasImageSource | null
   /**
    * The sticker's canvas wound to `localSec` (seconds into the clip).
    * Optional so headless callers can leave it out.
@@ -244,7 +244,8 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
   const progress = clipProgress(clip, t)
   const preset = captionPreset(clip.captionStyle)
   const fontPx = Math.max(12, (clip.fontSizePct / 100) * h)
-  ctx.font = `${clip.weight} ${fontPx}px 'Inter Variable', Inter, system-ui, sans-serif`
+  const family = clip.fontFamily || 'Inter Variable'
+  ctx.font = `${clip.weight} ${fontPx}px '${family}', Inter, system-ui, sans-serif`
   ctx.textBaseline = 'middle'
   ctx.textAlign = clip.align
 
@@ -542,13 +543,14 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
   const values = keyframeValuesAt(clip, t)
   if (!values) return clip
   const next = { ...clip } as StudioClip & { x?: number; y?: number; scale?: number; fontSizePct?: number }
-  if (values.x !== undefined && 'x' in clip) next.x = values.x
-  if (values.y !== undefined && 'y' in clip) next.y = values.y
+  if (values.x !== undefined && ('x' in clip || clip.kind === 'video' || clip.kind === 'image')) next.x = values.x
+  if (values.y !== undefined && ('y' in clip || clip.kind === 'video' || clip.kind === 'image')) next.y = values.y
   if (values.rotation !== undefined) next.rotation = values.rotation
   if (values.opacity !== undefined) next.opacity = clip.opacity * values.opacity
   if (values.scale !== undefined) {
     // "Scale" means whatever size means for this kind of clip.
     if (clip.kind === 'overlay' || clip.kind === 'sticker') next.scale = clip.scale * values.scale
+    else if (clip.kind === 'video' || clip.kind === 'image') next.scale = (clip.scale ?? 1) * values.scale
     else if (clip.kind === 'text') next.fontSizePct = clip.fontSizePct * values.scale
     else if (clip.kind === 'glass') {
       ;(next as unknown as { w: number; h: number }).w = clip.w * values.scale
@@ -568,6 +570,9 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
 function clipCentre(clip: StudioClip, w: number, h: number): { cx: number; cy: number } {
   if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker') {
     return { cx: clip.x * w, cy: clip.y * h }
+  }
+  if (clip.kind === 'video' || clip.kind === 'image') {
+    return { cx: (clip.x ?? 0.5) * w, cy: (clip.y ?? 0.5) * h }
   }
   return { cx: w / 2, cy: h / 2 }
 }
@@ -709,19 +714,27 @@ function drawClipContent(
     backgroundById(clip.backgroundId).paint(ctx, width, height, t)
   } else if (clip.kind === 'video' || clip.kind === 'image') {
     const source = sources.media(clip)
+    const scale = Math.max(0.05, clip.scale ?? 1)
+    const targetW = width * scale
+    const targetH = height * scale
+    const targetX = (clip.x ?? 0.5) * width - targetW / 2
+    const targetY = (clip.y ?? 0.5) * height - targetH / 2
+    ctx.save()
+    ctx.translate(targetX, targetY)
     if (source) {
       const [sw, sh] = sourceSize(source)
-      drawFit(ctx, source, sw, sh, width, height, clip.fit)
+      drawFit(ctx, source, sw, sh, targetW, targetH, clip.fit)
     } else {
       // Honest placeholder: the clip exists, its media handle does not.
       ctx.fillStyle = 'rgba(226,75,74,0.10)'
-      ctx.fillRect(0, 0, width, height)
+      ctx.fillRect(0, 0, targetW, targetH)
       ctx.fillStyle = 'rgba(244,241,234,0.72)'
       ctx.font = `600 ${Math.round(height * 0.028)}px 'Inter Variable', Inter, system-ui, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText(`Relink “${clip.fileName}”`, width / 2, height / 2)
+      ctx.fillText(`Relink “${clip.fileName}”`, targetW / 2, targetH / 2)
     }
+    ctx.restore()
   } else if (clip.kind === 'text') {
     drawTextClip(ctx, clip, t, width, height)
   } else if (clip.kind === 'glass') {
@@ -740,7 +753,7 @@ function drawClipContent(
       }
     }
   } else if (clip.kind === 'overlay') {
-    const source = sources.overlay(clip)
+    const source = sources.overlay(clip, Math.max(0, t - clip.startSec))
     if (source) {
       const [sw, sh] = sourceSize(source)
       if (sw && sh) {

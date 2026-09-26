@@ -7,6 +7,7 @@ const { pathToFileURL } = require('url')
 const { spawn } = require('child_process')
 const { GoogleGenerativeAI } = require('@google/generative-ai')
 const AdmZip = require('adm-zip')
+const { approveManualArenaGate, isManualArenaGateBlocked } = require('./automation-gate.cjs')
 
 let autoUpdater
 try {
@@ -58,7 +59,7 @@ let ffprobePath = resolveMediaTool('ffprobe')
 
 const DEV_URL = process.env.ELECTRON_START_URL
 const APP_ID = 'app.cupric-ai.studio'
-const MAX_RENDER_DURATION_SEC = 120
+const MAX_RENDER_DURATION_SEC = 180
 const DEFAULT_SILENCE_NOISE_DB = -35
 const DEFAULT_SILENCE_MIN_DURATION = 0.8
 const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
@@ -384,10 +385,19 @@ function resolveOpenCodeApiKey(baseUrl, model) {
 
 function aiSettings() {
   const settings = readSettings()
-  const provider = settings.aiProvider === 'gemini' ? 'gemini' : 'opencode'
   const openCodeBaseUrl = String(settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1').trim()
   const openCodeModel = String(settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || 'qwen/qwen3-235b-a22b:free').trim()
   const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || '').trim()
+  const explicit = settings.aiProvider === 'gemini' || settings.aiProvider === 'opencode' ? settings.aiProvider : null
+  // A fresh install used to silently select remote OpenRouter with no key. Pick
+  // a provider that can actually authenticate; with neither configured the UI
+  // clearly reports "no live model" and the deterministic planner takes over.
+  const openCodeReady = Boolean(
+    openCodeApiKey ||
+    resolveOpenCodeApiKey(openCodeBaseUrl, openCodeModel) ||
+    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(openCodeBaseUrl)
+  )
+  const provider = explicit || (geminiApiKey() ? 'gemini' : openCodeReady ? 'opencode' : 'gemini')
   return { provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
 }
 
@@ -978,15 +988,19 @@ async function ingestAutomationFootage(job, root, warnings, state) {
 async function openArenaBuilderForPrompt(prompt, extra = {}) {
   const url = 'https://arena.ai/code'
   const text = String(prompt || '').trim()
-  if (text) clipboard.writeText(text)
+  let copied = false
   try {
+    if (!text) throw new Error('No Arena prompt is available to copy')
+    clipboard.writeText(text)
+    copied = clipboard.readText() === text
+    if (!copied) throw new Error('The Arena prompt could not be verified on the clipboard')
     await shell.openExternal(url)
-    logLine('arena-opened', 'Opened Arena builder', { copied: Boolean(text), ...extra })
+    logLine('arena-opened', 'Opened Arena builder', { copied, ...extra })
   } catch (err) {
-    logLine('arena-open-failed', err?.message || String(err), extra)
-    throw new Error(`Could not open Arena in the browser: ${err?.message || err}`)
+    logLine('arena-open-failed', err?.message || String(err), { copied, ...extra })
+    throw new Error(`Could not prepare the manual Arena gate: ${err?.message || err}`)
   }
-  return { url, copied: Boolean(text) }
+  return { url, copied }
 }
 
 async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, warnings, state) {
@@ -1129,7 +1143,7 @@ async function runAutomationPipeline(jobId) {
       job = patchAutomation(job.id, { candidates: candidateResult.candidates, winnerPath: candidateResult.winnerPath, warnings }) || job
       sendAutomation('automation:progress', job)
     }
-    if (job.votingMode === 'manual-arena' && !job.manualVoteApproved) {
+    if (isManualArenaGateBlocked(job)) {
       const message = 'Manual Arena review gate: Cupric opened arena.ai/code in your browser and copied the Arena prompt. Paste it there, run the battle/build, vote yourself, download the winning ZIP, then approve this gate to continue. Public voting is never automated.'
       if (!job.arenaOpenedAt) {
         try {
@@ -1145,6 +1159,9 @@ async function runAutomationPipeline(jobId) {
       return
     }
     job = finishAutomationStep(job.id, 3, job.votingMode === 'manual-arena' ? 'Manual gate approved' : 'Winner selected from the AI candidate battle') || job
+    if (job.votingMode === 'manual-arena') {
+      logLine('automation-gate-resumed', 'Manual Arena approval advanced to footage/timeline stages', { jobId: job.id, nextStep: 4 })
+    }
 
     stepIndex = 4
     job = ensureAutomationActive(job.id, state)
@@ -1222,9 +1239,11 @@ ipcMain.handle('automation:resume', (_e, p) => {
 })
 ipcMain.handle('automation:approveStep', (_e, p) => {
   const latest = automationJobs().find(j => j.id === p?.jobId)
-  const steps = latest?.steps?.map(step => step.id === p?.stepId ? { ...step, status: 'done', progressPct: 100, message: 'Approved by reviewer', completedAt: new Date().toISOString() } : step)
-  const job = patchAutomation(p?.jobId, { status: 'running', manualVoteApproved: true, waitingMessage: null, steps })
-  if (job) setTimeout(() => { void runAutomationPipeline(job.id) }, 0)
+  const approved = approveManualArenaGate(latest, p?.stepId)
+  const job = patchAutomation(p?.jobId, approved)
+  // Resume on a fresh task: approval returns to the caller immediately, while
+  // the same persisted job continues at step 4 rather than re-entering gate 3.
+  setTimeout(() => { void runAutomationPipeline(job.id) }, 0)
   return job
 })
 ipcMain.handle('automation:rejectStep', (_e, p) => {
@@ -1294,10 +1313,12 @@ DEPTH — USE CSS 3D, NOT A 3D LIBRARY:
 
 IMPLEMENTATION NOTES:
 - At t=0 the first scene must be visible and valid.
-- All scene transitions must happen according to the timeline above.
+- All scene transitions must happen according to the timeline above. Automatically choose a visible but restrained transition for every boundary (mask wipe, depth push, lens sweep, blur-through or dissolve); do not repeat one transition throughout.
+- Automatically identify one meaningful keyword in each short scene and give it a separate span, accent colour, weight or reveal timing. Never highlight filler words.
+- Build a complete effects pass into __seek(t): subtle grain or grid depth, foreground/background parallax, scene-specific text reveals, and entrance/settle/exit states. Effects must be pure functions of clip-local progress and must settle before copy needs to be read.
 - Use safe-area margins and responsive scaling inside the fixed #scene canvas.
-- Expose clear variables for duration, fps, scenes, and sourceManifest.
-- The piece should look like a finished video, not a placeholder: polished typography, motion hierarchy, background design, and a final hold.`
+- Expose clear variables for duration, fps, scenes, sourceManifest, effectForScene(index), and transitionForBoundary(index).
+- The piece should look like a finished video, not a placeholder: polished typography, automatic keyword highlighting, motion hierarchy, background design, coherent effects, and a final hold.`
 }
 
 function normalizeRundown(candidate, briefText) {
@@ -1388,6 +1409,28 @@ async function listOpenCodeModels(payload = {}) {
 
 ipcMain.handle('opencode:listModels', (_event, payload) => listOpenCodeModels(payload || {}))
 ipcMain.handle('opencode:discoverModels', () => discoverOpenCodeConfiguredModels())
+ipcMain.handle('ai:testConnection', async (_event, payload = {}) => {
+  const provider = payload.provider === 'opencode' ? 'opencode' : 'gemini'
+  const started = Date.now()
+  try {
+    if (provider === 'opencode') {
+      const models = await listOpenCodeModels({
+        baseUrl: payload.baseUrl,
+        apiKey: payload.apiKey,
+        model: payload.model,
+      })
+      return { ok: true, provider, latencyMs: Date.now() - started, message: `Connected · ${models.length} free/local model${models.length === 1 ? '' : 's'} visible` }
+    }
+    const key = String(payload.apiKey || geminiApiKey() || '').trim()
+    if (!key) throw new Error('Gemini API key is not configured')
+    const modelName = String(payload.model || geminiModel()).trim()
+    const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: modelName, generationConfig: { maxOutputTokens: 1 } })
+    await model.generateContent('Reply OK')
+    return { ok: true, provider, latencyMs: Date.now() - started, message: `Connected to ${modelName}` }
+  } catch (err) {
+    return { ok: false, provider, latencyMs: Date.now() - started, message: err?.message || String(err) }
+  }
+})
 
 async function callOpenCode(messages, options = {}) {
   const cfg = aiSettings()
@@ -1408,6 +1451,7 @@ async function callOpenCode(messages, options = {}) {
   const result = await fetch(url, {
     method: 'POST',
     headers,
+    signal: AbortSignal.timeout(options.timeoutMs ?? 18_000),
     body: JSON.stringify({
       model: cfg.openCodeModel,
       messages,
@@ -1459,17 +1503,113 @@ async function generateOpenCodeRundown(prompt, history, context) {
   return normalizeRundown(parseJsonFromModel(text), prompt)
 }
 
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function withTimeout(promise, ms, label) {
+  let timer
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)} seconds`)), ms)
+  })
+  return Promise.race([promise, deadline]).finally(() => clearTimeout(timer))
+}
+
+function retryableAiError(err) {
+  return /408|409|425|429|500|502|503|504|timeout|timed out|temporar|overload|high demand|network|fetch failed/i.test(err?.message || String(err))
+}
+
 async function generateRundown(prompt, history, context) {
-  const provider = aiSettings().provider
+  const primary = aiSettings().provider
+  const available = {
+    gemini: Boolean(geminiApiKey()),
+    opencode: hasOpenCodeAccess(),
+  }
+  const providers = [primary, primary === 'gemini' ? 'opencode' : 'gemini']
+    .filter((provider, index, all) => all.indexOf(provider) === index && available[provider])
+  if (!providers.length) throw new Error('No live AI provider is configured')
+
   let lastError
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      return provider === 'opencode'
-        ? await generateOpenCodeRundown(prompt, history, context)
-        : await generateGeminiRundown(prompt, history, context)
-    } catch (err) {
-      lastError = err
-      logLine('ai-rundown-retry', err?.message || String(err), { provider })
+  for (const provider of providers) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        return provider === 'opencode'
+          ? await generateOpenCodeRundown(prompt, history, context)
+          : await generateGeminiRundown(prompt, history, context)
+      } catch (err) {
+        lastError = err
+        logLine('ai-rundown-retry', err?.message || String(err), { provider, attempt: attempt + 1 })
+        if (!retryableAiError(err) || attempt === 2) break
+        // Short exponential backoff handles transient Gemini/OpenRouter demand
+        // without making an invalid key feel like a frozen button.
+        await delay(400 * (3 ** attempt))
+      }
+    }
+    logLine('ai-rundown-provider-fallback', lastError?.message || String(lastError), { from: provider })
+  }
+  throw lastError
+}
+
+async function generateStudioEditPlan(instruction, studioContext) {
+  const schemaPrompt = `You are the edit-planning agent inside Cupric AI Studio. Return STRICT JSON only.
+The user instruction must become a small batch of allowlisted, non-destructive edit operations. Never invent clip IDs.
+
+OUTPUT:
+{"summary":string,"ops":[operation]}
+
+OPERATIONS:
+- {"type":"patchClip","clipId":string,"patch":{allowed properties}}
+  Allowed patch properties: x, y, scale, rotation, opacity, fontSizePct, color, fontFamily, weight, align, highlightWord, text, anim, transitionIn, transitionOut, volume. highlightWord must be an exact word already present in that text clip.
+  Fonts: Inter Variable, Manrope Variable, DM Sans Variable, Space Grotesk Variable, Playfair Display Variable, JetBrains Mono Variable.
+  Animations: none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
+  Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
+- {"type":"moveClip","clipId":string,"track":number?,"startSec":number?}
+- {"type":"deleteClip","clipId":string}
+- {"type":"addText","text":string,"track":number,"startSec":number,"durationSec":number,"color":string?,"fontFamily":string?,"anim":string?}
+- {"type":"setKeyframe","clipId":string,"at":number,"values":{"x":number?,"y":number?,"scale":number?,"rotation":number?,"opacity":number?},"ease":"linear"|"ease-in"|"ease-out"|"ease-in-out"?}
+- {"type":"reorderTrack","from":number,"to":number}
+- {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
+
+Track 0 is the bottom layer. x/y are normalized 0..1. Keyframe times are local to the clip. The context may include attributed motionReferences from React Bits, Skiper UI and Remotion: use their names as creative vocabulary, but translate every idea into only the native operations above. Never claim to install or execute an upstream component.
+
+EDITING STANDARD:
+- Read the whole timeline before changing it. Preserve source meaning and maintain readable title/action-safe placement.
+- Pick bundled fonts and hex colors that fit the subject instead of applying the same look every time. For important text, set highlightWord to the strongest existing keyword and combine it with a readable weight and animation.
+- For broad Auto edit requests, inspect every supplied clip and propose a coherent effect pass: varied scene-boundary transitions, contextual text animation, keyword highlighting, typography hierarchy and subtle two-keyframe visual motion. Do not merely return applyStylePreset.
+- Use moveClip for intentional T1/T2/T3 layering and timing. Use two or more setKeyframe operations when the request calls for movement; animation must have a start and destination.
+- Position, scale, rotation and opacity may be animated on visual clips. Avoid motion with no visual purpose.
+- Use native transitions sparingly at scene boundaries. Keep text concise and on screen long enough to read.
+- Prefer 4–12 precise operations for an automatic edit, fewer for a narrow request. Every operation must make a visible change.
+Do not return prose outside JSON.
+
+STUDIO CONTEXT:
+${JSON.stringify(studioContext)}
+
+USER INSTRUCTION:
+${instruction}`
+  const primary = aiSettings().provider
+  const available = { gemini: Boolean(geminiApiKey()), opencode: hasOpenCodeAccess() }
+  const providers = [primary, primary === 'gemini' ? 'opencode' : 'gemini'].filter((provider, index, all) => all.indexOf(provider) === index && available[provider])
+  if (!providers.length) throw new Error('No live AI provider is configured')
+  let lastError
+  for (const provider of providers) {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        if (provider === 'opencode') {
+          const text = await callOpenCode([
+            { role: 'system', content: 'Return only valid JSON edit operations for Cupric AI Studio.' },
+            { role: 'user', content: schemaPrompt },
+          ], { json: true, temperature: 0.2 })
+          return { ...parseJsonFromModel(text), source: 'live' }
+        }
+        const result = await runGeminiGenerateContent(geminiApiKey(), schemaPrompt, { responseMimeType: 'application/json', temperature: 0.2 })
+        return { ...parseJsonFromModel(result.response.text()), source: 'live' }
+      } catch (err) {
+        lastError = err
+        logLine('studio-edit-plan-retry', err?.message || String(err), { provider, attempt: attempt + 1 })
+        if (!retryableAiError(err) || attempt === 2) break
+        await delay(400 * (3 ** attempt))
+      }
     }
   }
   throw lastError
@@ -1495,14 +1635,35 @@ async function liveAiChat(text, ctx) {
 }
 
 ipcMain.handle('gemini:ask', async (_event, payload) => {
+  const prompt = payload?.prompt || ''
+  const context = payload?.rundownContext || {}
   const providerLabel = aiSettings().provider === 'opencode' ? 'OpenCode' : 'Gemini'
-  const rundownPatch = await generateRundown(payload?.prompt || '', payload?.history || [], payload?.rundownContext || {})
-  return {
-    text: `Live ${providerLabel} drafted a ${rundownPatch.durationSec}s rundown with ${rundownPatch.scenes.length} scene${rundownPatch.scenes.length === 1 ? '' : 's'}. The Arena prompt is ready at the bottom when you lock it.`,
-    rundownPatch,
+  try {
+    const rundownPatch = await generateRundown(prompt, payload?.history || [], context)
+    return {
+      source: 'live',
+      text: `Live ${providerLabel} drafted a ${rundownPatch.durationSec}s rundown with ${rundownPatch.scenes.length} scene${rundownPatch.scenes.length === 1 ? '' : 's'}. The Arena prompt is ready at the bottom when you lock it.`,
+      rundownPatch,
+    }
+  } catch (err) {
+    const fallbackReason = err?.message || String(err)
+    const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
+    const rundownPatch = fallbackRundownForJob({ brief: prompt, aspect, fps: context.fps === 60 ? 60 : 30 })
+    logLine('interactive-rundown-fallback', fallbackReason, { provider: providerLabel })
+    return {
+      source: 'local',
+      fallbackReason,
+      text: `The live ${providerLabel} connection was unavailable, so Cupric used the deterministic local planner. You can keep editing this rundown normally.`,
+      rundownPatch,
+    }
   }
 })
 ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.text || '', payload?.ctx || {}))
+ipcMain.handle('studio:planEdits', async (_event, payload) => {
+  const instruction = String(payload?.instruction || '').trim().slice(0, 2000)
+  if (!instruction) throw new Error('Describe the edit you want first')
+  return withTimeout(generateStudioEditPlan(instruction, payload?.context || {}), 10_000, 'Studio auto edit')
+})
 
 // ---------------------------------------------------------------------------
 // Arena import / preview
@@ -1961,9 +2122,13 @@ ipcMain.handle('footage:analyze', async (_event, payload) => {
 // Render pipeline
 // ---------------------------------------------------------------------------
 
+function evenInt(n, fallback) {
+  const r = Math.round(Number(n) || fallback)
+  return r % 2 === 0 ? r : r + 1
+}
 function targetSizeForAspect(aspect, size) {
   if (Array.isArray(size) && size.length >= 2) {
-    return { width: Math.round(Number(size[0]) || 1920), height: Math.round(Number(size[1]) || 1080) }
+    return { width: evenInt(size[0], 1920), height: evenInt(size[1], 1080) }
   }
   if (aspect === '9:16') return { width: 1080, height: 1920 }
   if (aspect === '1:1') return { width: 1080, height: 1080 }

@@ -176,6 +176,7 @@ export function defaultTextClip(start: number, track: number): StudioTextClip {
     opacity: 1,
     text: 'Your headline',
     fontSizePct: 9,
+    fontFamily: 'Inter Variable',
     color: '#F4F1EA',
     weight: 800,
     align: 'center',
@@ -245,6 +246,23 @@ export function normaliseClip(clip: StudioClip, trackCount: number): StudioClip 
     startSec: Math.max(0, Math.round(clip.startSec * 100) / 100),
     durationSec: Math.max(MIN_CLIP_SEC, Math.round(clip.durationSec * 100) / 100),
     opacity: clamp(clip.opacity ?? 1, 0, 1),
+  }
+}
+
+/**
+ * Swap two track layers without changing clip timing. Track numbers are the
+ * compositing z-order (0 is the bottom), so this one pure operation is shared
+ * by preview and export and can be recorded as one undo step.
+ */
+export function reorderTracks(doc: StudioDoc, from: number, to: number): StudioDoc {
+  const a = clamp(Math.round(from), 0, Math.max(0, doc.trackCount - 1))
+  const b = clamp(Math.round(to), 0, Math.max(0, doc.trackCount - 1))
+  if (a === b) return doc
+  return {
+    ...doc,
+    clips: doc.clips.map((clip) =>
+      clip.track === a ? { ...clip, track: b } : clip.track === b ? { ...clip, track: a } : clip,
+    ),
   }
 }
 

@@ -17,10 +17,12 @@ function openOutput(outputPath?: string | null) {
   if (ipc && outputPath) void ipc.invoke('automation:openOutput', { outputPath })
 }
 
-function openArenaForJob(jobId: string) {
+async function openArenaForJob(jobId: string): Promise<{ copied: boolean }> {
   const ipc = getIpc()
-  if (ipc) void ipc.invoke('automation:openArena', { jobId })
-  else window.open('https://arena.ai/code', '_blank', 'noopener,noreferrer')
+  if (ipc) return await ipc.invoke('automation:openArena', { jobId }) as { copied: boolean }
+  const opened = window.open('https://arena.ai/code', '_blank', 'noopener,noreferrer')
+  if (!opened) throw new Error('The browser blocked the Arena tab. Allow pop-ups and try again.')
+  return { copied: false }
 }
 
 export function Autonomous() {
@@ -36,6 +38,7 @@ export function Autonomous() {
   const [vote, setVote] = useState<VotingMode>('local-scoring')
   const [aspect, setAspect] = useState<'16:9'|'9:16'|'1:1'>('16:9')
   const [fps, setFps] = useState<30|60>(30)
+  const [targetDuration, setTargetDuration] = useState<30 | 50 | 180>(30)
   const [quality, setQuality] = useState<'draft'|'final'>('draft')
   const [footageFolder, setFootageFolder] = useState<string | null>(null)
   const [outputFolder, setOutputFolder] = useState<string | null>(null)
@@ -49,8 +52,8 @@ export function Autonomous() {
   const [handsFree, setHandsFree] = useState(true)
   const [speakBack, setSpeakBack] = useState(true)
   const listenerRef = useRef<VoiceListener | null>(null)
-  const settingsRef = useRef({ aspect, fps, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack })
-  settingsRef.current = { aspect, fps, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack }
+  const settingsRef = useRef({ aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack })
+  settingsRef.current = { aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack }
 
   const job = jobs[0]
   const currentStep = job?.steps.find(step => step.id === job.currentStepId) || job?.steps.find(step => step.status === 'waiting-for-user') || null
@@ -138,13 +141,16 @@ export function Autonomous() {
       setListening(true)
       setHeard('Listening\u2026 describe the video you want.')
       if (settingsRef.current.speakBack) speak('Listening. Describe the video you want.', { interrupt: true })
+    } else {
+      pushToast('error', 'Voice recognition is unavailable. Check Windows microphone privacy permission and install the latest Web Speech components, then restart Cupric AI.')
     }
   }
 
   function startJob(text: string) {
     const cfg = settingsRef.current
-    const finalBrief = text.trim() || brief.trim()
-    if (!finalBrief) return
+    const request = text.trim() || brief.trim()
+    if (!request) return
+    const finalBrief = `Create exactly a ${cfg.targetDuration}-second video. ${request}`
     start({
       brief: finalBrief,
       footageFolder: cfg.footageFolder,
@@ -170,8 +176,7 @@ export function Autonomous() {
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="text-sm font-medium">Project goal / brief</label>
-            {voiceSupported && (
-              <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-1.5 text-xs text-muted">
                   <input type="checkbox" checked={handsFree} onChange={(e) => setHandsFree(e.target.checked)} />
                   Start as soon as I stop speaking
@@ -180,11 +185,10 @@ export function Autonomous() {
                   <input type="checkbox" checked={speakBack} onChange={(e) => setSpeakBack(e.target.checked)} />
                   <Volume2 size={12} /> Speak status back
                 </label>
-                <Button size="sm" variant={listening ? 'primary' : 'outline'} onClick={toggleDictation}>
-                  {listening ? <Mic size={13} /> : <MicOff size={13} />} {listening ? 'Listening' : 'Speak the brief'}
+                <Button size="sm" variant={listening ? 'primary' : 'outline'} onClick={toggleDictation} title={voiceSupported ? 'Dictate the brief' : 'Click for microphone setup help'}>
+                  {listening ? <Mic size={13} /> : <MicOff size={13} />} {listening ? 'Listening' : voiceSupported ? 'Speak the brief' : 'Voice setup'}
                 </Button>
               </div>
-            )}
           </div>
           {heard && <p className="mt-2 text-xs text-muted">{heard}</p>}
           <textarea
@@ -197,7 +201,7 @@ export function Autonomous() {
             <Button variant="outline" onClick={() => pickFolder(setFootageFolder)}>Footage folder {footageFolder ? '✓' : '(optional)'}</Button>
             <Button variant="outline" onClick={() => pickFolder(setOutputFolder)}>Output folder {outputFolder ? '✓' : '(optional)'}</Button>
           </div>
-          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <label className="text-xs text-muted">Aspect
               <select value={aspect} onChange={e => setAspect(e.target.value as any)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text">
                 <option>16:9</option><option>9:16</option><option>1:1</option>
@@ -206,6 +210,11 @@ export function Autonomous() {
             <label className="text-xs text-muted">Frame rate
               <select value={fps} onChange={e => setFps(Number(e.target.value) as 30|60)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text">
                 <option value="30">30 fps</option><option value="60">60 fps</option>
+              </select>
+            </label>
+            <label className="text-xs text-muted">Duration
+              <select value={targetDuration} onChange={e => setTargetDuration(Number(e.target.value) as 30 | 50 | 180)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text">
+                <option value="30">30 seconds</option><option value="50">50 seconds</option><option value="180">3 minutes</option>
               </select>
             </label>
             <label className="text-xs text-muted">Quality
@@ -264,7 +273,17 @@ export function Autonomous() {
                 <div className="text-sm font-semibold text-accent-text">Review gate waiting</div>
                 <p className="mt-1 text-sm text-muted">{job.waitingMessage || currentStep.message || 'Approve this gate to continue.'}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" onClick={() => openArenaForJob(job.id)}>Open Arena in browser</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => void openArenaForJob(job.id)
+                      .then((result) => pushToast('success', result.copied
+                        ? 'Arena opened and the prompt was verified on your clipboard. Paste it to continue.'
+                        : 'Arena opened. Copy the prompt from the rundown before continuing.'))
+                      .catch((error) => pushToast('error', error instanceof Error ? error.message : String(error)))}
+                  >
+                    Open Arena & copy prompt
+                  </Button>
                   <Button size="sm" onClick={() => approve(job.id, currentStep.id)}>Approve gate & continue</Button>
                   <Button size="sm" variant="outline" onClick={() => reject(job.id, currentStep.id)}>Reject</Button>
                 </div>

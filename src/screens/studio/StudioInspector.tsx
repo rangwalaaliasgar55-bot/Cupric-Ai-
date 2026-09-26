@@ -411,7 +411,7 @@ function KeyframeFields({
   const keys = clip.keyframes ?? []
   const local = Math.round((time - clip.startSec) * 100) / 100
   const withinClip = local >= 0 && local <= clip.durationSec + 0.001
-  const positioned = clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker'
+  const positioned = clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image'
 
   const currentScale =
     clip.kind === 'overlay' || clip.kind === 'sticker' ? 1 : clip.kind === 'text' ? 1 : clip.kind === 'glass' ? 1 : 1
@@ -766,6 +766,21 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
         />
       </Field>
 
+      <Field label="Font" hint="Bundled locally so exports match the preview on every machine.">
+        <select
+          value={clip.fontFamily ?? 'Inter Variable'}
+          onChange={(e) => onPatch({ fontFamily: e.target.value } as Partial<StudioClip>)}
+          className={inputCx}
+        >
+          <option value="Inter Variable">Inter — versatile sans</option>
+          <option value="Manrope Variable">Manrope — modern editorial</option>
+          <option value="DM Sans Variable">DM Sans — clean social</option>
+          <option value="Space Grotesk Variable">Space Grotesk — geometric tech</option>
+          <option value="Playfair Display Variable">Playfair Display — cinematic serif</option>
+          <option value="JetBrains Mono Variable">JetBrains Mono — technical</option>
+        </select>
+      </Field>
+
       <div className="grid grid-cols-2 gap-3">
         <Field label="Animation">
           <select
@@ -920,6 +935,12 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
           <Slider label="Volume" value={clip.volume} min={0} max={1} step={0.05} onChange={(v) => onPatch({ volume: v } as Partial<StudioClip>)} />
         </>
       )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Slider label="Horizontal" value={clip.x ?? 0.5} min={0} max={1} step={0.01} onChange={(v) => onPatch({ x: v } as Partial<StudioClip>)} />
+        <Slider label="Vertical" value={clip.y ?? 0.5} min={0} max={1} step={0.01} onChange={(v) => onPatch({ y: v } as Partial<StudioClip>)} />
+      </div>
+      <Slider label="Scale" value={clip.scale ?? 1} min={0.05} max={4} step={0.05} suffix="×" onChange={(v) => onPatch({ scale: v } as Partial<StudioClip>)} />
 
       <Field label="Fit">
         <div className="grid grid-cols-2 gap-1.5">
@@ -1088,6 +1109,13 @@ function OverlayFields({ clip, onPatch }: { clip: StudioOverlayClip; onPatch: (p
   return (
     <div className="space-y-4 border-t border-line pt-4">
       <p className="truncate text-xs text-muted">From {clip.source}</p>
+      {clip.frames?.length ? (
+        <div className="rounded-lg border border-line bg-panel-alt p-2.5">
+          <p className="text-xs font-medium text-text">Animated React capture · {clip.frames.length} frames</p>
+          <p className="mt-0.5 text-[11px] text-muted">Scrub-safe motion; position, size, effects, keyframes and playback rate remain editable.</p>
+          <Slider label="Motion speed" value={(clip.frameFps ?? 8) / 8} min={0.5} max={2} step={0.25} suffix="×" onChange={(v) => onPatch({ frameFps: 8 * v } as Partial<StudioClip>)} />
+        </div>
+      ) : null}
       <Slider label="Scale" value={clip.scale} min={0.1} max={2} step={0.05} suffix="×" onChange={(v) => onPatch({ scale: v } as Partial<StudioClip>)} />
       <div className="grid grid-cols-2 gap-3">
         <Slider label="X" value={clip.x} min={0} max={1} step={0.01} onChange={(v) => onPatch({ x: v } as Partial<StudioClip>)} />

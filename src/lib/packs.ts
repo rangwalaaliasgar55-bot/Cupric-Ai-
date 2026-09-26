@@ -9,12 +9,12 @@
  *
  * Resolution order for a pack:
  *   1. in-memory cache (this session)
- *   2. IndexedDB cache (previous "Download all", survives restarts)
- *   3. network — `${PACKS_BASE}/<id>.json`
- *   4. same-origin `/resources/packs/<id>.json` (desktop build ships the tree)
+ *   2. bundled `/resources/packs/<id>.json` matching the installed app
+ *   3. IndexedDB cache (fallback for web/offline builds)
+ *   4. stable `main` network copy when no bundled/cache copy exists
  *
- * Every step is attempted in order, so a cold offline start still works if the
- * user downloaded the packs once, and a fresh online start works with no cache.
+ * The bundled copy is authoritative so updating the app also updates all packs
+ * atomically; an old cache or temporary development branch cannot hide items.
  */
 
 export type PackItemKind =
@@ -78,7 +78,10 @@ export type PackIndex = {
 
 /** Raw base for the branch this session works on. */
 export const PACKS_REPO = 'rangwalaaliasgar55-bot/Cupric-Ai-'
-export const PACKS_BRANCH = 'arena/01a0dcbd-cupric-ai'
+// Released builds may only fetch resources from the stable release branch.
+// Pointing at an old Arena work branch made a current install silently display
+// that branch's stale catalogue.
+export const PACKS_BRANCH = 'main'
 export const PACKS_BASE = `https://raw.githubusercontent.com/${PACKS_REPO}/${PACKS_BRANCH}/resources/packs`
 
 /* ——— IndexedDB key/value, ~40 lines, no dependency ——— */
@@ -167,8 +170,13 @@ async function fetchJson<T>(url: string, timeoutMs = 12_000): Promise<T | null> 
  */
 async function fetchLocal<T>(name: string): Promise<T | null> {
   return (
+    // Vite development server.
     (await fetchJson<T>(`/resources/packs/${name}.json`, 4000)) ??
-    (await fetchJson<T>(`./resources/packs/${name}.json`, 4000))
+    // Web builds that copy resources beside index.html.
+    (await fetchJson<T>(`./resources/packs/${name}.json`, 4000)) ??
+    // Packaged Electron: dist/index.html sits one directory below the bundled
+    // resources tree included by electron-builder.
+    (await fetchJson<T>(`../resources/packs/${name}.json`, 4000))
   )
 }
 
@@ -180,21 +188,25 @@ export async function loadPackIndex(): Promise<{ index: PackIndex | null; source
   const mem = memory.get('index') as PackIndex | undefined
   if (mem) return { index: mem, source: 'memory' }
 
-  const cached = await idbGet<PackIndex>('index')
-  // The network copy wins when it is reachable, so an updated repo shows up.
-  const remote = isOnline() ? await fetchJson<PackIndex>(`${PACKS_BASE}/index.json`) : null
-  if (remote) {
-    memory.set('index', remote)
-    return { index: remote, source: 'network' }
+  // The catalogue shipped with this exact application build is authoritative.
+  // A stale IndexedDB download or an old remote branch must never hide bundled
+  // resources from a freshly updated app.
+  const local = await fetchLocal<PackIndex>('index')
+  if (local) {
+    memory.set('index', local)
+    void idbSet('index', local)
+    return { index: local, source: 'local' }
   }
+  const cached = await idbGet<PackIndex>('index')
   if (cached) {
     memory.set('index', cached)
     return { index: cached, source: 'cache' }
   }
-  const local = await fetchLocal<PackIndex>('index')
-  if (local) {
-    memory.set('index', local)
-    return { index: local, source: 'local' }
+  const remote = isOnline() ? await fetchJson<PackIndex>(`${PACKS_BASE}/index.json`) : null
+  if (remote) {
+    memory.set('index', remote)
+    void idbSet('index', remote)
+    return { index: remote, source: 'network' }
   }
   return { index: null, source: 'none' }
 }
@@ -203,6 +215,12 @@ export async function loadPack(id: string): Promise<{ pack: Pack | null; source:
   const mem = memory.get(id) as Pack | undefined
   if (mem) return { pack: mem, source: 'memory' }
 
+  const local = await fetchLocal<Pack>(id)
+  if (local) {
+    memory.set(id, local)
+    void idbSet(id, local)
+    return { pack: local, source: 'local' }
+  }
   const cached = await idbGet<Pack>(id)
   if (cached) {
     memory.set(id, cached)
@@ -212,13 +230,9 @@ export async function loadPack(id: string): Promise<{ pack: Pack | null; source:
     const remote = await fetchJson<Pack>(`${PACKS_BASE}/${id}.json`)
     if (remote) {
       memory.set(id, remote)
+      void idbSet(id, remote)
       return { pack: remote, source: 'network' }
     }
-  }
-  const local = await fetchLocal<Pack>(id)
-  if (local) {
-    memory.set(id, local)
-    return { pack: local, source: 'local' }
   }
   return { pack: null, source: 'none' }
 }

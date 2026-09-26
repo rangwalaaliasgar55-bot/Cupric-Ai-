@@ -2,10 +2,35 @@
   "id": "sources",
   "name": "Sources",
   "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
-  "version": "0.5.0",
+  "version": "0.7.6",
   "source": "src/lib/sources.ts (links only; nothing third-party is bundled)",
   "license": "Per entry — see each item",
   "items": [
+    {
+      "id": "html-video",
+      "kind": "source",
+      "name": "html-video",
+      "description": "Apache-2.0 content-graph and multi-frame HTML-to-MP4 architecture: source ingestion, agent storyboard, deterministic browser capture and FFmpeg concat.",
+      "data": {
+        "url": "https://github.com/nexu-io/html-video",
+        "sourceKind": "templates",
+        "use": "video",
+        "intake": "reference",
+        "license": "Apache-2.0; architecture referenced, no upstream runtime bundled",
+        "promptCue": "Plan the video as a content graph: extract source facts, order them into explicit frames, give every frame editable text/data inputs, render deterministic HTML at a fixed fps, then concatenate and mux audio with FFmpeg."
+      },
+      "tags": [
+        "source",
+        "templates",
+        "video",
+        "html",
+        "video",
+        "content-graph",
+        "chromium",
+        "ffmpeg",
+        "agent"
+      ]
+    },
     {
       "id": "forge-ui",
       "kind": "source",
