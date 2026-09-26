@@ -112,6 +112,7 @@ await build({
       export { drawStudioFrame, clampToSafeArea, SAFE_MARGIN, gradeFilter, keyframeValuesAt } from './src/lib/studio/renderer'
       export { audioGainAt } from './src/lib/studio/doc'
       export { lintStudioDoc } from './src/lib/studio/lint'
+      export { parseGeneratedHtml, piecesToStudioClips, animForMotion } from './src/lib/studio/importHtml'
       export { validateEditingPlan } from './src/lib/editingPlan'
       export { emptyStudioDoc, defaultGlassClip, defaultTextClip } from './src/lib/studio/doc'
       export { TRANSITIONS, TEXT_ANIMATIONS } from './src/lib/studio/transitions'
@@ -446,6 +447,91 @@ if (mod.parseVoiceCommand('add text hello world')?.text !== 'hello world') failu
     const probe = makeCtx(1920, 1080)
     mod.drawStudioFrame(probe.ctx, doc, t, 1920, 1080, { media: () => null, overlay: () => null })
     if (probe.depth !== 0) failures.push(`keyframes: unbalanced save/restore at t=${t}`)
+  }
+}
+
+// 14. Generated HTML → editable clips.
+{
+  const manifestHtml = `<!doctype html><html><body><div id="scene"></div><script>
+    window.__cupricSourceManifest = {
+      sources: ['inline typography', 'css gradient'],
+      renderSpec: { fps: 30, size: [1080, 1920], durationSec: 9 },
+      sequence: [
+        { id: 's1', from: 0, to: 3, type: 'hook', copy: 'Ship faster', motion: 'typewriter reveal' },
+        { id: 's2', from: 3, to: 6, type: 'beat', copy: 'Every workflow in one place', motion: 'word stagger' },
+        { id: 's3', from: 6, to: 9, type: 'cta', copy: 'Start free', motion: 'scale pop' },
+      ],
+    };
+    window.__seek = function (t) {};
+    __seek(0);
+  <\/script></body></html>`
+
+  checks += 1
+  const piece = mod.parseGeneratedHtml(manifestHtml)
+  if (!piece || piece.via !== 'manifest') failures.push(`import: the manifest sequence was not used (${piece?.via})`)
+  if (piece) {
+    checks += 1
+    if (piece.scenes.length !== 3) failures.push(`import: expected 3 scenes, got ${piece.scenes.length}`)
+    checks += 1
+    if (piece.fps !== 30 || piece.size?.[0] !== 1080) failures.push('import: renderSpec was not read')
+    checks += 1
+    if (piece.scenes[0].copy !== 'Ship faster') failures.push('import: scene copy was lost')
+    checks += 1
+    if (piece.durationSec !== 9) failures.push(`import: duration should come from the scenes, got ${piece.durationSec}`)
+  }
+
+  // Single-quoted, unquoted-key, trailing-comma JS — i.e. what models write.
+  checks += 1
+  const messyHtml = `<html><script>const scenes = [
+    { copy: 'One', from: 0, to: 2, motion: 'fade up', },
+    { copy: "Two", from: 2, to: 5 },
+  ];<\/script></html>`
+  const messy = mod.parseGeneratedHtml(messyHtml)
+  if (!messy || messy.via !== 'scene-array' || messy.scenes.length !== 2) {
+    failures.push(`import: a loose scenes array was not recovered (${JSON.stringify(messy?.via)})`)
+  }
+
+  // The SaaS blueprint shape: ["COPY", seconds, "anim"].
+  checks += 1
+  const tuple = mod.parseGeneratedHtml(`<html><script>const scenes = [["THE NEW WAY", 3, "pop"], ["Try it free", 4, "fade-up"]]<\/script></html>`)
+  if (!tuple || tuple.scenes.length !== 2 || tuple.scenes[1].from !== 3 || tuple.durationSec !== 7) {
+    failures.push('import: tuple-shaped scenes were not laid out end to end')
+  }
+
+  // No structure at all: fall back to the visible copy rather than giving up.
+  checks += 1
+  const plain = mod.parseGeneratedHtml('<html><body><h1>Headline here</h1><p>Supporting line</p></body></html>')
+  if (!plain || plain.via !== 'headings' || plain.scenes.length !== 2) failures.push('import: the heading fallback did not fire')
+
+  checks += 1
+  if (mod.parseGeneratedHtml('') !== null || mod.parseGeneratedHtml('<html></html>') !== null) {
+    failures.push('import: an empty document should return null, not an empty piece')
+  }
+
+  // The clips produced must be ordinary, valid Studio clips.
+  checks += 1
+  const doc = mod.emptyStudioDoc('9:16')
+  const clips = mod.piecesToStudioClips(piece, doc, 'Arena')
+  if (clips.length !== 3) failures.push('import: wrong number of clips')
+  for (const clip of clips) {
+    if (clip.kind !== 'text' || !clip.id || !(clip.durationSec > 0) || !clip.text) {
+      failures.push(`import: produced an invalid clip ${JSON.stringify(clip).slice(0, 80)}`)
+    }
+  }
+  checks += 1
+  if (clips[1].startSec !== 3 || clips[2].startSec !== 6) failures.push('import: scene timings were not preserved')
+  checks += 1
+  if (clips[0].anim !== 'typewriter' || clips[1].anim !== 'word-reveal' || clips[2].anim !== 'pop') {
+    failures.push(`import: motion descriptions were not mapped (${clips.map((c) => c.anim).join(', ')})`)
+  }
+
+  // And the renderer must draw the imported document without complaint.
+  checks += 1
+  doc.clips = clips
+  for (const t of [0, 2, 4.5, 8]) {
+    const probe = makeCtx(1080, 1920)
+    mod.drawStudioFrame(probe.ctx, doc, t, 1080, 1920, { media: () => null, overlay: () => null })
+    if (probe.depth !== 0) failures.push(`import: unbalanced save/restore at t=${t}`)
   }
 }
 

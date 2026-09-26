@@ -22,6 +22,7 @@ import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
 import { emptyStudioDoc, normaliseClip, splitClipAt, studioOf } from '../lib/studio/doc'
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
+import { setSoundEnabled } from '../lib/sound'
 
 export type Toast = { id: string; kind: 'success' | 'info' | 'error'; text: string }
 
@@ -113,6 +114,8 @@ type AppState = {
   activeProjectId: string | null
   view: View
   theme: 'dark' | 'light'
+  /** Two quiet cues, on export finishing and export failing. Off is one click. */
+  soundCues: boolean
   askOpen: boolean
   toasts: Toast[]
   automationJobs: AutomationJob[]
@@ -134,6 +137,7 @@ type AppState = {
   setView: (v: View) => void
   setTheme: (t: 'dark' | 'light') => void
   toggleTheme: () => void
+  setSoundCues: (on: boolean) => void
   setAskOpen: (open: boolean) => void
   pushToast: (kind: Toast['kind'], text: string) => void
   dismissToast: (id: string) => void
@@ -240,6 +244,7 @@ export const useProjectStore = create<AppState>()(
         activeProjectId: null,
         view: 'home',
         theme: 'dark',
+        soundCues: true,
         askOpen: false,
         toasts: [],
         automationJobs: [],
@@ -334,6 +339,10 @@ export const useProjectStore = create<AppState>()(
         setView: (view) => set({ view }),
         setTheme: (theme) => set({ theme }),
         toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+        setSoundCues: (on) => {
+          setSoundEnabled(on)
+          set({ soundCues: on })
+        },
         setAskOpen: (askOpen) => set({ askOpen }),
         pushToast: (kind, text) => {
           const id = uid()
@@ -630,6 +639,7 @@ export const useProjectStore = create<AppState>()(
         activeProjectId: s.activeProjectId,
         view: s.view,
         theme: s.theme,
+        soundCues: s.soundCues,
         automationJobs: s.automationJobs,
       }),
     },

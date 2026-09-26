@@ -1633,6 +1633,23 @@ ipcMain.handle('arena:previewPath', async (_event, localPath) => {
   return pathToFileURL(localPath).toString()
 })
 
+/**
+ * Read a generated HTML file back as text, so the Studio can take it apart
+ * into editable clips.
+ *
+ * Same containment rule as the preview path — only files inside Cupric's own
+ * project data — and a size cap, because this is parsed in the renderer.
+ */
+ipcMain.handle('arena:readHtml', async (_event, localPath) => {
+  if (!localPath) throw new Error('No file path provided')
+  const root = userDataPath('projects')
+  if (!isSubPath(localPath, root)) throw new Error('That file is outside Cupric AI project data')
+  const stat = fs.statSync(localPath)
+  const MAX_BYTES = 8 * 1024 * 1024
+  if (stat.size > MAX_BYTES) throw new Error('That file is larger than 8 MB, which is too big to be a single-file scene')
+  return fs.readFileSync(localPath, 'utf8')
+})
+
 ipcMain.handle('arena:openBuilder', async (_event, payload) => {
   return openArenaBuilderForPrompt(payload?.prompt || '', { source: payload?.source || 'arena-desk' })
 })

@@ -50,6 +50,7 @@ import { readDragPayload, resourceToStudio } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
+import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
 
@@ -512,6 +513,7 @@ export function Studio() {
         const mp4 = await convertToMp4(result.blob, slugify(project?.name ?? 'cupric-studio'), doc.fps)
         setLastExport({ url: result.url, fileName: result.fileName })
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)`)
+        cueDone()
       } else {
         setLastExport({ url: result.url, fileName: result.fileName })
         const a = document.createElement('a')
@@ -521,9 +523,11 @@ export function Studio() {
         a.click()
         a.remove()
         pushToast('success', `Exported ${result.fileName}`)
+        cueDone()
       }
     } catch (err) {
       pushToast('error', humanError(err, 'Export'))
+      cueProblem()
     } finally {
       setExportPct(null)
       cancelRef.current = null

@@ -204,3 +204,26 @@ traffic lights, not a CSS imitation.
 assertions), the voice and error-copy check (34), and a scrub performance
 profile that fails if per-frame renderer work exceeds its budget or starts
 growing faster than the clip count.
+
+## v0.4.4 — the last three
+
+**Editable generated output.** `src/lib/studio/importHtml.ts` reads a
+generated piece's `__cupricSourceManifest` sequence — or its `scenes` array,
+or failing both, the copy on screen — and rebuilds it as ordinary text clips
+at their original timings, with the motion description mapped onto a real
+animation. "Open as clips" in the Arena Desk. The file is parsed as text,
+never executed. The old captured-frame route stays for when a still is what
+you want.
+
+**Progress-driven components.** `useProgress` / `useDrivenSeconds` / `useStep`
+give a component one clock: supplied by `ProgressProvider` when something is
+driving (a capture, a scrub), a local rAF loop when nothing is. Three
+components converted so far — marquee (WAAPI `currentTime`, so it stays on the
+compositor), pixel-loader, word-rotator — and the Lab capture now pins the
+demo to t=1.2s before it grabs the frame. `npm run check:progress` prints real
+coverage (3 of 19) and lists every component still on its own clock; it fails
+if a converted one regresses.
+
+**Sound.** Two synthesised cues — export finished, export failed — at roughly
+-28 dBFS, silent under `prefers-reduced-motion`, with a speaker toggle in the
+top bar. No audio files, nothing to 404, and no click on every button.

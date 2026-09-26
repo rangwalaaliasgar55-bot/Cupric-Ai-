@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { usePreviewPlay } from "@/lab/preview-play";
+import { useDrivenSeconds, useIsDriven } from "@/lib/progress";
 
 export type PixelPattern = "spiral" | "snake" | "pulse" | "checker";
 
@@ -96,6 +97,8 @@ export function PixelLoader({
   className?: string;
 }) {
   const grid = useRef<HTMLSpanElement>(null);
+  const driven = useIsDriven();
+  const drivenSeconds = useDrivenSeconds();
   const key = patterns.join();
   const sequence = useMemo(
     () => key.split(",").map((p) => buildPattern(p as PixelPattern, size)),
@@ -147,6 +150,23 @@ export function PixelLoader({
         elapsed = 0;
       }
     };
+    // Driven by a clock: the frame is computed from it, so a capture at 2.0s
+    // always shows the same pixels. No interval, no observers, no drift.
+    if (driven) {
+      let step = Math.max(0, Math.floor(drivenSeconds * 1000 / STEP))
+      for (let p = 0; p < sequence.length; p += 1) {
+        const frames = sequence[p]
+        const stepsInPattern = Math.max(frames.length, Math.ceil(PATTERN_MS / STEP))
+        if (step < stepsInPattern) {
+          light(new Set(frames[step % frames.length]))
+          return
+        }
+        step -= stepsInPattern
+      }
+      light(new Set(sequence[0][0]))
+      return
+    }
+
     // A resting frame from the middle of the first pattern, so a paused
     // loader still looks like one mid-thought rather than a dim grid.
     if (paused) {

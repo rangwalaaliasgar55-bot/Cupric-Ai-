@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useIsDriven, useStep } from "@/lib/progress";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
 import { usePreviewPlay } from "@/lab/preview-play";
@@ -75,6 +76,8 @@ export function WordRotator({
     entering: Set<number>;
   } | null>(null);
   const paused = useRef(false);
+  const driven = useIsDriven();
+  const drivenIndex = useStep(words.length, interval / 1000);
   const exitTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
@@ -129,12 +132,18 @@ export function WordRotator({
       const home = setTimeout(() => swapTo(0), 250);
       return () => clearTimeout(home);
     }
+    // Driven by a clock (a capture or a scrub): the index is derived, not
+    // ticked, so the same time always shows the same word.
+    if (driven) {
+      if (drivenIndex !== index) swapTo(drivenIndex);
+      return;
+    }
     const tick = setInterval(() => {
       if (paused.current || document.hidden) return;
       swapTo((index + 1) % words.length);
     }, interval);
     return () => clearInterval(tick);
-  }, [index, letters, words, interval, reduceMotion, pausedProp]);
+  }, [index, letters, words, interval, reduceMotion, pausedProp, driven, drivenIndex]);
 
   useEffect(() => () => clearTimeout(exitTimer.current), []);
 

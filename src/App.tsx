@@ -2,12 +2,14 @@ import { useEffect } from 'react'
 import { MotionConfig } from 'motion/react'
 import { AppLayout } from './app-shell/AppLayout'
 import { getBridge, getIpc } from './lib/bridge'
+import { setSoundEnabled } from './lib/sound'
 import { transitionSoft } from './lib/motion'
 import { useProjectStore } from './state/useProjectStore'
 
 export default function App() {
   const theme = useProjectStore((s) => s.theme)
   const setAskOpen = useProjectStore((s) => s.setAskOpen)
+  const soundCues = useProjectStore((s) => s.soundCues)
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -16,6 +18,12 @@ export default function App() {
   // On macOS the window is a real vibrancy material, so the app must not paint
   // an opaque background over it — the panels stay solid, the page behind them
   // lets the desktop through. Everywhere else the background is opaque as usual.
+  // The stored preference is the source of truth; the sound module holds the
+  // live answer so it can be read from outside React.
+  useEffect(() => {
+    setSoundEnabled(soundCues)
+  }, [soundCues])
+
   useEffect(() => {
     const platform = getBridge()?.platform
     if (platform === 'darwin') document.documentElement.dataset.vibrancy = 'on'
