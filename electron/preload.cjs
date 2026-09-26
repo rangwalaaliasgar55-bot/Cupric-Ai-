@@ -10,6 +10,7 @@ const invokeChannels = new Set([
   'state:clear',
   'gemini:ask',
   'gemini:chat',
+  'ai:testConnection',
   'opencode:listModels',
   'opencode:discoverModels',
   'dialog:pickArena',

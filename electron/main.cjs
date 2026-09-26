@@ -1407,6 +1407,28 @@ async function listOpenCodeModels(payload = {}) {
 
 ipcMain.handle('opencode:listModels', (_event, payload) => listOpenCodeModels(payload || {}))
 ipcMain.handle('opencode:discoverModels', () => discoverOpenCodeConfiguredModels())
+ipcMain.handle('ai:testConnection', async (_event, payload = {}) => {
+  const provider = payload.provider === 'opencode' ? 'opencode' : 'gemini'
+  const started = Date.now()
+  try {
+    if (provider === 'opencode') {
+      const models = await listOpenCodeModels({
+        baseUrl: payload.baseUrl,
+        apiKey: payload.apiKey,
+        model: payload.model,
+      })
+      return { ok: true, provider, latencyMs: Date.now() - started, message: `Connected · ${models.length} free/local model${models.length === 1 ? '' : 's'} visible` }
+    }
+    const key = String(payload.apiKey || geminiApiKey() || '').trim()
+    if (!key) throw new Error('Gemini API key is not configured')
+    const modelName = String(payload.model || geminiModel()).trim()
+    const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: modelName, generationConfig: { maxOutputTokens: 1 } })
+    await model.generateContent('Reply OK')
+    return { ok: true, provider, latencyMs: Date.now() - started, message: `Connected to ${modelName}` }
+  } catch (err) {
+    return { ok: false, provider, latencyMs: Date.now() - started, message: err?.message || String(err) }
+  }
+})
 
 async function callOpenCode(messages, options = {}) {
   const cfg = aiSettings()
@@ -1537,11 +1559,27 @@ async function liveAiChat(text, ctx) {
 }
 
 ipcMain.handle('gemini:ask', async (_event, payload) => {
+  const prompt = payload?.prompt || ''
+  const context = payload?.rundownContext || {}
   const providerLabel = aiSettings().provider === 'opencode' ? 'OpenCode' : 'Gemini'
-  const rundownPatch = await generateRundown(payload?.prompt || '', payload?.history || [], payload?.rundownContext || {})
-  return {
-    text: `Live ${providerLabel} drafted a ${rundownPatch.durationSec}s rundown with ${rundownPatch.scenes.length} scene${rundownPatch.scenes.length === 1 ? '' : 's'}. The Arena prompt is ready at the bottom when you lock it.`,
-    rundownPatch,
+  try {
+    const rundownPatch = await generateRundown(prompt, payload?.history || [], context)
+    return {
+      source: 'live',
+      text: `Live ${providerLabel} drafted a ${rundownPatch.durationSec}s rundown with ${rundownPatch.scenes.length} scene${rundownPatch.scenes.length === 1 ? '' : 's'}. The Arena prompt is ready at the bottom when you lock it.`,
+      rundownPatch,
+    }
+  } catch (err) {
+    const fallbackReason = err?.message || String(err)
+    const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
+    const rundownPatch = fallbackRundownForJob({ brief: prompt, aspect, fps: context.fps === 60 ? 60 : 30 })
+    logLine('interactive-rundown-fallback', fallbackReason, { provider: providerLabel })
+    return {
+      source: 'local',
+      fallbackReason,
+      text: `The live ${providerLabel} connection was unavailable, so Cupric used the deterministic local planner. You can keep editing this rundown normally.`,
+      rundownPatch,
+    }
   }
 })
 ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.text || '', payload?.ctx || {}))

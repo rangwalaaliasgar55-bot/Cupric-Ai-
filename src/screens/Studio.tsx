@@ -84,6 +84,7 @@ export function Studio() {
   const [showVoiceHelp, setShowVoiceHelp] = useState(false)
   const [showChecks, setShowChecks] = useState(false)
   const [showSafeAreas, setShowSafeAreas] = useState(true)
+  const [keyframeRecord, setKeyframeRecord] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -774,6 +775,7 @@ export function Studio() {
                 playing={playing}
                 muted={muted}
                 showSafeAreas={showSafeAreas}
+                keyframeRecord={keyframeRecord}
                 duration={Math.max(duration, 0.1)}
                 onTimeChange={setTime}
                 onEnded={() => {
@@ -809,6 +811,18 @@ export function Studio() {
               )}
             >
               Safe areas
+            </button>
+            <button
+              type="button"
+              aria-pressed={keyframeRecord}
+              title="When enabled, canvas transforms record a keyframe at the playhead"
+              onClick={() => setKeyframeRecord((recording) => !recording)}
+              className={cx(
+                'rounded-md border px-2 py-1 text-xs transition-colors',
+                keyframeRecord ? 'border-danger/60 bg-danger/10 text-danger' : 'border-line text-muted hover:text-text',
+              )}
+            >
+              ● Keyframe record
             </button>
             <span className="font-mono text-xs text-muted tabular-nums">
               {fmtClock(time)} / {fmtClock(duration)}

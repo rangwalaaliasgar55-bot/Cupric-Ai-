@@ -11,7 +11,8 @@ import type {
 } from '../../types/project'
 import { audioGainAt, clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
 import { getMedia } from '../../lib/studio/media'
-import { drawStudioFrame } from '../../lib/studio/renderer'
+import { drawStudioFrame, keyframeValuesAt } from '../../lib/studio/renderer'
+import { patchTransformKeyframe } from '../../lib/studio/keyframeEdit'
 import { registrySources } from '../../lib/studio/sources'
 
 type Props = {
@@ -28,6 +29,8 @@ type Props = {
   onPatchSelected?: (patch: Partial<StudioClip>) => void
   /** Editing-only title/action safe guides; never painted into exports. */
   showSafeAreas?: boolean
+  /** Canvas transforms create/update a keyframe at the playhead. */
+  keyframeRecord?: boolean
 }
 
 /**
@@ -47,6 +50,7 @@ export function StudioPreview({
   selected = null,
   onPatchSelected,
   showSafeAreas = false,
+  keyframeRecord = false,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
@@ -172,7 +176,13 @@ export function StudioPreview({
         </div>
       )}
       {!playing && selected && onPatchSelected && (
-        <TransformHandles clip={selected} time={time} frame={frameRef} onPatch={onPatchSelected} />
+        <TransformHandles
+          clip={selected}
+          time={time}
+          frame={frameRef}
+          keyframeRecord={keyframeRecord}
+          onPatch={onPatchSelected}
+        />
       )}
     </div>
   )
@@ -220,18 +230,28 @@ function TransformHandles({
   clip,
   time,
   frame,
+  keyframeRecord,
   onPatch,
 }: {
   clip: StudioClip
   time: number
   frame: React.RefObject<HTMLDivElement | null>
+  keyframeRecord: boolean
   onPatch: (patch: Partial<StudioClip>) => void
 }) {
   const [drag, setDrag] = useState<
-    { mode: 'move' | 'scale' | 'rotate'; startX: number; startY: number; box: Box; startRotation: number } | null
+    { mode: 'move' | 'scale' | 'rotate'; startX: number; startY: number; box: Box; startRotation: number; startScale: number } | null
   >(null)
   const active = time >= clip.startSec && time < clip.startSec + clip.durationSec
-  const box = boxOf(clip)
+  const values = keyframeValuesAt(clip, time)
+  const baseBox = boxOf(clip)
+  const box = baseBox ? {
+    ...baseBox,
+    x: values?.x ?? baseBox.x,
+    y: values?.y ?? baseBox.y,
+    w: baseBox.w * (values?.scale ?? 1),
+    h: baseBox.h * (values?.scale ?? 1),
+  } : null
 
   useEffect(() => {
     if (!drag) return
@@ -241,6 +261,10 @@ function TransformHandles({
     const onMove = (event: PointerEvent) => {
       const dx = (event.clientX - drag.startX) / rect.width
       const dy = (event.clientY - drag.startY) / rect.height
+      const patchTransform = (
+        keyPatch: Parameters<typeof patchTransformKeyframe>[2],
+        staticPatch: Partial<StudioClip>,
+      ) => onPatch(patchTransformKeyframe(clip, time, keyPatch, keyframeRecord) ?? staticPatch)
       if (drag.mode === 'rotate') {
         const cx = rect.left + drag.box.x * rect.width
         const cy = rect.top + drag.box.y * rect.height
@@ -255,18 +279,31 @@ function TransformHandles({
           const nearest = Math.round(next / 90) * 90
           if (Math.abs(next - nearest) < 3) next = nearest
         }
-        onPatch({ rotation: next === 0 ? undefined : Math.round(next) } as Partial<StudioClip>)
+        patchTransform(
+          { rotation: Math.round(next) },
+          { rotation: next === 0 ? undefined : Math.round(next) } as Partial<StudioClip>,
+        )
         return
       }
       if (drag.mode === 'move') {
         const x = Math.min(1, Math.max(0, drag.box.x + dx))
         const y = Math.min(1, Math.max(0, drag.box.y + dy))
-        onPatch({ x, y } as Partial<StudioClip>)
+        patchTransform({ x, y }, { x, y } as Partial<StudioClip>)
         return
       }
-      // Scale from the centre: the corner drag changes the half-width, so the
-      // layer grows symmetrically and never walks across the frame.
+      // Scale from the centre: keyframed scale is a multiplier; static scale
+      // keeps using each clip kind's native size property.
       const factor = Math.max(0.15, 1 + (dx + dy))
+      const keyframePatch = patchTransformKeyframe(
+        clip,
+        time,
+        { scale: Math.min(4, Math.max(0.1, drag.startScale * factor)) },
+        keyframeRecord,
+      )
+      if (keyframePatch) {
+        onPatch(keyframePatch)
+        return
+      }
       if (clip.kind === 'glass') {
         onPatch({
           w: Math.min(1, Math.max(0.05, drag.box.w * factor)),
@@ -291,11 +328,11 @@ function TransformHandles({
     }
     // `clip` is read fresh on every move through the closure above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drag, clip, onPatch])
+  }, [drag, clip, keyframeRecord, onPatch, time])
 
   if (!active || !box) return null
 
-  const rotation = clip.rotation ?? 0
+  const rotation = values?.rotation ?? clip.rotation ?? 0
   const style: React.CSSProperties = {
     left: `${(box.x - box.w / 2) * 100}%`,
     top: `${(box.y - box.h / 2) * 100}%`,
@@ -313,7 +350,7 @@ function TransformHandles({
       style={style}
       onPointerDown={(event) => {
         event.preventDefault()
-        setDrag({ mode: 'move', startX: event.clientX, startY: event.clientY, box, startRotation: rotation })
+        setDrag({ mode: 'move', startX: event.clientX, startY: event.clientY, box, startRotation: rotation, startScale: values?.scale ?? 1 })
       }}
     >
       <span
@@ -322,7 +359,7 @@ function TransformHandles({
         onPointerDown={(event) => {
           event.stopPropagation()
           event.preventDefault()
-          setDrag({ mode: 'rotate', startX: event.clientX, startY: event.clientY, box, startRotation: rotation })
+          setDrag({ mode: 'rotate', startX: event.clientX, startY: event.clientY, box, startRotation: rotation, startScale: values?.scale ?? 1 })
         }}
         className="absolute -top-7 left-1/2 h-3.5 w-3.5 -translate-x-1/2 cursor-grab rounded-full border border-bg bg-accent"
       />
@@ -338,7 +375,7 @@ function TransformHandles({
         onPointerDown={(event) => {
           event.stopPropagation()
           event.preventDefault()
-          setDrag({ mode: 'scale', startX: event.clientX, startY: event.clientY, box, startRotation: rotation })
+          setDrag({ mode: 'scale', startX: event.clientX, startY: event.clientY, box, startRotation: rotation, startScale: values?.scale ?? 1 })
         }}
         className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-nwse-resize rounded-sm border border-bg bg-accent"
       />

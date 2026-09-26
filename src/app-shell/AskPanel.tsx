@@ -77,6 +77,10 @@ export function AskPanel() {
   const [freeModels, setFreeModels] = useState<OpenCodePreset[]>(FREE_OPENCODE_PRESETS)
   const [modelSearch, setModelSearch] = useState('')
   const [modelLoadStatus, setModelLoadStatus] = useState('')
+  const [providerStatus, setProviderStatus] = useState<Record<AiProvider, { state: 'idle' | 'testing' | 'ok' | 'error'; message: string }>>({
+    gemini: { state: 'idle', message: 'Not tested' },
+    opencode: { state: 'idle', message: 'Not tested' },
+  })
 
   useEffect(() => {
     const ipc = getIpc()
@@ -177,6 +181,37 @@ export function AskPanel() {
     }
   }
 
+  async function testConnection(provider: AiProvider) {
+    setProviderStatus((current) => ({ ...current, [provider]: { state: 'testing', message: 'Testing…' } }))
+    try {
+      const ipc = getIpc()
+      if (!ipc) {
+        if (provider === 'gemini') throw new Error('Gemini connection tests require the desktop app')
+        const models = await listOpenCodeModelsWeb(openCodeBaseUrl, openCodeKey)
+        setProviderStatus((current) => ({
+          ...current,
+          opencode: { state: 'ok', message: `Connected · ${models.length} model${models.length === 1 ? '' : 's'} visible` },
+        }))
+        return
+      }
+      const result: { ok?: boolean; message?: string; latencyMs?: number } = await ipc.invoke('ai:testConnection', provider === 'gemini'
+        ? { provider, apiKey, model: geminiModel }
+        : { provider, apiKey: openCodeKey, baseUrl: openCodeBaseUrl, model: openCodeModel })
+      setProviderStatus((current) => ({
+        ...current,
+        [provider]: {
+          state: result.ok ? 'ok' : 'error',
+          message: `${result.message || (result.ok ? 'Connected' : 'Connection failed')}${result.latencyMs ? ` · ${result.latencyMs}ms` : ''}`,
+        },
+      }))
+    } catch (err) {
+      setProviderStatus((current) => ({
+        ...current,
+        [provider]: { state: 'error', message: humanError(err, 'Connection failed') },
+      }))
+    }
+  }
+
   async function saveAiSettings() {
     const ipc = getIpc()
     if (!ipc) {
@@ -255,7 +290,11 @@ export function AskPanel() {
               <Sparkles size={14} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-sm font-semibold">Ask Cupric AI <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{hasKey ? 'LIVE' : 'SETUP'}</span></div>
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                Ask Cupric AI
+                <span className={cx('h-2 w-2 rounded-full', providerStatus[aiProvider].state === 'ok' ? 'bg-accent' : providerStatus[aiProvider].state === 'error' ? 'bg-danger' : providerStatus[aiProvider].state === 'testing' ? 'bg-info' : 'bg-muted')} title={providerStatus[aiProvider].message} />
+                <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{hasKey ? 'LIVE' : 'SETUP'}</span>
+              </div>
               <div className="text-xs text-muted">{hasKey ? (aiProvider === 'opencode' ? `OpenCode · ${openCodeModel}` : `Gemini · ${geminiModel}`) : 'Connect Gemini or OpenCode model'}</div>
             </div>
             <button type="button" aria-label="AI settings" onClick={() => setShowSettings((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-panel-alt hover:text-text"><Settings size={15}/></button>
@@ -308,6 +347,13 @@ export function AskPanel() {
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
                 </label>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg/40 px-2 py-1.5 text-xs">
+                  <span className="flex min-w-0 items-center gap-2 text-muted" title={providerStatus.gemini.message}>
+                    <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.gemini.state === 'ok' ? 'bg-accent' : providerStatus.gemini.state === 'error' ? 'bg-danger' : providerStatus.gemini.state === 'testing' ? 'bg-info' : 'bg-muted')} />
+                    <span className="truncate">Gemini · {providerStatus.gemini.message}</span>
+                  </span>
+                  <button type="button" onClick={() => void testConnection('gemini')} disabled={providerStatus.gemini.state === 'testing'} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
+                </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2">
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <div className="text-xs font-semibold text-muted">OpenCode models</div>
@@ -379,6 +425,13 @@ export function AskPanel() {
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
                 </label>
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg/40 px-2 py-1.5 text-xs">
+                  <span className="flex min-w-0 items-center gap-2 text-muted" title={providerStatus.opencode.message}>
+                    <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.opencode.state === 'ok' ? 'bg-accent' : providerStatus.opencode.state === 'error' ? 'bg-danger' : providerStatus.opencode.state === 'testing' ? 'bg-info' : 'bg-muted')} />
+                    <span className="truncate">OpenCode · {providerStatus.opencode.message}</span>
+                  </span>
+                  <button type="button" onClick={() => void testConnection('opencode')} disabled={providerStatus.opencode.state === 'testing'} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
+                </div>
                 <button type="submit" className="w-full rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink">
                   Save live AI settings
                 </button>

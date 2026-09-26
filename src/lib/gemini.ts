@@ -248,7 +248,7 @@ export async function askGemini(userText: string, askCount: number): Promise<Gem
   if (api) {
     try {
       const live = (await api.invoke('gemini:ask', { prompt: userText, history: [], rundownContext: {} })) as GeminiResult
-      return { ...live, source: 'live' }
+      return { ...live, source: live.source === 'local' ? 'local' : 'live' }
     } catch (err) {
       // Swallowing this was the bug: the app looked like it had answered with a
       // model when it had quietly used the canned planner.

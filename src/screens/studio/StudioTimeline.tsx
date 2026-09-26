@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, Type as TypeIcon, Video } from 'lucide-react'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
+import { moveKeyframeTime } from '../../lib/studio/keyframeEdit'
 import { getMedia } from '../../lib/studio/media'
 import { clamp, cx, fmtClock } from '../../lib/utils'
 
@@ -25,6 +26,7 @@ type Drag =
   | { mode: 'move'; id: string; grabOffsetSec: number; startTrack: number; pointerStartY: number }
   | { mode: 'trim-start'; id: string; originStart: number; originDuration: number; originTrimIn: number }
   | { mode: 'trim-end'; id: string; originDuration: number }
+  | { mode: 'keyframe'; id: string; index: number }
   | { mode: 'scrub' }
 
 function clipIcon(clip: StudioClip) {
@@ -120,6 +122,14 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       }
       const clip = doc.clips.find((c) => c.id === drag.id)
       if (!clip) return
+
+      if (drag.mode === 'keyframe') {
+        const keys = clip.keyframes ?? []
+        const nextKeys = moveKeyframeTime(keys, drag.index, t - clip.startSec, clip.durationSec, doc.fps)
+        onPatchClip(clip.id, { keyframes: nextKeys })
+        onSeek(clip.startSec + (nextKeys[drag.index]?.at ?? 0))
+        return
+      }
 
       if (drag.mode === 'move') {
         const rawStart = t - drag.grabOffsetSec
@@ -313,6 +323,24 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                           <span className="relative ml-auto hidden font-mono text-xs text-muted tabular-nums sm:inline">
                             {clip.durationSec.toFixed(1)}s
                           </span>
+
+                          {selected && (clip.keyframes ?? []).map((keyframe, index) => (
+                            <button
+                              key={`${keyframe.at}-${index}`}
+                              type="button"
+                              title={`Keyframe at ${keyframe.at.toFixed(2)}s — drag to retime`}
+                              aria-label={`Keyframe ${index + 1} at ${keyframe.at.toFixed(2)} seconds`}
+                              onPointerDown={(event) => {
+                                event.stopPropagation()
+                                event.preventDefault()
+                                onSelect(clip.id)
+                                onSeek(clip.startSec + keyframe.at)
+                                setDrag({ mode: 'keyframe', id: clip.id, index })
+                              }}
+                              className="absolute bottom-1 z-10 h-2.5 w-2.5 -translate-x-1/2 rotate-45 cursor-ew-resize border border-accent-ink bg-accent shadow-sm"
+                              style={{ left: `${clamp(keyframe.at / clip.durationSec, 0, 1) * 100}%` }}
+                            />
+                          ))}
 
                           {/* Trim handles */}
                           <span
