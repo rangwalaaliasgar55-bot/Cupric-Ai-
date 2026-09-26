@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import {
   Clapperboard,
   Download,
@@ -7,12 +7,16 @@ import {
   Loader2,
   Mic,
   MicOff,
+  Music,
   Pause,
   Play,
   Plus,
   Scissors,
   Sparkles,
   SkipBack,
+  AlertTriangle,
+  CheckCircle2,
+  Sticker,
   Square,
   Type as TypeIcon,
   Volume2,
@@ -27,21 +31,28 @@ import { ProgressBar } from '../components/ProgressBar'
 import { StudioInspector } from './studio/StudioInspector'
 import { StudioPreview } from './studio/StudioPreview'
 import { StudioTimeline } from './studio/StudioTimeline'
-import type { StudioClip, StudioDoc, StudioMediaClip } from '../types/project'
+import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../types/project'
 import {
+  defaultAudioClip,
   defaultGlassClip,
+  defaultStickerClip,
   defaultTextClip,
   docDuration,
+  MIN_CLIP_SEC,
   nextFreeStart,
   studioOf,
 } from '../lib/studio/doc'
 import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
 import { TRANSITIONS } from '../lib/studio/transitions'
-import { isVoiceSupported, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
-import { registerFile } from '../lib/studio/media'
+import { isVoiceSupported, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
+import { hasMedia, registerFile } from '../lib/studio/media'
+import { readDragPayload, resourceToStudio } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
+import { lintStudioDoc } from '../lib/studio/lint'
+import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
+import { humanError } from '../lib/humanError'
 
 const ZOOM_STEPS = [12, 20, 32, 48, 72, 110, 160]
 
@@ -50,10 +61,13 @@ export function Studio() {
   const patchStudio = useProjectStore((s) => s.patchStudio)
   const addStudioClip = useProjectStore((s) => s.addStudioClip)
   const updateStudioClip = useProjectStore((s) => s.updateStudioClip)
+  const undo = useProjectStore((s) => s.undo)
+  const redo = useProjectStore((s) => s.redo)
   const removeStudioClip = useProjectStore((s) => s.removeStudioClip)
   const splitStudioClip = useProjectStore((s) => s.splitStudioClip)
   const duplicateStudioClip = useProjectStore((s) => s.duplicateStudioClip)
   const pushToast = useProjectStore((s) => s.pushToast)
+  const startAutomationJob = useProjectStore((s) => s.startAutomationJob)
 
   const [time, setTime] = useState(0)
   const [playing, setPlaying] = useState(false)
@@ -66,15 +80,20 @@ export function Studio() {
   const [listening, setListening] = useState(false)
   const [heard, setHeard] = useState<string | null>(null)
   const [showVoiceHelp, setShowVoiceHelp] = useState(false)
+  const [showChecks, setShowChecks] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const audioRef = useRef<HTMLInputElement>(null)
+  const [dropActive, setDropActive] = useState(false)
   const cancelRef = useRef<{ cancelled: boolean } | null>(null)
   const voiceRef = useRef<VoiceListener | null>(null)
   const commandRef = useRef<(command: VoiceCommand) => void>(() => {})
   const voiceSupported = useMemo(() => isVoiceSupported(), [])
   const mp4Supported = useMemo(() => canExportMp4(), [])
-
   const doc: StudioDoc = studioOf(project)
   const duration = docDuration(doc)
+  // Recomputed from the document, never stored: a stale warning is worse than
+  // no warning.
+  const issues = useMemo(() => lintStudioDoc(doc, { hasMedia }), [doc])
   const pid = project?.id ?? null
   const selected = useMemo(() => doc.clips.find((c) => c.id === selectedId) ?? null, [doc.clips, selectedId])
 
@@ -83,19 +102,88 @@ export function Studio() {
     [duration],
   )
 
-  // Space toggles playback; ⌘/Ctrl+B splits at the playhead. Ignored while a
-  // text field has focus so typing a caption never scrubs the timeline.
+  /**
+   * Editor shortcuts.
+   *
+   * Premiere/Resolve/FCP muscle memory, because anyone who edits video already
+   * has it: J/K/L shuttle, I and O set the in and out of the selected clip,
+   * space plays, ⌘Z undoes. Ignored while a text field has focus so typing a
+   * caption never scrubs the timeline.
+   */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
-      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
+      if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return
+
+      const key = e.key.toLowerCase()
+      const mod = e.metaKey || e.ctrlKey
+
+      if (mod && key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) redo()
+        else undo()
+        return
+      }
+      if (mod && key === 'y') {
+        e.preventDefault()
+        redo()
+        return
+      }
+
       if (e.code === 'Space') {
         e.preventDefault()
         if (duration > 0) setPlaying((p) => !p)
+        return
       }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b' && selectedId && pid) {
+
+      // J/K/L. J and L step the playhead; held down they act as shuttle,
+      // because the key repeat does the stepping for us.
+      if (!mod && key === 'l') {
+        e.preventDefault()
+        if (playing) seek(time + 0.5)
+        else if (duration > 0) setPlaying(true)
+        return
+      }
+      if (!mod && key === 'k') {
+        e.preventDefault()
+        setPlaying(false)
+        return
+      }
+      if (!mod && key === 'j') {
+        e.preventDefault()
+        setPlaying(false)
+        seek(time - 0.5)
+        return
+      }
+
+      // I and O trim the selected clip to the playhead — the in and out points.
+      if (!mod && (key === 'i' || key === 'o') && selectedId && pid) {
+        const clip = doc.clips.find((c) => c.id === selectedId)
+        if (!clip) return
+        e.preventDefault()
+        const end = clip.startSec + clip.durationSec
+        if (key === 'i') {
+          const startSec = clamp(time, 0, end - MIN_CLIP_SEC)
+          updateStudioClip(pid, selectedId, { startSec, durationSec: end - startSec })
+        } else {
+          const durationSec = Math.max(MIN_CLIP_SEC, time - clip.startSec)
+          updateStudioClip(pid, selectedId, { durationSec })
+        }
+        return
+      }
+
+      // Arrows nudge the playhead a frame at a time; Shift makes it a second.
+      if (!mod && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault()
+        const step = e.shiftKey ? 1 : 1 / doc.fps
+        seek(time + (e.key === 'ArrowRight' ? step : -step))
+        return
+      }
+
+      if (mod && key === 'b' && selectedId && pid) {
         e.preventDefault()
         splitStudioClip(pid, selectedId, time)
+        return
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && pid) {
         e.preventDefault()
@@ -105,7 +193,7 @@ export function Studio() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [duration, pid, removeStudioClip, selectedId, splitStudioClip, time])
+  }, [doc, duration, pid, playing, redo, removeStudioClip, seek, selectedId, splitStudioClip, time, undo, updateStudioClip])
 
   useEffect(() => {
     if (time > duration) setTime(duration)
@@ -163,6 +251,19 @@ export function Studio() {
     try {
       for (const file of Array.from(files)) {
         const handle = await registerFile(file)
+        if (handle.kind === 'audio') {
+          // Music gets its own track (the last one) so it never fights the
+          // picture tracks for space when the edit is re-stacked.
+          const audioTrack = Math.max(0, doc.trackCount - 1)
+          const clip: StudioAudioClip = defaultAudioClip(
+            nextFreeStart(doc, audioTrack, 0, Math.max(0.2, handle.durationSec)),
+            audioTrack,
+            { id: handle.id, fileName: handle.fileName, localPath: handle.localPath, durationSec: handle.durationSec },
+          )
+          addStudioClip(projectId, clip)
+          setSelectedId(clip.id)
+          continue
+        }
         const durationSec = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : 4
         start = nextFreeStart(doc, 0, start, durationSec)
         const clip: StudioMediaClip = {
@@ -191,11 +292,44 @@ export function Studio() {
       }
       pushToast('success', `Imported ${files.length} file${files.length > 1 ? 's' : ''}`)
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Import failed')
+      pushToast('error', humanError(err, 'Import'))
     } finally {
       setImporting(false)
       if (fileRef.current) fileRef.current.value = ''
     }
+  }
+
+  /**
+   * Resources dropped onto the stage.
+   *
+   * Both real files and Library items land here. Anything the renderer cannot
+   * actually draw is refused out loud instead of being inserted as a dead
+   * placeholder — that silent placeholder was the original bug.
+   */
+  function onStageDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    setDropActive(false)
+    if (event.dataTransfer.files?.length) {
+      void onFiles(event.dataTransfer.files)
+      return
+    }
+    const payload = readDragPayload(event.dataTransfer)
+    if (!payload) {
+      pushToast('info', 'Nothing droppable in that drag — try a card from Library → Resource packs.')
+      return
+    }
+    const result = resourceToStudio(doc, payload, time)
+    if (!result.ok) {
+      pushToast('info', result.reason)
+      return
+    }
+    if ('clip' in result) {
+      addStudioClip(projectId, result.clip)
+      setSelectedId(result.clip.id)
+    } else {
+      patchStudio(projectId, result.docPatch)
+    }
+    pushToast('success', result.message)
   }
 
   function addText() {
@@ -217,6 +351,13 @@ export function Studio() {
       opacity: 1,
       backgroundId: doc.backgroundId,
     }
+    addStudioClip(projectId, clip)
+    setSelectedId(clip.id)
+  }
+
+  function addSticker() {
+    const track = Math.min(1, doc.trackCount - 1)
+    const clip = defaultStickerClip(nextFreeStart(doc, track, time, 2), track)
     addStudioClip(projectId, clip)
     setSelectedId(clip.id)
   }
@@ -324,6 +465,23 @@ export function Studio() {
       case 'export':
         void runExport()
         break
+      case 'make-video': {
+        // Same store action the Autonomous screen calls — speaking a brief in
+        // the Studio hands the whole sentence to the pipeline rather than
+        // trying to build it clip by clip.
+        startAutomationJob({
+          brief: command.brief,
+          footageFolder: null,
+          outputFolder: null,
+          aspect: doc.aspect,
+          fps: doc.fps === 60 ? 60 : 30,
+          quality: 'draft',
+          mode: 'auto-draft',
+          votingMode: 'local-scoring',
+        })
+        speak(`Starting an autonomous job for ${command.brief}.`, { interrupt: true })
+        break
+      }
       case 'undo':
         pushToast('info', 'Undo is on the keyboard only for now.')
         break
@@ -355,6 +513,7 @@ export function Studio() {
         const mp4 = await convertToMp4(result.blob, slugify(project?.name ?? 'cupric-studio'), doc.fps)
         setLastExport({ url: result.url, fileName: result.fileName })
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)`)
+        cueDone()
       } else {
         setLastExport({ url: result.url, fileName: result.fileName })
         const a = document.createElement('a')
@@ -364,9 +523,11 @@ export function Studio() {
         a.click()
         a.remove()
         pushToast('success', `Exported ${result.fileName}`)
+        cueDone()
       }
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Export failed')
+      pushToast('error', humanError(err, 'Export'))
+      cueProblem()
     } finally {
       setExportPct(null)
       cancelRef.current = null
@@ -388,7 +549,18 @@ export function Studio() {
         <input
           ref={fileRef}
           type="file"
-          accept="video/*,image/*"
+          accept="video/*,image/*,audio/*"
+          multiple
+          className="hidden"
+          onChange={(e) => void onFiles(e.target.files)}
+        />
+        <Button size="sm" variant="outline" onClick={() => audioRef.current?.click()} disabled={importing || exporting}>
+          <Music size={13} /> Music
+        </Button>
+        <input
+          ref={audioRef}
+          type="file"
+          accept="audio/*"
           multiple
           className="hidden"
           onChange={(e) => void onFiles(e.target.files)}
@@ -401,6 +573,9 @@ export function Studio() {
         </Button>
         <Button size="sm" variant="outline" onClick={() => addGlassClip('panel')} disabled={exporting}>
           <Sparkles size={13} /> Glass
+        </Button>
+        <Button size="sm" variant="outline" onClick={addSticker} disabled={exporting}>
+          <Sticker size={13} /> Sticker
         </Button>
         <Button
           size="sm"
@@ -437,6 +612,16 @@ export function Studio() {
           >
             <ZoomIn size={15} />
           </IconButton>
+          <Button
+            size="sm"
+            variant={issues.some((i) => i.severity === 'error') ? 'danger' : 'outline'}
+            onClick={() => setShowChecks((v) => !v)}
+            disabled={exporting}
+            title="Things worth fixing before you export"
+          >
+            {issues.length === 0 ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
+            {issues.length === 0 ? 'Checks' : `${issues.length} check${issues.length === 1 ? '' : 's'}`}
+          </Button>
           <Button size="sm" variant="outline" onClick={() => void runExport(false)} disabled={exporting || duration <= 0}>
             {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
             {exporting ? 'Recording…' : 'Export WebM'}
@@ -474,6 +659,49 @@ export function Studio() {
         </div>
       )}
 
+      {showChecks && (
+        <div className="shrink-0 space-y-2 border-b border-line bg-panel px-6 py-3">
+          {issues.length === 0 ? (
+            <p className="text-xs text-muted">
+              Nothing to flag. Text is inside the safe area, every clip has its media, and the timeline has no holes.
+            </p>
+          ) : (
+            issues.map((issue) => (
+              <div key={issue.id} className="flex items-start gap-3 text-xs">
+                <span
+                  className={cx(
+                    'mt-1 h-1.5 w-1.5 shrink-0 rounded-full',
+                    issue.severity === 'error' ? 'bg-[rgb(226_75_74)]' : 'bg-[rgb(255_196_92)]',
+                  )}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-text">{issue.message}</p>
+                  {issue.hint && <p className="text-muted/80">{issue.hint}</p>}
+                </div>
+                {issue.clipId && (
+                  <button
+                    type="button"
+                    className="shrink-0 text-accent-text underline underline-offset-2"
+                    onClick={() => setSelectedId(issue.clipId ?? null)}
+                  >
+                    Show me
+                  </button>
+                )}
+                {issue.fix && issue.clipId && (
+                  <button
+                    type="button"
+                    className="shrink-0 text-accent-text underline underline-offset-2"
+                    onClick={() => updateStudioClip(projectId, issue.clipId as string, issue.fix!.patch)}
+                  >
+                    {issue.fix.label}
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {exporting && (
         <div className="flex shrink-0 items-center gap-3 border-b border-line bg-panel px-6 py-2">
           <ProgressBar pct={exportPct ?? 0} className="flex-1" />
@@ -496,7 +724,22 @@ export function Studio() {
       {/* Stage + inspector */}
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex min-h-0 flex-1 items-center justify-center bg-bg p-5">
+          <div
+            className={cx(
+              'flex min-h-0 flex-1 items-center justify-center bg-bg p-5 transition-colors duration-150',
+              dropActive && 'bg-accent/5 ring-2 ring-inset ring-accent/40',
+            )}
+            onDragOver={(e) => {
+              e.preventDefault()
+              e.dataTransfer.dropEffect = 'copy'
+              if (!dropActive) setDropActive(true)
+            }}
+            onDragLeave={(e) => {
+              if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+              setDropActive(false)
+            }}
+            onDrop={onStageDrop}
+          >
             {doc.clips.length === 0 ? (
               <div className="max-w-md rounded-xl border border-dashed border-line bg-panel/40 px-8 py-12 text-center">
                 <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
@@ -516,6 +759,8 @@ export function Studio() {
             ) : (
               <StudioPreview
                 doc={doc}
+                selected={selected}
+                onPatchSelected={(patch) => selectedId && updateStudioClip(projectId, selectedId, patch)}
                 time={time}
                 playing={playing}
                 muted={muted}
@@ -581,6 +826,7 @@ export function Studio() {
         <aside className={cx('w-80 shrink-0 overflow-y-auto border-l border-line bg-panel px-5 py-4')}>
           <StudioInspector
             doc={doc}
+            time={time}
             clip={selected}
             onPatch={(patch) => selectedId && updateStudioClip(projectId, selectedId, patch)}
             onPatchDoc={(patch) => patchStudio(projectId, patch)}

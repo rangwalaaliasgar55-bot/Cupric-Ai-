@@ -1,0 +1,32 @@
+{
+  "stickers": [
+    {
+      "id": "pulse-ring",
+      "name": "Pulse ring",
+      "durationSec": 1.5,
+      "w": 200,
+      "h": 200
+    },
+    {
+      "id": "check-pop",
+      "name": "Check pop",
+      "durationSec": 1.25,
+      "w": 200,
+      "h": 200
+    },
+    {
+      "id": "arrow-nudge",
+      "name": "Arrow nudge",
+      "durationSec": 1.333,
+      "w": 200,
+      "h": 200
+    },
+    {
+      "id": "live-dot",
+      "name": "Live dot",
+      "durationSec": 1.2,
+      "w": 200,
+      "h": 200
+    }
+  ]
+}

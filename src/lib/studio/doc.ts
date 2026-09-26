@@ -6,10 +6,12 @@
 
 import type {
   StudioAspect,
+  StudioAudioClip,
   StudioClip,
   StudioDoc,
   StudioGlassClip,
   StudioMediaClip,
+  StudioStickerClip,
   StudioTextClip,
 } from '../../types/project'
 import { clamp, uid } from '../utils'
@@ -67,9 +69,11 @@ export function clipProgress(clip: StudioClip, t: number): number {
 }
 
 /** Source time inside a media file for a given timeline time. */
-export function sourceTimeFor(clip: StudioMediaClip, t: number): number {
+export function sourceTimeFor(clip: StudioMediaClip | StudioAudioClip, t: number): number {
   const local = Math.max(0, t - clip.startSec)
-  const speed = clip.speed > 0 ? clip.speed : 1
+  // Audio clips have no speed control (pitch-shifting music is never what the
+  // user meant), so they always play at 1×.
+  const speed = 'speed' in clip && clip.speed > 0 ? clip.speed : 1
   const raw = clip.trimInSec + local * speed
   if (clip.sourceDurationSec > 0) return Math.min(raw, Math.max(0, clip.sourceDurationSec - 0.001))
   return raw
@@ -110,11 +114,53 @@ export function splitClipAt(clip: StudioClip, t: number): [StudioClip, StudioCli
   }
   left.transitionOut = 'none'
 
-  if (right.kind === 'video') {
-    const speed = right.speed > 0 ? right.speed : 1
+  if (right.kind === 'video' || right.kind === 'audio') {
+    // Audio has no speed control, so it always advances 1:1 with the timeline.
+    const speed = right.kind === 'video' && right.speed > 0 ? right.speed : 1
     ;(right as StudioMediaClip).trimInSec = (clip as StudioMediaClip).trimInSec + offset * speed
   }
   return [left, right]
+}
+
+/**
+ * Gain for an audio clip at absolute time t: master volume shaped by its fades.
+ * One function, used by the preview and by the exporter, so what you hear while
+ * editing is what lands in the file.
+ */
+export function audioGainAt(clip: StudioAudioClip, t: number): number {
+  if (t < clip.startSec || t >= clipEnd(clip)) return 0
+  const into = t - clip.startSec
+  const left = clipEnd(clip) - t
+  const fadeIn = clip.fadeInSec > 0 ? clamp(into / clip.fadeInSec, 0, 1) : 1
+  const fadeOut = clip.fadeOutSec > 0 ? clamp(left / clip.fadeOutSec, 0, 1) : 1
+  return clamp(clip.volume, 0, 1) * fadeIn * fadeOut
+}
+
+export function defaultAudioClip(
+  start: number,
+  track: number,
+  media: { id: string; fileName: string; localPath: string | null; durationSec: number },
+): StudioAudioClip {
+  const durationSec = Math.max(MIN_CLIP_SEC, media.durationSec || 8)
+  return {
+    id: uid(),
+    kind: 'audio',
+    track,
+    startSec: start,
+    durationSec,
+    name: media.fileName.replace(/\.[^.]+$/, '').slice(0, 28) || 'Audio',
+    transitionIn: 'none',
+    transitionOut: 'none',
+    opacity: 1,
+    mediaId: media.id,
+    fileName: media.fileName,
+    localPath: media.localPath,
+    trimInSec: 0,
+    sourceDurationSec: media.durationSec,
+    volume: 0.8,
+    fadeInSec: 0.5,
+    fadeOutSec: 1,
+  }
 }
 
 export function defaultTextClip(start: number, track: number): StudioTextClip {
@@ -138,6 +184,27 @@ export function defaultTextClip(start: number, track: number): StudioTextClip {
     anim: 'fade-up',
     captionStyle: null,
     highlightWord: null,
+  }
+}
+
+export function defaultStickerClip(start: number, track: number, stickerId = 'pulse-ring'): StudioStickerClip {
+  return {
+    id: uid(),
+    kind: 'sticker',
+    track,
+    startSec: start,
+    durationSec: 2,
+    name: 'Sticker',
+    transitionIn: 'none',
+    transitionOut: 'none',
+    opacity: 1,
+    stickerId,
+    json: null,
+    x: 0.5,
+    y: 0.5,
+    scale: 1,
+    loop: true,
+    speed: 1,
   }
 }
 

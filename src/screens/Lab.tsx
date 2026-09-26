@@ -1,6 +1,7 @@
 import { Suspense, useDeferredValue, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, FlaskConical, Loader2, Search, Wand2 } from 'lucide-react'
 import html2canvas from 'html2canvas'
+import { ProgressProvider } from '../lib/ProgressProvider'
 import { Button } from '../components/Button'
 import { availableSlugs, getDemo } from '../lab/demos'
 import { PreviewPlayContext } from '../lab/preview-play'
@@ -10,6 +11,7 @@ import type { StudioOverlayClip } from '../types/project'
 import { nextFreeStart, studioOf } from '../lib/studio/doc'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, uid } from '../lib/utils'
+import { humanError } from '../lib/humanError'
 
 /**
  * UI Lab — the vendored lab.xevrion.dev catalogue running locally.
@@ -22,12 +24,27 @@ import { cx, uid } from '../lib/utils'
 
 const ALL = 'all' as const
 
-function DemoFrame({ slug, play, className }: { slug: string; play: boolean | null; className?: string }) {
+function DemoFrame({
+  slug,
+  play,
+  className,
+  atSeconds,
+}: {
+  slug: string
+  play: boolean | null
+  className?: string
+  /**
+   * When set, the demo is driven from this instant instead of its own clock.
+   * Components that read the shared clock then render the same pixels every
+   * time — which is what makes a capture reproducible.
+   */
+  atSeconds?: number
+}) {
   const Demo = getDemo(slug)
   if (!Demo) {
     return <div className="grid h-full place-items-center text-xs text-muted">No demo file</div>
   }
-  return (
+  const body = (
     <PreviewPlayContext.Provider value={play}>
       <Suspense
         fallback={
@@ -42,6 +59,7 @@ function DemoFrame({ slug, play, className }: { slug: string; play: boolean | nu
       </Suspense>
     </PreviewPlayContext.Provider>
   )
+  return atSeconds === undefined ? body : <ProgressProvider seconds={atSeconds}>{body}</ProgressProvider>
 }
 
 function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
@@ -82,6 +100,12 @@ export function Lab() {
   const [category, setCategory] = useState<string>(ALL)
   const [open, setOpen] = useState<LabEntry | null>(null)
   const [capturing, setCapturing] = useState(false)
+  /**
+   * The instant the open demo is pinned to, or undefined for "run freely".
+   * Set while capturing so what lands on the timeline is a chosen moment
+   * rather than whatever the component was mid-way through.
+   */
+  const [freezeAt, setFreezeAt] = useState<number | undefined>(undefined)
   const stageRef = useRef<HTMLDivElement>(null)
 
   const project = useActiveProject()
@@ -109,6 +133,10 @@ export function Lab() {
     if (!open || !project || !stageRef.current) return
     setCapturing(true)
     try {
+      // Pin the demo to a moment a little way in — past the entrance, into
+      // the part worth looking at — and let React paint it before grabbing.
+      setFreezeAt(1.2)
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
       const canvas = await html2canvas(stageRef.current, {
         backgroundColor: null,
         scale: 2,
@@ -138,9 +166,11 @@ export function Lab() {
       pushToast('success', `${open.name} added to the Studio timeline`)
       setView('studio')
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Could not capture this demo')
+      pushToast('error', humanError(err, 'Could not capture this demo'))
     } finally {
       setCapturing(false)
+      // Let it run again — a frozen demo in the browser would look broken.
+      setFreezeAt(undefined)
     }
   }
 
@@ -196,7 +226,7 @@ export function Lab() {
               'justify-center',
             )}
           >
-            <DemoFrame slug={open.slug} play={null} className="place-items-center" />
+            <DemoFrame slug={open.slug} play={null} className="place-items-center" atSeconds={freezeAt} />
           </div>
           <p className="mx-auto mt-3 max-w-4xl font-mono text-xs text-muted">
             {open.category} · src/lab/components/{open.slug}.tsx

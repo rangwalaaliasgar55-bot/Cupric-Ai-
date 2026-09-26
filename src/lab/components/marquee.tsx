@@ -1,4 +1,5 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useDrivenSeconds, useIsDriven } from "@/lib/progress";
 import { cn } from "@/lib/cn";
 
 const REDUCE = "(prefers-reduced-motion: reduce)";
@@ -47,6 +48,8 @@ export function Marquee({
   const lensRef = useRef<HTMLDivElement>(null);
   const groupRef = useRef<HTMLUListElement>(null);
   const anims = useRef<Animation[]>([]);
+  const driven = useIsDriven();
+  const drivenSeconds = useDrivenSeconds();
   const raf = useRef(0);
   // A still row has nothing crossing the window, and hand-scrolling it
   // would slide the base copy out from under the lit one.
@@ -78,6 +81,20 @@ export function Marquee({
       .map(run);
     anims.current = all;
 
+    // Driven by a clock: WAAPI already separates "what the animation is" from
+    // "where it is", so the animation is paused and its currentTime is set
+    // from the clock. The motion stays on the compositor and becomes exactly
+    // reproducible — the best of both.
+    if (driven) {
+      for (const a of all) {
+        a.pause();
+        a.currentTime = drivenSeconds * 1000;
+      }
+      return () => {
+        for (const a of all) a.cancel();
+      };
+    }
+
     // Width changes (fonts loading, resizes) retime the loop, keeping the
     // current progress so the row never jumps.
     const ro = new ResizeObserver(() => {
@@ -99,7 +116,7 @@ export function Marquee({
       all.forEach((a) => a.cancel());
       anims.current = [];
     };
-  }, [reduceMotion, speed, direction, showLens]);
+  }, [reduceMotion, speed, direction, showLens, driven, drivenSeconds]);
 
   // animation-play-state can only snap and playbackRate can't be
   // transitioned, so ease the rate by hand. Starting from the current rate

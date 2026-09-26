@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Moon, Sparkles, Sun } from 'lucide-react'
+import { Moon, Sparkles, Sun, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { Kbd } from '../components/Kbd'
@@ -12,6 +12,8 @@ export function TopBar() {
   const rename = useProjectStore((s) => s.renameProject)
   const theme = useProjectStore((s) => s.theme)
   const toggleTheme = useProjectStore((s) => s.toggleTheme)
+  const soundCues = useProjectStore((s) => s.soundCues)
+  const setSoundCues = useProjectStore((s) => s.setSoundCues)
   const setAskOpen = useProjectStore((s) => s.setAskOpen)
 
   // "Saving…" pulse on every write, settling to "All changes saved".
@@ -49,6 +51,12 @@ export function TopBar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <IconButton
+          label={soundCues ? 'Turn off the two export sounds' : 'Turn on the two export sounds'}
+          onClick={() => setSoundCues(!soundCues)}
+        >
+          {soundCues ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        </IconButton>
         <IconButton
           label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
           onClick={toggleTheme}

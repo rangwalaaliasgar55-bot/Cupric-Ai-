@@ -22,8 +22,23 @@ import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
 import { emptyStudioDoc, normaliseClip, splitClipAt, studioOf } from '../lib/studio/doc'
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
+import { setSoundEnabled } from '../lib/sound'
 
-export type Toast = { id: string; kind: 'success' | 'info' | 'error'; text: string }
+export type Toast = {
+  id: string
+  kind: 'success' | 'info' | 'error'
+  text: string
+  /**
+   * Stays until it is dismissed or acted on. For the rare message that is
+   * worth missing nothing — an update waiting to be applied — rather than the
+   * usual four-second acknowledgement.
+   */
+  sticky?: boolean
+  /** One optional action, shown as a link on the toast. */
+  action?: { label: string; run: () => void }
+}
+
+export type ToastOptions = { sticky?: boolean; action?: Toast['action']; id?: string }
 
 const activeRenderCancels = new Map<string, () => void>()
 
@@ -113,9 +128,17 @@ type AppState = {
   activeProjectId: string | null
   view: View
   theme: 'dark' | 'light'
+  /** Two quiet cues, on export finishing and export failing. Off is one click. */
+  soundCues: boolean
   askOpen: boolean
   toasts: Toast[]
   automationJobs: AutomationJob[]
+  /** Undo stack. Never persisted — history dies with the session, by design. */
+  past: HistoryEntry[]
+  future: HistoryEntry[]
+
+  undo: () => void
+  redo: () => void
 
   startAutomationJob: (input: { brief: string; footageFolder?: string | null; outputFolder?: string | null; aspect: AutomationJob['aspect']; fps: AutomationJob['fps']; quality: AutomationJob['quality']; mode: AutomationMode; votingMode: VotingMode }) => void
   updateAutomationJob: (jobId: string, patch: Partial<AutomationJob>) => void
@@ -128,8 +151,9 @@ type AppState = {
   setView: (v: View) => void
   setTheme: (t: 'dark' | 'light') => void
   toggleTheme: () => void
+  setSoundCues: (on: boolean) => void
   setAskOpen: (open: boolean) => void
-  pushToast: (kind: Toast['kind'], text: string) => void
+  pushToast: (kind: Toast['kind'], text: string, options?: ToastOptions) => void
   dismissToast: (id: string) => void
 
   createProject: (name?: string) => string
@@ -171,6 +195,23 @@ type AppState = {
   updateRenderJob: (pid: string, jobId: string, patch: Partial<RenderJob>) => void
 }
 
+/**
+ * One undo step.
+ *
+ * The whole project list is snapshotted rather than a diff. Projects are plain
+ * JSON of a few hundred KB at most, snapshots are structurally shared by the
+ * untouched entries, and the stack is capped — which buys a guarantee that no
+ * diff scheme gives you: *every* action is undoable, including the ones added
+ * after this was written, because nothing has to remember to record itself.
+ */
+type HistoryEntry = { projects: Project[]; label: string; at: number }
+
+/** Deepest the undo stack goes. Beyond this the oldest steps are dropped. */
+const HISTORY_LIMIT = 80
+
+/** Drags fire dozens of updates a second; they should be one undo step. */
+const COALESCE_MS = 700
+
 /** Sequential single-track layout: startSec is always the cumulative sum. */
 function relayout(clips: TimelineClip[]): TimelineClip[] {
   let t = 0
@@ -184,9 +225,32 @@ function relayout(clips: TimelineClip[]): TimelineClip[] {
 export const useProjectStore = create<AppState>()(
   persist(
     (set, get) => {
-      const updateProject = (id: string, fn: (p: Project) => Project) =>
+      /**
+       * The single funnel every project mutation goes through — which is why
+       * undo can cover all of them at once.
+       *
+       * `label` is what the user is told they are undoing. Repeats of the same
+       * label in quick succession (a slider drag) collapse into one step.
+       */
+      const updateProject = (id: string, fn: (p: Project) => Project, label = 'Edit') =>
+        set((s) => {
+          const snapshot: HistoryEntry = { projects: s.projects, label, at: Date.now() }
+          const top = s.past[s.past.length - 1]
+          const coalesce = Boolean(top && top.label === label && snapshot.at - top.at < COALESCE_MS)
+          const past = coalesce ? s.past : [...s.past, snapshot].slice(-HISTORY_LIMIT)
+          return {
+            projects: s.projects.map((p) => (p.id === id ? { ...fn(p), updatedAt: nowIso() } : p)),
+            past,
+            // Any new edit abandons the redo branch, as in every editor.
+            future: [],
+          }
+        })
+
+      /** For mutations that are not a single-project edit (create, delete…). */
+      const recordHistory = (label: string) =>
         set((s) => ({
-          projects: s.projects.map((p) => (p.id === id ? { ...fn(p), updatedAt: nowIso() } : p)),
+          past: [...s.past, { projects: s.projects, label, at: Date.now() }].slice(-HISTORY_LIMIT),
+          future: [],
         }))
 
       return {
@@ -194,9 +258,41 @@ export const useProjectStore = create<AppState>()(
         activeProjectId: null,
         view: 'home',
         theme: 'dark',
+        soundCues: true,
         askOpen: false,
         toasts: [],
         automationJobs: [],
+        past: [],
+        future: [],
+
+        undo: () => {
+          const { past, projects } = get()
+          const entry = past[past.length - 1]
+          if (!entry) {
+            get().pushToast('info', 'Nothing to undo.')
+            return
+          }
+          set((s) => ({
+            projects: entry.projects,
+            past: s.past.slice(0, -1),
+            future: [...s.future, { projects, label: entry.label, at: Date.now() }].slice(-HISTORY_LIMIT),
+          }))
+          get().pushToast('info', `Undid: ${entry.label.toLowerCase()}`)
+        },
+        redo: () => {
+          const { future, projects } = get()
+          const entry = future[future.length - 1]
+          if (!entry) {
+            get().pushToast('info', 'Nothing to redo.')
+            return
+          }
+          set((s) => ({
+            projects: entry.projects,
+            future: s.future.slice(0, -1),
+            past: [...s.past, { projects, label: entry.label, at: Date.now() }].slice(-HISTORY_LIMIT),
+          }))
+          get().pushToast('info', `Redid: ${entry.label.toLowerCase()}`)
+        },
         startAutomationJob: (input) => {
           const projectId = get().activeProjectId || get().createProject()
           const id = uid()
@@ -257,11 +353,21 @@ export const useProjectStore = create<AppState>()(
         setView: (view) => set({ view }),
         setTheme: (theme) => set({ theme }),
         toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+        setSoundCues: (on) => {
+          setSoundEnabled(on)
+          set({ soundCues: on })
+        },
         setAskOpen: (askOpen) => set({ askOpen }),
-        pushToast: (kind, text) => {
-          const id = uid()
-          set((s) => ({ toasts: [...s.toasts.slice(-3), { id, kind, text }] }))
-          setTimeout(() => get().dismissToast(id), 4000)
+        pushToast: (kind, text, options) => {
+          // A caller-supplied id makes a message idempotent — the updater can
+          // announce the same downloaded version twice without stacking two
+          // identical banners.
+          const id = options?.id ?? uid()
+          set((s) => {
+            const without = s.toasts.filter((t) => t.id !== id)
+            return { toasts: [...without.slice(-3), { id, kind, text, sticky: options?.sticky, action: options?.action }] }
+          })
+          if (!options?.sticky) setTimeout(() => get().dismissToast(id), 4000)
         },
         dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
@@ -280,6 +386,7 @@ export const useProjectStore = create<AppState>()(
             studio: emptyStudioDoc(),
             brandKit: { colors: ['#0B0B10', '#C8F542', '#F4F1EA'], font: 'Inter Variable', logoDataUrl: null },
           }
+          recordHistory('Create project')
           set((s) => ({ projects: [...s.projects, project], activeProjectId: id, view: 'brief' }))
           return id
         },
@@ -291,19 +398,22 @@ export const useProjectStore = create<AppState>()(
           copy.name = `${src.name} copy`
           copy.createdAt = nowIso()
           copy.updatedAt = nowIso()
+          recordHistory('Duplicate project')
           set((s) => ({ projects: [...s.projects, copy] }))
         },
-        deleteProject: (id) =>
-          set((s) => ({
+        deleteProject: (id) => {
+          recordHistory('Delete project')
+          return set((s) => ({
             projects: s.projects.filter((p) => p.id !== id),
             activeProjectId: s.activeProjectId === id ? null : s.activeProjectId,
             view: s.activeProjectId === id ? 'home' : s.view,
-          })),
+          }))
+        },
         setActiveProject: (activeProjectId) => set({ activeProjectId }),
-        renameProject: (id, name) => updateProject(id, (p) => ({ ...p, name: name || 'Untitled project' })),
+        renameProject: (id, name) => updateProject(id, (p) => ({ ...p, name: name || 'Untitled project' }), 'Rename project'),
 
         addBriefMessage: (pid, msg) =>
-          updateProject(pid, (p) => ({ ...p, brief: { ...p.brief, messages: [...p.brief.messages, msg] } })),
+          updateProject(pid, (p) => ({ ...p, brief: { ...p.brief, messages: [...p.brief.messages, msg] } }), 'Add message'),
         patchRundown: (pid, patch) =>
           updateProject(pid, (p) => ({
             ...p,
@@ -311,7 +421,7 @@ export const useProjectStore = create<AppState>()(
               ...p.brief,
               draftRundown: { ...(p.brief.draftRundown ?? {}), ...patch },
             },
-          })),
+          }), 'Edit rundown'),
         lockRundown: (pid) => {
           const p = get().projects.find((x) => x.id === pid)
           const draft = p?.brief.draftRundown
@@ -319,7 +429,7 @@ export const useProjectStore = create<AppState>()(
           updateProject(pid, (proj) => ({
             ...proj,
             brief: { ...proj.brief, lockedRundown: draft as SceneRundown },
-          }))
+          }), 'Lock rundown')
         },
 
         addArenaAsset: (pid, a) => {
@@ -327,25 +437,25 @@ export const useProjectStore = create<AppState>()(
           updateProject(pid, (p) => ({
             ...p,
             arenaAssets: [{ ...a, id, createdAt: nowIso() }, ...p.arenaAssets],
-          }))
+          }), 'Add Arena asset')
           return id
         },
         updateArenaAsset: (pid, id, patch) =>
           updateProject(pid, (p) => ({
             ...p,
             arenaAssets: p.arenaAssets.map((a) => (a.id === id ? { ...a, ...patch } : a)),
-          })),
+          }), 'Edit Arena asset'),
 
         addFootageAsset: (pid, f) => {
           const id = uid()
-          updateProject(pid, (p) => ({ ...p, footageAssets: [...p.footageAssets, { ...f, id }] }))
+          updateProject(pid, (p) => ({ ...p, footageAssets: [...p.footageAssets, { ...f, id }] }), 'Add footage')
           return id
         },
         updateFootageAsset: (pid, id, patch) =>
           updateProject(pid, (p) => ({
             ...p,
             footageAssets: p.footageAssets.map((f) => (f.id === id ? { ...f, ...patch } : f)),
-          })),
+          }), 'Edit footage'),
 
         addTimelineClip: (pid, clip, insertIndex) =>
           updateProject(pid, (p) => {
@@ -353,12 +463,12 @@ export const useProjectStore = create<AppState>()(
             const at = Number.isFinite(insertIndex) ? clamp(Number(insertIndex), 0, next.length) : next.length
             next.splice(at, 0, { ...clip, id: uid(), startSec: 0 })
             return { ...p, timeline: relayout(next) }
-          }),
+          }, 'Add clip'),
         removeTimelineClip: (pid, clipId) =>
           updateProject(pid, (p) => ({
             ...p,
             timeline: relayout(p.timeline.filter((c) => c.id !== clipId)),
-          })),
+          }), 'Remove clip'),
         moveTimelineClip: (pid, from, to) =>
           updateProject(pid, (p) => {
             const arr = [...p.timeline]
@@ -366,7 +476,7 @@ export const useProjectStore = create<AppState>()(
             if (!moved) return p
             arr.splice(clamp(to, 0, arr.length), 0, moved)
             return { ...p, timeline: relayout(arr) }
-          }),
+          }, 'Move clip'),
         setClipDuration: (pid, clipId, dur) =>
           updateProject(pid, (p) => ({
             ...p,
@@ -375,7 +485,7 @@ export const useProjectStore = create<AppState>()(
                 c.id === clipId ? { ...c, durationSec: round1(clamp(dur, 0.5, 600)) } : c,
               ),
             ),
-          })),
+          }), 'Change duration'),
 
         updateRenderJob: (pid, jobId, patch) =>
           updateProject(pid, (p) => ({
@@ -386,7 +496,7 @@ export const useProjectStore = create<AppState>()(
         /* ——— Studio ——— */
 
         patchStudio: (pid, patch) =>
-          updateProject(pid, (p) => ({ ...p, studio: { ...studioOf(p), ...patch } })),
+          updateProject(pid, (p) => ({ ...p, studio: { ...studioOf(p), ...patch } }), 'Change project settings'),
 
         addStudioClip: (pid, clip) =>
           updateProject(pid, (p) => {
@@ -396,7 +506,7 @@ export const useProjectStore = create<AppState>()(
               ...p,
               studio: { ...doc, trackCount, clips: [...doc.clips, normaliseClip(clip, trackCount)] },
             }
-          }),
+          }, 'Add clip'),
 
         updateStudioClip: (pid, clipId, patch) =>
           updateProject(pid, (p) => {
@@ -410,13 +520,13 @@ export const useProjectStore = create<AppState>()(
                 ),
               },
             }
-          }),
+          }, 'Edit clip'),
 
         removeStudioClip: (pid, clipId) =>
           updateProject(pid, (p) => {
             const doc = studioOf(p)
             return { ...p, studio: { ...doc, clips: doc.clips.filter((c) => c.id !== clipId) } }
-          }),
+          }, 'Delete clip'),
 
         splitStudioClip: (pid, clipId, atSec) =>
           updateProject(pid, (p) => {
@@ -429,7 +539,7 @@ export const useProjectStore = create<AppState>()(
               ...p,
               studio: { ...doc, clips: doc.clips.flatMap((c) => (c.id === clipId ? halves : [c])) },
             }
-          }),
+          }, 'Split clip'),
 
         duplicateStudioClip: (pid, clipId) =>
           updateProject(pid, (p) => {
@@ -441,13 +551,13 @@ export const useProjectStore = create<AppState>()(
               doc.trackCount,
             )
             return { ...p, studio: { ...doc, clips: [...doc.clips, copy] } }
-          }),
+          }, 'Duplicate clip'),
 
         addStudioTrack: (pid) =>
           updateProject(pid, (p) => {
             const doc = studioOf(p)
             return { ...p, studio: { ...doc, trackCount: Math.min(8, doc.trackCount + 1) } }
-          }),
+          }, 'Add track'),
 
         startRender: (pid, opts) => {
           const p = get().projects.find((x) => x.id === pid)
@@ -549,6 +659,7 @@ export const useProjectStore = create<AppState>()(
         activeProjectId: s.activeProjectId,
         view: s.view,
         theme: s.theme,
+        soundCues: s.soundCues,
         automationJobs: s.automationJobs,
       }),
     },

@@ -12,6 +12,7 @@ import {
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx } from '../lib/utils'
 import { getIpc } from '../lib/bridge'
+import { humanError } from '../lib/humanError'
 
 type ChatMsg = { role: 'user' | 'ai'; text: string }
 
@@ -147,7 +148,7 @@ export function AskPanel() {
       setFreeModels(merged.filter((model) => (seen.has(`${model.baseUrl}|${model.model}`) ? false : (seen.add(`${model.baseUrl}|${model.model}`), true))))
       setModelLoadStatus(models.length ? `${models.length} OpenCode Desktop model${models.length === 1 ? '' : 's'} loaded` : 'No OpenCode Desktop models found yet')
     } catch (err) {
-      setModelLoadStatus(err instanceof Error ? err.message : 'Could not read OpenCode Desktop models')
+      setModelLoadStatus(humanError(err, 'Could not read OpenCode Desktop models'))
     }
   }
 
@@ -172,7 +173,7 @@ export function AskPanel() {
       }))
       setModelLoadStatus(`${models.length} free models loaded`)
     } catch (err) {
-      setModelLoadStatus(err instanceof Error ? err.message : 'Could not load free models')
+      setModelLoadStatus(humanError(err, 'Could not load free models'))
     }
   }
 
@@ -389,13 +390,26 @@ export function AskPanel() {
                 <span>Open Cupric AI on login</span>
                 <input type="checkbox" checked={autoLaunch} onChange={(e) => toggleAutoLaunch(e.target.checked)} />
               </label>
-              <button
-                type="button"
-                onClick={checkForUpdates}
-                className="w-full rounded-lg border border-line bg-bg/40 px-3 py-2 text-left text-xs text-muted hover:text-text"
-              >
-                Check for updates{updateStatus ? ` — ${updateStatus}` : ''}
-              </button>
+              {/*
+                * Updates are automatic: the app checks at launch and every
+                * four hours, and says so only when one is ready to apply.
+                * This stays as a fallback for someone who wants to force the
+                * question, which is why it reads as a quiet line of text
+                * rather than a button the workflow depends on.
+                */}
+              <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
+                <div className="flex items-center justify-between gap-3">
+                  <span>Updates install automatically</span>
+                  <button
+                    type="button"
+                    onClick={checkForUpdates}
+                    className="shrink-0 text-muted underline underline-offset-2 hover:text-text"
+                  >
+                    Check now
+                  </button>
+                </div>
+                {updateStatus && <div className="mt-1 font-mono text-[11px] text-muted/70">{updateStatus}</div>}
+              </div>
             </div>
           )}
           <div className="flex-1 space-y-3 overflow-y-auto p-4">

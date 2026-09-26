@@ -25,6 +25,7 @@ const invokeChannels = new Set([
   'render:reveal',
   'render:copyToDownloads',
   'updater:check',
+  'updater:install',
   'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput', 'automation:openArena',
 ])
 

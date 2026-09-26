@@ -126,6 +126,45 @@
         "studio-voice-commands"
       ],
       "code": "src/lib/voice.ts"
+    },
+    {
+      "id": "sources",
+      "path": "resources/packs/sources.json",
+      "use": [
+        "ui-references",
+        "video-generation",
+        "prompt-cues"
+      ],
+      "code": "src/lib/sources.ts",
+      "generated": "npm run packs:build",
+      "note": "46 external libraries, generators and galleries. Links and prompt cues only \u2014 no third-party code is bundled."
+    },
+    {
+      "id": "templates",
+      "path": "resources/effects",
+      "entries": "resources/packs/templates.json",
+      "use": [
+        "local-video",
+        "html-to-mp4",
+        "arena-html"
+      ],
+      "code": "src/lib/videoTemplates.ts",
+      "generated": "npm run packs:build",
+      "note": "Self-contained HTML scenes exposing window.__seek(t) and __cupricSourceManifest."
+    },
+    {
+      "id": "panelui",
+      "path": "resources/panelui",
+      "entries": "registry.json",
+      "url": "https://github.com/panel-ui/PanelUI",
+      "use": [
+        "ui-references",
+        "behaviour-notes",
+        "prompt-cues"
+      ],
+      "license": "MIT \u2014 Copyright (c) 2026 Khalid Abdi",
+      "note": "React Native / Expo library. 135 components + 21 chart visualisations vendored as catalogue + upstream theme tokens; the RN source cannot run in Cupric's DOM renderer and is not copied.",
+      "generated": "npm run packs:build"
     }
   ],
   "pipelineOrder": [

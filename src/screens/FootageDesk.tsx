@@ -14,6 +14,7 @@ import { footageToStudioClip } from '../lib/studio/handoff'
 import { getIpc } from '../lib/bridge'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, hashStr, mulberry32, round1 } from '../lib/utils'
+import { humanError } from '../lib/humanError'
 
 const CAPTIONS = [
   {
@@ -103,7 +104,7 @@ export function FootageDesk() {
       setSelectedId(id)
       pushToast('success', `${analyzedName} scanned — ${res.silenceRanges.length} silence cut${res.silenceRanges.length === 1 ? '' : 's'} found`)
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Footage analysis failed')
+      pushToast('error', humanError(err, 'Footage analysis'))
     } finally {
       setUploading(null)
     }
@@ -309,7 +310,7 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
       pushToast('success', `${asset.name} opened in the Studio`)
       setView('studio')
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Could not open that footage in the Studio')
+      pushToast('error', humanError(err, 'Could not open that footage in the Studio'))
     } finally {
       setSending(false)
     }

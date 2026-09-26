@@ -13,9 +13,12 @@ import { ProgressBar } from '../components/ProgressBar'
 import type { ArenaAsset, Project } from '../types/project'
 import { importArenaZip } from '../lib/arena'
 import { arenaToStudioClip } from '../lib/studio/handoff'
+import { parseGeneratedHtml, piecesToStudioClips } from '../lib/studio/importHtml'
+import { studioOf } from '../lib/studio/doc'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { copyText, cx, deriveAspect, gradientFor, relTime } from '../lib/utils'
 import { getIpc, getBridge } from '../lib/bridge'
+import { humanError } from '../lib/humanError'
 
 const STATUS_TONE = {
   'prompt-ready': 'neutral',
@@ -68,7 +71,43 @@ export function ArenaDesk() {
       }
       pushToast('success', 'Arena opened in your browser — prompt copied')
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Could not open Arena')
+      pushToast('error', humanError(err, 'Could not open Arena'))
+    }
+  }
+
+  /**
+   * Take a generated piece apart into clips the user can actually edit.
+   *
+   * The captured-frame route stays where it was — sometimes a still is what
+   * you want — but this is the one that hands back the storyboard: every
+   * scene as a text clip, at its original timing, with a matching entrance.
+   */
+  async function openEditable(asset: ArenaAsset) {
+    if (!project) return
+    try {
+      const ipc = getIpc()
+      if (!ipc) throw new Error('This file lives on disk — open the desktop app to take it apart here.')
+      if (!asset.localPath) throw new Error(`“${asset.name}” has not been imported yet, so there is no file to read.`)
+      const html: string = await ipc.invoke('arena:readHtml', asset.localPath)
+      const piece = parseGeneratedHtml(html)
+      if (!piece || !piece.scenes.length) {
+        throw new Error(
+          `Cupric could not find a scene list in “${asset.name}”. Render it as video instead, or send the captured frame.`,
+        )
+      }
+      const doc = studioOf(project)
+      const clips = piecesToStudioClips(piece, doc, asset.name.replace(/\.html?$/i, '').slice(0, 20))
+      for (const clip of clips) addStudioClip(project.id, clip)
+      const confidence =
+        piece.via === 'manifest'
+          ? 'read straight from its source manifest'
+          : piece.via === 'scene-array'
+            ? 'read from its scene list'
+            : 'recovered from the words on screen, so check the timings'
+      pushToast('success', `${clips.length} editable clips — ${confidence}.`)
+      setView('studio')
+    } catch (err) {
+      pushToast('error', humanError(err, 'Could not open that piece as clips'))
     }
   }
 
@@ -89,7 +128,7 @@ export function ArenaDesk() {
       })
       pushToast('success', `Imported ${res.htmlFileName} — ready to preview or render`)
     } catch (err) {
-      pushToast('error', err instanceof Error ? err.message : 'Arena import failed')
+      pushToast('error', humanError(err, 'Arena import'))
     } finally {
       setImporting(null)
     }
@@ -252,13 +291,14 @@ export function ArenaDesk() {
                 asset={a}
                 onPreview={() => setPreview(a)}
                 onBrowse={() => fileRef.current?.click()}
+                onOpenEditable={() => void openEditable(a)}
                 onSendToStudio={() => {
                   try {
                     addStudioClip(project.id, arenaToStudioClip(project, a))
                     pushToast('success', `${a.name} added to the Studio timeline`)
                     setView('studio')
                   } catch (err) {
-                    pushToast('error', err instanceof Error ? err.message : 'Could not send that asset to the Studio')
+                    pushToast('error', humanError(err, 'Could not send that asset to the Studio'))
                   }
                 }}
                 onRender={() => {
@@ -329,12 +369,14 @@ function ArenaCard({
   onPreview,
   onBrowse,
   onRender,
+  onOpenEditable,
   onSendToStudio,
 }: {
   asset: ArenaAsset
   onPreview: () => void
   onBrowse: () => void
   onRender: () => void
+  onOpenEditable: () => void
   onSendToStudio: () => void
 }) {
   const [copied, setCopied] = useState(false)
@@ -388,6 +430,19 @@ function ArenaCard({
               </Button>
               <Button size="sm" variant="primary" onClick={onRender} disabled={!asset.localPath}>
                 {asset.localPath ? 'Render video' : 'Import file first'}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onOpenEditable}
+                disabled={!asset.localPath}
+                title={
+                  asset.localPath
+                    ? 'Take the piece apart into text clips you can retime and rewrite'
+                    : 'Import the file first'
+                }
+              >
+                <Clapperboard size={13} /> Open as clips
               </Button>
               <Button
                 size="sm"

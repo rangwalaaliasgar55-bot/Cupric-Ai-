@@ -11,11 +11,12 @@
  * isn't" behaviour this app is trying to avoid.
  */
 
-import type { StudioDoc, StudioMediaClip } from '../../types/project'
+import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { getIpc, isDesktop } from '../bridge'
-import { clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
+import { audioGainAt, clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
 import { getMedia, overlayImage } from './media'
-import { drawStudioFrame, type FrameSources } from './renderer'
+import { stickerFrame } from './lottie'
+import { drawableElement, drawStudioFrame, type FrameSources } from './renderer'
 
 export type ExportOptions = {
   fileName?: string
@@ -65,6 +66,16 @@ function audioGraph(ctx: AudioContext, el: HTMLMediaElement) {
   return node
 }
 
+
+/** Move a clip's gain to `value` over one frame, avoiding zipper noise. */
+function rampGain(ctx: AudioContext, el: HTMLMediaElement, value: number) {
+  const { gain } = audioGraph(ctx, el)
+  const now = ctx.currentTime
+  gain.gain.cancelScheduledValues(now)
+  gain.gain.setValueAtTime(gain.gain.value, now)
+  gain.gain.linearRampToValueAtTime(value, now + 0.02)
+}
+
 export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}): Promise<ExportResult> {
   const duration = docDuration(doc)
   if (duration <= 0) throw new Error('Nothing to export — the timeline is empty.')
@@ -82,11 +93,15 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   if (!ctx) throw new Error('Could not create a 2D canvas context for export.')
 
   const videoClips = doc.clips.filter((c): c is StudioMediaClip => c.kind === 'video')
+  const audioClips = doc.clips.filter((c): c is StudioAudioClip => c.kind === 'audio')
 
   // — audio mix —
   let audioCtx: AudioContext | null = null
   let mixDest: MediaStreamAudioDestinationNode | null = null
-  const audible = videoClips.filter((clip) => clip.volume > 0 && getMedia(clip.mediaId))
+  const audible: (StudioMediaClip | StudioAudioClip)[] = [
+    ...videoClips.filter((clip) => clip.volume > 0 && getMedia(clip.mediaId)),
+    ...audioClips.filter((clip) => clip.volume > 0 && getMedia(clip.mediaId)),
+  ]
   if (audible.length) {
     const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     audioCtx = new Ctor()
@@ -94,9 +109,11 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
     mixDest = audioCtx.createMediaStreamDestination()
     for (const clip of audible) {
       const handle = getMedia(clip.mediaId)
-      if (!handle || !(handle.element instanceof HTMLVideoElement)) continue
+      if (!handle || !(handle.element instanceof HTMLMediaElement)) continue
       const { gain } = audioGraph(audioCtx, handle.element)
-      gain.gain.value = clip.volume
+      // Music clips ride their fade envelope, so the gain is set per frame in
+      // the tick loop below; video keeps its single clip volume.
+      gain.gain.value = clip.kind === 'audio' ? 0 : clip.volume
       gain.connect(mixDest)
     }
   }
@@ -115,13 +132,20 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   }
 
   const sources: FrameSources = {
-    media: (clip) => {
-      const handle = getMedia(clip.mediaId)
-      if (!handle) return null
-      if (handle.element instanceof HTMLVideoElement && handle.element.readyState < 2) return null
-      return handle.element
-    },
+    media: (clip) => drawableElement(clip.mediaId),
     overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
+    sticker: (clip, localSec) => stickerFrame(clip, localSec),
+  }
+
+  // Reset every audio clip to its trim-in as well, so a music bed that was
+  // auditioned mid-track does not start from wherever it was left.
+  for (const clip of audioClips) {
+    const el = getMedia(clip.mediaId)?.element
+    if (el instanceof HTMLAudioElement) {
+      el.pause()
+      el.currentTime = clip.trimInSec
+      el.volume = 1
+    }
   }
 
   // Reset every video to its trim-in before the recorder starts rolling.
@@ -168,6 +192,23 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
         }
       }
 
+      for (const clip of audioClips) {
+        const el = getMedia(clip.mediaId)?.element
+        if (!(el instanceof HTMLAudioElement)) continue
+        const active = elapsed >= clip.startSec && elapsed < clipEnd(clip)
+        if (active) {
+          const want = sourceTimeFor(clip, elapsed)
+          if (Math.abs(el.currentTime - want) > 0.25) el.currentTime = want
+          if (el.paused) void el.play().catch(() => undefined)
+          // Ramp instead of assign: stepping gain once per frame is audible as
+          // zipper noise, and a fade is exactly where it would be heard.
+          if (audioCtx) rampGain(audioCtx, el, audioGainAt(clip, elapsed))
+        } else {
+          if (audioCtx) rampGain(audioCtx, el, 0)
+          if (!el.paused) el.pause()
+        }
+      }
+
       drawStudioFrame(ctx, doc, Math.min(elapsed, duration), width, height, sources)
       options.onProgress?.(Math.min(99, (elapsed / duration) * 100))
 
@@ -180,9 +221,9 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
     requestAnimationFrame(tick)
   })
 
-  for (const clip of videoClips) {
+  for (const clip of [...videoClips, ...audioClips]) {
     const el = getMedia(clip.mediaId)?.element
-    if (el instanceof HTMLVideoElement) el.pause()
+    if (el instanceof HTMLMediaElement) el.pause()
   }
 
   recorder.stop()
@@ -192,7 +233,7 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
     for (const clip of audible) {
       const handle = getMedia(clip.mediaId)
       const el = handle?.element
-      if (el instanceof HTMLVideoElement && audioCtx) audioGraph(audioCtx, el).gain.disconnect(mixDest)
+      if (el instanceof HTMLMediaElement && audioCtx) audioGraph(audioCtx, el).gain.disconnect(mixDest)
     }
   }
   await audioCtx?.close()
@@ -243,8 +284,9 @@ export function captureStill(doc: StudioDoc, t: number, maxWidth = 640): string 
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
   drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, {
-    media: (clip) => getMedia(clip.mediaId)?.element ?? null,
+    media: (clip) => drawableElement(clip.mediaId),
     overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
+    sticker: (clip, localSec) => stickerFrame(clip, localSec),
   })
   try {
     return canvas.toDataURL('image/jpeg', 0.7)

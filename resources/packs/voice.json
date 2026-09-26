@@ -2,7 +2,7 @@
   "id": "voice",
   "name": "Voice commands",
   "description": "The Studio voice grammar. Each entry is a phrase the parser in src/lib/voice.ts accepts.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "source": "Cupric voice parser (Web Speech API)",
   "license": "MIT",
   "items": [
@@ -119,6 +119,15 @@
       "kind": "voice",
       "name": "\"export\"",
       "description": "Start the export",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-13",
+      "kind": "voice",
+      "name": "\"make a video about …\"",
+      "description": "Hand the whole sentence to the autonomous pipeline",
       "tags": [
         "voice"
       ]

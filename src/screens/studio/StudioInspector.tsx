@@ -1,23 +1,32 @@
 import { useRef } from 'react'
-import { Copy, Link2, Scissors, Trash2 } from 'lucide-react'
+import { Copy, Link2, Plus, Scissors, Trash2 } from 'lucide-react'
 import type {
+  StudioAudioClip,
   StudioBackgroundClip,
   StudioClip,
   StudioDoc,
   StudioGlassClip,
+  StudioGradeNode,
+  StudioKeyframe,
+  StudioMask,
   StudioMediaClip,
+  StudioCustomBackground,
   StudioOverlayClip,
+  StudioStickerClip,
   StudioTextClip,
 } from '../../types/project'
 import { Button } from '../../components/Button'
 import { STUDIO_BACKGROUNDS } from '../../lib/studio/backgrounds'
 import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/transitions'
 import { GLASS_PRESETS } from '../../lib/glass'
+import { STICKERS } from '../../lib/studio/lottie'
 import { hasMedia, registerFile } from '../../lib/studio/media'
 import { cx } from '../../lib/utils'
 
 type Props = {
   doc: StudioDoc
+  /** Playhead, in document seconds — keyframes are recorded where it stands. */
+  time: number
   clip: StudioClip | null
   onPatch: (patch: Partial<StudioClip>) => void
   onDelete: () => void
@@ -38,6 +47,39 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 const inputCx =
   'w-full rounded-lg border border-line bg-panel-alt px-2.5 py-1.5 text-base text-text placeholder:text-muted/60'
+
+
+/**
+ * A collapsed section.
+ *
+ * Restraint: grading, masking and mixing are real controls that most clips
+ * never need, so they stay folded away until asked for. One primary set of
+ * controls is visible; everything else is one click deep.
+ */
+function Disclosure({
+  label,
+  summary,
+  active,
+  children,
+}: {
+  label: string
+  summary?: string
+  active?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <details className="group rounded-lg border border-line bg-panel-alt/40 open:bg-panel-alt/70">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2">
+        <span className="flex items-center gap-2 text-xs font-medium text-text">
+          {label}
+          {active && <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-label="in use" />}
+        </span>
+        <span className="text-xs text-muted/70">{summary}</span>
+      </summary>
+      <div className="space-y-3 border-t border-line px-3 py-3">{children}</div>
+    </details>
+  )
+}
 
 function Slider({
   label,
@@ -77,7 +119,8 @@ function Slider({
   )
 }
 
-export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onSplit, onPatchDoc }: Props) {
+export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicate, onSplit, onPatchDoc }: Props) {
+  const bgFileRef = useRef<HTMLInputElement>(null)
   if (!clip) {
     return (
       <div className="space-y-5">
@@ -124,6 +167,91 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
               </button>
             ))}
           </div>
+        </Field>
+
+        <Field label="Background mode" hint="Independent of the selected layer.">
+          <div className="grid grid-cols-4 gap-1.5">
+            {([
+              { id: 'preset', label: 'Preset' },
+              { id: 'solid', label: 'Solid' },
+              { id: 'image', label: 'Image' },
+              { id: 'transparent', label: 'None' },
+            ] as const).map((mode) => {
+              const current = doc.customBackground?.type ?? 'preset'
+              return (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => {
+                    if (mode.id === 'preset') return onPatchDoc({ customBackground: null })
+                    if (mode.id === 'solid') return onPatchDoc({ customBackground: { type: 'solid', color: '#0B0B10' } })
+                    if (mode.id === 'transparent') return onPatchDoc({ customBackground: { type: 'transparent' } })
+                    bgFileRef.current?.click()
+                  }}
+                  className={cx(
+                    'rounded-lg border px-2 py-1.5 text-xs transition-colors duration-150',
+                    current === mode.id
+                      ? 'border-accent bg-accent text-accent-ink'
+                      : 'border-line bg-panel-alt text-muted hover:text-text',
+                  )}
+                >
+                  {mode.label}
+                </button>
+              )
+            })}
+          </div>
+          <input
+            ref={bgFileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              const reader = new FileReader()
+              reader.onload = () =>
+                onPatchDoc({ customBackground: { type: 'image', dataUrl: String(reader.result), fit: 'cover' } })
+              reader.readAsDataURL(file)
+              e.target.value = ''
+            }}
+          />
+          {doc.customBackground?.type === 'solid' && (
+            <input
+              type="color"
+              aria-label="Background colour"
+              value={doc.customBackground.color}
+              onChange={(e) => onPatchDoc({ customBackground: { type: 'solid', color: e.target.value } })}
+              className="mt-2 h-8 w-full cursor-pointer rounded-lg border border-line bg-panel-alt"
+            />
+          )}
+          {doc.customBackground?.type === 'image' && (
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {(['cover', 'contain'] as const).map((fit) => (
+                <button
+                  key={fit}
+                  type="button"
+                  onClick={() => {
+                    const bg = doc.customBackground
+                    if (bg?.type === 'image') onPatchDoc({ customBackground: { ...bg, fit } })
+                  }}
+                  className={cx(
+                    'rounded-lg border px-2 py-1.5 text-xs capitalize',
+                    (doc.customBackground as Extract<StudioCustomBackground, { type: 'image' }>).fit === fit
+                      ? 'border-accent bg-accent text-accent-ink'
+                      : 'border-line bg-panel-alt text-muted hover:text-text',
+                  )}
+                >
+                  {fit}
+                </button>
+              ))}
+            </div>
+          )}
+          {doc.customBackground?.type === 'transparent' && (
+            <p className="mt-2 text-xs text-muted">
+              Nothing is painted behind the clips. Exported video has no alpha channel, so this reads as black in the
+              file.
+            </p>
+          )}
         </Field>
 
         <Field label="Background" hint="Painted under every clip — also exported.">
@@ -204,6 +332,19 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
       </div>
 
       <Slider label="Opacity" value={clip.opacity} min={0} max={1} step={0.05} onChange={(v) => onPatch({ opacity: v })} />
+      <Slider
+        label="Rotation"
+        value={clip.rotation ?? 0}
+        min={-180}
+        max={180}
+        step={1}
+        suffix="°"
+        onChange={(v) => onPatch({ rotation: v === 0 ? undefined : v })}
+      />
+
+      <KeyframeFields clip={clip} time={time} onPatch={onPatch} />
+      <GradeFields clip={clip} onPatch={onPatch} />
+      <MaskFields clip={clip} onPatch={onPatch} />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Transition in">
@@ -243,6 +384,372 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
       {clip.kind === 'background' && <BackgroundFields clip={clip as StudioBackgroundClip} onPatch={onPatch} />}
       {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
       {clip.kind === 'glass' && <GlassFields clip={clip as StudioGlassClip} onPatch={onPatch} />}
+      {clip.kind === 'audio' && <AudioFields clip={clip as StudioAudioClip} onPatch={onPatch} />}
+      {clip.kind === 'sticker' && <StickerFields clip={clip as StudioStickerClip} onPatch={onPatch} />}
+    </div>
+  )
+}
+
+
+
+/**
+ * Keyframes, recorded at the playhead.
+ *
+ * No curve editor: pressing Record captures where the clip *is* right now, so
+ * the workflow is "move it, record, move the playhead, move it, record" —
+ * which is how people actually animate, and it needs no new mental model.
+ */
+function KeyframeFields({
+  clip,
+  time,
+  onPatch,
+}: {
+  clip: StudioClip
+  time: number
+  onPatch: (p: Partial<StudioClip>) => void
+}) {
+  const keys = clip.keyframes ?? []
+  const local = Math.round((time - clip.startSec) * 100) / 100
+  const withinClip = local >= 0 && local <= clip.durationSec + 0.001
+  const positioned = clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker'
+
+  const currentScale =
+    clip.kind === 'overlay' || clip.kind === 'sticker' ? 1 : clip.kind === 'text' ? 1 : clip.kind === 'glass' ? 1 : 1
+
+  function record() {
+    const next: StudioKeyframe = {
+      at: Math.max(0, local),
+      ease: 'ease-in-out',
+      ...(positioned ? { x: (clip as { x: number }).x, y: (clip as { y: number }).y } : {}),
+      rotation: clip.rotation ?? 0,
+      opacity: 1,
+      scale: currentScale,
+    }
+    // Recording twice at the same instant replaces, rather than stacking two
+    // keyframes a hundredth of a second apart.
+    const rest = keys.filter((k) => Math.abs(k.at - next.at) > 0.02)
+    onPatch({ keyframes: [...rest, next].sort((a, b) => a.at - b.at) })
+  }
+
+  return (
+    <Disclosure
+      label="Keyframes"
+      summary={keys.length ? `${keys.length} on this clip` : 'None'}
+      active={keys.length > 0}
+    >
+      <div className="flex items-center gap-2">
+        <Button size="sm" variant="outline" onClick={record} disabled={!withinClip}>
+          <Plus size={13} /> Record at {Math.max(0, local).toFixed(2)}s
+        </Button>
+        {keys.length > 0 && (
+          <Button size="sm" variant="ghost" onClick={() => onPatch({ keyframes: null })}>
+            Clear
+          </Button>
+        )}
+      </div>
+      {!withinClip && <p className="text-xs text-muted/80">Move the playhead over this clip to record a keyframe.</p>}
+
+      {keys.length === 1 && (
+        <p className="text-xs text-muted/80">
+          One keyframe just pins a value. Add a second somewhere else in the clip to get movement.
+        </p>
+      )}
+
+      {keys.map((key, index) => (
+        <div key={`${key.at}-${index}`} className="space-y-2 border-t border-line pt-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-xs text-text tabular-nums">{key.at.toFixed(2)}s</span>
+            <div className="flex items-center gap-2">
+              <select
+                value={key.ease}
+                onChange={(e) =>
+                  onPatch({
+                    keyframes: keys.map((k, i) => (i === index ? { ...k, ease: e.target.value as StudioKeyframe['ease'] } : k)),
+                  })
+                }
+                className="rounded-md border border-line bg-panel-alt px-1.5 py-1 text-xs text-text"
+              >
+                <option value="linear">Linear</option>
+                <option value="ease-in">Ease in</option>
+                <option value="ease-out">Ease out</option>
+                <option value="ease-in-out">Ease in and out</option>
+              </select>
+              <button
+                type="button"
+                className="text-xs text-muted underline underline-offset-2"
+                onClick={() => onPatch({ keyframes: keys.filter((_, i) => i !== index) })}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Slider label="Opacity" value={key.opacity ?? 1} min={0} max={1} step={0.05} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, opacity: v } : k)) })} />
+            <Slider label="Size" value={key.scale ?? 1} min={0.1} max={3} step={0.05} suffix="×" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, scale: v } : k)) })} />
+            <Slider label="Rotation" value={key.rotation ?? 0} min={-180} max={180} step={1} suffix="°" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, rotation: v } : k)) })} />
+            {positioned && (
+              <Slider label="X" value={key.x ?? 0.5} min={0} max={1} step={0.01} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, x: v } : k)) })} />
+            )}
+            {positioned && (
+              <Slider label="Y" value={key.y ?? 0.5} min={0} max={1} step={0.01} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, y: v } : k)) })} />
+            )}
+          </div>
+        </div>
+      ))}
+    </Disclosure>
+  )
+}
+
+const DEFAULT_GRADE: StudioGradeNode[] = [
+  { id: 'balance', enabled: true, exposure: 0, temperature: 0 },
+  { id: 'contrast', enabled: true, contrast: 0, fade: 0 },
+  { id: 'look', enabled: true, saturation: 0, hue: 0 },
+]
+
+/** Looks worth having as one click. Each is just a preset grade chain. */
+const GRADE_PRESETS: { id: string; name: string; nodes: StudioGradeNode[] }[] = [
+  { id: 'none', name: 'None', nodes: DEFAULT_GRADE },
+  {
+    id: 'warm-film',
+    name: 'Warm film',
+    nodes: [
+      { id: 'balance', enabled: true, exposure: 4, temperature: 32 },
+      { id: 'contrast', enabled: true, contrast: 12, fade: 14 },
+      { id: 'look', enabled: true, saturation: -8, hue: 0 },
+    ],
+  },
+  {
+    id: 'clean-punch',
+    name: 'Clean punch',
+    nodes: [
+      { id: 'balance', enabled: true, exposure: 6, temperature: 0 },
+      { id: 'contrast', enabled: true, contrast: 22, fade: 0 },
+      { id: 'look', enabled: true, saturation: 14, hue: 0 },
+    ],
+  },
+  {
+    id: 'night',
+    name: 'Night',
+    nodes: [
+      { id: 'balance', enabled: true, exposure: -10, temperature: -38 },
+      { id: 'contrast', enabled: true, contrast: 16, fade: 8 },
+      { id: 'look', enabled: true, saturation: -18, hue: 0 },
+    ],
+  },
+  {
+    id: 'mono',
+    name: 'Mono',
+    nodes: [
+      { id: 'balance', enabled: true, exposure: 2, temperature: 0 },
+      { id: 'contrast', enabled: true, contrast: 18, fade: 6 },
+      { id: 'look', enabled: true, saturation: -100, hue: 0 },
+    ],
+  },
+]
+
+function gradeIsActive(nodes: StudioGradeNode[] | null | undefined) {
+  return Boolean(nodes?.some((n) => n.enabled && Object.entries(n).some(([k, v]) => k !== 'id' && k !== 'enabled' && v !== 0)))
+}
+
+/**
+ * Three nodes, in the order a colourist works: balance, contrast, look.
+ *
+ * Deliberately not a node graph with wires — the chain is fixed, so there is
+ * nothing to connect and nothing to get wrong. Any node can be bypassed.
+ */
+function GradeFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const nodes = clip.grade ?? DEFAULT_GRADE
+  const set = (id: StudioGradeNode['id'], patch: Record<string, number | boolean>) =>
+    onPatch({ grade: nodes.map((n) => (n.id === id ? ({ ...n, ...patch } as StudioGradeNode) : n)) })
+  const balance = nodes.find((n) => n.id === 'balance') as Extract<StudioGradeNode, { id: 'balance' }> | undefined
+  const contrast = nodes.find((n) => n.id === 'contrast') as Extract<StudioGradeNode, { id: 'contrast' }> | undefined
+  const look = nodes.find((n) => n.id === 'look') as Extract<StudioGradeNode, { id: 'look' }> | undefined
+  const active = gradeIsActive(clip.grade)
+
+  return (
+    <Disclosure label="Colour grade" summary={active ? 'On' : 'Off'} active={active}>
+      <Field label="Look">
+        <select
+          value=""
+          onChange={(e) => {
+            const preset = GRADE_PRESETS.find((p) => p.id === e.target.value)
+            if (preset) onPatch({ grade: preset.id === 'none' ? null : preset.nodes.map((n) => ({ ...n })) })
+          }}
+          className={inputCx}
+        >
+          <option value="">Choose a look…</option>
+          {GRADE_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </Field>
+
+      {balance && (
+        <div className="space-y-2 border-t border-line pt-2">
+          <NodeHeader label="1 · Balance" enabled={balance.enabled} onToggle={(v) => set('balance', { enabled: v })} />
+          <Slider label="Exposure" value={balance.exposure} min={-100} max={100} step={1} onChange={(v) => set('balance', { exposure: v })} />
+          <Slider label="Temperature" value={balance.temperature} min={-100} max={100} step={1} onChange={(v) => set('balance', { temperature: v })} />
+        </div>
+      )}
+      {contrast && (
+        <div className="space-y-2 border-t border-line pt-2">
+          <NodeHeader label="2 · Contrast" enabled={contrast.enabled} onToggle={(v) => set('contrast', { enabled: v })} />
+          <Slider label="Contrast" value={contrast.contrast} min={-100} max={100} step={1} onChange={(v) => set('contrast', { contrast: v })} />
+          <Slider label="Fade" value={contrast.fade} min={0} max={100} step={1} onChange={(v) => set('contrast', { fade: v })} />
+        </div>
+      )}
+      {look && (
+        <div className="space-y-2 border-t border-line pt-2">
+          <NodeHeader label="3 · Look" enabled={look.enabled} onToggle={(v) => set('look', { enabled: v })} />
+          <Slider label="Saturation" value={look.saturation} min={-100} max={100} step={1} onChange={(v) => set('look', { saturation: v })} />
+          <Slider label="Hue" value={look.hue} min={-100} max={100} step={1} onChange={(v) => set('look', { hue: v })} />
+        </div>
+      )}
+      {active && (
+        <Button size="sm" variant="outline" onClick={() => onPatch({ grade: null })}>
+          Reset grade
+        </Button>
+      )}
+    </Disclosure>
+  )
+}
+
+function NodeHeader({ label, enabled, onToggle }: { label: string; enabled: boolean; onToggle: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-xs font-medium text-text">{label}</span>
+      <label className="flex items-center gap-1.5 text-xs text-muted">
+        <input type="checkbox" checked={enabled} onChange={(e) => onToggle(e.target.checked)} />
+        On
+      </label>
+    </div>
+  )
+}
+
+const DEFAULT_MASK: StudioMask = {
+  shape: 'ellipse',
+  x: 0.15,
+  y: 0.15,
+  w: 0.7,
+  h: 0.7,
+  featherPct: 4,
+  invert: false,
+  threshold: 0.5,
+  softness: 0.25,
+}
+
+function MaskFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const mask = clip.mask ?? null
+  const set = (patch: Partial<StudioMask>) => onPatch({ mask: { ...(mask ?? DEFAULT_MASK), ...patch } })
+
+  return (
+    <Disclosure label="Mask" summary={mask ? mask.shape : 'Off'} active={Boolean(mask)}>
+      <Field label="Shape">
+        <select
+          value={mask?.shape ?? 'off'}
+          onChange={(e) => (e.target.value === 'off' ? onPatch({ mask: null }) : set({ shape: e.target.value as StudioMask['shape'] }))}
+          className={inputCx}
+        >
+          <option value="off">Off</option>
+          <option value="rect">Rectangle</option>
+          <option value="ellipse">Ellipse</option>
+          <option value="luma">Luma key</option>
+          <option value="matte">Imported matte</option>
+        </select>
+      </Field>
+
+      {mask && (mask.shape === 'rect' || mask.shape === 'ellipse') && (
+        <div className="grid grid-cols-2 gap-2">
+          <Slider label="X" value={mask.x} min={-0.5} max={1} step={0.01} onChange={(v) => set({ x: v })} />
+          <Slider label="Y" value={mask.y} min={-0.5} max={1} step={0.01} onChange={(v) => set({ y: v })} />
+          <Slider label="Width" value={mask.w} min={0.02} max={1.5} step={0.01} onChange={(v) => set({ w: v })} />
+          <Slider label="Height" value={mask.h} min={0.02} max={1.5} step={0.01} onChange={(v) => set({ h: v })} />
+        </div>
+      )}
+
+      {mask && mask.shape === 'luma' && (
+        <>
+          <Slider label="Threshold" value={mask.threshold} min={0} max={1} step={0.01} onChange={(v) => set({ threshold: v })} />
+          <Slider label="Softness" value={mask.softness} min={0.01} max={1} step={0.01} onChange={(v) => set({ softness: v })} />
+        </>
+      )}
+
+      {mask && mask.shape === 'matte' && (
+        <Field label="Matte image" hint="A greyscale or alpha PNG the size of the frame. White keeps, black cuts.">
+          <input
+            type="file"
+            accept="image/png,image/webp"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              const reader = new FileReader()
+              reader.onload = () => set({ matteDataUrl: String(reader.result) })
+              reader.readAsDataURL(file)
+            }}
+            className="w-full text-xs text-muted"
+          />
+        </Field>
+      )}
+
+      {mask && (
+        <>
+          <Slider label="Feather" value={mask.featherPct} min={0} max={25} step={0.5} suffix="%" onChange={(v) => set({ featherPct: v })} />
+          <label className="flex items-center gap-2 text-xs text-muted">
+            <input type="checkbox" checked={mask.invert} onChange={(e) => set({ invert: e.target.checked })} />
+            Invert — keep what the mask would have cut
+          </label>
+        </>
+      )}
+    </Disclosure>
+  )
+}
+
+function StickerFields({ clip, onPatch }: { clip: StudioStickerClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  return (
+    <div className="space-y-3 border-t border-line pt-4">
+      <Field label="Sticker">
+        <select
+          value={clip.stickerId}
+          onChange={(e) => onPatch({ stickerId: e.target.value, json: null } as Partial<StudioClip>)}
+          className={inputCx}
+        >
+          {STICKERS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+          {clip.stickerId === 'custom' && <option value="custom">Imported file</option>}
+        </select>
+      </Field>
+
+      <Field label="Import a Lottie" hint="A .json exported from After Effects (Bodymovin) or LottieFiles. Images and expressions are not supported.">
+        <input
+          type="file"
+          accept="application/json,.json"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (!file) return
+            const reader = new FileReader()
+            reader.onload = () =>
+              onPatch({ stickerId: 'custom', json: String(reader.result), name: file.name.replace(/\.json$/i, '') } as Partial<StudioClip>)
+            reader.readAsText(file)
+          }}
+          className="w-full text-xs text-muted"
+        />
+      </Field>
+
+      <div className="grid grid-cols-2 gap-2">
+        <Slider label="X" value={clip.x} min={0} max={1} step={0.01} onChange={(v) => onPatch({ x: v } as Partial<StudioClip>)} />
+        <Slider label="Y" value={clip.y} min={0} max={1} step={0.01} onChange={(v) => onPatch({ y: v } as Partial<StudioClip>)} />
+      </div>
+      <Slider label="Size" value={clip.scale} min={0.2} max={4} step={0.05} onChange={(v) => onPatch({ scale: v } as Partial<StudioClip>)} />
+      <Slider label="Speed" value={clip.speed} min={0.25} max={3} step={0.05} suffix="×" onChange={(v) => onPatch({ speed: v } as Partial<StudioClip>)} />
+      <label className="flex items-center gap-2 text-xs text-muted">
+        <input type="checkbox" checked={clip.loop} onChange={(e) => onPatch({ loop: e.target.checked } as Partial<StudioClip>)} />
+        Loop — otherwise it holds its last frame
+      </label>
     </div>
   )
 }
@@ -433,6 +940,54 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
           ))}
         </div>
       </Field>
+    </div>
+  )
+}
+
+function AudioFields({ clip, onPatch }: { clip: StudioAudioClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const linked = hasMedia(clip.mediaId)
+  // Fades cannot overlap, or the clip would never reach full level; the caps
+  // keep each one inside its own half of the clip.
+  const maxFade = Math.max(0.1, clip.durationSec / 2)
+  return (
+    <div className="space-y-3 border-t border-line pt-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate font-mono text-xs text-muted">{clip.fileName}</span>
+        {!linked && <span className="shrink-0 text-xs text-danger">Needs relink</span>}
+      </div>
+      {!linked && (
+        <p className="text-xs leading-relaxed text-muted">
+          Audio handles cannot survive a reload — re-import this track to hear it again.
+        </p>
+      )}
+      <Slider
+        label="Trim in (s)"
+        value={clip.trimInSec}
+        min={0}
+        max={Math.max(0.1, clip.sourceDurationSec - 0.1)}
+        step={0.1}
+        onChange={(v) => onPatch({ trimInSec: v } as Partial<StudioClip>)}
+      />
+      <Slider label="Volume" value={clip.volume} min={0} max={1} step={0.05} onChange={(v) => onPatch({ volume: v } as Partial<StudioClip>)} />
+      <Slider
+        label="Fade in (s)"
+        value={Math.min(clip.fadeInSec, maxFade)}
+        min={0}
+        max={maxFade}
+        step={0.1}
+        onChange={(v) => onPatch({ fadeInSec: v } as Partial<StudioClip>)}
+      />
+      <Slider
+        label="Fade out (s)"
+        value={Math.min(clip.fadeOutSec, maxFade)}
+        min={0}
+        max={maxFade}
+        step={0.1}
+        onChange={(v) => onPatch({ fadeOutSec: v } as Partial<StudioClip>)}
+      />
+      <p className="text-xs leading-relaxed text-muted">
+        Drag the clip's left edge on the timeline to slide into the track instead of cutting the song's start.
+      </p>
     </div>
   )
 }

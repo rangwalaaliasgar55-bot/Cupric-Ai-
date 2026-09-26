@@ -1,6 +1,7 @@
 export type RenderUpdate = (pct: number) => void
 import type { SceneRundown } from '../types/project'
 import { getIpc } from './bridge'
+import { humanError } from './humanError'
 
 export type RenderSource = {
   sourceType?: 'arena' | 'footage' | 'rundown'
@@ -430,7 +431,7 @@ function browserRender(job: RenderJobInput, onUpdate: RenderUpdate, onDone: (res
       onUpdate(100)
       onDone({ outputPath, outputName })
     } catch (err) {
-      if (!cancelled) onDone({ error: err instanceof Error ? err.message : 'Browser render failed' })
+      if (!cancelled) onDone({ error: humanError(err, 'Browser render') })
     } finally {
       streamStop(recorder?.stream)
     }

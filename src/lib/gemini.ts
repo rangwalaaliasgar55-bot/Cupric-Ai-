@@ -11,7 +11,17 @@ import { round1, slugify, uid } from './utils'
  */
 
 export type RundownPatch = Partial<SceneRundown>
-export type GeminiResult = { text: string; rundownPatch: RundownPatch }
+export type GeminiResult = {
+  text: string
+  rundownPatch: RundownPatch
+  /**
+   * Which planner answered. Callers show this so a silent downgrade to the
+   * offline planner can never masquerade as a live model reply.
+   */
+  source?: 'live' | 'local'
+  /** Why the live call was skipped or failed, when `source` is 'local'. */
+  fallbackReason?: string
+}
 
 type Flavor = 'logo' | 'quote' | 'saas' | 'podcast' | 'generic'
 
@@ -234,14 +244,20 @@ export async function geminiChatLocal(
 
 export async function askGemini(userText: string, askCount: number): Promise<GeminiResult> {
   const api = getIpc()
+  let fallbackReason = 'Running in the browser preview, where no model key is available.'
   if (api) {
     try {
-      return (await api.invoke('gemini:ask', { prompt: userText, history: [], rundownContext: {} })) as GeminiResult
-    } catch {
-      /* local fallback */
+      const live = (await api.invoke('gemini:ask', { prompt: userText, history: [], rundownContext: {} })) as GeminiResult
+      return { ...live, source: 'live' }
+    } catch (err) {
+      // Swallowing this was the bug: the app looked like it had answered with a
+      // model when it had quietly used the canned planner.
+      fallbackReason = err instanceof Error ? err.message : String(err)
+      console.warn('[cupric] live rundown failed, using the local planner:', fallbackReason)
     }
   }
-  return askGeminiLocal(userText, askCount)
+  const local = await askGeminiLocal(userText, askCount)
+  return { ...local, source: 'local', fallbackReason }
 }
 
 export async function askGeminiChat(

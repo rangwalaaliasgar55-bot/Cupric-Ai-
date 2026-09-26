@@ -31,6 +31,8 @@ export type VoiceCommand =
   | { type: 'zoom'; direction: 'in' | 'out' }
   | { type: 'export' }
   | { type: 'mute'; on: boolean }
+  /** The whole utterance is a brief: run the autonomous pipeline on it. */
+  | { type: 'make-video'; brief: string }
 
 const NUMBER_WORDS: Record<string, number> = {
   zero: 0, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
@@ -61,6 +63,7 @@ export const VOICE_PHRASES: { say: string; does: string }[] = [
   { say: '"zoom in" / "zoom out"', does: 'Timeline zoom' },
   { say: '"mute" / "unmute"', does: 'Preview audio' },
   { say: '"export"', does: 'Start the export' },
+  { say: '"make a video about …"', does: 'Hand the whole sentence to the autonomous pipeline' },
 ]
 
 /**
@@ -121,6 +124,14 @@ export function parseVoiceCommand(rawInput: string): VoiceCommand | null {
   if (/^unmute$/.test(text)) return { type: 'mute', on: false }
   if (/^(export|render|save video|export video)$/.test(text)) return { type: 'export' }
 
+  // Checked last, so it never shadows a specific command: anything phrased as
+  // "make/create/generate a video …" becomes an autonomous job brief.
+  m = text.match(/^(?:make|create|generate|build)\s+(?:me\s+)?(?:a|an)?\s*(?:video|short|clip|promo|reel)\b(.*)$/)
+  if (m) {
+    const rest = m[1].replace(/^\s*(?:about|for|of|that says|saying|showing)\s*/, '').trim()
+    if (rest) return { type: 'make-video', brief: rest }
+  }
+
   return null
 }
 
@@ -155,6 +166,44 @@ export type VoiceEvents = {
   onEnd?: () => void
 }
 
+export type VoiceMode =
+  /** Grammar mode: only recognised commands fire (the Studio mic). */
+  | 'command'
+  /**
+   * Dictation mode: nothing is parsed, every final phrase is handed over as
+   * text. This is what "speak a brief and walk away" needs — a brief is prose,
+   * and running it through the command grammar would throw all of it away.
+   */
+  | 'dictation'
+
+/**
+ * Speak a line back with the browser's own synthesiser.
+ *
+ * No dependency and no network: it is the cheapest way to close the loop on a
+ * hands-free run. Silently does nothing where speech synthesis is missing,
+ * because status is always shown on screen as well — audio is the garnish.
+ */
+export function speak(text: string, opts: { rate?: number; interrupt?: boolean } = {}) {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  try {
+    if (opts.interrupt) window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.rate = opts.rate ?? 1.02
+    window.speechSynthesis.speak(utterance)
+  } catch {
+    /* synthesis is optional */
+  }
+}
+
+export function stopSpeaking() {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return
+  try {
+    window.speechSynthesis.cancel()
+  } catch {
+    /* nothing to cancel */
+  }
+}
+
 /**
  * Continuous listener. `start()` is a no-op when unsupported, so callers do not
  * need to branch twice.
@@ -163,7 +212,11 @@ export class VoiceListener {
   private rec: SpeechRecognitionLike | null = null
   private running = false
 
-  constructor(private events: VoiceEvents, private lang = 'en-US') {}
+  constructor(
+    private events: VoiceEvents,
+    private lang = 'en-US',
+    private mode: VoiceMode = 'command',
+  ) {}
 
   get active() {
     return this.running
@@ -183,6 +236,8 @@ export class VoiceListener {
         const transcript: string = result[0]?.transcript ?? ''
         this.events.onTranscript(transcript.trim(), Boolean(result.isFinal))
         if (!result.isFinal) continue
+        // Dictation never parses: the caller wants the words, not a verb.
+        if (this.mode === 'dictation') continue
         const command = parseVoiceCommand(transcript)
         if (command) this.events.onCommand(command, transcript.trim())
         else this.events.onUnrecognised?.(transcript.trim())
@@ -233,4 +288,38 @@ export class VoiceListener {
     }
     this.rec = null
   }
+}
+
+/** Minimum words before a dictated phrase is allowed to launch a job by itself. */
+export const AUTO_START_MIN_WORDS = 6
+
+/** Words that mean the speaker was mid-thought, whatever the pause suggested. */
+const TRAILING_INCOMPLETE =
+  /\b(a|an|the|and|or|but|so|then|with|without|for|to|of|in|on|at|about|that|this|like|plus|because|while|where|which|who|if|when|um|uh|erm|hmm)$/i
+
+/** Phrases that are a request to start, not a brief worth starting. */
+const BARE_REQUEST = /^(ok(ay)?\s+)?(hey\s+)?(cupric\s+)?(please\s+)?(make|create|build|generate|do)\s+(me\s+)?(a|an|the)?\s*(short|quick|new)?\s*(video|clip|promo|reel|ad)?\s*$/i
+
+/**
+ * Gate for hands-free dictation: should this settled phrase start a job?
+ *
+ * A false positive here is the worst failure mode in the product — the app
+ * would run off and spend model budget on half a sentence — so every doubtful
+ * case answers no and waits for the user to press the button.
+ */
+export function shouldAutoStartBrief(phrase: string, minWords = AUTO_START_MIN_WORDS): boolean {
+  const spoken = phrase.trim().replace(/[\s,;:\u2026]+$/, '')
+  if (!spoken) return false
+  // Trailing comma/ellipsis in the raw phrase means the recogniser itself heard
+  // an unfinished clause.
+  if (/[,;:\u2026]$/.test(phrase.trim())) return false
+  const words = spoken.split(/\s+/).filter(Boolean)
+  if (words.length < minWords) return false
+  if (BARE_REQUEST.test(spoken)) return false
+  if (TRAILING_INCOMPLETE.test(words[words.length - 1] ?? '')) return false
+  // A phrase that is exactly an editor command ("add text hello there please")
+  // is a command, not a brief.
+  const parsed = parseVoiceCommand(spoken)
+  if (parsed && parsed.type !== 'make-video') return false
+  return true
 }

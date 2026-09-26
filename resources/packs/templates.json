@@ -1,0 +1,165 @@
+{
+  "id": "templates",
+  "name": "Video templates",
+  "description": "Self-contained HTML scenes under resources/effects. Each exposes window.__seek(t) and a source manifest, so the desktop renderer can capture it frame by frame into an MP4 with no network.",
+  "version": "0.5.0",
+  "source": "Cupric templates, built after Forge UI, 23rd.dev and motion-primitives",
+  "license": "MIT (this implementation)",
+  "items": [
+    {
+      "id": "logo-sting",
+      "kind": "template",
+      "name": "Logo sting",
+      "description": "Mark snaps in, wordmark follows, everything settles on a clean hold frame.",
+      "data": {
+        "file": "resources/effects/logo-sting.html",
+        "durationSec": 3,
+        "fps": 30,
+        "size": [
+          1080,
+          1080
+        ],
+        "loops": false,
+        "sources": [
+          "motion-primitives"
+        ]
+      },
+      "tags": [
+        "template",
+        "intro",
+        "brand"
+      ]
+    },
+    {
+      "id": "quote-card",
+      "kind": "template",
+      "name": "Quote card",
+      "description": "Word-by-word quote over a dot field, attribution fading in last.",
+      "data": {
+        "file": "resources/effects/quote-card.html",
+        "durationSec": 6,
+        "fps": 30,
+        "size": [
+          1080,
+          1920
+        ],
+        "loops": false,
+        "sources": [
+          "dotforge",
+          "text-effects"
+        ]
+      },
+      "tags": [
+        "template",
+        "quote",
+        "text"
+      ]
+    },
+    {
+      "id": "text-reveal",
+      "kind": "template",
+      "name": "Text reveal",
+      "description": "Blur-and-rise word stagger for an opening statement. After Forge UI Text Reveal.",
+      "data": {
+        "file": "resources/effects/text-reveal.html",
+        "durationSec": 5,
+        "fps": 30,
+        "size": [
+          1080,
+          1920
+        ],
+        "loops": false,
+        "sources": [
+          "forge-ui",
+          "motion-primitives",
+          "kinetics"
+        ]
+      },
+      "tags": [
+        "template",
+        "text",
+        "stagger",
+        "opening"
+      ]
+    },
+    {
+      "id": "progress-stack",
+      "kind": "template",
+      "name": "Progress stack",
+      "description": "Three onboarding cards with a filling progress bar — the “it is working” beat.",
+      "data": {
+        "file": "resources/effects/progress-stack.html",
+        "durationSec": 6,
+        "fps": 30,
+        "size": [
+          1080,
+          1920
+        ],
+        "loops": false,
+        "sources": [
+          "forge-ui",
+          "circle-loaders"
+        ]
+      },
+      "tags": [
+        "template",
+        "progress",
+        "onboarding",
+        "ui"
+      ]
+    },
+    {
+      "id": "stack-ripple",
+      "kind": "template",
+      "name": "Stack ripple",
+      "description": "Notification cards fan open on a spring, then hold. After Forge UI Stack Ripple.",
+      "data": {
+        "file": "resources/effects/stack-ripple.html",
+        "durationSec": 5,
+        "fps": 30,
+        "size": [
+          1080,
+          1920
+        ],
+        "loops": false,
+        "sources": [
+          "forge-ui",
+          "microkit"
+        ]
+      },
+      "tags": [
+        "template",
+        "notifications",
+        "spring",
+        "ui"
+      ]
+    },
+    {
+      "id": "mesh-drift",
+      "kind": "template",
+      "name": "Mesh drift",
+      "description": "Looping mesh-gradient atmosphere with a centred title. Canvas, not WebGL, so it survives frame capture.",
+      "data": {
+        "file": "resources/effects/mesh-drift.html",
+        "durationSec": 8,
+        "fps": 30,
+        "size": [
+          1080,
+          1920
+        ],
+        "loops": true,
+        "sources": [
+          "23rd-dev",
+          "gradient-lab",
+          "gradientool"
+        ]
+      },
+      "tags": [
+        "template",
+        "background",
+        "gradient",
+        "loop"
+      ]
+    }
+  ]
+}

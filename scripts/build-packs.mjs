@@ -21,6 +21,8 @@ export { STUDIO_BACKGROUNDS } from './src/lib/studio/backgrounds'
 export { EFFECTS } from './src/lib/effects'
 export { GRADIENT_PRESETS } from './src/lib/gradients'
 export { VOICE_PHRASES } from './src/lib/voice'
+export { SOURCES } from './src/lib/sources'
+export { VIDEO_TEMPLATES } from './src/lib/videoTemplates'
 `
 
 await build({
@@ -157,6 +159,90 @@ packs.push({
     tags: ['voice'],
   })),
 })
+
+packs.push({
+  id: 'sources',
+  name: 'Sources',
+  description:
+    'The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.',
+  version: VERSION,
+  source: 'src/lib/sources.ts (links only; nothing third-party is bundled)',
+  license: 'Per entry — see each item',
+  items: mod.SOURCES.map((s) => ({
+    id: s.id,
+    kind: 'source',
+    name: s.name,
+    description: s.description,
+    data: {
+      url: s.url,
+      sourceKind: s.kind,
+      use: s.use,
+      intake: s.intake,
+      license: s.license,
+      promptCue: s.promptCue,
+    },
+    tags: ['source', s.kind, s.use, ...s.tags],
+  })),
+})
+
+packs.push({
+  id: 'templates',
+  name: 'Video templates',
+  description:
+    'Self-contained HTML scenes under resources/effects. Each exposes window.__seek(t) and a source manifest, so the desktop renderer can capture it frame by frame into an MP4 with no network.',
+  version: VERSION,
+  source: 'Cupric templates, built after Forge UI, 23rd.dev and motion-primitives',
+  license: 'MIT (this implementation)',
+  items: mod.VIDEO_TEMPLATES.map((t) => ({
+    id: t.id,
+    kind: 'template',
+    name: t.name,
+    description: t.description,
+    data: {
+      file: t.file,
+      durationSec: t.durationSec,
+      fps: t.fps,
+      size: t.size,
+      loops: t.loops ?? false,
+      sources: t.sources,
+    },
+    tags: ['template', ...t.tags],
+  })),
+})
+
+// PanelUI: catalogue only. The library is React Native, so its source cannot
+// run in Cupric's DOM renderer — what we vendor is the behaviour catalogue that
+// the prompt builder and our own components learn from.
+try {
+  const panel = JSON.parse(await readFile(path.join(root, 'resources', 'panelui', 'registry.json'), 'utf8'))
+  packs.push({
+    id: 'panelui',
+    name: 'PanelUI catalogue',
+    description:
+      'All 135 PanelUI components and 21 chart visualisations, with the upstream behaviour notes. React Native source stays upstream; Cupric mines the behaviour, the copy and the accessibility rules.',
+    version: VERSION,
+    source: `${panel.source} (${panel.package} ${panel.upstreamVersion}, ${panel.platform})`,
+    license: panel.license,
+    items: panel.entries.map((entry) => ({
+      id: `panelui-${entry.slug}`,
+      kind: 'source',
+      name: entry.name,
+      description: entry.description || `PanelUI ${entry.group} entry`,
+      data: {
+        url: `https://panelui.dev/docs/${entry.group}/${entry.slug}`,
+        sourceKind: 'components',
+        use: 'ui',
+        intake: 'reference',
+        license: panel.license,
+        platform: panel.platform,
+        promptCue: entry.description || '',
+      },
+      tags: ['source', 'panelui', entry.group],
+    })),
+  })
+} catch {
+  console.warn('resources/panelui/registry.json not readable — skipping the PanelUI pack')
+}
 
 // SaaS blueprints are first-class editable Studio storyboards.
 try {

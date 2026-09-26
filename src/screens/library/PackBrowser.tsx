@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Check,
@@ -10,6 +10,9 @@ import {
   RefreshCw,
   Search,
   Sparkles,
+  ExternalLink,
+  Film,
+  Link2,
   Type as TypeIcon,
   Wand2,
   WifiOff,
@@ -35,6 +38,7 @@ import type { StudioClip, StudioTextAnim, StudioTransition } from '../../types/p
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { EASE_SOFT } from '../../lib/motion'
 import { useReducedMotion } from '../../lib/use-reduced-motion'
+import { writeDragPayload } from '../../lib/studio/resourceDrop'
 import { copyText, cx, uid } from '../../lib/utils'
 
 const KIND_ICON = {
@@ -45,13 +49,14 @@ const KIND_ICON = {
   effect: Wand2,
   component: Layers,
   voice: Mic,
-  template: Layers,
+  source: Link2,
+  template: Film,
   font: TypeIcon,
   skill: Sparkles,
   icon: Sparkles,
   block: Layers,
   provider: Wand2,
-  'saas-template': Sparkles,
+  'saas-template': Film,
 } as const
 
 type Source = 'memory' | 'cache' | 'network' | 'local' | 'none'
@@ -235,6 +240,17 @@ export function PackBrowser() {
     } else if (item.kind === 'voice') {
       void copyText(item.name.replace(/"/g, ''))
       pushToast('info', 'Phrase copied — press Voice in the Studio and say it.')
+    } else if (item.kind === 'source') {
+      // Sources are links, not material: hand over the cue the prompt builder
+      // wants and open the site in the user's own browser.
+      const data = item.data as { url?: string; promptCue?: string } | undefined
+      void copyText(data?.promptCue ?? item.description)
+      if (data?.url) window.open(data.url, '_blank', 'noopener,noreferrer')
+      pushToast('success', `Prompt cue for “${item.name}” copied.`)
+    } else if (item.kind === 'template') {
+      const data = item.data as { file?: string; durationSec?: number; fps?: number } | undefined
+      void copyText(data?.file ?? item.id)
+      pushToast('info', `“${item.name}” — ${data?.durationSec ?? 0}s at ${data?.fps ?? 30}fps. Path copied; open it from the Render screen.`)
     } else if (item.kind === 'component') {
       setView('lab')
       pushToast('info', `Opening the Lab at “${item.name}”.`)
@@ -246,7 +262,7 @@ export function PackBrowser() {
       addStudioClip(project.id, clip)
       const source = (item.data as { source?: string } | undefined)?.source
       pushToast('success', `“${item.name}” added as an editable Studio cue${source ? ' — source linked in the resource card' : ''}.`)
-    } else if (item.kind === 'template' || item.kind === 'font' || item.kind === 'skill' || item.kind === 'provider') {
+    } else if (item.kind === 'font' || item.kind === 'skill' || item.kind === 'provider') {
       const source = (item.data as { source?: string } | undefined)?.source
       if (source) window.open(source, '_blank', 'noopener,noreferrer')
       pushToast('info', `${item.name} is indexed with an editable video/agent adapter. Opening its upstream reference.`)
@@ -350,7 +366,19 @@ export function PackBrowser() {
                   exit={reduced ? undefined : { opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.22, ease: EASE_SOFT, delay: reduced ? 0 : Math.min(i, 12) * 0.015 }}
                   whileHover={reduced ? undefined : { y: -2 }}
-                  className="group flex flex-col gap-2.5 rounded-xl border border-line bg-panel p-3.5 transition-colors duration-150 hover:border-text/25"
+                  // Draggable straight onto the Studio stage; the drop uses the
+                  // same mapping as the button below, so both paths agree.
+                  draggable
+                  onDragStart={(event) =>
+                    writeDragPayload((event as unknown as DragEvent<HTMLDivElement>).dataTransfer, {
+                      kind: item.kind,
+                      id: item.id,
+                      name: item.name,
+                      description: item.description,
+                      data: item.data,
+                    })
+                  }
+                  className="group flex cursor-grab flex-col gap-2.5 rounded-xl border border-line bg-panel p-3.5 transition-colors duration-150 hover:border-text/25 active:cursor-grabbing"
                 >
                   {item.css && (
                     <div
@@ -371,20 +399,31 @@ export function PackBrowser() {
                     </div>
                   </div>
                   <div className="mt-auto flex items-center justify-between gap-2 pt-0.5">
-                    <span className="truncate font-mono text-[11px] text-muted/70">{item.id}</span>
+                    <span className="truncate font-mono text-[11px] text-muted/70">
+                      {/* A source's id means nothing to the reader; its domain does. */}
+                      {item.kind === 'source'
+                        ? ((item.data as { url?: string } | undefined)?.url ?? '')
+                            .replace(/^https?:\/\//, '')
+                            .replace(/\/$/, '')
+                        : item.id}
+                    </span>
                     {used.has(item.id) ? (
                       <Badge tone="accent">
                         <Check size={11} /> Added
                       </Badge>
                     ) : (
                       <Button size="sm" variant="outline" onClick={() => addToStudio(item)}>
-                        {item.kind === 'effect' || item.kind === 'voice' ? (
+                        {item.kind === 'effect' || item.kind === 'voice' || item.kind === 'template' ? (
                           <>
                             <Copy size={12} /> Copy
                           </>
+                        ) : item.kind === 'source' ? (
+                          <>
+                            <ExternalLink size={12} /> Open
+                          </>
                         ) : item.kind === 'component' ? (
                           'Open in Lab'
-                        ) : item.kind === 'template' || item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider' ? (
+                        ) : item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider' ? (
                           'Open source'
                         ) : (
                           'Add to Studio'

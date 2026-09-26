@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Image as ImageIcon, Layers, Music, Sparkles, Type as TypeIcon, Video } from 'lucide-react'
-import type { StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
+import { Image as ImageIcon, Layers, Music, Sparkles, Sticker, Type as TypeIcon, Video } from 'lucide-react'
+import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
 import { clamp, cx, fmtClock } from '../../lib/utils'
 
@@ -31,6 +31,7 @@ function clipIcon(clip: StudioClip) {
   if (clip.kind === 'text') return TypeIcon
   if (clip.kind === 'overlay') return Layers
   if (clip.kind === 'glass') return Sparkles
+  if (clip.kind === 'sticker') return Sticker
   return Music
 }
 
@@ -46,7 +47,11 @@ function clipTint(clip: StudioClip, selected: boolean): string {
             ? 'bg-[rgb(226_75_74/0.14)] border-[rgb(226_75_74/0.38)]'
             : clip.kind === 'glass'
               ? 'bg-[rgb(255_255_255/0.10)] border-[rgb(255_255_255/0.32)] backdrop-blur-sm'
-              : 'bg-panel-alt border-line'
+              : clip.kind === 'sticker'
+                ? 'bg-[rgb(255_196_92/0.16)] border-[rgb(255_196_92/0.44)]'
+                : clip.kind === 'audio'
+                ? 'bg-[rgb(167_139_250/0.16)] border-[rgb(167_139_250/0.42)]'
+                : 'bg-panel-alt border-line'
   return cx(base, selected && 'ring-2 ring-accent ring-offset-0')
 }
 
@@ -115,8 +120,11 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
           startSec: drag.originStart + shift,
           durationSec: drag.originDuration - shift,
         }
-        if (clip.kind === 'video') {
-          const speed = (clip as StudioMediaClip).speed || 1
+        // Trimming the head of a media OR audio clip must move the source
+        // in-point too, otherwise dragging the left edge of a music bed just
+        // deletes the start of the song instead of sliding into it.
+        if (clip.kind === 'video' || clip.kind === 'audio') {
+          const speed = clip.kind === 'video' ? (clip as StudioMediaClip).speed || 1 : 1
           ;(patch as Partial<StudioMediaClip>).trimInSec = Math.max(0, drag.originTrimIn + shift * speed)
         }
         onPatchClip(clip.id, patch)
@@ -277,7 +285,10 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                                 id: clip.id,
                                 originStart: clip.startSec,
                                 originDuration: clip.durationSec,
-                                originTrimIn: clip.kind === 'video' ? (clip as StudioMediaClip).trimInSec : 0,
+                                originTrimIn:
+                                  clip.kind === 'video' || clip.kind === 'audio'
+                                    ? (clip as StudioMediaClip | StudioAudioClip).trimInSec
+                                    : 0,
                               })
                             }}
                             className="absolute inset-y-0 left-0 w-2 cursor-ew-resize bg-text/0 hover:bg-text/25"

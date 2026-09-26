@@ -6,7 +6,7 @@ import { Button } from '../components/Button'
 import { Kbd } from '../components/Kbd'
 import { NoProject } from '../components/NoProject'
 import type { BriefMessage, SceneRundown } from '../types/project'
-import { askGemini, askGeminiLocal } from '../lib/gemini'
+import { askGemini } from '../lib/gemini'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, deriveAspect, nowIso } from '../lib/utils'
 
@@ -58,6 +58,9 @@ export function Brief() {
     const askCount = messages.filter((m) => m.role === 'user').length
     const res = await askGemini(text, askCount)
     addBriefMessage(project.id, { role: 'gemini', text: res.text, at: nowIso() })
+    if (res.source === 'local' && res.fallbackReason) {
+      pushToast('info', `Offline planner used — the live model was unavailable: ${res.fallbackReason}`)
+    }
     setBusy(false)
 
     // Fill the rundown field by field — never dump the whole JSON at once.
@@ -89,10 +92,17 @@ export function Brief() {
     if (!rundown?.title || !rundown.scenes?.length || !rundown.size) {
       const text = input.trim() || project.name || 'Cupric AI launch video'
       setBusy(true)
-      const res = await askGeminiLocal(text, messages.filter((m) => m.role === 'user').length)
+      // Root cause of "the Video tab does not use Gemini": this path called
+      // askGeminiLocal() — the offline planner — directly, so the desktop
+      // `gemini:ask` IPC was never reached even with a key configured. Chat
+      // (send) used askGemini(), which is why only this button felt canned.
+      const res = await askGemini(text, messages.filter((m) => m.role === 'user').length)
       rundown = res.rundownPatch as SceneRundown
       addBriefMessage(project.id, { role: 'user', text, at: nowIso() })
-      addBriefMessage(project.id, { role: 'gemini', text: 'Cupric AI generated a renderable scene plan and is creating the video file now.', at: nowIso() })
+      addBriefMessage(project.id, { role: 'gemini', text: res.text, at: nowIso() })
+      if (res.source === 'local' && res.fallbackReason) {
+        pushToast('info', `Offline planner used — the live model was unavailable: ${res.fallbackReason}`)
+      }
       patchRundown(project.id, rundown)
       setInput('')
       setBusy(false)
