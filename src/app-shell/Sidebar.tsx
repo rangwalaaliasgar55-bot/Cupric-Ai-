@@ -1,0 +1,81 @@
+import { GanttChart, Home, Film, Library as LibraryIcon, MessagesSquare, Rocket, Swords } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import { motion } from 'motion/react'
+import type { View } from '../types/project'
+import { useActiveProject, useProjectStore } from '../state/useProjectStore'
+import { cx } from '../lib/utils'
+import logoUrl from '../assets/logo.svg'
+
+type NavItem = {
+  view: View
+  label: string
+  icon: LucideIcon
+  needProject?: boolean
+  needLock?: boolean
+}
+
+const NAV: NavItem[] = [
+  { view: 'home', label: 'Home', icon: Home },
+  { view: 'brief', label: 'Brief', icon: MessagesSquare, needProject: true },
+  { view: 'arena', label: 'Arena Desk', icon: Swords, needProject: true, needLock: true },
+  { view: 'footage', label: 'Footage Desk', icon: Film, needProject: true },
+  { view: 'timeline', label: 'Timeline', icon: GanttChart, needProject: true },
+  { view: 'render', label: 'Render', icon: Rocket, needProject: true },
+  { view: 'library', label: 'Library', icon: LibraryIcon },
+]
+
+export function Sidebar() {
+  const view = useProjectStore((s) => s.view)
+  const setView = useProjectStore((s) => s.setView)
+  const active = useActiveProject()
+
+  const disabledReason = (item: NavItem): string | null => {
+    if (item.needProject && !active) return ' — open a project'
+    if (item.needLock && !active?.brief.lockedRundown) return ' — lock a rundown in Brief'
+    return null
+  }
+
+  return (
+    <aside className="flex h-full w-16 shrink-0 flex-col items-center border-r border-line bg-panel py-3">
+      <img src={logoUrl} alt="Northframe Studio" className="mb-4 h-8 w-8 rounded-lg" />
+
+      <nav aria-label="Primary" className="flex flex-col items-center gap-1">
+        {NAV.map((item) => {
+          const reason = disabledReason(item)
+          const isActive = view === item.view
+          const Icon = item.icon
+          return (
+            <div key={item.view} className="group relative flex w-full justify-center">
+              <button
+                type="button"
+                aria-label={item.label}
+                aria-current={isActive ? 'page' : undefined}
+                disabled={!!reason}
+                onClick={() => setView(item.view)}
+                className={cx(
+                  'relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors duration-150',
+                  isActive ? 'text-accent-text' : reason ? 'cursor-not-allowed text-muted/35' : 'text-muted hover:bg-panel-alt hover:text-text',
+                )}
+              >
+                {isActive && (
+                  <motion.span
+                    layoutId="rail-active"
+                    transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                    className="absolute -left-3 h-6 w-[3px] rounded-r-full bg-accent"
+                  />
+                )}
+                <Icon size={18} />
+              </button>
+              <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-line bg-panel-alt px-2 py-1 text-xs text-text opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+                {item.label}
+                {reason && <span className="text-muted">{reason}</span>}
+              </span>
+            </div>
+          )
+        })}
+      </nav>
+
+      <div className="mt-auto font-mono text-xs text-muted/50">v0.1</div>
+    </aside>
+  )
+}
