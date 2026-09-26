@@ -1502,6 +1502,70 @@ async function buildWaveform(videoPath, durationSec) {
   return waveformFromPcm(buffer)
 }
 
+/**
+ * Studio export → MP4.
+ *
+ * The renderer records the canvas to WebM (that is all MediaRecorder can do in
+ * Chromium), sends the bytes here, and FFmpeg remuxes/transcodes them to H.264
+ * MP4 so the file plays anywhere. Without FFmpeg we say so instead of silently
+ * renaming a WebM to .mp4.
+ */
+ipcMain.handle('studio:exportMp4', async (_event, payload) => {
+  const bytes = payload?.bytes
+  if (!bytes || !bytes.byteLength) throw new Error('No recording was received from the Studio.')
+
+  ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
+  if (!ffmpegPath) {
+    throw new Error('FFmpeg is unavailable in this build, so the WebM cannot be converted. Set CUPRIC_FFMPEG_PATH or install a build with ffmpeg-static unpacked.')
+  }
+
+  const outDir = userDataPath('renders', 'studio')
+  ensureDir(outDir)
+  const base = safeFileName(String(payload?.fileName || 'cupric-studio'), 'cupric-studio').replace(/\.(webm|mp4)$/i, '')
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+  const source = path.join(outDir, `${base}-${stamp}.webm`)
+  const outputPath = path.join(outDir, `${base}-${stamp}.mp4`)
+
+  await fsp.writeFile(source, Buffer.from(bytes))
+
+  const fps = Number(payload?.fps) > 0 ? Math.round(Number(payload.fps)) : 30
+  const crf = String(Math.max(14, Math.min(32, Number(payload?.crf) || 18)))
+  const args = [
+    '-y',
+    '-hide_banner',
+    '-v', 'error',
+    '-i', source,
+    '-c:v', 'libx264',
+    '-preset', 'medium',
+    '-crf', crf,
+    '-pix_fmt', 'yuv420p',
+    // MediaRecorder writes variable frame rate; pin it so players seek correctly.
+    '-r', String(fps),
+    '-movflags', '+faststart',
+    '-c:a', 'aac',
+    '-b:a', '192k',
+    outputPath,
+  ]
+
+  try {
+    await runProcess(null, ffmpegPath, args)
+  } catch (err) {
+    await fsp.rm(source, { force: true })
+    throw new Error(`FFmpeg could not convert the recording: ${err?.message || String(err)}`)
+  }
+
+  if (!fs.existsSync(outputPath)) {
+    await fsp.rm(source, { force: true })
+    throw new Error('FFmpeg reported success but produced no file.')
+  }
+
+  // Keep only the MP4 — the intermediate WebM is a build artifact.
+  await fsp.rm(source, { force: true })
+  const { size } = await fsp.stat(outputPath)
+  if (payload?.reveal !== false) shell.showItemInFolder(outputPath)
+  return { outputPath, bytes: size }
+})
+
 ipcMain.handle('media:status', () => mediaToolStatus())
 
 ipcMain.handle('dialog:pickFolder', async () => {

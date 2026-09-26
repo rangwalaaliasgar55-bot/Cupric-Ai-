@@ -1,0 +1,609 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Clapperboard,
+  Download,
+  Image as ImageIcon,
+  Layers,
+  Loader2,
+  Mic,
+  MicOff,
+  Pause,
+  Play,
+  Plus,
+  Scissors,
+  Sparkles,
+  SkipBack,
+  Square,
+  Type as TypeIcon,
+  Volume2,
+  VolumeX,
+  ZoomIn,
+  ZoomOut,
+} from 'lucide-react'
+import { Button } from '../components/Button'
+import { IconButton } from '../components/IconButton'
+import { NoProject } from '../components/NoProject'
+import { ProgressBar } from '../components/ProgressBar'
+import { StudioInspector } from './studio/StudioInspector'
+import { StudioPreview } from './studio/StudioPreview'
+import { StudioTimeline } from './studio/StudioTimeline'
+import type { StudioClip, StudioDoc, StudioMediaClip } from '../types/project'
+import {
+  defaultGlassClip,
+  defaultTextClip,
+  docDuration,
+  nextFreeStart,
+  studioOf,
+} from '../lib/studio/doc'
+import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
+import { TRANSITIONS } from '../lib/studio/transitions'
+import { isVoiceSupported, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
+import { registerFile } from '../lib/studio/media'
+import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
+import { useActiveProject, useProjectStore } from '../state/useProjectStore'
+import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
+
+const ZOOM_STEPS = [12, 20, 32, 48, 72, 110, 160]
+
+export function Studio() {
+  const project = useActiveProject()
+  const patchStudio = useProjectStore((s) => s.patchStudio)
+  const addStudioClip = useProjectStore((s) => s.addStudioClip)
+  const updateStudioClip = useProjectStore((s) => s.updateStudioClip)
+  const removeStudioClip = useProjectStore((s) => s.removeStudioClip)
+  const splitStudioClip = useProjectStore((s) => s.splitStudioClip)
+  const duplicateStudioClip = useProjectStore((s) => s.duplicateStudioClip)
+  const pushToast = useProjectStore((s) => s.pushToast)
+
+  const [time, setTime] = useState(0)
+  const [playing, setPlaying] = useState(false)
+  const [muted, setMuted] = useState(false)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [zoom, setZoom] = useState(3)
+  const [importing, setImporting] = useState(false)
+  const [exportPct, setExportPct] = useState<number | null>(null)
+  const [lastExport, setLastExport] = useState<{ url: string; fileName: string } | null>(null)
+  const [listening, setListening] = useState(false)
+  const [heard, setHeard] = useState<string | null>(null)
+  const [showVoiceHelp, setShowVoiceHelp] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const cancelRef = useRef<{ cancelled: boolean } | null>(null)
+  const voiceRef = useRef<VoiceListener | null>(null)
+  const commandRef = useRef<(command: VoiceCommand) => void>(() => {})
+  const voiceSupported = useMemo(() => isVoiceSupported(), [])
+  const mp4Supported = useMemo(() => canExportMp4(), [])
+
+  const doc: StudioDoc = studioOf(project)
+  const duration = docDuration(doc)
+  const pid = project?.id ?? null
+  const selected = useMemo(() => doc.clips.find((c) => c.id === selectedId) ?? null, [doc.clips, selectedId])
+
+  const seek = useCallback(
+    (t: number) => setTime(clamp(t, 0, Math.max(0, duration))),
+    [duration],
+  )
+
+  // Space toggles playback; ⌘/Ctrl+B splits at the playhead. Ignored while a
+  // text field has focus so typing a caption never scrubs the timeline.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
+      if (e.code === 'Space') {
+        e.preventDefault()
+        if (duration > 0) setPlaying((p) => !p)
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b' && selectedId && pid) {
+        e.preventDefault()
+        splitStudioClip(pid, selectedId, time)
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && pid) {
+        e.preventDefault()
+        removeStudioClip(pid, selectedId)
+        setSelectedId(null)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [duration, pid, removeStudioClip, selectedId, splitStudioClip, time])
+
+  useEffect(() => {
+    if (time > duration) setTime(duration)
+  }, [duration, time])
+
+  // The listener is created once and torn down on unmount; commands are
+  // dispatched through a ref so the handler always sees fresh state.
+  useEffect(() => {
+    return () => {
+      voiceRef.current?.stop()
+      voiceRef.current = null
+    }
+  }, [])
+
+  const toggleVoice = useCallback(() => {
+    if (voiceRef.current?.active) {
+      voiceRef.current.stop()
+      voiceRef.current = null
+      setListening(false)
+      setHeard(null)
+      return
+    }
+    const listener = new VoiceListener({
+      onTranscript: (text, isFinal) => {
+        if (text) setHeard(isFinal ? text : `${text}\u2026`)
+      },
+      onCommand: (command, transcript) => {
+        setHeard(transcript)
+        commandRef.current(command)
+      },
+      onUnrecognised: (transcript) => {
+        setHeard(`\u201c${transcript}\u201d \u2014 not a command`)
+      },
+      onError: (message) => {
+        pushToast('error', message)
+        setListening(false)
+      },
+      onEnd: () => setListening(false),
+    })
+    if (listener.start()) {
+      voiceRef.current = listener
+      setListening(true)
+      setHeard('Listening\u2026')
+    }
+  }, [pushToast])
+
+  if (!project || !pid) return <NoProject />
+
+  const projectId: string = pid
+
+  async function onFiles(files: FileList | null) {
+    if (!files?.length) return
+    setImporting(true)
+    let start = nextFreeStart(doc, 0, 0, 0.1)
+    try {
+      for (const file of Array.from(files)) {
+        const handle = await registerFile(file)
+        const durationSec = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : 4
+        start = nextFreeStart(doc, 0, start, durationSec)
+        const clip: StudioMediaClip = {
+          id: uid(),
+          kind: handle.kind,
+          track: 0,
+          startSec: start,
+          durationSec,
+          name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28),
+          transitionIn: 'fade',
+          transitionOut: 'none',
+          opacity: 1,
+          mediaId: handle.id,
+          fileName: handle.fileName,
+          localPath: handle.localPath,
+          trimInSec: 0,
+          sourceDurationSec: handle.kind === 'video' ? handle.durationSec : 0,
+          speed: 1,
+          volume: 1,
+          fit: 'cover',
+          posterDataUrl: handle.posterDataUrl,
+        }
+        addStudioClip(projectId, clip)
+        setSelectedId(clip.id)
+        start += durationSec
+      }
+      pushToast('success', `Imported ${files.length} file${files.length > 1 ? 's' : ''}`)
+    } catch (err) {
+      pushToast('error', err instanceof Error ? err.message : 'Import failed')
+    } finally {
+      setImporting(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  function addText() {
+    const clip = defaultTextClip(time, Math.min(1, doc.trackCount - 1))
+    addStudioClip(projectId, clip)
+    setSelectedId(clip.id)
+  }
+
+  function addBackgroundClip() {
+    const clip: StudioClip = {
+      id: uid(),
+      kind: 'background',
+      track: 0,
+      startSec: nextFreeStart(doc, 0, time, 4),
+      durationSec: 4,
+      name: 'Background',
+      transitionIn: 'fade',
+      transitionOut: 'fade',
+      opacity: 1,
+      backgroundId: doc.backgroundId,
+    }
+    addStudioClip(projectId, clip)
+    setSelectedId(clip.id)
+  }
+
+  function addGlassClip(shape: 'panel' | 'lens' = 'panel', presetId = 'hero') {
+    const clip = defaultGlassClip(nextFreeStart(doc, Math.min(1, doc.trackCount - 1), time, 3), Math.min(1, doc.trackCount - 1), presetId, shape)
+    addStudioClip(projectId, clip)
+    setSelectedId(clip.id)
+  }
+
+  /**
+   * Voice commands run through the same store actions as the buttons — there
+   * is no second code path that could drift from the UI.
+   */
+  function runVoiceCommand(command: VoiceCommand) {
+    switch (command.type) {
+      case 'play':
+        if (duration > 0) setPlaying(true)
+        break
+      case 'pause':
+      case 'stop':
+        setPlaying(false)
+        break
+      case 'seek-start':
+        setPlaying(false)
+        seek(0)
+        break
+      case 'seek-end':
+        setPlaying(false)
+        seek(duration)
+        break
+      case 'seek-to':
+        setPlaying(false)
+        seek(command.seconds)
+        break
+      case 'nudge':
+        seek(time + command.seconds)
+        break
+      case 'split':
+        if (selectedId) splitStudioClip(projectId, selectedId, time)
+        else pushToast('info', 'Select a clip first.')
+        break
+      case 'delete':
+        if (selectedId) {
+          removeStudioClip(projectId, selectedId)
+          setSelectedId(null)
+        }
+        break
+      case 'duplicate':
+        if (selectedId) duplicateStudioClip(projectId, selectedId)
+        break
+      case 'add-text': {
+        const clip = defaultTextClip(nextFreeStart(doc, Math.min(1, doc.trackCount - 1), time, 3), Math.min(1, doc.trackCount - 1))
+        if (command.text) clip.text = command.text
+        addStudioClip(projectId, clip)
+        setSelectedId(clip.id)
+        break
+      }
+      case 'add-background': {
+        const wanted = command.name?.toLowerCase().replace(/\s+/g, '')
+        const match = wanted
+          ? STUDIO_BACKGROUNDS.find(
+              (b) => b.id.replace(/-/g, '') === wanted || b.name.toLowerCase().replace(/\s+/g, '') === wanted,
+            )
+          : undefined
+        const clip: StudioClip = {
+          id: uid(),
+          kind: 'background',
+          track: 0,
+          startSec: nextFreeStart(doc, 0, time, 4),
+          durationSec: 4,
+          name: match?.name ?? 'Background',
+          transitionIn: 'fade',
+          transitionOut: 'fade',
+          opacity: 1,
+          backgroundId: match?.id ?? doc.backgroundId,
+        }
+        addStudioClip(projectId, clip)
+        setSelectedId(clip.id)
+        if (command.name && !match) pushToast('info', `No background called \u201c${command.name}\u201d \u2014 used the current one.`)
+        break
+      }
+      case 'add-glass': {
+        const wanted = (command.preset ?? '').toLowerCase()
+        const shape = wanted.includes('lens') ? 'lens' : 'panel'
+        const preset = ['hero', 'portfolio', 'plaque', 'liquid', 'frost', 'lens'].find((id) => wanted.includes(id))
+        addGlassClip(shape, preset ?? (shape === 'lens' ? 'lens' : 'hero'))
+        break
+      }
+      case 'set-transition': {
+        const match = TRANSITIONS.find(
+          (t) => t.id === command.transition || t.name.toLowerCase().replace(/\s+/g, '-') === command.transition,
+        )
+        if (!match) pushToast('info', `No transition called \u201c${command.transition}\u201d.`)
+        else if (!selectedId) pushToast('info', 'Select a clip first.')
+        else updateStudioClip(projectId, selectedId, { transitionIn: match.id })
+        break
+      }
+      case 'zoom':
+        setZoom((z) => clamp(command.direction === 'in' ? z + 1 : z - 1, 0, ZOOM_STEPS.length - 1))
+        break
+      case 'mute':
+        setMuted(command.on)
+        break
+      case 'export':
+        void runExport()
+        break
+      case 'undo':
+        pushToast('info', 'Undo is on the keyboard only for now.')
+        break
+    }
+  }
+
+  commandRef.current = runVoiceCommand
+
+  async function runExport(asMp4 = false) {
+    if (duration <= 0) {
+      pushToast('error', 'Add a clip before exporting.')
+      return
+    }
+    setPlaying(false)
+    setExportPct(0)
+    const signal = { cancelled: false }
+    cancelRef.current = signal
+    try {
+      const result = await exportStudio(doc, {
+        fileName: `${slugify(project?.name ?? 'cupric-studio')}-studio`,
+        scale: 1,
+        onProgress: setExportPct,
+        signal,
+      })
+      if (result.cancelled) {
+        pushToast('info', 'Export cancelled')
+      } else if (asMp4) {
+        pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
+        const mp4 = await convertToMp4(result.blob, slugify(project?.name ?? 'cupric-studio'), doc.fps)
+        setLastExport({ url: result.url, fileName: result.fileName })
+        pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)`)
+      } else {
+        setLastExport({ url: result.url, fileName: result.fileName })
+        const a = document.createElement('a')
+        a.href = result.url
+        a.download = result.fileName
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        pushToast('success', `Exported ${result.fileName}`)
+      }
+    } catch (err) {
+      pushToast('error', err instanceof Error ? err.message : 'Export failed')
+    } finally {
+      setExportPct(null)
+      cancelRef.current = null
+    }
+  }
+
+  const exporting = exportPct !== null
+  const pps = ZOOM_STEPS[zoom]
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      {/* Toolbar */}
+      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line px-6 py-3">
+        <h1 className="mr-2 text-base font-semibold">Studio</h1>
+
+        <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={importing || exporting}>
+          {importing ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Import media
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="video/*,image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => void onFiles(e.target.files)}
+        />
+        <Button size="sm" variant="outline" onClick={addText} disabled={exporting}>
+          <TypeIcon size={13} /> Text
+        </Button>
+        <Button size="sm" variant="outline" onClick={addBackgroundClip} disabled={exporting}>
+          <ImageIcon size={13} /> Background
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => addGlassClip('panel')} disabled={exporting}>
+          <Sparkles size={13} /> Glass
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => selectedId && splitStudioClip(projectId, selectedId, time)}
+          disabled={!selectedId || exporting}
+        >
+          <Scissors size={13} /> Split
+        </Button>
+        {!selectedId && (
+          <span className="text-xs text-muted">Select a clip to split it</span>
+        )}
+
+        {voiceSupported && (
+          <Button
+            size="sm"
+            variant={listening ? 'primary' : 'outline'}
+            onClick={toggleVoice}
+            disabled={exporting}
+            title="Voice commands"
+          >
+            {listening ? <Mic size={13} /> : <MicOff size={13} />} {listening ? 'Listening' : 'Voice'}
+          </Button>
+        )}
+
+        <div className="ml-auto flex items-center gap-1.5">
+          <IconButton label="Zoom out" onClick={() => setZoom((z) => Math.max(0, z - 1))} disabled={zoom === 0}>
+            <ZoomOut size={15} />
+          </IconButton>
+          <IconButton
+            label="Zoom in"
+            onClick={() => setZoom((z) => Math.min(ZOOM_STEPS.length - 1, z + 1))}
+            disabled={zoom === ZOOM_STEPS.length - 1}
+          >
+            <ZoomIn size={15} />
+          </IconButton>
+          <Button size="sm" variant="outline" onClick={() => void runExport(false)} disabled={exporting || duration <= 0}>
+            {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+            {exporting ? 'Recording…' : 'Export WebM'}
+          </Button>
+          {mp4Supported && (
+            <Button size="sm" variant="primary" onClick={() => void runExport(true)} disabled={exporting || duration <= 0}>
+              <Download size={13} /> Export MP4
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {voiceSupported && (listening || heard) && (
+        <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-line bg-panel px-6 py-2">
+          <span className={cx('h-2 w-2 shrink-0 rounded-full', listening ? 'animate-pulse bg-accent' : 'bg-muted')} />
+          <span className="min-w-0 flex-1 truncate text-xs text-muted">{heard ?? 'Listening\u2026'}</span>
+          <button
+            type="button"
+            className="text-xs text-accent-text underline underline-offset-2"
+            onClick={() => setShowVoiceHelp((v) => !v)}
+          >
+            {showVoiceHelp ? 'Hide commands' : 'What can I say?'}
+          </button>
+        </div>
+      )}
+
+      {showVoiceHelp && (
+        <div className="grid shrink-0 gap-x-6 gap-y-1 border-b border-line bg-panel-alt px-6 py-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
+          {VOICE_PHRASES.map((phrase) => (
+            <div key={phrase.say} className="flex min-w-0 gap-2">
+              <span className="shrink-0 font-mono text-fg">{phrase.say}</span>
+              <span className="truncate text-muted">{phrase.does}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {exporting && (
+        <div className="flex shrink-0 items-center gap-3 border-b border-line bg-panel px-6 py-2">
+          <ProgressBar pct={exportPct ?? 0} className="flex-1" />
+          <span className="font-mono text-xs text-muted tabular-nums">{Math.round(exportPct ?? 0)}%</span>
+          <span className="text-xs text-muted">
+            Recording in real time so audio and motion stay in sync — {Math.ceil(duration)}s.
+          </span>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (cancelRef.current) cancelRef.current.cancelled = true
+            }}
+          >
+            <Square size={12} /> Stop
+          </Button>
+        </div>
+      )}
+
+      {/* Stage + inspector */}
+      <div className="flex min-h-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex min-h-0 flex-1 items-center justify-center bg-bg p-5">
+            {doc.clips.length === 0 ? (
+              <div className="max-w-md rounded-xl border border-dashed border-line bg-panel/40 px-8 py-12 text-center">
+                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
+                  <Clapperboard size={19} />
+                </div>
+                <h2 className="mt-3 text-base font-semibold">Make a video right here</h2>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                  Import footage or photos, stack text and backgrounds on the tracks below, then export. Nothing leaves
+                  the machine — the preview and the export are the same renderer.
+                </p>
+                <div className="mt-4">
+                  <Button variant="primary" onClick={() => fileRef.current?.click()}>
+                    <Plus size={14} /> Import media
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <StudioPreview
+                doc={doc}
+                time={time}
+                playing={playing}
+                muted={muted}
+                duration={Math.max(duration, 0.1)}
+                onTimeChange={setTime}
+                onEnded={() => {
+                  setPlaying(false)
+                  setTime(duration)
+                }}
+              />
+            )}
+          </div>
+
+          {/* Transport */}
+          <div className="flex shrink-0 items-center gap-2 border-t border-line px-6 py-2">
+            <IconButton label="Back to start" onClick={() => seek(0)}>
+              <SkipBack size={15} />
+            </IconButton>
+            <IconButton
+              label={playing ? 'Pause' : 'Play'}
+              onClick={() => duration > 0 && setPlaying((p) => !p)}
+              disabled={duration <= 0}
+            >
+              {playing ? <Pause size={15} /> : <Play size={15} />}
+            </IconButton>
+            <IconButton label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted((m) => !m)}>
+              {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+            </IconButton>
+            <span className="font-mono text-xs text-muted tabular-nums">
+              {fmtClock(time)} / {fmtClock(duration)}
+            </span>
+            <span className="ml-auto font-mono text-xs text-muted tabular-nums">
+              {doc.aspect} · {doc.fps}fps · {doc.clips.length} clip{doc.clips.length === 1 ? '' : 's'}
+            </span>
+            {lastExport && (
+              <a
+                href={lastExport.url}
+                download={lastExport.fileName}
+                className="text-xs text-accent-text underline underline-offset-2"
+              >
+                Save {lastExport.fileName} again
+              </a>
+            )}
+          </div>
+
+          <div className="h-[46%] min-h-[190px] shrink-0">
+            <StudioTimeline
+              doc={doc}
+              time={time}
+              pps={pps}
+              duration={duration}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onSeek={(t) => {
+                setPlaying(false)
+                seek(t)
+              }}
+              onPatchClip={(id, patch) => updateStudioClip(projectId, id, patch)}
+            />
+          </div>
+        </div>
+
+        <aside className={cx('w-80 shrink-0 overflow-y-auto border-l border-line bg-panel px-5 py-4')}>
+          <StudioInspector
+            doc={doc}
+            clip={selected}
+            onPatch={(patch) => selectedId && updateStudioClip(projectId, selectedId, patch)}
+            onPatchDoc={(patch) => patchStudio(projectId, patch)}
+            onDelete={() => {
+              if (!selectedId) return
+              removeStudioClip(projectId, selectedId)
+              setSelectedId(null)
+            }}
+            onDuplicate={() => selectedId && duplicateStudioClip(projectId, selectedId)}
+            onSplit={() => selectedId && splitStudioClip(projectId, selectedId, time)}
+          />
+
+          <div className="mt-6 border-t border-line pt-4">
+            <h3 className="flex items-center gap-1.5 text-xs font-semibold text-muted">
+              <Layers size={12} /> Tracks
+            </h3>
+            <p className="mt-1.5 text-xs leading-relaxed text-muted/80">
+              Track 1 is the bottom layer. Drag a clip up or down to restack it, drag its edges to trim,
+              and press <span className="font-mono">Space</span> to play.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  )
+}

@@ -1,5 +1,6 @@
 import type { SceneRundown, View } from '../types/project'
 import { getIpc } from './bridge'
+import { chat as openCodeChat, isConfigured as isOpenCodeConfigured } from './opencode'
 import { effectsPromptAppendix } from './effects'
 import { round1, slugify, uid } from './utils'
 
@@ -11,8 +12,6 @@ import { round1, slugify, uid } from './utils'
 
 export type RundownPatch = Partial<SceneRundown>
 export type GeminiResult = { text: string; rundownPatch: RundownPatch }
-
-const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 type Flavor = 'logo' | 'quote' | 'saas' | 'podcast' | 'generic'
 
@@ -170,8 +169,6 @@ function pick<T>(arr: T[], seed: number): T {
 }
 
 export async function askGeminiLocal(userText: string, askCount: number): Promise<GeminiResult> {
-  await wait(800 + Math.random() * 700)
-
   const t = userText.toLowerCase()
   const flavor = detectFlavor(t)
   const topic = topicOf(userText)
@@ -214,7 +211,6 @@ export async function geminiChatLocal(
   text: string,
   ctx: { projectName: string | null; view: View },
 ): Promise<string> {
-  await wait(700 + Math.random() * 600)
   const t = text.toLowerCase()
   const proj = ctx.projectName ? `“${ctx.projectName}”` : 'a project'
 
@@ -248,17 +244,52 @@ export async function askGemini(userText: string, askCount: number): Promise<Gem
   return askGeminiLocal(userText, askCount)
 }
 
-export async function askGeminiChat(text: string, ctx: { projectName: string | null; view: View }) {
+export async function askGeminiChat(
+  text: string,
+  ctx: { projectName: string | null; view: View },
+): Promise<string> {
   const api = getIpc()
-  if (!api) {
-    return 'Live chat needs the desktop app so Cupric AI can call Gemini or an OpenCode/OpenAI-compatible model securely. Video creation still works locally from the Brief screen.'
+
+  // 1. Desktop: keys live in the main process, so ask it first.
+  if (api) {
+    try {
+      const reply = await api.invoke('gemini:chat', { text, ctx })
+      if (typeof reply === 'string' && reply.trim()) return reply
+      if (reply && typeof reply === 'object' && 'text' in reply) {
+        const nested = (reply as { text?: unknown }).text
+        if (typeof nested === 'string' && nested.trim()) return nested
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err || '')
+      return `The configured model could not be reached (${message}). Open the settings icon in this panel to pick another OpenCode model — the local presets cost nothing.`
+    }
   }
-  try {
-    return await api.invoke('gemini:chat', { text, ctx })
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err || '')
-    return `No live AI model is connected yet. Open settings, choose a free OpenCode preset such as an OpenRouter “:free” model or local Ollama, then save your key/base URL. (${message})`
+
+  // 2. Web build: talk to whatever OpenAI-compatible endpoint the user set up
+  //    (OpenCode, Ollama, LM Studio, OpenRouter free tier).
+  if (isOpenCodeConfigured()) {
+    try {
+      return await openCodeChat([
+        {
+          role: 'system',
+          content:
+            'You are the assistant inside Cupric AI, a desktop short-form video editor with a Brief screen, an Arena import flow, a Footage desk, a CapCut-style Studio editor and a Render queue. Answer briefly and concretely about making and editing video in this app.',
+        },
+        {
+          role: 'user',
+          content: `Current screen: ${ctx.view}. Project: ${ctx.projectName ?? 'none open'}.\n\n${text}`,
+        },
+      ])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err || '')
+      const fallback = await geminiChatLocal(text, ctx)
+      return `${fallback}\n\n(Live model error: ${message})`
+    }
   }
+
+  // 3. Nothing configured: the deterministic local planner, clearly labelled.
+  const planned = await geminiChatLocal(text, ctx)
+  return `${planned}\n\nNo live model is connected. Click the settings icon in this panel to point Cupric AI at a free OpenCode / Ollama / LM Studio endpoint.`
 }
 
 export { arenaPromptOf, slugify }

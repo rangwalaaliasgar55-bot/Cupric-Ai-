@@ -59,6 +59,35 @@ stays on buttons. One accent per view — lime leads, blue informs, red warns.
 - Stage backgrounds (grid, dots, lime haze) are for **preview / Arena / marketing only**.
 - App chrome stays flat surface tokens — no stacked page backgrounds.
 
+### Studio (in-app editor)
+
+The Studio is Cupric's CapCut-style editor: stacked tracks of video / image /
+text / background / overlay clips over a painted background.
+
+- **One renderer**: `src/lib/studio/renderer.ts#drawStudioFrame` draws the
+  preview *and* every exported frame. There is no "preview only" effect.
+- **Backgrounds** (`src/lib/studio/backgrounds.ts`) ship twice — as CSS for the
+  DOM/Arena/Library, and as a canvas `paint()` so the export matches the
+  preview exactly. `src/lib/gradients.ts` is a view over this list, never a
+  second list.
+- **Export** (`src/lib/studio/export.ts`) records in real time through
+  MediaRecorder so duration and audio stay correct; frame-stepping is
+  deliberately not used because MediaRecorder timestamps by wall clock.
+- **Media handles are runtime-only.** The store keeps `mediaId`, file name,
+  poster and source duration; object URLs never persist. After a reload the
+  clip paints a "Relink" frame and the inspector offers the file picker — it
+  never pretends the media is still there.
+- Motion inside a clip is a pure function of clip progress, so scrubbing to a
+  time always shows the same frame.
+
+### Vendored UI Lab
+
+`src/lab/` holds the 190 components from lab.xevrion.dev (MIT). They keep their
+own neutral palette through `--lab-*` tokens mapped in `@theme inline`, scoped
+to `.lab-canvas`, so the lab never becomes a second design language in Cupric
+chrome. `muted` and `danger` deliberately fall through to Cupric tokens.
+Next.js APIs are shimmed in `src/lab/shims/` (no network fonts, no optimizer).
+
 ---
 
 ## 2. Component inventory & states

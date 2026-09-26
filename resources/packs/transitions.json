@@ -1,0 +1,140 @@
+{
+  "id": "transitions",
+  "name": "Transitions",
+  "description": "Every transition the Studio renderer implements, including the glass and liquid families.",
+  "version": "0.4.0",
+  "source": "Cupric Studio renderer",
+  "license": "MIT",
+  "items": [
+    {
+      "id": "none",
+      "kind": "transition",
+      "name": "Cut",
+      "description": "Hard cut — no blend at all.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "transition",
+        "core"
+      ]
+    },
+    {
+      "id": "fade",
+      "kind": "transition",
+      "name": "Fade",
+      "description": "Opacity ramp on an ease-out curve.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "transition",
+        "core"
+      ]
+    },
+    {
+      "id": "wipe-left",
+      "kind": "transition",
+      "name": "Wipe",
+      "description": "Hard edge travelling left to right.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "transition",
+        "core"
+      ]
+    },
+    {
+      "id": "zoom-in",
+      "kind": "transition",
+      "name": "Zoom",
+      "description": "Scales from 1.08 with the fade, never from 0.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "transition",
+        "core"
+      ]
+    },
+    {
+      "id": "blur",
+      "kind": "transition",
+      "name": "Blur through",
+      "description": "Focus pulls in from 18px of blur.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "transition",
+        "core"
+      ]
+    },
+    {
+      "id": "iris",
+      "kind": "transition",
+      "name": "Iris",
+      "description": "Circular reveal from the centre outwards.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "transition",
+        "core"
+      ]
+    },
+    {
+      "id": "push-up",
+      "kind": "transition",
+      "name": "Push up",
+      "description": "Slides up a third of the frame as it fades.",
+      "data": {
+        "family": "core"
+      },
+      "tags": [
+        "transition",
+        "core"
+      ]
+    },
+    {
+      "id": "glass-wipe",
+      "kind": "transition",
+      "name": "Glass wipe",
+      "description": "A refracting glass bar sweeps across and leaves the clip behind it.",
+      "data": {
+        "family": "glass"
+      },
+      "tags": [
+        "transition",
+        "glass"
+      ]
+    },
+    {
+      "id": "liquid-dissolve",
+      "kind": "transition",
+      "name": "Liquid dissolve",
+      "description": "Warping blur dissolve — the frame melts in rather than fading.",
+      "data": {
+        "family": "liquid"
+      },
+      "tags": [
+        "transition",
+        "liquid"
+      ]
+    },
+    {
+      "id": "lens-sweep",
+      "kind": "transition",
+      "name": "Lens sweep",
+      "description": "A circular lens travels across the frame, magnifying as it reveals.",
+      "data": {
+        "family": "glass"
+      },
+      "tags": [
+        "transition",
+        "glass"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
+import { getIpc } from '../lib/bridge'
 
 function isBrowserUrl(path: string) {
   return /^(blob|data|https?):/i.test(path)
@@ -18,7 +19,7 @@ export function VideoPreview({ path, poster, className }: { path?: string | null
     setError(null)
     setUrl(null)
     if (!path) return
-    const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (!ipc || isBrowserUrl(path)) {
       setUrl(path)
       return

@@ -8,6 +8,7 @@ import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
 import { Segmented } from '../components/Segmented'
 import type { RenderJob } from '../types/project'
+import { getIpc } from '../lib/bridge'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, relTime } from '../lib/utils'
 
@@ -192,14 +193,17 @@ export function Render() {
                     a.click()
                     pushToast('success', `Downloaded ${job.outputName || 'browser render'}`)
                   }
-                  else if (job.outputPath && (window as any).northframe?.ipc) {
-                    const result = await (window as any).northframe.ipc.invoke('render:copyToDownloads', job.outputPath)
-                    pushToast('success', `Copied to Downloads — ${result?.outputPath ? 'opened in Explorer' : 'ready'}`)
+                  else if (job.outputPath && getIpc()) {
+                    const result = (await getIpc()!.invoke('render:copyToDownloads', job.outputPath)) as
+                      | { ok?: boolean; outputPath?: string; error?: string }
+                      | null
+                    if (result?.error) pushToast('error', `Copy failed — ${result.error}`)
+                    else pushToast('success', `Copied to Downloads${result?.outputPath ? ` — ${result.outputPath}` : ''}`)
                   }
                   else pushToast('info', 'Finish a render before downloading')
                 }}
                 onReveal={async () => {
-                  if (job.outputPath && (window as any).northframe?.ipc) await (window as any).northframe.ipc.invoke('render:reveal', job.outputPath)
+                  if (job.outputPath && getIpc()) await getIpc()!.invoke('render:reveal', job.outputPath)
                   else if (job.outputPath?.startsWith('blob:')) window.open(job.outputPath, '_blank', 'noopener,noreferrer')
                   else pushToast('info', 'This render has no desktop output yet')
                 }}

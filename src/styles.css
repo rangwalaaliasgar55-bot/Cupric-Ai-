@@ -68,6 +68,50 @@
   --ease-spring-3: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/*
+ * Vendored UI Lab surface tokens (github.com/xevrion/ui-lab, lab.xevrion.dev).
+ * The 190 lab demos are written against `background / foreground / surface /
+ * border / marker` and a `dark:` variant. Cupric AI drives its theme from the
+ * `data-theme` attribute, so the variant is remapped here instead of relying
+ * on `prefers-color-scheme`. `muted` and `danger` deliberately fall through to
+ * the Cupric tokens above so the lab never introduces a second palette.
+ */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+:root {
+  --lab-background: #0a0a0a;
+  --lab-foreground: #ededed;
+  --lab-surface: #161616;
+  --lab-border: #262626;
+  --lab-marker: #ff6b5f;
+  --lab-focus-ring: oklch(0.95 0 0 / 0.45);
+  --lab-shadow-raised:
+    0 0 0 1px oklch(1 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.4), 0 6px 16px -6px oklch(0 0 0 / 0.6);
+  --lab-shadow-wheel: inset 0 1px 2px oklch(0 0 0 / 0.5), inset 0 0 0 1px oklch(1 0 0 / 0.04);
+}
+
+[data-theme='light'] {
+  --lab-background: #ffffff;
+  --lab-foreground: #171717;
+  --lab-surface: #f5f5f5;
+  --lab-border: #e5e5e5;
+  --lab-marker: #d93d31;
+  --lab-focus-ring: oklch(0.2 0 0 / 0.38);
+  --lab-shadow-raised:
+    0 0 0 1px oklch(0 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.06), 0 6px 16px -6px oklch(0 0 0 / 0.12);
+  --lab-shadow-wheel: inset 0 1px 2px oklch(0 0 0 / 0.08), inset 0 0 0 1px oklch(0 0 0 / 0.04);
+}
+
+@theme inline {
+  --color-background: var(--lab-background);
+  --color-foreground: var(--lab-foreground);
+  --color-surface: var(--lab-surface);
+  --color-border: var(--lab-border);
+  --color-marker: var(--lab-marker);
+  --shadow-raised: var(--lab-shadow-raised);
+  --shadow-wheel: var(--lab-shadow-wheel);
+}
+
 /* Optional light mode (default is dark). Surfaces keep the brand lime;
    `accent-text` darkens for contrast when lime is used as *text*. */
 [data-theme='light'] {
@@ -155,6 +199,27 @@
     background-color: rgb(255 255 255 / 0.18);
   }
 
+  /*
+   * Lab canvas: the surface the vendored demos live on. Scoped so the lab's
+   * neutral palette never leaks into Cupric chrome.
+   */
+  .lab-canvas {
+    background: var(--lab-background);
+    color: var(--lab-foreground);
+  }
+  .lab-canvas :focus-visible,
+  .lab-canvas :focus-visible::after {
+    outline-color: var(--lab-focus-ring);
+  }
+  /* Handwritten marker face used by the next/font shim (offline-safe stack). */
+  .font-marker {
+    font-family: 'Caveat', 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive;
+  }
+  .ul-stroke {
+    stroke-dasharray: 1;
+    animation: ul-draw 700ms cubic-bezier(0.65, 0, 0.35, 1) 350ms both;
+  }
+
   /* Stage backgrounds — marketing / preview only, never app chrome */
   .stage-bg-lime-void {
     background: radial-gradient(ellipse 80% 60% at 50% 40%, rgb(200 245 66 / 0.14), transparent 70%), #0b0b10;
@@ -229,5 +294,42 @@
   }
   .nf-drift {
     animation: nf-drift 9s ease-in-out infinite;
+  }
+}
+
+/* Lab underline draw (vendored ui-lab) */
+@keyframes ul-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ul-stroke {
+    animation: none;
+  }
+}
+
+/* Ambient app backdrop (src/app-shell/AppBackdrop.tsx). Transform-only so it
+   stays on the compositor, and disabled wholesale under reduced motion. */
+@keyframes cupric-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(2%, -1.5%, 0) scale(1.04);
+  }
+  66% {
+    transform: translate3d(-1.5%, 2%, 0) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*='cupric-drift'],
+  .\[animation\:cupric-drift_46s_ease-in-out_infinite\] {
+    animation: none !important;
   }
 }

@@ -9,6 +9,7 @@ import type { LibraryItem } from '../types/project'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { EFFECTS } from '../lib/effects'
 import { GRADIENT_PRESETS } from '../lib/gradients'
+import { PackBrowser } from './library/PackBrowser'
 import { copyText, relTime } from '../lib/utils'
 
 /* Built-in starter library: rundowns, arena, presets, effects, backgrounds. */
@@ -129,7 +130,6 @@ function buildResourceItems(): LibraryItem[] {
     updatedAt: now,
     gradientId: g.id,
     css: g.css,
-    className: g.className,
   }))
   return [...effects, ...backgrounds]
 }
@@ -148,6 +148,7 @@ export function Library() {
   const project = useActiveProject()
   const patchRundown = useProjectStore((s) => s.patchRundown)
   const addArenaAsset = useProjectStore((s) => s.addArenaAsset)
+  const patchStudio = useProjectStore((s) => s.patchStudio)
   const pushToast = useProjectStore((s) => s.pushToast)
 
   const [filter, setFilter] = useState<Filter>('all')
@@ -175,8 +176,14 @@ export function Library() {
       return
     }
     if (item.kind === 'background') {
-      const ok = await copyText(item.css)
-      pushToast(ok ? 'success' : 'info', ok ? `Background CSS “${item.name}” copied` : 'Could not copy CSS')
+      if (project) {
+        // Backgrounds are real Studio presets, so apply instead of just copying.
+        patchStudio(project.id, { backgroundId: item.gradientId })
+        pushToast('success', `“${item.name}” set as the Studio background for “${project.name}”`)
+      } else {
+        const ok = await copyText(item.css)
+        pushToast(ok ? 'success' : 'info', ok ? `Background CSS “${item.name}” copied` : 'Could not copy CSS')
+      }
       setApplied((s) => new Set(s).add(item.id))
       return
     }
@@ -221,9 +228,16 @@ export function Library() {
         <div>
           <h1 className="text-lg font-bold">Library</h1>
           <p className="text-sm text-muted">
-            Rundowns, Arena assets, brand presets, local effects and stage backgrounds — resources for better video
-            generation on-platform.
+            Glass materials, transitions, animations, gradients, effects and voice commands — fetched from the Cupric
+            repository and addable straight to the Studio. Rundowns and brand presets live below.
           </p>
+        </div>
+
+        <PackBrowser />
+
+        <div className="border-t border-line pt-5">
+          <h2 className="text-sm font-semibold">Project starters</h2>
+          <p className="text-xs text-muted">Rundowns, Arena prompts and brand presets that seed a project.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -290,7 +304,15 @@ function LibraryCard({ item, used, onUse }: { item: LibraryItem; used: boolean; 
       </div>
 
       {item.kind === 'background' && (
-        <div className={`h-16 w-full rounded-lg border border-line ${item.className}`} aria-hidden />
+        <div
+          className="h-16 w-full rounded-lg border border-line"
+          aria-hidden
+          ref={(node) => {
+            // The preset ships raw CSS (the same string the Studio paints and
+            // the copy button hands over), so it is applied directly.
+            if (node) node.setAttribute('style', item.css)
+          }}
+        />
       )}
 
       <div>

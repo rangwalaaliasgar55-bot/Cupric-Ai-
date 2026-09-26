@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, Copy, ExternalLink, FileCode2, Loader2, Lock, Play, Swords, Upload } from 'lucide-react'
+import { Check, Clapperboard, Copy, ExternalLink, FileCode2, Loader2, Lock, Play, Swords, Upload } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
@@ -12,8 +12,10 @@ import { MotionCompositionPlayer } from '../components/MotionCompositionPlayer'
 import { ProgressBar } from '../components/ProgressBar'
 import type { ArenaAsset, Project } from '../types/project'
 import { importArenaZip } from '../lib/arena'
+import { arenaToStudioClip } from '../lib/studio/handoff'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { copyText, cx, deriveAspect, gradientFor, relTime } from '../lib/utils'
+import { getIpc, getBridge } from '../lib/bridge'
 
 const STATUS_TONE = {
   'prompt-ready': 'neutral',
@@ -26,6 +28,7 @@ export function ArenaDesk() {
   const project = useActiveProject()
   const addArenaAsset = useProjectStore((s) => s.addArenaAsset)
   const startRender = useProjectStore((s) => s.startRender)
+  const addStudioClip = useProjectStore((s) => s.addStudioClip)
   const pushToast = useProjectStore((s) => s.pushToast)
   const setView = useProjectStore((s) => s.setView)
 
@@ -57,7 +60,7 @@ export function ArenaDesk() {
   async function openArenaBuilder() {
     const prompt = locked?.arenaPrompt || ''
     try {
-      const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+      const ipc = getIpc()
       if (ipc) await ipc.invoke('arena:openBuilder', { prompt, source: 'arena-desk' })
       else {
         await copyText(prompt)
@@ -249,6 +252,15 @@ export function ArenaDesk() {
                 asset={a}
                 onPreview={() => setPreview(a)}
                 onBrowse={() => fileRef.current?.click()}
+                onSendToStudio={() => {
+                  try {
+                    addStudioClip(project.id, arenaToStudioClip(project, a))
+                    pushToast('success', `${a.name} added to the Studio timeline`)
+                    setView('studio')
+                  } catch (err) {
+                    pushToast('error', err instanceof Error ? err.message : 'Could not send that asset to the Studio')
+                  }
+                }}
                 onRender={() => {
                   startRender(project.id, {
                     aspect: deriveAspect(locked.size),
@@ -317,11 +329,13 @@ function ArenaCard({
   onPreview,
   onBrowse,
   onRender,
+  onSendToStudio,
 }: {
   asset: ArenaAsset
   onPreview: () => void
   onBrowse: () => void
   onRender: () => void
+  onSendToStudio: () => void
 }) {
   const [copied, setCopied] = useState(false)
 
@@ -375,6 +389,15 @@ function ArenaCard({
               <Button size="sm" variant="primary" onClick={onRender} disabled={!asset.localPath}>
                 {asset.localPath ? 'Render video' : 'Import file first'}
               </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onSendToStudio}
+                disabled={!asset.thumbnailDataUrl}
+                title={asset.thumbnailDataUrl ? 'Add the captured frame to the Studio timeline' : 'Preview it once so a frame can be captured'}
+              >
+                <Clapperboard size={13} /> Send to Studio
+              </Button>
             </>
           )}
         </div>
@@ -403,7 +426,7 @@ function PreviewModal({
     let alive = true
     setPreviewUrl(null)
     const localPath = asset?.localPath
-    const bridge = (window as any).cupric || (window as any).northframe
+    const bridge = getBridge()
     if (!localPath) return
     if (/^(blob|data|https?):/i.test(localPath) || !bridge?.ipc) {
       setPreviewUrl(localPath)

@@ -2,16 +2,17 @@ import { useState } from 'react'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { ProgressBar } from '../components/ProgressBar'
+import { getIpc } from '../lib/bridge'
 import { useProjectStore } from '../state/useProjectStore'
 import type { AutomationMode, VotingMode } from '../types/project'
 
 function openOutput(outputPath?: string | null) {
-  const ipc = (window as any).northframe?.ipc
+  const ipc = getIpc()
   if (ipc && outputPath) void ipc.invoke('automation:openOutput', { outputPath })
 }
 
 function openArenaForJob(jobId: string) {
-  const ipc = (window as any).northframe?.ipc
+  const ipc = getIpc()
   if (ipc) void ipc.invoke('automation:openArena', { jobId })
   else window.open('https://arena.ai/code', '_blank', 'noopener,noreferrer')
 }
@@ -32,7 +33,7 @@ export function Autonomous() {
   const [footageFolder, setFootageFolder] = useState<string | null>(null)
   const [outputFolder, setOutputFolder] = useState<string | null>(null)
   const pickFolder = async (setter: (v: string | null) => void) => {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = getIpc()
     if (ipc) setter(await ipc.invoke('dialog:pickFolder'))
   }
   const job = jobs[0]

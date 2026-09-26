@@ -1,0 +1,56 @@
+{
+  "version": "0.4.0",
+  "updated": "2026-09-26",
+  "repo": "rangwalaaliasgar55-bot/Cupric-Ai-",
+  "packs": [
+    {
+      "id": "glass",
+      "name": "Liquid Glass",
+      "description": "Refracting glass materials for the app chrome and for the Studio canvas. One parameter set drives the DOM (backdrop-filter + SVG displacement) and the exported video (canvas).",
+      "itemCount": 6,
+      "bytes": 3464
+    },
+    {
+      "id": "transitions",
+      "name": "Transitions",
+      "description": "Every transition the Studio renderer implements, including the glass and liquid families.",
+      "itemCount": 10,
+      "bytes": 2981
+    },
+    {
+      "id": "animations",
+      "name": "Text animations",
+      "description": "Caption and title animations, all pure functions of clip progress so preview and export match.",
+      "itemCount": 9,
+      "bytes": 2681
+    },
+    {
+      "id": "backgrounds",
+      "name": "Backgrounds & gradients",
+      "description": "Studio stage backgrounds — gradients, mesh gradients and patterns — with the CSS twin used by the app and by Arena HTML.",
+      "itemCount": 34,
+      "bytes": 16650
+    },
+    {
+      "id": "effects",
+      "name": "Effects",
+      "description": "Effect cues shared by the Arena prompt builder and the local renderer.",
+      "itemCount": 10,
+      "bytes": 4336
+    },
+    {
+      "id": "voice",
+      "name": "Voice commands",
+      "description": "The Studio voice grammar. Each entry is a phrase the parser in src/lib/voice.ts accepts.",
+      "itemCount": 13,
+      "bytes": 2716
+    },
+    {
+      "id": "components",
+      "name": "Lab components",
+      "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
+      "itemCount": 190,
+      "bytes": 63695
+    }
+  ]
+}

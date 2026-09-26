@@ -28,7 +28,7 @@ export function TopBar() {
   }, [projects])
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-line bg-panel px-4">
+    <header className="flex h-14 shrink-0 items-center gap-4 border-b border-line bg-panel/75 px-4 backdrop-blur-xl">
       {active ? (
         <input
           key={active.id}

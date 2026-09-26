@@ -1,4 +1,4 @@
-import { GanttChart, Home, Film, Library as LibraryIcon, MessagesSquare, Rocket, Swords, Bot, Video } from 'lucide-react'
+import { GanttChart, Home, Film, FlaskConical, Library as LibraryIcon, MessagesSquare, Rocket, Scissors, Swords, Bot, Video } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { View } from '../types/project'
@@ -21,7 +21,9 @@ const NAV: NavItem[] = [
   { view: 'brief', label: 'Brief', icon: MessagesSquare, needProject: true },
   { view: 'arena', label: 'Arena Desk', icon: Swords, needProject: true, needLock: true },
   { view: 'footage', label: 'Footage Desk', icon: Film, needProject: true },
+  { view: 'studio', label: 'Studio', icon: Scissors, needProject: true },
   { view: 'timeline', label: 'Timeline', icon: GanttChart, needProject: true },
+  { view: 'lab', label: 'UI Lab', icon: FlaskConical },
   { view: 'render', label: 'Render', icon: Rocket, needProject: true },
   { view: 'library', label: 'Library', icon: LibraryIcon },
 ]
@@ -38,7 +40,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="flex h-full w-16 shrink-0 flex-col items-center border-r border-line bg-panel py-3">
+    <aside className="relative z-10 flex h-full w-16 shrink-0 flex-col items-center border-r border-line bg-panel/80 py-3 backdrop-blur-xl">
       <img src={logoUrl} alt="Cupric AI" className="mb-4 h-8 w-8 rounded-lg" />
 
       <nav aria-label="Primary" className="flex flex-col items-center gap-1">
@@ -81,7 +83,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto font-mono text-xs text-muted/50">v0.2.3</div>
+      <div className="mt-auto font-mono text-xs text-muted/50">v0.3.0</div>
     </aside>
   )
 }

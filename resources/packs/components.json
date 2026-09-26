@@ -1,0 +1,2670 @@
+{
+  "id": "components",
+  "name": "Lab components",
+  "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
+  "version": "0.4.0",
+  "source": "https://lab.xevrion.dev/lab/",
+  "license": "MIT (upstream)",
+  "items": [
+    {
+      "id": "odometer",
+      "kind": "component",
+      "name": "Odometer",
+      "description": "Rolls forward like a mechanical counter and wraps from 999 back to 000.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "hold-to-delete",
+      "kind": "component",
+      "name": "Hold to delete",
+      "description": "Fills slowly while you commit to it, snaps back the moment you let go.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "segmented-control",
+      "kind": "component",
+      "name": "Segmented control",
+      "description": "The pill stretches toward your pick like an inchworm, recoloring each label as its edge crosses.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "tilt-card",
+      "kind": "component",
+      "name": "Tilt card",
+      "description": "Leans toward your cursor with a glare that follows the light.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "dock",
+      "kind": "component",
+      "name": "Dock",
+      "description": "Icons swell as your cursor nears them, and launch with a macOS-style bounce.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "sheet",
+      "kind": "component",
+      "name": "Sheet",
+      "description": "Drag it down or flick it away; pull it up and it pushes back.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "toast-stack",
+      "kind": "component",
+      "name": "Toast stack",
+      "description": "Stacks with depth, fans out on hover, and each toast's edge drains as its timer.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "elastic-slider",
+      "kind": "component",
+      "name": "Elastic slider",
+      "description": "Stretches like rubber when you drag past the end, then springs back.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "magnetic-button",
+      "kind": "component",
+      "name": "Magnetic button",
+      "description": "Stretches toward your cursor like soft rubber on a magnet, then wobbles home.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "text-scramble",
+      "kind": "component",
+      "name": "Text scramble",
+      "description": "Hover a word and a block cursor reads it in, one letter at a time.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "swipe-deck",
+      "kind": "component",
+      "name": "Swipe deck",
+      "description": "Fling a card away and the rest of the deck steps forward.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "scroll-reveal",
+      "kind": "component",
+      "name": "Scroll reveal",
+      "description": "Words light up one by one as you scroll through them.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "copy-button",
+      "kind": "component",
+      "name": "Copy button",
+      "description": "The two pages merge into one before a check draws itself in.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "expanding-search",
+      "kind": "component",
+      "name": "Expanding search",
+      "description": "Opens from a circle into a search field, and closes faster than it opens.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "accordion",
+      "kind": "component",
+      "name": "Accordion",
+      "description": "Answers unfold from under their question like a folded flap, and the row you clicked never moves.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "expanding-card",
+      "kind": "component",
+      "name": "Expanding card",
+      "description": "Grows from its slot into a detail view and folds back when you are done.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "otp-input",
+      "kind": "component",
+      "name": "OTP input",
+      "description": "Six slots mirror one real input, so paste and SMS autofill just work.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "toggle-switch",
+      "kind": "component",
+      "name": "Toggle switch",
+      "description": "Leans into the move when pressed, then springs across and squashes on landing.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "command-palette",
+      "kind": "component",
+      "name": "Command palette",
+      "description": "Opens on ⌘K and filters commands as you type.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "marquee",
+      "kind": "component",
+      "name": "Marquee",
+      "description": "Drifts endlessly past a reading lens, and brakes gently when you hover.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "reorder-list",
+      "kind": "component",
+      "name": "Reorder list",
+      "description": "Picks rows up by the handle and slides the rest out of the way.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "compare-slider",
+      "kind": "component",
+      "name": "Compare slider",
+      "description": "Drag the line to see what polish actually changes.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "multi-step-form",
+      "kind": "component",
+      "name": "Multi-step form",
+      "description": "Slides between steps while the card grows around each one.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "upload-button",
+      "kind": "component",
+      "name": "Upload button",
+      "description": "Shrinks into a progress ring, fills, then checks off.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "tooltip-group",
+      "kind": "component",
+      "name": "Tooltip group",
+      "description": "One tooltip slides from button to button and reshapes around each label.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "dropdown-menu",
+      "kind": "component",
+      "name": "Dropdown menu",
+      "description": "Grows out of its trigger, and press, drag, release picks an item like a native menu.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "dynamic-island",
+      "kind": "component",
+      "name": "Dynamic island",
+      "description": "Morphs between live states with a springy, Apple-style bounce.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "scrub-input",
+      "kind": "component",
+      "name": "Scrub input",
+      "description": "Drag the label and a tape measure runs under the needle, or just type.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "star-rating",
+      "kind": "component",
+      "name": "Star rating",
+      "description": "Hover to preview, click to commit with a little pop.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "like-button",
+      "kind": "component",
+      "name": "Like button",
+      "description": "Pops, bursts and rolls the count when you like.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "sliding-tabs",
+      "kind": "component",
+      "name": "Sliding tabs",
+      "description": "An underline stretches toward the tab you pick while a soft pill follows your pointer.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "page-dots",
+      "kind": "component",
+      "name": "Page dots",
+      "description": "A pill that inches between pages like a worm and counts down to the next.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "collapsible-sidebar",
+      "kind": "component",
+      "name": "Collapsible sidebar",
+      "description": "Folds down to an icon rail, with labels that step aside before it closes.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "snap-carousel",
+      "kind": "component",
+      "name": "Snap carousel",
+      "description": "Snaps cards to center, drags with the mouse, and each card acts out its motion principle.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "skeleton-loader",
+      "kind": "component",
+      "name": "Skeleton loader",
+      "description": "Holds the exact shape of what is coming, so nothing jumps.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "context-menu",
+      "kind": "component",
+      "name": "Context menu",
+      "description": "Opens at your cursor and grows from it.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "notification-bell",
+      "kind": "component",
+      "name": "Notification bell",
+      "description": "Rings when something new arrives, and the badge rolls up with each one.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "avatar-stack",
+      "kind": "component",
+      "name": "Avatar stack",
+      "description": "Fans open when you reach for it, with a name above each face.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "morphing-button",
+      "kind": "component",
+      "name": "Morphing button",
+      "description": "Shrinks into a spinner while it saves, then answers with a check or a shake.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "kanban-board",
+      "kind": "component",
+      "name": "Kanban board",
+      "description": "Lift a card and the others slide aside to make room for it.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "color-swatches",
+      "kind": "component",
+      "name": "Color swatches",
+      "description": "The ring glides to the color you pick and the color floods the preview from that side.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "mini-calendar",
+      "kind": "component",
+      "name": "Mini calendar",
+      "description": "Months slide past in the direction you travel.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "floating-label",
+      "kind": "component",
+      "name": "Floating label",
+      "description": "The label peels up letter by letter, and never covers what you wrote.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "password-field",
+      "kind": "component",
+      "name": "Password field",
+      "description": "Reveals the password with a wave of dots turning into letters; the meter fills as it gets stronger.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "filter-list",
+      "kind": "component",
+      "name": "Filter list",
+      "description": "Rows fade out of the way while the rest slide up to close the gap.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "gauge",
+      "kind": "component",
+      "name": "Gauge",
+      "description": "Ticks light up as the value sweeps in, and a peak marker holds where it was before falling.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "sparkline",
+      "kind": "component",
+      "name": "Sparkline",
+      "description": "Draws itself in, then scrubs to the nearest point under your cursor.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "bar-chart",
+      "kind": "component",
+      "name": "Bar chart",
+      "description": "Grows its bars from the baseline and springs them between two weeks.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "stacked-drawer",
+      "kind": "component",
+      "name": "Stacked drawer",
+      "description": "Stacks iOS sheets that push the page back and drag down to dismiss.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "confetti-button",
+      "kind": "component",
+      "name": "Confetti button",
+      "description": "A click pops confetti; hold it and the fuse burns until the whole thing blows.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "typewriter",
+      "kind": "component",
+      "name": "Typewriter",
+      "description": "Types, pauses and rewrites the last word with a human rhythm.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "tag-input",
+      "kind": "component",
+      "name": "Tag input",
+      "description": "Your typed words stay put while a chip forms around them.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "range-slider",
+      "kind": "component",
+      "name": "Range slider",
+      "description": "Two thumbs that glide, stop at each other, and show their value as you drag.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "number-stepper",
+      "kind": "component",
+      "name": "Number stepper",
+      "description": "Rolls each digit the way the count moves, and speeds up the longer you hold.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "select-menu",
+      "kind": "component",
+      "name": "Select menu",
+      "description": "Opens with your current choice sitting exactly on the button, macOS style.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "undo-toast",
+      "kind": "component",
+      "name": "Undo toast",
+      "description": "Deletes instantly and gives you five seconds to change your mind.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "file-dropzone",
+      "kind": "component",
+      "name": "File dropzone",
+      "description": "Its dashed edge marches when a file enters the window and seals solid when it is overhead.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "chat-thread",
+      "kind": "component",
+      "name": "Chat thread",
+      "description": "Replies arrive after a beat of typing, and the thread follows only if you are.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "loader-set",
+      "kind": "component",
+      "name": "Loader set",
+      "description": "Four loaders that each know how to finish: leapfrog dots, an inchworm bar, a ring that closes into a check.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "wheel-picker",
+      "kind": "component",
+      "name": "Wheel picker",
+      "description": "Spins through the hours on a curved drum, just like iOS.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "slide-to-confirm",
+      "kind": "component",
+      "name": "Slide to confirm",
+      "description": "Drag the knob all the way across to confirm.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "pull-to-refresh",
+      "kind": "component",
+      "name": "Pull to refresh",
+      "description": "Pull the feed down and new posts slide in at the top.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "hover-card",
+      "kind": "component",
+      "name": "Hover card",
+      "description": "One card travels between names as you hover them.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "tree-view",
+      "kind": "component",
+      "name": "Tree view",
+      "description": "Folders unfold in place while the selection glides to the file you pick.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "pricing-toggle",
+      "kind": "component",
+      "name": "Pricing toggle",
+      "description": "Each digit rolls to its new price on its own, and new digits grow in.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "reading-progress",
+      "kind": "component",
+      "name": "Reading progress",
+      "description": "A progress bar fills as you read while the time left counts down.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "code-block",
+      "kind": "component",
+      "name": "Code block",
+      "description": "Switch files with a sliding underline and copy with one click.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "wave-text",
+      "kind": "component",
+      "name": "Wave text",
+      "description": "Letters rise in a wave that follows your cursor.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "dot-grid",
+      "kind": "component",
+      "name": "Dot grid",
+      "description": "Dots swell and part around your cursor, and a click sends a shockwave.",
+      "data": {
+        "path": null,
+        "category": "playground"
+      },
+      "tags": [
+        "component",
+        "playground"
+      ]
+    },
+    {
+      "id": "spotlight-card",
+      "kind": "component",
+      "name": "Spotlight card",
+      "description": "The cursor is a lamp: cards catch its glow and their icons cast shadows away from it.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "story-progress",
+      "kind": "component",
+      "name": "Story progress",
+      "description": "Tap through stories, hold to pause.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "data-table",
+      "kind": "component",
+      "name": "Data table",
+      "description": "Sorts, selects and bulk-acts on rows without losing its place.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "combobox",
+      "kind": "component",
+      "name": "Combobox",
+      "description": "The person you pick flies out of the list and into the field.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "date-range-picker",
+      "kind": "component",
+      "name": "Date range picker",
+      "description": "Paints the range as you hover, then commits it on the second click.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "inline-edit",
+      "kind": "component",
+      "name": "Inline edit",
+      "description": "Edits your name and bio in place without moving a pixel.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "dialog",
+      "kind": "component",
+      "name": "Dialog",
+      "description": "Opens a modal over the page, with a confirmation that stacks on top of it.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "pagination",
+      "kind": "component",
+      "name": "Pagination",
+      "description": "Numbers roll in place like an odometer; the one you click never moves.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "announcement-banner",
+      "kind": "component",
+      "name": "Announcement banner",
+      "description": "Dismissing folds the bar away and the page slides up to fill the gap.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "shortcut-sheet",
+      "kind": "component",
+      "name": "Shortcut sheet",
+      "description": "Press ? anywhere to see every shortcut, then press one to watch it light up.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "spring-playground",
+      "kind": "component",
+      "name": "Spring playground",
+      "description": "Tune a spring and watch its overshoot and settle, plotted live.",
+      "data": {
+        "path": null,
+        "category": "playground"
+      },
+      "tags": [
+        "component",
+        "playground"
+      ]
+    },
+    {
+      "id": "easing-editor",
+      "kind": "component",
+      "name": "Easing editor",
+      "description": "Drag a cubic-bezier into shape and see it move.",
+      "data": {
+        "path": null,
+        "category": "playground"
+      },
+      "tags": [
+        "component",
+        "playground"
+      ]
+    },
+    {
+      "id": "stagger-visualizer",
+      "kind": "component",
+      "name": "Stagger visualizer",
+      "description": "Shows what per-item delay actually does to a list entrance.",
+      "data": {
+        "path": null,
+        "category": "playground"
+      },
+      "tags": [
+        "component",
+        "playground"
+      ]
+    },
+    {
+      "id": "onboarding-checklist",
+      "kind": "component",
+      "name": "Onboarding checklist",
+      "description": "A setup checklist that counts up as you go and celebrates the finish.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "flip-card",
+      "kind": "component",
+      "name": "Flip card",
+      "description": "Turns over in 3D to show what is on the back.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "icon-morph",
+      "kind": "component",
+      "name": "Icon morph",
+      "description": "Icons reshape themselves between states instead of swapping.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "sticky-stack",
+      "kind": "component",
+      "name": "Sticky stack",
+      "description": "Cards pile up and sink back as you scroll.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "infinite-canvas",
+      "kind": "component",
+      "name": "Infinite canvas",
+      "description": "Pan, pinch and zoom around a board of notes.",
+      "data": {
+        "path": null,
+        "category": "playground"
+      },
+      "tags": [
+        "component",
+        "playground"
+      ]
+    },
+    {
+      "id": "drag-select",
+      "kind": "component",
+      "name": "Drag select",
+      "description": "Draw a box across files to select them, like the desktop.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "sortable-grid",
+      "kind": "component",
+      "name": "Sortable grid",
+      "description": "Drag an app tile and the others slide out of its way.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "magnet-lines",
+      "kind": "component",
+      "name": "Magnet lines",
+      "description": "Lines turn toward your cursor like iron filings near a magnet.",
+      "data": {
+        "path": null,
+        "category": "playground"
+      },
+      "tags": [
+        "component",
+        "playground"
+      ]
+    },
+    {
+      "id": "morphing-nav",
+      "kind": "component",
+      "name": "Morphing nav",
+      "description": "One dropdown panel reshapes and slides as you move between menu items.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "color-picker",
+      "kind": "component",
+      "name": "Color picker",
+      "description": "Drag a color out of the square, then fine-tune hue and opacity.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "card-input",
+      "kind": "component",
+      "name": "Card input",
+      "description": "Formats as you type, spots the card brand, and flips to show the CVC.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "radio-cards",
+      "kind": "component",
+      "name": "Radio cards",
+      "description": "The selection ring glides to the plan you pick.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "checkbox-group",
+      "kind": "component",
+      "name": "Checkbox group",
+      "description": "Check marks draw themselves in, and Shift-click fills a range.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "progress-stepper",
+      "kind": "component",
+      "name": "Progress stepper",
+      "description": "Fills the line toward the next step and unfills it in reverse.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "promise-toast",
+      "kind": "component",
+      "name": "Promise toast",
+      "description": "One toast that morphs from saving to saved, or to an error with retry.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "confirm-popover",
+      "kind": "component",
+      "name": "Confirm popover",
+      "description": "Asks before deleting, from a popover that grows out of the button.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "activity-timeline",
+      "kind": "component",
+      "name": "Activity timeline",
+      "description": "New events slide in at the top as the line grows to meet them.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "breadcrumbs",
+      "kind": "component",
+      "name": "Breadcrumbs",
+      "description": "Folds the middle of a deep path into a menu when space runs out.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "overflow-tabs",
+      "kind": "component",
+      "name": "Overflow tabs",
+      "description": "Scrolls a long row of tabs, fading whichever edge still hides more.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "tab-bar",
+      "kind": "component",
+      "name": "Tab bar",
+      "description": "A phone tab bar whose pill slides over and fills in the icon it lands on.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "selection-toolbar",
+      "kind": "component",
+      "name": "Selection toolbar",
+      "description": "A formatting toolbar that grows out of whatever text you select.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "carousel-3d",
+      "kind": "component",
+      "name": "Carousel 3d",
+      "description": "Spin a ring of cards and flick it to land on the one you were aiming for.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "lens-reveal",
+      "kind": "component",
+      "name": "Lens reveal",
+      "description": "A lens follows your cursor and shows the specs hidden under a card.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "elastic-string",
+      "kind": "component",
+      "name": "Elastic string",
+      "description": "Pull a string and let go to watch it ring back to rest.",
+      "data": {
+        "path": null,
+        "category": "playground"
+      },
+      "tags": [
+        "component",
+        "playground"
+      ]
+    },
+    {
+      "id": "particle-text",
+      "kind": "component",
+      "name": "Particle text",
+      "description": "A word made of dots that part around your cursor and burst when clicked.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "theme-toggle",
+      "kind": "component",
+      "name": "Theme toggle",
+      "description": "A sun that folds its rays away and turns into a crescent moon.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "bookmark-button",
+      "kind": "component",
+      "name": "Bookmark button",
+      "description": "Fills from the bottom up and lands with a small squash.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "send-button",
+      "kind": "component",
+      "name": "Send button",
+      "description": "The plane takes off along a curve, and a check lands in its place.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "download-button",
+      "kind": "component",
+      "name": "Download button",
+      "description": "The arrow drops into the tray while the button fills with progress.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "contribution-heatmap",
+      "kind": "component",
+      "name": "Contribution heatmap",
+      "description": "A year of activity at a glance, sweeping in week by week.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "donut-chart",
+      "kind": "component",
+      "name": "Donut chart",
+      "description": "Draws itself in, then lifts whichever slice you point at.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "stat-counter",
+      "kind": "component",
+      "name": "Stat counter",
+      "description": "Numbers count up to their value; scrub a sparkline and the figure rolls back through its history.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "leaderboard",
+      "kind": "component",
+      "name": "Leaderboard",
+      "description": "Players glide past each other to their new ranks.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "rotary-dial",
+      "kind": "component",
+      "name": "Rotary dial",
+      "description": "Drag a hole to the finger stop and each digit lands as the disc unwinds.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "tape-measure",
+      "kind": "component",
+      "name": "Tape measure",
+      "description": "Pull the blade out to measure; release the lock and it reels itself back in.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "pull-cord-switch",
+      "kind": "component",
+      "name": "Pull cord switch",
+      "description": "Pull the ball chain to switch the site's lights; light pours from the bulb as a cone.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "combination-lock",
+      "kind": "component",
+      "name": "Combination lock",
+      "description": "Spin right, left, right to fill each number, then turn the handle to open.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "rubber-stamp",
+      "kind": "component",
+      "name": "Rubber stamp",
+      "description": "Stamps a document approved or rejected, with ink that looks pressed in.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "sticky-note-peel",
+      "kind": "component",
+      "name": "Sticky note peel",
+      "description": "Peel the top reminder off by its corner to mark it done.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "receipt-printer",
+      "kind": "component",
+      "name": "Receipt printer",
+      "description": "Feeds a receipt out of the slot line by line; twist it against the cutter to tear it off.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "tear-off-calendar",
+      "kind": "component",
+      "name": "Tear off calendar",
+      "description": "Tear a day off to move forward, pull one back to go back.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "balance-scale",
+      "kind": "component",
+      "name": "Balance scale",
+      "description": "Weighs your pros against your cons on a balance that tips and slowly settles.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "tally-counter",
+      "kind": "component",
+      "name": "Tally counter",
+      "description": "Counts in hand-drawn tally marks, one pen stroke at a time.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "ink-well",
+      "kind": "component",
+      "name": "Ink well",
+      "description": "Drains a glass inkwell as you spend your character limit.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "typing-seismograph",
+      "kind": "component",
+      "name": "Typing seismograph",
+      "description": "Records the rhythm of your typing on a scrolling seismograph.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "envelope-send",
+      "kind": "component",
+      "name": "Envelope send",
+      "description": "Folds your note into an envelope, seals it and sends it off.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "paper-shredder",
+      "kind": "component",
+      "name": "Paper shredder",
+      "description": "Drag a file into the shredder and it comes out in strips.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "tip-jar",
+      "kind": "component",
+      "name": "Tip jar",
+      "description": "Coins drop into a glass jar and pile up as the total counts.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "zipper-reveal",
+      "kind": "component",
+      "name": "Zipper reveal",
+      "description": "Unzip the pouch to reveal the code inside.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "cassette-scrubber",
+      "kind": "component",
+      "name": "Cassette scrubber",
+      "description": "Scrub audio by dragging the tape, with reels that spin like the real thing.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "bubble-wrap",
+      "kind": "component",
+      "name": "Bubble wrap",
+      "description": "Pop every bubble to clear the list, one click or one long swipe.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "sundial-picker",
+      "kind": "component",
+      "name": "Sundial picker",
+      "description": "Pick a time by dragging the sun across the sky.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "folded-map",
+      "kind": "component",
+      "name": "Folded map",
+      "description": "An itinerary that unfolds panel by panel like a paper road map, recentring as it opens.",
+      "data": {
+        "path": null,
+        "category": "objects"
+      },
+      "tags": [
+        "component",
+        "objects"
+      ]
+    },
+    {
+      "id": "scroll-spine",
+      "kind": "component",
+      "name": "Scroll spine",
+      "description": "Maps the article as a spine of bands, each as long as its section, filling in as you read.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "availability-badge",
+      "kind": "component",
+      "name": "Availability badge",
+      "description": "Shows when the owner is working, and when that overlaps with your day.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "sidenotes",
+      "kind": "component",
+      "name": "Sidenotes",
+      "description": "Slides footnotes into the margin beside their sentence, and folds them inline on narrow screens.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "footer-signature",
+      "kind": "component",
+      "name": "Footer signature",
+      "description": "Signs the footer by hand when it scrolls into view, slowing through every loop.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "changelog-stack",
+      "kind": "component",
+      "name": "Changelog stack",
+      "description": "Files each release card behind the stack like a hand riffling index cards.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "pricing-calculator",
+      "kind": "component",
+      "name": "Pricing calculator",
+      "description": "Itemizes your bill like an invoice and upgrades the plan the moment your team crosses a seat threshold.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "feature-spotlight",
+      "kind": "component",
+      "name": "Feature spotlight",
+      "description": "A camera zooms into the part of the product screenshot each feature describes as you scroll past it.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "testimonial-highlight",
+      "kind": "component",
+      "name": "Testimonial highlight",
+      "description": "Swipes a highlighter across the line that sold the customer, one line at a time.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "waitlist-join",
+      "kind": "component",
+      "name": "Waitlist join",
+      "description": "Drops your face into a real queue and rolls out your place in line.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "cookie-consent",
+      "kind": "component",
+      "name": "Cookie consent",
+      "description": "Bakes a bite back into the cookie for every category you allow.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "email-typo-fix",
+      "kind": "component",
+      "name": "Email typo fix",
+      "description": "Catches gmial.com and fixes it by moving only the letters that were wrong.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "coupon-code",
+      "kind": "component",
+      "name": "Coupon code",
+      "description": "Stamps your promo code onto the order and strikes out the price it beat.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "code-morph",
+      "kind": "component",
+      "name": "Code morph",
+      "description": "Glides every surviving token to its new spot as a tutorial moves to the next step.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "image-hotspots",
+      "kind": "component",
+      "name": "Image hotspots",
+      "description": "Draws a leader line to one label card that travels between a watch's features, never covering the product.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "quote-share",
+      "kind": "component",
+      "name": "Quote share",
+      "description": "Lifts the words you select out of the paragraph and into a shareable quote card.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "waveform-player",
+      "kind": "component",
+      "name": "Waveform player",
+      "description": "Inks in a podcast's waveform, with chapter markers and a ghost playhead.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "size-picker",
+      "kind": "component",
+      "name": "Size picker",
+      "description": "Pulls a tee over a body outline so you see the fit before you pick the size.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "order-tracker",
+      "kind": "component",
+      "name": "Order tracker",
+      "description": "Drives a parcel across a street map to your door and stamps each stop as it arrives.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "gift-wrap",
+      "kind": "component",
+      "name": "Gift wrap",
+      "description": "Folds kraft paper over the cart item, ties a ribbon and bow, and asks who it's for.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "store-hours",
+      "kind": "component",
+      "name": "Store hours",
+      "description": "Draws the week's hours on a 24-hour scale and can redraw them in your own time zone.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "word-rotator",
+      "kind": "component",
+      "name": "Word rotator",
+      "description": "Keeps the letters two words share and glides them into place as the rest trade out.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "keycap-hint",
+      "kind": "component",
+      "name": "Keycap hint",
+      "description": "Keycaps that sink when you press the real keys.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "caps-lock-warning",
+      "kind": "component",
+      "name": "Caps lock warning",
+      "description": "A small caps lock key with its light on slides into the field when caps is on.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "eye-toggle",
+      "kind": "component",
+      "name": "Eye toggle",
+      "description": "The eye shuts when your password is hidden and watches while you type.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "relative-time",
+      "kind": "component",
+      "name": "Relative time",
+      "description": "Says \"4 min ago\" and changes only at the moment the words would change.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "copy-email",
+      "kind": "component",
+      "name": "Copy email",
+      "description": "Click the address and its letters flip, one by one, into \"Copied to clipboard\".",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "directional-underline",
+      "kind": "component",
+      "name": "Directional underline",
+      "description": "The underline comes in from the side your cursor entered and leaves toward the side it left.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "hover-preview-link",
+      "kind": "component",
+      "name": "Hover preview link",
+      "description": "Hover a link to get a preview card that trails your cursor and leans as it moves.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "scribble-checkbox",
+      "kind": "component",
+      "name": "Scribble checkbox",
+      "description": "Checks itself off with a quick pen stroke and strikes the words through.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "focus-paragraph",
+      "kind": "component",
+      "name": "Focus paragraph",
+      "description": "Brings the sentence you're reading forward and lets the rest step back.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "text-progress",
+      "kind": "component",
+      "name": "Text progress",
+      "description": "Fills the label itself with ink as the upload runs.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "spoiler-text",
+      "kind": "component",
+      "name": "Spoiler text",
+      "description": "Hides a spoiler under shimmering grain that blows away from your click.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "badge-counter",
+      "kind": "component",
+      "name": "Badge counter",
+      "description": "Rolls its digits the way the count moved and bumps each time it changes.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "star-button",
+      "kind": "component",
+      "name": "Star button",
+      "description": "Spins once and throws off tiny sparks when starred, then rolls the count.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "follow-button",
+      "kind": "component",
+      "name": "Follow button",
+      "description": "Turns its plus into a check as you follow, and warns before you unfollow.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "live-indicator",
+      "kind": "component",
+      "name": "Live indicator",
+      "description": "Breathes while live, lets the viewer count drift, and blinks hollow while reconnecting.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "mini-clock",
+      "kind": "component",
+      "name": "Mini clock",
+      "description": "A tiny analog clock that sweeps in its city's time and turns dark after sundown.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "pixel-loader",
+      "kind": "component",
+      "name": "Pixel loader",
+      "description": "A tiny pixel grid that cycles spiral, snake, pulse and checker, then draws a check when done.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "greeting",
+      "kind": "component",
+      "name": "Greeting",
+      "description": "Greets by time of day, with a sun or moon that rises into place along an arc.",
+      "data": {
+        "path": null,
+        "category": "text"
+      },
+      "tags": [
+        "component",
+        "text"
+      ]
+    },
+    {
+      "id": "arrow-callout",
+      "kind": "component",
+      "name": "Arrow callout",
+      "description": "A handwritten note whose arrow draws itself to whatever it points at.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "voice-orb",
+      "kind": "component",
+      "name": "Voice orb",
+      "description": "A glassy orb of drifting mist that listens to your real mic, thinks in a slow swirl and breathes as it speaks.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "call-widget",
+      "kind": "component",
+      "name": "Call widget",
+      "description": "Accept turns into hang-up as the call controls unfold out of it, one by one.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "logo-orbit",
+      "kind": "component",
+      "name": "Logo orbit",
+      "description": "Logos orbit a heading on tilted rings, passing behind it, and brake to a stop when you point.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "now-playing",
+      "kind": "component",
+      "name": "Now playing",
+      "description": "A listening-to pill whose record slides out from behind the cover and spins while it plays.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "uptime-bar",
+      "kind": "component",
+      "name": "Uptime bar",
+      "description": "Point at any day and the row's own caption tells you what happened.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "helpful-prompt",
+      "kind": "component",
+      "name": "Helpful prompt",
+      "description": "Asks if the page helped, and on a no opens into a field right where the question was.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "back-to-top",
+      "kind": "component",
+      "name": "Back to top",
+      "description": "Fills its ring as you read, and when you press it the arrow lifts off while the page glides back up.",
+      "data": {
+        "path": null,
+        "category": "navigation"
+      },
+      "tags": [
+        "component",
+        "navigation"
+      ]
+    },
+    {
+      "id": "share-button",
+      "kind": "component",
+      "name": "Share button",
+      "description": "Opens in place into copy, X and email, and the link turns into a check when it is copied.",
+      "data": {
+        "path": null,
+        "category": "buttons"
+      },
+      "tags": [
+        "component",
+        "buttons"
+      ]
+    },
+    {
+      "id": "autosave-status",
+      "kind": "component",
+      "name": "Autosave status",
+      "description": "A dot for unsaved changes splits into three while saving, then gathers into a check.",
+      "data": {
+        "path": null,
+        "category": "feedback"
+      },
+      "tags": [
+        "component",
+        "feedback"
+      ]
+    },
+    {
+      "id": "reactions",
+      "kind": "component",
+      "name": "Reactions",
+      "description": "Tap a reaction to add yours, or pick one and watch it fly into its pill as the count rolls.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "shortcut-recorder",
+      "kind": "component",
+      "name": "Shortcut recorder",
+      "description": "Press keys to set a shortcut: keycaps appear as you hold them, and it tells you when a combo is taken.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "storage-meter",
+      "kind": "component",
+      "name": "Storage meter",
+      "description": "Point at any slice to read its size, then clear the cache and watch the total count down.",
+      "data": {
+        "path": null,
+        "category": "data"
+      },
+      "tags": [
+        "component",
+        "data"
+      ]
+    },
+    {
+      "id": "status-picker",
+      "kind": "component",
+      "name": "Status picker",
+      "description": "Pick a status and the badge on your avatar turns into its shape: a dot, a moon, a stop sign or a ring.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "mood-slider",
+      "kind": "component",
+      "name": "Mood slider",
+      "description": "The thumb is a face that frowns, grins and leans into the drag as you rate your day.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    },
+    {
+      "id": "signature-pad",
+      "kind": "component",
+      "name": "Signature pad",
+      "description": "Ink that swells where you slow down, and wipes away the way you wrote it.",
+      "data": {
+        "path": null,
+        "category": "inputs"
+      },
+      "tags": [
+        "component",
+        "inputs"
+      ]
+    }
+  ]
+}

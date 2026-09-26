@@ -5,6 +5,7 @@
  */
 
 import { analyzeFootageFileInBrowser, importArenaFileInBrowser } from './browserMedia'
+import { getIpc, getBridge } from './bridge'
 
 type ArenaImportResult = { htmlFileName: string; thumbnailDataUrl?: string | null; localPath?: string | null }
 type FootageAnalyzeResult = {
@@ -17,7 +18,7 @@ type FootageAnalyzeResult = {
 
 function desktopFilePath(file: File | null): string | null {
   if (!file) return null
-  const bridge = (window as any).cupric || (window as any).northframe
+  const bridge = getBridge()
   return bridge?.filePathFor?.(file) || ((file as any).path as string | undefined) || null
 }
 
@@ -26,7 +27,7 @@ export async function importArenaZip(
   projectId: string,
   onProgress: (pct: number) => void,
 ): Promise<ArenaImportResult> {
-  const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+  const ipc = getIpc()
   if (!ipc) return importArenaFileInBrowser(file, onProgress)
 
   onProgress(10)
@@ -53,7 +54,7 @@ export async function uploadFootage(
   projectId: string,
   onProgress: (pct: number) => void,
 ): Promise<FootageAnalyzeResult> {
-  const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+  const ipc = getIpc()
   if (!ipc) return analyzeFootageFileInBrowser(file, onProgress)
 
   const srcPath = desktopFilePath(file)

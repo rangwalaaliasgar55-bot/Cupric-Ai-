@@ -1,0 +1,127 @@
+{
+  "id": "voice",
+  "name": "Voice commands",
+  "description": "The Studio voice grammar. Each entry is a phrase the parser in src/lib/voice.ts accepts.",
+  "version": "0.4.0",
+  "source": "Cupric voice parser (Web Speech API)",
+  "license": "MIT",
+  "items": [
+    {
+      "id": "voice-0",
+      "kind": "voice",
+      "name": "\"play\" / \"pause\" / \"stop\"",
+      "description": "Transport control",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-1",
+      "kind": "voice",
+      "name": "\"go to start\" / \"go to end\"",
+      "description": "Jump the playhead",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-2",
+      "kind": "voice",
+      "name": "\"go to 12 seconds\"",
+      "description": "Seek to a time",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-3",
+      "kind": "voice",
+      "name": "\"forward 5\" / \"back 2\"",
+      "description": "Nudge the playhead",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-4",
+      "kind": "voice",
+      "name": "\"split\" / \"cut here\"",
+      "description": "Split the selected clip at the playhead",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-5",
+      "kind": "voice",
+      "name": "\"delete\" / \"duplicate\"",
+      "description": "Edit the selected clip",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-6",
+      "kind": "voice",
+      "name": "\"add text hello world\"",
+      "description": "New caption with that wording",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-7",
+      "kind": "voice",
+      "name": "\"add background aurora\"",
+      "description": "New background clip, matched by name",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-8",
+      "kind": "voice",
+      "name": "\"add glass lens\"",
+      "description": "New glass panel/lens clip",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-9",
+      "kind": "voice",
+      "name": "\"transition fade\"",
+      "description": "Set the selected clip’s in-transition",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-10",
+      "kind": "voice",
+      "name": "\"zoom in\" / \"zoom out\"",
+      "description": "Timeline zoom",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-11",
+      "kind": "voice",
+      "name": "\"mute\" / \"unmute\"",
+      "description": "Preview audio",
+      "tags": [
+        "voice"
+      ]
+    },
+    {
+      "id": "voice-12",
+      "kind": "voice",
+      "name": "\"export\"",
+      "description": "Start the export",
+      "tags": [
+        "voice"
+      ]
+    }
+  ]
+}
