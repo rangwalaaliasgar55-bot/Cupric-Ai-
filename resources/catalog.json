@@ -3,6 +3,13 @@
   "updated": "2026-09-26",
   "packs": [
     {
+      "id": "saas-video",
+      "path": "resources/saas",
+      "entries": "templates.json",
+      "use": ["product-launch", "feature-demo", "testimonials", "pricing", "changelog", "onboarding"],
+      "code": "src/screens/library/PackBrowser.tsx"
+    },
+    {
       "id": "external-ui",
       "path": "resources/external",
       "entries": "catalog.json",

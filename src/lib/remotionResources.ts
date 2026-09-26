@@ -21,6 +21,7 @@ export type RemotionPlan = {
 }
 
 const templateRules: Array<[RegExp, string]> = [
+  [/saas|startup|product launch|feature|pricing|changelog|onboarding/i, 'saas-video'],
   [/audio|podcast|voice|music/i, 'audiogram'],
   [/code|developer|programming|software/i, 'code-hike'],
   [/tiktok|reel|short|vertical/i, 'tiktok'],

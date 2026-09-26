@@ -158,6 +158,29 @@ packs.push({
   })),
 })
 
+// SaaS blueprints are first-class editable Studio storyboards.
+try {
+  const saas = JSON.parse(await readFile(path.join(root, 'resources', 'saas', 'templates.json'), 'utf8'))
+  packs.push({
+    id: 'saas-video',
+    name: 'SaaS video templates',
+    description: saas.description,
+    version: VERSION,
+    source: 'Cupric authored templates',
+    license: 'MIT (Cupric authored blueprint)',
+    items: saas.templates.map((template) => ({
+      id: template.id,
+      kind: 'saas-template',
+      name: template.name,
+      description: template.goal,
+      data: { durationSec: template.durationSec, scenes: template.scenes, editable: true, agentUsable: true },
+      tags: ['saas', 'video', 'template', 'editable', 'agent'],
+    })),
+  })
+} catch {
+  console.warn('resources/saas/templates.json not readable — skipping SaaS pack')
+}
+
 // External UI sources are represented as attributed, editable capability entries.
 // We do not silently copy third-party code or assets without a compatible license.
 try {

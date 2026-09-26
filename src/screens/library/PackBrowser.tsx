@@ -51,6 +51,7 @@ const KIND_ICON = {
   icon: Sparkles,
   block: Layers,
   provider: Wand2,
+  'saas-template': Sparkles,
 } as const
 
 type Source = 'memory' | 'cache' | 'network' | 'local' | 'none'
@@ -156,6 +157,28 @@ export function PackBrowser() {
     const doc = studioOf(project)
     const at = docDuration(doc)
     const topTrack = Math.min(1, doc.trackCount - 1)
+
+    if (item.kind === 'saas-template') {
+      const data = item.data as { scenes?: [string, number, StudioTextAnim][]; editable?: boolean } | undefined
+      const scenes = data?.scenes ?? []
+      let cursor = nextFreeStart(doc, 0, 0, 1)
+      scenes.forEach(([text, duration, anim], index) => {
+        const clip = defaultTextClip(cursor, topTrack)
+        clip.text = text
+        clip.name = `${item.name} · Scene ${index + 1}`
+        clip.durationSec = Math.max(0.2, duration)
+        clip.anim = anim
+        clip.captionStyle = 'standard'
+        clip.fontSizePct = text.length > 28 ? 6.5 : 9
+        clip.highlightWord = text.split(/\s+/)[0] || null
+        addStudioClip(project.id, clip)
+        cursor += duration
+      })
+      patchStudio(project.id, { backgroundId: 'grid-haze' })
+      pushToast('success', `“${item.name}” added as ${scenes.length} editable SaaS scenes. Edit every scene on the Studio timeline.`)
+      markUsed(item)
+      return
+    }
 
     if (item.kind === 'glass') {
       const clip = defaultGlassClip(nextFreeStart(doc, topTrack, at, 3), topTrack, item.id, item.id === 'lens' ? 'lens' : 'panel')
