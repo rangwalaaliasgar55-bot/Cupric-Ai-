@@ -73,6 +73,7 @@ export function AskPanel() {
   const [hasOpenCodeKey, setHasOpenCodeKey] = useState(false)
   const [autoLaunch, setAutoLaunch] = useState(false)
   const [updateStatus, setUpdateStatus] = useState('')
+  const [updateReady, setUpdateReady] = useState(false)
   const [mediaReady, setMediaReady] = useState<boolean | null>(null)
   const [freeModels, setFreeModels] = useState<OpenCodePreset[]>(FREE_OPENCODE_PRESETS)
   const [modelSearch, setModelSearch] = useState('')
@@ -109,6 +110,7 @@ export function AskPanel() {
     if (typeof ipc.on === 'function') {
       return ipc.on('updater:status', (event: { status?: string; version?: string; message?: string }) => {
         setUpdateStatus(event?.version ? `${event.status} ${event.version}` : event?.message || event?.status || '')
+        setUpdateReady(event?.status === 'downloaded')
       })
     }
   }, [])
@@ -260,6 +262,14 @@ export function AskPanel() {
     setUpdateStatus('checking')
     const result = await ipc.invoke('updater:check')
     setUpdateStatus(result?.message || result?.status || 'checking')
+  }
+
+  async function installUpdate() {
+    const ipc = getIpc()
+    if (!ipc) return
+    setUpdateStatus('installing · Cupric AI will restart')
+    const result = await ipc.invoke('updater:install')
+    if (result?.status !== 'installing') setUpdateStatus(result?.message || result?.status || 'Update could not start')
   }
 
   async function send(textArg?: string) {
@@ -452,15 +462,26 @@ export function AskPanel() {
                 */}
               <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
                 <div className="flex items-center justify-between gap-3">
-                  <span>Updates install automatically</span>
-                  <button
-                    type="button"
-                    onClick={checkForUpdates}
-                    className="shrink-0 text-muted underline underline-offset-2 hover:text-text"
-                  >
-                    Check now
-                  </button>
+                  <span>{updateReady ? 'A new release is ready' : 'Automatic app updates'}</span>
+                  {updateReady ? (
+                    <button
+                      type="button"
+                      onClick={() => void installUpdate()}
+                      className="shrink-0 rounded-md bg-accent px-2 py-1 font-semibold text-accent-ink"
+                    >
+                      Update & restart
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => void checkForUpdates()}
+                      className="shrink-0 text-muted underline underline-offset-2 hover:text-text"
+                    >
+                      Check now
+                    </button>
+                  )}
                 </div>
+                <div className="mt-1 text-xs text-muted/70">Checks at launch and every four hours. Downloaded releases install on quit, or immediately with the button above.</div>
                 {updateStatus && <div className="mt-1 font-mono text-[11px] text-muted/70">{updateStatus}</div>}
               </div>
             </div>
