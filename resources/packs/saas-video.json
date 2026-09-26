@@ -17,22 +17,26 @@
           [
             "THE NEW WAY TO WORK",
             3,
-            "pop"
+            "pop",
+            "text"
           ],
           [
             "One workspace. Every workflow.",
             5,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "Try it free today",
             4,
-            "fade-up"
+            "fade-up",
+            "text"
           ],
           [
             "yourproduct.com",
             3,
-            "shimmer"
+            "shimmer",
+            "logo"
           ]
         ],
         "editable": true,
@@ -57,22 +61,26 @@
           [
             "NEW FEATURE",
             2.5,
-            "pop"
+            "pop",
+            "text"
           ],
           [
             "Turn busywork into momentum.",
             3.5,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "Automate the handoff in one click.",
             3.5,
-            "fade-up"
+            "fade-up",
+            "text"
           ],
           [
             "Ship faster.",
             2.5,
-            "shimmer"
+            "shimmer",
+            "text"
           ]
         ],
         "editable": true,
@@ -97,27 +105,32 @@
           [
             "See it in action",
             3,
-            "fade-up"
+            "fade-up",
+            "text"
           ],
           [
             "1. Capture the request",
             5,
-            "word-reveal"
+            "word-reveal",
+            "media"
           ],
           [
             "2. Collaborate in context",
             5,
-            "word-reveal"
+            "word-reveal",
+            "media"
           ],
           [
             "3. Deliver with confidence",
             5,
-            "word-reveal"
+            "word-reveal",
+            "media"
           ],
           [
             "Start your workflow",
             2,
-            "shimmer"
+            "shimmer",
+            "text"
           ]
         ],
         "editable": true,
@@ -142,22 +155,26 @@
           [
             "Still losing hours to busywork?",
             4,
-            "fade-up"
+            "fade-up",
+            "text"
           ],
           [
             "Meet your calm control center.",
             4,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "Less chasing. More creating.",
             4,
-            "pop"
+            "pop",
+            "text"
           ],
           [
             "Make work flow.",
             3,
-            "shimmer"
+            "shimmer",
+            "text"
           ]
         ],
         "editable": true,
@@ -182,22 +199,26 @@
           [
             "“We got our time back.”",
             5,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "— Alex, Head of Operations",
             3,
-            "fade-up"
+            "fade-up",
+            "text"
           ],
           [
             "3x faster launch cycles",
             4,
-            "pop"
+            "pop",
+            "text"
           ],
           [
             "Join teams moving forward.",
             3,
-            "shimmer"
+            "shimmer",
+            "text"
           ]
         ],
         "editable": true,
@@ -222,22 +243,26 @@
           [
             "Built for your next stage",
             3,
-            "fade-up"
+            "fade-up",
+            "text"
           ],
           [
             "Simple plans. No surprises.",
             3,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "Start free · Upgrade when ready",
             3,
-            "pop"
+            "pop",
+            "text"
           ],
           [
             "Get started",
             3,
-            "shimmer"
+            "shimmer",
+            "text"
           ]
         ],
         "editable": true,
@@ -262,27 +287,32 @@
           [
             "WHAT’S NEW · 2.4",
             3,
-            "pop"
+            "pop",
+            "text"
           ],
           [
             "Faster search",
             3,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "Smarter automations",
             3,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "A calmer daily workflow",
             3,
-            "fade-up"
+            "fade-up",
+            "text"
           ],
           [
             "Available now",
             3,
-            "shimmer"
+            "shimmer",
+            "text"
           ]
         ],
         "editable": true,
@@ -307,27 +337,32 @@
           [
             "Welcome to your new workspace",
             4,
-            "fade-up"
+            "fade-up",
+            "text"
           ],
           [
             "Create your first project",
             4,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "Invite your team",
             4,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "Make progress visible",
             3,
-            "word-reveal"
+            "word-reveal",
+            "text"
           ],
           [
             "You’re ready to go",
             3,
-            "shimmer"
+            "shimmer",
+            "text"
           ]
         ],
         "editable": true,

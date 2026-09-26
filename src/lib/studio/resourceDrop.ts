@@ -38,12 +38,13 @@ export type DropResult =
   | { ok: true; action: 'open-lab'; labSlug: string; message: string }
   | { ok: false; reason: string }
 
-export type ResourceDisposition = 'clip' | 'lab' | 'reference'
+export type ResourceDisposition = 'clip' | 'lab' | 'template' | 'reference'
 
 /** One classification drives every resource badge and drag expectation. */
 export function resourceDisposition(kind: string): ResourceDisposition {
   if (kind === 'component') return 'lab'
-  if (['glass', 'background', 'animation', 'effect', 'transition', 'saas-template'].includes(kind)) return 'clip'
+  if (kind === 'saas-template') return 'template'
+  if (['glass', 'background', 'animation', 'effect', 'transition'].includes(kind)) return 'clip'
   return 'reference'
 }
 
@@ -172,6 +173,12 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
       return {
         ok: false,
         reason: `“${payload.name}” is an HTML scene rendered by the desktop pipeline, not a canvas clip. Use it from the Render screen.`,
+      }
+
+    case 'saas-template':
+      return {
+        ok: false,
+        reason: `“${payload.name}” has editable placeholders. Open it in Library and choose “Auto-fill template” to preview and accept the timeline diff.`,
       }
 
     case 'source':

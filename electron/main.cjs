@@ -7,6 +7,7 @@ const { pathToFileURL } = require('url')
 const { spawn } = require('child_process')
 const { GoogleGenerativeAI } = require('@google/generative-ai')
 const AdmZip = require('adm-zip')
+const { approveManualArenaGate, isManualArenaGateBlocked } = require('./automation-gate.cjs')
 
 let autoUpdater
 try {
@@ -1142,7 +1143,7 @@ async function runAutomationPipeline(jobId) {
       job = patchAutomation(job.id, { candidates: candidateResult.candidates, winnerPath: candidateResult.winnerPath, warnings }) || job
       sendAutomation('automation:progress', job)
     }
-    if (job.votingMode === 'manual-arena' && !job.manualVoteApproved) {
+    if (isManualArenaGateBlocked(job)) {
       const message = 'Manual Arena review gate: Cupric opened arena.ai/code in your browser and copied the Arena prompt. Paste it there, run the battle/build, vote yourself, download the winning ZIP, then approve this gate to continue. Public voting is never automated.'
       if (!job.arenaOpenedAt) {
         try {
@@ -1158,6 +1159,9 @@ async function runAutomationPipeline(jobId) {
       return
     }
     job = finishAutomationStep(job.id, 3, job.votingMode === 'manual-arena' ? 'Manual gate approved' : 'Winner selected from the AI candidate battle') || job
+    if (job.votingMode === 'manual-arena') {
+      logLine('automation-gate-resumed', 'Manual Arena approval advanced to footage/timeline stages', { jobId: job.id, nextStep: 4 })
+    }
 
     stepIndex = 4
     job = ensureAutomationActive(job.id, state)
@@ -1235,9 +1239,11 @@ ipcMain.handle('automation:resume', (_e, p) => {
 })
 ipcMain.handle('automation:approveStep', (_e, p) => {
   const latest = automationJobs().find(j => j.id === p?.jobId)
-  const steps = latest?.steps?.map(step => step.id === p?.stepId ? { ...step, status: 'done', progressPct: 100, message: 'Approved by reviewer', completedAt: new Date().toISOString() } : step)
-  const job = patchAutomation(p?.jobId, { status: 'running', manualVoteApproved: true, waitingMessage: null, steps })
-  if (job) setTimeout(() => { void runAutomationPipeline(job.id) }, 0)
+  const approved = approveManualArenaGate(latest, p?.stepId)
+  const job = patchAutomation(p?.jobId, approved)
+  // Resume on a fresh task: approval returns to the caller immediately, while
+  // the same persisted job continues at step 4 rather than re-entering gate 3.
+  setTimeout(() => { void runAutomationPipeline(job.id) }, 0)
   return job
 })
 ipcMain.handle('automation:rejectStep', (_e, p) => {
