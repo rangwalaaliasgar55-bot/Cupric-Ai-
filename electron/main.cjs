@@ -1559,7 +1559,7 @@ OPERATIONS:
 - {"type":"reorderTrack","from":number,"to":number}
 - {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
 
-Track 0 is the bottom layer. x/y are normalized 0..1. Keyframe times are local to the clip. Prefer 2–6 precise operations. Do not return prose outside JSON.
+Track 0 is the bottom layer. x/y are normalized 0..1. Keyframe times are local to the clip. The context may include attributed motionReferences from React Bits, Skiper UI and Remotion: use their names as creative vocabulary, but translate every idea into only the native operations above. Never claim to install or execute an upstream component. Prefer 2–6 precise operations. Do not return prose outside JSON.
 
 STUDIO CONTEXT:
 ${JSON.stringify(studioContext)}

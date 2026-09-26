@@ -56,6 +56,9 @@ import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
 import { getIpc } from '../lib/bridge'
+import reactBitsCatalog from '../../resources/react-bits/catalog.json'
+import skiperCatalog from '../../resources/skiper/catalog.json'
+import remotionCatalog from '../../resources/remotion/catalog.json'
 import {
   applyStudioEditPlan,
   describeStudioEditOp,
@@ -276,6 +279,14 @@ export function Studio() {
           fps: doc.fps,
           trackCount: doc.trackCount,
           selectedId,
+          // Names only: the agent uses these attributed libraries as visual
+          // vocabulary, then translates the idea into Cupric's safe native
+          // operations. Third-party source is never sent, copied or executed.
+          motionReferences: {
+            reactBits: reactBitsCatalog.items.map((item) => item.name),
+            skiperUi: skiperCatalog.items.map((item) => item.name),
+            remotionPackages: (remotionCatalog.packages ?? []).map((item) => item.name),
+          },
           clips: doc.clips.map((clip) => ({
             id: clip.id,
             kind: clip.kind,

@@ -1,0 +1,1895 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "DavidHDev/react-bits",
+    "url": "https://github.com/DavidHDev/react-bits",
+    "ref": "main",
+    "retrieved": "2026-09-26",
+    "license": "MIT + Commons Clause v1.0",
+    "licenseUrl": "https://github.com/DavidHDev/react-bits/blob/main/LICENSE.md"
+  },
+  "policy": "Metadata links only. Commons Clause prohibits redistributing the component collection itself, including bundled or ported versions. Cupric does not vendor upstream source; users can open the attributed source and use it under its terms.",
+  "items": [
+    {
+      "id": "gradual-blur",
+      "name": "Gradual Blur",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/gradual-blur",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "blob-cursor",
+      "name": "Blob Cursor",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/blob-cursor",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "animated-content",
+      "name": "Animated Content",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/animated-content",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "magnet",
+      "name": "Magnet",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/magnet",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "fade-content",
+      "name": "Fade Content",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/fade-content",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "crosshair",
+      "name": "Crosshair",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/crosshair",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "shape-blur",
+      "name": "Shape Blur",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/shape-blur",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "star-border",
+      "name": "Star Border",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/star-border",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "noise",
+      "name": "Noise",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/noise",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "magnet-lines",
+      "name": "Magnet Lines",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/magnet-lines",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "splash-cursor",
+      "name": "Splash Cursor",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/splash-cursor",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "click-spark",
+      "name": "Click Spark",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/click-spark",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "pixel-transition",
+      "name": "Pixel Transition",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/pixel-transition",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "pixel-swap",
+      "name": "Pixel Swap",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/pixel-swap",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "image-trail",
+      "name": "Image Trail",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/image-trail",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "pixel-trail",
+      "name": "Pixel Trail",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/pixel-trail",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "ribbons",
+      "name": "Ribbons",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/ribbons",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "meta-balls",
+      "name": "Meta Balls",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/meta-balls",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "metallic-paint",
+      "name": "Metallic Paint",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/metallic-paint",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "glare-hover",
+      "name": "Glare Hover",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/glare-hover",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "cubes",
+      "name": "Cubes",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/cubes",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "target-cursor",
+      "name": "Target Cursor",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/target-cursor",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "sticker-peel",
+      "name": "Sticker Peel",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/sticker-peel",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "scroll-expand",
+      "name": "Scroll Expand",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/scroll-expand",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "masked-heading",
+      "name": "Masked Heading",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/masked-heading",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "elastic-mesh",
+      "name": "Elastic Mesh",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/elastic-mesh",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "ripple-distortion",
+      "name": "Ripple Distortion",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/ripple-distortion",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "swarm-cursor",
+      "name": "Swarm Cursor",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/swarm-cursor",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "halftone-reveal",
+      "name": "Halftone Reveal",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/halftone-reveal",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "electric-border",
+      "name": "Electric Border",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/electric-border",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "laser-flow",
+      "name": "Laser Flow",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/laser-flow",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "ghost-cursor",
+      "name": "Ghost Cursor",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/ghost-cursor",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "antigravity",
+      "name": "Antigravity",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/antigravity",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "orbit-images",
+      "name": "Orbit Images",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/orbit-images",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "magic-rings",
+      "name": "Magic Rings",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/magic-rings",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "strands",
+      "name": "Strands",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/strands",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "cursor-grid",
+      "name": "Cursor Grid",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/cursor-grid",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "glow-cursor",
+      "name": "Glow Cursor",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/glow-cursor",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "dither-veil",
+      "name": "Dither Veil",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/dither-veil",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "electric-logo",
+      "name": "Electric Logo",
+      "category": "animations",
+      "source": "https://reactbits.dev/animations/electric-logo",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "split-text",
+      "name": "Split Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/split-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "blur-text",
+      "name": "Blur Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/blur-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "shiny-text",
+      "name": "Shiny Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/shiny-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "gradient-text",
+      "name": "Gradient Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/gradient-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "count-up",
+      "name": "Count Up",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/count-up",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "decrypted-text",
+      "name": "Decrypted Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/decrypted-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "true-focus",
+      "name": "True Focus",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/true-focus",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "variable-proximity",
+      "name": "Variable Proximity",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/variable-proximity",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "text-pressure",
+      "name": "Text Pressure",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/text-pressure",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "ascii-text",
+      "name": "Ascii Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/ascii-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "falling-text",
+      "name": "Falling Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/falling-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "rotating-text",
+      "name": "Rotating Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/rotating-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "circular-text",
+      "name": "Circular Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/circular-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "scroll-velocity",
+      "name": "Scroll Velocity",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/scroll-velocity",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "scroll-reveal",
+      "name": "Scroll Reveal",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/scroll-reveal",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "scroll-float",
+      "name": "Scroll Float",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/scroll-float",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "glitch-text",
+      "name": "Glitch Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/glitch-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "fuzzy-text",
+      "name": "Fuzzy Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/fuzzy-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "text-cursor",
+      "name": "Text Cursor",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/text-cursor",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "scrambled-text",
+      "name": "Scrambled Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/scrambled-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "curved-loop",
+      "name": "Curved Loop",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/curved-loop",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "text-type",
+      "name": "Text Type",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/text-type",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "logo-loop",
+      "name": "Logo Loop",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/logo-loop",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "shuffle",
+      "name": "Shuffle",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/shuffle",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "particle-text",
+      "name": "Particle Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/particle-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "split-flap-text",
+      "name": "Split Flap Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/split-flap-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "warp-text",
+      "name": "Warp Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/warp-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "stroke-text",
+      "name": "Stroke Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/stroke-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "depth-text",
+      "name": "Depth Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/depth-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "fold-text",
+      "name": "Fold Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/fold-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "echo-text",
+      "name": "Echo Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/echo-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "text-loop",
+      "name": "Text Loop",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/text-loop",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "tech-text",
+      "name": "Tech Text",
+      "category": "text",
+      "source": "https://reactbits.dev/text-animations/tech-text",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "stack",
+      "name": "Stack",
+      "category": "component",
+      "source": "https://reactbits.dev/components/stack",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "dock",
+      "name": "Dock",
+      "category": "component",
+      "source": "https://reactbits.dev/components/dock",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "spotlight-card",
+      "name": "Spotlight Card",
+      "category": "component",
+      "source": "https://reactbits.dev/components/spotlight-card",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "border-glow",
+      "name": "Border Glow",
+      "category": "component",
+      "source": "https://reactbits.dev/components/border-glow",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "elastic-slider",
+      "name": "Elastic Slider",
+      "category": "component",
+      "source": "https://reactbits.dev/components/elastic-slider",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "decay-card",
+      "name": "Decay Card",
+      "category": "component",
+      "source": "https://reactbits.dev/components/decay-card",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "bounce-cards",
+      "name": "Bounce Cards",
+      "category": "component",
+      "source": "https://reactbits.dev/components/bounce-cards",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "pixel-card",
+      "name": "Pixel Card",
+      "category": "component",
+      "source": "https://reactbits.dev/components/pixel-card",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "tilted-card",
+      "name": "Tilted Card",
+      "category": "component",
+      "source": "https://reactbits.dev/components/tilted-card",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "infinite-spiral",
+      "name": "Infinite Spiral",
+      "category": "component",
+      "source": "https://reactbits.dev/components/infinite-spiral",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "infinite-menu",
+      "name": "Infinite Menu",
+      "category": "component",
+      "source": "https://reactbits.dev/components/infinite-menu",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "flying-posters",
+      "name": "Flying Posters",
+      "category": "component",
+      "source": "https://reactbits.dev/components/flying-posters",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "flowing-menu",
+      "name": "Flowing Menu",
+      "category": "component",
+      "source": "https://reactbits.dev/components/flowing-menu",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "depth-carousel",
+      "name": "Depth Carousel",
+      "category": "component",
+      "source": "https://reactbits.dev/components/depth-carousel",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "accordion-gallery",
+      "name": "Accordion Gallery",
+      "category": "component",
+      "source": "https://reactbits.dev/components/accordion-gallery",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "morph-slider",
+      "name": "Morph Slider",
+      "category": "component",
+      "source": "https://reactbits.dev/components/morph-slider",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "drift-wall",
+      "name": "Drift Wall",
+      "category": "component",
+      "source": "https://reactbits.dev/components/drift-wall",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "circular-gallery",
+      "name": "Circular Gallery",
+      "category": "component",
+      "source": "https://reactbits.dev/components/circular-gallery",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "stepper",
+      "name": "Stepper",
+      "category": "component",
+      "source": "https://reactbits.dev/components/stepper",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "carousel",
+      "name": "Carousel",
+      "category": "component",
+      "source": "https://reactbits.dev/components/carousel",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "counter",
+      "name": "Counter",
+      "category": "component",
+      "source": "https://reactbits.dev/components/counter",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "lanyard",
+      "name": "Lanyard",
+      "category": "component",
+      "source": "https://reactbits.dev/components/lanyard",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "glass-icons",
+      "name": "Glass Icons",
+      "category": "component",
+      "source": "https://reactbits.dev/components/glass-icons",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "animated-list",
+      "name": "Animated List",
+      "category": "component",
+      "source": "https://reactbits.dev/components/animated-list",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "folder",
+      "name": "Folder",
+      "category": "component",
+      "source": "https://reactbits.dev/components/folder",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "gooey-nav",
+      "name": "Gooey Nav",
+      "category": "component",
+      "source": "https://reactbits.dev/components/gooey-nav",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "chroma-grid",
+      "name": "Chroma Grid",
+      "category": "component",
+      "source": "https://reactbits.dev/components/chroma-grid",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "profile-card",
+      "name": "Profile Card",
+      "category": "component",
+      "source": "https://reactbits.dev/components/profile-card",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "card-swap",
+      "name": "Card Swap",
+      "category": "component",
+      "source": "https://reactbits.dev/components/card-swap",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "model-viewer",
+      "name": "Model Viewer",
+      "category": "component",
+      "source": "https://reactbits.dev/components/model-viewer",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "fluid-glass",
+      "name": "Fluid Glass",
+      "category": "component",
+      "source": "https://reactbits.dev/components/fluid-glass",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "masonry",
+      "name": "Masonry",
+      "category": "component",
+      "source": "https://reactbits.dev/components/masonry",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "magic-bento",
+      "name": "Magic Bento",
+      "category": "component",
+      "source": "https://reactbits.dev/components/magic-bento",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "scroll-stack",
+      "name": "Scroll Stack",
+      "category": "component",
+      "source": "https://reactbits.dev/components/scroll-stack",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "glass-surface",
+      "name": "Glass Surface",
+      "category": "component",
+      "source": "https://reactbits.dev/components/glass-surface",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "pill-nav",
+      "name": "Pill Nav",
+      "category": "component",
+      "source": "https://reactbits.dev/components/pill-nav",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "card-nav",
+      "name": "Card Nav",
+      "category": "component",
+      "source": "https://reactbits.dev/components/card-nav",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "bubble-menu",
+      "name": "Bubble Menu",
+      "category": "component",
+      "source": "https://reactbits.dev/components/bubble-menu",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "dome-gallery",
+      "name": "Dome Gallery",
+      "category": "component",
+      "source": "https://reactbits.dev/components/dome-gallery",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "staggered-menu",
+      "name": "Staggered Menu",
+      "category": "component",
+      "source": "https://reactbits.dev/components/staggered-menu",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "reflective-card",
+      "name": "Reflective Card",
+      "category": "component",
+      "source": "https://reactbits.dev/components/reflective-card",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "line-sidebar",
+      "name": "Line Sidebar",
+      "category": "component",
+      "source": "https://reactbits.dev/components/line-sidebar",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "curved-input",
+      "name": "Curved Input",
+      "category": "component",
+      "source": "https://reactbits.dev/components/curved-input",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "option-wheel",
+      "name": "Option Wheel",
+      "category": "component",
+      "source": "https://reactbits.dev/components/option-wheel",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "specular-button",
+      "name": "Specular Button",
+      "category": "component",
+      "source": "https://reactbits.dev/components/specular-button",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "squish-switch",
+      "name": "Squish Switch",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/squish-switch",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "hold-button",
+      "name": "Hold Button",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/hold-button",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "peek-rating",
+      "name": "Peek Rating",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/peek-rating",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "spring-check",
+      "name": "Spring Check",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/spring-check",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "pulse-heart",
+      "name": "Pulse Heart",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/pulse-heart",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "rubber-segment",
+      "name": "Rubber Segment",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/rubber-segment",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "slide-commit",
+      "name": "Slide Commit",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/slide-commit",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "warm-tooltip",
+      "name": "Warm Tooltip",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/warm-tooltip",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "fuse-button",
+      "name": "Fuse Button",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/fuse-button",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "scrub-field",
+      "name": "Scrub Field",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/scrub-field",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "lattice-loader",
+      "name": "Lattice Loader",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/lattice-loader",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "dodge-field",
+      "name": "Dodge Field",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/dodge-field",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "code-slots",
+      "name": "Code Slots",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/code-slots",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "wake-slider",
+      "name": "Wake Slider",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/wake-slider",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "comet-dial",
+      "name": "Comet Dial",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/comet-dial",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "jelly-radio",
+      "name": "Jelly Radio",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/jelly-radio",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "swipe-row",
+      "name": "Swipe Row",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/swipe-row",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "glide-select",
+      "name": "Glide Select",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/glide-select",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "status-mark",
+      "name": "Status Mark",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/status-mark",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "call-chip",
+      "name": "Call Chip",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/call-chip",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "bell-toggle",
+      "name": "Bell Toggle",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/bell-toggle",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "sling-button",
+      "name": "Sling Button",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/sling-button",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "swipe-toast",
+      "name": "Swipe Toast",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/swipe-toast",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "prompt-bar",
+      "name": "Prompt Bar",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/prompt-bar",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "slosh-gauge",
+      "name": "Slosh Gauge",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/slosh-gauge",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "voice-pill",
+      "name": "Voice Pill",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/voice-pill",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "thought-line",
+      "name": "Thought Line",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/thought-line",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "refine-frame",
+      "name": "Refine Frame",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/refine-frame",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "folder-float",
+      "name": "Folder Float",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/folder-float",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "branched-menu",
+      "name": "Branched Menu",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/branched-menu",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "flip-card",
+      "name": "Flip Card",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/flip-card",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "tear-ticket",
+      "name": "Tear Ticket",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/tear-ticket",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "paper-crumple",
+      "name": "Paper Crumple",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/paper-crumple",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "shredder",
+      "name": "Shredder",
+      "category": "micro",
+      "source": "https://reactbits.dev/micro/shredder",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "shape-waves",
+      "name": "Shape Waves",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/shape-waves",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "aero-shards",
+      "name": "Aero Shards",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/aero-shards",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "ghost-fibers",
+      "name": "Ghost Fibers",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/ghost-fibers",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "silk",
+      "name": "Silk",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/silk",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "aurora",
+      "name": "Aurora",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/aurora",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "shape-grid",
+      "name": "Shape Grid",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/shape-grid",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "hyperspeed",
+      "name": "Hyperspeed",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/hyperspeed",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "iridescence",
+      "name": "Iridescence",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/iridescence",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "grid-motion",
+      "name": "Grid Motion",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/grid-motion",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "waves",
+      "name": "Waves",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/waves",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "ballpit",
+      "name": "Ballpit",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/ballpit",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "letter-glitch",
+      "name": "Letter Glitch",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/letter-glitch",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "grid-distortion",
+      "name": "Grid Distortion",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/grid-distortion",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "orb",
+      "name": "Orb",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/orb",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "particles",
+      "name": "Particles",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/particles",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "liquid-chrome",
+      "name": "Liquid Chrome",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/liquid-chrome",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "balatro",
+      "name": "Balatro",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/balatro",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "threads",
+      "name": "Threads",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/threads",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "dither",
+      "name": "Dither",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/dither",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "lightning",
+      "name": "Lightning",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/lightning",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "dot-grid",
+      "name": "Dot Grid",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/dot-grid",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "beams",
+      "name": "Beams",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/beams",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "ripple-grid",
+      "name": "Ripple Grid",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/ripple-grid",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "dark-veil",
+      "name": "Dark Veil",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/dark-veil",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "galaxy",
+      "name": "Galaxy",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/galaxy",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "light-rays",
+      "name": "Light Rays",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/light-rays",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "faulty-terminal",
+      "name": "Faulty Terminal",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/faulty-terminal",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "plasma",
+      "name": "Plasma",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/plasma",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "plasma-wave",
+      "name": "Plasma Wave",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/plasma-wave",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "prism",
+      "name": "Prism",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/prism",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "gradient-blinds",
+      "name": "Gradient Blinds",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/gradient-blinds",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "grainient",
+      "name": "Grainient",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/grainient",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "prismatic-burst",
+      "name": "Prismatic Burst",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/prismatic-burst",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "pixel-blast",
+      "name": "Pixel Blast",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/pixel-blast",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "liquid-ether",
+      "name": "Liquid Ether",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/liquid-ether",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "color-bends",
+      "name": "Color Bends",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/color-bends",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "crt-warp",
+      "name": "Crt Warp",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/crt-warp",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "line-waves",
+      "name": "Line Waves",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/line-waves",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "grid-scan",
+      "name": "Grid Scan",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/grid-scan",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "floating-lines",
+      "name": "Floating Lines",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/floating-lines",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "light-pillar",
+      "name": "Light Pillar",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/light-pillar",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "pixel-snow",
+      "name": "Pixel Snow",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/pixel-snow",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "radar",
+      "name": "Radar",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/radar",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "soft-aurora",
+      "name": "Soft Aurora",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/soft-aurora",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "evil-eye",
+      "name": "Evil Eye",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/evil-eye",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "dot-field",
+      "name": "Dot Field",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/dot-field",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "side-rays",
+      "name": "Side Rays",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/side-rays",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "lightfall",
+      "name": "Lightfall",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/lightfall",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "ferrofluid",
+      "name": "Ferrofluid",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/ferrofluid",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "molten-metal",
+      "name": "Molten Metal",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/molten-metal",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "gradient-waves",
+      "name": "Gradient Waves",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/gradient-waves",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "web-threads",
+      "name": "Web Threads",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/web-threads",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "topography",
+      "name": "Topography",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/topography",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "light-tunnel",
+      "name": "Light Tunnel",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/light-tunnel",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "sliced-waves",
+      "name": "Sliced Waves",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/sliced-waves",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "acid-squares",
+      "name": "Acid Squares",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/acid-squares",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    },
+    {
+      "id": "scanner",
+      "name": "Scanner",
+      "category": "background",
+      "source": "https://reactbits.dev/backgrounds/scanner",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "reference-only"
+    }
+  ]
+}

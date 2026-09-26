@@ -52,5 +52,7 @@ assert.match(preload, /'studio:planEdits'/, 'edit planner IPC must be allowliste
 assert.match(studio, /preview only until accepted/, 'Studio must show a non-destructive preview')
 assert.match(studio, /Accept all/, 'agent batch must require explicit acceptance')
 assert.match(studio, />\s*Auto edit\s*</, 'Studio must offer content-directed automatic editing')
+assert.match(studio, /motionReferences:[\s\S]*reactBits[\s\S]*skiperUi[\s\S]*remotionPackages/, 'agent context must expose the attributed motion libraries')
+assert.match(main, /translate every idea into only the native operations/, 'third-party references must resolve to safe editable operations')
 
 console.log('agent edit check passed — strict allowlist, local/live planning, preview and atomic apply are wired')

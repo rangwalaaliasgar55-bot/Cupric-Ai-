@@ -2,7 +2,7 @@
   "id": "templates",
   "name": "Video templates",
   "description": "Self-contained HTML scenes under resources/effects. Each exposes window.__seek(t) and a source manifest, so the desktop renderer can capture it frame by frame into an MP4 with no network.",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "source": "Cupric templates, built after Forge UI, 23rd.dev and motion-primitives",
   "license": "MIT (this implementation)",
   "items": [

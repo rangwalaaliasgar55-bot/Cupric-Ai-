@@ -319,6 +319,14 @@ try {
       data: { source: `${remotion.source.url}/tree/${remotion.source.ref}/.agents/skills/${skill.id}` },
       tags: ['remotion', 'skill', 'agent'],
     })),
+    ...(remotion.packages ?? []).map((pkg) => ({
+      id: `package-${pkg.id}`,
+      kind: 'provider',
+      name: pkg.name,
+      description: `Remotion package capability · ${pkg.license}`,
+      data: { source: pkg.source, license: pkg.license, intake: pkg.intake, agentUsable: pkg.agentUsable },
+      tags: ['remotion', 'package', 'agent', 'license-review'],
+    })),
   ]
   packs.push({
     id: 'remotion',
@@ -331,6 +339,65 @@ try {
   })
 } catch {
   console.warn('resources/remotion/catalog.json not readable — skipping the Remotion pack')
+}
+
+// React Bits is discoverable, but its Commons Clause explicitly forbids
+// redistributing the component collection (including bundled/ported versions).
+// Keep this as attributed metadata and never silently vendor upstream source.
+try {
+  const reactBits = JSON.parse(await readFile(path.join(root, 'resources', 'react-bits', 'catalog.json'), 'utf8'))
+  packs.push({
+    id: 'react-bits',
+    name: 'React Bits index',
+    description: `All ${reactBits.items.length} current React Bits entries as attributed design references. Source code is not redistributed because of the Commons Clause.`,
+    version: VERSION,
+    source: reactBits.source.url,
+    license: reactBits.source.license,
+    items: reactBits.items.map((item) => ({
+      id: `react-bits-${item.id}`,
+      kind: 'block',
+      name: item.name,
+      description: `React Bits ${item.category} reference · open upstream to review and adapt under its license`,
+      data: { source: item.source, category: item.category, editable: item.editable, agentUsable: item.agentUsable, intake: item.intake, license: reactBits.source.license },
+      tags: ['react-bits', item.category, 'agent', 'attributed'],
+    })),
+  })
+} catch {
+  console.warn('resources/react-bits/catalog.json not readable — skipping React Bits')
+}
+
+// Skiper UI permits commercial adaptation with attribution. Each entry becomes
+// an original Cupric-native storyboard: editable text/media clips rather than a
+// copy of upstream source or assets, with the source credit retained in data.
+try {
+  const skiper = JSON.parse(await readFile(path.join(root, 'resources', 'skiper', 'catalog.json'), 'utf8'))
+  packs.push({
+    id: 'skiper-ui',
+    name: 'Skiper UI blueprints',
+    description: `All ${skiper.items.length} supplied Skiper UI ideas as attributed, editable Studio storyboards.`,
+    version: VERSION,
+    source: skiper.source.url,
+    license: skiper.source.license,
+    items: skiper.items.map((item) => {
+      const isVideo = item.category === 'video'
+      const isMotion = item.category === 'motion'
+      const scenes = isVideo
+        ? [[item.name, 2.5, 'fade-up', 'text'], ['Replace with your video', 5.5, 'none', 'media'], ['Close / replay', 2, 'pop', 'text']]
+        : isMotion
+          ? [[item.name, 3, 'fade-up', 'text'], ['Scroll-driven movement', 4, 'word-reveal', 'media'], ['Make it yours', 3, 'shimmer', 'text']]
+          : [[item.name, 3, 'pop', 'text'], ['Editable interaction state', 4, 'word-reveal', 'text'], ['Call to action', 3, 'fade-up', 'text']]
+      return {
+        id: item.id,
+        kind: 'saas-template',
+        name: item.name,
+        description: `Original editable storyboard inspired by ${item.name} · attribution: ${item.attribution}`,
+        data: { durationSec: 10, scenes, editable: true, agentUsable: true, source: item.source, attribution: item.attribution, category: item.category },
+        tags: ['skiper-ui', item.category, 'editable', 'agent', 'attributed'],
+      }
+    }),
+  })
+} catch {
+  console.warn('resources/skiper/catalog.json not readable — skipping Skiper UI')
 }
 
 // The vendored lab components are listed from their generated registry.

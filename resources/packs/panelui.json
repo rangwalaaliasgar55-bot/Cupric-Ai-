@@ -2,7 +2,7 @@
   "id": "panelui",
   "name": "PanelUI catalogue",
   "description": "All 135 PanelUI components and 21 chart visualisations, with the upstream behaviour notes. React Native source stays upstream; Cupric mines the behaviour, the copy and the accessibility rules.",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "source": "https://github.com/panel-ui/PanelUI (panelui-native 0.102.1, react-native)",
   "license": "MIT — Copyright (c) 2026 Khalid Abdi",
   "items": [

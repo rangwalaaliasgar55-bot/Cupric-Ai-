@@ -1,5 +1,5 @@
 {
-  "version": "0.5.0",
+  "version": "0.7.0",
   "updated": "2026-09-26",
   "repo": "rangwalaaliasgar55-bot/Cupric-Ai-",
   "packs": [
@@ -84,8 +84,22 @@
       "id": "remotion",
       "name": "Remotion toolkit",
       "description": "Upstream Remotion templates, Google Fonts catalog and agent skills indexed for autonomous planning. Source metadata only; no upstream code is vendored.",
-      "itemCount": 1946,
-      "bytes": 655680
+      "itemCount": 2083,
+      "bytes": 738938
+    },
+    {
+      "id": "react-bits",
+      "name": "React Bits index",
+      "description": "All 209 current React Bits entries as attributed design references. Source code is not redistributed because of the Commons Clause.",
+      "itemCount": 209,
+      "bytes": 120877
+    },
+    {
+      "id": "skiper-ui",
+      "name": "Skiper UI blueprints",
+      "description": "All 106 supplied Skiper UI ideas as attributed, editable Studio storyboards.",
+      "itemCount": 106,
+      "bytes": 103377
     },
     {
       "id": "components",

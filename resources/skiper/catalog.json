@@ -1,0 +1,1072 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "name": "Skiper UI",
+    "url": "https://skiper-ui.com",
+    "retrieved": "2026-09-26",
+    "license": "Free personal/commercial use with attribution to Skiper UI; individual entries may carry additional upstream attribution."
+  },
+  "policy": "Catalog metadata plus original Cupric-native editable adaptations only. Every use preserves Skiper UI attribution and any per-entry credit.",
+  "items": [
+    {
+      "id": "skiper1",
+      "name": "Anime js scrollbar",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper1",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper2",
+      "name": "Dynamic island",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper2",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper3",
+      "name": "Apple play button",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper3",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper4",
+      "name": "Theme toggle buttons",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper4",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper5",
+      "name": "Things drag and scroll",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper5",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper6",
+      "name": "Hover members",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper6",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper7",
+      "name": "Nike preloader",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper7",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper8",
+      "name": "Words preloader",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper8",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper9",
+      "name": "Stairs preloader",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper9",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper10",
+      "name": "Double stairs preloader",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper10",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper11",
+      "name": "Pixel preloader",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper11",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper12",
+      "name": "Vercel Liquid simulation",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper12",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper13",
+      "name": "Nike menu",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper13",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper14",
+      "name": "Ascii Simulation",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper14",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper15",
+      "name": "Box loading preloader",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper15",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper16",
+      "name": "Card stack scroll",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper16",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper17",
+      "name": "Card stack with gsap and rotate",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper17",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper18",
+      "name": "Image cursor trail",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper18",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper19",
+      "name": "Svg follow scroll",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper19",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper20",
+      "name": "UniSwap Country Dialog",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper20",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper21",
+      "name": "Family wallet",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper21",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper22",
+      "name": "Aave token swap",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper22",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper23",
+      "name": "Minimal Card Expand",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper23",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper24",
+      "name": "Tik tik color list",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper24",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper25",
+      "name": "Music toggle btn",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper25",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper26",
+      "name": "Theme toggle btn",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper26",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper27",
+      "name": "Rolling text",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper27",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper28",
+      "name": "3D perspective text",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper28",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper29",
+      "name": "Siena parallax",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper29",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper30",
+      "name": "Oliver parallax",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper30",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper31",
+      "name": "Text Scroll animation",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper31",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper32",
+      "name": "Scroll images reveal 001",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper32",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper33",
+      "name": "Scroll images reveal 002",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper33",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper34",
+      "name": "Scroll images reveal 003",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper34",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper35",
+      "name": "Hover expand",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper35",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper36",
+      "name": "Interactive3d Hero",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper36",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper37",
+      "name": "Animated number",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper37",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper38",
+      "name": "Apple Navbar V001",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper38",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper39",
+      "name": "Canvas crowd",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper39",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper40",
+      "name": "CssLink",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper40",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper41",
+      "name": "Progressive Blur",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper41",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper42",
+      "name": "Animated icons 001",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper42",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper43",
+      "name": "Vercel Tooltip",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper43",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper44",
+      "name": "Vercel scroll with blur",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper44",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper45",
+      "name": "Family Receive button",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper45",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper46",
+      "name": "Nextjs gooey menu",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper46",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper47",
+      "name": "Perspective carousel",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper47",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper48",
+      "name": "Card swipe carousel",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper48",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper49",
+      "name": "Inverted perspective carousel",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper49",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper50",
+      "name": "Creative carousel 001",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper50",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper51",
+      "name": "Creative carousel 002",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper51",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper52",
+      "name": "ExpandOnHover",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper52",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper53",
+      "name": "ExpandOnHover vertical",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper53",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper54",
+      "name": "Shadcn clipPath Carousal",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper54",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper55",
+      "name": "Parallax Image",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper55",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper56",
+      "name": "Devouring details sign in",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper56",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper57",
+      "name": "Vercel navigation bar",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper57",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper58",
+      "name": "Text roll navigation",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper58",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper59",
+      "name": "Drawing cursor effect",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper59",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper60",
+      "name": "Side Scroll Navigation",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper60",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper61",
+      "name": "Mouse follow animations",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper61",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper62",
+      "name": "Loop animation hook",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper62",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper63",
+      "name": "Apple squicircle effect",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper63",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper64",
+      "name": "Gooey Effect",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper64",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper65",
+      "name": "Breakpoint indicator",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper65",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper66",
+      "name": "SVG clip path mask",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper66",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper67",
+      "name": "Video player 001",
+      "category": "video",
+      "source": "https://skiper-ui.com/v1/skiper67",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper68",
+      "name": "Animated number input",
+      "category": "input",
+      "source": "https://skiper-ui.com/v1/skiper68",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper69",
+      "name": "Skiper Number flow",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper69",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper70",
+      "name": "Text reveal box",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper70",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper71",
+      "name": "Image reveal",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper71",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper72",
+      "name": "Horizontal Text reveal",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper72",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper73",
+      "name": "Infinite canvas",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper73",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper74",
+      "name": "Timeline calendar",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper74",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper75",
+      "name": "Apple Navbar V002",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper75",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper76",
+      "name": "Apple Feature Block",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper76",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper77",
+      "name": "Apple carousel",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper77",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper78",
+      "name": "Dia Browser's Carousal",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper78",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper79",
+      "name": "Team showcase scroll",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper79",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper80",
+      "name": "Projects Showcase",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper80",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper81",
+      "name": "AI Input 001",
+      "category": "input",
+      "source": "https://skiper-ui.com/v1/skiper81",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper82",
+      "name": "AI Input 002",
+      "category": "input",
+      "source": "https://skiper-ui.com/v1/skiper82",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper83",
+      "name": "AI Input 003",
+      "category": "input",
+      "source": "https://skiper-ui.com/v1/skiper83",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper84",
+      "name": "AI Input 004",
+      "category": "input",
+      "source": "https://skiper-ui.com/v1/skiper84",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper85",
+      "name": "AI Input 005",
+      "category": "input",
+      "source": "https://skiper-ui.com/v1/skiper85",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper86",
+      "name": "Apple Ai gradient",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper86",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper87",
+      "name": "Scroll with fade effect",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper87",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper88",
+      "name": "3D Rolling Text on scroll",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper88",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper89",
+      "name": "Scroll progress 001",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper89",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper90",
+      "name": "Gradient hover cards",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper90",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper91",
+      "name": "video player 002",
+      "category": "video",
+      "source": "https://skiper-ui.com/v1/skiper91",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper92",
+      "name": "Vercel Command Search",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper92",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper93",
+      "name": "Scroll progress 002",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper93",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper94",
+      "name": "Scroll progress 003",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper94",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper95",
+      "name": "Expandable tabs navigation",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper95",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper96",
+      "name": "video player 003",
+      "category": "video",
+      "source": "https://skiper-ui.com/v1/skiper96",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper97",
+      "name": "Vertical tooltip menu",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper97",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper98",
+      "name": "Animated icons 002",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper98",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper99",
+      "name": "Draggable snap button",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper99",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper100",
+      "name": "Custom tooltip",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper100",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper101",
+      "name": "Debug Pannel",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper101",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper102",
+      "name": "Bouncy accordion",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper102",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper103",
+      "name": "Scroll reveal grid cards",
+      "category": "motion",
+      "source": "https://skiper-ui.com/v1/skiper103",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper104",
+      "name": "Auto Scale input",
+      "category": "input",
+      "source": "https://skiper-ui.com/v1/skiper104",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper105",
+      "name": "Smooth caret input",
+      "category": "input",
+      "source": "https://skiper-ui.com/v1/skiper105",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    },
+    {
+      "id": "skiper106",
+      "name": "Knockout bracket",
+      "category": "component",
+      "source": "https://skiper-ui.com/v1/skiper106",
+      "attribution": "Skiper UI · gxuri.me",
+      "editable": true,
+      "agentUsable": true,
+      "intake": "attributed-reference"
+    }
+  ]
+}
