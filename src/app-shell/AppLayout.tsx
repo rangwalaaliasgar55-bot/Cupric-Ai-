@@ -9,6 +9,7 @@ import { FootageDesk } from '../screens/FootageDesk'
 import { HomeProject } from '../screens/HomeProject'
 import { Library } from '../screens/Library'
 import { Render } from '../screens/Render'
+import { ReviewRoom } from '../screens/ReviewRoom'
 import { Timeline } from '../screens/Timeline'
 import { Autonomous } from '../screens/Autonomous'
 import { useProjectStore } from '../state/useProjectStore'
@@ -16,6 +17,7 @@ import { useProjectStore } from '../state/useProjectStore'
 const SCREENS = {
   home: <HomeProject />,
   auto: <Autonomous />,
+  review: <ReviewRoom />,
   brief: <Brief />,
   arena: <ArenaDesk />,
   footage: <FootageDesk />,

@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer, webUtils } = require('electron')
 
 const invokeChannels = new Set([
   'settings:get',
@@ -10,6 +10,7 @@ const invokeChannels = new Set([
   'state:clear',
   'gemini:ask',
   'gemini:chat',
+  'opencode:listModels',
   'dialog:pickArena',
   'arena:import',
   'arena:previewPath',
@@ -30,13 +31,20 @@ function assertChannel(channel, allowed) {
   if (!allowed.has(channel)) throw new Error(`IPC channel is not exposed: ${channel}`)
 }
 
-contextBridge.exposeInMainWorld('northframe', {
+const bridge = {
   isDesktop: true,
   platform: process.platform,
   versions: {
     electron: process.versions.electron,
     chrome: process.versions.chrome,
     node: process.versions.node,
+  },
+  filePathFor: (file) => {
+    try {
+      return webUtils.getPathForFile(file) || null
+    } catch {
+      return null
+    }
   },
   ipc: {
     invoke: (channel, payload) => {
@@ -53,4 +61,7 @@ contextBridge.exposeInMainWorld('northframe', {
   paths: {
     arenaPreviewUrl: (localPath) => ipcRenderer.invoke('arena:previewPath', localPath),
   },
-})
+}
+
+contextBridge.exposeInMainWorld('northframe', bridge)
+contextBridge.exposeInMainWorld('cupric', bridge)

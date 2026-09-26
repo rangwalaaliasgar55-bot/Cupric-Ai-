@@ -2,9 +2,8 @@ import type { SceneRundown, View } from '../types/project'
 import { round1, slugify, uid } from './utils'
 
 /**
- * Mocked Gemini co-pilot. No network — deterministic-ish templates shaped by
- * the user's text. The Brief screen animates `rundownPatch` into the JSON
- * panel field by field.
+ * Gemini co-pilot. Desktop calls Gemini when a key is configured; otherwise the
+ * same UI uses a deterministic local planner so the editing workflow still runs.
  */
 
 export type RundownPatch = Partial<SceneRundown>
@@ -85,7 +84,7 @@ function buildScenes(dur: number, flavor: Flavor, topic: string): SceneRundown['
     return [
       mk(0, hookEnd, 'quote', `“${topic}.”`, 'word-by-word reveal, 9 words/s'),
       mk(hookEnd, bodyEnd, 'attribution', '— Cupric AI', 'fade up, letter-spacing settles'),
-      mk(bodyEnd, dur, 'mark', 'NORTHFRAME', 'scale 0.96 -> 1 spring, hold'),
+      mk(bodyEnd, dur, 'mark', 'CUPRIC AI', 'scale 0.96 -> 1 spring, hold'),
     ]
   }
 
@@ -99,7 +98,7 @@ function buildScenes(dur: number, flavor: Flavor, topic: string): SceneRundown['
   } else {
     scenes.push(mk(hookEnd, bodyEnd, 'body', `${topic} — in motion.`, 'mask wipe left-to-right, ease-out'))
   }
-  scenes.push(mk(bodyEnd, dur, 'cta', 'northframe.studio — Oct 2', 'counter ticks up, fade to logo'))
+  scenes.push(mk(bodyEnd, dur, 'cta', 'cupric.ai — Oct 2', 'counter ticks up, fade to logo'))
   return scenes
 }
 
@@ -137,6 +136,7 @@ export async function askGeminiLocal(userText: string, askCount: number): Promis
     scenes: buildScenes(dur, flavor, topic),
     arenaPrompt: '',
   }
+  base.arenaPrompt = arenaPromptOf(base)
 
   if (askCount === 0) {
     const openers = [
@@ -158,8 +158,8 @@ export async function askGeminiLocal(userText: string, askCount: number): Promis
   return { text: pick(refinements, seed), rundownPatch: { ...base } }
 }
 
-/** Mocked chat replies for the "Ask Gemini" slide-over panel. */
-export async function fakeGeminiChatLocal(
+/** Local planner replies for the "Ask Gemini" slide-over panel when no Gemini key is configured. */
+export async function geminiChatLocal(
   text: string,
   ctx: { projectName: string | null; view: View },
 ): Promise<string> {
@@ -179,7 +179,7 @@ export async function fakeGeminiChatLocal(
   if (/render|export|mp4/.test(t)) {
     return `Rendering uses the desktop seek-and-FFmpeg pipeline when you run Cupric AI in Electron: Arena pieces are captured frame by frame, footage is trimmed/cropped, and progress streams back into the Render queue. Web preview keeps a local fallback.`
   }
-  return `Noted — I'd start from ${proj} on the ${ctx.view === 'home' ? 'Home' : ctx.view} screen. Everything I do here is mocked in the prototype, so try the Brief screen for a full walkthrough of the flow.`
+  return `Noted — I'd start from ${proj} on the ${ctx.view === 'home' ? 'Home' : ctx.view} screen. Without a Gemini key I answer from the local planner; imports, previews, and browser/desktop renders still use real local media where available.`
 }
 
 export async function askGemini(userText: string, askCount: number): Promise<GeminiResult> {
@@ -190,11 +190,17 @@ export async function askGemini(userText: string, askCount: number): Promise<Gem
   return askGeminiLocal(userText, askCount)
 }
 
-export async function fakeAskGemini(userText: string, askCount: number) { return askGeminiLocal(userText, askCount) }
-export async function fakeGeminiChat(text: string, ctx: { projectName: string | null; view: View }) {
-  const api = (window as any).northframe?.ipc
-  if (api) { try { return await api.invoke('gemini:chat', { text, ctx }) } catch { /* demo fallback */ } }
-  return fakeGeminiChatLocal(text, ctx)
+export async function askGeminiChat(text: string, ctx: { projectName: string | null; view: View }) {
+  const api = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+  if (!api) {
+    return 'Live chat needs the desktop app so Cupric AI can call Gemini or an OpenCode/OpenAI-compatible model securely. Video creation still works locally from the Brief screen.'
+  }
+  try {
+    return await api.invoke('gemini:chat', { text, ctx })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err || '')
+    return `No live AI model is connected yet. Open settings, choose a free OpenCode preset such as an OpenRouter “:free” model or local Ollama, then save your key/base URL. (${message})`
+  }
 }
 
 export { arenaPromptOf, slugify }

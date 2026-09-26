@@ -57,7 +57,7 @@ export function TopBar() {
         </IconButton>
         <Button variant="primary" size="sm" onClick={() => setAskOpen(true)} className="pr-2">
           <Sparkles size={14} />
-          Ask Gemini
+          Ask AI
           <Kbd className="border-accent-ink/15 bg-accent-ink/10 text-accent-ink">⌘K</Kbd>
         </Button>
       </div>

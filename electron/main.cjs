@@ -35,7 +35,7 @@ function findOnPath(binName) {
 
 function resolveMediaTool(kind) {
   const envName = kind === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH'
-  const envCandidate = candidateBinaryPath(process.env[`NORTHFRAME_${envName}`] || process.env[envName])
+  const envCandidate = candidateBinaryPath(process.env[`CUPRIC_${envName}`] || process.env[`NORTHFRAME_${envName}`] || process.env[envName])
   if (envCandidate) return envCandidate
   try {
     const moduleCandidate = kind === 'ffmpeg' ? require('ffmpeg-static') : require('ffprobe-static').path
@@ -158,11 +158,31 @@ function geminiApiKey() {
   return String(readSettings().geminiApiKey || process.env.GEMINI_API_KEY || '').trim()
 }
 
+function aiSettings() {
+  const settings = readSettings()
+  const provider = settings.aiProvider === 'gemini' ? 'gemini' : 'opencode'
+  const openCodeBaseUrl = String(settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1').trim()
+  const openCodeModel = String(settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || 'qwen/qwen3-235b-a22b:free').trim()
+  const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || '').trim()
+  return { provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
+}
+
+function hasOpenCodeAccess() {
+  const cfg = aiSettings()
+  return Boolean(cfg.openCodeApiKey || /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(cfg.openCodeBaseUrl))
+}
+
 function publicSettings() {
   const settings = readSettings()
+  const ai = aiSettings()
   const login = app.getLoginItemSettings ? app.getLoginItemSettings() : { openAtLogin: false }
   return {
-    hasKey: Boolean(geminiApiKey()),
+    hasKey: ai.provider === 'opencode' ? hasOpenCodeAccess() : Boolean(geminiApiKey()),
+    hasGeminiKey: Boolean(geminiApiKey()),
+    hasOpenCodeKey: hasOpenCodeAccess(),
+    aiProvider: ai.provider,
+    openCodeBaseUrl: ai.openCodeBaseUrl,
+    openCodeModel: ai.openCodeModel,
     autoLaunch: Boolean(settings.autoLaunch ?? login.openAtLogin),
     silenceNoiseDb: Number.isFinite(Number(settings.silenceNoiseDb)) ? Number(settings.silenceNoiseDb) : DEFAULT_SILENCE_NOISE_DB,
     silenceMinDuration: Number.isFinite(Number(settings.silenceMinDuration))
@@ -178,6 +198,22 @@ function applySettingsPatch(patch) {
     const key = String(patch.geminiApiKey || '').trim()
     if (key) settings.geminiApiKey = key
     else delete settings.geminiApiKey
+  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiProvider')) {
+    settings.aiProvider = patch.aiProvider === 'opencode' ? 'opencode' : 'gemini'
+  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'openCodeApiKey')) {
+    const key = String(patch.openCodeApiKey || '').trim()
+    if (key) settings.openCodeApiKey = key
+    else delete settings.openCodeApiKey
+  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'openCodeBaseUrl')) {
+    const v = String(patch.openCodeBaseUrl || '').trim()
+    if (v) settings.openCodeBaseUrl = v
+  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'openCodeModel')) {
+    const v = String(patch.openCodeModel || '').trim()
+    if (v) settings.openCodeModel = v
   }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'autoLaunch')) {
     settings.autoLaunch = Boolean(patch.autoLaunch)
@@ -200,7 +236,7 @@ function stateFile() {
 }
 
 ipcMain.handle('settings:get', () => publicSettings())
-ipcMain.handle('settings:hasKey', () => Boolean(geminiApiKey()))
+ipcMain.handle('settings:hasKey', () => publicSettings().hasKey)
 ipcMain.handle('settings:set', (_event, patch) => applySettingsPatch(patch || {}))
 ipcMain.handle('settings:autoLaunch', (_event, enabled) => applySettingsPatch({ autoLaunch: Boolean(enabled) }))
 ipcMain.handle('state:save', (_event, payload) => {
@@ -240,6 +276,7 @@ async function prepareAutomationJob(job) {
     logLine('automation-fallback', err?.message || String(err))
   }
   writeJson(path.join(root, 'rundown.json'), rundown)
+  let footageMeta = null
   // Ingest the newest/largest supported footage file and run real FFprobe/silence analysis.
   if (job.footageFolder && fs.existsSync(job.footageFolder)) {
     const videoExt = /\.(mp4|mov|m4v|webm|mkv|avi)$/i
@@ -260,7 +297,12 @@ async function prepareAutomationJob(job) {
     }
   }
   let winnerPath = null
-  let footageMeta = null
+  if (job.votingMode === 'manual-arena') {
+    job.reviewReportPath = path.join(root, 'review-report.json')
+    writeJson(job.reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, outputPath: null, footageUsed: Boolean(footageMeta), warnings: ['Manual Arena voting requires importing the winning ZIP before final render.'] })
+    saveAutomationJobs(automationJobs().map(item => item.id === job.id ? { ...item, ...job, updatedAt: new Date().toISOString() } : item))
+    return job
+  }
   if (job.votingMode === 'local-scoring') {
     const candidates = []
     for (let i = 0; i < 3; i++) {
@@ -286,7 +328,7 @@ async function prepareAutomationJob(job) {
     const timeline = segments.map((s, i) => ({ id: `clip-${i + 1}`, startSec: segments.slice(0, i).reduce((n, x) => n + x.duration, 0), durationSec: s.duration, source: s.path }))
     writeJson(path.join(root, 'timeline.json'), timeline)
     writeJson(path.join(root, 'editing-plan.json'), { schema_version: '1.0', project: { target_duration_s: rundown.durationSec, aspect_ratio: job.aspect, fps: job.fps }, sections: [{ role: 'hook', clips: timeline.map((clip, i) => ({ id: clip.id, source_file: clip.source, in_s: 0, out_s: clip.duration, purpose: i === 0 ? 'opening hook' : 'supporting edit', transition_in: i === 0 ? 'hard_cut' : 'dissolve', captions: [] })) }], captions: { enabled: true, mode: 'phrase', auto_from_transcript: true } })
-    const outputPath = path.join(outDir, `${safeFileName(rundown.title, 'northframe')}.mp4`)
+    const outputPath = path.join(outDir, `${safeFileName(rundown.title, 'cupric-ai')}.mp4`)
     await concatSegments(renderState, segments, outputPath, { workDir })
     if (job.outputFolder && isSubPath(job.outputFolder, job.outputFolder)) { ensureDir(job.outputFolder); await fsp.copyFile(outputPath, path.join(job.outputFolder, path.basename(outputPath))) }
     job.outputPath = outputPath
@@ -300,7 +342,9 @@ async function prepareAutomationJob(job) {
 }
 
 ipcMain.handle('automation:start', async (_e, job) => {
-  try { await prepareAutomationJob(job) } catch (err) { patchAutomation(job.id, { status: 'error', errorMessage: err?.message || String(err) }); mainWindow?.webContents.send('automation:error', { jobId: job.id, message: err?.message || String(err) }); return job }
+  const initialExisting = automationJobs().filter(j => j.id !== job.id)
+  saveAutomationJobs([job, ...initialExisting])
+  try { job = await prepareAutomationJob(job) } catch (err) { const failed = patchAutomation(job.id, { status: 'error', errorMessage: err?.message || String(err) }) || job; mainWindow?.webContents.send('automation:error', { jobId: job.id, message: err?.message || String(err) }); return failed }
   const existing = automationJobs().filter(j => j.id !== job.id); saveAutomationJobs([job, ...existing])
   // Sequential native queue. Manual Arena is an explicit review gate; no public UI automation.
   const steps = job.steps || []
@@ -420,32 +464,125 @@ History: ${JSON.stringify(history || [])}
 Current rundown/context: ${JSON.stringify(rundownContext || {})}`
 }
 
-async function generateRundown(prompt, history, context) {
+function isLocalModelBase(baseUrl) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(String(baseUrl || ''))
+}
+
+function isFreeModel(model) {
+  const id = String(model?.id || '')
+  if (id.includes(':free')) return true
+  const pricing = model?.pricing || {}
+  const values = [pricing.prompt, pricing.completion, pricing.request, pricing.image]
+  return values.length > 0 && values.every((value) => value === undefined || Number(value) === 0)
+}
+
+async function listOpenCodeModels(payload = {}) {
+  const cfg = aiSettings()
+  const baseUrl = String(payload.baseUrl || cfg.openCodeBaseUrl || '').trim()
+  const apiKey = String(payload.apiKey || cfg.openCodeApiKey || '').trim()
+  if (!baseUrl) throw new Error('OpenCode/OpenAI-compatible base URL is not configured')
+  const headers = {}
+  if (apiKey) headers.authorization = `Bearer ${apiKey}`
+  if (/openrouter\.ai/i.test(baseUrl)) {
+    headers['HTTP-Referer'] = 'https://cupric.ai'
+    headers['X-Title'] = 'Cupric AI'
+  }
+  const result = await fetch(`${baseUrl.replace(/\/$/, '')}/models`, { headers })
+  if (!result.ok) throw new Error(`Model list failed (${result.status}): ${(await result.text()).slice(0, 500)}`)
+  const data = await result.json()
+  const rawModels = Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : []
+  const local = isLocalModelBase(baseUrl)
+  return rawModels
+    .filter((model) => local || isFreeModel(model))
+    .map((model) => {
+      const id = String(model?.id || model?.name || '')
+      const label = String(model?.name || id).replace(/\s*\(?free\)?\s*$/i, '')
+      return { id: `live-${id}`, label, baseUrl, model: id, note: local ? 'Local OpenCode/Ollama model discovered from your machine.' : 'Free model discovered from the configured model endpoint.' }
+    })
+    .filter((model) => model.model)
+    .slice(0, 200)
+}
+
+ipcMain.handle('opencode:listModels', (_event, payload) => listOpenCodeModels(payload || {}))
+
+async function callOpenCode(messages, options = {}) {
+  const cfg = aiSettings()
+  if (!cfg.openCodeBaseUrl) throw new Error('OpenCode/OpenAI-compatible base URL is not configured')
+  if (!cfg.openCodeApiKey && !isLocalModelBase(cfg.openCodeBaseUrl)) {
+    throw new Error('OpenCode/OpenAI-compatible API key is not configured')
+  }
+  const url = `${cfg.openCodeBaseUrl.replace(/\/$/, '')}/chat/completions`
+  const headers = { 'content-type': 'application/json' }
+  if (/openrouter\.ai/i.test(cfg.openCodeBaseUrl)) {
+    headers['HTTP-Referer'] = 'https://cupric.ai'
+    headers['X-Title'] = 'Cupric AI'
+  }
+  if (cfg.openCodeApiKey) headers.authorization = `Bearer ${cfg.openCodeApiKey}`
+  const result = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: cfg.openCodeModel,
+      messages,
+      temperature: options.temperature ?? 0.55,
+      ...(options.json ? { response_format: { type: 'json_object' } } : {}),
+    }),
+  })
+  if (!result.ok) throw new Error(`OpenCode model request failed (${result.status}): ${(await result.text()).slice(0, 1000)}`)
+  const data = await result.json()
+  const text = data?.choices?.[0]?.message?.content || data?.message?.content || ''
+  if (!text) throw new Error('OpenCode model returned an empty response')
+  return text
+}
+
+async function generateGeminiRundown(prompt, history, context) {
   const key = geminiApiKey()
   if (!key) throw new Error('Gemini API key is not configured')
   const model = new GoogleGenerativeAI(key).getGenerativeModel({
     model: 'gemini-2.0-flash',
     generationConfig: { responseMimeType: 'application/json' },
   })
+  const result = await model.generateContent(geminiRundownPrompt(prompt, history, context))
+  return normalizeRundown(parseJsonFromModel(result.response.text()), prompt)
+}
+
+async function generateOpenCodeRundown(prompt, history, context) {
+  const text = await callOpenCode([
+    { role: 'system', content: 'You are Cupric AI creative director. Return STRICT JSON only, no markdown.' },
+    { role: 'user', content: geminiRundownPrompt(prompt, history, context) },
+  ], { json: true })
+  return normalizeRundown(parseJsonFromModel(text), prompt)
+}
+
+async function generateRundown(prompt, history, context) {
+  const provider = aiSettings().provider
   let lastError
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
-      const result = await model.generateContent(geminiRundownPrompt(prompt, history, context))
-      return normalizeRundown(parseJsonFromModel(result.response.text()), prompt)
+      return provider === 'opencode'
+        ? await generateOpenCodeRundown(prompt, history, context)
+        : await generateGeminiRundown(prompt, history, context)
     } catch (err) {
       lastError = err
-      logLine('gemini-parse-retry', err?.message || String(err))
+      logLine('ai-rundown-retry', err?.message || String(err), { provider })
     }
   }
   throw lastError
 }
 
-async function geminiChat(text, ctx) {
+async function liveAiChat(text, ctx) {
+  const provider = aiSettings().provider
+  if (provider === 'opencode') {
+    return callOpenCode([
+      { role: 'system', content: 'You are Cupric AI desktop creative copilot. Be concise, practical, and specific. Help with video creation, rendering, resources, prompts, and edits.' },
+      { role: 'user', content: `Context: ${JSON.stringify(ctx || {})}\nUser: ${text}` },
+    ])
+  }
   const key = geminiApiKey()
   if (!key) throw new Error('Gemini API key is not configured')
   const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: 'gemini-2.0-flash' })
   const result = await model.generateContent(
-    `You are Cupric AI's desktop creative copilot. Be concise, practical, and specific. Never mention API keys. Context: ${JSON.stringify(
+    `You are Cupric AI's desktop creative copilot. Be concise, practical, and specific. Context: ${JSON.stringify(
       ctx || {},
     )}. User: ${text}`,
   )
@@ -459,7 +596,7 @@ ipcMain.handle('gemini:ask', async (_event, payload) => {
     rundownPatch,
   }
 })
-ipcMain.handle('gemini:chat', async (_event, payload) => geminiChat(payload?.text || '', payload?.ctx || {}))
+ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.text || '', payload?.ctx || {}))
 
 // ---------------------------------------------------------------------------
 // Arena import / preview
@@ -607,7 +744,7 @@ function mediaToolStatus() {
 function assertMediaTools() {
   const status = mediaToolStatus()
   if (!status.ready) {
-    throw new Error('FFmpeg/FFprobe binaries are unavailable in this build. Run a clean install so ffmpeg-static and ffprobe-static can download their native binaries, or set NORTHFRAME_FFMPEG_PATH and NORTHFRAME_FFPROBE_PATH.')
+    throw new Error('FFmpeg/FFprobe binaries are unavailable in this build. Run a clean install so ffmpeg-static and ffprobe-static can download their native binaries, or set CUPRIC_FFMPEG_PATH and CUPRIC_FFPROBE_PATH.')
   }
 }
 
@@ -809,6 +946,7 @@ ipcMain.handle('footage:analyze', async (_event, payload) => {
     logLine('waveform-failed', err?.message || String(err))
   }
   return {
+    name: path.basename(srcPath),
     videoPath: dest,
     durationSec: Math.round((durationSec || 0) * 10) / 10,
     silenceRanges: parseSilence(silence.stderr, durationSec),
@@ -838,7 +976,7 @@ function presetForQuality(quality) {
 }
 
 function renderOutputName(name) {
-  const safe = safeFileName(name || 'northframe-render.mp4', 'northframe-render.mp4')
+  const safe = safeFileName(name || 'cupric-render.mp4', 'cupric-render.mp4')
   return /\.mp4$/i.test(safe) ? safe : `${safe}.mp4`
 }
 
@@ -1227,7 +1365,7 @@ ipcMain.handle('render:copyToDownloads', async (_event, outputPath) => {
   const rendersRoot = userDataPath('renders')
   if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
   const downloads = app.getPath('downloads')
-  const dest = path.join(downloads, safeFileName(path.basename(outputPath), 'northframe-render.mp4'))
+  const dest = path.join(downloads, safeFileName(path.basename(outputPath), 'cupric-render.mp4'))
   await fsp.copyFile(outputPath, dest)
   shell.showItemInFolder(dest)
   return { outputPath: dest }

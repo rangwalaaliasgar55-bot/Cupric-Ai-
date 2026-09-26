@@ -1,4 +1,4 @@
-import { GanttChart, Home, Film, Library as LibraryIcon, MessagesSquare, Rocket, Swords, Bot } from 'lucide-react'
+import { GanttChart, Home, Film, Library as LibraryIcon, MessagesSquare, Rocket, Swords, Bot, Video } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { View } from '../types/project'
@@ -16,6 +16,7 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { view: 'auto', label: 'Auto', icon: Bot },
+  { view: 'review', label: 'Review Room', icon: Video },
   { view: 'home', label: 'Home', icon: Home },
   { view: 'brief', label: 'Brief', icon: MessagesSquare, needProject: true },
   { view: 'arena', label: 'Arena Desk', icon: Swords, needProject: true, needLock: true },
@@ -76,7 +77,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto font-mono text-xs text-muted/50">v0.1</div>
+      <div className="mt-auto font-mono text-xs text-muted/50">v0.2.1</div>
     </aside>
   )
 }

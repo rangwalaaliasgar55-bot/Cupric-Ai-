@@ -5,9 +5,9 @@ idea to exported cut:
 
 **Brief → Arena battle → Footage auto-edit → Timeline → Render.**
 
-The original prototype UI is preserved, but the Electron desktop build now wires
-real functionality behind the same stable renderer signatures in
-`src/lib/gemini.ts`, `src/lib/arena.ts`, and `src/lib/render.ts`.
+The app now avoids placeholder starter projects and wires real local media paths
+behind the renderer signatures in `src/lib/gemini.ts`, `src/lib/arena.ts`, and
+`src/lib/render.ts`.
 
 The Arena workflow intentionally stays human-in-the-loop: Cupric AI generates
 the prompt, you paste it into `arena.ai/code`, vote in Arena yourself, download
@@ -22,9 +22,10 @@ npm install
 npm run dev        # web preview at http://localhost:5173
 ```
 
-The web preview keeps local fallbacks for operations that require desktop
-filesystem/media access. To use the real filesystem, Gemini key storage,
-footage analysis, and rendering pipeline, run Electron:
+The web preview now works with real local browser files for HTML/ZIP Arena imports,
+Video.js footage preview, Web Audio silence/waveform analysis, and downloadable
+WebM draft renders. To use the native filesystem, Gemini key storage, FFmpeg MP4
+rendering pipeline, and installed-app media tools, run Electron:
 
 ```bash
 npm run desktop
@@ -56,9 +57,11 @@ it can run offline after installation. Gemini requires either a saved key or a
 |---|---|
 | **Gemini** | API key is stored in Electron `settings.json` or read from `GEMINI_API_KEY`; the renderer only receives key presence. Brief and Ask Gemini call `gemini-2.0-flash` and fall back locally if the live call fails. |
 | **Arena import** | ZIP/HTML is imported into project app data, extracted safely, checked for `window.__seek(t)`, loaded in a hidden BrowserWindow, and captured as a PNG thumbnail. |
-| **Arena preview** | Imported Arena HTML previews in a sandboxed iframe through an IPC-approved `file://` path under the project data folder. |
-| **Footage analysis** | Video is copied into project app data, duration is read by FFprobe, silences are detected with FFmpeg `silencedetect`, and waveform peaks are returned to the existing waveform UI. |
-| **Timeline render** | Timeline clips render to MP4 under app data. Arena clips are captured frame-by-frame through `window.__seek(t)`; footage clips are trimmed, cropped/scaled, optional silence cuts are applied, and segments are concatenated in timeline order. |
+| **Arena preview** | Imported Arena HTML previews in a sandboxed iframe through an IPC-approved `file://` path under the project data folder. The browser preview imports `.html`/`.zip` with JSZip and validates `window.__seek(t)`. |
+| **Remotion preview** | Locked rundowns are rendered through `@remotion/player` so you can preview the generated composition before exporting or importing Arena results. |
+| **Footage analysis** | Desktop video is copied into project app data, duration is read by FFprobe, silences are detected with FFmpeg `silencedetect`, and waveform peaks are returned to the waveform UI. Browser mode uses Web Audio for duration/waveform/silence scanning. |
+| **Video playback** | Footage preview uses Video.js controls, seeking, volume, playback rates, and picture-in-picture where available. |
+| **Timeline render** | Desktop timeline clips render to MP4 under app data. Arena clips are captured frame-by-frame through `window.__seek(t)`; footage clips are trimmed, cropped/scaled, optional silence cuts are applied, and segments are concatenated in timeline order. Browser mode records a downloadable WebM draft via `canvas.captureStream()`/`MediaRecorder`. |
 | **Progress/cancel** | Render progress streams over IPC. Cancel kills active FFmpeg processes and closes hidden capture windows. |
 | **Persistence** | Zustand state mirrors to `%APPDATA%/cupric-ai/projects.json` in Electron; browser localStorage remains the web-preview fallback. |
 | **Desktop hardening** | Single-instance lock, crash logs under `logs/`, renderer-crash reload screen, optional launch-on-login, GitHub updater check, and optional code signing docs. |
@@ -68,6 +71,7 @@ it can run offline after installation. Gemini requires either a saved key or a
 | Screen | What it does |
 |---|---|
 | **Home** | Project grid with open / duplicate / delete and first Arena thumbnail as the project preview when available. |
+| **Review Room** | Twilio-compatible live review area with real camera/mic preview, invite link copying, mute/camera toggles, and optional Twilio Video token connection. |
 | **Brief** | Chat with Gemini; the scene rundown fills in field by field; lock the rundown to unlock the Arena Desk. |
 | **Arena Desk** | Copy prompt → paste into Arena → vote manually → import the winning ZIP/HTML → preview/import thumbnail/render. |
 | **Footage Desk** | Drop or browse raw video, scan for silences, view real waveform peaks, exclude proposed cuts, pick caption style/crop, apply edit. |
@@ -92,21 +96,38 @@ Important files/folders:
 - `renders/<jobId>/` — MP4 outputs and temporary render work folders.
 - `logs/` — crash and render/update logs.
 
-## Gemini key
+## Live AI providers: Gemini + free OpenCode presets
 
-Set the key in the Ask Gemini settings panel or set `GEMINI_API_KEY` before
-launching the desktop app. The key is never sent to the renderer and is never
-logged; renderer code only sees `hasKey: true/false`.
+The Ask AI settings panel supports Gemini and OpenCode/OpenAI-compatible chat
+completion endpoints.
+
+Free / no-cost options exposed in the UI:
+
+- **Many OpenRouter free-tier presets** including Qwen, DeepSeek, Gemma, Llama,
+  Mistral, Kimi, GLM, and MAI `:free` model IDs. These models are free-tier, but
+  OpenRouter still requires a free API key.
+- **Live free-model discovery** with **Load live list**, which calls the
+  configured `/models` endpoint and filters free models automatically.
+- **Local Ollama** at `http://localhost:11434/v1`, for example
+  `qwen2.5-coder:7b` or `llama3.2:3b`. This is completely local/free when
+  Ollama is running and the model is installed.
+- **Gemini** through a saved key or `GEMINI_API_KEY`.
+
+Keys are stored only in Electron `settings.json` or read from environment
+variables (`OPENCODE_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`,
+`GEMINI_API_KEY`). The renderer only sees provider/key presence, not the secret.
 
 ## FFmpeg / FFprobe
 
-Cupric AI depends on `ffmpeg-static` and `ffprobe-static`; a normal clean
-`npm install` downloads the native binaries. The desktop app also supports
-explicit paths for constrained environments:
+Cupric AI uses `ffmpeg-static` and `ffprobe-static` as optional packaged media
+engines; a normal clean `npm install` attempts to download the native binaries
+without blocking the rest of the app if a corporate proxy/certificate blocks the
+download. The desktop app also supports explicit paths for constrained
+environments:
 
 ```bash
-NORTHFRAME_FFMPEG_PATH=C:\path\to\ffmpeg.exe
-NORTHFRAME_FFPROBE_PATH=C:\path\to\ffprobe.exe
+CUPRIC_FFMPEG_PATH=C:\path\to\ffmpeg.exe
+CUPRIC_FFPROBE_PATH=C:\path\to\ffprobe.exe
 ```
 
 If those variables are not set, Cupric AI checks the packaged static modules

@@ -7,6 +7,7 @@ export type AutomationJob = { id: string; projectId: string; brief: string; foot
 export type View =
   | 'home'
   | 'auto'
+  | 'review'
   | 'brief'
   | 'arena'
   | 'footage'
@@ -68,6 +69,7 @@ export type RenderJob = {
   outputPath?: string | null
   errorMessage?: string | null
   createdAt: string
+  sources?: unknown[]
 }
 
 export type Project = {

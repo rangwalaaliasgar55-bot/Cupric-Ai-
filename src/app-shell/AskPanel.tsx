@@ -1,15 +1,40 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { Send, Sparkles, X, Settings } from 'lucide-react'
-import { fakeGeminiChat } from '../lib/gemini'
+import { askGeminiChat } from '../lib/gemini'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx } from '../lib/utils'
 
-type ChatMsg = { role: 'user' | 'gemini'; text: string }
+type ChatMsg = { role: 'user' | 'ai'; text: string }
+
+type AiProvider = 'gemini' | 'opencode'
 
 const CHIPS = ['Suggest a 12s bumper', 'How does the Arena flow work?', 'Tighten my captions']
 
-/** Ask Gemini slide-over — shell per Prompt 0, wired to the mocked chat lib. */
+type OpenCodePreset = { id: string; label: string; baseUrl: string; model: string; note: string }
+
+const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
+
+const FREE_OPENCODE_PRESETS: OpenCodePreset[] = [
+  { id: 'openrouter-qwen3-235b', label: 'Qwen 3 235B free', baseUrl: OPENROUTER_BASE_URL, model: 'qwen/qwen3-235b-a22b:free', note: 'Large Qwen free-tier model for briefs and chat.' },
+  { id: 'openrouter-qwen3-30b', label: 'Qwen 3 30B free', baseUrl: OPENROUTER_BASE_URL, model: 'qwen/qwen3-30b-a3b:free', note: 'Fast Qwen free-tier model.' },
+  { id: 'openrouter-qwen-coder', label: 'Qwen coder free', baseUrl: OPENROUTER_BASE_URL, model: 'qwen/qwen-2.5-coder-32b-instruct:free', note: 'Good for HTML/CSS/JS Arena code prompts.' },
+  { id: 'openrouter-deepseek-v3', label: 'DeepSeek V3 free', baseUrl: OPENROUTER_BASE_URL, model: 'deepseek/deepseek-chat-v3-0324:free', note: 'Strong default for chat and JSON rundowns.' },
+  { id: 'openrouter-deepseek-r1', label: 'DeepSeek R1 free', baseUrl: OPENROUTER_BASE_URL, model: 'deepseek/deepseek-r1:free', note: 'Reasoning-focused free-tier model.' },
+  { id: 'openrouter-deepseek-r1-0528', label: 'DeepSeek R1 0528 free', baseUrl: OPENROUTER_BASE_URL, model: 'deepseek/deepseek-r1-0528:free', note: 'Newer R1 free-tier preset when available.' },
+  { id: 'openrouter-gemma-27b', label: 'Gemma 3 27B free', baseUrl: OPENROUTER_BASE_URL, model: 'google/gemma-3-27b-it:free', note: 'Lightweight free model for quick chat.' },
+  { id: 'openrouter-gemma-12b', label: 'Gemma 3 12B free', baseUrl: OPENROUTER_BASE_URL, model: 'google/gemma-3-12b-it:free', note: 'Smaller Gemma free-tier preset.' },
+  { id: 'openrouter-llama-33', label: 'Llama 3.3 70B free', baseUrl: OPENROUTER_BASE_URL, model: 'meta-llama/llama-3.3-70b-instruct:free', note: 'Meta Llama free-tier preset when available.' },
+  { id: 'openrouter-llama-32', label: 'Llama 3.2 3B free', baseUrl: OPENROUTER_BASE_URL, model: 'meta-llama/llama-3.2-3b-instruct:free', note: 'Small/fast free-tier preset.' },
+  { id: 'openrouter-mistral-small', label: 'Mistral Small free', baseUrl: OPENROUTER_BASE_URL, model: 'mistralai/mistral-small-3.1-24b-instruct:free', note: 'Mistral free-tier preset for concise chat.' },
+  { id: 'openrouter-kimi', label: 'Kimi free', baseUrl: OPENROUTER_BASE_URL, model: 'moonshotai/kimi-k2:free', note: 'Kimi free-tier preset when available.' },
+  { id: 'openrouter-glm', label: 'GLM free', baseUrl: OPENROUTER_BASE_URL, model: 'z-ai/glm-4.5-air:free', note: 'GLM free-tier preset when available.' },
+  { id: 'openrouter-mai', label: 'MAI DS R1 free', baseUrl: OPENROUTER_BASE_URL, model: 'microsoft/mai-ds-r1:free', note: 'Microsoft free-tier reasoning preset when available.' },
+  { id: 'local-ollama-qwen-coder', label: 'Local Ollama coder', baseUrl: 'http://localhost:11434/v1', model: 'qwen2.5-coder:7b', note: 'Completely free local model if Ollama is running and the model is installed.' },
+  { id: 'local-ollama-llama', label: 'Local Ollama Llama', baseUrl: 'http://localhost:11434/v1', model: 'llama3.2:3b', note: 'Small completely local/free Ollama preset.' },
+]
+
+/** Live model slide-over — Gemini or OpenCode/OpenAI-compatible, never fake chat. */
 export function AskPanel() {
   const open = useProjectStore((s) => s.askOpen)
   const setAskOpen = useProjectStore((s) => s.setAskOpen)
@@ -18,24 +43,38 @@ export function AskPanel() {
 
   const [msgs, setMsgs] = useState<ChatMsg[]>([
     {
-      role: 'gemini',
-      text: "Hey — I'm the Gemini co-pilot. Ask me for rundown ideas, tighter copy, or how the Arena flow works. Add a Gemini key in settings for live answers; otherwise I keep the local fallback ready.",
+      role: 'ai',
+      text: "Hey — I'm Cupric AI. Live chat uses Gemini or an OpenCode/OpenAI-compatible model configured in settings. Video creation does not need chat; use Brief → Create video file.",
     },
   ])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [apiKey, setApiKey] = useState('')
+  const [openCodeKey, setOpenCodeKey] = useState('')
+  const [openCodeBaseUrl, setOpenCodeBaseUrl] = useState('https://openrouter.ai/api/v1')
+  const [openCodeModel, setOpenCodeModel] = useState('qwen/qwen3-235b-a22b:free')
+  const [aiProvider, setAiProvider] = useState<AiProvider>('opencode')
   const [hasKey, setHasKey] = useState(false)
+  const [hasGeminiKey, setHasGeminiKey] = useState(false)
+  const [hasOpenCodeKey, setHasOpenCodeKey] = useState(false)
   const [autoLaunch, setAutoLaunch] = useState(false)
   const [updateStatus, setUpdateStatus] = useState('')
   const [mediaReady, setMediaReady] = useState<boolean | null>(null)
+  const [freeModels, setFreeModels] = useState<OpenCodePreset[]>(FREE_OPENCODE_PRESETS)
+  const [modelSearch, setModelSearch] = useState('')
+  const [modelLoadStatus, setModelLoadStatus] = useState('')
 
   useEffect(() => {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
     if (!ipc) return
-    ipc.invoke('settings:get').then((settings: { hasKey?: boolean; autoLaunch?: boolean }) => {
+    ipc.invoke('settings:get').then((settings: { hasKey?: boolean; hasGeminiKey?: boolean; hasOpenCodeKey?: boolean; aiProvider?: AiProvider; openCodeBaseUrl?: string; openCodeModel?: string; autoLaunch?: boolean }) => {
       setHasKey(Boolean(settings?.hasKey))
+      setHasGeminiKey(Boolean(settings?.hasGeminiKey))
+      setHasOpenCodeKey(Boolean(settings?.hasOpenCodeKey))
+      if (settings?.aiProvider) setAiProvider(settings.aiProvider)
+      if (settings?.openCodeBaseUrl) setOpenCodeBaseUrl(settings.openCodeBaseUrl)
+      if (settings?.openCodeModel) setOpenCodeModel(settings.openCodeModel)
       setAutoLaunch(Boolean(settings?.autoLaunch))
     })
     ipc.invoke('media:status').then((status: { ready?: boolean }) => setMediaReady(Boolean(status?.ready))).catch(() => setMediaReady(false))
@@ -46,23 +85,67 @@ export function AskPanel() {
     }
   }, [])
 
-  async function saveKey() {
-    const ipc = (window as any).northframe?.ipc
+  const shownFreeModels = freeModels.filter((preset) => {
+    const q = modelSearch.trim().toLowerCase()
+    if (!q) return true
+    return `${preset.label} ${preset.model} ${preset.note}`.toLowerCase().includes(q)
+  })
+
+  function useOpenCodePreset(preset: OpenCodePreset) {
+    setAiProvider('opencode')
+    setOpenCodeBaseUrl(preset.baseUrl)
+    setOpenCodeModel(preset.model)
+  }
+
+  async function loadFreeOpenCodeModels() {
+    setModelLoadStatus('loading')
+    try {
+      const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+      let models: OpenCodePreset[] = []
+      if (ipc) {
+        models = await ipc.invoke('opencode:listModels', { baseUrl: openCodeBaseUrl, apiKey: openCodeKey })
+      } else {
+        const res = await fetch(`${openCodeBaseUrl.replace(/\/$/, '')}/models`)
+        const data = await res.json()
+        models = (data?.data ?? [])
+          .filter((model: any) => String(model?.id || '').includes(':free'))
+          .map((model: any) => ({ id: `live-${model.id}`, label: String(model.name || model.id).replace(/\s*\(free\)/i, ''), baseUrl: openCodeBaseUrl, model: model.id, note: 'Live free model discovered from the configured model endpoint.' }))
+      }
+      const merged = [...models, ...FREE_OPENCODE_PRESETS]
+      const seen = new Set<string>()
+      setFreeModels(merged.filter((model) => (seen.has(model.model) ? false : (seen.add(model.model), true))))
+      setModelLoadStatus(`${models.length} free models loaded`)
+    } catch (err) {
+      setModelLoadStatus(err instanceof Error ? err.message : 'Could not load free models')
+    }
+  }
+
+  async function saveAiSettings() {
+    const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
     if (!ipc) return
-    const result = await ipc.invoke('settings:set', { geminiApiKey: apiKey })
+    const result = await ipc.invoke('settings:set', {
+      aiProvider,
+      geminiApiKey: apiKey,
+      openCodeApiKey: openCodeKey,
+      openCodeBaseUrl,
+      openCodeModel,
+    })
     setHasKey(Boolean(result?.hasKey))
+    setHasGeminiKey(Boolean(result?.hasGeminiKey))
+    setHasOpenCodeKey(Boolean(result?.hasOpenCodeKey))
     setApiKey('')
+    setOpenCodeKey('')
   }
 
   async function toggleAutoLaunch(next: boolean) {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
     if (!ipc) return
     const result = await ipc.invoke('settings:set', { autoLaunch: next })
     setAutoLaunch(Boolean(result?.autoLaunch))
   }
 
   async function checkForUpdates() {
-    const ipc = (window as any).northframe?.ipc
+    const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
     if (!ipc) return
     setUpdateStatus('checking')
     const result = await ipc.invoke('updater:check')
@@ -75,8 +158,8 @@ export function AskPanel() {
     setInput('')
     setMsgs((m) => [...m, { role: 'user', text }])
     setBusy(true)
-    const reply = await fakeGeminiChat(text, { projectName: active?.name ?? null, view })
-    setMsgs((m) => [...m, { role: 'gemini', text: reply }])
+    const reply = await askGeminiChat(text, { projectName: active?.name ?? null, view })
+    setMsgs((m) => [...m, { role: 'ai', text: reply }])
     setBusy(false)
   }
 
@@ -85,7 +168,7 @@ export function AskPanel() {
       {open && (
         <motion.aside
           key="ask-panel"
-          aria-label="Ask Gemini"
+          aria-label="Ask Cupric AI"
           initial={{ x: 48, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 48, opacity: 0 }}
@@ -97,10 +180,10 @@ export function AskPanel() {
               <Sparkles size={14} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 text-sm font-semibold">Ask Gemini <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{hasKey ? 'LIVE' : 'MOCK'}</span></div>
-              <div className="text-xs text-muted">{hasKey ? 'Gemini 2.0 Flash' : 'Local fallback — add an API key'}</div>
+              <div className="flex items-center gap-2 text-sm font-semibold">Ask Cupric AI <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{hasKey ? 'LIVE' : 'SETUP'}</span></div>
+              <div className="text-xs text-muted">{hasKey ? (aiProvider === 'opencode' ? `OpenCode · ${openCodeModel}` : 'Gemini 2.0 Flash') : 'Connect Gemini or OpenCode model'}</div>
             </div>
-            <button type="button" aria-label="Gemini settings" onClick={() => setShowSettings((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-panel-alt hover:text-text"><Settings size={15}/></button>
+            <button type="button" aria-label="AI settings" onClick={() => setShowSettings((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-panel-alt hover:text-text"><Settings size={15}/></button>
             <button
               type="button"
               aria-label="Close panel"
@@ -114,24 +197,102 @@ export function AskPanel() {
           {showSettings && (
             <div className="space-y-3 border-b border-line bg-panel-alt p-3">
               <form
+                className="space-y-2"
                 onSubmit={(e) => {
                   e.preventDefault()
-                  saveKey()
+                  saveAiSettings()
                 }}
               >
-                <label className="mb-1 block text-xs text-muted">Gemini API key</label>
-                <div className="flex gap-2">
+                <label className="block text-xs text-muted">
+                  Live AI provider
+                  <select
+                    value={aiProvider}
+                    onChange={(e) => setAiProvider(e.target.value as AiProvider)}
+                    className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs text-text"
+                  >
+                    <option value="gemini">Gemini</option>
+                    <option value="opencode">OpenCode / OpenAI compatible</option>
+                  </select>
+                </label>
+                <label className="block text-xs text-muted">
+                  Gemini API key <span className={hasGeminiKey ? 'text-accent-text' : 'text-muted'}>{hasGeminiKey ? 'saved' : 'not saved'}</span>
                   <input
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    placeholder={hasKey ? 'Key saved — paste a new one to replace' : 'Paste key — stored locally'}
-                    className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-bg px-2 text-xs"
+                    placeholder="Paste Gemini key — stored locally"
+                    className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
-                  <button type="submit" className="rounded-lg bg-accent px-3 text-xs font-semibold text-accent-ink">
-                    Save
-                  </button>
+                </label>
+                <div className="rounded-lg border border-line bg-bg/40 p-2">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div className="text-xs font-semibold text-muted">Free OpenCode models</div>
+                    <button type="button" onClick={loadFreeOpenCodeModels} className="rounded-md border border-line bg-panel px-2 py-1 text-xs text-muted hover:text-text">
+                      Load live list
+                    </button>
+                  </div>
+                  <input
+                    value={modelSearch}
+                    onChange={(e) => setModelSearch(e.target.value)}
+                    placeholder="Search free models…"
+                    className="mb-2 h-8 w-full rounded-lg border border-line bg-panel px-2 text-xs"
+                  />
+                  <div className="max-h-52 overflow-y-auto pr-1">
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {shownFreeModels.map((preset) => (
+                        <button
+                          key={`${preset.id}-${preset.model}`}
+                          type="button"
+                          onClick={() => useOpenCodePreset(preset)}
+                          className={cx(
+                            'rounded-lg border px-2 py-1.5 text-left text-xs transition-colors duration-150 hover:border-accent/50 hover:text-text',
+                            aiProvider === 'opencode' && openCodeModel === preset.model
+                              ? 'border-accent/60 bg-accent/10 text-accent-text'
+                              : 'border-line bg-panel text-muted',
+                          )}
+                          title={preset.note}
+                        >
+                          <span className="block font-medium">{preset.label}</span>
+                          <span className="block truncate font-mono text-[10px] text-muted">{preset.model}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs leading-relaxed text-muted">
+                    {modelLoadStatus || `${freeModels.length} presets included. OpenRouter “:free” models need a free key; local Ollama presets need Ollama running, no key.`}
+                  </p>
                 </div>
+                <label className="block text-xs text-muted">
+                  OpenCode base URL
+                  <input
+                    value={openCodeBaseUrl}
+                    onChange={(e) => setOpenCodeBaseUrl(e.target.value)}
+                    placeholder="https://openrouter.ai/api/v1 or http://localhost:11434/v1"
+                    className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
+                  />
+                </label>
+                <label className="block text-xs text-muted">
+                  OpenCode model
+                  <input
+                    value={openCodeModel}
+                    onChange={(e) => setOpenCodeModel(e.target.value)}
+                    placeholder="qwen/qwen3-235b-a22b:free"
+                    className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
+                  />
+                </label>
+                <label className="block text-xs text-muted">
+                  OpenCode API key <span className={hasOpenCodeKey ? 'text-accent-text' : 'text-muted'}>{hasOpenCodeKey ? 'saved / local model' : 'not saved'}</span>
+                  <input
+                    type="password"
+                    value={openCodeKey}
+                    onChange={(e) => setOpenCodeKey(e.target.value)}
+                    placeholder="OpenRouter/OpenAI key, or blank for local Ollama"
+                    className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
+                  />
+                </label>
+                <button type="submit" className="w-full rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink">
+                  Save live AI settings
+                </button>
               </form>
               <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
                 Media engine: <span className={mediaReady ? 'text-accent-text' : 'text-danger'}>{mediaReady === null ? 'checking' : mediaReady ? 'ready' : 'FFmpeg missing'}</span>
@@ -203,7 +364,7 @@ export function AskPanel() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask anything…"
-                aria-label="Ask Gemini"
+                aria-label="Ask Cupric AI"
                 className="h-9 flex-1 rounded-lg border border-line bg-panel-alt px-3 text-sm placeholder:text-muted/70"
               />
               <button

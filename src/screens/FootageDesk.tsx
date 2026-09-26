@@ -85,8 +85,9 @@ export function FootageDesk() {
     setUploading({ name, pct: 0 })
     try {
       const res = await uploadFootage(file, project.id, (pct) => setUploading((cur) => (cur ? { ...cur, pct } : cur)))
+      const analyzedName = (res as { name?: string }).name || name
       const id = addFootageAsset(project.id, {
-        name,
+        name: analyzedName,
         durationSec: res.durationSec,
         localPath: (res as any).videoPath ?? null,
         status: 'uploaded',
@@ -96,7 +97,7 @@ export function FootageDesk() {
         crop: '9:16',
       })
       setSelectedId(id)
-      pushToast('success', `${name} scanned — ${res.silenceRanges.length} silence cut${res.silenceRanges.length === 1 ? '' : 's'} found`)
+      pushToast('success', `${analyzedName} scanned — ${res.silenceRanges.length} silence cut${res.silenceRanges.length === 1 ? '' : 's'} found`)
     } catch (err) {
       pushToast('error', err instanceof Error ? err.message : 'Footage analysis failed')
     } finally {
@@ -262,6 +263,8 @@ export function FootageDesk() {
 function FootageDetail({ asset }: { asset: FootageAsset }) {
   const project = useActiveProject()
   const updateFootageAsset = useProjectStore((s) => s.updateFootageAsset)
+  const addTimelineClip = useProjectStore((s) => s.addTimelineClip)
+  const setView = useProjectStore((s) => s.setView)
   const pushToast = useProjectStore((s) => s.pushToast)
   const [caption, setCaption] = useState(asset.captionStyle)
   const [crop, setCrop] = useState(asset.crop)
@@ -276,7 +279,15 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
       captionStyle: caption,
       crop,
     })
-    pushToast('success', 'Edit applied — clip is ready for the Timeline')
+    if (!project!.timeline.some((clip) => clip.sourceType === 'footage' && clip.sourceId === asset.id)) {
+      addTimelineClip(project!.id, {
+        sourceType: 'footage',
+        sourceId: asset.id,
+        durationSec: Math.max(0.5, round1(asset.durationSec - cutTotal)),
+      })
+    }
+    pushToast('success', 'Edit applied and added to the Timeline')
+    setView('timeline')
   }
 
   return (
