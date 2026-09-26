@@ -1666,6 +1666,26 @@ export const lab: LabEntry[] = [
     keywords: "signature sign draw pen ink canvas pad handwriting form",
     previewScale: 0.65,
   },
+  {
+    slug: "progress-stack",
+    isNew: true,
+    name: "Progress stack",
+    category: "feedback",
+    description:
+      "Three onboarding steps deep — the finished one below, the running one in focus, the next one waiting above.",
+    keywords: "progress steps onboarding loader stack verifying account setup",
+    previewScale: 0.95,
+  },
+  {
+    slug: "stack-ripple",
+    isNew: true,
+    name: "Stack ripple",
+    category: "cards",
+    description:
+      "Notification cards collapsed into a deck, fanning open on one shared spring when you ask to see them all.",
+    keywords: "notifications stack cards expand collapse spring toast deck",
+    previewScale: 0.85,
+  },
   // new-component:entries
 ];
 

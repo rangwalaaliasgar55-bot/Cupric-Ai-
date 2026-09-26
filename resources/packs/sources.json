@@ -1,0 +1,1008 @@
+{
+  "id": "sources",
+  "name": "Sources",
+  "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
+  "version": "0.4.0",
+  "source": "src/lib/sources.ts (links only; nothing third-party is bundled)",
+  "license": "Per entry — see each item",
+  "items": [
+    {
+      "id": "forge-ui",
+      "kind": "source",
+      "name": "Forge UI",
+      "description": "Motion-first React components. Progress Stack and Stack Ripple are vendored into the Lab; Text Reveal and Velora drive HTML video templates.",
+      "data": {
+        "url": "https://forgeui.in/components",
+        "sourceKind": "components",
+        "use": "both",
+        "intake": "copy",
+        "license": "Free tier, MIT-style copy-paste",
+        "promptCue": "Forge UI look: soft neutral gradient cards (from-neutral-100 to-neutral-50, dark from-neutral-800 to-neutral-950), 12px radius, inset hairline ring, spring motion (damping 15, stiffness 200)."
+      },
+      "tags": [
+        "source",
+        "components",
+        "both",
+        "react",
+        "motion",
+        "cards",
+        "progress"
+      ]
+    },
+    {
+      "id": "forge-ui-templates",
+      "kind": "source",
+      "name": "Forge UI templates",
+      "description": "Full page templates used as scene layouts for HTML → MP4 renders (hero, pricing, feature grid).",
+      "data": {
+        "url": "https://forgeui.in/template",
+        "sourceKind": "templates",
+        "use": "video",
+        "intake": "copy",
+        "license": "Free tier",
+        "promptCue": "Template scene: full-bleed hero, one headline at 64px/800 weight, one supporting line at 22px muted, content centred in a 1080×1920 safe area."
+      },
+      "tags": [
+        "source",
+        "templates",
+        "video",
+        "template",
+        "landing",
+        "scene"
+      ]
+    },
+    {
+      "id": "forge-ui-illustrations",
+      "kind": "source",
+      "name": "Forge UI illustrations",
+      "description": "SVG illustrations for empty states in the app and as foreground art in generated video.",
+      "data": {
+        "url": "https://forgeui.in/illustrations",
+        "sourceKind": "illustrations",
+        "use": "both",
+        "intake": "copy",
+        "license": "Free tier",
+        "promptCue": "Line-art SVG illustration, single accent colour on a near-black field, 2px strokes, no gradients."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "both",
+        "svg",
+        "empty-state",
+        "art"
+      ]
+    },
+    {
+      "id": "watermelon-ui",
+      "kind": "source",
+      "name": "Watermelon UI",
+      "description": "Playful animated React/Tailwind blocks — good source for Studio panel micro-states.",
+      "data": {
+        "url": "https://ui.watermelon.sh/home",
+        "sourceKind": "components",
+        "use": "both",
+        "intake": "copy",
+        "license": "Open source",
+        "promptCue": "Watermelon look: high-contrast rounded blocks, bouncy spring entrances, oversized type, one saturated accent."
+      },
+      "tags": [
+        "source",
+        "components",
+        "both",
+        "react",
+        "tailwind",
+        "animated"
+      ]
+    },
+    {
+      "id": "shadcn-ui",
+      "kind": "source",
+      "name": "shadcn/ui",
+      "description": "The baseline primitive set and registry format every other source here plugs into.",
+      "data": {
+        "url": "https://ui.shadcn.com",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "registry",
+        "license": "MIT",
+        "promptCue": "shadcn baseline: neutral tokens, 0.5rem radius, focus-visible ring, muted-foreground for secondary text."
+      },
+      "tags": [
+        "source",
+        "components",
+        "ui",
+        "primitives",
+        "registry",
+        "tokens"
+      ]
+    },
+    {
+      "id": "aceternity-ui",
+      "kind": "source",
+      "name": "Aceternity UI",
+      "description": "200+ animated React/Tailwind sections — spotlight cards, beams, aurora backgrounds.",
+      "data": {
+        "url": "https://ui.aceternity.com",
+        "sourceKind": "components",
+        "use": "both",
+        "intake": "copy",
+        "license": "MIT",
+        "promptCue": "Aceternity look: aurora/beam background, spotlight that tracks the pointer, gradient borders, heavy blur."
+      },
+      "tags": [
+        "source",
+        "components",
+        "both",
+        "animated",
+        "hero",
+        "background"
+      ]
+    },
+    {
+      "id": "magic-ui",
+      "kind": "source",
+      "name": "Magic UI",
+      "description": "Marquees, number tickers, shine borders — most of them map 1:1 to a video overlay.",
+      "data": {
+        "url": "https://magicui.design",
+        "sourceKind": "components",
+        "use": "both",
+        "intake": "copy",
+        "license": "MIT",
+        "promptCue": "Magic UI look: shimmering border sweep, number ticker counting up, marquee row of logos at 40s linear."
+      },
+      "tags": [
+        "source",
+        "components",
+        "both",
+        "marquee",
+        "ticker",
+        "border"
+      ]
+    },
+    {
+      "id": "motion-primitives",
+      "kind": "source",
+      "name": "Motion Primitives",
+      "description": "Small, composable motion behaviours — the closest match to the Studio text animations.",
+      "data": {
+        "url": "https://motion-primitives.com",
+        "sourceKind": "motion",
+        "use": "both",
+        "intake": "copy",
+        "license": "MIT",
+        "promptCue": "Motion primitive: per-character stagger of 0.03s, blur 6px → 0, y 12px → 0, easeOut 0.4s."
+      },
+      "tags": [
+        "source",
+        "motion",
+        "both",
+        "motion",
+        "stagger",
+        "text"
+      ]
+    },
+    {
+      "id": "uiverse",
+      "kind": "source",
+      "name": "Uiverse",
+      "description": "Community CSS-only buttons, loaders and toggles — pure CSS, so they drop straight into a render frame.",
+      "data": {
+        "url": "https://uiverse.io",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "copy",
+        "license": "MIT (per-snippet)",
+        "promptCue": "CSS-only control, no JS: keyframes for the whole state change, hover and active handled in CSS."
+      },
+      "tags": [
+        "source",
+        "components",
+        "ui",
+        "css",
+        "buttons",
+        "loaders"
+      ]
+    },
+    {
+      "id": "uiable",
+      "kind": "source",
+      "name": "Uiable",
+      "description": "Curated Tailwind blocks; used as layout reference for the Library and Review Room.",
+      "data": {
+        "url": "https://uiable.com",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "Free tier",
+        "promptCue": "Clean Tailwind block: 12-column grid, generous 24px gaps, hairline dividers instead of shadows."
+      },
+      "tags": [
+        "source",
+        "components",
+        "ui",
+        "blocks",
+        "layout"
+      ]
+    },
+    {
+      "id": "mapcn",
+      "kind": "source",
+      "name": "mapcn",
+      "description": "Map, marker, route and popup components — the route-draw animation is a ready video beat.",
+      "data": {
+        "url": "https://mapcn.dev",
+        "sourceKind": "components",
+        "use": "both",
+        "intake": "copy",
+        "license": "MIT",
+        "promptCue": "Map beat: dark tiles, a single lime route drawn with stroke-dashoffset over 2s, marker pops at each stop."
+      },
+      "tags": [
+        "source",
+        "components",
+        "both",
+        "map",
+        "route",
+        "marker"
+      ]
+    },
+    {
+      "id": "21st-dev",
+      "kind": "source",
+      "name": "21st.dev",
+      "description": "Component registry that plugs in over MCP — the fastest way to pull one more block into the app.",
+      "data": {
+        "url": "https://21st.dev",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "registry",
+        "license": "Mixed, per item",
+        "promptCue": "Registry install: shadcn add <item>, then restyle to Cupric tokens (near-black #0B0B10, lime #C8F542)."
+      },
+      "tags": [
+        "source",
+        "components",
+        "ui",
+        "registry",
+        "mcp"
+      ]
+    },
+    {
+      "id": "23rd-dev",
+      "kind": "source",
+      "name": "23rd (shadcn registry)",
+      "description": "Shader Gradient / Fire / Sky, Live Orb, ASCII Logo, Logo Burst, Radiant Lines, Dithered 404 — installs via shadcn CLI, renders as video atmosphere.",
+      "data": {
+        "url": "https://23rd.dev",
+        "sourceKind": "shaders",
+        "use": "both",
+        "intake": "registry",
+        "license": "Open registry (per item)",
+        "promptCue": "Shader atmosphere behind content: full-bleed animated gradient in a relatively positioned, isolated section; UI sits in a later stacking context at z-10."
+      },
+      "tags": [
+        "source",
+        "shaders",
+        "both",
+        "shader",
+        "webgl",
+        "background",
+        "ascii"
+      ]
+    },
+    {
+      "id": "beautiful-ui",
+      "kind": "source",
+      "name": "Beautiful UI",
+      "description": "Polished marketing sections; used for spacing and type-scale reference.",
+      "data": {
+        "url": "https://beautifului.dev",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "reference",
+        "license": "Free tier",
+        "promptCue": "Editorial spacing: 96px section rhythm, 1.15 line-height headlines, -0.02em tracking."
+      },
+      "tags": [
+        "source",
+        "components",
+        "ui",
+        "marketing",
+        "typography"
+      ]
+    },
+    {
+      "id": "metalforge",
+      "kind": "source",
+      "name": "MetalForge",
+      "description": "Metallic/chrome material studies — the best reference for the liquid-glass and chrome-title looks.",
+      "data": {
+        "url": "https://metalforge.xyz",
+        "sourceKind": "shaders",
+        "use": "video",
+        "intake": "reference",
+        "license": "Reference only",
+        "promptCue": "Chrome title: brushed metal gradient with an animated specular sweep, 1px dark inner bevel, no drop shadow."
+      },
+      "tags": [
+        "source",
+        "shaders",
+        "video",
+        "chrome",
+        "metal",
+        "title"
+      ]
+    },
+    {
+      "id": "astryx",
+      "kind": "source",
+      "name": "Astryx",
+      "description": "Meta-built component set — dense, accessible patterns worth copying for the app chrome.",
+      "data": {
+        "url": "https://astryx.atmeta.com/components",
+        "sourceKind": "components",
+        "use": "both",
+        "intake": "reference",
+        "license": "Per site terms",
+        "promptCue": "Astryx look: restrained neutral surfaces, strong focus states, 4px spacing grid, motion under 200ms."
+      },
+      "tags": [
+        "source",
+        "components",
+        "both",
+        "accessible",
+        "chrome",
+        "dense"
+      ]
+    },
+    {
+      "id": "microkit",
+      "kind": "source",
+      "name": "Microkit",
+      "description": "Micro-interactions — the small confirmations that make the Studio feel responsive.",
+      "data": {
+        "url": "https://microkit.co",
+        "sourceKind": "motion",
+        "use": "ui",
+        "intake": "copy",
+        "license": "Free tier",
+        "promptCue": "Micro-interaction: 120ms scale to 0.97 on press, 240ms spring back, haptic-style overshoot of 4%."
+      },
+      "tags": [
+        "source",
+        "motion",
+        "ui",
+        "micro",
+        "feedback"
+      ]
+    },
+    {
+      "id": "glass-refraction",
+      "kind": "source",
+      "name": "Glass refraction",
+      "description": "Glass refraction study; feeds the existing Liquid Glass preset parameters.",
+      "data": {
+        "url": "https://glass.samasante.com",
+        "sourceKind": "shaders",
+        "use": "both",
+        "intake": "reference",
+        "license": "Reference only",
+        "promptCue": "Liquid glass: backdrop blur 18px, SVG displacement 24, 1px white inner ring at 20%, specular highlight top-left."
+      },
+      "tags": [
+        "source",
+        "shaders",
+        "both",
+        "glass",
+        "refraction",
+        "blur"
+      ]
+    },
+    {
+      "id": "text-effects",
+      "kind": "source",
+      "name": "Text Effects (Colorion)",
+      "description": "Copy-paste CSS text effects — direct source for kinetic type beats.",
+      "data": {
+        "url": "https://text-effects.colorion.co",
+        "sourceKind": "motion",
+        "use": "video",
+        "intake": "copy",
+        "license": "Free",
+        "promptCue": "Text effect beat: gradient text with an animated background-position sweep over 2.4s linear infinite."
+      },
+      "tags": [
+        "source",
+        "motion",
+        "video",
+        "text",
+        "css",
+        "kinetic"
+      ]
+    },
+    {
+      "id": "kinetics",
+      "kind": "source",
+      "name": "Kinetics (Colorion)",
+      "description": "150+ motion effects shipped with React code and a matching prompt for each.",
+      "data": {
+        "url": "https://kinetics.colorion.co",
+        "sourceKind": "motion",
+        "use": "both",
+        "intake": "copy",
+        "license": "Free",
+        "promptCue": "Kinetic effect: describe the motion in one clause (what moves, how far, over how long, with what easing)."
+      },
+      "tags": [
+        "source",
+        "motion",
+        "both",
+        "motion",
+        "react",
+        "prompts"
+      ]
+    },
+    {
+      "id": "circle-loaders",
+      "kind": "source",
+      "name": "Circle Loaders",
+      "description": "Pure-CSS circular loaders — used for progress beats and the Render screen.",
+      "data": {
+        "url": "https://circleloaders.dominikakissi.com",
+        "sourceKind": "motion",
+        "use": "both",
+        "intake": "copy",
+        "license": "Free",
+        "promptCue": "Circular loader: 2px stroke, 270° arc, 1s linear rotation, accent stroke on a 12%-opacity track."
+      },
+      "tags": [
+        "source",
+        "motion",
+        "both",
+        "loader",
+        "css",
+        "progress"
+      ]
+    },
+    {
+      "id": "gradient-buttons",
+      "kind": "source",
+      "name": "Gradient Buttons",
+      "description": "Gradient button recipes for the primary CTA family.",
+      "data": {
+        "url": "https://gradientbuttons.colorion.co",
+        "sourceKind": "components",
+        "use": "ui",
+        "intake": "copy",
+        "license": "Free",
+        "promptCue": "Gradient CTA: 135° two-stop gradient, 1px lighter top edge, shadow only on hover."
+      },
+      "tags": [
+        "source",
+        "components",
+        "ui",
+        "button",
+        "gradient",
+        "cta"
+      ]
+    },
+    {
+      "id": "kitbitz",
+      "kind": "source",
+      "name": "Kitbitz",
+      "description": "2,000+ hand-drawn illustrations — foreground art for video and empty states in the app.",
+      "data": {
+        "url": "https://kitbitz.art",
+        "sourceKind": "illustrations",
+        "use": "both",
+        "intake": "export",
+        "license": "Free tier",
+        "promptCue": "Hand-drawn illustration, ink linework, slightly wobbly strokes, flat single-colour fills."
+      },
+      "tags": [
+        "source",
+        "illustrations",
+        "both",
+        "illustration",
+        "hand-drawn"
+      ]
+    },
+    {
+      "id": "3dicons",
+      "kind": "source",
+      "name": "3dicons",
+      "description": "Free 3D icons (PNG/Blend) — hero props for video beats and Library category art.",
+      "data": {
+        "url": "https://3dicons.co",
+        "sourceKind": "icons",
+        "use": "both",
+        "intake": "export",
+        "license": "CC0",
+        "promptCue": "3D icon prop: soft clay material, single key light from top-left, 15° tilt, transparent background."
+      },
+      "tags": [
+        "source",
+        "icons",
+        "both",
+        "3d",
+        "icon",
+        "prop"
+      ]
+    },
+    {
+      "id": "animejs",
+      "kind": "source",
+      "name": "Anime.js",
+      "description": "Timeline animation library — the natural driver for `__seek(t)` HTML video templates.",
+      "data": {
+        "url": "https://animejs.com",
+        "sourceKind": "motion",
+        "use": "video",
+        "intake": "copy",
+        "license": "MIT",
+        "promptCue": "Anime.js timeline seeked by frame: build the full timeline, then call tl.seek(t * 1000) per frame."
+      },
+      "tags": [
+        "source",
+        "motion",
+        "video",
+        "timeline",
+        "seek",
+        "render"
+      ]
+    },
+    {
+      "id": "gradientool",
+      "kind": "source",
+      "name": "Gradientool",
+      "description": "Gradient generator; exports CSS that drops into the backgrounds pack.",
+      "data": {
+        "url": "https://gradientool.com",
+        "sourceKind": "generators",
+        "use": "both",
+        "intake": "export",
+        "license": "Free",
+        "promptCue": "Export as CSS `background-image` only, no vendor prefixes, sRGB stops."
+      },
+      "tags": [
+        "source",
+        "generators",
+        "both",
+        "gradient",
+        "css"
+      ]
+    },
+    {
+      "id": "gradient-lab",
+      "kind": "source",
+      "name": "Backgrounds Supply — Gradient Lab",
+      "description": "Mesh gradient lab — full-bleed stage backgrounds for renders.",
+      "data": {
+        "url": "https://backgrounds.supply/gradient-lab",
+        "sourceKind": "backgrounds",
+        "use": "video",
+        "intake": "export",
+        "license": "Free tier",
+        "promptCue": "Mesh gradient stage: 4 blurred colour blobs over #0B0B10, 120px blur, no visible banding."
+      },
+      "tags": [
+        "source",
+        "backgrounds",
+        "video",
+        "mesh",
+        "background",
+        "stage"
+      ]
+    },
+    {
+      "id": "animos",
+      "kind": "source",
+      "name": "Animos editor",
+      "description": "Browser animation editor; its exported keyframes convert into Studio clips.",
+      "data": {
+        "url": "https://animos.app/editor",
+        "sourceKind": "generators",
+        "use": "video",
+        "intake": "export",
+        "license": "Free tier",
+        "promptCue": "Keyframe export: list of {t, props} pairs, linear between keys unless an easing is named."
+      },
+      "tags": [
+        "source",
+        "generators",
+        "video",
+        "keyframes",
+        "editor"
+      ]
+    },
+    {
+      "id": "cutting-mat",
+      "kind": "source",
+      "name": "Cutting Mat Generator",
+      "description": "Self-healing cutting-mat grid — a distinctive SVG backdrop for product beats.",
+      "data": {
+        "url": "https://cutting-mat-generator.vercel.app",
+        "sourceKind": "backgrounds",
+        "use": "video",
+        "intake": "export",
+        "license": "Free",
+        "promptCue": "Cutting-mat backdrop: dark teal field, 1cm white grid at 12%, 5cm grid at 24%, faint angle guides."
+      },
+      "tags": [
+        "source",
+        "backgrounds",
+        "video",
+        "grid",
+        "svg",
+        "backdrop"
+      ]
+    },
+    {
+      "id": "space-type",
+      "kind": "source",
+      "name": "Space Type Generator",
+      "description": "Type-in-space renders — ready-made title cards.",
+      "data": {
+        "url": "https://spacetypegenerator.com",
+        "sourceKind": "generators",
+        "use": "video",
+        "intake": "export",
+        "license": "Free",
+        "promptCue": "Spatial title: letters distributed in depth, slow dolly-in, heavy tracking, monochrome."
+      },
+      "tags": [
+        "source",
+        "generators",
+        "video",
+        "type",
+        "3d",
+        "title"
+      ]
+    },
+    {
+      "id": "book-of-shapes",
+      "kind": "source",
+      "name": "Book of Shapes",
+      "description": "Generative shape library — SVG accents and transition masks.",
+      "data": {
+        "url": "https://bookofshapes.com",
+        "sourceKind": "generators",
+        "use": "both",
+        "intake": "export",
+        "license": "Free",
+        "promptCue": "Generative shape mask: one organic blob, used as a clip-path that grows from 0 to cover over 0.6s."
+      },
+      "tags": [
+        "source",
+        "generators",
+        "both",
+        "shape",
+        "svg",
+        "mask"
+      ]
+    },
+    {
+      "id": "tabbied",
+      "kind": "source",
+      "name": "Tabbied patterns",
+      "description": "Doodle-pattern generator; tiles as a looping background.",
+      "data": {
+        "url": "https://tabbied.com/patterns",
+        "sourceKind": "backgrounds",
+        "use": "video",
+        "intake": "export",
+        "license": "Free",
+        "promptCue": "Pattern backdrop: repeating doodle tile at 8% opacity, slow 60s diagonal drift."
+      },
+      "tags": [
+        "source",
+        "backgrounds",
+        "video",
+        "pattern",
+        "tile"
+      ]
+    },
+    {
+      "id": "dotforge",
+      "kind": "source",
+      "name": "Dotforge",
+      "description": "Dot-matrix background generator — matches the existing Dot Field effect.",
+      "data": {
+        "url": "https://dotforge.vercel.app",
+        "sourceKind": "backgrounds",
+        "use": "both",
+        "intake": "export",
+        "license": "Free",
+        "promptCue": "Dot matrix: 1px dots on a 24px grid at 8% white, radial mask fading to transparent at the edges."
+      },
+      "tags": [
+        "source",
+        "backgrounds",
+        "both",
+        "dots",
+        "matrix",
+        "background"
+      ]
+    },
+    {
+      "id": "ditther",
+      "kind": "source",
+      "name": "Ditther",
+      "description": "Dithering tool — 1-bit treatments for retro beats and thumbnails.",
+      "data": {
+        "url": "https://ditther.com",
+        "sourceKind": "generators",
+        "use": "video",
+        "intake": "export",
+        "license": "Free",
+        "promptCue": "Dither pass: Atkinson dithering to 1-bit, then tint the white channel with the accent colour."
+      },
+      "tags": [
+        "source",
+        "generators",
+        "video",
+        "dither",
+        "retro",
+        "1-bit"
+      ]
+    },
+    {
+      "id": "tokokino",
+      "kind": "source",
+      "name": "Tokokino",
+      "description": "Motion-heavy showcase; reference for pacing and scene cuts.",
+      "data": {
+        "url": "https://tokokino.com",
+        "sourceKind": "inspiration",
+        "use": "both",
+        "intake": "reference",
+        "license": "Reference only",
+        "promptCue": "Pacing reference: cut on the beat every 1.2s, hold the final frame for 1.5s."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "both",
+        "motion",
+        "pacing"
+      ]
+    },
+    {
+      "id": "benday",
+      "kind": "source",
+      "name": "benday",
+      "description": "Ben-Day halftone generator — print-style texture over stills.",
+      "data": {
+        "url": "https://benday.kacemmathlouthi.dev",
+        "sourceKind": "generators",
+        "use": "video",
+        "intake": "export",
+        "license": "Free",
+        "promptCue": "Halftone pass: 6px dot grid at 15°, two-colour separation, slight registration offset."
+      },
+      "tags": [
+        "source",
+        "generators",
+        "video",
+        "halftone",
+        "print",
+        "texture"
+      ]
+    },
+    {
+      "id": "spherium",
+      "kind": "source",
+      "name": "Spherium",
+      "description": "Sphere/orb visuals — a drop-in hero object for opening beats.",
+      "data": {
+        "url": "https://tryspherium.com",
+        "sourceKind": "shaders",
+        "use": "video",
+        "intake": "reference",
+        "license": "Free tier",
+        "promptCue": "Orb hero: single iridescent sphere centred, slow rotation, rim light, dark vignette field."
+      },
+      "tags": [
+        "source",
+        "shaders",
+        "video",
+        "orb",
+        "sphere",
+        "hero"
+      ]
+    },
+    {
+      "id": "designmd",
+      "kind": "source",
+      "name": "designmd.ai",
+      "description": "Design systems expressed as markdown an agent can read — the format Cupric briefs should follow.",
+      "data": {
+        "url": "https://designmd.ai",
+        "sourceKind": "prompts",
+        "use": "ui",
+        "intake": "reference",
+        "license": "Free tier",
+        "promptCue": "Give the agent the system as markdown: tokens, spacing scale, component rules, then the task."
+      },
+      "tags": [
+        "source",
+        "prompts",
+        "ui",
+        "design-system",
+        "markdown",
+        "agent"
+      ]
+    },
+    {
+      "id": "vibeprompts",
+      "kind": "source",
+      "name": "Vibeprompts",
+      "description": "Ready-made prompts for dashboards and landing pages — seeds for the Brief screen.",
+      "data": {
+        "url": "https://vibeprompts.dev",
+        "sourceKind": "prompts",
+        "use": "both",
+        "intake": "copy",
+        "license": "Free",
+        "promptCue": "Brief seed: audience, one promise, three proof beats, one call to action."
+      },
+      "tags": [
+        "source",
+        "prompts",
+        "both",
+        "prompt",
+        "brief"
+      ]
+    },
+    {
+      "id": "getlayers",
+      "kind": "source",
+      "name": "getlayers.ai",
+      "description": "200+ full build prompts for 3D and scroll-driven sites — complete briefs, not components.",
+      "data": {
+        "url": "https://getlayers.ai",
+        "sourceKind": "prompts",
+        "use": "video",
+        "intake": "copy",
+        "license": "Free tier",
+        "promptCue": "Full build brief: scene list, camera moves, scroll triggers, asset list, then the copy deck."
+      },
+      "tags": [
+        "source",
+        "prompts",
+        "video",
+        "brief",
+        "3d",
+        "scroll"
+      ]
+    },
+    {
+      "id": "minimal-gallery",
+      "kind": "source",
+      "name": "Minimal Gallery",
+      "description": "High-end minimal sites — feed a URL to the agent as a style anchor.",
+      "data": {
+        "url": "https://minimal.gallery",
+        "sourceKind": "inspiration",
+        "use": "both",
+        "intake": "reference",
+        "license": "Reference only",
+        "promptCue": "Style anchor: minimal, one typeface, one accent, whitespace doing the work."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "both",
+        "minimal",
+        "anchor"
+      ]
+    },
+    {
+      "id": "kage-design",
+      "kind": "source",
+      "name": "Kage",
+      "description": "UI inspiration mapped straight to prompts.",
+      "data": {
+        "url": "https://kage.design",
+        "sourceKind": "prompts",
+        "use": "ui",
+        "intake": "reference",
+        "license": "Free tier",
+        "promptCue": "Inspiration → prompt: name the layout, the motion, the palette, and the one detail that sells it."
+      },
+      "tags": [
+        "source",
+        "prompts",
+        "ui",
+        "inspiration",
+        "prompt"
+      ]
+    },
+    {
+      "id": "refero-styles",
+      "kind": "source",
+      "name": "Refero Styles",
+      "description": "2,000+ real product styles with typography specs — type scales worth stealing exactly.",
+      "data": {
+        "url": "https://styles.refero.design",
+        "sourceKind": "inspiration",
+        "use": "ui",
+        "intake": "reference",
+        "license": "Free tier",
+        "promptCue": "Type scale: name the family, the weights used, the scale ratio, and the tracking at display sizes."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "ui",
+        "typography",
+        "styles"
+      ]
+    },
+    {
+      "id": "component-gallery",
+      "kind": "source",
+      "name": "The Component Gallery",
+      "description": "2,600+ ways top design systems solve the same element — the tiebreaker when a pattern is unclear.",
+      "data": {
+        "url": "https://component.gallery",
+        "sourceKind": "inspiration",
+        "use": "ui",
+        "intake": "reference",
+        "license": "Free",
+        "promptCue": "Pattern check: compare three systems solving this element, keep the simplest that stays accessible."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "ui",
+        "patterns",
+        "design-systems"
+      ]
+    },
+    {
+      "id": "appshot-gallery",
+      "kind": "source",
+      "name": "Appshot Gallery",
+      "description": "App screenshot gallery — framing reference for product-shot beats.",
+      "data": {
+        "url": "https://appshot.gallery",
+        "sourceKind": "inspiration",
+        "use": "video",
+        "intake": "reference",
+        "license": "Reference only",
+        "promptCue": "Product shot beat: device frame at 12° tilt, screen content readable, soft floor shadow."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "video",
+        "screenshot",
+        "framing"
+      ]
+    },
+    {
+      "id": "saved-design",
+      "kind": "source",
+      "name": "Saved.design",
+      "description": "Curated saves of interface and motion work — a running moodboard for the app.",
+      "data": {
+        "url": "https://saved.design",
+        "sourceKind": "inspiration",
+        "use": "both",
+        "intake": "reference",
+        "license": "Reference only",
+        "promptCue": "Moodboard cue: one adjective for the motion, one for the surface, one for the type."
+      },
+      "tags": [
+        "source",
+        "inspiration",
+        "both",
+        "moodboard",
+        "curation"
+      ]
+    }
+  ]
+}

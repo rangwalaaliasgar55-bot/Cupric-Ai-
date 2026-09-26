@@ -21,6 +21,8 @@ export { STUDIO_BACKGROUNDS } from './src/lib/studio/backgrounds'
 export { EFFECTS } from './src/lib/effects'
 export { GRADIENT_PRESETS } from './src/lib/gradients'
 export { VOICE_PHRASES } from './src/lib/voice'
+export { SOURCES } from './src/lib/sources'
+export { VIDEO_TEMPLATES } from './src/lib/videoTemplates'
 `
 
 await build({
@@ -155,6 +157,56 @@ packs.push({
     name: p.say,
     description: p.does,
     tags: ['voice'],
+  })),
+})
+
+packs.push({
+  id: 'sources',
+  name: 'Sources',
+  description:
+    'The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.',
+  version: VERSION,
+  source: 'src/lib/sources.ts (links only; nothing third-party is bundled)',
+  license: 'Per entry — see each item',
+  items: mod.SOURCES.map((s) => ({
+    id: s.id,
+    kind: 'source',
+    name: s.name,
+    description: s.description,
+    data: {
+      url: s.url,
+      sourceKind: s.kind,
+      use: s.use,
+      intake: s.intake,
+      license: s.license,
+      promptCue: s.promptCue,
+    },
+    tags: ['source', s.kind, s.use, ...s.tags],
+  })),
+})
+
+packs.push({
+  id: 'templates',
+  name: 'Video templates',
+  description:
+    'Self-contained HTML scenes under resources/effects. Each exposes window.__seek(t) and a source manifest, so the desktop renderer can capture it frame by frame into an MP4 with no network.',
+  version: VERSION,
+  source: 'Cupric templates, built after Forge UI, 23rd.dev and motion-primitives',
+  license: 'MIT (this implementation)',
+  items: mod.VIDEO_TEMPLATES.map((t) => ({
+    id: t.id,
+    kind: 'template',
+    name: t.name,
+    description: t.description,
+    data: {
+      file: t.file,
+      durationSec: t.durationSec,
+      fps: t.fps,
+      size: t.size,
+      loops: t.loops ?? false,
+      sources: t.sources,
+    },
+    tags: ['template', ...t.tags],
   })),
 })
 

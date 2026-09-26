@@ -10,6 +10,9 @@ import {
   RefreshCw,
   Search,
   Sparkles,
+  ExternalLink,
+  Film,
+  Link2,
   Type as TypeIcon,
   Wand2,
   WifiOff,
@@ -45,6 +48,8 @@ const KIND_ICON = {
   effect: Wand2,
   component: Layers,
   voice: Mic,
+  source: Link2,
+  template: Film,
 } as const
 
 type Source = 'memory' | 'cache' | 'network' | 'local' | 'none'
@@ -206,6 +211,17 @@ export function PackBrowser() {
     } else if (item.kind === 'voice') {
       void copyText(item.name.replace(/"/g, ''))
       pushToast('info', 'Phrase copied — press Voice in the Studio and say it.')
+    } else if (item.kind === 'source') {
+      // Sources are links, not material: hand over the cue the prompt builder
+      // wants and open the site in the user's own browser.
+      const data = item.data as { url?: string; promptCue?: string } | undefined
+      void copyText(data?.promptCue ?? item.description)
+      if (data?.url) window.open(data.url, '_blank', 'noopener,noreferrer')
+      pushToast('success', `Prompt cue for “${item.name}” copied.`)
+    } else if (item.kind === 'template') {
+      const data = item.data as { file?: string; durationSec?: number; fps?: number } | undefined
+      void copyText(data?.file ?? item.id)
+      pushToast('info', `“${item.name}” — ${data?.durationSec ?? 0}s at ${data?.fps ?? 30}fps. Path copied; open it from the Render screen.`)
     } else if (item.kind === 'component') {
       setView('lab')
       pushToast('info', `Opening the Lab at “${item.name}”.`)
@@ -330,16 +346,27 @@ export function PackBrowser() {
                     </div>
                   </div>
                   <div className="mt-auto flex items-center justify-between gap-2 pt-0.5">
-                    <span className="truncate font-mono text-[11px] text-muted/70">{item.id}</span>
+                    <span className="truncate font-mono text-[11px] text-muted/70">
+                      {/* A source's id means nothing to the reader; its domain does. */}
+                      {item.kind === 'source'
+                        ? ((item.data as { url?: string } | undefined)?.url ?? '')
+                            .replace(/^https?:\/\//, '')
+                            .replace(/\/$/, '')
+                        : item.id}
+                    </span>
                     {used.has(item.id) ? (
                       <Badge tone="accent">
                         <Check size={11} /> Added
                       </Badge>
                     ) : (
                       <Button size="sm" variant="outline" onClick={() => addToStudio(item)}>
-                        {item.kind === 'effect' || item.kind === 'voice' ? (
+                        {item.kind === 'effect' || item.kind === 'voice' || item.kind === 'template' ? (
                           <>
                             <Copy size={12} /> Copy
+                          </>
+                        ) : item.kind === 'source' ? (
+                          <>
+                            <ExternalLink size={12} /> Open
                           </>
                         ) : item.kind === 'component' ? (
                           'Open in Lab'

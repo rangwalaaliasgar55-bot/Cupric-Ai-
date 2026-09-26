@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cupric effect — mesh drift</title>
+<!--
+  Full-bleed animated mesh-gradient atmosphere, after the shader backgrounds on
+  23rd.dev and backgrounds.supply/gradient-lab. Canvas blobs instead of WebGL:
+  no GPU context to lose while the renderer screenshots frame by frame.
+-->
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  #scene { position: relative; width: 1080px; height: 1920px; background: #0B0B10; }
+  canvas { position: absolute; inset: 0; filter: blur(90px); }
+  #grain { position: absolute; inset: 0; opacity: 0.05;
+    background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 4px 4px; }
+  #title {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    font-family: Inter, system-ui, sans-serif; font-size: 84px; font-weight: 800;
+    letter-spacing: -0.03em; color: #F4F1EA; opacity: 0;
+  }
+</style>
+</head>
+<body>
+<div id="scene">
+  <canvas id="c" width="1080" height="1920"></canvas>
+  <div id="grain"></div>
+  <div id="title">Cupric AI</div>
+</div>
+<script>
+var DUR = 8, FPS = 30;
+var BLOBS = [
+  { x: 0.25, y: 0.28, r: 520, c: '#C8F542', sx: 0.09, sy: 0.06 },
+  { x: 0.78, y: 0.36, r: 460, c: '#3B82F6', sx: -0.07, sy: 0.05 },
+  { x: 0.45, y: 0.74, r: 560, c: '#A855F7', sx: 0.05, sy: -0.08 },
+  { x: 0.82, y: 0.82, r: 400, c: '#22D3EE', sx: -0.06, sy: -0.04 }
+];
+function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+var ctx = document.getElementById('c').getContext('2d');
+window.__seek = function (t) {
+  ctx.clearRect(0, 0, 1080, 1920);
+  ctx.fillStyle = '#0B0B10';
+  ctx.fillRect(0, 0, 1080, 1920);
+  for (var i = 0; i < BLOBS.length; i++) {
+    var b = BLOBS[i];
+    // Lissajous drift: periodic, so the clip loops cleanly at DUR.
+    var x = (b.x + b.sx * Math.sin((2 * Math.PI * t) / DUR + i)) * 1080;
+    var y = (b.y + b.sy * Math.cos((2 * Math.PI * t) / DUR + i)) * 1920;
+    var g = ctx.createRadialGradient(x, y, 0, x, y, b.r);
+    g.addColorStop(0, b.c);
+    g.addColorStop(1, 'rgba(11,11,16,0)');
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  document.getElementById('title').style.opacity = String(clamp((t - 0.6) / 1.2, 0, 1));
+};
+window.__cupricSourceManifest = {
+  sources: ['23rd-dev', 'gradient-lab', 'gradientool'],
+  sequence: [
+    { from: 0, to: 8, type: 'background', copy: 'drifting mesh gradient' },
+    { from: 0.6, to: 8, type: 'title', copy: 'Cupric AI' }
+  ],
+  renderSpec: { durationSec: DUR, fps: FPS, size: [1080, 1920], loops: true }
+};
+window.__seek(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cupric effect — text reveal</title>
+<!--
+  Word-by-word blur reveal, after forgeui.in/components/text-reveal and the
+  stagger recipes on motion-primitives.com. Pure function of t.
+-->
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  #scene {
+    width: 1080px; height: 1920px; box-sizing: border-box; padding: 140px 90px;
+    background: #0B0B10;
+    display: flex; align-items: center;
+    font-family: Inter, system-ui, sans-serif; color: #F4F1EA;
+  }
+  #copy { font-size: 78px; font-weight: 800; line-height: 1.12; letter-spacing: -0.03em; }
+  #copy span { display: inline-block; margin-right: 0.28em; }
+  #copy .accent { color: #C8F542; }
+</style>
+</head>
+<body>
+<div id="scene"><div id="copy"></div></div>
+<script>
+var DUR = 5, FPS = 30;
+var WORDS = ['Everything', 'you', 'need', 'to', 'ship', 'the', 'shot.'];
+var STAGGER = 0.18, RISE = 0.5;
+function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+var copy = document.getElementById('copy');
+copy.innerHTML = WORDS.map(function (w, i) {
+  var cls = i === WORDS.length - 1 ? ' class="accent"' : '';
+  return '<span' + cls + ' data-i="' + i + '">' + w + '</span>';
+}).join('');
+var spans = copy.querySelectorAll('span');
+window.__seek = function (t) {
+  for (var i = 0; i < spans.length; i++) {
+    var p = clamp((t - i * STAGGER) / RISE, 0, 1);
+    var e = 1 - Math.pow(1 - p, 3);
+    spans[i].style.opacity = String(e);
+    spans[i].style.filter = 'blur(' + ((1 - e) * 10).toFixed(2) + 'px)';
+    spans[i].style.transform = 'translateY(' + ((1 - e) * 26).toFixed(2) + 'px)';
+  }
+};
+window.__cupricSourceManifest = {
+  sources: ['forge-ui', 'motion-primitives', 'kinetics'],
+  sequence: [
+    { from: 0, to: 2.2, type: 'reveal', copy: 'Everything you need to ship the shot.' },
+    { from: 2.2, to: 5, type: 'hold', copy: 'full line' }
+  ],
+  renderSpec: { durationSec: DUR, fps: FPS, size: [1080, 1920] }
+};
+window.__seek(0);
+</script>
+</body>
+</html>

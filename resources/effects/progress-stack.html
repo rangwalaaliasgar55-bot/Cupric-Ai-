@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Cupric effect — progress stack</title>
+<!--
+  Onboarding progress stack, after the Forge UI "Progress Stack" component
+  (https://forgeui.in/components). Rebuilt as dependency-free HTML/CSS so the
+  local renderer can drive it frame by frame through window.__seek(t).
+-->
+<style>
+  html, body { margin: 0; background: #000; overflow: hidden; }
+  #scene {
+    width: 1080px; height: 1920px; position: relative; box-sizing: border-box;
+    background: #0B0B10;
+    display: flex; align-items: center; justify-content: center;
+    font-family: Inter, system-ui, sans-serif; color: #F4F1EA;
+  }
+  #stack { display: flex; flex-direction: column; align-items: center; gap: 18px; }
+  .card {
+    width: 620px; box-sizing: border-box;
+    padding: 28px 120px 28px 32px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: linear-gradient(to bottom right, #1a1a1d, #0d0d10);
+    display: flex; flex-direction: column; gap: 18px;
+  }
+  .card.dim { transform: scale(0.9); opacity: 0.55; }
+  .row { display: flex; align-items: center; gap: 14px; font-size: 26px; }
+  .track { margin-left: 40px; height: 10px; border-radius: 999px; background: rgba(255,255,255,0.12); overflow: hidden; }
+  .fill { height: 100%; width: 0%; background: #C8F542; }
+  .full { background: #C8F542; }
+  .spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.25); border-top-color: #C8F542; }
+  .tick { width: 28px; height: 28px; border-radius: 50%; background: #C8F542; color: #0B0B10; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; }
+  #fadeTop, #fadeBottom { position: absolute; left: 0; width: 100%; height: 34%; pointer-events: none; }
+  #fadeTop { top: 0; background: linear-gradient(to bottom, #0B0B10 18%, transparent 100%); }
+  #fadeBottom { bottom: 0; background: linear-gradient(to top, #0B0B10 18%, transparent 100%); }
+</style>
+</head>
+<body>
+<div id="scene">
+  <div id="stack">
+    <div class="card dim">
+      <div class="row"><div class="spinner" id="s3"></div><div id="t3">Account Created</div></div>
+      <div class="track"></div>
+    </div>
+    <div class="card">
+      <div class="row"><div class="spinner" id="s2"></div><div id="t2">Verifying Details</div></div>
+      <div class="track"><div class="fill" id="fill"></div></div>
+    </div>
+    <div class="card dim">
+      <div class="row"><div class="tick">&#10003;</div><div id="t1">Welcome Aboard</div></div>
+      <div class="track full"></div>
+    </div>
+  </div>
+  <div id="fadeTop"></div>
+  <div id="fadeBottom"></div>
+</div>
+<script>
+var DUR = 6, FPS = 30;
+function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+function ease(p) { return p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; }
+window.__seek = function (t) {
+  var p = clamp(t / DUR, 0, 1);
+  // Progress bar fills over the first 60% of the shot, then holds.
+  document.getElementById('fill').style.width = (ease(clamp(p / 0.6, 0, 1)) * 100) + '%';
+  // Spinners are seeked, never animated by CSS, so every frame is deterministic.
+  var deg = (t * 360) % 360;
+  document.getElementById('s2').style.transform = 'rotate(' + deg + 'deg)';
+  document.getElementById('s3').style.transform = 'rotate(' + (deg * 0.4) + 'deg)';
+};
+window.__cupricSourceManifest = {
+  sources: ['forge-ui'],
+  sequence: [
+    { from: 0, to: 4, type: 'progress', copy: 'Verifying Details' },
+    { from: 4, to: 6, type: 'confirm', copy: 'Account Created' }
+  ],
+  renderSpec: { durationSec: DUR, fps: FPS, size: [1080, 1920] }
+};
+window.__seek(0);
+</script>
+</body>
+</html>

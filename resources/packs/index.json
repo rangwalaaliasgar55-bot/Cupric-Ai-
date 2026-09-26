@@ -46,6 +46,20 @@
       "bytes": 2716
     },
     {
+      "id": "sources",
+      "name": "Sources",
+      "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
+      "itemCount": 46,
+      "bytes": 29691
+    },
+    {
+      "id": "templates",
+      "name": "Video templates",
+      "description": "Self-contained HTML scenes under resources/effects. Each exposes window.__seek(t) and a source manifest, so the desktop renderer can capture it frame by frame into an MP4 with no network.",
+      "itemCount": 6,
+      "bytes": 3934
+    },
+    {
       "id": "components",
       "name": "Lab components",
       "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",

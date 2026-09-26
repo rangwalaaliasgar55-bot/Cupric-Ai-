@@ -17,7 +17,18 @@
  * user downloaded the packs once, and a fresh online start works with no cache.
  */
 
-export type PackItemKind = 'glass' | 'transition' | 'animation' | 'background' | 'effect' | 'component' | 'voice'
+export type PackItemKind =
+  | 'glass'
+  | 'transition'
+  | 'animation'
+  | 'background'
+  | 'effect'
+  | 'component'
+  | 'voice'
+  /** A third-party library, generator or gallery — a link plus a prompt cue. */
+  | 'source'
+  /** A self-contained HTML scene with `__seek(t)`, rendered locally to MP4. */
+  | 'template'
 
 export type PackItem = {
   id: string
