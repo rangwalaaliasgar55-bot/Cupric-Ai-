@@ -1,4 +1,4 @@
-# NEXT_SESSION.md — Northframe Studio desktop implementation status
+# NEXT_SESSION.md — Cupric AI desktop implementation status
 
 The desktop functionality pass for Prompts 6–10 is now implemented on branch
 `arena/01a0db3a-cupric-ai`.
@@ -60,6 +60,10 @@ machine.
 
 ## Human-in-the-loop Arena workflow remains unchanged
 
-Northframe generates the Arena prompt, the user pastes it into `arena.ai/code`,
+Cupric AI generates the Arena prompt, the user pastes it into `arena.ai/code`,
 votes manually, downloads the winner, and imports that export back into
-Northframe. Voting is intentionally not automated.
+Cupric AI. Voting is intentionally not automated.
+
+## Autonomous Mode status
+
+Added the Auto screen, automation data model, Zustand actions, browser preview simulation, and safe Electron job lifecycle IPC with persisted jobs. Public Arena voting remains manual; local scoring is the autonomous-safe path. Native media orchestration and final report generation should be continued by wiring the persisted queue to the existing rundown, Arena import, footage analysis, and render services.

@@ -137,7 +137,7 @@ export function AskPanel() {
                 Media engine: <span className={mediaReady ? 'text-accent-text' : 'text-danger'}>{mediaReady === null ? 'checking' : mediaReady ? 'ready' : 'FFmpeg missing'}</span>
               </div>
               <label className="flex items-center justify-between gap-3 rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
-                <span>Open Northframe on login</span>
+                <span>Open Cupric AI on login</span>
                 <input type="checkbox" checked={autoLaunch} onChange={(e) => toggleAutoLaunch(e.target.checked)} />
               </label>
               <button

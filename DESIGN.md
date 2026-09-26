@@ -1,4 +1,4 @@
-# DESIGN.md — Northframe Studio system
+# DESIGN.md — Cupric AI system
 
 One file, one look. If a screen needs a color, font, radius, duration or
 spacing value that isn't here, the answer is **no** — extend this file first.

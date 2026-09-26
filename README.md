@@ -1,6 +1,6 @@
-# Northframe Studio
+# Cupric AI
 
-Northframe Studio is a desktop creator tool for short-form video — from rough
+Cupric AI is a desktop creator tool for short-form video — from rough
 idea to exported cut:
 
 **Brief → Arena battle → Footage auto-edit → Timeline → Render.**
@@ -9,9 +9,9 @@ The original prototype UI is preserved, but the Electron desktop build now wires
 real functionality behind the same stable renderer signatures in
 `src/lib/gemini.ts`, `src/lib/arena.ts`, and `src/lib/render.ts`.
 
-The Arena workflow intentionally stays human-in-the-loop: Northframe generates
+The Arena workflow intentionally stays human-in-the-loop: Cupric AI generates
 the prompt, you paste it into `arena.ai/code`, vote in Arena yourself, download
-the winning export, then import that winner back into Northframe.
+the winning export, then import that winner back into Cupric AI.
 
 ---
 
@@ -41,8 +41,8 @@ npm run dist:win
 
 Outputs into `release/`:
 
-- `Northframe Studio-Setup-0.1.0.exe` — NSIS installer.
-- `Northframe Studio-0.1.0-x64-Portable.exe` — portable executable.
+- `Cupric AI-Setup-0.1.0.exe` — NSIS installer.
+- `Cupric AI-0.1.0-x64-Portable.exe` — portable executable.
 
 The packaged app loads the built `dist/` over `file://` and self-hosts fonts, so
 it can run offline after installation. Gemini requires either a saved key or a
@@ -60,7 +60,7 @@ it can run offline after installation. Gemini requires either a saved key or a
 | **Footage analysis** | Video is copied into project app data, duration is read by FFprobe, silences are detected with FFmpeg `silencedetect`, and waveform peaks are returned to the existing waveform UI. |
 | **Timeline render** | Timeline clips render to MP4 under app data. Arena clips are captured frame-by-frame through `window.__seek(t)`; footage clips are trimmed, cropped/scaled, optional silence cuts are applied, and segments are concatenated in timeline order. |
 | **Progress/cancel** | Render progress streams over IPC. Cancel kills active FFmpeg processes and closes hidden capture windows. |
-| **Persistence** | Zustand state mirrors to `%APPDATA%/northframe-studio/projects.json` in Electron; browser localStorage remains the web-preview fallback. |
+| **Persistence** | Zustand state mirrors to `%APPDATA%/cupric-ai/projects.json` in Electron; browser localStorage remains the web-preview fallback. |
 | **Desktop hardening** | Single-instance lock, crash logs under `logs/`, renderer-crash reload screen, optional launch-on-login, GitHub updater check, and optional code signing docs. |
 
 ## Screens
@@ -80,7 +80,7 @@ it can run offline after installation. Gemini requires either a saved key or a
 Electron uses `app.getPath('userData')`. On Windows this resolves to:
 
 ```text
-%APPDATA%/northframe-studio/
+%APPDATA%/cupric-ai/
 ```
 
 Important files/folders:
@@ -100,7 +100,7 @@ logged; renderer code only sees `hasKey: true/false`.
 
 ## FFmpeg / FFprobe
 
-Northframe depends on `ffmpeg-static` and `ffprobe-static`; a normal clean
+Cupric AI depends on `ffmpeg-static` and `ffprobe-static`; a normal clean
 `npm install` downloads the native binaries. The desktop app also supports
 explicit paths for constrained environments:
 
@@ -109,7 +109,7 @@ NORTHFRAME_FFMPEG_PATH=C:\path\to\ffmpeg.exe
 NORTHFRAME_FFPROBE_PATH=C:\path\to\ffprobe.exe
 ```
 
-If those variables are not set, Northframe checks the packaged static modules
+If those variables are not set, Cupric AI checks the packaged static modules
 and then falls back to `ffmpeg` / `ffprobe` on `PATH`.
 
 ## Windows signing and SmartScreen

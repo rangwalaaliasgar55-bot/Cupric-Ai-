@@ -9,6 +9,10 @@ import type {
   SceneRundown,
   TimelineClip,
   View,
+  AutomationJob,
+  AutomationStep,
+  AutomationMode,
+  VotingMode,
 } from '../types/project'
 import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
@@ -84,6 +88,15 @@ type AppState = {
   theme: 'dark' | 'light'
   askOpen: boolean
   toasts: Toast[]
+  automationJobs: AutomationJob[]
+
+  startAutomationJob: (input: { brief: string; footageFolder?: string | null; outputFolder?: string | null; aspect: AutomationJob['aspect']; fps: AutomationJob['fps']; quality: AutomationJob['quality']; mode: AutomationMode; votingMode: VotingMode }) => void
+  updateAutomationJob: (jobId: string, patch: Partial<AutomationJob>) => void
+  updateAutomationStep: (jobId: string, stepId: string, patch: Partial<AutomationStep>) => void
+  cancelAutomationJob: (jobId: string) => void
+  resumeAutomationJob: (jobId: string) => void
+  approveAutomationStep: (jobId: string, stepId: string) => void
+  rejectAutomationStep: (jobId: string, stepId: string) => void
 
   setView: (v: View) => void
   setTheme: (t: 'dark' | 'light') => void
@@ -147,6 +160,28 @@ export const useProjectStore = create<AppState>()(
         theme: 'dark',
         askOpen: false,
         toasts: [],
+        automationJobs: [],
+        startAutomationJob: (input) => {
+          const projectId = get().activeProjectId || get().createProject()
+          const id = uid()
+          const labels = ['Create project', 'Generate Gemini rundown', 'Lock rundown', 'Generate candidates', 'Ingest footage', 'Build timeline', 'Render MP4', 'Review report']
+          const steps = labels.map((label, i) => ({ id: `${id}-step-${i}`, label, status: i === 0 ? 'running' as const : 'queued' as const, progressPct: 0 }))
+          const job: AutomationJob = { ...input, id, projectId, status: 'running', currentStepId: steps[0].id, steps, createdAt: nowIso(), updatedAt: nowIso(), outputPath: null, reviewReportPath: null }
+          set((s) => ({ automationJobs: [job, ...s.automationJobs], view: 'auto' }))
+          const ipc = (window as any).northframe?.ipc
+          if (ipc) void ipc.invoke('automation:start', job)
+          else {
+            // Browser preview deliberately simulates progress without touching the filesystem.
+            steps.forEach((step, i) => setTimeout(() => get().updateAutomationStep(id, step.id, { status: 'done', progressPct: 100, completedAt: nowIso() }), (i + 1) * 700))
+            setTimeout(() => get().updateAutomationJob(id, { status: 'done', currentStepId: null }), labels.length * 700 + 100)
+          }
+        },
+        updateAutomationJob: (jobId, patch) => set((s) => ({ automationJobs: s.automationJobs.map((j) => j.id === jobId ? { ...j, ...patch, updatedAt: nowIso() } : j) })),
+        updateAutomationStep: (jobId, stepId, patch) => set((s) => ({ automationJobs: s.automationJobs.map((j) => j.id === jobId ? { ...j, steps: j.steps.map((x) => x.id === stepId ? { ...x, ...patch } : x), updatedAt: nowIso() } : j) })),
+        cancelAutomationJob: (jobId) => { const ipc = (window as any).northframe?.ipc; if (ipc) void ipc.invoke('automation:cancel', { jobId }); get().updateAutomationJob(jobId, { status: 'cancelled' }) },
+        resumeAutomationJob: (jobId) => { const ipc = (window as any).northframe?.ipc; if (ipc) void ipc.invoke('automation:resume', { jobId }); get().updateAutomationJob(jobId, { status: 'running' }) },
+        approveAutomationStep: (jobId, stepId) => { const ipc = (window as any).northframe?.ipc; if (ipc) void ipc.invoke('automation:approveStep', { jobId, stepId }) },
+        rejectAutomationStep: (jobId, stepId) => { const ipc = (window as any).northframe?.ipc; if (ipc) void ipc.invoke('automation:rejectStep', { jobId, stepId }) },
 
         setView: (view) => set({ view }),
         setTheme: (theme) => set({ theme }),
@@ -341,13 +376,14 @@ export const useProjectStore = create<AppState>()(
       }
     },
     {
-      name: 'northframe-studio-v1',
+      name: 'northframe-v1',
       storage: createJSONStorage(() => desktopAwareStorage),
       partialize: (s) => ({
         projects: s.projects,
         activeProjectId: s.activeProjectId,
         view: s.view,
         theme: s.theme,
+        automationJobs: s.automationJobs,
       }),
     },
   ),

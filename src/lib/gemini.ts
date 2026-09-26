@@ -40,7 +40,7 @@ function topicOf(t: string): string {
     )
     .replace(/\s+/g, ' ')
     .trim()
-  if (!cleaned) return 'Northframe'
+  if (!cleaned) return 'Cupric AI'
   return cleaned
     .split(' ')
     .slice(0, 4)
@@ -84,7 +84,7 @@ function buildScenes(dur: number, flavor: Flavor, topic: string): SceneRundown['
   if (flavor === 'quote') {
     return [
       mk(0, hookEnd, 'quote', `“${topic}.”`, 'word-by-word reveal, 9 words/s'),
-      mk(hookEnd, bodyEnd, 'attribution', '— Northframe Studio', 'fade up, letter-spacing settles'),
+      mk(hookEnd, bodyEnd, 'attribution', '— Cupric AI', 'fade up, letter-spacing settles'),
       mk(bodyEnd, dur, 'mark', 'NORTHFRAME', 'scale 0.96 -> 1 spring, hold'),
     ]
   }
@@ -177,7 +177,7 @@ export async function fakeGeminiChatLocal(
     return `Captions live on the Footage Desk. Pick a style per clip — Hormozi (big, punched, one lime word), Standard (clean white), or Minimal (quiet chip) — mark the silence cuts to drop, then Apply. The edit shows up on the Timeline.`
   }
   if (/render|export|mp4/.test(t)) {
-    return `Rendering uses the desktop seek-and-FFmpeg pipeline when you run Northframe in Electron: Arena pieces are captured frame by frame, footage is trimmed/cropped, and progress streams back into the Render queue. Web preview keeps a local fallback.`
+    return `Rendering uses the desktop seek-and-FFmpeg pipeline when you run Cupric AI in Electron: Arena pieces are captured frame by frame, footage is trimmed/cropped, and progress streams back into the Render queue. Web preview keeps a local fallback.`
   }
   return `Noted — I'd start from ${proj} on the ${ctx.view === 'home' ? 'Home' : ctx.view} screen. Everything I do here is mocked in the prototype, so try the Brief screen for a full walkthrough of the flow.`
 }

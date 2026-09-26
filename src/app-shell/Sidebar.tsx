@@ -1,4 +1,4 @@
-import { GanttChart, Home, Film, Library as LibraryIcon, MessagesSquare, Rocket, Swords } from 'lucide-react'
+import { GanttChart, Home, Film, Library as LibraryIcon, MessagesSquare, Rocket, Swords, Bot } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { View } from '../types/project'
@@ -15,6 +15,7 @@ type NavItem = {
 }
 
 const NAV: NavItem[] = [
+  { view: 'auto', label: 'Auto', icon: Bot },
   { view: 'home', label: 'Home', icon: Home },
   { view: 'brief', label: 'Brief', icon: MessagesSquare, needProject: true },
   { view: 'arena', label: 'Arena Desk', icon: Swords, needProject: true, needLock: true },
@@ -37,7 +38,7 @@ export function Sidebar() {
 
   return (
     <aside className="flex h-full w-16 shrink-0 flex-col items-center border-r border-line bg-panel py-3">
-      <img src={logoUrl} alt="Northframe Studio" className="mb-4 h-8 w-8 rounded-lg" />
+      <img src={logoUrl} alt="Cupric AI" className="mb-4 h-8 w-8 rounded-lg" />
 
       <nav aria-label="Primary" className="flex flex-col items-center gap-1">
         {NAV.map((item) => {

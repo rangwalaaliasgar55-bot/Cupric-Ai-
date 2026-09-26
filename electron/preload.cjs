@@ -13,7 +13,7 @@ const invokeChannels = new Set([
   'dialog:pickArena',
   'arena:import',
   'arena:previewPath',
-  'dialog:pickFootage',
+  'dialog:pickFootage', 'dialog:pickFolder',
   'footage:analyze',
   'media:status',
   'render:start',
@@ -21,9 +21,10 @@ const invokeChannels = new Set([
   'render:reveal',
   'render:copyToDownloads',
   'updater:check',
+  'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput',
 ])
 
-const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'updater:status'])
+const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error'])
 
 function assertChannel(channel, allowed) {
   if (!allowed.has(channel)) throw new Error(`IPC channel is not exposed: ${channel}`)
