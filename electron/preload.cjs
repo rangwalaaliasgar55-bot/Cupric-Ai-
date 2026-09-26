@@ -11,9 +11,11 @@ const invokeChannels = new Set([
   'gemini:ask',
   'gemini:chat',
   'opencode:listModels',
+  'opencode:discoverModels',
   'dialog:pickArena',
   'arena:import',
   'arena:previewPath',
+  'arena:openBuilder',
   'dialog:pickFootage', 'dialog:pickFolder',
   'footage:analyze',
   'media:status',
@@ -22,7 +24,7 @@ const invokeChannels = new Set([
   'render:reveal',
   'render:copyToDownloads',
   'updater:check',
-  'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput',
+  'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput', 'automation:openArena',
 ])
 
 const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error'])

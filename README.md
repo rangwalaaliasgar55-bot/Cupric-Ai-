@@ -10,8 +10,9 @@ behind the renderer signatures in `src/lib/gemini.ts`, `src/lib/arena.ts`, and
 `src/lib/render.ts`.
 
 The Arena workflow intentionally stays human-in-the-loop: Cupric AI generates
-the prompt, you paste it into `arena.ai/code`, vote in Arena yourself, download
-the winning export, then import that winner back into Cupric AI.
+the prompt, opens `arena.ai/code` in your browser, copies the prompt for paste,
+you vote in Arena yourself, download the winning export, then import that winner
+back into Cupric AI.
 
 ---
 
@@ -55,8 +56,8 @@ it can run offline after installation. Gemini requires either a saved key or a
 
 | Area | Desktop behavior |
 |---|---|
-| **Gemini** | API key is stored in Electron `settings.json` or read from `GEMINI_API_KEY`; the renderer only receives key presence. Brief and Ask Gemini call `gemini-2.0-flash` and fall back locally if the live call fails. |
-| **Arena import** | ZIP/HTML is imported into project app data, extracted safely, checked for `window.__seek(t)`, loaded in a hidden BrowserWindow, and captured as a PNG thumbnail. |
+| **Gemini / OpenCode** | API keys are stored in Electron `settings.json` or read from environment variables; the renderer only receives key presence. Brief and Ask AI use Gemini `gemini-3.8-flash` by default or OpenCode/OpenAI-compatible models, with local deterministic fallback when live AI is unavailable. |
+| **Arena handoff + import** | Cupric AI can open `arena.ai/code` in the user's browser and copy a full Arena build brief for paste/build. The brief includes hard constraints, source/asset plan, exact scene sequence, render spec, and `window.__cupricSourceManifest` requirements. ZIP/HTML winners are imported into project app data, extracted safely, checked for `window.__seek(t)`, loaded in a hidden BrowserWindow, and captured as a PNG thumbnail. |
 | **Arena preview** | Imported Arena HTML previews in a sandboxed iframe through an IPC-approved `file://` path under the project data folder. The browser preview imports `.html`/`.zip` with JSZip and validates `window.__seek(t)`. |
 | **Remotion preview** | Locked rundowns are rendered through `@remotion/player` so you can preview the generated composition before exporting or importing Arena results. |
 | **Footage analysis** | Desktop video is copied into project app data, duration is read by FFprobe, silences are detected with FFmpeg `silencedetect`, and waveform peaks are returned to the waveform UI. Browser mode uses Web Audio for duration/waveform/silence scanning. |
@@ -106,16 +107,22 @@ Free / no-cost options exposed in the UI:
 - **Many OpenRouter free-tier presets** including Qwen, DeepSeek, Gemma, Llama,
   Mistral, Kimi, GLM, and MAI `:free` model IDs. These models are free-tier, but
   OpenRouter still requires a free API key.
+- **OpenCode Desktop import** with **Load OpenCode**, which reads local
+  OpenCode provider/model config and reuses keys from OpenCode/env inside the
+  Electron main process without exposing the secret to the renderer.
 - **Live free-model discovery** with **Load live list**, which calls the
   configured `/models` endpoint and filters free models automatically.
-- **Local Ollama** at `http://localhost:11434/v1`, for example
-  `qwen2.5-coder:7b` or `llama3.2:3b`. This is completely local/free when
-  Ollama is running and the model is installed.
-- **Gemini** through a saved key or `GEMINI_API_KEY`.
+- **Local Ollama / LM Studio / Atomic Chat / llama.cpp** OpenAI-compatible
+  endpoints. Ollama defaults to `http://localhost:11434/v1` with examples like
+  `qwen2.5-coder:7b` or `llama3.2:3b`.
+- **Gemini** through a saved key or `GEMINI_API_KEY`; the default model is
+  `gemini-3.8-flash` and can be overridden with `GEMINI_MODEL` or the settings
+  field.
 
 Keys are stored only in Electron `settings.json` or read from environment
 variables (`OPENCODE_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`,
-`GEMINI_API_KEY`). The renderer only sees provider/key presence, not the secret.
+`GEMINI_API_KEY`, `GEMINI_MODEL`). The renderer only sees provider/key presence,
+not the secret.
 
 ## FFmpeg / FFprobe
 

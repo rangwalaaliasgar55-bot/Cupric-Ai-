@@ -7,7 +7,7 @@ The desktop functionality pass for Prompts 6–10 is now implemented on branch
 
 Implemented:
 
-- Real Gemini IPC through Electron main process using `@google/generative-ai` and `gemini-2.0-flash`.
+- Real Gemini/OpenCode IPC through Electron main process using `@google/generative-ai` with `gemini-3.8-flash` by default and OpenAI-compatible OpenCode providers.
 - Gemini API key storage in `settings.json` or `GEMINI_API_KEY`; key is never exposed to the renderer.
 - Settings UI in Ask Gemini for key save, live/mock status, auto-launch, update check, and media-engine status.
 - Real Arena ZIP/HTML import with safe extraction into app data.

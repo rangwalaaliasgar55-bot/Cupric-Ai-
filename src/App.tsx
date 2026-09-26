@@ -16,12 +16,20 @@ export default function App() {
     const ipc = (window as any).northframe?.ipc
     if (!ipc) return
     const apply = (payload: any) => {
-      const job = payload?.jobId ? payload : payload
-      const id = job?.id || job?.jobId
+      const job = payload?.id ? payload : payload?.job ? payload.job : payload
+      const id = job?.id || job?.jobId || payload?.jobId
       if (!id) return
       const store = useProjectStore.getState()
-      if (job?.steps) store.updateAutomationJob(id, job)
-      else if (payload?.message) store.updateAutomationJob(id, { status: 'waiting-for-user' })
+      if (job?.steps) {
+        store.updateAutomationJob(id, job)
+        if (job.rundown && job.projectId) {
+          store.patchRundown(job.projectId, job.rundown)
+          store.lockRundown(job.projectId)
+          if (job.rundown.title) store.renameProject(job.projectId, job.rundown.title)
+        }
+      } else if (payload?.message) {
+        store.updateAutomationJob(id, { status: payload.status === 'error' ? 'error' : 'waiting-for-user', waitingMessage: payload.message, errorMessage: payload.status === 'error' ? payload.message : undefined })
+      }
     }
     const unsubs = ['automation:progress', 'automation:step', 'automation:done', 'automation:waiting', 'automation:error'].map(c => ipc.on(c, apply))
     return () => unsubs.forEach((off: any) => off?.())

@@ -11,7 +11,7 @@ type AiProvider = 'gemini' | 'opencode'
 
 const CHIPS = ['Suggest a 12s bumper', 'How does the Arena flow work?', 'Tighten my captions']
 
-type OpenCodePreset = { id: string; label: string; baseUrl: string; model: string; note: string }
+type OpenCodePreset = { id: string; label: string; baseUrl: string; model: string; note: string; source?: string }
 
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1'
 
@@ -32,6 +32,9 @@ const FREE_OPENCODE_PRESETS: OpenCodePreset[] = [
   { id: 'openrouter-mai', label: 'MAI DS R1 free', baseUrl: OPENROUTER_BASE_URL, model: 'microsoft/mai-ds-r1:free', note: 'Microsoft free-tier reasoning preset when available.' },
   { id: 'local-ollama-qwen-coder', label: 'Local Ollama coder', baseUrl: 'http://localhost:11434/v1', model: 'qwen2.5-coder:7b', note: 'Completely free local model if Ollama is running and the model is installed.' },
   { id: 'local-ollama-llama', label: 'Local Ollama Llama', baseUrl: 'http://localhost:11434/v1', model: 'llama3.2:3b', note: 'Small completely local/free Ollama preset.' },
+  { id: 'local-lmstudio', label: 'Local LM Studio', baseUrl: 'http://localhost:1234/v1', model: 'local-model', note: 'Use with LM Studio local server; click Load live list after the server is running.' },
+  { id: 'local-atomic-chat', label: 'Local Atomic Chat', baseUrl: 'http://127.0.0.1:1337/v1', model: 'local-model', note: 'OpenCode-compatible local desktop endpoint; click Load live list for exact models.' },
+  { id: 'local-llamacpp', label: 'Local llama.cpp', baseUrl: 'http://127.0.0.1:8080/v1', model: 'local-model', note: 'OpenAI-compatible llama.cpp server preset.' },
 ]
 
 /** Live model slide-over — Gemini or OpenCode/OpenAI-compatible, never fake chat. */
@@ -51,6 +54,7 @@ export function AskPanel() {
   const [busy, setBusy] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [apiKey, setApiKey] = useState('')
+  const [geminiModel, setGeminiModel] = useState('gemini-3.8-flash')
   const [openCodeKey, setOpenCodeKey] = useState('')
   const [openCodeBaseUrl, setOpenCodeBaseUrl] = useState('https://openrouter.ai/api/v1')
   const [openCodeModel, setOpenCodeModel] = useState('qwen/qwen3-235b-a22b:free')
@@ -68,11 +72,12 @@ export function AskPanel() {
   useEffect(() => {
     const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
     if (!ipc) return
-    ipc.invoke('settings:get').then((settings: { hasKey?: boolean; hasGeminiKey?: boolean; hasOpenCodeKey?: boolean; aiProvider?: AiProvider; openCodeBaseUrl?: string; openCodeModel?: string; autoLaunch?: boolean }) => {
+    ipc.invoke('settings:get').then((settings: { hasKey?: boolean; hasGeminiKey?: boolean; hasOpenCodeKey?: boolean; aiProvider?: AiProvider; geminiModel?: string; openCodeBaseUrl?: string; openCodeModel?: string; autoLaunch?: boolean }) => {
       setHasKey(Boolean(settings?.hasKey))
       setHasGeminiKey(Boolean(settings?.hasGeminiKey))
       setHasOpenCodeKey(Boolean(settings?.hasOpenCodeKey))
       if (settings?.aiProvider) setAiProvider(settings.aiProvider)
+      if (settings?.geminiModel) setGeminiModel(settings.geminiModel)
       if (settings?.openCodeBaseUrl) setOpenCodeBaseUrl(settings.openCodeBaseUrl)
       if (settings?.openCodeModel) setOpenCodeModel(settings.openCodeModel)
       setAutoLaunch(Boolean(settings?.autoLaunch))
@@ -97,6 +102,21 @@ export function AskPanel() {
     setOpenCodeModel(preset.model)
   }
 
+  async function loadOpenCodeDesktopModels() {
+    setModelLoadStatus('reading OpenCode Desktop config')
+    try {
+      const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
+      if (!ipc) throw new Error('OpenCode Desktop import is available in the desktop app')
+      const models: OpenCodePreset[] = await ipc.invoke('opencode:discoverModels')
+      const merged = [...models, ...freeModels]
+      const seen = new Set<string>()
+      setFreeModels(merged.filter((model) => (seen.has(`${model.baseUrl}|${model.model}`) ? false : (seen.add(`${model.baseUrl}|${model.model}`), true))))
+      setModelLoadStatus(models.length ? `${models.length} OpenCode Desktop model${models.length === 1 ? '' : 's'} loaded` : 'No OpenCode Desktop models found yet')
+    } catch (err) {
+      setModelLoadStatus(err instanceof Error ? err.message : 'Could not read OpenCode Desktop models')
+    }
+  }
+
   async function loadFreeOpenCodeModels() {
     setModelLoadStatus('loading')
     try {
@@ -113,7 +133,10 @@ export function AskPanel() {
       }
       const merged = [...models, ...FREE_OPENCODE_PRESETS]
       const seen = new Set<string>()
-      setFreeModels(merged.filter((model) => (seen.has(model.model) ? false : (seen.add(model.model), true))))
+      setFreeModels(merged.filter((model) => {
+        const key = `${model.baseUrl}|${model.model}`
+        return seen.has(key) ? false : (seen.add(key), true)
+      }))
       setModelLoadStatus(`${models.length} free models loaded`)
     } catch (err) {
       setModelLoadStatus(err instanceof Error ? err.message : 'Could not load free models')
@@ -123,13 +146,15 @@ export function AskPanel() {
   async function saveAiSettings() {
     const ipc = (window as any).cupric?.ipc || (window as any).northframe?.ipc
     if (!ipc) return
-    const result = await ipc.invoke('settings:set', {
+    const patch: Record<string, string> = {
       aiProvider,
-      geminiApiKey: apiKey,
-      openCodeApiKey: openCodeKey,
+      geminiModel,
       openCodeBaseUrl,
       openCodeModel,
-    })
+    }
+    if (apiKey.trim()) patch.geminiApiKey = apiKey.trim()
+    if (openCodeKey.trim()) patch.openCodeApiKey = openCodeKey.trim()
+    const result = await ipc.invoke('settings:set', patch)
     setHasKey(Boolean(result?.hasKey))
     setHasGeminiKey(Boolean(result?.hasGeminiKey))
     setHasOpenCodeKey(Boolean(result?.hasOpenCodeKey))
@@ -181,7 +206,7 @@ export function AskPanel() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-sm font-semibold">Ask Cupric AI <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{hasKey ? 'LIVE' : 'SETUP'}</span></div>
-              <div className="text-xs text-muted">{hasKey ? (aiProvider === 'opencode' ? `OpenCode · ${openCodeModel}` : 'Gemini 2.0 Flash') : 'Connect Gemini or OpenCode model'}</div>
+              <div className="text-xs text-muted">{hasKey ? (aiProvider === 'opencode' ? `OpenCode · ${openCodeModel}` : `Gemini · ${geminiModel}`) : 'Connect Gemini or OpenCode model'}</div>
             </div>
             <button type="button" aria-label="AI settings" onClick={() => setShowSettings((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-panel-alt hover:text-text"><Settings size={15}/></button>
             <button
@@ -220,16 +245,30 @@ export function AskPanel() {
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Paste Gemini key — stored locally"
+                    placeholder="Paste Gemini key — blank keeps saved key"
+                    className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
+                  />
+                </label>
+                <label className="block text-xs text-muted">
+                  Gemini model
+                  <input
+                    value={geminiModel}
+                    onChange={(e) => setGeminiModel(e.target.value)}
+                    placeholder="gemini-3.8-flash"
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
                 </label>
                 <div className="rounded-lg border border-line bg-bg/40 p-2">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <div className="text-xs font-semibold text-muted">Free OpenCode models</div>
-                    <button type="button" onClick={loadFreeOpenCodeModels} className="rounded-md border border-line bg-panel px-2 py-1 text-xs text-muted hover:text-text">
-                      Load live list
-                    </button>
+                    <div className="text-xs font-semibold text-muted">OpenCode models</div>
+                    <div className="flex gap-1">
+                      <button type="button" onClick={loadOpenCodeDesktopModels} className="rounded-md border border-line bg-panel px-2 py-1 text-xs text-muted hover:text-text">
+                        Load OpenCode
+                      </button>
+                      <button type="button" onClick={loadFreeOpenCodeModels} className="rounded-md border border-line bg-panel px-2 py-1 text-xs text-muted hover:text-text">
+                        Load live list
+                      </button>
+                    </div>
                   </div>
                   <input
                     value={modelSearch}
@@ -259,7 +298,7 @@ export function AskPanel() {
                     </div>
                   </div>
                   <p className="mt-2 text-xs leading-relaxed text-muted">
-                    {modelLoadStatus || `${freeModels.length} presets included. OpenRouter “:free” models need a free key; local Ollama presets need Ollama running, no key.`}
+                    {modelLoadStatus || `${freeModels.length} presets included. Load OpenCode reads your desktop OpenCode providers without exposing keys to the UI; OpenRouter “:free” models still need a free key.`}
                   </p>
                 </div>
                 <label className="block text-xs text-muted">
@@ -281,12 +320,12 @@ export function AskPanel() {
                   />
                 </label>
                 <label className="block text-xs text-muted">
-                  OpenCode API key <span className={hasOpenCodeKey ? 'text-accent-text' : 'text-muted'}>{hasOpenCodeKey ? 'saved / local model' : 'not saved'}</span>
+                  OpenCode API key <span className={hasOpenCodeKey ? 'text-accent-text' : 'text-muted'}>{hasOpenCodeKey ? 'saved / imported / local model' : 'not saved'}</span>
                   <input
                     type="password"
                     value={openCodeKey}
                     onChange={(e) => setOpenCodeKey(e.target.value)}
-                    placeholder="OpenRouter/OpenAI key, or blank for local Ollama"
+                    placeholder="OpenRouter/OpenAI key — blank keeps saved/OpenCode/local"
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
                 </label>
