@@ -38,6 +38,7 @@ import {
   defaultStickerClip,
   defaultTextClip,
   docDuration,
+  MIN_CLIP_SEC,
   nextFreeStart,
   studioOf,
 } from '../lib/studio/doc'
@@ -58,6 +59,8 @@ export function Studio() {
   const patchStudio = useProjectStore((s) => s.patchStudio)
   const addStudioClip = useProjectStore((s) => s.addStudioClip)
   const updateStudioClip = useProjectStore((s) => s.updateStudioClip)
+  const undo = useProjectStore((s) => s.undo)
+  const redo = useProjectStore((s) => s.redo)
   const removeStudioClip = useProjectStore((s) => s.removeStudioClip)
   const splitStudioClip = useProjectStore((s) => s.splitStudioClip)
   const duplicateStudioClip = useProjectStore((s) => s.duplicateStudioClip)
@@ -97,19 +100,88 @@ export function Studio() {
     [duration],
   )
 
-  // Space toggles playback; ⌘/Ctrl+B splits at the playhead. Ignored while a
-  // text field has focus so typing a caption never scrubs the timeline.
+  /**
+   * Editor shortcuts.
+   *
+   * Premiere/Resolve/FCP muscle memory, because anyone who edits video already
+   * has it: J/K/L shuttle, I and O set the in and out of the selected clip,
+   * space plays, ⌘Z undoes. Ignored while a text field has focus so typing a
+   * caption never scrubs the timeline.
+   */
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
-      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
+      if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName) || target.isContentEditable)) return
+
+      const key = e.key.toLowerCase()
+      const mod = e.metaKey || e.ctrlKey
+
+      if (mod && key === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) redo()
+        else undo()
+        return
+      }
+      if (mod && key === 'y') {
+        e.preventDefault()
+        redo()
+        return
+      }
+
       if (e.code === 'Space') {
         e.preventDefault()
         if (duration > 0) setPlaying((p) => !p)
+        return
       }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b' && selectedId && pid) {
+
+      // J/K/L. J and L step the playhead; held down they act as shuttle,
+      // because the key repeat does the stepping for us.
+      if (!mod && key === 'l') {
+        e.preventDefault()
+        if (playing) seek(time + 0.5)
+        else if (duration > 0) setPlaying(true)
+        return
+      }
+      if (!mod && key === 'k') {
+        e.preventDefault()
+        setPlaying(false)
+        return
+      }
+      if (!mod && key === 'j') {
+        e.preventDefault()
+        setPlaying(false)
+        seek(time - 0.5)
+        return
+      }
+
+      // I and O trim the selected clip to the playhead — the in and out points.
+      if (!mod && (key === 'i' || key === 'o') && selectedId && pid) {
+        const clip = doc.clips.find((c) => c.id === selectedId)
+        if (!clip) return
+        e.preventDefault()
+        const end = clip.startSec + clip.durationSec
+        if (key === 'i') {
+          const startSec = clamp(time, 0, end - MIN_CLIP_SEC)
+          updateStudioClip(pid, selectedId, { startSec, durationSec: end - startSec })
+        } else {
+          const durationSec = Math.max(MIN_CLIP_SEC, time - clip.startSec)
+          updateStudioClip(pid, selectedId, { durationSec })
+        }
+        return
+      }
+
+      // Arrows nudge the playhead a frame at a time; Shift makes it a second.
+      if (!mod && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault()
+        const step = e.shiftKey ? 1 : 1 / doc.fps
+        seek(time + (e.key === 'ArrowRight' ? step : -step))
+        return
+      }
+
+      if (mod && key === 'b' && selectedId && pid) {
         e.preventDefault()
         splitStudioClip(pid, selectedId, time)
+        return
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && pid) {
         e.preventDefault()
@@ -119,7 +191,7 @@ export function Studio() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [duration, pid, removeStudioClip, selectedId, splitStudioClip, time])
+  }, [doc, duration, pid, playing, redo, removeStudioClip, seek, selectedId, splitStudioClip, time, undo, updateStudioClip])
 
   useEffect(() => {
     if (time > duration) setTime(duration)
