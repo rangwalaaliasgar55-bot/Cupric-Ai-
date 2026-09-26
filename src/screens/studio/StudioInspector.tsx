@@ -1,11 +1,13 @@
 import { useRef } from 'react'
 import { Copy, Link2, Scissors, Trash2 } from 'lucide-react'
 import type {
+  StudioAudioClip,
   StudioBackgroundClip,
   StudioClip,
   StudioDoc,
   StudioGlassClip,
   StudioMediaClip,
+  StudioCustomBackground,
   StudioOverlayClip,
   StudioTextClip,
 } from '../../types/project'
@@ -78,6 +80,7 @@ function Slider({
 }
 
 export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onSplit, onPatchDoc }: Props) {
+  const bgFileRef = useRef<HTMLInputElement>(null)
   if (!clip) {
     return (
       <div className="space-y-5">
@@ -124,6 +127,91 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
               </button>
             ))}
           </div>
+        </Field>
+
+        <Field label="Background mode" hint="Independent of the selected layer.">
+          <div className="grid grid-cols-4 gap-1.5">
+            {([
+              { id: 'preset', label: 'Preset' },
+              { id: 'solid', label: 'Solid' },
+              { id: 'image', label: 'Image' },
+              { id: 'transparent', label: 'None' },
+            ] as const).map((mode) => {
+              const current = doc.customBackground?.type ?? 'preset'
+              return (
+                <button
+                  key={mode.id}
+                  type="button"
+                  onClick={() => {
+                    if (mode.id === 'preset') return onPatchDoc({ customBackground: null })
+                    if (mode.id === 'solid') return onPatchDoc({ customBackground: { type: 'solid', color: '#0B0B10' } })
+                    if (mode.id === 'transparent') return onPatchDoc({ customBackground: { type: 'transparent' } })
+                    bgFileRef.current?.click()
+                  }}
+                  className={cx(
+                    'rounded-lg border px-2 py-1.5 text-xs transition-colors duration-150',
+                    current === mode.id
+                      ? 'border-accent bg-accent text-accent-ink'
+                      : 'border-line bg-panel-alt text-muted hover:text-text',
+                  )}
+                >
+                  {mode.label}
+                </button>
+              )
+            })}
+          </div>
+          <input
+            ref={bgFileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              const reader = new FileReader()
+              reader.onload = () =>
+                onPatchDoc({ customBackground: { type: 'image', dataUrl: String(reader.result), fit: 'cover' } })
+              reader.readAsDataURL(file)
+              e.target.value = ''
+            }}
+          />
+          {doc.customBackground?.type === 'solid' && (
+            <input
+              type="color"
+              aria-label="Background colour"
+              value={doc.customBackground.color}
+              onChange={(e) => onPatchDoc({ customBackground: { type: 'solid', color: e.target.value } })}
+              className="mt-2 h-8 w-full cursor-pointer rounded-lg border border-line bg-panel-alt"
+            />
+          )}
+          {doc.customBackground?.type === 'image' && (
+            <div className="mt-2 grid grid-cols-2 gap-1.5">
+              {(['cover', 'contain'] as const).map((fit) => (
+                <button
+                  key={fit}
+                  type="button"
+                  onClick={() => {
+                    const bg = doc.customBackground
+                    if (bg?.type === 'image') onPatchDoc({ customBackground: { ...bg, fit } })
+                  }}
+                  className={cx(
+                    'rounded-lg border px-2 py-1.5 text-xs capitalize',
+                    (doc.customBackground as Extract<StudioCustomBackground, { type: 'image' }>).fit === fit
+                      ? 'border-accent bg-accent text-accent-ink'
+                      : 'border-line bg-panel-alt text-muted hover:text-text',
+                  )}
+                >
+                  {fit}
+                </button>
+              ))}
+            </div>
+          )}
+          {doc.customBackground?.type === 'transparent' && (
+            <p className="mt-2 text-xs text-muted">
+              Nothing is painted behind the clips. Exported video has no alpha channel, so this reads as black in the
+              file.
+            </p>
+          )}
         </Field>
 
         <Field label="Background" hint="Painted under every clip — also exported.">
@@ -243,6 +331,7 @@ export function StudioInspector({ doc, clip, onPatch, onDelete, onDuplicate, onS
       {clip.kind === 'background' && <BackgroundFields clip={clip as StudioBackgroundClip} onPatch={onPatch} />}
       {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
       {clip.kind === 'glass' && <GlassFields clip={clip as StudioGlassClip} onPatch={onPatch} />}
+      {clip.kind === 'audio' && <AudioFields clip={clip as StudioAudioClip} onPatch={onPatch} />}
     </div>
   )
 }
@@ -433,6 +522,54 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
           ))}
         </div>
       </Field>
+    </div>
+  )
+}
+
+function AudioFields({ clip, onPatch }: { clip: StudioAudioClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const linked = hasMedia(clip.mediaId)
+  // Fades cannot overlap, or the clip would never reach full level; the caps
+  // keep each one inside its own half of the clip.
+  const maxFade = Math.max(0.1, clip.durationSec / 2)
+  return (
+    <div className="space-y-3 border-t border-line pt-4">
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate font-mono text-xs text-muted">{clip.fileName}</span>
+        {!linked && <span className="shrink-0 text-xs text-danger">Needs relink</span>}
+      </div>
+      {!linked && (
+        <p className="text-xs leading-relaxed text-muted">
+          Audio handles cannot survive a reload — re-import this track to hear it again.
+        </p>
+      )}
+      <Slider
+        label="Trim in (s)"
+        value={clip.trimInSec}
+        min={0}
+        max={Math.max(0.1, clip.sourceDurationSec - 0.1)}
+        step={0.1}
+        onChange={(v) => onPatch({ trimInSec: v } as Partial<StudioClip>)}
+      />
+      <Slider label="Volume" value={clip.volume} min={0} max={1} step={0.05} onChange={(v) => onPatch({ volume: v } as Partial<StudioClip>)} />
+      <Slider
+        label="Fade in (s)"
+        value={Math.min(clip.fadeInSec, maxFade)}
+        min={0}
+        max={maxFade}
+        step={0.1}
+        onChange={(v) => onPatch({ fadeInSec: v } as Partial<StudioClip>)}
+      />
+      <Slider
+        label="Fade out (s)"
+        value={Math.min(clip.fadeOutSec, maxFade)}
+        min={0}
+        max={maxFade}
+        step={0.1}
+        onChange={(v) => onPatch({ fadeOutSec: v } as Partial<StudioClip>)}
+      />
+      <p className="text-xs leading-relaxed text-muted">
+        Drag the clip's left edge on the timeline to slide into the track instead of cutting the song's start.
+      </p>
     </div>
   )
 }

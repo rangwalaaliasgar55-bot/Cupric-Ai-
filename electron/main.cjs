@@ -614,18 +614,234 @@ function sceneAt(t){return (rundown.scenes||[]).find(s=>t>=Number(s.from||0)&&t<
 window.__seek=function(t){t=clamp(Number(t)||0,0,duration); const s=sceneAt(t); const from=Number(s.from||0), to=Math.max(from+.1,Number(s.to||duration)); const local=clamp((t-from)/(to-from),0,1); const e=ease(local*2.4); copy.textContent=String(s.copy||rundown.title||'Cupric AI').toUpperCase(); motion.textContent=String(s.motion||rundown.style||'deterministic motion'); badge.textContent=String(s.type||'scene')+' · '+t.toFixed(1)+'s'; copy.style.opacity=e; copy.style.transform='translateY('+((1-e)*70)+'px) scale('+(0.96+e*.04)+')'; motion.style.opacity=clamp((local-.12)*2.2,0,1); motion.style.transform='translateX('+((1-e)*(variant%2?-40:40))+'px)'; bar.style.width=(7+86*(t/duration))+'%'; orb.style.transform='translate('+(Math.sin(t*.9+variant)*60)+'px,'+(Math.cos(t*.7+variant)*50)+'px) scale('+(1+Math.sin(t*1.1)*.08)+')'; grid.style.transform='translateY('+(-t*18)+'px)';}; window.__seek(0);
 </script></body></html>`
 }
-function writeAutomationCandidates(root, rundown) {
-  const candidates = []
-  for (let i = 0; i < 3; i += 1) {
-    const file = path.join(root, `candidate-${i + 1}.html`)
-    fs.writeFileSync(file, candidateHtmlForRundown(rundown, i), 'utf8')
-    const html = fs.readFileSync(file, 'utf8')
-    const score = 50 + (html.includes('window.__seek') ? 20 : 0) + (html.includes(String(rundown.durationSec)) ? 8 : 0) + (i * 4) + (rundown.scenes?.length ? 8 : 0)
-    candidates.push({ file, score, reasons: ['single-file HTML', 'defines window.__seek(t)', 'scene copy mapped to deterministic motion'] })
+/**
+ * Where the shipped resource packs live, in dev and when packaged.
+ *
+ * electron-builder copies `resources/**` next to the app, so try the packaged
+ * location first and fall back to the repo layout during `npm run desktop`.
+ */
+function packsDir() {
+  const candidates = [
+    path.join(process.resourcesPath || '', 'resources', 'packs'),
+    path.join(__dirname, '..', 'resources', 'packs'),
+    path.join(__dirname, '..', 'dist', 'resources', 'packs'),
+  ]
+  return candidates.find((dir) => dir && fs.existsSync(dir)) || ''
+}
+
+/**
+ * Pick the registered components, templates and sources that actually relate to
+ * this brief, so the model composes with the Lab/Resources catalogue instead of
+ * inventing everything from a blank page.
+ *
+ * Matching is deliberately dumb (token overlap on name/description/tags): the
+ * catalogue is small, and a wrong-but-plausible suggestion costs the model
+ * nothing, while a missed one costs us the whole point of having a registry.
+ */
+function automationResourceContext(brief, rundown) {
+  const dir = packsDir()
+  if (!dir) return { components: [], templates: [], sources: [], prompt: '' }
+
+  const haystack = `${brief || ''} ${rundown?.style || ''} ${(rundown?.scenes || []).map((s) => `${s.type} ${s.copy} ${s.motion}`).join(' ')}`
+  const words = Array.from(new Set(String(haystack).toLowerCase().match(/[a-z][a-z0-9-]{2,}/g) || []))
+  const STOP = new Set(['the', 'and', 'for', 'with', 'this', 'that', 'from', 'into', 'your', 'our', 'video', 'scene', 'motion', 'seconds'])
+  const terms = words.filter((w) => !STOP.has(w))
+
+  const load = (id) => {
+    try {
+      const pack = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'))
+      return Array.isArray(pack?.items) ? pack.items : []
+    } catch {
+      return []
+    }
   }
+
+  const scoreItem = (item) => {
+    const text = `${item.name} ${item.description} ${(item.tags || []).join(' ')}`.toLowerCase()
+    return terms.reduce((n, term) => (text.includes(term) ? n + 1 : n), 0)
+  }
+
+  const top = (items, limit) =>
+    items
+      .map((item) => ({ item, score: scoreItem(item) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .filter((entry, index) => entry.score > 0 || index < Math.min(3, limit))
+      .map((entry) => entry.item)
+
+  const components = top(load('components'), 12)
+  const templates = top(load('templates'), 4)
+  const sources = top(load('sources'), 6)
+
+  const lines = []
+  if (components.length) {
+    lines.push('REGISTERED UI COMPONENTS you may re-create in HTML/CSS (from the Cupric UI Lab registry — match their behaviour, not their React code):')
+    lines.push(...components.map((c) => `- ${c.name}: ${c.description}`))
+  }
+  if (templates.length) {
+    lines.push('', 'EXISTING CUPRIC SCENE TEMPLATES whose structure is already proven to render (mirror their timing shape):')
+    lines.push(...templates.map((t) => `- ${t.name} (${t.data?.durationSec ?? '?'}s): ${t.description}`))
+  }
+  if (sources.length) {
+    lines.push('', 'HOUSE STYLE CUES from the Cupric sources catalogue:')
+    lines.push(...sources.map((s) => `- ${s.name}: ${s.data?.promptCue || s.description}`))
+  }
+
+  return { components, templates, sources, prompt: lines.join('\n') }
+}
+
+/**
+ * Validate a model-authored HTML candidate against the same contract the
+ * renderer enforces at capture time (see renderArenaSegment): one file, a
+ * #scene root, a deterministic window.__seek(t), and no wall-clock animation.
+ *
+ * Returns a score and the reasons behind it. Anything that fails a `fatal`
+ * check cannot be rendered at all and is disqualified rather than ranked.
+ */
+function validateCandidateHtml(html, rundown) {
+  const text = String(html || '')
+  const checks = [
+    { id: 'non-empty', ok: text.trim().length > 400, fatal: true, points: 10, why: 'has real content' },
+    { id: 'html-doc', ok: /<html[\s>]/i.test(text) && /<\/html>/i.test(text), fatal: true, points: 10, why: 'complete HTML document' },
+    { id: 'scene-root', ok: /id=["']scene["']/.test(text), fatal: true, points: 15, why: 'has the #scene root the renderer captures' },
+    { id: 'seek', ok: /window\.__seek\s*=/.test(text), fatal: true, points: 25, why: 'defines window.__seek(t)' },
+    { id: 'manifest', ok: /__cupricSourceManifest/.test(text), fatal: false, points: 8, why: 'declares its source manifest' },
+    { id: 'initial-frame', ok: /__seek\s*\(\s*0\s*\)/.test(text), fatal: false, points: 8, why: 'paints a valid frame at t=0' },
+    { id: 'self-contained', ok: !/<script[^>]+src=|<link[^>]+href=["']https?:/i.test(text), fatal: true, points: 12, why: 'no remote scripts or stylesheets' },
+    { id: 'no-wall-clock', ok: !/requestAnimationFrame|setInterval|setTimeout|Date\.now\(\)|performance\.now\(\)/.test(text), fatal: false, points: 12, why: 'frames depend only on t, not on wall-clock time' },
+    { id: 'no-random', ok: !/Math\.random/.test(text), fatal: false, points: 6, why: 'deterministic (no Math.random)' },
+    { id: 'size', ok: text.includes(String(rundown.size?.[0])) && text.includes(String(rundown.size?.[1])), fatal: false, points: 6, why: 'renders at the requested frame size' },
+    {
+      id: 'copy',
+      ok: (rundown.scenes || []).every((scene) => !scene.copy || text.includes(String(scene.copy).slice(0, 18))),
+      fatal: false,
+      points: 10,
+      why: 'carries every line of locked scene copy',
+    },
+  ]
+  const failedFatal = checks.filter((c) => c.fatal && !c.ok)
+  const score = checks.reduce((n, c) => n + (c.ok ? c.points : 0), 0)
+  return {
+    valid: failedFatal.length === 0,
+    score,
+    reasons: checks.filter((c) => c.ok).map((c) => c.why),
+    failures: checks.filter((c) => !c.ok).map((c) => `${c.fatal ? 'FATAL' : 'weak'}: ${c.why}`),
+  }
+}
+
+/** Strip ```html fences and any prose the model wrapped the file in. */
+function extractHtmlFromModel(text) {
+  const raw = String(text || '')
+  const fenced = raw.match(/```(?:html)?\s*([\s\S]*?)```/i)
+  const body = fenced ? fenced[1] : raw
+  const start = body.search(/<!doctype html|<html[\s>]/i)
+  return (start >= 0 ? body.slice(start) : body).trim()
+}
+
+async function generateCandidateHtml(prompt) {
+  const provider = aiSettings().provider
+  if (provider === 'opencode') {
+    return extractHtmlFromModel(
+      await callOpenCode(
+        [
+          { role: 'system', content: 'You are a motion-graphics engineer. Return ONLY a complete single-file index.html. No prose, no markdown fences.' },
+          { role: 'user', content: prompt },
+        ],
+        { temperature: 0.85 },
+      ),
+    )
+  }
+  const key = geminiApiKey()
+  if (!key) throw new Error('Gemini API key is not configured')
+  const result = await runGeminiGenerateContent(key, prompt, { temperature: 0.85, maxOutputTokens: 8192 })
+  return extractHtmlFromModel(result.response.text())
+}
+
+const CANDIDATE_COUNT = 3
+
+/**
+ * The real model battle.
+ *
+ * Previously this wrote the same hardcoded template three times with three
+ * palettes and "scored" it with checks that all three always passed — the
+ * winner was decided by the `i * 4` tiebreak, i.e. by nothing. Now each
+ * candidate is an independent model generation from the locked Arena prompt
+ * (plus the resource context), validated against the renderer's real contract.
+ *
+ * The boilerplate template is still here, but only as an explicit, *declared*
+ * rescue: if it is used, the job says so in warnings and the voting report
+ * records `fallbackUsed`.
+ */
+async function writeAutomationCandidates(root, rundown, job, warnings) {
+  const resources = automationResourceContext(job?.brief, rundown)
+  const basePrompt = rundown.arenaPrompt || arenaPromptOf(rundown)
+  const prompt = resources.prompt
+    ? `${basePrompt}\n\nCOMPOSE WITH CUPRIC'S OWN RESOURCE LIBRARY:\n${resources.prompt}\n\nUse at least two of the registered components or templates above as structural elements of the piece, re-implemented in inline HTML/CSS/SVG.`
+    : basePrompt
+
+  const candidates = []
+  const attempts = []
+  let fallbackUsed = false
+
+  for (let i = 0; i < CANDIDATE_COUNT; i += 1) {
+    const file = path.join(root, `candidate-${i + 1}.html`)
+    // Each candidate gets a different creative constraint so the battle
+    // compares genuinely different pieces, not three samples of one prompt.
+    const angle = [
+      'Direction A: typography-led. The type IS the visual — scale contrast, tight tracking, minimal ornament.',
+      'Direction B: composition-led. Geometry, masks and grid motion carry the piece; type is secondary.',
+      'Direction C: atmosphere-led. Gradient/field background with depth and a restrained, confident type layer.',
+    ][i % 3]
+    try {
+      const html = await generateCandidateHtml(`${prompt}\n\nCREATIVE DIRECTION FOR THIS CANDIDATE:\n${angle}`)
+      const verdict = validateCandidateHtml(html, rundown)
+      attempts.push({ candidate: i + 1, generated: true, valid: verdict.valid, failures: verdict.failures })
+      if (!verdict.valid) {
+        logLine('automation-candidate-invalid', `Candidate ${i + 1} failed the render contract`, verdict.failures)
+        continue
+      }
+      fs.writeFileSync(file, html, 'utf8')
+      candidates.push({ file, score: verdict.score, generatedBy: aiSettings().provider, reasons: verdict.reasons, failures: verdict.failures })
+    } catch (err) {
+      attempts.push({ candidate: i + 1, generated: false, error: err?.message || String(err) })
+      logLine('automation-candidate-failed', err?.message || String(err), { candidate: i + 1 })
+    }
+  }
+
+  if (!candidates.length) {
+    // Honest fallback: say it out loud, do not dress canned HTML up as a battle.
+    fallbackUsed = true
+    const reason = attempts.map((a) => a.error || (a.failures || []).join('; ')).filter(Boolean)[0] || 'unknown model error'
+    warnings.push(
+      `No AI candidate passed the render contract (${reason}). Cupric fell back to its built-in deterministic template — this render was NOT chosen by a model battle.`,
+    )
+    for (let i = 0; i < CANDIDATE_COUNT; i += 1) {
+      const file = path.join(root, `candidate-${i + 1}.html`)
+      const html = candidateHtmlForRundown(rundown, i)
+      fs.writeFileSync(file, html, 'utf8')
+      const verdict = validateCandidateHtml(html, rundown)
+      candidates.push({ file, score: verdict.score, generatedBy: 'builtin-template', reasons: verdict.reasons, failures: verdict.failures })
+    }
+  } else if (candidates.length < CANDIDATE_COUNT) {
+    warnings.push(`${CANDIDATE_COUNT - candidates.length} of ${CANDIDATE_COUNT} AI candidates failed to generate or failed validation; the winner was picked from the ${candidates.length} that passed.`)
+  }
+
   candidates.sort((a, b) => b.score - a.score)
-  writeJson(path.join(root, 'voting-report.json'), { mode: 'local-scoring', winner: candidates[0].file, candidates })
-  return { candidates, winnerPath: candidates[0].file }
+  writeJson(path.join(root, 'voting-report.json'), {
+    mode: fallbackUsed ? 'builtin-template-fallback' : 'ai-generated-local-scoring',
+    provider: aiSettings().provider,
+    fallbackUsed,
+    resourcesUsed: {
+      components: resources.components.map((c) => c.id),
+      templates: resources.templates.map((t) => t.id),
+      sources: resources.sources.map((s) => s.id),
+    },
+    prompt,
+    attempts,
+    winner: candidates[0].file,
+    candidates,
+  })
+  return { candidates, winnerPath: candidates[0].file, fallbackUsed }
 }
 async function ingestAutomationFootage(job, root, warnings, state) {
   if (!job.footageFolder) return null
@@ -743,8 +959,8 @@ function generationGuideFor(job, rundown) {
     sequence: (rundown.scenes || []).map((s, index) => ({ index: index + 1, from: s.from, to: s.to, type: s.type, copy: s.copy, motion: s.motion })),
     generationSteps: [
       'Generate/lock the creative rundown from the brief.',
-      'Build Arena candidates as single-file deterministic HTML motion pieces.',
-      'Use private local scoring or a manual Arena browser vote gate to select the winner.',
+      'Ask the configured model (Gemini or OpenCode) for several independent single-file HTML motion pieces, each given a different creative direction and the matching entries from the Cupric resource catalogue.',
+      'Validate every candidate against the renderer contract (#scene root, deterministic window.__seek(t), self-contained, scene copy present) and score the survivors.',
       'Optionally ingest footage, detect silences, and add captions/crop metadata.',
       'Render HTML frames and footage segments with FFmpeg, then concatenate into the final MP4.',
     ],
@@ -807,13 +1023,16 @@ async function runAutomationPipeline(jobId) {
 
     stepIndex = 3
     job = ensureAutomationActive(job.id, state)
-    if (job.votingMode === 'official-arena-api') {
-      throw new Error('Official Arena API voting is not configured in this build. Use Local model battle scoring for fully autonomous MP4, or Manual Arena for a visible human review gate.')
-    }
     if (!job.winnerPath || !Array.isArray(job.candidates)) {
-      startAutomationStep(job.id, 3, job.votingMode === 'manual-arena' ? 'Generating review candidates before the manual Arena gate' : 'Generating and locally scoring candidates')
-      const candidateResult = writeAutomationCandidates(root, rundown)
-      job = patchAutomation(job.id, { candidates: candidateResult.candidates, winnerPath: candidateResult.winnerPath }) || job
+      startAutomationStep(
+        job.id,
+        3,
+        job.votingMode === 'manual-arena'
+          ? 'Generating AI review candidates before the manual Arena gate'
+          : `Generating ${CANDIDATE_COUNT} AI candidates and scoring them against the render contract`,
+      )
+      const candidateResult = await writeAutomationCandidates(root, rundown, job, warnings)
+      job = patchAutomation(job.id, { candidates: candidateResult.candidates, winnerPath: candidateResult.winnerPath, warnings }) || job
       sendAutomation('automation:progress', job)
     }
     if (job.votingMode === 'manual-arena' && !job.manualVoteApproved) {
@@ -831,7 +1050,7 @@ async function runAutomationPipeline(jobId) {
       waitAutomationStep(job.id, 3, message)
       return
     }
-    job = finishAutomationStep(job.id, 3, job.votingMode === 'manual-arena' ? 'Manual gate approved' : 'Candidate selected by local scoring') || job
+    job = finishAutomationStep(job.id, 3, job.votingMode === 'manual-arena' ? 'Manual gate approved' : 'Winner selected from the AI candidate battle') || job
 
     stepIndex = 4
     job = ensureAutomationActive(job.id, state)

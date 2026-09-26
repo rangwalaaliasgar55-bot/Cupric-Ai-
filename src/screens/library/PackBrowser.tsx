@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Check,
@@ -38,6 +38,7 @@ import type { StudioClip, StudioTextAnim, StudioTransition } from '../../types/p
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { EASE_SOFT } from '../../lib/motion'
 import { useReducedMotion } from '../../lib/use-reduced-motion'
+import { writeDragPayload } from '../../lib/studio/resourceDrop'
 import { copyText, cx, uid } from '../../lib/utils'
 
 const KIND_ICON = {
@@ -325,7 +326,19 @@ export function PackBrowser() {
                   exit={reduced ? undefined : { opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.22, ease: EASE_SOFT, delay: reduced ? 0 : Math.min(i, 12) * 0.015 }}
                   whileHover={reduced ? undefined : { y: -2 }}
-                  className="group flex flex-col gap-2.5 rounded-xl border border-line bg-panel p-3.5 transition-colors duration-150 hover:border-text/25"
+                  // Draggable straight onto the Studio stage; the drop uses the
+                  // same mapping as the button below, so both paths agree.
+                  draggable
+                  onDragStart={(event) =>
+                    writeDragPayload((event as unknown as DragEvent<HTMLDivElement>).dataTransfer, {
+                      kind: item.kind,
+                      id: item.id,
+                      name: item.name,
+                      description: item.description,
+                      data: item.data,
+                    })
+                  }
+                  className="group flex cursor-grab flex-col gap-2.5 rounded-xl border border-line bg-panel p-3.5 transition-colors duration-150 hover:border-text/25 active:cursor-grabbing"
                 >
                   {item.css && (
                     <div

@@ -85,9 +85,8 @@ export function Autonomous() {
             </label>
             <label className="text-xs text-muted">Voting
               <select value={vote} onChange={e => setVote(e.target.value as VotingMode)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text">
-                <option value="local-scoring">Private local scoring (no public vote)</option>
+                <option value="local-scoring">AI candidate battle, scored locally (no public vote)</option>
                 <option value="manual-arena">Manual Arena vote</option>
-                <option value="official-arena-api" disabled>Official Arena API (coming soon)</option>
               </select>
             </label>
           </div>

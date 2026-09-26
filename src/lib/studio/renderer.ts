@@ -438,7 +438,21 @@ export function drawStudioFrame(
   ctx.clearRect(0, 0, width, height)
 
   // 1. Document background, then any background clip active right now.
-  backgroundById(doc.backgroundId).paint(ctx, width, height, t)
+  // A custom background overrides the preset, and is deliberately checked
+  // before anything else so it is independent of the current selection.
+  const custom = doc.customBackground
+  if (custom?.type === 'solid') {
+    ctx.fillStyle = custom.color
+    ctx.fillRect(0, 0, width, height)
+  } else if (custom?.type === 'image') {
+    const image = overlayImage(`doc-bg-${custom.dataUrl.slice(-24)}`, custom.dataUrl)
+    if (image) {
+      const [sw, sh] = sourceSize(image)
+      drawFit(ctx, image, sw, sh, width, height, custom.fit)
+    }
+  } else if (custom?.type !== 'transparent') {
+    backgroundById(doc.backgroundId).paint(ctx, width, height, t)
+  }
 
   for (const clip of clipsAt(doc, t)) {
     ctx.save()

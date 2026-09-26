@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import {
   Clapperboard,
   Download,
@@ -7,6 +7,7 @@ import {
   Loader2,
   Mic,
   MicOff,
+  Music,
   Pause,
   Play,
   Plus,
@@ -27,8 +28,9 @@ import { ProgressBar } from '../components/ProgressBar'
 import { StudioInspector } from './studio/StudioInspector'
 import { StudioPreview } from './studio/StudioPreview'
 import { StudioTimeline } from './studio/StudioTimeline'
-import type { StudioClip, StudioDoc, StudioMediaClip } from '../types/project'
+import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../types/project'
 import {
+  defaultAudioClip,
   defaultGlassClip,
   defaultTextClip,
   docDuration,
@@ -39,6 +41,7 @@ import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
 import { TRANSITIONS } from '../lib/studio/transitions'
 import { isVoiceSupported, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
 import { registerFile } from '../lib/studio/media'
+import { readDragPayload, resourceToStudio } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
@@ -67,6 +70,8 @@ export function Studio() {
   const [heard, setHeard] = useState<string | null>(null)
   const [showVoiceHelp, setShowVoiceHelp] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const audioRef = useRef<HTMLInputElement>(null)
+  const [dropActive, setDropActive] = useState(false)
   const cancelRef = useRef<{ cancelled: boolean } | null>(null)
   const voiceRef = useRef<VoiceListener | null>(null)
   const commandRef = useRef<(command: VoiceCommand) => void>(() => {})
@@ -163,6 +168,19 @@ export function Studio() {
     try {
       for (const file of Array.from(files)) {
         const handle = await registerFile(file)
+        if (handle.kind === 'audio') {
+          // Music gets its own track (the last one) so it never fights the
+          // picture tracks for space when the edit is re-stacked.
+          const audioTrack = Math.max(0, doc.trackCount - 1)
+          const clip: StudioAudioClip = defaultAudioClip(
+            nextFreeStart(doc, audioTrack, 0, Math.max(0.2, handle.durationSec)),
+            audioTrack,
+            { id: handle.id, fileName: handle.fileName, localPath: handle.localPath, durationSec: handle.durationSec },
+          )
+          addStudioClip(projectId, clip)
+          setSelectedId(clip.id)
+          continue
+        }
         const durationSec = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : 4
         start = nextFreeStart(doc, 0, start, durationSec)
         const clip: StudioMediaClip = {
@@ -196,6 +214,39 @@ export function Studio() {
       setImporting(false)
       if (fileRef.current) fileRef.current.value = ''
     }
+  }
+
+  /**
+   * Resources dropped onto the stage.
+   *
+   * Both real files and Library items land here. Anything the renderer cannot
+   * actually draw is refused out loud instead of being inserted as a dead
+   * placeholder — that silent placeholder was the original bug.
+   */
+  function onStageDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault()
+    setDropActive(false)
+    if (event.dataTransfer.files?.length) {
+      void onFiles(event.dataTransfer.files)
+      return
+    }
+    const payload = readDragPayload(event.dataTransfer)
+    if (!payload) {
+      pushToast('info', 'Nothing droppable in that drag — try a card from Library → Resource packs.')
+      return
+    }
+    const result = resourceToStudio(doc, payload, time)
+    if (!result.ok) {
+      pushToast('info', result.reason)
+      return
+    }
+    if ('clip' in result) {
+      addStudioClip(projectId, result.clip)
+      setSelectedId(result.clip.id)
+    } else {
+      patchStudio(projectId, result.docPatch)
+    }
+    pushToast('success', result.message)
   }
 
   function addText() {
@@ -388,7 +439,18 @@ export function Studio() {
         <input
           ref={fileRef}
           type="file"
-          accept="video/*,image/*"
+          accept="video/*,image/*,audio/*"
+          multiple
+          className="hidden"
+          onChange={(e) => void onFiles(e.target.files)}
+        />
+        <Button size="sm" variant="outline" onClick={() => audioRef.current?.click()} disabled={importing || exporting}>
+          <Music size={13} /> Music
+        </Button>
+        <input
+          ref={audioRef}
+          type="file"
+          accept="audio/*"
           multiple
           className="hidden"
           onChange={(e) => void onFiles(e.target.files)}
@@ -496,7 +558,22 @@ export function Studio() {
       {/* Stage + inspector */}
       <div className="flex min-h-0 flex-1">
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex min-h-0 flex-1 items-center justify-center bg-bg p-5">
+          <div
+            className={cx(
+              'flex min-h-0 flex-1 items-center justify-center bg-bg p-5 transition-colors duration-150',
+              dropActive && 'bg-accent/5 ring-2 ring-inset ring-accent/40',
+            )}
+            onDragOver={(e) => {
+              e.preventDefault()
+              e.dataTransfer.dropEffect = 'copy'
+              if (!dropActive) setDropActive(true)
+            }}
+            onDragLeave={(e) => {
+              if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+              setDropActive(false)
+            }}
+            onDrop={onStageDrop}
+          >
             {doc.clips.length === 0 ? (
               <div className="max-w-md rounded-xl border border-dashed border-line bg-panel/40 px-8 py-12 text-center">
                 <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
@@ -516,6 +593,8 @@ export function Studio() {
             ) : (
               <StudioPreview
                 doc={doc}
+                selected={selected}
+                onPatchSelected={(patch) => selectedId && updateStudioClip(projectId, selectedId, patch)}
                 time={time}
                 playing={playing}
                 muted={muted}

@@ -1,5 +1,13 @@
 export type AutomationMode = 'guided' | 'auto-draft' | 'auto-final'
-export type VotingMode = 'manual-arena' | 'official-arena-api' | 'local-scoring'
+/**
+ * How the winning candidate is chosen.
+ * - `local-scoring`: the app generates several AI candidates and scores them
+ *   against the renderer contract itself.
+ * - `manual-arena`: the human votes on arena.ai and approves the gate.
+ * An "official Arena API" mode existed here but was never implemented — it only
+ * threw — so it was removed rather than left reachable in the UI.
+ */
+export type VotingMode = 'manual-arena' | 'local-scoring'
 export type AutomationStepStatus = 'queued' | 'running' | 'waiting-for-user' | 'done' | 'error' | 'cancelled'
 export type AutomationStep = {
   id: string
@@ -242,6 +250,28 @@ export type StudioOverlayClip = StudioClipCommon & {
   scale: number
 }
 
+/**
+ * Background music / voiceover.
+ *
+ * Audio paints nothing, so it never reaches the canvas renderer — it is mixed
+ * in the preview (element volume) and in the export (Web Audio gain). Fades are
+ * stored in seconds rather than as a curve id so preview and export can compute
+ * the same gain from the same numbers.
+ */
+export type StudioAudioClip = StudioClipCommon & {
+  kind: 'audio'
+  mediaId: string
+  fileName: string
+  localPath: string | null
+  /** Seconds into the source file where this clip starts. */
+  trimInSec: number
+  sourceDurationSec: number
+  /** 0–1 master level for this clip, before fades. */
+  volume: number
+  fadeInSec: number
+  fadeOutSec: number
+}
+
 export type StudioGlassClip = StudioClipCommon & {
   kind: 'glass'
   /** Preset id from `src/lib/glass.ts`. */
@@ -261,16 +291,30 @@ export type StudioGlassClip = StudioClipCommon & {
 
 export type StudioClip =
   | StudioMediaClip
+  | StudioAudioClip
   | StudioTextClip
   | StudioBackgroundClip
   | StudioOverlayClip
   | StudioGlassClip
+
+/**
+ * Stage background that is not one of the shipped presets.
+ * Lives on the document, not on a clip, so changing it never depends on what is
+ * selected — `transparent` exports a black stage (video has no alpha) but keeps
+ * the checkerboard in the preview so the user can see there is nothing behind.
+ */
+export type StudioCustomBackground =
+  | { type: 'solid'; color: string }
+  | { type: 'transparent' }
+  | { type: 'image'; dataUrl: string; fit: 'cover' | 'contain' }
 
 export type StudioDoc = {
   aspect: StudioAspect
   fps: 24 | 30 | 60
   /** Background painted under every clip. */
   backgroundId: string
+  /** When set, this wins over `backgroundId`. */
+  customBackground?: StudioCustomBackground | null
   clips: StudioClip[]
   trackCount: number
 }

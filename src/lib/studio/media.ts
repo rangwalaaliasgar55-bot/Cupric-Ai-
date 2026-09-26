@@ -12,15 +12,17 @@ import { uid } from '../utils'
 
 export type MediaHandle = {
   id: string
-  kind: 'video' | 'image'
+  kind: 'video' | 'image' | 'audio'
   fileName: string
   localPath: string | null
   url: string
   durationSec: number
   width: number
   height: number
-  element: HTMLVideoElement | HTMLImageElement
+  element: HTMLVideoElement | HTMLImageElement | HTMLAudioElement
   posterDataUrl: string | null
+  /** Coarse loudness envelope (0–1) for the timeline, audio only. */
+  waveform?: number[]
 }
 
 const registry = new Map<string, MediaHandle>()
@@ -37,7 +39,7 @@ export function hasMedia(mediaId: string | null | undefined): boolean {
 export function releaseMedia(mediaId: string) {
   const handle = registry.get(mediaId)
   if (!handle) return
-  if (handle.element instanceof HTMLVideoElement) handle.element.pause()
+  if (handle.element instanceof HTMLMediaElement) handle.element.pause()
   URL.revokeObjectURL(handle.url)
   registry.delete(mediaId)
 }
@@ -76,6 +78,50 @@ function loadVideo(url: string): Promise<HTMLVideoElement> {
   })
 }
 
+function loadAudio(url: string): Promise<HTMLAudioElement> {
+  return new Promise((resolve, reject) => {
+    const audio = new Audio()
+    audio.preload = 'auto'
+    audio.crossOrigin = 'anonymous'
+    audio.src = url
+    // `loadedmetadata` is enough: duration is all the timeline needs, and
+    // waiting for full buffering would stall the import of a long track.
+    audio.addEventListener('loadedmetadata', () => resolve(audio), { once: true })
+    audio.addEventListener('error', () => reject(new Error('This file could not be decoded as audio.')), { once: true })
+  })
+}
+
+/**
+ * Cheap loudness envelope for the timeline block.
+ *
+ * Decoding a whole track through the Web Audio API costs real memory, so this
+ * samples at most 160 buckets and gives up quietly — a missing waveform draws a
+ * plain block, which is a cosmetic loss, not a broken clip.
+ */
+async function waveformFor(file: Blob, buckets = 160): Promise<number[] | undefined> {
+  try {
+    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    if (!Ctor) return undefined
+    const ctx = new Ctor()
+    const buffer = await ctx.decodeAudioData(await file.arrayBuffer())
+    const data = buffer.getChannelData(0)
+    const per = Math.max(1, Math.floor(data.length / buckets))
+    const out: number[] = []
+    for (let i = 0; i < buckets; i += 1) {
+      let peak = 0
+      for (let j = i * per; j < Math.min((i + 1) * per, data.length); j += 1) {
+        const v = Math.abs(data[j])
+        if (v > peak) peak = v
+      }
+      out.push(Math.min(1, peak))
+    }
+    void ctx.close()
+    return out
+  } catch {
+    return undefined
+  }
+}
+
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -90,7 +136,8 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 export async function registerFile(file: File, existingId?: string): Promise<MediaHandle> {
   const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|m4v|avi)$/i.test(file.name)
   const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(file.name)
-  if (!isVideo && !isImage) throw new Error(`${file.name} is not a video or image file.`)
+  const isAudio = file.type.startsWith('audio/') || /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus)$/i.test(file.name)
+  if (!isVideo && !isImage && !isAudio) throw new Error(`${file.name} is not a video, image or audio file.`)
 
   const url = URL.createObjectURL(file)
   const id = existingId ?? uid()
@@ -111,6 +158,25 @@ export async function registerFile(file: File, existingId?: string): Promise<Med
         height: element.videoHeight,
         element,
         posterDataUrl: posterFrom(element, element.videoWidth, element.videoHeight),
+      }
+      registry.set(id, handle)
+      return handle
+    }
+
+    if (isAudio) {
+      const element = await loadAudio(url)
+      const handle: MediaHandle = {
+        id,
+        kind: 'audio',
+        fileName: file.name,
+        localPath,
+        url,
+        durationSec: Number.isFinite(element.duration) && element.duration > 0 ? element.duration : 0,
+        width: 0,
+        height: 0,
+        element,
+        posterDataUrl: null,
+        waveform: await waveformFor(file),
       }
       registry.set(id, handle)
       return handle
@@ -147,7 +213,7 @@ export async function registerFile(file: File, existingId?: string): Promise<Med
 export async function registerUrl(
   url: string,
   fileName: string,
-  kind: 'video' | 'image',
+  kind: 'video' | 'image' | 'audio',
   localPath: string | null = null,
   existingId?: string,
 ): Promise<MediaHandle> {
@@ -165,6 +231,23 @@ export async function registerUrl(
       height: element.videoHeight,
       element,
       posterDataUrl: posterFrom(element, element.videoWidth, element.videoHeight),
+    }
+    registry.set(id, handle)
+    return handle
+  }
+  if (kind === 'audio') {
+    const element = await loadAudio(url)
+    const handle: MediaHandle = {
+      id,
+      kind: 'audio',
+      fileName,
+      localPath,
+      url,
+      durationSec: Number.isFinite(element.duration) && element.duration > 0 ? element.duration : 0,
+      width: 0,
+      height: 0,
+      element,
+      posterDataUrl: null,
     }
     registry.set(id, handle)
     return handle
