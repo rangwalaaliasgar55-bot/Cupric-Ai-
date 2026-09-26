@@ -3,6 +3,7 @@ dist/
 release/
 *.local
 .DS_Store
+*.tsbuildinfo
 # Generated pack mirror only — main tracks public/resources/README.md and the
 # avatars pulled by `npm run resources:sync`, so do not ignore the whole tree.
 public/resources/packs/

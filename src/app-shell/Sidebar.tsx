@@ -1,4 +1,4 @@
-import { GanttChart, Home, Film, FlaskConical, Library as LibraryIcon, MessagesSquare, Rocket, Scissors, Swords, Bot, Video } from 'lucide-react'
+import { GanttChart, Home, Film, FlaskConical, Library as LibraryIcon, MessagesSquare, Rocket, Scissors, Swords, Bot, Video, Sparkles } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { motion } from 'motion/react'
 import type { View } from '../types/project'
@@ -22,6 +22,7 @@ const NAV: NavItem[] = [
   { view: 'arena', label: 'Arena Desk', icon: Swords, needProject: true, needLock: true },
   { view: 'footage', label: 'Footage Desk', icon: Film, needProject: true },
   { view: 'studio', label: 'Studio', icon: Scissors, needProject: true },
+  { view: 'motion', label: 'Motion Engine', icon: Sparkles },
   { view: 'timeline', label: 'Timeline', icon: GanttChart, needProject: true },
   { view: 'lab', label: 'UI Lab', icon: FlaskConical },
   { view: 'render', label: 'Render', icon: Rocket, needProject: true },
