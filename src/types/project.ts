@@ -57,6 +57,7 @@ export type RenderJob = {
   status: 'queued' | 'rendering' | 'done' | 'error'
   progressPct: number
   outputName: string | null
+  outputPath?: string | null
   createdAt: string
 }
 

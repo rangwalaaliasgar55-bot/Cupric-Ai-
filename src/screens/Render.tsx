@@ -179,10 +179,14 @@ export function Render() {
                 key={job.id}
                 job={job}
                 onRetry={() => retryRender(project.id, job.id)}
-                onDownload={() =>
-                  pushToast('success', `Saved to ~/Downloads/${job.outputName ?? 'export.mp4'} (mock)`)
-                }
-                onReveal={() => pushToast('info', 'Revealed in Explorer (mock)')}
+                onDownload={async () => {
+                  if (job.outputPath && (window as any).northframe?.ipc) { await (window as any).northframe.ipc.invoke('render:reveal', job.outputPath); pushToast('success', 'Render opened in Explorer') }
+                  else pushToast('info', 'Finish a desktop render to reveal the MP4')
+                }}
+                onReveal={async () => {
+                  if (job.outputPath && (window as any).northframe?.ipc) await (window as any).northframe.ipc.invoke('render:reveal', job.outputPath)
+                  else pushToast('info', 'This render has no desktop output yet')
+                }}
               />
             ))
           )}

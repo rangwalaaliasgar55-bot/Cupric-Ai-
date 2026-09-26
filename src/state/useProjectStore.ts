@@ -230,8 +230,8 @@ export const useProjectStore = create<AppState>()(
           get().pushToast('info', `Render started — ${job.outputName}`)
           startRender({ ...job, sources: p.timeline.map((c) => ({ ...c, arenaPath: p.arenaAssets.find((a) => a.id === c.sourceId)?.localPath, footagePath: p.footageAssets.find((f) => f.id === c.sourceId)?.localPath })) },
             (pct) => get().updateRenderJob(pid, job.id, { progressPct: pct, status: 'rendering' }),
-            () => {
-              get().updateRenderJob(pid, job.id, { progressPct: 100, status: 'done' })
+            (result) => {
+              get().updateRenderJob(pid, job.id, { progressPct: 100, status: 'done', outputPath: result?.outputPath })
               get().pushToast('success', `Render complete — ${job.outputName}`)
             },
           )
