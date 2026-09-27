@@ -29,6 +29,12 @@ use raw hex or arbitrary magic values.
 Light mode (`[data-theme="light"]`) swaps surfaces/text only; the brand lime
 stays on buttons. One accent per view — lime leads, blue informs, red warns.
 
+Canvas-drawn pieces (device mockups 2.15, before/after labels 2.21, scopes, the
+curve editor) cannot read CSS variables in the export path, so they use the token
+*values* literally: body `--color-bg`, browser chrome/laptop base `--color-panel-alt`
+/ `--color-panel`, traffic lights `--color-danger` · `--color-muted` · `--color-accent`,
+dividers/labels `--color-text`, curve handles/scope blue `--color-info`. No new colours.
+
 ### Type
 
 - UI sans: **Inter Variable**; Mono: **JetBrains Mono Variable**.

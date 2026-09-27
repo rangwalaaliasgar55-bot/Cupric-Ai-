@@ -108,3 +108,27 @@ The web-build-only Arena capture paths (`captureArenaThumbnail`, `captureArenaFr
 
 Third-party licenses: heic2any/libheif is LGPL-3.0 (dynamically loaded JS/wasm, unmodified).
 whisper.cpp and the ggml models are MIT. Both are fetched and bundled with attribution, not rebranded.
+
+
+## Master-prompt progress — Part 2 remainder (same day, second pass)
+
+New subsystems, all covered by `npm run check:pro` (193 assertions, chained into `build`):
+- 2.1 Q/W trim-to-playhead, Shift+Delete ripple, [ ] slip, Alt+, / . roll (`timelineOps.ts`)
+- 2.2 custom bezier ease + curve editor (`curves.ts`, `CurveEditor.tsx`). On-canvas keyframe drag was already shipped (record mode).
+- 2.3 lift/gamma/gain wheels, .cube LUTs, histogram/waveform/vectorscope (`color.ts`, Pro tools → Scopes)
+- 2.4 auto-ducking (the same gain in preview and export), BS.1770 LUFS maths, loudnorm on MP4 export. Timeline waveforms were already shipped.
+- 2.5 text presets, captions from a transcript, 9:16 social-UI safe guide
+- 2.6 blend modes, chroma key with spill
+- 2.7 markers (M, ; '), snapping, "All sizes" export queue. **Video proxies NOT done**; photo proxies are done.
+- 2.8 / 2.10: the Studio already used Library's PackBrowser; the timeline is now a drop target (files + resource cards).
+- 2.9 suggestions with preview → accept (`suggestions.ts`)
+- 2.11 12 new agent ops; the component recordSec cap of 6 s is removed
+- 2.12 AI rewrites with a labelled rule-based fallback
+- 2.15 device mockups · 2.16 product-photo presets · 2.17 auto grade · 2.18 kinetic words · 2.19 collage ·
+  2.20 testimonial grid (placeholders only; export blocks unfilled ones) · 2.21 before/after · 2.22 logo reveals ·
+  2.23 build-from-assets (product/startup/business)
+- 1.4 track reorder: verified as already shipped. 1.8: added 1 s / 4 s backoff; the rest was verified as already shipped.
+- Part 4: `resourceLinks.ts` licence check (blocks CapCut/DaFont/paid marketplaces/social posts; GitHub licence lookup; rights confirmation for unknown sources; Credits on the doc)
+
+Still open: video proxies; real Whisper word timestamps for captions (the API accepts `words`, but voice:transcribe returns text only);
+Windows hardware pass for 1.10/2.24; web-only Arena capture paths still use same-origin iframes.

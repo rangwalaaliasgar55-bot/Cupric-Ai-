@@ -89,4 +89,16 @@ async function detect(run, platform, mode = 'auto') {
   return { name: SOFTWARE, hardware: false, tried, reason: tried.length ? `No hardware encoder worked (${tried.join(', ')}); using libx264.` : 'No hardware encoder in this FFmpeg build; using libx264.' }
 }
 
-module.exports = { SOFTWARE, candidatesFor, videoArgs, isHardware, listedEncoders, probeArgs, detect }
+/**
+ * 2.4 — export loudness normalisation. Single-pass EBU R128 `loudnorm` to a
+ * target in LUFS (true peak −1.5 dBTP). Anything outside −30…−8 is ignored so
+ * a corrupt setting can never crush or blow up the mix.
+ */
+function loudnormArgs(target) {
+  const t = Number(target)
+  if (!Number.isFinite(t) || t < -30 || t > -8) return []
+  return ['-af', `loudnorm=I=${Math.round(t)}:TP=-1.5:LRA=11`]
+}
+
+module.exports = {
+  loudnormArgs, SOFTWARE, candidatesFor, videoArgs, isHardware, listedEncoders, probeArgs, detect }

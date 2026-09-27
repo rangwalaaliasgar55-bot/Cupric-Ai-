@@ -24,6 +24,11 @@ import { backgroundById } from './backgrounds'
 import { clipProgress, clipsAt } from './doc'
 import { paintGlass, paintGlassLens } from './glass'
 import { getMedia, overlayImage } from './media'
+import { applyPixelGrade, chromaKey } from './color'
+import { bezierEase } from './curves'
+import { compareDivider, deviceGeometry } from './layouts'
+import { kineticWord } from './textTools'
+import type { StudioBlendMode, StudioDevice } from '../../types/project'
 
 export type FrameSources = {
   /** Element to draw for a media clip — supplied by the preview or exporter. */
@@ -165,12 +170,14 @@ function drawFit(
   w: number,
   h: number,
   fit: 'cover' | 'contain',
+  ox = 0,
+  oy = 0,
 ) {
   if (!sw || !sh) return
   const scale = fit === 'cover' ? Math.max(w / sw, h / sh) : Math.min(w / sw, h / sh)
   const dw = sw * scale
   const dh = sh * scale
-  ctx.drawImage(source, (w - dw) / 2, (h - dh) / 2, dw, dh)
+  ctx.drawImage(source, ox + (w - dw) / 2, oy + (h - dh) / 2, dw, dh)
 }
 
 function sourceSize(source: CanvasImageSource): [number, number] {
@@ -493,7 +500,36 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
     }
 
     // Word-by-word reveal + optional highlight word (Hormozi-style punch).
-    if (clip.anim === 'word-reveal' || clip.highlightWord) {
+    if (clip.anim === 'kinetic') {
+      // 2.18 — each word lands on its own beat (pure function of progress).
+      const words = line.split(' ')
+      const widths = words.map((word) => ctx.measureText(`${word} `).width)
+      const lineWidth = widths.reduce((a, b) => a + b, 0) - (widths.length ? ctx.measureText(' ').width : 0)
+      let cursor = clip.align === 'center' ? -lineWidth / 2 : clip.align === 'left' ? anchorX : anchorX - lineWidth
+      const prevAlign = ctx.textAlign
+      ctx.textAlign = 'left'
+      const totalWords = raw.split(/\s+/).filter(Boolean).length || 1
+      let seen = lines.slice(0, index).join(' ').split(/\s+/).filter(Boolean).length
+      for (let i = 0; i < words.length; i++) {
+        const st = kineticWord(seen, totalWords, progress)
+        seen += 1
+        if (st.alpha > 0) {
+          const isHighlight = clip.highlightWord && words[i].toLowerCase().replace(/[^a-z0-9]/g, '') === clip.highlightWord.toLowerCase()
+          ctx.save()
+          ctx.globalAlpha *= st.alpha
+          const wx = cursor + ctx.measureText(words[i]).width / 2
+          ctx.translate(wx, y + st.dy * fontPx)
+          ctx.scale(st.scale, st.scale)
+          ctx.fillStyle = isHighlight ? '#C8F542' : clip.color
+          ctx.textAlign = 'center'
+          if (preset.stroke) ctx.strokeText(words[i], 0, 0)
+          ctx.fillText(words[i], 0, 0)
+          ctx.restore()
+        }
+        cursor += widths[i]
+      }
+      ctx.textAlign = prevAlign
+    } else if (clip.anim === 'word-reveal' || clip.highlightWord) {
       const words = line.split(' ')
       const widths = words.map((word) => ctx.measureText(`${word} `).width)
       const lineWidth = widths.reduce((a, b) => a + b, 0) - (widths.length ? ctx.measureText(' ').width : 0)
@@ -648,6 +684,8 @@ const EASES: Record<StudioKeyframe['ease'], (p: number) => number> = {
   'elastic-out': (p) => (p <= 0 ? 0 : p >= 1 ? 1 : Math.pow(2, -10 * p) * Math.sin((p * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1),
   // Step: hold this value, then cut to the next key.
   hold: (p) => (p >= 1 ? 1 : 0),
+  // Custom curves are resolved per keyframe (see keyframeValuesAt).
+  bezier: (p) => p,
 }
 
 /** The animated properties, resolved at time `t`. */
@@ -676,7 +714,7 @@ export function keyframeValuesAt(clip: StudioClip, t: number): KeyframeValues | 
     if (local < a.at || local > b.at) continue
     const span = b.at - a.at
     const raw = span <= 0 ? 1 : (local - a.at) / span
-    const p = (EASES[a.ease] ?? EASES.linear)(clamp01(raw))
+    const p = a.ease === 'bezier' && a.bezier ? bezierEase(a.bezier, clamp01(raw)) : (EASES[a.ease] ?? EASES.linear)(clamp01(raw))
     return {
       x: mix(a.x, b.x, p),
       y: mix(a.y, b.y, p),
@@ -821,6 +859,13 @@ function scratchFor(w: number, h: number) {
 function applyMask(ctx: CanvasRenderingContext2D, mask: StudioMask, w: number, h: number) {
   const feather = (mask.featherPct / 100) * Math.min(w, h)
 
+  if (mask.shape === 'chroma') {
+    const image = ctx.getImageData(0, 0, w, h)
+    chromaKey(image.data, mask.keyColor || '#00ff00', mask.threshold, mask.softness, mask.spill ?? 0.5, mask.invert)
+    ctx.putImageData(image, 0, 0)
+    return
+  }
+
   if (mask.shape === 'luma') {
     const image = ctx.getImageData(0, 0, w, h)
     const data = image.data
@@ -888,7 +933,45 @@ function drawClipContent(
     const targetY = (clip.y ?? 0.5) * height - targetH / 2
     ctx.save()
     ctx.translate(targetX, targetY)
-    if (source) {
+    const device = clip.device && clip.device !== 'none' ? clip.device : null
+    if (source && device) {
+      drawInDevice(ctx, device, 0, 0, targetW, targetH, (x, y, sw2, sh2) => {
+        const [sw, sh] = sourceSize(source)
+        drawFit(ctx, source, sw, sh, sw2, sh2, 'cover', x, y)
+      })
+    } else if (source && clip.compare) {
+      const before = sources.media({ ...clip, mediaId: clip.compare.beforeMediaId, compare: null })
+      const [sw, sh] = sourceSize(source)
+      drawFit(ctx, source, sw, sh, targetW, targetH, clip.fit)
+      const split = compareDivider(clip.compare.mode, clip.compare.position, clipProgress(clip, t)) * targetW
+      if (before) {
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(0, 0, split, targetH)
+        ctx.clip()
+        const [bw, bh] = sourceSize(before)
+        drawFit(ctx, before, bw, bh, targetW, targetH, clip.fit)
+        ctx.restore()
+      }
+      // Divider + labels. Labels are fixed words, never claims about results.
+      ctx.fillStyle = '#F4F1EA'
+      ctx.fillRect(split - Math.max(1.5, width * 0.002), 0, Math.max(3, width * 0.004), targetH)
+      const fs = Math.round(height * 0.024)
+      ctx.font = `700 ${fs}px 'Inter Variable', Inter, system-ui, sans-serif`
+      ctx.textBaseline = 'top'
+      ctx.fillStyle = 'rgba(11,11,16,0.6)'
+      ctx.fillRect(fs * 0.6, fs * 0.6, ctx.measureText('BEFORE').width + fs, fs * 1.6)
+      ctx.fillRect(targetW - ctx.measureText('AFTER').width - fs * 1.6, fs * 0.6, ctx.measureText('AFTER').width + fs, fs * 1.6)
+      ctx.fillStyle = '#F4F1EA'
+      ctx.textAlign = 'left'
+      ctx.fillText('BEFORE', fs * 1.1, fs * 0.9)
+      ctx.fillText('AFTER', targetW - ctx.measureText('AFTER').width - fs * 1.1, fs * 0.9)
+      if (!before) {
+        ctx.fillStyle = 'rgba(244,241,234,0.72)'
+        ctx.textAlign = 'center'
+        ctx.fillText(`Relink “${clip.compare.beforeFileName}”`, split / 2, targetH / 2)
+      }
+    } else if (source) {
       const [sw, sh] = sourceSize(source)
       drawFit(ctx, source, sw, sh, targetW, targetH, clip.fit)
     } else {
@@ -927,7 +1010,13 @@ function drawClipContent(
         const base = Math.min(width / sw, height / sh)
         const dw = sw * base * clip.scale
         const dh = sh * base * clip.scale
-        ctx.drawImage(source, clip.x * width - dw / 2, clip.y * height - dh / 2, dw, dh)
+        if (clip.device && clip.device !== 'none') {
+          drawInDevice(ctx, clip.device, clip.x * width - dw / 2, clip.y * height - dh / 2, dw, dh, (x, y, w2, h2) => {
+            drawFit(ctx, source, sw, sh, w2, h2, 'cover', x, y)
+          })
+        } else {
+          ctx.drawImage(source, clip.x * width - dw / 2, clip.y * height - dh / 2, dw, dh)
+        }
       }
     } else if (clip.component) {
       drawComponentPlaceholder(ctx, clip, t, width, height)
@@ -1038,15 +1127,21 @@ export function drawStudioFrame(
 
     const grade = gradeFilter(clip.grade)
     const mask = clip.mask
-    const scratch = mask ? scratchFor(width, height) : null
+    const pixelGrade = needsPixelGrade(clip)
+    const scratch = mask || pixelGrade ? scratchFor(width, height) : null
+    ctx.globalCompositeOperation = compositeFor(clip.blendMode)
 
-    if (mask && scratch) {
-      // Matted clips are drawn to a scratch layer first: the matte has to cut
-      // the clip alone, not everything already on the frame.
+    if (scratch) {
+      // Matted / wheel-graded / LUT clips are drawn to a scratch layer first:
+      // the pixel work has to touch the clip alone, not the frame below.
       scratch.ctx.filter = grade || 'none'
       drawClipContent(scratch.ctx, clip, t, width, height, sources)
       scratch.ctx.filter = 'none'
-      applyMask(scratch.ctx, mask, width, height)
+      if (pixelGrade) {
+        const image = scratch.ctx.getImageData(0, 0, width, height)
+        if (applyPixelGrade(image.data, clip.grade, clip.lut)) scratch.ctx.putImageData(image, 0, 0)
+      }
+      if (mask) applyMask(scratch.ctx, mask, width, height)
       ctx.drawImage(scratch.canvas, 0, 0, width, height)
     } else {
       ctx.filter = composeFilter(ctx.filter, grade)
@@ -1054,6 +1149,7 @@ export function drawStudioFrame(
     }
 
     ctx.filter = 'none'
+    ctx.globalCompositeOperation = 'source-over'
     paintTransitionGlass(ctx, clip, t, width, height)
     ctx.restore()
   }
@@ -1076,3 +1172,93 @@ export function drawableElement(mediaId: string, quality: 'full' | 'preview' = '
 }
 
 
+
+/* ——— 2.3 / 2.6 / 2.15 helpers ——— */
+
+const BLEND: Record<StudioBlendMode, GlobalCompositeOperation> = {
+  normal: 'source-over',
+  multiply: 'multiply',
+  screen: 'screen',
+  overlay: 'overlay',
+  darken: 'darken',
+  lighten: 'lighten',
+  'color-dodge': 'color-dodge',
+  'soft-light': 'soft-light',
+  difference: 'difference',
+  add: 'lighter',
+}
+
+export function compositeFor(mode: StudioBlendMode | undefined): GlobalCompositeOperation {
+  return (mode && BLEND[mode]) || 'source-over'
+}
+
+/** Wheels or a LUT need the pixels; the CSS-filter grade nodes do not. */
+export function needsPixelGrade(clip: StudioClip): boolean {
+  if (clip.lut && clip.lut.strength > 0) return true
+  return !!clip.grade?.some((n) => n.id === 'wheels' && n.enabled && [...n.lift, ...n.gamma, ...n.gain].some((v) => v !== 0))
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const rr = Math.max(0, Math.min(r, w / 2, h / 2))
+  ctx.beginPath()
+  ctx.moveTo(x + rr, y)
+  ctx.arcTo(x + w, y, x + w, y + h, rr)
+  ctx.arcTo(x + w, y + h, x, y + h, rr)
+  ctx.arcTo(x, y + h, x, y, rr)
+  ctx.arcTo(x, y, x + w, y, rr)
+  ctx.closePath()
+}
+
+/** Paint a device body and draw `content` clipped into its screen. */
+function drawInDevice(
+  ctx: CanvasRenderingContext2D,
+  device: StudioDevice,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  content: (x: number, y: number, w: number, h: number) => void,
+) {
+  const g = deviceGeometry(device, x, y, w, h) as ReturnType<typeof deviceGeometry> & {
+    notch?: { x: number; y: number; w: number; h: number }
+    base?: { x: number; y: number; w: number; h: number; r: number }
+    bar?: { x: number; y: number; w: number; h: number }
+  }
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.45)'
+  ctx.shadowBlur = Math.min(w, h) * 0.05
+  ctx.shadowOffsetY = Math.min(w, h) * 0.02
+  roundRect(ctx, g.body.x, g.body.y, g.body.w, g.body.h, g.body.r)
+  ctx.fillStyle = device === 'browser' ? '#1C1C24' : '#0B0B10'
+  ctx.fill()
+  ctx.restore()
+  if (g.base) {
+    ctx.fillStyle = '#15151B'
+    roundRect(ctx, g.base.x, g.base.y, g.base.w, g.base.h, g.base.r)
+    ctx.fill()
+  }
+  if (g.bar) {
+    const dot = g.bar.h * 0.22
+    ;['#E24B4A', '#9A9AA5', '#C8F542'].forEach((c, i) => {
+      ctx.fillStyle = c
+      ctx.beginPath()
+      ctx.arc(g.bar!.x + g.bar!.h * 0.6 + i * dot * 3, g.bar!.y + g.bar!.h / 2, dot, 0, Math.PI * 2)
+      ctx.fill()
+    })
+    ctx.fillStyle = 'rgba(244,241,234,0.08)'
+    roundRect(ctx, g.bar.x + g.bar.w * 0.25, g.bar.y + g.bar.h * 0.22, g.bar.w * 0.5, g.bar.h * 0.56, g.bar.h * 0.28)
+    ctx.fill()
+  }
+  ctx.save()
+  roundRect(ctx, g.screen.x, g.screen.y, g.screen.w, g.screen.h, g.screen.r)
+  ctx.clip()
+  ctx.fillStyle = '#000'
+  ctx.fillRect(g.screen.x, g.screen.y, g.screen.w, g.screen.h)
+  content(g.screen.x, g.screen.y, g.screen.w, g.screen.h)
+  ctx.restore()
+  if (g.notch) {
+    ctx.fillStyle = '#0B0B10'
+    roundRect(ctx, g.notch.x, g.notch.y, g.notch.w, g.notch.h, g.notch.h / 2)
+    ctx.fill()
+  }
+}

@@ -188,6 +188,8 @@ export type StudioTextAnim =
   | 'shimmer'
   | 'glass-rise'
   | 'liquid-wave'
+  /** 2.18 — per-word kinetic run: each word lands on its own beat. */
+  | 'kinetic'
 export type StudioTransition =
   | 'none'
   | 'fade'
@@ -213,6 +215,23 @@ export type StudioGradeNode =
   | { id: 'balance'; enabled: boolean; exposure: number; temperature: number }
   | { id: 'contrast'; enabled: boolean; contrast: number; fade: number }
   | { id: 'look'; enabled: boolean; saturation: number; hue: number }
+  /**
+   * 2.3 — colour wheels. Lift/gamma/gain per channel, each -100..100. Needs
+   * the pixels, so a clip with this node takes the scratch-layer path.
+   */
+  | { id: 'wheels'; enabled: boolean; lift: [number, number, number]; gamma: [number, number, number]; gain: [number, number, number] }
+
+/** 2.3 — a parsed .cube 3D LUT (size ≤ 33), applied after the grade. */
+export type StudioLut = { name: string; size: number; /** size³ × RGB, 0–1, red fastest. */ data: number[]; strength: number }
+
+/** 2.6 — how a clip composites onto what is below it. */
+export type StudioBlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'soft-light' | 'difference' | 'add'
+
+/** 2.15 — device frame drawn around a media/overlay clip. */
+export type StudioDevice = 'none' | 'phone' | 'laptop' | 'browser'
+
+/** 2.7 — a named point on the timeline. */
+export type StudioMarker = { id: string; at: number; label: string; color: 'lime' | 'info' | 'danger' }
 
 /**
  * Per-clip matte.
@@ -223,7 +242,11 @@ export type StudioGradeNode =
  * tool (or by the automation pipeline) is imported and used as the alpha.
  */
 export type StudioMask = {
-  shape: 'rect' | 'ellipse' | 'luma' | 'matte'
+  shape: 'rect' | 'ellipse' | 'luma' | 'matte' | 'chroma'
+  /** 2.6 — chroma key: colour to remove (threshold = tolerance, softness = edge). */
+  keyColor?: string
+  /** 2.6 — pull the key colour's spill out of the edges (0–1). */
+  spill?: number
   /** Normalised geometry for the shape masks. */
   x: number
   y: number
@@ -257,6 +280,8 @@ export type StudioEase =
   | 'expo-in-out'
   | 'elastic-out'
   | 'hold'
+  /** 2.2 — custom curve from the curve editor; control points in `bezier`. */
+  | 'bezier'
 
 export type StudioKeyframe = {
   at: number
@@ -273,6 +298,8 @@ export type StudioKeyframe = {
    * `hold` jumps at the next key (a step / freeze).
    */
   ease: StudioEase
+  /** 2.2 — CSS-style cubic-bezier control points (x1, y1, x2, y2) for ease 'bezier'. */
+  bezier?: [number, number, number, number]
 }
 
 type StudioClipCommon = {
@@ -294,6 +321,10 @@ type StudioClipCommon = {
   mask?: StudioMask | null
   /** Property animation, sorted by `at`. Absent means the clip is static. */
   keyframes?: StudioKeyframe[] | null
+  /** 2.6 — absent means normal. */
+  blendMode?: StudioBlendMode
+  /** 2.3 — absent means no LUT. */
+  lut?: StudioLut | null
 }
 
 export type StudioMediaClip = StudioClipCommon & {
@@ -313,6 +344,15 @@ export type StudioMediaClip = StudioClipCommon & {
   y?: number
   scale?: number
   posterDataUrl?: string | null
+  /** 2.15 — device mockup frame. */
+  device?: StudioDevice
+  /**
+   * 2.21 — before/after. This clip is the AFTER; `beforeMediaId` is drawn on
+   * the left of a divider. Both images come from the user — never generated.
+   */
+  compare?: { beforeMediaId: string; beforeFileName: string; mode: 'sweep' | 'static'; position: number } | null
+  /** 2.16 — the parametric product-photo preset that wrote this clip's keyframes. */
+  motionPreset?: string | null
 }
 
 export type StudioTextClip = StudioClipCommon & {
@@ -377,6 +417,8 @@ export type StudioOverlayClip = StudioClipCommon & {
   x: number
   y: number
   scale: number
+  /** 2.15 — device mockup frame. */
+  device?: StudioDevice
 }
 
 /**
@@ -399,6 +441,10 @@ export type StudioAudioClip = StudioClipCommon & {
   volume: number
   fadeInSec: number
   fadeOutSec: number
+  /** 2.4 — music ducks under voice when doc ducking is on. Absent = music. */
+  role?: 'music' | 'voice' | 'sfx'
+  /** 2.4 — cached waveform peaks (0–1), ~100 per second, for the timeline. */
+  peaks?: number[] | null
 }
 
 export type StudioGlassClip = StudioClipCommon & {
@@ -474,4 +520,12 @@ export type StudioDoc = {
    * Not on the timeline, never rendered; Place copies one to the playhead.
    */
   shelf?: StudioOverlayClip[]
+  /** 2.7 — timeline markers (M). Snap targets; never rendered. */
+  markers?: StudioMarker[]
+  /** 2.4 — auto-duck music under voice clips. */
+  ducking?: { enabled: boolean; amountDb: number; fadeSec: number } | null
+  /** 2.4 — loudness target for export normalisation (LUFS, e.g. -14). null = off. */
+  loudnessTarget?: number | null
+  /** Part 4 — licence + attribution of anything imported from a link. */
+  credits?: Array<{ url: string; source: string; sourceLicense: string | null; attribution: string | null }>
 }

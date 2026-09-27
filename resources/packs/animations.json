@@ -122,6 +122,19 @@
         "animation",
         "liquid"
       ]
+    },
+    {
+      "id": "kinetic",
+      "kind": "animation",
+      "name": "Kinetic words",
+      "description": "Each word lands on its own beat with a small overshoot.",
+      "data": {
+        "family": "kinetic"
+      },
+      "tags": [
+        "animation",
+        "kinetic"
+      ]
     }
   ]
 }

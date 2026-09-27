@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, Type as TypeIcon, Video } from 'lucide-react'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
+import { markerTimes } from '../../lib/studio/timelineOps'
 import { moveKeyframeTime } from '../../lib/studio/keyframeEdit'
 import { getMedia } from '../../lib/studio/media'
 import { clamp, cx, fmtClock } from '../../lib/utils'
@@ -21,6 +22,8 @@ type Props = {
   onPatchClip: (id: string, patch: Partial<StudioClip>) => void
   onReorderTrack: (from: number, to: number) => void
   onSettleClip?: (id: string) => void
+  /** 2.10 — a file or resource dropped on a lane, at the pointer's time and track. */
+  onDropAt?: (data: DataTransfer, sec: number, track: number) => void
 }
 
 type Drag =
@@ -85,7 +88,7 @@ function tickStep(pps: number): number {
   return 10
 }
 
-export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, onSeek, onPatchClip, onReorderTrack, onSettleClip }: Props) {
+export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, onSeek, onPatchClip, onReorderTrack, onSettleClip, onDropAt }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const laneRef = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
@@ -134,7 +137,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
 
       if (drag.mode === 'move') {
         const rawStart = t - drag.grabOffsetSec
-        const start = snapTime(doc, rawStart, clip.id, [time], 8 / pps)
+        const start = snapTime(doc, rawStart, clip.id, [time, ...markerTimes(doc)], 8 / pps)
         // Rows are drawn top layer first, so dragging DOWN means a LOWER track.
         // Dragging above the top row opens a new layer.
         const rowDelta = Math.round((event.clientY - drag.pointerStartY) / (ROW_H + ROW_GAP))
@@ -145,7 +148,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
 
       if (drag.mode === 'trim-start') {
         const maxShift = drag.originDuration - MIN_CLIP_SEC
-        const snapped = snapTime(doc, t, clip.id, [time], 8 / pps)
+        const snapped = snapTime(doc, t, clip.id, [time, ...markerTimes(doc)], 8 / pps)
         const shift = clamp(snapped - drag.originStart, -drag.originStart, maxShift)
         const patch: Partial<StudioClip> = {
           startSec: drag.originStart + shift,
@@ -163,7 +166,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       }
 
       // trim-end
-      const snapped = snapTime(doc, t, clip.id, [time], 8 / pps)
+      const snapped = snapTime(doc, t, clip.id, [time, ...markerTimes(doc)], 8 / pps)
       onPatchClip(clip.id, { durationSec: Math.max(MIN_CLIP_SEC, snapped - clip.startSec) })
     }
 
@@ -266,7 +269,26 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
             </div>
 
             {/* Lanes */}
-            <div ref={laneRef} className="relative" style={{ width }} onPointerDown={() => onSelect(null)}>
+            <div
+              ref={laneRef}
+              className="relative"
+              style={{ width }}
+              onPointerDown={() => onSelect(null)}
+              onDragOver={(e) => {
+                if (!onDropAt) return
+                e.preventDefault()
+                e.dataTransfer.dropEffect = 'copy'
+              }}
+              onDrop={(e) => {
+                if (!onDropAt) return
+                e.preventDefault()
+                e.stopPropagation()
+                const rect = e.currentTarget.getBoundingClientRect()
+                const row = Math.max(0, Math.min(tracks.length - 1, Math.floor((e.clientY - rect.top) / (ROW_H + ROW_GAP))))
+                const at = snapTime(doc, timeAt(e.clientX), '', [time, ...markerTimes(doc)], 8 / pps)
+                onDropAt(e.dataTransfer, at, tracks[row])
+              }}
+            >
               {tracks.map((track) => (
                 <div
                   key={track}
@@ -382,6 +404,13 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                         </div>
                       )
                     })}
+                </div>
+              ))}
+
+              {/* Markers (2.7): M drops one, ; and ' jump between them, clips snap to them. */}
+              {(doc.markers ?? []).map((m) => (
+                <div key={m.id} className="pointer-events-none absolute -top-7 bottom-0 z-[9] w-px bg-info/70" style={{ left: m.at * pps }} title={`${m.label} · ${m.at.toFixed(2)}s`}>
+                  <span className="absolute -left-[5px] top-0 h-2.5 w-2.5 rotate-45 rounded-[2px] bg-info" aria-label={`Marker ${m.label}`} />
                 </div>
               ))}
 

@@ -21,8 +21,8 @@
       "id": "animations",
       "name": "Text animations",
       "description": "Caption and title animations, all pure functions of clip progress so preview and export match.",
-      "itemCount": 9,
-      "bytes": 2681
+      "itemCount": 10,
+      "bytes": 2971
     },
     {
       "id": "backgrounds",

@@ -15,7 +15,8 @@ import { registrySources } from './sources'
 import { ensureDocFonts } from './fonts'
 import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { getIpc, isDesktop } from '../bridge'
-import { audioGainAt, clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
+import { clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
+import { mixGainAt } from './audioMix'
 import { getMedia, overlayImage } from './media'
 import { stickerFrame } from './lottie'
 import { drawableElement, drawStudioFrame, type FrameSources } from './renderer'
@@ -210,7 +211,7 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
           if (el.paused) void el.play().catch(() => undefined)
           // Ramp instead of assign: stepping gain once per frame is audible as
           // zipper noise, and a fade is exactly where it would be heard.
-          if (audioCtx) rampGain(audioCtx, el, audioGainAt(clip, elapsed))
+          if (audioCtx) rampGain(audioCtx, el, mixGainAt(doc, clip, elapsed))
         } else {
           if (audioCtx) rampGain(audioCtx, el, 0)
           if (!el.paused) el.pause()
@@ -265,6 +266,7 @@ export async function convertToMp4(
   blob: Blob,
   fileName: string,
   fps: number,
+  loudnessTarget: number | null = null,
 ): Promise<{ outputPath: string; bytes: number }> {
   const ipc = getIpc()
   if (!isDesktop() || !ipc) throw new Error('MP4 conversion needs the desktop app (FFmpeg runs in the main process).')
@@ -273,6 +275,7 @@ export async function convertToMp4(
     bytes: new Uint8Array(buffer),
     fileName,
     fps,
+    loudnessTarget,
   })
   return result
 }

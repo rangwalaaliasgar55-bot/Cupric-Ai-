@@ -1,4 +1,9 @@
-import type { StudioClip, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition } from '../../types/project'
+import type { StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition } from '../../types/project'
+import { closeGaps as closeGapsOp, addMarker as addMarkerOp, rippleDelete as rippleDeleteOp } from './timelineOps'
+import { LOGO_REVEALS, PRODUCT_PRESETS, buildTestimonialGrid, logoRevealKeyframes, withProductPreset, type LogoReveal, type ProductPreset } from './layouts'
+import { TEXT_PRESETS, applyTextPreset, captionsFromTranscript } from './textTools'
+import { DEFAULT_DUCKING } from './audioMix'
+import { clampRecordSec } from './components'
 import { clamp } from '../utils'
 import { MAX_TRACKS, defaultTextClip, docDuration, normaliseClip, reorderTracks, resolveOverlaps } from './doc'
 import { componentFromInstruction, findComponent, withComponent } from './components'
@@ -53,15 +58,29 @@ export type StudioEditOp =
   | { type: 'applyStylePreset'; preset: 'editorial' | 'bold-social' | 'minimal' }
   /** Place a UI component (src/lab/components); the Studio records its real animation. */
   | { type: 'addComponent'; slug: string; startSec: number; durationSec: number; x?: number; y?: number; interact?: boolean; motion?: MotionSpec }
+  /* 2.11 — expansion: every new subsystem is reachable by the agent too. */
+  | { type: 'rippleDelete'; clipId: string }
+  | { type: 'closeGaps'; track?: number }
+  | { type: 'addMarker'; at: number; label?: string }
+  | { type: 'setBlend'; clipId: string; mode: StudioBlendMode }
+  | { type: 'setDevice'; clipId: string; device: StudioDevice }
+  | { type: 'productMotion'; clipId: string; preset: ProductPreset }
+  | { type: 'logoReveal'; clipId: string; reveal: LogoReveal }
+  | { type: 'textPreset'; clipId: string; preset: string }
+  | { type: 'setAudioRole'; clipId: string; role: 'music' | 'voice' | 'sfx' }
+  | { type: 'setDucking'; enabled: boolean; amountDb?: number }
+  | { type: 'addTestimonialGrid'; count: number; startSec: number }
+  | { type: 'addCaptions'; transcript: string; startSec: number; durationSec: number }
 
 export type StudioEditPlan = { summary: string; ops: StudioEditOp[]; source: 'live' | 'local'; warning?: string }
 
 const PATCH_KEYS = new Set(['x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume', 'durationSec', 'startSec', 'name'])
 const TEXT_KEYS = new Set(['fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim'])
 const FONTS = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
-const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', 'word-reveal', 'shimmer', 'slide-left', 'glass-rise', 'liquid-wave'])
+const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', 'word-reveal', 'shimmer', 'slide-left', 'glass-rise', 'liquid-wave', 'kinetic'])
+const BLEND_MODES = new Set<StudioBlendMode>(['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'soft-light', 'difference', 'add'])
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
-const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out', 'back-out', 'back-in', 'expo-out', 'expo-in-out', 'elastic-out', 'hold'])
+const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out', 'back-out', 'back-in', 'expo-out', 'expo-in-out', 'elastic-out', 'hold', 'bezier'])
 const KEYFRAME_SCALABLE = ['overlay', 'sticker', 'video', 'image', 'text', 'glass']
 
 /** Accept a motion spec from a model, dropping anything it made up. */
@@ -235,6 +254,62 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
         ...(motion ? { motion } : {}),
       }
     }
+    if (type === 'rippleDelete') return { type, clipId: requireClip() }
+    if (type === 'closeGaps') return { type, ...(finite(op.track) ? { track: clamp(Math.round(op.track as number), 0, MAX_TRACKS - 1) } : {}) }
+    if (type === 'addMarker') {
+      if (!finite(op.at) || (op.at as number) < 0) throw new Error(`Operation ${index + 1} has an invalid marker time`)
+      return { type, at: op.at as number, ...(typeof op.label === 'string' ? { label: op.label.slice(0, 40) } : {}) }
+    }
+    if (type === 'setBlend') {
+      const mode = String(op.mode) as StudioBlendMode
+      if (!BLEND_MODES.has(mode)) throw new Error(`Unknown blend mode “${mode}”`)
+      return { type, clipId: requireClip(), mode }
+    }
+    if (type === 'setDevice') {
+      const device = String(op.device) as StudioDevice
+      if (!['none', 'phone', 'laptop', 'browser'].includes(device)) throw new Error(`Unknown device “${device}”`)
+      const clipId = requireClip()
+      const kind = doc.clips.find((c) => c.id === clipId)?.kind
+      if (kind !== 'video' && kind !== 'image' && kind !== 'overlay') throw new Error('Device frames go on video, image or component clips')
+      return { type, clipId, device }
+    }
+    if (type === 'productMotion' || type === 'logoReveal') {
+      const clipId = requireClip()
+      const kind = doc.clips.find((c) => c.id === clipId)?.kind
+      if (kind !== 'video' && kind !== 'image') throw new Error('Photo motion goes on image or video clips')
+      if (type === 'productMotion') {
+        const preset = String(op.preset) as ProductPreset
+        if (!PRODUCT_PRESETS.includes(preset)) throw new Error(`Unknown product preset “${preset}”`)
+        return { type, clipId, preset }
+      }
+      const reveal = String(op.reveal) as LogoReveal
+      if (!LOGO_REVEALS.includes(reveal)) throw new Error(`Unknown logo reveal “${reveal}”`)
+      return { type, clipId, reveal }
+    }
+    if (type === 'textPreset') {
+      const clipId = requireClip()
+      if (doc.clips.find((c) => c.id === clipId)?.kind !== 'text') throw new Error('Text presets go on text clips')
+      if (!TEXT_PRESETS.some((p) => p.id === op.preset)) throw new Error(`Unknown text preset “${String(op.preset)}”`)
+      return { type, clipId, preset: String(op.preset) }
+    }
+    if (type === 'setAudioRole') {
+      const clipId = requireClip()
+      if (doc.clips.find((c) => c.id === clipId)?.kind !== 'audio') throw new Error('Audio roles go on audio clips')
+      const role = String(op.role)
+      if (role !== 'music' && role !== 'voice' && role !== 'sfx') throw new Error(`Unknown audio role “${role}”`)
+      return { type, clipId, role }
+    }
+    if (type === 'setDucking') return { type, enabled: op.enabled !== false, ...(finite(op.amountDb) ? { amountDb: clamp(op.amountDb as number, -30, -3) } : {}) }
+    if (type === 'addTestimonialGrid') {
+      if (!finite(op.startSec)) throw new Error(`Operation ${index + 1} has invalid timing`)
+      return { type, count: finite(op.count) ? clamp(Math.round(op.count as number), 1, 4) : 2, startSec: Math.max(0, op.startSec as number) }
+    }
+    if (type === 'addCaptions') {
+      const transcript = String(op.transcript ?? '').trim().slice(0, 4000)
+      if (!transcript) throw new Error('Captions need transcript text')
+      if (!finite(op.startSec) || !finite(op.durationSec)) throw new Error(`Operation ${index + 1} has invalid timing`)
+      return { type, transcript, startSec: Math.max(0, op.startSec as number), durationSec: clamp(op.durationSec as number, 0.5, 600) }
+    }
     if (type === 'applyStylePreset' && ['editorial', 'bold-social', 'minimal'].includes(String(op.preset))) {
       return { type, preset: String(op.preset) as 'editorial' | 'bold-social' | 'minimal' }
     }
@@ -272,6 +347,18 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'clearKeyframes') return `Remove keyframes from ${name}`
   if (op.type === 'setKeyframe') return `Keyframe ${name} at ${op.at.toFixed(2)}s: ${Object.keys(op.values).join(', ')}`
   if (op.type === 'reorderTrack') return `Swap T${op.from + 1} and T${op.to + 1}`
+  if (op.type === 'rippleDelete') return `Ripple-delete ${name} (close the gap)`
+  if (op.type === 'closeGaps') return op.track === undefined ? 'Close gaps on every track' : `Close gaps on T${op.track + 1}`
+  if (op.type === 'addMarker') return `Marker “${op.label ?? 'Marker'}” at ${op.at.toFixed(2)}s`
+  if (op.type === 'setBlend') return `Blend ${name}: ${op.mode}`
+  if (op.type === 'setDevice') return op.device === 'none' ? `Remove device frame from ${name}` : `Put ${name} in a ${op.device} frame`
+  if (op.type === 'productMotion') return `Product motion on ${name}: ${op.preset}`
+  if (op.type === 'logoReveal') return `Logo reveal on ${name}: ${op.reveal}`
+  if (op.type === 'textPreset') return `Style ${name} as ${TEXT_PRESETS.find((p) => p.id === op.preset)?.label ?? op.preset}`
+  if (op.type === 'setAudioRole') return `Mark ${name} as ${op.role}`
+  if (op.type === 'setDucking') return op.enabled ? `Duck music under speech${op.amountDb !== undefined ? ` by ${op.amountDb} dB` : ''}` : 'Turn ducking off'
+  if (op.type === 'addTestimonialGrid') return `Add ${op.count} empty testimonial card${op.count > 1 ? 's' : ''} at ${op.startSec.toFixed(2)}s (you fill in real quotes)`
+  if (op.type === 'addCaptions') return `Add captions from the transcript at ${op.startSec.toFixed(2)}s`
   if (op.type === 'addComponent') return `Add the “${findComponent(op.slug)?.name ?? op.slug}” component at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s (its real animation is recorded)${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
   return `Apply ${op.preset} style across the timeline`
 }
@@ -325,7 +412,8 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       const added = withComponent(next, op.slug, {
         startSec: op.startSec,
         durationSec: op.durationSec,
-        recordSec: Math.min(op.durationSec, 6),
+        // 2.13: the component records for the clip's own length (clamped).
+        recordSec: clampRecordSec(op.durationSec),
         ...(op.x !== undefined ? { x: op.x } : {}),
         ...(op.y !== undefined ? { y: op.y } : {}),
         ...(op.interact !== undefined ? { interact: op.interact } : {}),
@@ -336,6 +424,29 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       next = { ...added.doc, clips: added.doc.clips.map((c) => (c.id === clip.id ? clip : c)) }
     }
     else if (op.type === 'applyStylePreset') next = applyStyle(next, op.preset)
+    else if (op.type === 'rippleDelete') next = rippleDeleteOp(next, op.clipId).doc
+    else if (op.type === 'closeGaps') next = closeGapsOp(next, op.track).doc
+    else if (op.type === 'addMarker') next = addMarkerOp(next, op.at, op.label).doc
+    else if (op.type === 'setDucking') next = { ...next, ducking: { ...(next.ducking ?? DEFAULT_DUCKING), enabled: op.enabled, ...(op.amountDb !== undefined ? { amountDb: op.amountDb } : {}) } }
+    else if (op.type === 'addTestimonialGrid') next = buildTestimonialGrid(next, op.count, op.startSec).doc
+    else if (op.type === 'addCaptions') {
+      const caps = captionsFromTranscript(op.transcript, { startSec: op.startSec, durationSec: op.durationSec, track: Math.min(MAX_TRACKS - 1, next.trackCount) })
+      next = { ...next, trackCount: Math.min(MAX_TRACKS, next.trackCount + 1), clips: [...next.clips, ...caps] }
+    } else if (op.type === 'setBlend' || op.type === 'setDevice' || op.type === 'productMotion' || op.type === 'logoReveal' || op.type === 'textPreset' || op.type === 'setAudioRole') {
+      next = {
+        ...next,
+        clips: next.clips.map((clip) => {
+          if (clip.id !== op.clipId) return clip
+          if (op.type === 'setBlend') return { ...clip, blendMode: op.mode }
+          if (op.type === 'setDevice') return { ...clip, device: op.device } as StudioClip
+          if (op.type === 'productMotion' && (clip.kind === 'image' || clip.kind === 'video')) return withProductPreset(clip, op.preset)
+          if (op.type === 'logoReveal') return { ...clip, keyframes: logoRevealKeyframes(op.reveal, clip.durationSec), motionPreset: `logo:${op.reveal}` } as StudioClip
+          if (op.type === 'textPreset' && clip.kind === 'text') return applyTextPreset(clip, op.preset)
+          if (op.type === 'setAudioRole' && clip.kind === 'audio') return { ...clip, role: op.role }
+          return clip
+        }),
+      }
+    }
   }
   // Whatever the plan did, never leave two clips fighting for one track slot.
   return resolveOverlaps(next)

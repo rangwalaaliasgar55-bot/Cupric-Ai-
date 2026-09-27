@@ -65,6 +65,7 @@ export const TEXT_ANIMATIONS: TextAnimInfo[] = [
   { id: 'shimmer', name: 'Glass shimmer', description: 'A specular highlight sweeps through the letters.', family: 'glass' },
   { id: 'glass-rise', name: 'Glass rise', description: 'Frosted plate rises and clears behind the text.', family: 'glass' },
   { id: 'liquid-wave', name: 'Liquid wave', description: 'Letters ride a sine wave that settles into place.', family: 'liquid' },
+  { id: 'kinetic', name: 'Kinetic words', description: 'Each word lands on its own beat with a small overshoot.', family: 'kinetic' },
 ]
 
 export function textAnimInfo(id: StudioTextAnim): TextAnimInfo {

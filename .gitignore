@@ -13,3 +13,4 @@ vendor/whisper/*
 # Check-script scratch bundles
 .*-check.mjs
 .undo-audit-check.mjs
+.pro-features-check.mjs

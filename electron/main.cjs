@@ -1794,6 +1794,9 @@ async function aiRoutes() {
  * that does not parse gets exactly one stricter repair round on the same route
  * before moving on.
  */
+/** 1.8 — backoff schedule for transient AI errors, per route. */
+const AI_BACKOFF_MS = [1000, 4000]
+
 async function completeWithFallback({ system, user, json = false, temperature = 0.4, images = [], history = [], deadlineMs = 45_000, validate }) {
   const routes = await aiRoutes()
   if (!routes.length) {
@@ -1829,7 +1832,24 @@ async function completeWithFallback({ system, user, json = false, temperature = 
         ], { json, temperature, override: route.override, timeoutMs: Math.max(2000, deadline - Date.now()) })
         return { text, model: route.override?.openCodeModel || aiSettings().openCodeModel }
       }
-      let reply = await ask()
+      // 1.8 — transient failures (503 / overload / timeouts / plain rate
+      // limits) get the same route again after 1 s, then 4 s, while the
+      // deadline allows. A quota exhaustion moves straight to the next route
+      // (retrying it only burns the remaining quota and the user's time).
+      const askWithBackoff = async (extra = '') => {
+        for (let attempt = 0; ; attempt += 1) {
+          try {
+            return await ask(extra)
+          } catch (err) {
+            const wait = AI_BACKOFF_MS[attempt]
+            const quota = /quota|resource_exhausted|exceeded your current/i.test(err?.message || String(err))
+            if (wait === undefined || quota || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
+            logLine('ai-backoff', `${route.label}: retry in ${wait}ms`, { error: (err?.message || String(err)).slice(0, 200) })
+            await delay(wait)
+          }
+        }
+      }
+      let reply = await askWithBackoff()
       if (json) {
         let parsed
         try {
@@ -1929,6 +1949,18 @@ OPERATIONS:
 - {"type":"reorderTrack","from":number,"to":number}
 - {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
 - {"type":"addComponent","slug":string,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"interact"?:boolean,"motion"?:{...as applyMotion}}
+- {"type":"rippleDelete","clipId":string}
+- {"type":"closeGaps","track"?:number}
+- {"type":"addMarker","at":number,"label"?:string}
+- {"type":"setBlend","clipId":string,"mode":"normal"|"multiply"|"screen"|"overlay"|"darken"|"lighten"|"color-dodge"|"soft-light"|"difference"|"add"}
+- {"type":"setDevice","clipId":string,"device":"none"|"phone"|"laptop"|"browser"}  (video/image/component clips)
+- {"type":"productMotion","clipId":string,"preset":"subtle"|"push-in"|"orbit"|"hero-reveal"}  (image/video)
+- {"type":"logoReveal","clipId":string,"reveal":"scale-pop"|"blur-rise"|"spin-settle"|"wipe-on"}  (image/video)
+- {"type":"textPreset","clipId":string,"preset":"title"|"subtitle"|"lower-third"|"caption"|"quote"|"cta"|"kinetic"}
+- {"type":"setAudioRole","clipId":string,"role":"music"|"voice"|"sfx"}
+- {"type":"setDucking","enabled":boolean,"amountDb"?:-30..-3}
+- {"type":"addTestimonialGrid","count":1..4,"startSec":number}  (EMPTY placeholders — never write testimonials)
+- {"type":"addCaptions","transcript":string,"startSec":number,"durationSec":number}  (only the user's own words)
   Places a real animated UI component (buttons, toggles, counters, cards, loaders, charts…). Cupric plays the actual component,
   acts it out (hover, clicks) and records its genuine animation into an editable overlay clip. slug MUST be one of
   STUDIO CONTEXT.components[].slug. Use one when the user asks for a UI element, a product/app demo moment, or a named component.
@@ -2446,6 +2478,7 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
     // MediaRecorder writes variable frame rate; pin it so players seek correctly.
     '-r', String(fps),
     '-movflags', '+faststart',
+    ...encoders.loudnormArgs(payload?.loudnessTarget),
     '-c:a', 'aac',
     '-b:a', '192k',
     outputPath,

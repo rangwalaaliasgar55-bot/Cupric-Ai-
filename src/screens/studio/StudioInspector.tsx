@@ -26,6 +26,8 @@ import type {
   StudioTextClip,
 } from '../../types/project'
 import { Button } from '../../components/Button'
+import { ClipProFields } from './ClipProFields'
+import { CurveEditor } from './CurveEditor'
 import { STUDIO_BACKGROUNDS } from '../../lib/studio/backgrounds'
 import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/transitions'
 import { GLASS_PRESETS } from '../../lib/glass'
@@ -338,6 +340,8 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
       {clip.kind === 'audio' && <AudioFields clip={clip as StudioAudioClip} onPatch={onPatch} />}
       {clip.kind === 'sticker' && <StickerFields clip={clip as StudioStickerClip} onPatch={onPatch} />}
 
+      <ClipProFields doc={doc} clip={clip} onPatch={onPatch} onPatchDoc={onPatchDoc} />
+
       <MotionPresetFields clip={clip} onPatch={onPatch} />
 
       <div className="grid grid-cols-2 gap-3">
@@ -502,6 +506,7 @@ function KeyframeFields({
                 <option value="back-in">Back in — wind up, then leave</option>
                 <option value="elastic-out">Elastic — spring</option>
                 <option value="hold">Hold — step to next key</option>
+                <option value="bezier">Custom curve…</option>
               </select>
               <button
                 type="button"
@@ -512,6 +517,12 @@ function KeyframeFields({
               </button>
             </div>
           </div>
+          {key.ease === 'bezier' && index < keys.length - 1 && (
+            <CurveEditor
+              value={key.bezier ?? [0.45, 0, 0.55, 1]}
+              onChange={(bezier) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, bezier } : k)) })}
+            />
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Slider label="Opacity" value={key.opacity ?? 1} min={0} max={1} step={0.05} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, opacity: v } : k)) })} />
             <Slider label="Size" value={key.scale ?? 1} min={0.1} max={3} step={0.05} suffix="×" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, scale: v } : k)) })} />

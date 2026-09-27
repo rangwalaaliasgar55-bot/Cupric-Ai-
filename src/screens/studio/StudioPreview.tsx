@@ -9,7 +9,9 @@ import type {
   StudioStickerClip,
   StudioTextClip,
 } from '../../types/project'
-import { audioGainAt, clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
+import { clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
+import { safeAreas } from '../../lib/studio/textTools'
+import { mixGainAt } from '../../lib/studio/audioMix'
 import { getMedia } from '../../lib/studio/media'
 import { drawStudioFrame, keyframeValuesAt, measureTextBlock } from '../../lib/studio/renderer'
 import { docFontFamilies, ensureDocFonts, FONTS_CHANGED_EVENT } from '../../lib/studio/fonts'
@@ -96,7 +98,7 @@ export function StudioPreview({
       const el = getMedia(audio.mediaId)?.element
       if (!(el instanceof HTMLAudioElement)) continue
       const active = t >= audio.startSec && t < clipEnd(audio)
-      el.volume = muted ? 0 : audioGainAt(audio, t)
+      el.volume = muted ? 0 : mixGainAt(doc, audio, t)
       el.muted = muted || el.volume <= 0
       if (active && isPlaying) {
         const want = sourceTimeFor(audio, t)
@@ -197,6 +199,14 @@ export function StudioPreview({
           <div className="absolute inset-[10%] rounded border border-dashed border-accent/60">
             <span className="absolute left-1 top-0.5 text-[9px] font-medium uppercase tracking-wide text-accent-text/80">title safe</span>
           </div>
+          {doc.aspect === '9:16' &&
+            safeAreas('9:16')
+              .filter((b) => b.id === 'social')
+              .map((b) => (
+                <div key={b.id} className="absolute rounded border border-dashed border-info/70" style={{ left: `${b.x * 100}%`, top: `${b.y * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%` }}>
+                  <span className="absolute bottom-0.5 left-1 text-[9px] font-medium uppercase tracking-wide text-info">clear of app UI</span>
+                </div>
+              ))}
         </div>
       )}
       {!playing && selected && onPatchSelected && (

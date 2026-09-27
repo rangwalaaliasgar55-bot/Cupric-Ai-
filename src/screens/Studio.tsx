@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { StudioProPanel } from './studio/StudioProPanel'
+import { unfilledPlaceholders } from '../lib/studio/layouts'
+import { addMarker, jumpMarker, rippleDelete, rollEdit, slipClip, trimEndTo, trimStartTo, type EditResult } from '../lib/studio/timelineOps'
 import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
   Boxes,
@@ -114,6 +117,12 @@ export function Studio() {
   const [showSafeAreas, setShowSafeAreas] = useState(true)
   const [keyframeRecord, setKeyframeRecord] = useState(false)
   const [showResources, setShowResources] = useState(false)
+  const [showPro, setShowPro] = useState(false)
+  /** A proposed edit shown on the stage but not yet committed (2.9 preview/accept). */
+  const [previewDoc, setPreviewDoc] = useState<{ doc: StudioDoc; label: string } | null>(null)
+  useEffect(() => {
+    if (!showPro) setPreviewDoc(null)
+  }, [showPro])
   const [showComponents, setShowComponents] = useState(false)
   const [agentInstruction, setAgentInstruction] = useState('')
   const [agentRevision, setAgentRevision] = useState('')
@@ -326,6 +335,31 @@ export function Studio() {
         splitStudioClip(pid, selectedId, time)
         return
       }
+      // 2.1 / 2.7 pro timeline keys — each one labelled undo step, and a
+      // toast explaining why when it cannot apply (no silent no-ops).
+      if (!mod && pid && (key === 'q' || key === 'w' || key === 'm' || key === '[' || key === ']' || key === ';' || key === "'" || ((e.key === 'Delete' || e.key === 'Backspace') && e.shiftKey) || (e.altKey && (e.key === ',' || e.key === '.')))) {
+        e.preventDefault()
+        const commit = (r: EditResult, label: string) => {
+          if (!r.changed) pushToast('info', r.reason ?? 'Nothing to change here.')
+          else patchStudio(pid, { clips: r.doc.clips, markers: r.doc.markers, trackCount: r.doc.trackCount }, label)
+          return r.changed
+        }
+        const frame = 1 / doc.fps
+        if (key === 'm') { commit(addMarker(doc, time), 'Add marker'); return }
+        if (key === ';' || key === "'") {
+          const to = jumpMarker(doc, time, key === "'" ? 1 : -1)
+          if (to === null) pushToast('info', (doc.markers ?? []).length ? 'No more markers that way.' : 'Press M to drop a marker first.')
+          else seek(to)
+          return
+        }
+        if (!selectedId) { pushToast('info', 'Select a clip first.'); return }
+        if (key === 'q') commit(trimStartTo(doc, selectedId, time), 'Trim start to playhead')
+        else if (key === 'w') commit(trimEndTo(doc, selectedId, time), 'Trim end to playhead')
+        else if (key === '[' || key === ']') commit(slipClip(doc, selectedId, (key === ']' ? 1 : -1) * frame * (e.shiftKey ? 10 : 1)), 'Slip clip')
+        else if (e.key === ',' || e.key === '.') commit(rollEdit(doc, selectedId, (e.key === '.' ? 1 : -1) * frame * (e.shiftKey ? 10 : 1)), 'Roll edit')
+        else if (commit(rippleDelete(doc, selectedId), 'Ripple delete')) setSelectedId(null)
+        return
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && pid) {
         e.preventDefault()
         removeStudioClip(pid, selectedId)
@@ -334,7 +368,7 @@ export function Studio() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [doc, duration, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitStudioClip, time, undo, updateStudioClip])
+  }, [doc, duration, patchStudio, pushToast, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitStudioClip, time, undo, updateStudioClip])
 
   useEffect(() => {
     if (time > duration) setTime(duration)
@@ -505,7 +539,8 @@ export function Studio() {
     return studioOf(useProjectStore.getState().projects.find((item) => item.id === projectId))
   }
 
-  async function onFiles(files: FileList | null) {
+  /** `at` (2.10): a drop on the timeline lands where it was dropped. */
+  async function onFiles(files: FileList | null, at?: { sec: number; track: number }) {
     if (!files?.length) return
     setImporting(true)
     let start = nextFreeStart(doc, 0, 0, 0.1)
@@ -586,9 +621,9 @@ export function Studio() {
         if (handle.kind === 'audio') {
           // Music gets its own track (the last one) so it never fights the
           // picture tracks for space when the edit is re-stacked.
-          const audioTrack = Math.max(0, doc.trackCount - 1)
+          const audioTrack = at ? at.track : Math.max(0, doc.trackCount - 1)
           const clip: StudioAudioClip = defaultAudioClip(
-            nextFreeStart(doc, audioTrack, 0, Math.max(0.2, handle.durationSec)),
+            at ? Math.round(at.sec * 100) / 100 : nextFreeStart(doc, audioTrack, 0, Math.max(0.2, handle.durationSec)),
             audioTrack,
             { id: handle.id, fileName: handle.fileName, localPath: handle.localPath, durationSec: handle.durationSec },
           )
@@ -597,11 +632,11 @@ export function Studio() {
           continue
         }
         const durationSec = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : 4
-        start = nextFreeStart(doc, 0, start, durationSec)
+        start = at ? Math.round(at.sec * 100) / 100 : nextFreeStart(doc, 0, start, durationSec)
         const clip: StudioMediaClip = {
           id: uid(),
           kind: handle.kind,
-          track: 0,
+          track: at?.track ?? 0,
           startSec: start,
           durationSec,
           name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28),
@@ -641,6 +676,20 @@ export function Studio() {
    * actually draw is refused out loud instead of being inserted as a dead
    * placeholder — that silent placeholder was the original bug.
    */
+  /** 2.10 — one drop path: files and resource cards land at the pointer on the timeline. */
+  function onTimelineDrop(data: DataTransfer, sec: number, track: number) {
+    if (data.files?.length) {
+      void onFiles(data.files, { sec, track })
+      return
+    }
+    const payload = readDragPayload(data)
+    if (!payload) {
+      pushToast('info', 'Nothing droppable in that drag — try a file or a card from Resources.')
+      return
+    }
+    void applyResourceItem(payload, { atSec: sec, selectedId })
+  }
+
   function onStageDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault()
     setDropActive(false)
@@ -857,31 +906,59 @@ export function Studio() {
     patchStudio(projectId, { shelf: (doc.shelf ?? []).filter((entry) => entry.id !== id) }, 'Remove recorded component')
   }
 
-  async function runExport(asMp4 = false) {
+  /**
+   * 2.7 — export queue: render the same edit at several aspect ratios one
+   * after another (clip geometry is normalised, so it reframes). Stop cancels
+   * the current job and the rest of the queue.
+   */
+  const [exportQueue, setExportQueue] = useState<Array<{ aspect: StudioDoc['aspect']; status: 'queued' | 'running' | 'done' | 'failed' | 'cancelled' }>>([])
+  async function runExportQueue(aspects: StudioDoc['aspect'][], asMp4: boolean) {
+    if (duration <= 0) return pushToast('error', 'Add a clip before exporting.')
+    setExportQueue(aspects.map((aspect) => ({ aspect, status: 'queued' })))
+    for (let i = 0; i < aspects.length; i += 1) {
+      setExportQueue((q) => q.map((job, j) => (j === i ? { ...job, status: 'running' } : job)))
+      const outcome = await runExport(asMp4, aspects[i])
+      setExportQueue((q) => q.map((job, j) => (j === i ? { ...job, status: outcome } : job)))
+      if (outcome === 'cancelled') {
+        setExportQueue((q) => q.map((job, j) => (j > i ? { ...job, status: 'cancelled' } : job)))
+        break
+      }
+    }
+  }
+
+  async function runExport(asMp4 = false, aspect?: StudioDoc['aspect']): Promise<'done' | 'failed' | 'cancelled'> {
     if (duration <= 0) {
       pushToast('error', 'Add a clip before exporting.')
-      return
+      return 'failed'
     }
+    const unfilled = unfilledPlaceholders(doc)
+    if (unfilled.length) {
+      pushToast('error', `${unfilled.length} testimonial placeholder${unfilled.length > 1 ? 's are' : ' is'} still empty. Fill in real quotes or delete the cards before exporting.`)
+      return 'failed'
+    }
+    const target = aspect ? { ...doc, aspect } : doc
+    const suffix = aspect ? `-${aspect.replace(':', 'x')}` : ''
     if (doc.clips.some(isPendingComponent)) {
       pushToast('info', 'A component is still recording its animation — export as soon as it lands on the timeline.')
-      return
+      return 'failed'
     }
     setPlaying(false)
     setExportPct(0)
     const signal = { cancelled: false }
     cancelRef.current = signal
     try {
-      const result = await exportStudio(doc, {
-        fileName: `${slugify(project?.name ?? 'cupric-studio')}-studio`,
+      const result = await exportStudio(target, {
+        fileName: `${slugify(project?.name ?? 'cupric-studio')}-studio${suffix}`,
         scale: 1,
         onProgress: setExportPct,
         signal,
       })
       if (result.cancelled) {
         pushToast('info', 'Export cancelled')
+        return 'cancelled'
       } else if (asMp4) {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
-        const mp4 = await convertToMp4(result.blob, slugify(project?.name ?? 'cupric-studio'), doc.fps)
+        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null)
         setLastExport({ url: result.url, fileName: result.fileName })
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)`)
         cueDone()
@@ -896,9 +973,11 @@ export function Studio() {
         pushToast('success', `Exported ${result.fileName}`)
         cueDone()
       }
+      return 'done'
     } catch (err) {
       pushToast('error', humanError(err, 'Export'))
       cueProblem()
+      return 'failed'
     } finally {
       setExportPct(null)
       cancelRef.current = null
@@ -969,6 +1048,7 @@ export function Studio() {
           onClick={() => {
             setShowResources((shown) => !shown)
             setShowComponents(false)
+            setShowPro(false)
           }}
           disabled={exporting}
         >
@@ -980,11 +1060,25 @@ export function Studio() {
           onClick={() => {
             setShowComponents((shown) => !shown)
             setShowResources(false)
+            setShowPro(false)
           }}
           disabled={exporting}
           title="Every UI component, recorded with its real animation"
         >
           <Component size={13} /> Components
+        </Button>
+        <Button
+          size="sm"
+          variant={showPro ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowPro((shown) => !shown)
+            setShowResources(false)
+            setShowComponents(false)
+          }}
+          disabled={exporting}
+          title="Suggestions, build-from-assets, layouts, captions, markers, scopes, import from link"
+        >
+          <Sparkles size={13} /> Pro tools
         </Button>
 
         <Button
@@ -1033,6 +1127,20 @@ export function Studio() {
           >
             <Download size={13} /> {mp4Supported ? 'Render MP4' : 'MP4 needs desktop'}
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void runExportQueue(['9:16', '1:1', '16:9'], mp4Supported)}
+            disabled={exporting || duration <= 0}
+            title="Queue the edit at 9:16, 1:1 and 16:9 — rendered one after another"
+          >
+            <Download size={13} /> All sizes
+          </Button>
+          {exportQueue.length > 0 && (
+            <span className="font-mono text-xs text-muted" role="status" aria-label="Export queue">
+              {exportQueue.map((j) => `${j.aspect} ${j.status === 'done' ? '✓' : j.status === 'running' ? '…' : j.status === 'queued' ? '·' : '✕'}`).join('  ')}
+            </span>
+          )}
         </div>
       </div>
 
@@ -1231,6 +1339,20 @@ export function Studio() {
             />
           </aside>
         )}
+        {showPro && (
+          <aside className="w-[380px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio pro tools">
+            <StudioProPanel
+              doc={doc}
+              time={time}
+              onSeek={seek}
+              onPreview={(next, label) => setPreviewDoc(next ? { doc: next, label } : null)}
+              onCommit={(next, label) => {
+                const { ...patch } = next
+                patchStudio(projectId, patch, label)
+              }}
+            />
+          </aside>
+        )}
         {showResources && (
           <aside className="w-[420px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio resources">
             <div className="mb-3">
@@ -1257,7 +1379,7 @@ export function Studio() {
             }}
             onDrop={onStageDrop}
           >
-            {doc.clips.length === 0 ? (
+            {doc.clips.length === 0 && !previewDoc ? (
               <div className="max-w-md rounded-xl border border-dashed border-line bg-panel/40 px-8 py-12 text-center">
                 <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
                   <Clapperboard size={19} />
@@ -1275,7 +1397,7 @@ export function Studio() {
               </div>
             ) : (
               <StudioPreview
-                doc={doc}
+                doc={previewDoc?.doc ?? doc}
                 selected={selected}
                 onPatchSelected={(patch) => selectedId && updateStudioClip(projectId, selectedId, patch)}
                 time={time}
@@ -1399,6 +1521,7 @@ export function Studio() {
               onPatchClip={(id, patch) => updateStudioClip(projectId, id, patch)}
               onReorderTrack={(from, to) => reorderStudioTracks(projectId, from, to)}
               onSettleClip={(id) => settleStudioClip(projectId, id)}
+              onDropAt={onTimelineDrop}
             />
           </div>
         </div>
@@ -1445,6 +1568,12 @@ const SHORTCUTS: Array<[string, string]> = [
   ['Double-click text', 'Edit it right on the canvas (Enter to finish)'],
   ['Drag on canvas', 'Snaps to centre and safe areas (hold Alt to place freely)'],
   ['Delete', 'Remove the selected clip'],
+  ['Shift + Delete', 'Ripple delete — remove and close the gap'],
+  ['Q · W', 'Trim the selected clip’s start / end to the playhead'],
+  ['[ · ]', 'Slip the source under the clip a frame (Shift: 10)'],
+  ['Alt + , / .', 'Roll the cut after the selected clip'],
+  ['M', 'Drop a marker at the playhead'],
+  ['; · \'', 'Jump to the previous / next marker'],
   ['Ctrl/⌘ + Z', 'Undo (Shift: redo)'],
   ['?', 'Show or hide this sheet'],
 ]
