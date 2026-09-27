@@ -116,6 +116,13 @@
       "bytes": 12592
     },
     {
+      "id": "motion-kit",
+      "name": "Motion kit — fonts, shapes, cursor, 3D",
+      "description": "What Cupric's shapes library, cursor clicks, 3D tilt and rich captions build on: the video-grade fonts (all bundled, OFL) and the Javis.jl ideas (MIT, concepts only). Shapes and the cursor live in the Studio toolbar.",
+      "itemCount": 8,
+      "bytes": 6658
+    },
+    {
       "id": "components",
       "name": "Lab components",
       "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",

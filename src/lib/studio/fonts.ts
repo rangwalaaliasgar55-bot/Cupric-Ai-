@@ -12,7 +12,7 @@
 import type { StudioDoc } from '../../types/project'
 
 /** Families that ship with the app (see styles.css) — never downloaded. */
-const BUNDLED = new Set(['inter', 'inter variable', 'jetbrains mono', 'jetbrains mono variable', 'manrope', 'manrope variable', 'playfair display', 'playfair display variable', 'dm sans', 'dm sans variable', 'space grotesk', 'space grotesk variable', 'system-ui', 'sans-serif', 'serif', 'monospace'])
+const BUNDLED = new Set(['inter', 'inter variable', 'jetbrains mono', 'jetbrains mono variable', 'manrope', 'manrope variable', 'playfair display', 'playfair display variable', 'dm sans', 'dm sans variable', 'space grotesk', 'space grotesk variable', 'geist', 'geist variable', 'montserrat', 'montserrat variable', 'poppins', 'outfit', 'outfit variable', 'bebas neue', 'anton', 'instrument serif', 'system-ui', 'sans-serif', 'serif', 'monospace'])
 
 const CACHE_NAME = 'cupric-fonts-v1'
 const pending = new Map<string, Promise<boolean>>()

@@ -1,3 +1,7 @@
+## Latest: Motion kit (3D, shapes, cursor, fonts, rich captions)
+- Covered in MOTION_KIT.md. Check: `check:shapes-cursor-3d` (221 assertions, in the build).
+- Not verified in a real browser yet (no headless browser in the sandbox). Eyeball the 3D projection seams, the rich-caption line heights, and the cursor on a recorded component.
+
 # NEXT_SESSION.md — Cupric AI implementation status
 
 ## Current status (v0.4.0)

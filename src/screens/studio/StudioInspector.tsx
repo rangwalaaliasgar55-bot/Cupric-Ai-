@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { VIDEO_FONT_FAMILIES, VIDEO_FONTS, fontInfo } from '../../lib/studio/videoFonts'
 import {
   CAMERA_RECIPES,
   EMPHASIS_RECIPES,
@@ -28,6 +29,7 @@ import type {
 import { Button } from '../../components/Button'
 import { ClipProFields } from './ClipProFields'
 import { CurveEditor } from './CurveEditor'
+import { CursorFields, RichTextFields, ShapeFields, ThreeDFields } from './InspectorExtras'
 import { STUDIO_BACKGROUNDS } from '../../lib/studio/backgrounds'
 import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/transitions'
 import { GLASS_PRESETS } from '../../lib/glass'
@@ -43,7 +45,7 @@ import { applyTrack, sourceFrameMap, trackBox, trackSummary } from '../../lib/st
 import { sampleLumaFrames } from '../../lib/studio/autoEditAnalysis'
 
 /** Values of the built-in Font options; anything else came from Resources → Fonts. */
-const BUNDLED_FONT_VALUES = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
+const BUNDLED_FONT_VALUES = VIDEO_FONT_FAMILIES
 
 type Props = {
   doc: StudioDoc
@@ -378,6 +380,9 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
       {/* What the clip IS comes first — its words, media or look — then timing,
           motion and finishing. The text box used to sit below the fold. */}
       {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
+      {clip.kind === 'text' && <RichTextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
+      {clip.kind === 'shape' && <ShapeFields clip={clip} onPatch={onPatch} />}
+      {clip.kind === 'cursor' && <CursorFields clip={clip} doc={doc} onPatch={onPatch} />}
       {(clip.kind === 'video' || clip.kind === 'image') && (
         <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
       )}
@@ -424,6 +429,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
         suffix="°"
         onChange={(v) => onPatch({ rotation: v === 0 ? undefined : v })}
       />
+      {clip.kind !== 'audio' && <ThreeDFields clip={clip} onPatch={onPatch} />}
 
       <KeyframeFields clip={clip} time={time} onPatch={onPatch} />
       <GradeFields clip={clip} onPatch={onPatch} />
@@ -485,7 +491,7 @@ function KeyframeFields({
   const keys = clip.keyframes ?? []
   const local = Math.round((time - clip.startSec) * 100) / 100
   const withinClip = local >= 0 && local <= clip.durationSec + 0.001
-  const positioned = clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image'
+  const positioned = clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image'
 
   const currentScale =
     clip.kind === 'overlay' || clip.kind === 'sticker' ? 1 : clip.kind === 'text' ? 1 : clip.kind === 'glass' ? 1 : 1
@@ -574,6 +580,8 @@ function KeyframeFields({
             <Slider label="Opacity" value={key.opacity ?? 1} min={0} max={1} step={0.05} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, opacity: v } : k)) })} />
             <Slider label="Size" value={key.scale ?? 1} min={0.1} max={3} step={0.05} suffix="×" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, scale: v } : k)) })} />
             <Slider label="Rotation" value={key.rotation ?? 0} min={-180} max={180} step={1} suffix="°" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, rotation: v } : k)) })} />
+            <Slider label="Tilt X" value={key.tiltX ?? 0} min={-80} max={80} step={1} suffix="°" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, tiltX: v } : k)) })} />
+            <Slider label="Turn Y" value={key.turnY ?? 0} min={-80} max={80} step={1} suffix="°" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, turnY: v } : k)) })} />
             {positioned && (
               <Slider label="X" value={key.x ?? 0.5} min={0} max={1} step={0.01} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, x: v } : k)) })} />
             )}
@@ -907,18 +915,17 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
         />
       </Field>
 
-      <Field label="Font" hint="Six fonts ship with the app; any Google font from Resources → Fonts downloads once and is embedded in exports.">
+      <Field label="Font" hint={fontInfo(clip.fontFamily ?? 'Inter Variable') ? `${fontInfo(clip.fontFamily ?? 'Inter Variable')!.bestFor}. Tip: ${fontInfo(clip.fontFamily ?? 'Inter Variable')!.customize}` : 'Downloaded from Resources → Fonts; embedded in exports.'}>
         <select
           value={clip.fontFamily ?? 'Inter Variable'}
           onChange={(e) => onPatch({ fontFamily: e.target.value } as Partial<StudioClip>)}
           className={inputCx}
         >
-          <option value="Inter Variable">Inter — versatile sans</option>
-          <option value="Manrope Variable">Manrope — modern editorial</option>
-          <option value="DM Sans Variable">DM Sans — clean social</option>
-          <option value="Space Grotesk Variable">Space Grotesk — geometric tech</option>
-          <option value="Playfair Display Variable">Playfair Display — cinematic serif</option>
-          <option value="JetBrains Mono Variable">JetBrains Mono — technical</option>
+          {(['caption', 'headline', 'display', 'emphasis', 'body', 'mono'] as const).map((role) => (
+            <optgroup key={role} label={{ caption: 'Captions', headline: 'Headlines', display: 'Impact / display', emphasis: 'Serif & emphasis', body: 'Body & lower thirds', mono: 'Numbers & code' }[role]}>
+              {VIDEO_FONTS.filter((f) => f.role === role).map((f) => <option key={f.family} value={f.family}>{f.label} — {f.bestFor.split(',')[0]}</option>)}
+            </optgroup>
+          ))}
           {clip.fontFamily && !BUNDLED_FONT_VALUES.has(clip.fontFamily) && (
             <option value={clip.fontFamily}>{clip.fontFamily} — from Resources</option>
           )}

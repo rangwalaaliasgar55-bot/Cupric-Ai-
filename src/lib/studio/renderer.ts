@@ -22,6 +22,8 @@ import type {
 import { glassPreset } from '../glass'
 import { backgroundById } from './backgrounds'
 import { clipProgress, clipsAt } from './doc'
+import { drawCursor, drawShape, has3D, project3D } from './renderExtras'
+import { cursorAt } from './cursor'
 import { paintGlass, paintGlassLens } from './glass'
 import { getMedia, overlayImage, proxyMode } from './media'
 import { applyPixelGrade, chromaKey } from './color'
@@ -29,6 +31,7 @@ import { bezierEase } from './curves'
 import { compareDivider, deviceGeometry } from './layouts'
 import { drawPhone, type DrawMedia } from './phone'
 import { kineticWord } from './textTools'
+import { hasRichMarkup, parseRich, RICH_DEFAULTS, type RichStyle, type RichWord } from './richText'
 import type { StudioBlendMode, StudioDevice } from '../../types/project'
 
 export type FrameSources = {
@@ -391,6 +394,7 @@ function paintLegibilityScrim(
 }
 
 function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: number, w: number, h: number) {
+  if (hasRichMarkup(clip.text)) { drawRichText(ctx, clip, t, w, h); return }
   const progress = clipProgress(clip, t)
   const preset = captionPreset(clip.captionStyle)
   const fontPx = Math.max(12, (clip.fontSizePct / 100) * h)
@@ -492,6 +496,10 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
       ctx.shadowColor = 'rgba(0,0,0,0.65)'
       ctx.shadowBlur = preset.shadow
       ctx.shadowOffsetY = preset.shadow * 0.25
+    }
+    if (clip.textGlow && !preset.shadow) {
+      ctx.shadowColor = clip.color
+      ctx.shadowBlur = fontPx * 0.6 * clip.textGlow
     }
     if (preset.stroke) {
       ctx.lineJoin = 'round'
@@ -690,7 +698,7 @@ const EASES: Record<StudioKeyframe['ease'], (p: number) => number> = {
 }
 
 /** The animated properties, resolved at time `t`. */
-export type KeyframeValues = { x?: number; y?: number; scale?: number; rotation?: number; opacity?: number; blur?: number; glow?: number; hue?: number }
+export type KeyframeValues = { x?: number; y?: number; scale?: number; rotation?: number; opacity?: number; blur?: number; glow?: number; hue?: number; tiltX?: number; turnY?: number }
 
 /**
  * Interpolate a clip's keyframes at document time `t`.
@@ -725,13 +733,15 @@ export function keyframeValuesAt(clip: StudioClip, t: number): KeyframeValues | 
       blur: mix(a.blur, b.blur, p),
       glow: mix(a.glow, b.glow, p),
       hue: mix(a.hue, b.hue, p),
+      tiltX: mix(a.tiltX, b.tiltX, p),
+      turnY: mix(a.turnY, b.turnY, p),
     }
   }
   return pick(last)
 }
 
 function pick(key: StudioKeyframe): KeyframeValues {
-  return { x: key.x, y: key.y, scale: key.scale, rotation: key.rotation, opacity: key.opacity, blur: key.blur, glow: key.glow, hue: key.hue }
+  return { x: key.x, y: key.y, scale: key.scale, rotation: key.rotation, opacity: key.opacity, blur: key.blur, glow: key.glow, hue: key.hue, tiltX: key.tiltX, turnY: key.turnY }
 }
 
 /** Interpolate two optional numbers: a missing end holds the start, and vice versa. */
@@ -755,10 +765,13 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
   if (values.x !== undefined && ('x' in clip || clip.kind === 'video' || clip.kind === 'image')) next.x = values.x
   if (values.y !== undefined && ('y' in clip || clip.kind === 'video' || clip.kind === 'image')) next.y = values.y
   if (values.rotation !== undefined) next.rotation = values.rotation
+  if (values.tiltX !== undefined) next.tiltX = values.tiltX
+  if (values.turnY !== undefined) next.turnY = values.turnY
   if (values.opacity !== undefined) next.opacity = clip.opacity * values.opacity
   if (values.scale !== undefined) {
     // "Scale" means whatever size means for this kind of clip.
-    if (clip.kind === 'overlay' || clip.kind === 'sticker') next.scale = clip.scale * values.scale
+    if (clip.kind === 'overlay' || clip.kind === 'sticker' || clip.kind === 'cursor') (next as { scale?: number; size?: number }).scale = clip.kind === 'cursor' ? undefined : clip.scale * values.scale
+    else if (clip.kind === 'shape') (next as unknown as { w: number }).w = clip.w * values.scale
     else if (clip.kind === 'video' || clip.kind === 'image') next.scale = (clip.scale ?? 1) * values.scale
     else if (clip.kind === 'text') next.fontSizePct = clip.fontSizePct * values.scale
     else if (clip.kind === 'glass') {
@@ -777,7 +790,7 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
 
 /** Where a clip pivots. Positioned clips turn about themselves, full-frame ones about the frame. */
 function clipCentre(clip: StudioClip, w: number, h: number): { cx: number; cy: number } {
-  if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker') {
+  if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'shape' || clip.kind === 'cursor') {
     return { cx: clip.x * w, cy: clip.y * h }
   }
   if (clip.kind === 'video' || clip.kind === 'image') {
@@ -862,6 +875,26 @@ function composeFilter(existing: string, extra: string): string {
 
 /** Scratch canvas for matted clips. One per size, reused across frames. */
 let maskScratch: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null = null
+let layer3d: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; temp: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } } | null = null
+/** Two full-frame layers for 3D clips (content + turn pass). Null outside the DOM. */
+function layer3dFor(w: number, h: number) {
+  if (typeof document === 'undefined') return null
+  if (!layer3d) {
+    const a = document.createElement('canvas'), b = document.createElement('canvas')
+    const actx = a.getContext('2d'), bctx = b.getContext('2d')
+    if (!actx || !bctx) return null
+    layer3d = { canvas: a, ctx: actx, temp: { canvas: b, ctx: bctx } }
+  }
+  for (const c of [layer3d.canvas, layer3d.temp.canvas]) if (c.width !== w || c.height !== h) { c.width = w; c.height = h }
+  const l = layer3d.ctx
+  l.setTransform(1, 0, 0, 1, 0, 0)
+  l.filter = 'none'
+  l.globalAlpha = 1
+  l.globalCompositeOperation = 'source-over'
+  l.clearRect(0, 0, w, h)
+  return layer3d
+}
+
 function scratchFor(w: number, h: number) {
   if (typeof document === 'undefined') return null
   if (!maskScratch) {
@@ -956,6 +989,14 @@ function drawClipContent(
   height: number,
   sources: FrameSources,
 ) {
+  if (clip.kind === 'shape') {
+    drawShape(ctx, clip, t, width, height)
+    return
+  }
+  if (clip.kind === 'cursor') {
+    drawCursor(ctx, clip, t, width, height)
+    return
+  }
   if (clip.kind === 'background') {
     const bg = backgroundById(clip.backgroundId)
     bg.paint(ctx, width, height, bg.local ? Math.max(0, t - clip.startSec) : t)
@@ -1146,6 +1187,15 @@ export function drawStudioFrame(
     backgroundById(doc.backgroundId).paint(ctx, width, height, t)
   }
 
+  // Cursor → target reactions: a linked clip presses in on each click (or
+  // lifts on hover). Computed once per frame from the active cursor clips.
+  const press = new Map<string, number>()
+  for (const c of doc.clips) {
+    if (c.kind !== 'cursor' || !c.targetClipId || t < c.startSec || t > c.startSec + c.durationSec) continue
+    const f = cursorAt(c, t - c.startSec)
+    if (f.targetPress) press.set(c.targetClipId, f.targetPress)
+  }
+
   for (const raw of clipsAt(doc, t)) {
     // Keyframes are resolved once, up front, so everything below — transitions,
     // rotation, the matte, the draw itself — sees the animated clip.
@@ -1156,18 +1206,30 @@ export function drawStudioFrame(
 
     // Rotation is about the clip's own centre, so a rotated title still sits
     // where the user put it rather than swinging off round the frame origin.
+    // 3D clips draw into their own layer, then get projected (see below).
+    const layer3d = has3D(clip) ? layer3dFor(width, height) : null
+    const target = layer3d ? layer3d.ctx : ctx
     const rotation = clip.rotation ?? 0
     if (rotation) {
       const { cx, cy } = clipCentre(clip, width, height)
-      ctx.translate(cx, cy)
-      ctx.rotate((rotation * Math.PI) / 180)
-      ctx.translate(-cx, -cy)
+      target.translate(cx, cy)
+      target.rotate((rotation * Math.PI) / 180)
+      target.translate(-cx, -cy)
     }
     if (clip.flipX || clip.flipY) {
       const { cx, cy } = clipCentre(clip, width, height)
-      ctx.translate(cx, cy)
-      ctx.scale(clip.flipX ? -1 : 1, clip.flipY ? -1 : 1)
-      ctx.translate(-cx, -cy)
+      target.translate(cx, cy)
+      target.scale(clip.flipX ? -1 : 1, clip.flipY ? -1 : 1)
+      target.translate(-cx, -cy)
+    }
+    const pressed = press.get(raw.id)
+    if (pressed) {
+      // Press-in (click) shrinks 5%; hover (negative) lifts 3%.
+      const k = pressed > 0 ? 1 - 0.05 * pressed : 1 + 0.03 * -pressed
+      const { cx, cy } = clipCentre(clip, width, height)
+      target.translate(cx, cy)
+      target.scale(k, k)
+      target.translate(-cx, -cy)
     }
 
     const grade = [gradeFilter(clip.grade), keyframeFilter(raw, t, height)].filter(Boolean).join(' ')
@@ -1175,6 +1237,7 @@ export function drawStudioFrame(
     const pixelGrade = needsPixelGrade(clip)
     const scratch = mask || pixelGrade ? scratchFor(width, height) : null
     ctx.globalCompositeOperation = compositeFor(clip.blendMode)
+    if (layer3d) layer3d.ctx.globalCompositeOperation = 'source-over'
 
     if (scratch) {
       // Matted / wheel-graded / LUT clips are drawn to a scratch layer first:
@@ -1187,10 +1250,15 @@ export function drawStudioFrame(
         if (applyPixelGrade(image.data, clip.grade, clip.lut)) scratch.ctx.putImageData(image, 0, 0)
       }
       if (mask) applyMask(scratch.ctx, mask, width, height)
-      ctx.drawImage(scratch.canvas, 0, 0, width, height)
+      target.drawImage(scratch.canvas, 0, 0, width, height)
     } else {
-      ctx.filter = composeFilter(ctx.filter, grade)
-      drawClipContent(ctx, clip, t, width, height, sources)
+      target.filter = composeFilter(target.filter, grade)
+      drawClipContent(target, clip, t, width, height, sources)
+    }
+    if (layer3d) {
+      layer3d.ctx.filter = 'none'
+      const { cx, cy } = clipCentre(clip, width, height)
+      project3D(ctx, layer3d.canvas, layer3d.temp, cx, cy, clip.tiltX ?? 0, clip.turnY ?? 0, (clip.perspective ?? 1600) * (height / 1080), width, height)
     }
 
     ctx.filter = 'none'
@@ -1321,4 +1389,106 @@ function drawInDevice(
     roundRect(ctx, g.notch.x, g.notch.y, g.notch.w, g.notch.h, g.notch.h / 2)
     ctx.fill()
   }
+}
+
+/**
+ * Rich caption: per-word fonts/colours/boxes from markup (richText.ts), wrapped
+ * and aligned as one block, animated per word. Pure function of progress.
+ */
+function drawRichText(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: number, w: number, h: number) {
+  const progress = clipProgress(clip, t)
+  const preset = captionPreset(clip.captionStyle)
+  const base = Math.max(12, (clip.fontSizePct / 100) * h)
+  const family = clip.fontFamily || 'Inter Variable'
+  const emFont = clip.emphasisFont || RICH_DEFAULTS.emphasisFont
+  const emColor = clip.emphasisColor || RICH_DEFAULTS.emphasisColor
+  const boxColor = clip.boxColor || RICH_DEFAULTS.boxColor
+  const accent = clip.accentColor || RICH_DEFAULTS.accentColor
+  const words = parseRich(preset.uppercase ? clip.text.toUpperCase() : clip.text)
+  if (!words.length) return
+  const fontFor = (s: RichStyle) => {
+    const px = base * (s.big ? 1.5 : 1) * (s.em ? 1.12 : 1)
+    const weight = s.em ? 400 : s.big ? Math.max(800, clip.weight) : clip.weight
+    const fam = s.em ? emFont : family
+    return { px, css: `${s.em ? 'italic ' : ''}${weight} ${px}px '${fam}', ${s.em ? "'Playfair Display Variable', Georgia, serif" : 'Inter, system-ui, sans-serif'}` }
+  }
+  // Layout: wrap into lines, respecting explicit line breaks.
+  type Placed = { word: RichWord; px: number; css: string; width: number; x: number; line: number }
+  const maxWidth = w * 0.86
+  const placed: Placed[] = []
+  ctx.save()
+  ctx.font = fontFor({ em: false, box: false, accent: false, big: false }).css
+  const space = ctx.measureText(' ').width
+  let line = 0, lineW = 0, srcLine = 0
+  for (const word of words) {
+    const f = fontFor(word.style)
+    ctx.font = f.css
+    const width = ctx.measureText(word.text).width
+    if (word.line !== srcLine) { line++; lineW = 0; srcLine = word.line }
+    else if (lineW > 0 && lineW + space + width > maxWidth) { line++; lineW = 0 }
+    const x = lineW > 0 ? lineW + space : 0
+    placed.push({ word, px: f.px, css: f.css, width, x, line })
+    lineW = x + width
+  }
+  const lines = line + 1
+  const lineWidths = Array.from({ length: lines }, (_, i) => placed.filter((p) => p.line === i).reduce((m, p) => Math.max(m, p.x + p.width), 0))
+  const lineHeights = Array.from({ length: lines }, (_, i) => Math.max(base, ...placed.filter((p) => p.line === i).map((p) => p.px)) * 1.08)
+  const totalH = lineHeights.reduce((a, b) => a + b, 0)
+  const widest = Math.max(...lineWidths)
+  const inP = clamp01(progress / 0.22)
+  let alpha = 1, offsetY = 0, scale = 1
+  if (clip.anim === 'fade-up' || clip.anim === 'glass-rise') { alpha = easeOut(inP); offsetY = (1 - easeOut(inP)) * base * 0.5 }
+  else if (clip.anim === 'pop') { alpha = easeOut(inP); scale = 0.94 + 0.06 * easeOut(inP) + Math.sin(inP * Math.PI) * 0.03 }
+  else if (clip.anim !== 'kinetic' && clip.anim !== 'word-reveal' && clip.anim !== 'none') alpha = easeOut(inP)
+  const { x: cx, y: cy } = clampToSafeArea(clip.x * w, clip.y * h + offsetY, widest, totalH, clip.align, w, h)
+  paintLegibilityScrim(ctx, clip, cx, cy, widest, totalH, base, alpha, w, h)
+  ctx.globalAlpha *= alpha
+  ctx.translate(cx, cy)
+  ctx.scale(scale, scale)
+  ctx.textBaseline = 'middle'
+  ctx.textAlign = 'left'
+  const total = placed.length
+  const shown = clip.anim === 'word-reveal' ? Math.ceil(clamp01(progress / 0.55) * total) : total
+  let top = -totalH / 2
+  const lineTop: number[] = []
+  for (let i = 0; i < lines; i++) { lineTop.push(top); top += lineHeights[i] }
+  const left = (i: number) => (clip.align === 'left' ? -widest / 2 : clip.align === 'right' ? widest / 2 - lineWidths[i] : -lineWidths[i] / 2)
+  placed.forEach((p, idx) => {
+    if (idx >= shown) return
+    const st = clip.anim === 'kinetic' ? kineticWord(idx, total, progress) : { alpha: 1, dy: 0, scale: 1 }
+    if (st.alpha <= 0) return
+    const y = lineTop[p.line] + lineHeights[p.line] / 2
+    const x = left(p.line) + p.x
+    ctx.save()
+    ctx.globalAlpha *= st.alpha
+    ctx.translate(x + p.width / 2, y + st.dy * base)
+    ctx.scale(st.scale, st.scale)
+    ctx.font = p.css
+    if (p.word.style.box) {
+      // Box spans to the next boxed word on the same line (one continuous bar).
+      const next = placed[idx + 1]
+      const joins = next && next.line === p.line && next.word.style.box
+      const padX = base * 0.22, padY = base * 0.16
+      const bw = p.width + padX * 2 + (joins ? next.x - (p.x + p.width) : 0)
+      ctx.fillStyle = boxColor
+      ctx.globalAlpha *= 0.88
+      ctx.fillRect(-p.width / 2 - padX, -p.px * 0.5 - padY, bw, p.px + padY * 2)
+      ctx.globalAlpha /= 0.88
+    }
+    const color = p.word.style.accent ? accent : p.word.style.em ? emColor : clip.color
+    if (clip.textGlow || p.word.style.em) {
+      ctx.shadowColor = color
+      ctx.shadowBlur = base * 0.55 * Math.max(clip.textGlow ?? 0, p.word.style.em ? 0.45 : 0)
+    }
+    if (preset.stroke) {
+      ctx.lineJoin = 'round'
+      ctx.lineWidth = preset.stroke * (p.px / 64)
+      ctx.strokeStyle = '#0B0B10'
+      ctx.strokeText(p.word.text, -p.width / 2, 0)
+    }
+    ctx.fillStyle = color
+    ctx.fillText(p.word.text, -p.width / 2, 0)
+    ctx.restore()
+  })
+  ctx.restore()
 }

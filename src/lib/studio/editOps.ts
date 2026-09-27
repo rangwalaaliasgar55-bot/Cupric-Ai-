@@ -1,4 +1,7 @@
-import type { StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition } from '../../types/project'
+import type { StudioShapeAnim, StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition } from '../../types/project'
+import { VIDEO_FONT_FAMILIES } from './videoFonts'
+import { SHAPES, shapeById } from './shapes'
+import { addCursorTo, addShape as addShapeKit } from './motionKit'
 import { closeGaps as closeGapsOp, addMarker as addMarkerOp, rippleDelete as rippleDeleteOp } from './timelineOps'
 import { LOGO_REVEALS, PRODUCT_PRESETS, buildTestimonialGrid, logoRevealKeyframes, withProductPreset, type LogoReveal, type ProductPreset } from './layouts'
 import { TEXT_PRESETS, applyTextPreset, captionsFromTranscript } from './textTools'
@@ -53,12 +56,16 @@ export type StudioEditOp =
       motion?: MotionSpec
     }
   | { type: 'applyMotion'; clipId: string; motion: MotionSpec }
+  /** Vector shape from the shape library (see shapes.ts `use` for when). */
+  | { type: 'addShape'; shape: string; startSec: number; durationSec: number; x?: number; y?: number; w?: number; fill?: string | null; stroke?: string | null; anim?: StudioShapeAnim; label?: string }
+  /** Animated cursor clicking/hovering a clip — only where an interaction needs explaining. */
+  | { type: 'addCursor'; clipId: string; action?: 'click' | 'double-click' | 'hover' | 'drag'; force?: boolean }
   | { type: 'clearKeyframes'; clipId: string }
-  | { type: 'setKeyframe'; clipId: string; at: number; values: Partial<Pick<StudioKeyframe, 'x' | 'y' | 'scale' | 'rotation' | 'opacity'>>; ease?: StudioKeyframe['ease'] }
+  | { type: 'setKeyframe'; clipId: string; at: number; values: Partial<Pick<StudioKeyframe, 'x' | 'y' | 'scale' | 'rotation' | 'opacity' | 'tiltX' | 'turnY'>>; ease?: StudioKeyframe['ease'] }
   | { type: 'reorderTrack'; from: number; to: number }
   | { type: 'applyStylePreset'; preset: 'editorial' | 'bold-social' | 'minimal' }
   /** Place a UI component (src/lab/components); the Studio records its real animation. */
-  | { type: 'addComponent'; slug: string; startSec: number; durationSec: number; x?: number; y?: number; interact?: boolean; motion?: MotionSpec }
+  | { type: 'addComponent'; slug: string; startSec: number; durationSec: number; x?: number; y?: number; interact?: boolean; motion?: MotionSpec; /** Also add a clicking cursor when the component is interactive (cursorNeeded decides). */ cursor?: boolean }
   /* 2.11 — expansion: every new subsystem is reachable by the agent too. */
   | { type: 'rippleDelete'; clipId: string }
   | { type: 'closeGaps'; track?: number }
@@ -76,14 +83,14 @@ export type StudioEditOp =
 
 export type StudioEditPlan = { summary: string; ops: StudioEditOp[]; source: 'live' | 'local'; warning?: string }
 
-const PATCH_KEYS = new Set(['x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume', 'durationSec', 'startSec', 'name'])
+const PATCH_KEYS = new Set(['tiltX', 'turnY', 'perspective', 'emphasisColor', 'boxColor', 'accentColor', 'textGlow', 'x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume', 'durationSec', 'startSec', 'name'])
 const TEXT_KEYS = new Set(['fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim'])
-const FONTS = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
+const FONTS = VIDEO_FONT_FAMILIES
 const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', 'word-reveal', 'shimmer', 'slide-left', 'glass-rise', 'liquid-wave', 'kinetic'])
 const BLEND_MODES = new Set<StudioBlendMode>(['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'soft-light', 'difference', 'add'])
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
 const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out', 'back-out', 'back-in', 'expo-out', 'expo-in-out', 'elastic-out', 'hold', 'bezier'])
-const KEYFRAME_SCALABLE = ['overlay', 'sticker', 'video', 'image', 'text', 'glass']
+const KEYFRAME_SCALABLE = ['shape', 'overlay', 'sticker', 'video', 'image', 'text', 'glass']
 
 /** Accept a motion spec from a model, dropping anything it made up. */
 function readMotionSpec(value: unknown): MotionSpec | null {
@@ -156,7 +163,7 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
         if (key === 'anim' && !ANIMS.has(item as StudioTextAnim)) throw new Error(`Unknown animation “${item}”`)
         if ((key === 'transitionIn' || key === 'transitionOut') && !TRANSITIONS.has(item as StudioTransition)) throw new Error(`Unknown transition “${item}”`)
         if (key === 'name' && (typeof item !== 'string' || item.length > 60)) throw new Error('Name must contain at most 60 characters')
-        const ranges: Record<string, [number, number]> = { x: [0, 1], y: [0, 1], scale: [0.05, 10], rotation: [-3600, 3600], opacity: [0, 1], fontSizePct: [1, 40], volume: [0, 2], durationSec: [0.2, 3600], startSec: [0, 36000] }
+        const ranges: Record<string, [number, number]> = { x: [0, 1], y: [0, 1], scale: [0.05, 10], rotation: [-3600, 3600], tiltX: [-89, 89], turnY: [-89, 89], perspective: [200, 8000], textGlow: [0, 1], opacity: [0, 1], fontSizePct: [1, 40], volume: [0, 2], durationSec: [0.2, 3600], startSec: [0, 36000] }
         if (key in ranges && (typeof item !== 'number' || item < ranges[key][0] || item > ranges[key][1])) throw new Error(`Property “${key}” is outside its safe range`)
         patch[key] = item
       }
@@ -169,6 +176,21 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       return { type, clipId, ...(finite(op.track) ? { track: op.track } : {}), ...(finite(op.startSec) ? { startSec: op.startSec } : {}) }
     }
     if (type === 'deleteClip') return { type, clipId: requireClip() }
+    if (type === 'addShape') {
+      if (typeof op.shape !== 'string' || !shapeById(op.shape)) throw new Error(`Unknown shape “${String(op.shape)}” — use one of: ${SHAPES.map((x) => x.id).join(', ')}`)
+      if (![op.startSec, op.durationSec].every(finite) || (op.startSec as number) < 0 || (op.durationSec as number) < 0.2) throw new Error(`Operation ${index + 1} has invalid timing`)
+      for (const k of ['x', 'y'] as const) if (op[k] !== undefined && (!finite(op[k]) || (op[k] as number) < 0 || (op[k] as number) > 1)) throw new Error(`Shape ${k} must be 0–1`)
+      if (op.w !== undefined && (!finite(op.w) || (op.w as number) < 0.01 || (op.w as number) > 1.5)) throw new Error('Shape width must be 0.01–1.5 of the frame')
+      for (const k of ['fill', 'stroke'] as const) if (op[k] !== undefined && op[k] !== null && !/^#[0-9a-f]{6}$/i.test(String(op[k]))) throw new Error(`Shape ${k} must be a #RRGGBB colour or null`)
+      if (op.anim !== undefined && !['none', 'draw-on', 'pop', 'grow', 'spin-in', 'pulse', 'wiggle', 'draw-then-fill'].includes(String(op.anim))) throw new Error(`Unknown shape animation “${op.anim}”`)
+      if (op.label !== undefined && (typeof op.label !== 'string' || op.label.length > 40)) throw new Error('Shape label must be at most 40 characters')
+      return { type, shape: op.shape, startSec: op.startSec as number, durationSec: op.durationSec as number, ...(op.x !== undefined ? { x: op.x as number } : {}), ...(op.y !== undefined ? { y: op.y as number } : {}), ...(op.w !== undefined ? { w: op.w as number } : {}), ...(op.fill !== undefined ? { fill: op.fill as string | null } : {}), ...(op.stroke !== undefined ? { stroke: op.stroke as string | null } : {}), ...(op.anim !== undefined ? { anim: op.anim as StudioShapeAnim } : {}), ...(op.label ? { label: op.label as string } : {}) }
+    }
+    if (type === 'addCursor') {
+      const clipId = requireClip()
+      if (op.action !== undefined && !['click', 'double-click', 'hover', 'drag'].includes(String(op.action))) throw new Error(`Unknown cursor action “${op.action}”`)
+      return { type, clipId, ...(op.action ? { action: op.action as 'click' } : {}), ...(op.force === true ? { force: true } : {}) }
+    }
     if (type === 'addText') {
       if (typeof op.text !== 'string' || !op.text.trim() || op.text.length > 500) throw new Error(`Operation ${index + 1} needs 1–500 characters of text`)
       if (![op.track, op.startSec, op.durationSec].every(finite) || (op.startSec as number) < 0 || (op.durationSec as number) < 0.2) throw new Error(`Operation ${index + 1} has invalid timing`)
@@ -219,7 +241,7 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       if (!finite(op.at) || !op.values || typeof op.values !== 'object') throw new Error(`Operation ${index + 1} has invalid keyframe data`)
       const values: Record<string, number> = {}
       for (const [key, item] of Object.entries(op.values as Record<string, unknown>)) {
-        if (!['x', 'y', 'scale', 'rotation', 'opacity'].includes(key) || !finite(item)) throw new Error(`Invalid keyframe property “${key}”`)
+        if (!['x', 'y', 'scale', 'rotation', 'opacity', 'tiltX', 'turnY'].includes(key) || !finite(item)) throw new Error(`Invalid keyframe property “${key}”`)
         const targetClip = doc.clips.find((item) => item.id === clipId)!
         if ((key === 'x' || key === 'y') && !('x' in targetClip) && targetClip.kind !== 'video' && targetClip.kind !== 'image') throw new Error(`Keyframe property “${key}” does not apply to this clip`)
         if (key === 'scale' && !KEYFRAME_SCALABLE.includes(targetClip.kind)) throw new Error('Scale keyframes only apply to visual clips')
@@ -248,6 +270,7 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       return {
         type,
         slug,
+        ...(op.cursor === true ? { cursor: true } : {}),
         startSec: op.startSec as number,
         durationSec,
         ...(x !== undefined ? { x } : {}),
@@ -352,6 +375,8 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'patchClip') return `Change ${name}: ${Object.entries(op.patch).map(([key, value]) => `${key} → ${value}`).join(', ')}`
   if (op.type === 'moveClip') return `Move ${name}${op.track !== undefined ? ` to T${op.track + 1}` : ''}${op.startSec !== undefined ? ` at ${op.startSec.toFixed(2)}s` : ''}`
   if (op.type === 'deleteClip') return `Delete ${name}`
+  if (op.type === 'addShape') return `Add ${shapeById(op.shape)?.name ?? op.shape} at ${op.startSec.toFixed(2)}s${op.anim ? ` · ${op.anim}` : ''}`
+  if (op.type === 'addCursor') return `Add a cursor ${op.action ?? 'click'} on clip ${op.clipId}`
   if (op.type === 'addText') return `Add text “${op.text}” at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
   if (op.type === 'applyMotion') return `Animate ${name}: ${describeMotionSpec(op.motion)}`
   if (op.type === 'clearKeyframes') return `Remove keyframes from ${name}`
@@ -370,7 +395,7 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'setDucking') return op.enabled ? `Duck music under speech${op.amountDb !== undefined ? ` by ${op.amountDb} dB` : ''}` : 'Turn ducking off'
   if (op.type === 'addTestimonialGrid') return `Add ${op.count} empty testimonial card${op.count > 1 ? 's' : ''} at ${op.startSec.toFixed(2)}s (you fill in real quotes)`
   if (op.type === 'addCaptions') return `Add captions from the transcript at ${op.startSec.toFixed(2)}s`
-  if (op.type === 'addComponent') return `Add the “${findComponent(op.slug)?.name ?? op.slug}” component at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s (its real animation is recorded)${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
+  if (op.type === 'addComponent') return `Add the “${findComponent(op.slug)?.name ?? op.slug}” component at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s (its real animation is recorded)${op.cursor ? ' · with a clicking cursor if it is interactive' : ''}${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
   return `Apply ${op.preset} style across the timeline`
 }
 
@@ -393,6 +418,15 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       }
       return patched
     }) }
+    else if (op.type === 'addShape') {
+      const r = addShapeKit(next, op.shape, op.startSec, { durationSec: op.durationSec, ...(op.x !== undefined ? { x: op.x } : {}), ...(op.y !== undefined ? { y: op.y } : {}), ...(op.w !== undefined ? { w: op.w } : {}), ...(op.fill !== undefined ? { fill: op.fill } : {}), ...(op.stroke !== undefined ? { stroke: op.stroke } : {}), ...(op.anim ? { anim: op.anim } : {}), ...(op.label ? { label: op.label } : {}) })
+      if (r.changed) next = r.doc
+    }
+    else if (op.type === 'addCursor') {
+      const r = addCursorTo(next, op.clipId, { force: op.force, action: op.action })
+      if (!r.changed) throw new Error(r.reason ?? 'Cursor not added')
+      next = r.doc
+    }
     else if (op.type === 'addText') {
       next = { ...next, trackCount: growTracks(op.track) }
       const clip = defaultTextClip(Math.max(0, op.startSec), clamp(Math.round(op.track), 0, next.trackCount - 1))
@@ -433,6 +467,10 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       const motion: MotionSpec = op.motion ?? { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }
       const clip = { ...added.clip, ...motionPatch(added.clip, motion) } as StudioClip
       next = { ...added.doc, clips: added.doc.clips.map((c) => (c.id === clip.id ? clip : c)) }
+      if (op.cursor) {
+        const withCursor = addCursorTo(next, clip.id)
+        if (withCursor.changed) next = withCursor.doc
+      }
     }
     else if (op.type === 'applyStylePreset') next = applyStyle(next, op.preset)
     else if (op.type === 'rippleDelete') next = rippleDeleteOp(next, op.clipId).doc
@@ -688,7 +726,7 @@ function keyframeOpsFor(clip: StudioClip, spec: MotionSpec, count: number): Stud
       }
       const a = picked[gap], b = picked[gap + 1] ?? a
       const mid: StudioKeyframe = { at: (a.at + b.at) / 2, ease: a.ease }
-      for (const prop of ['x', 'y', 'scale', 'rotation', 'opacity'] as const) {
+      for (const prop of ['x', 'y', 'scale', 'rotation', 'opacity', 'tiltX', 'turnY'] as const) {
         const va = a[prop], vb = b[prop]
         if (typeof va === 'number' && typeof vb === 'number') mid[prop] = (va + vb) / 2
       }
@@ -697,13 +735,13 @@ function keyframeOpsFor(clip: StudioClip, spec: MotionSpec, count: number): Stud
   }
   const positional = 'x' in clip || clip.kind === 'video' || clip.kind === 'image'
   return picked.map((key) => {
-    const values: Partial<Pick<StudioKeyframe, 'x' | 'y' | 'scale' | 'rotation' | 'opacity'>> = {}
-    for (const prop of ['x', 'y', 'scale', 'rotation', 'opacity'] as const) {
+    const values: Partial<Pick<StudioKeyframe, 'x' | 'y' | 'scale' | 'rotation' | 'opacity' | 'tiltX' | 'turnY'>> = {}
+    for (const prop of ['x', 'y', 'scale', 'rotation', 'opacity', 'tiltX', 'turnY'] as const) {
       const v = key[prop]
       if (typeof v !== 'number' || !Number.isFinite(v)) continue
       if ((prop === 'x' || prop === 'y') && !positional) continue
       if (prop === 'scale' && !KEYFRAME_SCALABLE.includes(clip.kind)) continue
-      values[prop] = prop === 'opacity' || prop === 'x' || prop === 'y' ? clamp(v, 0, 1) : prop === 'scale' ? clamp(v, 0.05, 10) : v
+      values[prop] = prop === 'opacity' || prop === 'x' || prop === 'y' ? clamp(v, 0, 1) : prop === 'scale' ? clamp(v, 0.05, 10) : prop === 'tiltX' || prop === 'turnY' ? clamp(v, -89, 89) : v
     }
     if (!Object.keys(values).length) values.opacity = 1
     return { type: 'setKeyframe', clipId: clip.id, at: clamp(key.at, 0, clip.durationSec), values, ease: key.ease } as StudioEditOp

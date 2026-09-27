@@ -5,6 +5,17 @@
 @import '@fontsource-variable/playfair-display';
 @import '@fontsource-variable/dm-sans';
 @import '@fontsource-variable/space-grotesk';
+@import '@fontsource-variable/playfair-display/wght-italic.css';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+@import '@fontsource-variable/montserrat';
+@import '@fontsource-variable/montserrat/wght-italic.css';
+@import '@fontsource/bebas-neue/400.css';
+@import '@fontsource/anton/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/700.css';
+@import '@fontsource/poppins/800.css';
+@import '@fontsource-variable/outfit';
 @import 'tailwindcss';
 
 /*

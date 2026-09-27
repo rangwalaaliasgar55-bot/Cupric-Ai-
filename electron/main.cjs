@@ -1930,10 +1930,17 @@ OPERATIONS:
 - {"type":"patchClip","clipId":string,"patch":{allowed properties}}
   Allowed: x, y, scale, rotation, opacity, fontSizePct, color, fontFamily, weight(400|600|800), align, highlightWord, text, anim, transitionIn, transitionOut, volume, durationSec, startSec, name.
   highlightWord must be an exact word already present in that text clip.
-  Fonts: Inter Variable, Manrope Variable, DM Sans Variable, Space Grotesk Variable, Playfair Display Variable, JetBrains Mono Variable.
+  Also allowed: tiltX/turnY (-89..89 degrees, 3D on ANY clip), perspective (200..8000), and for text emphasisColor, boxColor, accentColor ("#rrggbb"), textGlow (0..1).
+  Fonts (video-grade): Geist Variable, Inter Variable, Montserrat Variable (bold captions), Poppins, Outfit Variable, Manrope Variable, DM Sans Variable, Space Grotesk Variable, Bebas Neue / Anton (condensed hype titles, uppercase), Instrument Serif / Playfair Display Variable (italic emphasis), JetBrains Mono Variable (code/stats).
+  RICH CAPTIONS inside text: *word* = serif italic emphasis, ==words== = colour highlight box, {words} = accent colour, ^30^ = big number, newline = stacked lines. Emphasise 1–2 words per caption, never whole sentences.
   Text animations (content-level): none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
   Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
 - {"type":"addText","text":string,"track":number,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"fontSizePct"?:number,"weight"?:400|600|800,"align"?:"left"|"center"|"right","color"?:"#rrggbb","fontFamily"?:string,"anim"?:string,"highlightWord"?:string,"motion"?:{...as applyMotion}}
+- {"type":"addShape","shape":id,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"w"?:0.01..1.5 (width, fraction of frame),"fill"?:"#rrggbb"|null,"stroke"?:"#rrggbb"|null,"anim"?:"draw-on"|"draw-then-fill"|"pop"|"grow"|"spin-in"|"pulse"|"wiggle"|"none","label"?:string}
+  Shapes: rectangle rounded-rect pill circle ellipse ring arc semicircle triangle diamond pentagon hexagon octagon polygon parallelogram trapezoid star sparkle burst seal sunburst arrow block-arrow curved-arrow loop-arrow double-arrow chevron elbow-arrow speech-bubble thought-bubble callout-box lower-third underline circle-scribble strike highlight-bar brackets frame button progress-bar toggle play browser check cross plus heart lightning pin quote-marks cloud line wave zigzag spiral blob.
+  How editors use them: curved-arrow/elbow-arrow point FROM a caption TO the thing (before→after); underline/circle-scribble/highlight-bar mark ONE key word or number (draw-on, 0.4s); burst/seal/sparkle for price/NEW badges (pop); check/cross for do-vs-don't; lower-third/callout-box behind names; brackets/frame to isolate a detail. One accent shape per beat; match the brand accent; keep stroke 6–10px.
+- {"type":"addCursor","clipId":string,"action"?:"click"|"double-click"|"hover"|"drag","force"?:true}
+  Adds a pointer that travels to that clip and clicks it (the clip presses in; recorded components are re-recorded interacting). Use ONLY for interactive UI — buttons, toggles, inputs, menus, app/website demos, tutorials. Never on backgrounds, text-only reveals, loaders, charts or decorative motion; the app refuses those unless force is true, and you should not force it.
 - {"type":"setKeyframe","clipId":string,"at":number,"values":{"x"?,"y"?,"scale"?,"rotation"?,"opacity"?},"ease":"linear"|"ease-in"|"ease-out"|"ease-in-out"|"expo-out"|"expo-in-out"|"back-out"|"back-in"|"elastic-out"|"hold"}
   Only for custom paths applyMotion cannot express. scale and opacity are MULTIPLIERS of the clip's own value (1 = rest). x/y are absolute 0..1. The ease on a key controls travel to the NEXT key.
 - {"type":"clearKeyframes","clipId":string}
@@ -1941,7 +1948,7 @@ OPERATIONS:
 - {"type":"deleteClip","clipId":string}
 - {"type":"reorderTrack","from":number,"to":number}
 - {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
-- {"type":"addComponent","slug":string,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"interact"?:boolean,"motion"?:{...as applyMotion}}
+- {"type":"addComponent","slug":string,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"interact"?:boolean,"cursor"?:true (adds a clicking pointer when the component is interactive),"motion"?:{...as applyMotion}}
 - {"type":"rippleDelete","clipId":string}
 - {"type":"closeGaps","track"?:number}
 - {"type":"addMarker","at":number,"label"?:string}

@@ -113,7 +113,7 @@ ok(read('src/lib/studio/export.ts').includes('const doc = resolveForOutput(editD
 const studio = read('src/screens/Studio.tsx')
 ok(studio.includes("c: 'copy', x: 'cut', v: 'paste', d: 'duplicate'") && studio.includes('<ClipContextMenu') && studio.includes('onContextMenu'), 'hotkeys + timeline and canvas menus wired')
 ok(read('src/screens/studio/StudioTimeline.tsx').includes('if (clip.locked) return'), 'timeline will not drag/trim locked clips')
-ok(read('src/lib/studio/renderer.ts').includes('ctx.scale(clip.flipX ? -1 : 1, clip.flipY ? -1 : 1)'), 'renderer flips')
+ok(read('src/lib/studio/renderer.ts').match(/(ctx|target)\.scale\(clip\.flipX \? -1 : 1, clip\.flipY \? -1 : 1\)/), 'renderer flips')
 
 /* scenes + variables */
 {

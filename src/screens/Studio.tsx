@@ -29,6 +29,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Sticker,
+  Shapes,
+  MousePointerClick,
   Square,
   Type as TypeIcon,
   Volume2,
@@ -36,6 +38,8 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react'
+import { ShapePicker } from './studio/ShapePicker'
+import { addCursorTo, addShape as addShapeKit } from '../lib/studio/motionKit'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { NoProject } from '../components/NoProject'
@@ -114,6 +118,7 @@ export function Studio() {
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [shapeOpen, setShapeOpen] = useState(false)
   const [zoom, setZoom] = useState(3)
   const [importing, setImporting] = useState(false)
   const [exportPct, setExportPct] = useState<number | null>(null)
@@ -887,6 +892,27 @@ export function Studio() {
     setSelectedId(clip.id)
   }
 
+  function addShapeAt(id: string) {
+    const r = addShapeKit(doc, id, Math.round(time * 100) / 100)
+    setShapeOpen(false)
+    if (!r.changed) { pushToast('error', r.reason ?? 'Shape not added'); return }
+    patchStudio(projectId, { clips: r.doc.clips, trackCount: r.doc.trackCount }, 'Add shape')
+    if (r.clipId) setSelectedId(r.clipId)
+  }
+
+  /** Cursor click on the selected clip — refuses with the reason when a pointer would be noise. */
+  function addCursorClick(force = false) {
+    if (!selectedId) { pushToast('info', 'Select the button, toggle or component the cursor should click.'); return }
+    const r = addCursorTo(doc, selectedId, { force })
+    if (!r.changed) {
+      pushToast('info', `${r.reason ?? 'No cursor added.'}${r.verdict && !r.verdict.needed ? ' Shift-click Cursor to add one anyway.' : ''}`)
+      return
+    }
+    patchStudio(projectId, { clips: r.doc.clips, trackCount: r.doc.trackCount }, 'Add cursor click')
+    pushToast('success', r.verdict?.reason ?? 'Cursor added.')
+    if (r.clipId) setSelectedId(r.clipId)
+  }
+
   function addGlassClip(shape: 'panel' | 'lens' = 'panel', presetId = 'hero') {
     const clip = defaultGlassClip(Math.round(time * 100) / 100, Math.min(1, doc.trackCount - 1), presetId, shape)
     addStudioClip(projectId, clip)
@@ -1177,6 +1203,15 @@ export function Studio() {
         </Button>
         <Button size="sm" variant="outline" onClick={addSticker} disabled={exporting}>
           <Sticker size={13} /> Sticker
+        </Button>
+        <div className="relative">
+          <Button size="sm" variant="outline" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} aria-expanded={shapeOpen}>
+            <Shapes size={13} /> Shape
+          </Button>
+          {shapeOpen && <ShapePicker onPick={addShapeAt} onClose={() => setShapeOpen(false)} />}
+        </div>
+        <Button size="sm" variant="outline" onClick={(e) => addCursorClick(e.shiftKey)} disabled={exporting} title="Animated cursor that clicks the selected clip — only added where an interaction needs showing">
+          <MousePointerClick size={13} /> Cursor
         </Button>
         <Button
           size="sm"

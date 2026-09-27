@@ -23,3 +23,4 @@ vendor/whisper/*
 .physics-check.mjs
 .check-resource-finder.mjs
 .check-creative-tools.mjs
+.check-shapes-cursor-3d.mjs

@@ -1,0 +1,188 @@
+{
+  "id": "motion-kit",
+  "name": "Motion kit — fonts, shapes, cursor, 3D",
+  "description": "What Cupric's shapes library, cursor clicks, 3D tilt and rich captions build on: the video-grade fonts (all bundled, OFL) and the Javis.jl ideas (MIT, concepts only). Shapes and the cursor live in the Studio toolbar.",
+  "version": "0.9.0",
+  "source": "curated",
+  "license": "Per item (see each entry)",
+  "items": [
+    {
+      "id": "javis-jl",
+      "kind": "source",
+      "name": "Javis.jl (concepts)",
+      "description": "Julia animation framework. Cupric borrows its ideas, not its code: draw-on paths (Javis `appear(:draw_text)`), actions scheduled in frame ranges on objects, and parent/child object transforms — mapped to shape draw-on, per-clip keyframes and cursor→target linking.",
+      "data": {
+        "url": "https://github.com/JuliaAnimators/Javis.jl",
+        "license": "MIT",
+        "provider": "Javis.jl (concepts)",
+        "attribution": "Javis.jl (concepts) — https://github.com/JuliaAnimators/Javis.jl",
+        "use": "animation",
+        "intake": "reference",
+        "promptCue": "Reveal diagrams by drawing strokes on in sequence; schedule each action on a frame range; move children with their parent.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "julia",
+        "draw-on",
+        "diagram",
+        "concept"
+      ]
+    },
+    {
+      "id": "font-montserrat",
+      "kind": "source",
+      "name": "Montserrat (bold captions)",
+      "description": "Geometric sans at weight 800 is the talking-head caption standard: wide, legible on phones. Bundled.",
+      "data": {
+        "url": "https://fonts.google.com/specimen/Montserrat",
+        "license": "OFL-1.1",
+        "provider": "Montserrat (bold captions)",
+        "attribution": "Montserrat (bold captions) — https://fonts.google.com/specimen/Montserrat",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Captions: Montserrat 800, 6–8% of frame height, white with a soft shadow; emphasise one word.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "caption",
+        "sans"
+      ]
+    },
+    {
+      "id": "font-instrument-serif",
+      "kind": "source",
+      "name": "Instrument Serif (italic emphasis)",
+      "description": "Condensed editorial serif; its italic is the ‘*woman* over 30’ emphasis word in creator edits. Bundled.",
+      "data": {
+        "url": "https://fonts.google.com/specimen/Instrument+Serif",
+        "license": "OFL-1.1",
+        "provider": "Instrument Serif (italic emphasis)",
+        "attribution": "Instrument Serif (italic emphasis) — https://fonts.google.com/specimen/Instrument+Serif",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Pair a heavy sans caption with ONE Instrument Serif italic word, tinted lilac or brand colour.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "serif",
+        "emphasis",
+        "italic"
+      ]
+    },
+    {
+      "id": "font-bebas-neue",
+      "kind": "source",
+      "name": "Bebas Neue (hype titles)",
+      "description": "Tall condensed caps for hype titles, sports and countdowns. Bundled.",
+      "data": {
+        "url": "https://fonts.google.com/specimen/Bebas+Neue",
+        "license": "OFL-1.1",
+        "provider": "Bebas Neue (hype titles)",
+        "attribution": "Bebas Neue (hype titles) — https://fonts.google.com/specimen/Bebas+Neue",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Uppercase only, wide tracking (+4%), very large; never for body captions.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "display",
+        "condensed"
+      ]
+    },
+    {
+      "id": "font-anton",
+      "kind": "source",
+      "name": "Anton (impact headlines)",
+      "description": "Heavy condensed grotesque for punchy YouTube-style headlines. Bundled.",
+      "data": {
+        "url": "https://fonts.google.com/specimen/Anton",
+        "license": "OFL-1.1",
+        "provider": "Anton (impact headlines)",
+        "attribution": "Anton (impact headlines) — https://fonts.google.com/specimen/Anton",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Short 2–4 word headlines, stroke or box behind for contrast.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "display",
+        "impact"
+      ]
+    },
+    {
+      "id": "font-poppins",
+      "kind": "source",
+      "name": "Poppins (friendly UI/explainers)",
+      "description": "Rounded geometric sans for explainers and product videos. Bundled.",
+      "data": {
+        "url": "https://fonts.google.com/specimen/Poppins",
+        "license": "OFL-1.1",
+        "provider": "Poppins (friendly UI/explainers)",
+        "attribution": "Poppins (friendly UI/explainers) — https://fonts.google.com/specimen/Poppins",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Friendly explainer text, weight 600–700.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "sans",
+        "explainer"
+      ]
+    },
+    {
+      "id": "font-outfit",
+      "kind": "source",
+      "name": "Outfit (modern SaaS)",
+      "description": "Clean modern geometric for SaaS launches. Bundled.",
+      "data": {
+        "url": "https://fonts.google.com/specimen/Outfit",
+        "license": "OFL-1.1",
+        "provider": "Outfit (modern SaaS)",
+        "attribution": "Outfit (modern SaaS) — https://fonts.google.com/specimen/Outfit",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "SaaS titles: Outfit 700, tight tracking (-2%).",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "sans",
+        "saas"
+      ]
+    },
+    {
+      "id": "font-geist",
+      "kind": "source",
+      "name": "Geist (product/tech)",
+      "description": "Vercel's neutral tech sans; great for stats and product UI. Bundled.",
+      "data": {
+        "url": "https://vercel.com/font",
+        "license": "OFL-1.1",
+        "provider": "Geist (product/tech)",
+        "attribution": "Geist (product/tech) — https://vercel.com/font",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Numbers and product UI copy; pair with Geist Mono for code.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "sans",
+        "tech"
+      ]
+    }
+  ]
+}

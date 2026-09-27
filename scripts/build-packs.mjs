@@ -520,6 +520,13 @@ try {
   console.warn('resources/packs/essentials.json not readable — skipping Essentials')
 }
 
+// Motion kit — fonts, Javis.jl concepts (curated file).
+try {
+  packs.push(JSON.parse(await readFile(path.join(outDir, 'motion-kit.json'), 'utf8')))
+} catch {
+  console.warn('resources/packs/motion-kit.json not readable — skipping Motion kit')
+}
+
 // The vendored lab components are listed from their generated registry.
 try {
   const registry = JSON.parse(await readFile(path.join(root, 'resources', 'ui-lab', 'registry.json'), 'utf8'))

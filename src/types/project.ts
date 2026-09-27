@@ -317,6 +317,9 @@ export type StudioKeyframe = {
   scale?: number
   rotation?: number
   opacity?: number
+  /** 3D tilt / turn in degrees (see StudioClipCommon). */
+  tiltX?: number
+  turnY?: number
   /** Focus: gaussian blur in px at 1080p (0 = sharp). */
   blur?: number
   /** Bloom / glow intensity 0–1 (brightness lift + soft halo). */
@@ -348,6 +351,12 @@ type StudioClipCommon = {
   opacity: number
   /** Degrees clockwise about the clip's own centre. Absent means 0. */
   rotation?: number
+  /** 3D: tilt about the horizontal axis in degrees (top away = positive). */
+  tiltX?: number
+  /** 3D: turn about the vertical axis in degrees (right side away = positive). */
+  turnY?: number
+  /** 3D camera distance in px at 1080p (smaller = stronger perspective). Default 1600. */
+  perspective?: number
   /** Up to three grade nodes, applied in array order. Absent means ungraded. */
   grade?: StudioGradeNode[] | null
   /** Absent means the clip fills its own bounds with no matte. */
@@ -419,6 +428,13 @@ export type StudioTextClip = StudioClipCommon & {
   anim: StudioTextAnim
   captionStyle: StudioCaptionStyle | null
   highlightWord: string | null
+  /** Rich markup colours: *emphasis* (serif italic), ==highlight box==, {accent}, ^big^. */
+  emphasisColor?: string
+  emphasisFont?: string
+  boxColor?: string
+  accentColor?: string
+  /** Soft glow behind the glyphs (0–1), like creator hook titles. */
+  textGlow?: number
   /**
    * Text legibility (2.14). `auto` (default) paints a soft scrim only when the
    * pixels under the text are low-contrast or busy; `on` always; `off` never.
@@ -550,6 +566,62 @@ export type StudioClip =
   | StudioGlassClip
   | StudioStickerClip
   | StudioSequenceClip
+  | StudioShapeClip
+  | StudioCursorClip
+
+export type StudioShapeAnim = 'none' | 'draw-on' | 'pop' | 'grow' | 'spin-in' | 'pulse' | 'wiggle' | 'draw-then-fill'
+
+/** Vector shape drawn natively (crisp at any size); see lib/studio/shapes.ts. */
+export type StudioShapeClip = StudioClipCommon & {
+  kind: 'shape'
+  shape: string
+  x: number
+  y: number
+  /** Width as a fraction of frame width; height = w × aspect (in px terms). */
+  w: number
+  aspect: number
+  fill: string | null
+  stroke: string | null
+  /** Stroke width in px at 1080p. */
+  strokeWidth: number
+  anim: StudioShapeAnim
+  /** Regular polygon sides / star points when the shape takes them. */
+  sides?: number
+  /** Corner radius 0–0.5 of the short side (rects, pills, badges). */
+  radius?: number
+  /** Soft glow 0–1. */
+  glow?: number
+  /** Optional text inside (badges, bubbles, buttons). */
+  label?: string
+  labelColor?: string
+}
+
+export type StudioCursorStyle = 'arrow' | 'hand' | 'dot' | 'ring' | 'touch'
+
+/**
+ * Animated cursor: glides from `from` to the target and clicks there. When
+ * `targetClipId` is set the target reacts (press-in) on each click.
+ */
+export type StudioCursorClip = StudioClipCommon & {
+  kind: 'cursor'
+  style: StudioCursorStyle
+  /** Target point (normalised). */
+  x: number
+  y: number
+  fromX: number
+  fromY: number
+  /** Click moments as fractions of the clip (0–1). */
+  clicks: number[]
+  action: 'click' | 'double-click' | 'hover' | 'drag'
+  /** Drag end point for action 'drag'. */
+  toX?: number
+  toY?: number
+  /** Size multiplier (1 = 3.2% of frame height). */
+  size: number
+  color: string
+  rippleColor: string
+  targetClipId?: string | null
+}
 
 /**
  * Nested sequence: a saved scene (another complete edit) placed as ONE clip.

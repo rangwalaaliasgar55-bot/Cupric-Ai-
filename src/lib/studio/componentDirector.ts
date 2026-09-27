@@ -165,5 +165,5 @@ export function directComponents(doc: StudioDoc, opts: DirectorOptions = {}): Co
 export function componentOps(moments: ComponentMoment[]): StudioEditOp[] {
   return moments
     .filter((m) => findComponent(m.slug))
-    .map((m) => ({ type: 'addComponent', slug: m.slug, startSec: m.startSec, durationSec: m.durationSec, x: m.x, y: m.y, interact: m.interact, motion: m.motion }) as StudioEditOp)
+    .map((m) => ({ type: 'addComponent', slug: m.slug, startSec: m.startSec, durationSec: m.durationSec, x: m.x, y: m.y, interact: m.interact, ...(m.interact ? { cursor: true } : {}), motion: m.motion }) as StudioEditOp)
 }
