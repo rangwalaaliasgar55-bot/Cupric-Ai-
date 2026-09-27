@@ -4,6 +4,8 @@ import { MAX_TRACKS, defaultTextClip, docDuration, normaliseClip, reorderTracks,
 import {
   ALL_RECIPE_IDS,
   choreograph,
+  explicitStyle,
+  styleFromContent,
   CAMERA_RECIPES,
   EMPHASIS_RECIPES,
   ENTRANCE_RECIPES,
@@ -331,7 +333,9 @@ function fontFor(text: string, style: DirectionStyle, isHero: boolean): string {
 
 /** A whole-timeline pass: typography, hierarchy, reading time, motion, transitions. */
 function polishPlan(doc: StudioDoc, instruction: string): StudioEditPlan {
-  const style = styleFromInstruction(instruction)
+  // An explicit request wins; otherwise the content decides (a brand film
+  // gets cinematic motion, a sale reel gets bold social motion).
+  const style = explicitStyle(instruction) ?? styleFromContent(doc.clips)
   const ops: StudioEditOp[] = []
   const visual = [...doc.clips].filter((c) => c.kind !== 'audio').sort((a, b) => a.startSec - b.startSec || a.track - b.track)
   const texts = visual.filter((c): c is Extract<StudioClip, { kind: 'text' }> => c.kind === 'text')
@@ -365,7 +369,16 @@ function polishPlan(doc: StudioDoc, instruction: string): StudioEditPlan {
         }
       }
       // Hierarchy: the hero reads first, supporting lines step down.
-      const heroSize = hero ? (hero.fontSizePct < 8 ? (style === 'bold-social' ? 11 : 9.5) : hero.fontSizePct) : 9
+      const wanted = hero ? (hero.fontSizePct < 8 ? (style === 'bold-social' ? 11 : 9.5) : hero.fontSizePct) : 9
+      // Fit inside title-safe (80% of the width) for this aspect: bold display
+      // glyphs average ~0.6 em, and a line wraps only between words, so the
+      // longest word — or the whole line when it is short — must fit.
+      const frameW = doc.aspect === '9:16' ? 9 / 16 : doc.aspect === '1:1' ? 1 : 16 / 9
+      const heroText = hero?.text ?? ''
+      const longestWord = Math.max(1, ...heroText.split(/\s+/).map((w) => w.length))
+      const fitChars = heroText.length <= 14 ? Math.max(longestWord, heroText.length) : longestWord
+      const fitPct = Math.floor(((0.8 * frameW) / (fitChars * 0.6)) * 1000) / 10
+      const heroSize = Math.max(4.5, Math.min(wanted, fitPct))
       if (isHero && clip.fontSizePct !== heroSize) patch.fontSizePct = heroSize
       if (!isHero && clip.fontSizePct > heroSize * 0.75) patch.fontSizePct = Math.max(4.5, Math.round(heroSize * 0.6 * 10) / 10)
       const words = (clip.text.match(/\S+/g) ?? []).length

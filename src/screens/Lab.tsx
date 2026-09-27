@@ -89,20 +89,30 @@ function useNearViewport<T extends Element>(): [React.RefObject<T | null>, boole
 
 function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
   const [hover, setHover] = useState(false)
-  const [ref, near] = useNearViewport<HTMLButtonElement>()
+  const [ref, near] = useNearViewport<HTMLDivElement>()
   return (
-    <button
+    // A div with button semantics, not a <button>: the live demo inside
+    // renders its own buttons, and nested buttons are invalid HTML that
+    // browsers "repair" unpredictably.
+    <div
       ref={ref}
-      type="button"
+      role="button"
+      tabIndex={0}
+      aria-label={`Open ${entry.name}`}
       onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() }
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onFocus={() => setHover(true)}
       onBlur={() => setHover(false)}
-      className="group overflow-hidden rounded-xl border border-line bg-panel text-left transition-colors duration-150 hover:border-accent/40"
+      className="group cursor-pointer overflow-hidden rounded-xl border border-line bg-panel text-left transition-colors duration-150 hover:border-accent/40 focus-visible:outline-2 focus-visible:outline-accent"
     >
       <div className="relative h-40 overflow-hidden border-b border-line">
         <div
+          inert
           className="pointer-events-none absolute inset-0"
           style={{ transform: `scale(${entry.previewScale ?? 1})`, transformOrigin: 'center' }}
         >
@@ -118,7 +128,7 @@ function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
         </div>
         <p className="line-clamp-2 text-xs leading-relaxed text-muted">{entry.description}</p>
       </div>
-    </button>
+    </div>
   )
 }
 

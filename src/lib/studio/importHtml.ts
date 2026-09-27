@@ -30,6 +30,8 @@ export type ImportedScene = {
   type?: string
   /** A supporting line that shares its scene's time (subtitle, kicker, body). */
   role?: 'title' | 'sub'
+  /** Media the scene's own markup references (img/video src, background urls). */
+  media?: string[]
 }
 
 export type ImportedPiece = {
@@ -40,7 +42,7 @@ export type ImportedPiece = {
   /** What the manifest said the piece was built from. */
   sources: string[]
   /** How the scenes were recovered, so the UI can be honest about confidence. */
-  via: 'manifest' | 'scene-array' | 'timed-markup' | 'headings' | 'script-copy' | 'title'
+  via: 'manifest' | 'scene-array' | 'timed-markup' | 'scene-blocks' | 'headings' | 'script-copy' | 'title'
 }
 
 /** Pull the first balanced `{…}` or `[…]` literal starting at `from`. */
@@ -187,6 +189,129 @@ function visibleLines(markup: string): string[] {
   return unique.slice(0, 40)
 }
 
+/* ——— Scene blocks ————————————————————————————————————————————————————————
+ * Generated films are usually a stack of scene containers:
+ *   <div class="scene" data-duration="3"><span class="kicker">…</span><div class="big">…</div></div>
+ * A non-greedy regex cannot find the end of a <div> that contains <div>s, so
+ * this walks the tags with a depth counter. Only markup is read; nothing is
+ * executed.
+ */
+
+const SCENE_ATTR = /\bdata-(?:scene|slide|shot|duration|dur|length)\b|\b(?:class|className|id)\s*=\s*["'][^"']*\b(?:scene|slide|shot|beat|chapter|frame-\d|panel)s?(?:[-_]\w+)?\b[^"']*["']/i
+const INLINE_TAGS = new Set(['strong', 'em', 'b', 'i', 'u', 'mark', 'br', 'sup', 'sub', 'small', 'wbr', 'abbr', 'code'])
+const VOID_TAGS = new Set(['br', 'img', 'hr', 'input', 'meta', 'link', 'source', 'wbr', 'area', 'col', 'embed', 'track', 'param'])
+
+function stripNonVisual(markup: string) {
+  return markup
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/<(?:svg|noscript|template|head)\b[^>]*>[\s\S]*?<\/(?:svg|noscript|template|head)>/gi, ' ')
+}
+
+type Block = { start: number; end: number; attrs: string; inner: string }
+
+function sceneBlockList(markup: string): Block[] {
+  const body = stripNonVisual(markup)
+  const tagRe = /<(\/?)([a-zA-Z][\w-]*)\b([^>]*?)(\/?)>/g
+  const stack: Array<{ name: string; attrs: string; innerStart: number; start: number; scene: boolean }> = []
+  const blocks: Block[] = []
+  for (const m of body.matchAll(tagRe)) {
+    const [, closing, rawName, attrs, selfClose] = m
+    const name = rawName.toLowerCase()
+    const at = m.index ?? 0
+    if (VOID_TAGS.has(name) || selfClose) continue
+    if (!closing) {
+      const scene = (name === 'section' || name === 'article' || name === 'div' || name === 'li') && (name === 'section' || SCENE_ATTR.test(attrs))
+      stack.push({ name, attrs, innerStart: at + m[0].length, start: at, scene })
+      continue
+    }
+    // Pop to the matching opener; tolerate sloppy markup by unwinding.
+    for (let i = stack.length - 1; i >= 0; i -= 1) {
+      if (stack[i].name !== name) continue
+      const open = stack[i]
+      stack.length = i
+      if (open.scene) blocks.push({ start: open.start, end: at, attrs: open.attrs, inner: body.slice(open.innerStart, at) })
+      break
+    }
+  }
+  // Keep the innermost scene level: a "scenes" wrapper holding scenes is not
+  // itself a scene.
+  const inner = blocks.filter((b) => !blocks.some((o) => o !== b && o.start > b.start && o.end < b.end))
+  return inner.sort((a, b) => a.start - b.start)
+}
+
+type Run = { text: string; hint: string }
+
+/** Every run of visible text in a block, tagged with its element's tag + class. */
+function textRuns(markup: string): Run[] {
+  const runs: Run[] = []
+  const stack: string[] = []
+  let buffer = ''
+  const flush = () => {
+    const text = cleanLine(buffer)
+    buffer = ''
+    if (text.length > 1 && text.length < 220 && /[A-Za-z0-9]/.test(text)) runs.push({ text, hint: stack[stack.length - 1] ?? '' })
+  }
+  const tagRe = /<(\/?)([a-zA-Z][\w-]*)\b([^>]*?)\/?>/g
+  let last = 0
+  for (const m of markup.matchAll(tagRe)) {
+    buffer += markup.slice(last, m.index)
+    last = (m.index ?? 0) + m[0].length
+    const name = m[2].toLowerCase()
+    if (INLINE_TAGS.has(name)) { if (name === 'br') buffer += ' '; continue }
+    flush()
+    if (VOID_TAGS.has(name)) continue
+    if (m[1]) stack.pop()
+    else stack.push(`${name} ${m[3].match(/\bclass(?:Name)?\s*=\s*["']([^"']*)["']/i)?.[1] ?? ''}`)
+  }
+  buffer += markup.slice(last)
+  flush()
+  return runs
+}
+
+const HERO_HINT = /^(?:h1|h2|h3)\b|\b(?:big|title|headline|heading|hero|display|main|lead|cta|claim|tagline)\b/i
+
+function secondsAttr(attrs: string): number | null {
+  const m = attrs.match(/data-(?:duration|dur|length)\s*=\s*["']?([\d.]+)\s*(ms|s)?/i)
+  if (!m) return null
+  const n = Number(m[1])
+  if (!Number.isFinite(n) || n <= 0) return null
+  return m[2]?.toLowerCase() === 'ms' || n > 120 ? n / 1000 : n
+}
+
+/** Scenes from scene containers: one hero line each, the rest as supporting lines. */
+function sceneBlocks(markup: string): ImportedScene[] {
+  const blocks = sceneBlockList(markup)
+  if (blocks.length < 2) return []
+  const scenes: ImportedScene[] = []
+  let cursor = 0
+  for (const block of blocks) {
+    const runs = textRuns(block.inner)
+    if (!runs.length) continue
+    const heroIndex = runs.reduce((best, run, i) => {
+      const score = (HERO_HINT.test(run.hint) ? 100 : 0) + Math.min(run.text.length, 60)
+      const bestScore = (HERO_HINT.test(runs[best].hint) ? 100 : 0) + Math.min(runs[best].text.length, 60)
+      return score > bestScore ? i : best
+    }, 0)
+    const hero = runs[heroIndex].text
+    const words = runs.reduce((n, r) => n + r.text.split(/\s+/).length, 0)
+    const dur = secondsAttr(block.attrs) ?? Math.max(2.2, Math.min(6, 0.9 + words * 0.3))
+    const from = Math.round(cursor * 100) / 100
+    const to = Math.round((cursor + dur) * 100) / 100
+    const media = [...block.inner.matchAll(/<(?:img|video|source)\b[^>]*\bsrc\s*=\s*["']([^"']+)["']|url\(\s*["']?([^"')]+)["']?\s*\)/gi)]
+      .map((m) => (m[1] ?? m[2] ?? '').trim())
+      .filter((src) => src && !/^(?:data:|https?:|\/\/)/i.test(src))
+    scenes.push({ from, to, copy: hero, role: 'title', ...(media.length ? { media } : {}) })
+    for (const [i, run] of runs.entries()) {
+      if (i === heroIndex || run.text === hero) continue
+      scenes.push({ from, to, copy: run.text, role: 'sub' })
+    }
+    cursor += dur
+  }
+  return scenes.filter((s) => s.role === 'title').length >= 2 ? scenes : []
+}
+
 /** Elements that declare their own timing: data-start / data-end / data-duration. */
 function timedMarkup(markup: string): ImportedScene[] {
   const scenes: ImportedScene[] = []
@@ -306,6 +431,10 @@ export function parseGeneratedHtml(html: string, opts: ParseOptions = {}): Impor
 
   const timed = timedMarkup(text)
   if (timed.length) return piece(timed, 'timed-markup')
+
+  // Scene containers (<section>, .scene, data-duration…) with their own copy.
+  const blocks = sceneBlocks(text)
+  if (blocks.length) return piece(blocks, 'scene-blocks')
 
   // The words on screen, in order — from the HTML and any JSX components.
   const lines = [...visibleLines(text), ...visibleLines(scripts.replace(/\/\* [^*]+\.(?:css|json|md|txt) \*\/[\s\S]*?(?=\n\/\* |$)/g, ''))]
@@ -482,7 +611,8 @@ export function piecesToStudioClips(piece: ImportedPiece, doc: StudioDoc, label 
     clips.push({
       ...template,
       id: uid(),
-      name: `${label} · scene ${index + 1}${sub ? ' sub' : ''}`.slice(0, 40),
+      // Named by what it says, so the timeline reads like a script.
+      name: scene.copy.length > 32 ? `${scene.copy.slice(0, 31)}…` : scene.copy,
       startSec: Math.round((base + scene.from + (sub ? 0.25 : 0)) * 100) / 100,
       durationSec: Math.max(0.4, Math.round((scene.to - scene.from - (sub ? 0.25 : 0)) * 100) / 100),
       text: scene.copy,

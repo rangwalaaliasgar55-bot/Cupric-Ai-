@@ -73,6 +73,18 @@ try {
   assert.equal(timed.durationSec, 5)
 
   // Nothing readable at all still imports as a renameable title card.
+  // Scene containers with nested divs, data-duration only, no headings.
+  const blocks = parseGeneratedHtml(`<div id="stage">
+    <div class="scene s1" data-duration="3"><span class="kicker">Introducing</span><div class="big">Cupric AI</div></div>
+    <div class="scene s2" data-duration="3000ms"><div class="big">Edit at the speed of <b>thought</b></div><span class="sub">Motion, captions and color</span></div>
+    <div class="scene s3" data-duration="2.5"><img src="assets/hero.png"><div class="big">Made for creators</div></div>
+    <div class="scene s4"><div class="cta">Download free today</div></div></div>`, { name: 'film.zip' })
+  assert.equal(blocks.via, 'scene-blocks', 'scene containers must be read scene by scene')
+  const heroes = blocks.scenes.filter((s) => s.role === 'title')
+  assert.deepEqual(heroes.map((s) => s.copy), ['Cupric AI', 'Edit at the speed of thought', 'Made for creators', 'Download free today'], 'every scene keeps its hero line, inline tags merged')
+  assert.deepEqual(heroes.slice(0, 3).map((s) => s.to - s.from), [3, 3, 2.5], 'data-duration (s and ms) sets scene timing')
+  assert.ok(blocks.scenes.some((s) => s.role === 'sub' && s.copy === 'Introducing'), 'kickers survive as supporting lines')
+  assert.deepEqual(heroes[2].media, ['assets/hero.png'], 'scene media is attached to its scene')
   const bare = parseGeneratedHtml('<canvas></canvas><script>requestAnimationFrame(()=>{})</script>', { name: 'cupric-ai-cinematic-brand-film (1).zip' })
   assert.equal(bare.via, 'title')
   assert.equal(bare.scenes[0].copy, 'Cupric AI Cinematic Brand Film')

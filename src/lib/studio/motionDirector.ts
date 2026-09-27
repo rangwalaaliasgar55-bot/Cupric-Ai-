@@ -345,6 +345,9 @@ export function pickHighlightWord(text: string): string {
   if (words.length < 2) return ''
   const number = words.find((w) => /\d/.test(w))
   if (number) return number
+  // The word that sells: offers and urgency beat merely long words.
+  const persuasive = words.find((w) => /^(free|new|save|win|exclusive|instantly|unlimited|forever)$/i.test(w))
+  if (persuasive) return persuasive
   const candidates = words.filter((w) => !STOPWORDS.has(w.toLowerCase()) && w.length > 3)
   const proper = candidates.slice(1).find((w) => /^[A-Z][a-z]/.test(w))
   if (proper) return proper
@@ -357,11 +360,32 @@ export function readingTimeSec(text: string): number {
   return clamp(0.8 + words * 0.3, 1.2, 8)
 }
 
-export function styleFromInstruction(text: string): DirectionStyle {
+/** A style the user actually asked for, or null when they did not say. */
+export function explicitStyle(text: string): DirectionStyle | null {
   const t = text.toLowerCase()
   if (/\b(social|reel|reels|tiktok|short|shorts|hype|bold|punchy|energetic|viral|youtube)\b/.test(t)) return 'bold-social'
-  if (/\b(minimal|clean|calm|subtle|simple|quiet|elegant)\b/.test(t)) return 'minimal'
+  if (/\b(minimal|minimalist|calm|quiet|simple look|understated)\b/.test(t)) return 'minimal'
   if (/\b(cinematic|film|trailer|epic|dramatic|luxury|premium|brand)\b/.test(t)) return 'cinematic'
+  if (/\b(editorial|magazine|documentary|elegant)\b/.test(t)) return 'editorial'
+  return null
+}
+
+export function styleFromInstruction(text: string): DirectionStyle {
+  return explicitStyle(text) ?? 'editorial'
+}
+
+/**
+ * What the footage itself asks for, when the user gave no style: read the
+ * words on screen and the clip names the way an editor skims a script.
+ */
+export function styleFromContent(clips: StudioClip[]): DirectionStyle {
+  const copy = clips.map((c) => `${'text' in c ? (c as StudioTextClip).text : ''} ${c.name}`).join(' ').toLowerCase()
+  const lines = clips.filter((c) => c.kind === 'text') as StudioTextClip[]
+  const punchy = /\b(free|now|today|sale|off|deal|win|hack|secret|stop|wow|new)\b|!|\d+%|\$\d/.test(copy)
+  const cinematic = /\b(introducing|film|story|journey|discover|legacy|crafted|brand|world|future|cinematic|meet)\b/.test(copy)
+  const avgWords = lines.length ? lines.reduce((n, c) => n + c.text.split(/\s+/).length, 0) / lines.length : 0
+  if (cinematic) return 'cinematic'
+  if (punchy && avgWords <= 6) return 'bold-social'
   return 'editorial'
 }
 

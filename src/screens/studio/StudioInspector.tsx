@@ -120,9 +120,9 @@ function Slider({
           step={step}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="h-1 flex-1 accent-[var(--color-accent)]"
+          className="h-1 w-full min-w-0 flex-1 accent-[var(--color-accent)]"
         />
-        <span className="w-14 shrink-0 text-right font-mono text-xs text-muted tabular-nums">
+        <span className="w-12 shrink-0 text-right font-mono text-xs text-muted tabular-nums">
           {value.toFixed(step < 1 ? 2 : 0)}
           {suffix ?? ''}
         </span>

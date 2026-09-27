@@ -240,6 +240,25 @@ export function clampToSafeArea(
   return { x: x + dx, y: nextTop + blockH / 2 }
 }
 
+/**
+ * The laid-out size of a text clip as a fraction of the frame, measured with
+ * exactly the font, wrapping and line height `drawTextClip` uses — so editor
+ * handles hug the painted text instead of guessing from character counts.
+ * Takes a context rather than creating one so this module stays DOM-free.
+ */
+export function measureTextBlock(ctx: CanvasRenderingContext2D, clip: StudioTextClip, w: number, h: number): { w: number; h: number } {
+  const preset = captionPreset(clip.captionStyle)
+  const fontPx = Math.max(12, (clip.fontSizePct / 100) * h)
+  ctx.save()
+  ctx.font = `${clip.weight} ${fontPx}px '${clip.fontFamily || 'Inter Variable'}', Inter, system-ui, sans-serif`
+  const raw = preset.uppercase ? clip.text.toUpperCase() : clip.text
+  const lines = wrapLines(ctx, raw || ' ', w * 0.86)
+  const widest = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0)
+  ctx.restore()
+  const pad = fontPx * 0.25
+  return { w: Math.min(1, (widest + pad * 2) / w), h: Math.min(1, (fontPx * 1.12 * lines.length + pad * 2) / h) }
+}
+
 function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: number, w: number, h: number) {
   const progress = clipProgress(clip, t)
   const preset = captionPreset(clip.captionStyle)

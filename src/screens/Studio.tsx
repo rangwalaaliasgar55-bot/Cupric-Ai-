@@ -112,6 +112,7 @@ export function Studio() {
   const [agentPhase, setAgentPhase] = useState('')
   const [agentPlan, setAgentPlan] = useState<StudioEditPlan | null>(null)
   const [timelineH, setTimelineH] = useState<number | null>(null)
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -161,6 +162,16 @@ export function Studio() {
 
       const key = e.key.toLowerCase()
       const mod = e.metaKey || e.ctrlKey
+
+      if (e.key === '?') {
+        e.preventDefault()
+        setShowShortcuts((shown) => !shown)
+        return
+      }
+      if (e.key === 'Escape' && showShortcuts) {
+        setShowShortcuts(false)
+        return
+      }
 
       if (mod && key === 'z') {
         e.preventDefault()
@@ -229,6 +240,19 @@ export function Studio() {
         return
       }
 
+      // Alt + arrows nudge the selected layer (Shift for bigger steps).
+      if (e.altKey && e.key.startsWith('Arrow') && selectedId && pid) {
+        const clip = doc.clips.find((c) => c.id === selectedId)
+        if (clip && 'x' in clip && typeof clip.x === 'number' && typeof clip.y === 'number') {
+          e.preventDefault()
+          const step = e.shiftKey ? 0.05 : 0.005
+          const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0
+          const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0
+          updateStudioClip(pid, selectedId, { x: Math.min(1, Math.max(0, clip.x + dx)), y: Math.min(1, Math.max(0, clip.y + dy)) } as Partial<StudioClip>)
+          return
+        }
+      }
+
       // Arrows nudge the playhead a frame at a time; Shift makes it a second.
       if (!mod && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
         e.preventDefault()
@@ -256,7 +280,7 @@ export function Studio() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [doc, duration, pid, playing, redo, removeStudioClip, seek, selectedId, splitStudioClip, time, undo, updateStudioClip])
+  }, [doc, duration, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitStudioClip, time, undo, updateStudioClip])
 
   useEffect(() => {
     if (time > duration) setTime(duration)
@@ -454,15 +478,20 @@ export function Studio() {
                 mediaClips.push(defaultAudioClip(base, Math.max(0, current.trackCount - 1), { id: handle.id, fileName: handle.fileName, localPath: handle.localPath, durationSec: handle.durationSec }))
                 continue
               }
-              const assetDuration = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : imageDuration
+              // A scene that references this file in its own markup owns it:
+              // the image sits exactly under that scene's text.
+              const baseName = (path: string) => path.split(/[\\/]/).pop()?.toLowerCase() ?? ''
+              const owner = piece.scenes.find((scene) => scene.media?.some((src) => baseName(src) === baseName(asset.sourcePath)))
+              const anchored = owner && handle.kind === 'image'
+              const assetDuration = anchored ? Math.max(0.5, owner.to - owner.from) : handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : imageDuration
               mediaClips.push({
-                id: uid(), kind: handle.kind, track: 0, startSec: Math.round(cursor * 100) / 100, durationSec: assetDuration,
+                id: uid(), kind: handle.kind, track: 0, startSec: Math.round((anchored ? base + owner.from : cursor) * 100) / 100, durationSec: assetDuration,
                 name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28), transitionIn: 'fade', transitionOut: 'none', opacity: 1,
                 mediaId: handle.id, fileName: handle.fileName, localPath: handle.localPath, trimInSec: 0,
                 sourceDurationSec: handle.kind === 'video' ? handle.durationSec : 0, speed: 1, volume: 1,
                 fit: 'cover', x: 0.5, y: 0.5, scale: 1, posterDataUrl: handle.posterDataUrl,
               } as StudioMediaClip)
-              cursor += assetDuration
+              if (!anchored) cursor += assetDuration
             } catch {
               generated.notes.push(`Skipped ${asset.sourcePath} (unsupported or damaged).`)
             }
@@ -482,11 +511,12 @@ export function Studio() {
             manifest: 'from its Cupric manifest',
             'scene-array': 'from its scene list',
             'timed-markup': 'from its timed markup',
+            'scene-blocks': 'scene by scene, with each scene’s own timing',
             headings: 'from the text on screen',
             'script-copy': 'from copy in its scripts',
             title: 'as a title card — no scene copy was found, so rename it',
           }[piece.via]
-          const titles = sceneClips.filter((c) => !c.name.endsWith(' sub')).length
+          const titles = piece.scenes.filter((scene) => scene.role !== 'sub').length
           pushToast(
             'success',
             `Imported ${file.name}: ${titles} editable scene${titles === 1 ? '' : 's'}${mediaClips.length ? ` + ${mediaClips.length} media clip${mediaClips.length === 1 ? '' : 's'}` : ''} ${how}.${generated.notes.length ? ` ${generated.notes[0]}` : ''}`,
@@ -797,6 +827,7 @@ export function Studio() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {showShortcuts && <ShortcutSheet onClose={() => setShowShortcuts(false)} />}
       {/* Toolbar */}
       {/* One row at every width: the add-strip scrolls sideways instead of
           wrapping, so the preview never loses a whole row of height. */}
@@ -927,7 +958,7 @@ export function Studio() {
           type="button"
           variant="ghost"
           disabled={agentPlanning || exporting || doc.clips.length === 0}
-          onClick={() => void planAgentEdit(agentInstruction.trim() || 'Auto edit and polish the complete timeline. Read all clip names, copy, timing and duration. Apply context-appropriate bundled typography, automatic keyword highlighting, purposeful text animation, varied native transitions, safe-area placement, track hierarchy, and subtle two-keyframe motion on visual clips. Preserve meaning and source media.')}
+          onClick={() => void planAgentEdit(agentInstruction.trim() || 'Auto edit and polish the complete timeline. Read all clip names, copy, timing and duration. Apply context-appropriate bundled typography, automatic keyword highlighting, purposeful text animation, varied native transitions, safe-area placement, track hierarchy, and purposeful keyframe motion on visual clips. Match the style to the content. Preserve meaning and source media.')}
           title="Analyze the complete timeline and preview an automatic edit"
         >
           Auto polish
@@ -937,7 +968,7 @@ export function Studio() {
           type="button"
           variant="ghost"
           disabled={agentPlanning || exporting || doc.clips.length === 0}
-          onClick={() => void planAgentEdit('Create a cohesive automatic effects pass without deleting or rewriting source content. Choose a different suitable native transition at scene boundaries, animate and highlight the strongest existing word in each important caption, and add subtle start/end keyframes to images and videos. Keep effects restrained and readable.')}
+          onClick={() => void planAgentEdit('Create a cohesive automatic effects pass without deleting or rewriting source content. Choose a different suitable native transition at scene boundaries, animate and highlight the strongest existing word in each important caption, and add gentle start/end keyframes to images and videos. Keep effects readable.')}
           title="Automatically choose native effects, then show every change for approval"
         >
           Auto effects
@@ -1195,6 +1226,14 @@ export function Studio() {
             <span className="ml-auto font-mono text-xs text-muted tabular-nums">
               {doc.aspect} · {doc.fps}fps · {doc.clips.length} clip{doc.clips.length === 1 ? '' : 's'}
             </span>
+            <button
+              type="button"
+              onClick={() => setShowShortcuts(true)}
+              title="Keyboard shortcuts (?)"
+              className="rounded-md border border-line px-2 py-1 font-mono text-xs text-muted transition-colors hover:text-text"
+            >
+              ? Shortcuts
+            </button>
             {lastExport && (
               <a
                 href={lastExport.url}
@@ -1276,6 +1315,47 @@ export function Studio() {
             </p>
           </div>
         </aside>
+      </div>
+    </div>
+  )
+}
+
+const SHORTCUTS: Array<[string, string]> = [
+  ['Space', 'Play / pause'],
+  ['J · L', 'Back / forward half a second (L plays)'],
+  ['← →', 'Step one frame (Shift: one second)'],
+  ['K', 'Add a keyframe to the selected clip at the playhead'],
+  ['S', 'Split the selected clip at the playhead'],
+  ['I · O', 'Trim the selected clip’s in / out point to the playhead'],
+  ['Alt + arrows', 'Nudge the selected layer (Shift: bigger steps)'],
+  ['Double-click text', 'Edit it right on the canvas (Enter to finish)'],
+  ['Drag on canvas', 'Snaps to centre and safe areas (hold Alt to place freely)'],
+  ['Delete', 'Remove the selected clip'],
+  ['Ctrl/⌘ + Z', 'Undo (Shift: redo)'],
+  ['?', 'Show or hide this sheet'],
+]
+
+function ShortcutSheet({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-6 backdrop-blur-sm" onClick={onClose} role="presentation">
+      <div
+        role="dialog"
+        aria-label="Studio keyboard shortcuts"
+        className="w-full max-w-lg rounded-2xl border border-line bg-panel p-5 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Studio shortcuts</h2>
+          <button type="button" onClick={onClose} className="rounded-md px-2 py-1 text-xs text-muted hover:text-text">Close · Esc</button>
+        </div>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+          {SHORTCUTS.map(([keys, what]) => (
+            <div key={keys} className="contents">
+              <dt><kbd className="rounded-md border border-line bg-bg px-1.5 py-0.5 font-mono text-[11px] text-text">{keys}</kbd></dt>
+              <dd className="text-muted">{what}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </div>
   )
