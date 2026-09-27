@@ -1,3 +1,4 @@
+import { PHYSICS_PRESETS, paintPhysics } from './physics'
 /**
  * Studio backgrounds.
  *
@@ -13,7 +14,9 @@
 export type StudioBackground = {
   id: string
   name: string
-  group: 'gradient' | 'pattern' | 'solid' | 'mesh'
+  group: 'gradient' | 'pattern' | 'solid' | 'mesh' | 'physics'
+  /** Paint in the layer's own time (starts at the clip start) — simulations. */
+  local?: boolean
   css: string
   paint: (ctx: CanvasRenderingContext2D, w: number, h: number, t: number) => void
 }
@@ -303,6 +306,18 @@ export const STUDIO_BACKGROUNDS: StudioBackground[] = [
     paint: (ctx, w, h) => fill(ctx, w, h, '#F4F1EA'),
   },
 ]
+
+// Real rigid-body simulations (Rapier) — cached at 60 Hz, fully scrubbable.
+for (const p of PHYSICS_PRESETS) {
+  STUDIO_BACKGROUNDS.push({
+    id: `physics-${p.id}`,
+    name: `Physics: ${p.name}`,
+    group: 'physics',
+    local: true,
+    css: 'linear-gradient(180deg,#15151b,#0b0b10)',
+    paint: (ctx, w, h, t) => paintPhysics(ctx, `physics-${p.id}`, w, h, t),
+  })
+}
 
 export function backgroundById(id: string): StudioBackground {
   return STUDIO_BACKGROUNDS.find((b) => b.id === id) ?? STUDIO_BACKGROUNDS[0]

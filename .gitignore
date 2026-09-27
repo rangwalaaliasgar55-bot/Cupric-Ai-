@@ -20,3 +20,4 @@ vendor/whisper/*
 .editor-upgrades-check.mjs
 .source-project-check.mjs
 .mask-track-check.mjs
+.physics-check.mjs

@@ -957,7 +957,8 @@ function drawClipContent(
   sources: FrameSources,
 ) {
   if (clip.kind === 'background') {
-    backgroundById(clip.backgroundId).paint(ctx, width, height, t)
+    const bg = backgroundById(clip.backgroundId)
+    bg.paint(ctx, width, height, bg.local ? Math.max(0, t - clip.startSec) : t)
   } else if (clip.kind === 'video' || clip.kind === 'image') {
     const source = sources.media(clip)
     const scale = Math.max(0.05, clip.scale ?? 1)

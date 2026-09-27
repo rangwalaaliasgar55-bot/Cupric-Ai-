@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { onPhysicsReady } from '../../lib/studio/physics'
 import type {
   StudioAudioClip,
   StudioClip,
@@ -133,6 +134,9 @@ export function StudioPreview({
     return () => window.clearTimeout(retry)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc, time, playing, muted, width, height])
+
+  // Physics layers load their WASM engine on first use; repaint when it lands.
+  useEffect(() => onPhysicsReady(() => { if (!playingRef.current) syncAndDraw(timeRef.current, false) }), [])
 
   // Custom fonts (Resources → Fonts) download on demand. Load whatever this
   // document uses, and repaint the moment a face arrives — otherwise titles

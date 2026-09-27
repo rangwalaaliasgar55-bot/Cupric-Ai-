@@ -20,6 +20,7 @@ import { clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
 import { mixGainAt } from './audioMix'
 import { getMedia, overlayImage } from './media'
 import { stickerFrame } from './lottie'
+import { ensurePhysicsFor } from './physics'
 import { drawableElement, drawStudioFrame, type FrameSources } from './renderer'
 
 export type ExportOptions = {
@@ -89,6 +90,8 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
   // Fonts chosen from Resources are downloaded on demand; wait for them so the
   // export never bakes the fallback face into the video.
   await ensureDocFonts(doc).catch(() => [])
+  // Physics layers must never be baked as the loading placeholder.
+  await ensurePhysicsFor(doc)
   await document.fonts?.ready.catch(() => undefined)
 
   const scale = options.scale ?? 1
