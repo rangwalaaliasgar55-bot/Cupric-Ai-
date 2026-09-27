@@ -481,8 +481,15 @@ function drawGlassClip(ctx: CanvasRenderingContext2D, clip: StudioGlassClip, t: 
 
   if (clip.label.trim()) {
     ctx.save()
-    const fontPx = Math.max(12, boxH * 0.22)
+    // Sized to the panel, then shrunk until it fits inside the panel's width:
+    // a long label used to spill past both edges of a small pill.
+    let fontPx = Math.max(12, boxH * 0.26)
     ctx.font = `600 ${fontPx}px 'Inter Variable', Inter, system-ui, sans-serif`
+    const labelW = ctx.measureText(clip.label).width
+    if (labelW > boxW * 0.84) {
+      fontPx = Math.max(10, fontPx * ((boxW * 0.84) / labelW))
+      ctx.font = `600 ${fontPx}px 'Inter Variable', Inter, system-ui, sans-serif`
+    }
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = clip.labelColor

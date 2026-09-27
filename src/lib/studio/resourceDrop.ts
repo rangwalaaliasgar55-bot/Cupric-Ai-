@@ -236,18 +236,13 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
       const data = (payload.data ?? {}) as TemplateFillData
       const slots = templateSlots(data)
       if (!slots.length) return { ok: false, reason: `“${payload.name}” has no editable scenes.` }
-      if (slots.some((slot) => slot.kind !== 'text')) {
-        return {
-          ok: false,
-          reason: `“${payload.name}” needs media assignments. Click its Auto-fill button so Cupric can ask which footage belongs in each slot.`,
-        }
-      }
-      const assignments = Object.fromEntries(slots.map((slot) => [slot.id, { text: slot.defaultText }]))
-      const plan = planTemplateFill(doc, data, assignments, payload.name)
+      // Media slots never block: project footage fills them, else a designed
+      // placeholder panel does (see storyboard.ts).
+      const plan = planTemplateFill(doc, data, {}, payload.name, { atSec })
       if (!plan.clips.length) return { ok: false, reason: `“${payload.name}” did not produce any clips.` }
       return {
         ok: true,
-        docPatch: { clips: [...doc.clips, ...plan.clips] },
+        docPatch: { clips: plan.doc.clips, trackCount: plan.doc.trackCount },
         message: `Added “${payload.name}” as ${plan.clips.length} editable clips.`,
       }
     }

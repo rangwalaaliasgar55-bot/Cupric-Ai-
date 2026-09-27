@@ -83,9 +83,9 @@
     {
       "id": "remotion",
       "name": "Remotion toolkit",
-      "description": "Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; the Google Fonts catalog remains an attributed reference until each font is bundled. No upstream source is vendored.",
-      "itemCount": 2083,
-      "bytes": 848499
+      "description": "Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.",
+      "itemCount": 2080,
+      "bytes": 1161736
     },
     {
       "id": "react-bits",

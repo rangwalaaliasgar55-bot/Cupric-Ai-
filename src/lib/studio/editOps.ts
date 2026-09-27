@@ -323,7 +323,7 @@ const ADD_TEXT_RE = /\b(?:add|write|put|insert|create|type|place|show)\b[^.]*?\b
 
 type LocalOpts = { time?: number }
 
-function fontFor(text: string, style: DirectionStyle, isHero: boolean): string {
+export function fontFor(text: string, style: DirectionStyle, isHero: boolean): string {
   if (/\b(ai|api|data|software|system|future|digital|tech|code|app|cloud|device)\b/i.test(text)) return 'Space Grotesk Variable'
   if (style === 'cinematic' || /\b(story|discover|journey|beautiful|introducing|legacy|crafted)\b/i.test(text)) return isHero ? 'Playfair Display Variable' : 'Manrope Variable'
   if (style === 'bold-social') return 'Inter Variable'

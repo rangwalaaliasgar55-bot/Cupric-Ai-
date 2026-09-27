@@ -300,6 +300,49 @@ try {
 // agent skill discoverable to the Library and autonomous planner.
 try {
   const remotion = JSON.parse(await readFile(path.join(root, 'resources', 'remotion', 'catalog.json'), 'utf8'))
+  // Exact Google family names + weights, extracted from @remotion/google-fonts
+  // (import names drop spaces and spell digits out, so they cannot be loaded).
+  const fontMeta = JSON.parse(await readFile(path.join(root, 'resources', 'remotion', 'font-meta.json'), 'utf8')).fonts
+  // Every template used to share one placeholder storyboard ("Replace with
+  // your content"), so applying any of them produced the same empty-looking
+  // edit. Each now has a real, on-brief storyboard for what it is for.
+  const REMOTION_STORYBOARDS = {
+    audiogram: [['EPISODE 42', 2.5, 'pop'], ['The one habit that doubled our output', 4, 'word-reveal'], ['New episode — listen now', 3.5, 'shimmer']],
+    blank: [['Your story starts here', 3, 'fade-up'], ['Add media, text and motion', 3.5, 'word-reveal'], ['Made with Cupric', 2.5, 'shimmer']],
+    'code-hike': [['Ship it in three lines', 3, 'typewriter'], ['npm install your-sdk', 3.5, 'typewriter'], ['Read the docs', 3, 'fade-up']],
+    electron: [['Your desktop app', 3, 'pop'], ['Native speed. Web skills.', 4, 'word-reveal'], ['Download for Mac and Windows', 3, 'shimmer']],
+    helloworld: [['Hello, world', 3, 'pop'], ['Every video starts with one frame', 4, 'word-reveal'], ['Let’s make yours', 3, 'fade-up']],
+    'music-visualization': [['NOW PLAYING', 2.5, 'pop'], ['Cover art', 4, 'fade-up', 'media'], ['Out now everywhere', 3.5, 'shimmer']],
+    'next-app-tailwind': [['Launch your Next app', 3, 'pop'], ['Tailwind-fast UI, ready to deploy', 4, 'word-reveal'], ['Start building today', 3, 'fade-up']],
+    overlay: [['BREAKING', 2, 'pop'], ['Lower thirds that land every time', 4, 'slide-left'], ['Subscribe for more', 3, 'shimmer']],
+    'prompt-to-motion-graphics': [['Type a prompt', 3, 'typewriter'], ['Get motion graphics in seconds', 4, 'word-reveal'], ['Try it free', 3, 'pop']],
+    'prompt-to-video': [['From prompt to video', 3, 'pop'], ['Describe it. Watch it render.', 4, 'word-reveal'], ['Create your first video', 3, 'fade-up']],
+    'react-router': [['Every route, animated', 3, 'pop'], ['Smooth page-to-page stories', 4, 'word-reveal'], ['See the demo', 3, 'fade-up']],
+    recorder: [['Record once', 2.5, 'pop'], ['Your screen recording', 4.5, 'fade-up', 'media'], ['Share everywhere', 3, 'shimmer']],
+    'render-server': [['Render at scale', 3, 'pop'], ['Thousands of videos, one API', 4, 'word-reveal'], ['Deploy your server', 3, 'fade-up']],
+    skia: [['Pixel-perfect graphics', 3, 'glass-rise'], ['GPU-drawn shapes and shaders', 4, 'word-reveal'], ['Draw something bold', 3, 'shimmer']],
+    stargazer: [['1,000 STARS', 3, 'pop'], ['Thank you to every contributor', 4, 'word-reveal'], ['Star us on GitHub', 3, 'shimmer']],
+    still: [['One perfect frame', 3, 'fade-up'], ['Thumbnails and social cards', 3.5, 'word-reveal'], ['Export as an image', 2.5, 'fade-up']],
+    three: [['Step into 3D', 3, 'glass-rise'], ['Depth, light and motion', 4, 'word-reveal'], ['Explore the scene', 3, 'fade-up']],
+    tiktok: [['WAIT FOR IT', 2, 'pop'], ['Captions that pop on every word', 4, 'word-reveal'], ['Follow for part 2', 3, 'shimmer']],
+    vercel: [['Deployed in seconds', 3, 'pop'], ['Preview every change instantly', 4, 'word-reveal'], ['Ship to production', 3, 'fade-up']],
+    'vibe-code': [['Just vibe it', 3, 'liquid-wave'], ['Describe the app. Watch it build.', 4, 'word-reveal'], ['Start vibing', 3, 'pop']],
+  }
+  const storyboardFor = (t) => (REMOTION_STORYBOARDS[t.id] ?? [[t.name, 3, 'pop'], [`${t.name}, made simple`, 4, 'word-reveal'], ['See it in action', 3, 'fade-up']])
+    .map(([text, sec, anim, kind = 'text']) => [text, sec, anim, kind])
+  // Developer skills and packages have ids like "add-cli-option" / ".cargo";
+  // show them as words, and keep a storyboard body short enough to read.
+  const humanName = (id) => {
+    const words = String(id).replace(/^[.@]+/, '').replace(/[-_/]+/g, ' ').trim()
+    const acronyms = /^(cli|api|ai|ui|ssr|css|html|js|ts|gpu|cpu|mp4|gif|svg|url|sdk|aws|gcp|ffmpeg|webgl|webcodecs|lambda)$/i
+    const out = words.split(/\s+/).map((w, i) => (acronyms.test(w) ? w.toUpperCase() : i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(' ')
+    return out || String(id)
+  }
+  const firstSentence = (text, max = 84) => {
+    const sentence = String(text).split(/(?<=[.!?])\s/)[0].replace(/\.$/, '')
+    if (sentence.length <= max) return sentence
+    return sentence.slice(0, max).replace(/\s+\S*$/, '').replace(/[\s,;:–—-]+$/, '') + '…'
+  }
   const items = [
     ...remotion.templates.map((t) => ({
       id: `template-${t.id}`,
@@ -307,12 +350,8 @@ try {
       name: t.name,
       description: `Editable Cupric-native storyboard for the ${t.name} workflow · upstream ${t.package}`,
       data: {
-        durationSec: 10,
-        scenes: [
-          [t.name, 3, 'pop', 'text'],
-          ['Replace with your content', 4, 'word-reveal', 'text'],
-          ['Edit motion, timing and style', 3, 'fade-up', 'text'],
-        ],
+        durationSec: storyboardFor(t).reduce((sum, scene) => sum + scene[1], 0),
+        scenes: storyboardFor(t),
         source: t.source,
         package: t.package,
         editable: true,
@@ -321,22 +360,23 @@ try {
       },
       tags: ['remotion', 'template', 'editable', 'agent', 'native-storyboard'],
     })),
-    ...remotion.fonts.names.map((name) => ({
+    // Helper modules (base, from-info…) are not fonts; only real families ship.
+    ...remotion.fonts.names.filter((name) => fontMeta[name]).map((name) => ({
       id: `font-${name}`,
       kind: 'font',
-      name,
-      description: 'Remotion Google Fonts catalog entry; loaded lazily with a local fallback.',
-      data: { provider: remotion.fonts.provider },
+      name: fontMeta[name][0],
+      description: 'Google font · Apply sets it on the selected text (or adds a sample). Downloads once, then works offline.',
+      data: { provider: remotion.fonts.provider, family: fontMeta[name][0], weights: fontMeta[name][1], latin: fontMeta[name][2] === 1 },
       tags: ['remotion', 'font'],
     })),
     ...remotion.skills.map((skill) => ({
       id: `skill-${skill.id}`,
       kind: 'saas-template',
-      name: skill.name,
+      name: humanName(skill.name),
       description: `${skill.description} · editable agent-ready storyboard`,
       data: {
-        durationSec: 8,
-        scenes: [[skill.name, 3, 'pop', 'text'], [skill.description, 5, 'word-reveal', 'text']],
+        durationSec: 10,
+        scenes: [[humanName(skill.name), 3, 'pop', 'text'], [firstSentence(skill.description), 4.5, 'word-reveal', 'text'], ['Automated with Cupric', 2.5, 'fade-up', 'text']],
         source: `${remotion.source.url}/tree/${remotion.source.ref}/.agents/skills/${skill.id}`,
         editable: true,
         agentUsable: true,
@@ -347,11 +387,11 @@ try {
     ...(remotion.packages ?? []).map((pkg) => ({
       id: `package-${pkg.id}`,
       kind: 'saas-template',
-      name: pkg.name,
+      name: humanName(pkg.name),
       description: `Editable native capability storyboard · upstream Remotion package remains license-gated`,
       data: {
         durationSec: 8,
-        scenes: [[pkg.name, 3, 'pop', 'text'], ['Agent-ready native workflow', 5, 'fade-up', 'text']],
+        scenes: [[humanName(pkg.name), 3, 'pop', 'text'], [`Built with the ${pkg.name.replace(/^[.@]+/, '')} package`, 5, 'word-reveal', 'text']],
         source: pkg.source,
         license: pkg.license,
         intake: 'original-native-storyboard',
@@ -365,7 +405,7 @@ try {
   packs.push({
     id: 'remotion',
     name: 'Remotion toolkit',
-    description: 'Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; the Google Fonts catalog remains an attributed reference until each font is bundled. No upstream source is vendored.',
+    description: 'Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.',
     version: VERSION,
     source: remotion.source.url,
     license: remotion.source.license,
