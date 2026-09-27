@@ -32,7 +32,7 @@ import { GLASS_PRESETS } from '../../lib/glass'
 import { STICKERS } from '../../lib/studio/lottie'
 import { hasMedia, registerFile } from '../../lib/studio/media'
 
-import { findComponent } from '../../lib/studio/components'
+import { clampRecordSec, findComponent, MAX_RECORD_SEC } from '../../lib/studio/components'
 import { applyResource } from '../../lib/studio/resourceApply'
 import { cx } from '../../lib/utils'
 
@@ -900,6 +900,22 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
         />
       </Field>
 
+      <Field label="Text legibility" hint="Auto adds a soft backing only when the picture behind the text is too dark, too light or too busy to read.">
+        <select
+          value={clip.legibility ?? 'auto'}
+          onChange={(e) => onPatch({ legibility: e.target.value as StudioTextClip['legibility'] } as Partial<StudioClip>)}
+          className={inputCx}
+          aria-label="Text legibility"
+        >
+          <option value="auto">Auto</option>
+          <option value="on">Always back the text</option>
+          <option value="off">Off</option>
+        </select>
+      </Field>
+      {(clip.legibility ?? 'auto') !== 'off' && (
+        <Slider label="Backing strength" value={clip.scrimStrength ?? 0.55} min={0} max={1} step={0.05} onChange={(v) => onPatch({ scrimStrength: v } as Partial<StudioClip>)} />
+      )}
+
       <Field label="Align">
         <div className="grid grid-cols-3 gap-1.5">
           {(['left', 'center', 'right'] as const).map((align) => (
@@ -957,7 +973,7 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
           <input
             ref={relinkRef}
             type="file"
-            accept="video/*,image/*"
+            accept="video/*,image/*,.heic,.heif"
             className="hidden"
             onChange={(e) => void relink(e.target.files?.[0])}
           />
@@ -1186,11 +1202,24 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Record length">
-              <select value={meta.recordSec} onChange={(e) => rerecord({ recordSec: Number(e.target.value) })} className={inputCx} disabled={busy} aria-label="Record length">
-                {[2, 3, 4, 6, 8, 10].map((sec) => (
-                  <option key={sec} value={sec}>{sec}s</option>
-                ))}
-              </select>
+              <input
+                key={`${clip.id}:${meta.recordSec}`}
+                type="number"
+                min={0.5}
+                max={MAX_RECORD_SEC}
+                step={0.5}
+                defaultValue={meta.recordSec}
+                onBlur={(e) => {
+                  const next = clampRecordSec(e.target.value, meta.recordSec)
+                  if (next !== meta.recordSec) rerecord({ recordSec: next })
+                  else e.target.value = String(meta.recordSec)
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                className={inputCx}
+                disabled={busy}
+                aria-label="Record length in seconds"
+                title={`Type any length from 0.5 to ${MAX_RECORD_SEC} seconds, then press Enter to record again`}
+              />
             </Field>
             <Field label="Performance">
               <select value={meta.interact ? 'act' : 'watch'} onChange={(e) => rerecord({ interact: e.target.value === 'act' })} className={inputCx} disabled={busy} aria-label="Performance">

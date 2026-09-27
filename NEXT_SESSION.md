@@ -93,3 +93,18 @@ If `ffmpeg-static` fails to download, set:
 CUPRIC_FFMPEG_PATH=C:\path\to\ffmpeg.exe
 CUPRIC_FFPROBE_PATH=C:\path\to\ffprobe.exe
 ```
+
+## Master-prompt progress (2026-09-27 session)
+
+Done, each with a `check:*` script chained into `npm run build`:
+2.13 component length + recorded shelf · 2.14 legibility scrim · 2.24 HW encoding (NVENC/QSV/VideoToolbox → libx264) ·
+2.25/2.30 photo previews, HEIC + EXIF · 2.26 autosave snapshots + restore · 2.27 diagnostic report · 2.28 sandboxed capture ·
+2.29 schema migration · 2.31 undo re-audit (`check:undo`, runs against the real store) · 1.10 offline voice (Whisper → Windows Speech).
+
+Needs a hardware pass: 1.10 on Windows (`npm run whisper:fetch`, then speak), and 2.24 on NVENC/QSV/Apple machines.
+
+Still open: 2.1–2.12, 2.15–2.23, verify 1.4 and 1.8, Part 4. `editOps.ts` still caps agent recordSec at 6.
+The web-build-only Arena capture paths (`captureArenaThumbnail`, `captureArenaFrame`) still use same-origin iframes.
+
+Third-party licenses: heic2any/libheif is LGPL-3.0 (dynamically loaded JS/wasm, unmodified).
+whisper.cpp and the ggml models are MIT. Both are fetched and bundled with attribution, not rebranded.

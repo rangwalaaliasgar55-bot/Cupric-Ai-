@@ -154,7 +154,7 @@ export function resampleShots(shots: { t: number; url: string }[], durationSec: 
 }
 
 export async function recordComponent(stage: HTMLElement, opts: RecordOptions): Promise<RecordResult> {
-  const durationSec = Math.min(10, Math.max(1, opts.durationSec))
+  const durationSec = Math.min(120, Math.max(0.5, opts.durationSec))
   const fps = Math.max(6, Math.min(24, opts.fps ?? 12))
   const pixelRatio = opts.pixelRatio ?? Math.min(2, Math.max(1.5, window.devicePixelRatio || 1))
   const capture = { type: 'image/webp' as const, quality: 0.86, pixelRatio }

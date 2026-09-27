@@ -52,7 +52,7 @@ import { TRANSITIONS } from '../lib/studio/transitions'
 import { isVoiceSupported, parseVoiceCommand, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
 import { FOCUS_NOW_EVENT, VOICE_RUN_EVENT, publishPlayhead, setStudioMounted, takePendingVoicePhrase, type FocusNowDetail } from '../lib/studio/studioLink'
 import { useResourceApply } from './library/useResourceApply'
-import { componentCatalogFor, isPendingComponent, withComponent } from '../lib/studio/components'
+import { componentCatalogFor, isPendingComponent, placeShelfItem, shelfComponent, withComponent } from '../lib/studio/components'
 import { motionPatch } from '../lib/studio/motionDirector'
 import { ComponentRecorderHost } from './studio/ComponentRecorderHost'
 import { ComponentsPanel } from './studio/ComponentsPanel'
@@ -834,6 +834,29 @@ export function Studio() {
     setTime(visibleMomentOf(withMotion))
   }
 
+  /** Record a component without placing it (2.13). Place it later from the shelf. */
+  function recordComponentToShelf(slug: string, opts: { recordSec: number; interact: boolean }) {
+    const item = shelfComponent(slug, opts)
+    patchStudio(projectId, { shelf: [item, ...(doc.shelf ?? [])] }, 'Record component to shelf')
+  }
+
+  function placeFromShelf(id: string) {
+    const item = (doc.shelf ?? []).find((entry) => entry.id === id)
+    if (!item) return
+    if (!item.frames?.length && !item.dataUrl) {
+      pushToast('info', `“${item.name}” has not finished recording yet.`)
+      return
+    }
+    const placed = placeShelfItem(doc, item, time)
+    patchStudio(projectId, { trackCount: placed.doc.trackCount, clips: placed.doc.clips }, 'Place recorded component')
+    setSelectedId(placed.clip.id)
+    setPlaying(false)
+  }
+
+  function removeFromShelf(id: string) {
+    patchStudio(projectId, { shelf: (doc.shelf ?? []).filter((entry) => entry.id !== id) }, 'Remove recorded component')
+  }
+
   async function runExport(asMp4 = false) {
     if (duration <= 0) {
       pushToast('error', 'Add a clip before exporting.')
@@ -903,7 +926,7 @@ export function Studio() {
         <input
           ref={fileRef}
           type="file"
-          accept="video/*,image/*,audio/*,.zip,.html,.htm"
+          accept="video/*,image/*,.heic,.heif,audio/*,.zip,.html,.htm"
           multiple
           className="hidden"
           onChange={(e) => void onFiles(e.target.files)}
@@ -1199,7 +1222,13 @@ export function Studio() {
       <div className="flex min-h-0 flex-1">
         {showComponents && (
           <aside className="w-[360px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio components">
-            <ComponentsPanel onAdd={addComponentAt} />
+            <ComponentsPanel
+              onAdd={addComponentAt}
+              onRecordToShelf={recordComponentToShelf}
+              shelf={doc.shelf ?? []}
+              onPlaceShelf={placeFromShelf}
+              onRemoveShelf={removeFromShelf}
+            />
           </aside>
         )}
         {showResources && (

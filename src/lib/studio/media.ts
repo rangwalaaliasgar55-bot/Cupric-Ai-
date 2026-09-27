@@ -9,6 +9,7 @@
 
 import { getBridge } from '../bridge'
 import { uid } from '../utils'
+import { convertHeic, isHeicBytes, looksLikeHeicName, preparePhoto } from './photoImport'
 
 export type MediaHandle = {
   id: string
@@ -23,6 +24,15 @@ export type MediaHandle = {
   posterDataUrl: string | null
   /** Coarse loudness envelope (0–1) for the timeline, audio only. */
   waveform?: number[]
+  /**
+   * Photos only (2.25): a downscaled copy drawn by preview and scrubbing.
+   * Export always draws `element`, the full-resolution original.
+   */
+  preview?: HTMLCanvasElement | HTMLImageElement
+  /** Photos only: EXIF orientation tag of the source (1 = upright). */
+  orientation?: number
+  /** Photos only: set when the file was converted on import (e.g. HEIC → JPEG). */
+  convertedFrom?: string
 }
 
 const registry = new Map<string, MediaHandle>()
@@ -44,7 +54,7 @@ export function releaseMedia(mediaId: string) {
   registry.delete(mediaId)
 }
 
-function posterFrom(el: HTMLVideoElement | HTMLImageElement, w: number, h: number): string | null {
+function posterFrom(el: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement, w: number, h: number): string | null {
   try {
     const canvas = document.createElement('canvas')
     const scale = Math.min(1, 240 / Math.max(w || 1, 1))
@@ -135,13 +145,14 @@ function loadImage(url: string): Promise<HTMLImageElement> {
 /** Register a picked File and return a handle the editor can draw immediately. */
 export async function registerFile(file: File, existingId?: string): Promise<MediaHandle> {
   const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|m4v|avi)$/i.test(file.name)
-  const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|avif|svg)$/i.test(file.name)
+  const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp|gif|avif|svg|bmp|heic|heif)$/i.test(file.name)
   const isAudio = file.type.startsWith('audio/') || /\.(mp3|wav|ogg|oga|m4a|aac|flac|opus)$/i.test(file.name)
   if (!isVideo && !isImage && !isAudio) throw new Error(`${file.name} is not a video, image or audio file.`)
 
-  const url = URL.createObjectURL(file)
   const id = existingId ?? uid()
   const localPath = getBridge()?.filePathFor(file) ?? null
+  if (isImage && !isVideo) return registerPhoto(file, file.name, id, localPath)
+  const url = URL.createObjectURL(file)
 
   try {
     if (isVideo) {
@@ -182,21 +193,7 @@ export async function registerFile(file: File, existingId?: string): Promise<Med
       return handle
     }
 
-    const element = await loadImage(url)
-    const handle: MediaHandle = {
-      id,
-      kind: 'image',
-      fileName: file.name,
-      localPath,
-      url,
-      durationSec: 0,
-      width: element.naturalWidth,
-      height: element.naturalHeight,
-      element,
-      posterDataUrl: posterFrom(element, element.naturalWidth, element.naturalHeight),
-    }
-    registry.set(id, handle)
-    return handle
+    throw new Error(`${file.name} is not a video, image or audio file.`)
   } catch (err) {
     URL.revokeObjectURL(url)
     throw err
@@ -252,21 +249,63 @@ export async function registerUrl(
     registry.set(id, handle)
     return handle
   }
-  const element = await loadImage(url)
-  const handle: MediaHandle = {
-    id,
-    kind: 'image',
-    fileName,
-    localPath,
-    url,
-    durationSec: 0,
-    width: element.naturalWidth,
-    height: element.naturalHeight,
-    element,
-    posterDataUrl: posterFrom(element, element.naturalWidth, element.naturalHeight),
+  // Photos go through the same path as picked files: HEIC conversion,
+  // orientation and a preview proxy.
+  let blob: Blob
+  try {
+    blob = await (await fetch(url)).blob()
+  } catch {
+    // Not fetchable (e.g. a cross-origin URL): load it directly, unproxied.
+    const element = await loadImage(url)
+    const handle: MediaHandle = { id, kind: 'image', fileName, localPath, url, durationSec: 0, width: element.naturalWidth, height: element.naturalHeight, element, posterDataUrl: posterFrom(element, element.naturalWidth, element.naturalHeight) }
+    registry.set(id, handle)
+    return handle
   }
-  registry.set(id, handle)
-  return handle
+  return registerPhoto(blob, fileName, id, localPath)
+}
+
+/**
+ * Photos (2.25, 2.30): convert HEIC/HEIF to JPEG, keep EXIF orientation, and
+ * build a preview proxy so a project full of 12-megapixel phone photos still
+ * scrubs smoothly. The full-resolution original is only drawn at export.
+ */
+async function registerPhoto(source: Blob, fileName: string, id: string, localPath: string | null): Promise<MediaHandle> {
+  const head = new Uint8Array(await source.slice(0, 64).arrayBuffer())
+  let blob = source
+  let convertedFrom: string | undefined
+  if (isHeicBytes(head) || looksLikeHeicName(fileName, source.type)) {
+    blob = await convertHeic(source, fileName)
+    convertedFrom = 'HEIC'
+  }
+  const url = URL.createObjectURL(blob)
+  try {
+    const element = await loadImage(url).catch(() => {
+      throw new Error(`${fileName} could not be decoded as an image. If it is a RAW or uncommon format, export it as JPEG or PNG and import it again.`)
+    })
+    const isJpeg = blob.type === 'image/jpeg' || /\.jpe?g$/i.test(fileName) || convertedFrom === 'HEIC'
+    const bytes = isJpeg ? await blob.slice(0, 256 * 1024).arrayBuffer() : null
+    const photo = preparePhoto(element, bytes)
+    const handle: MediaHandle = {
+      id,
+      kind: 'image',
+      fileName,
+      localPath,
+      url,
+      durationSec: 0,
+      width: photo.width,
+      height: photo.height,
+      element: photo.full,
+      preview: photo.proxied ? photo.preview : undefined,
+      orientation: photo.orientation,
+      convertedFrom,
+      posterDataUrl: posterFrom(photo.preview as HTMLImageElement, photo.width, photo.height),
+    }
+    registry.set(id, handle)
+    return handle
+  } catch (err) {
+    URL.revokeObjectURL(url)
+    throw err
+  }
 }
 
 /**

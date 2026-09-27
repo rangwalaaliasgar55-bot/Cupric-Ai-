@@ -8,6 +8,11 @@ const { spawn } = require('child_process')
 const { GoogleGenerativeAI } = require('@google/generative-ai')
 const AdmZip = require('adm-zip')
 const { approveManualArenaGate, isManualArenaGateBlocked } = require('./automation-gate.cjs')
+const projectHistory = require('./project-history.cjs')
+const diagnostics = require('./diagnostics.cjs')
+const encoders = require('./encoders.cjs')
+const { migrateSettings } = require('./settings-migration.cjs')
+const voiceEngines = require('./voice-engines.cjs')
 
 let autoUpdater
 try {
@@ -429,6 +434,7 @@ function publicSettings() {
       ? Number(settings.silenceMinDuration)
       : DEFAULT_SILENCE_MIN_DURATION,
     updateChannel: settings.updateChannel || 'latest',
+    hardwareEncoding: settings.hardwareEncoding === 'off' ? 'off' : 'auto',
   }
 }
 
@@ -467,6 +473,12 @@ function applySettingsPatch(patch) {
     const v = Number(patch.silenceNoiseDb)
     if (Number.isFinite(v)) settings.silenceNoiseDb = Math.max(-90, Math.min(-5, v))
   }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'hardwareEncoding')) {
+    settings.hardwareEncoding = patch.hardwareEncoding === 'off' ? 'off' : 'auto'
+    // Re-detect on the next render with the new preference.
+    encoderSession.result = null
+    encoderSession.disabledReason = null
+  }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'silenceMinDuration')) {
     const v = Number(patch.silenceMinDuration)
     if (Number.isFinite(v)) settings.silenceMinDuration = Math.max(0.1, Math.min(10, v))
@@ -483,18 +495,72 @@ ipcMain.handle('settings:get', () => publicSettings())
 ipcMain.handle('settings:hasKey', () => publicSettings().hasKey)
 ipcMain.handle('settings:set', (_event, patch) => applySettingsPatch(patch || {}))
 ipcMain.handle('settings:autoLaunch', (_event, enabled) => applySettingsPatch({ autoLaunch: Boolean(enabled) }))
+// Autosave / crash recovery / version history (2.26): atomic writes, a
+// rolling set of snapshots, recovery from the newest valid one when the main
+// file is unreadable. Logic lives in project-history.cjs so it is testable.
+let stateRecovery = { previousSessionCrashed: false, recoveredFrom: null }
 ipcMain.handle('state:save', (_event, payload) => {
   const value = typeof payload === 'string' ? payload : payload?.value ?? JSON.stringify(payload ?? null)
-  ensureDir(path.dirname(stateFile()))
-  fs.writeFileSync(stateFile(), String(value), 'utf8')
+  try {
+    projectHistory.save(app.getPath('userData'), String(value))
+  } catch (err) {
+    logLine('state-save-failed', err?.message || String(err))
+    throw err
+  }
   return true
 })
 ipcMain.handle('state:load', () => {
-  try {
-    return fs.readFileSync(stateFile(), 'utf8')
-  } catch {
-    return null
+  const result = projectHistory.load(app.getPath('userData'))
+  if (result.recoveredFrom) {
+    stateRecovery = { ...stateRecovery, recoveredFrom: result.recoveredFrom }
+    logLine('state-recovered', 'projects.json was unreadable; restored the newest valid autosave', { from: result.recoveredFrom })
   }
+  return result.text
+})
+ipcMain.handle('state:recoveryInfo', () => stateRecovery)
+
+// One-click diagnostic report (2.27). Redaction lives in diagnostics.cjs.
+function recentLogLines(maxFiles = 2) {
+  try {
+    const dir = userDataPath('logs')
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith('.log')).sort().slice(-maxFiles)
+    return files.flatMap((f) => fs.readFileSync(path.join(dir, f), 'utf8').split(/\r?\n/)).slice(-2000)
+  } catch {
+    return []
+  }
+}
+ipcMain.handle('diag:report', (_event, payload) => {
+  const settings = publicSettings()
+  return diagnostics.buildReport({
+    appVersion: app.getVersion(),
+    packaged: app.isPackaged,
+    platform: process.platform,
+    osRelease: os.release(),
+    arch: process.arch,
+    versions: process.versions,
+    media: mediaToolStatus(),
+    encoder: typeof videoEncoderState === 'function' ? videoEncoderState() : null,
+    ai: settings,
+    recovery: stateRecovery,
+    versionCount: projectHistory.listVersions(app.getPath('userData')).length,
+    logLines: recentLogLines(),
+    rendererErrors: Array.isArray(payload?.rendererErrors) ? payload.rendererErrors.map(String).slice(-40) : [],
+    homeDir: os.homedir(),
+  })
+})
+ipcMain.handle('state:listVersions', () => projectHistory.listVersions(app.getPath('userData')))
+ipcMain.handle('state:snapshotNow', () => {
+  try {
+    const text = fs.readFileSync(stateFile(), 'utf8')
+    return { id: projectHistory.snapshot(app.getPath('userData'), text, 'manual') }
+  } catch (err) {
+    throw new Error(`Nothing saved yet to keep as a version (${err?.message || String(err)}).`)
+  }
+})
+ipcMain.handle('state:restoreVersion', (_event, payload) => {
+  const result = projectHistory.restore(app.getPath('userData'), String(payload?.id || ''))
+  logLine('state-restored', 'Restored an earlier version', result)
+  return result
 })
 ipcMain.handle('state:clear', () => {
   fs.rmSync(stateFile(), { force: true })
@@ -2367,7 +2433,8 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
 
   const fps = Number(payload?.fps) > 0 ? Math.round(Number(payload.fps)) : 30
   const crf = String(Math.max(14, Math.min(32, Number(payload?.crf) || 18)))
-  const args = [
+  // Hardware encoder when one works (2.24); an explicit CRF keeps libx264.
+  const buildArgs = (videoArgs) => [
     '-y',
     '-hide_banner',
     '-v', 'error',
@@ -2375,10 +2442,7 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
     // A canvas sized from the window can be odd (e.g. 1759×894); H.264 in
     // yuv420p needs even sides, so round down to the nearest even pixel.
     '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos,setsar=1',
-    '-c:v', 'libx264',
-    '-preset', 'medium',
-    '-crf', crf,
-    '-pix_fmt', 'yuv420p',
+    ...videoArgs,
     // MediaRecorder writes variable frame rate; pin it so players seek correctly.
     '-r', String(fps),
     '-movflags', '+faststart',
@@ -2387,8 +2451,10 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
     outputPath,
   ]
 
+  const softwareArgs = ['-c:v', 'libx264', '-preset', 'medium', '-crf', crf, '-profile:v', 'high', '-pix_fmt', 'yuv420p']
   try {
-    await runProcess(null, ffmpegPath, args)
+    if (payload?.crf) await runProcess(null, ffmpegPath, buildArgs(softwareArgs))
+    else await runEncode(null, 'final', buildArgs)
   } catch (err) {
     await fsp.rm(source, { force: true })
     throw new Error(`FFmpeg could not convert the recording: ${err?.message || String(err)}`)
@@ -2407,6 +2473,88 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
 })
 
 ipcMain.handle('media:status', () => mediaToolStatus())
+
+/* ——— offline voice input (1.10) ——— */
+// Whisper (whisper.cpp) first, Windows Speech Recognition second; the
+// renderer shows its existing friendly message when neither is available.
+let windowsSpeechAvailable = null
+
+function whisperSetup() {
+  return voiceEngines.findWhisper({
+    env: process.env,
+    dirs: [
+      process.resourcesPath ? path.join(process.resourcesPath, 'whisper') : null,
+      userDataPath('whisper'),
+      path.join(__dirname, '..', 'vendor', 'whisper'),
+    ],
+    platform: process.platform,
+    exists: (p) => fs.existsSync(p),
+    list: (d) => fs.readdirSync(d),
+  })
+}
+
+async function probeWindowsSpeech() {
+  if (process.platform !== 'win32') return false
+  if (windowsSpeechAvailable !== null) return windowsSpeechAvailable
+  try {
+    const { stdout } = await runProcess(null, 'powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', voiceEngines.WINDOWS_SPEECH_PROBE])
+    windowsSpeechAvailable = Number(String(stdout).trim()) > 0
+  } catch (err) {
+    windowsSpeechAvailable = false
+    logLine('voice-windows-probe-failed', err?.message || String(err))
+  }
+  return windowsSpeechAvailable
+}
+
+ipcMain.handle('voice:status', async () => {
+  const whisper = whisperSetup()
+  const windows = await probeWindowsSpeech()
+  return {
+    whisper: Boolean(whisper),
+    windows,
+    engine: whisper ? 'whisper' : windows ? 'windows' : null,
+    whisperModel: whisper ? path.basename(whisper.model) : null,
+  }
+})
+
+ipcMain.handle('voice:transcribe', async (_event, payload) => {
+  const bytes = payload?.wav
+  if (!bytes || !bytes.byteLength) return { text: '', engine: null }
+  if (bytes.byteLength > 8 * 1024 * 1024) throw new Error('That recording is too long to transcribe in one go.')
+  const dir = userDataPath('voice-tmp')
+  ensureDir(dir)
+  const base = path.join(dir, `utt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+  const wavPath = `${base}.wav`
+  await fsp.writeFile(wavPath, Buffer.from(bytes))
+  const failures = []
+  try {
+    const whisper = whisperSetup()
+    if (whisper) {
+      try {
+        await runProcess(null, whisper.bin, voiceEngines.whisperArgs({ model: whisper.model, wavPath, outBase: base, lang: payload?.lang, threads: Math.max(1, os.cpus().length - 1) }), { cwd: path.dirname(whisper.bin) })
+        const text = voiceEngines.cleanTranscript(await fsp.readFile(`${base}.txt`, 'utf8').catch(() => ''))
+        return { text, engine: 'whisper' }
+      } catch (err) {
+        failures.push(`Whisper: ${String(err?.message || err).slice(0, 300)}`)
+      }
+    }
+    if (await probeWindowsSpeech()) {
+      try {
+        const { stdout } = await runProcess(null, 'powershell.exe', voiceEngines.windowsSpeechArgs(wavPath))
+        return { text: voiceEngines.cleanTranscript(stdout), engine: 'windows' }
+      } catch (err) {
+        failures.push(`Windows Speech: ${String(err?.message || err).slice(0, 300)}`)
+      }
+    }
+    if (failures.length) logLine('voice-transcribe-failed', failures.join(' | '))
+    const error = new Error(failures.length ? 'Offline speech recognition failed on this recording.' : 'No offline speech engine is installed.')
+    error.code = failures.length ? 'engine-failed' : 'no-engine'
+    throw error
+  } finally {
+    fsp.rm(wavPath, { force: true }).catch(() => {})
+    fsp.rm(`${base}.txt`, { force: true }).catch(() => {})
+  }
+})
 
 ipcMain.handle('dialog:pickFolder', async () => {
   const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
@@ -2483,6 +2631,57 @@ function crfForQuality(quality) {
 
 function presetForQuality(quality) {
   return quality === 'final' ? 'slow' : 'veryfast'
+}
+
+/* ——— hardware-accelerated encoding (2.24) ——— */
+// Detected once per session (a tiny real test encode per candidate), then
+// reused. If a hardware encoder fails mid-render the segment is re-encoded
+// with libx264 and hardware is disabled for the rest of the session.
+const encoderSession = { result: null, pending: null, disabledReason: null }
+
+function hardwareEncodingMode() {
+  const mode = readSettings().hardwareEncoding
+  return mode === 'off' ? 'off' : 'auto'
+}
+
+async function currentVideoEncoder() {
+  if (encoderSession.disabledReason) return encoders.SOFTWARE
+  if (encoderSession.result) return encoderSession.result.name
+  if (!encoderSession.pending) {
+    encoderSession.pending = encoders
+      .detect((args) => runProcess(null, ffmpegPath, args), process.platform, hardwareEncodingMode())
+      .then((result) => {
+        encoderSession.result = result
+        logLine('video-encoder', result.reason, { name: result.name, tried: result.tried })
+        return result
+      })
+      .finally(() => { encoderSession.pending = null })
+  }
+  return (await encoderSession.pending).name
+}
+
+function videoEncoderState() {
+  const r = encoderSession.result
+  if (!r) return encoderSession.disabledReason ? { name: encoders.SOFTWARE, hardware: false, tried: [], reason: encoderSession.disabledReason } : null
+  if (encoderSession.disabledReason) return { name: encoders.SOFTWARE, hardware: false, tried: r.tried, reason: encoderSession.disabledReason }
+  return r
+}
+
+/**
+ * Run an FFmpeg encode whose video arguments come from the chosen encoder.
+ * `build(videoArgs)` returns the full argument list.
+ */
+async function runEncode(state, quality, build, options) {
+  const name = await currentVideoEncoder()
+  try {
+    return await runProcess(state, ffmpegPath, build(encoders.videoArgs(name, quality)), options)
+  } catch (err) {
+    if (!encoders.isHardware(name) || state?.cancelled) throw err
+    encoderSession.disabledReason = `${name} failed during a render; switched to libx264 for this session.`
+    logLine('video-encoder-fallback', encoderSession.disabledReason, { error: String(err?.message || err).slice(-600) })
+    if (state) state.encoderSwitched = true
+    return runProcess(state, ffmpegPath, build(encoders.videoArgs(encoders.SOFTWARE, quality)), options)
+  }
 }
 
 function renderOutputName(name) {
@@ -2630,7 +2829,7 @@ async function renderArenaSegment(state, source, ctx) {
     if (!win.isDestroyed()) win.destroy()
   }
 
-  await runProcess(state, ffmpegPath, [
+  await runEncode(state, ctx.quality, (v) => [
     '-y',
     '-hide_banner',
     // A PNG sequence feeds faster than libx264 consumes it; the default
@@ -2657,12 +2856,7 @@ async function renderArenaSegment(state, source, ctx) {
     String(ctx.fps),
     '-vf',
     evenFrameFilter(ctx.target.width, ctx.target.height),
-    '-c:v',
-    'libx264',
-    '-preset',
-    presetForQuality(ctx.quality),
-    '-crf',
-    crfForQuality(ctx.quality),
+    ...v,
     '-c:a',
     'aac',
     '-ar',
@@ -2686,19 +2880,12 @@ async function renderFootageInterval(state, source, interval, ctx, hasAudio) {
 
   const progressArgs = ['-progress', 'pipe:2', '-nostats']
   const base = ['-y', '-hide_banner', ...progressArgs, '-ss', String(start), '-t', String(duration), '-i', source.videoPath || source.footagePath]
-  const output = [
+  const output = (v) => [
     '-vf',
     vf,
     '-r',
     String(ctx.fps),
-    '-c:v',
-    'libx264',
-    '-preset',
-    presetForQuality(ctx.quality),
-    '-crf',
-    crfForQuality(ctx.quality),
-    '-pix_fmt',
-    'yuv420p',
+    ...v,
     '-c:a',
     'aac',
     '-ar',
@@ -2708,12 +2895,12 @@ async function renderFootageInterval(state, source, interval, ctx, hasAudio) {
     '-shortest',
     segmentPath,
   ]
-  const args = hasAudio
-    ? [...base, '-map', '0:v:0', '-map', '0:a:0', ...output]
-    : [...base, '-f', 'lavfi', '-t', String(duration), '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000', '-map', '0:v:0', '-map', '1:a:0', ...output]
+  const args = (v) => hasAudio
+    ? [...base, '-map', '0:v:0', '-map', '0:a:0', ...output(v)]
+    : [...base, '-f', 'lavfi', '-t', String(duration), '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000', '-map', '0:v:0', '-map', '1:a:0', ...output(v)]
 
   let lastUnits = 0
-  await runProcess(state, ffmpegPath, args, {
+  await runEncode(state, ctx.quality, args, {
     onStderr: (text) => {
       const seconds = ffmpegProgressSeconds(text)
       if (seconds !== null) {
@@ -2755,7 +2942,13 @@ async function concatSegments(state, segments, outputPath, ctx) {
   const listPath = path.join(ctx.workDir, 'concat.txt')
   const body = segments.map((segment) => `file '${String(segment.path).replace(/'/g, "'\\''")}'`).join(os.EOL)
   fs.writeFileSync(listPath, body, 'utf8')
-  await runProcess(state, ffmpegPath, ['-y', '-hide_banner', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', '-movflags', '+faststart', outputPath])
+  // Segments are stream-copied when they all came from one encoder. If a
+  // hardware encoder failed part-way (see runEncode), the segments differ,
+  // so they are re-encoded together instead of risking a broken file.
+  const codec = state?.encoderSwitched
+    ? [...encoders.videoArgs(encoders.SOFTWARE, 'final'), '-c:a', 'aac', '-ar', '48000', '-ac', '2']
+    : ['-c', 'copy']
+  await runProcess(state, ffmpegPath, ['-y', '-hide_banner', '-f', 'concat', '-safe', '0', '-i', listPath, ...codec, '-movflags', '+faststart', outputPath])
 }
 
 ipcMain.handle('render:start', async (event, job) => {
@@ -3033,6 +3226,23 @@ function createWindow() {
 app.setAppUserModelId(APP_ID)
 wireUpdater()
 app.whenReady().then(() => {
+  // settings.json migration (2.29): once per launch, backed up first.
+  try {
+    if (fs.existsSync(settingsFile())) {
+      const migrated = migrateSettings(readSettings())
+      if (migrated.changed) {
+        fs.copyFileSync(settingsFile(), `${settingsFile()}.v${migrated.fromVersion}.bak`)
+        writeSettings(migrated.settings)
+        logLine('settings-migrated', `settings.json upgraded from v${migrated.fromVersion}`)
+      }
+    }
+  } catch (err) {
+    logLine('settings-migration-failed', err?.message || String(err))
+  }
+  try {
+    stateRecovery.previousSessionCrashed = projectHistory.beginSession(app.getPath('userData'))
+    if (stateRecovery.previousSessionCrashed) logLine('unclean-exit', 'The previous session did not close cleanly')
+  } catch {}
   createWindow()
   if (autoUpdater && !DEV_URL) autoUpdater.checkForUpdatesAndNotify().catch((err) => logLine('updater-launch-failed', err?.message || String(err)))
   startPeriodicUpdateChecks()
@@ -3051,4 +3261,5 @@ app.on('before-quit', () => {
     }
   }
 })
+app.on('will-quit', () => projectHistory.endSession(app.getPath('userData')))
 app.on('window-all-closed', () => app.quit())

@@ -38,7 +38,10 @@ assert.match(studio, /addSticker/, 'built-in Lottie stickers must be addable fro
 for (const key of ['j', 'k', 'l', 's']) assert.match(studio, new RegExp(`key === '${key}'`), `${key.toUpperCase()} shortcut must stay wired`)
 assert.match(studio, /key === 'k'[\s\S]*?patchTransformKeyframe/, 'K must create a keyframe on the selected clip')
 assert.match(studio, /key === 's'[\s\S]*?splitStudioClip/, 'S must split the selected clip')
-assert.match(studio, /accept="video\/\*,image\/\*,audio\/\*,\.zip,\.html,\.htm"/, 'Studio import must accept generated HTML and zip packages')
+{
+  const accept = (studio.match(/accept="(video\/\*[^"]*)"/) || [])[1] || ''
+  for (const t of ['video/*', 'image/*', 'audio/*', '.zip', '.html', '.htm', '.heic']) assert.ok(accept.split(',').includes(t), `Studio import must accept ${t} (generated HTML/zip packages, HEIC photos)`)
+}
 assert.match(generatedPackage, /mediaReferences[\s\S]*?entry\.async\('blob'\)/, 'zip import must extract referenced package media without executing HTML')
 assert.match(studio, /generated\.assets[\s\S]*?registerFile\(asset\.file\)[\s\S]*?StudioMediaClip/, 'package media must become editable native Studio clips')
 const resourceDrop = await readFile(new URL('../src/lib/studio/resourceDrop.ts', import.meta.url), 'utf8')

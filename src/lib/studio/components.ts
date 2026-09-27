@@ -27,6 +27,24 @@ export function findComponent(slug: string | null | undefined): ComponentEntry |
 }
 
 export const DEFAULT_RECORD_SEC = 4
+/** Shortest recording that still shows motion. */
+export const MIN_RECORD_SEC = 0.5
+/**
+ * No 2–8 s preset ceiling any more: the user types any length. The only limit
+ * is memory — every frame is an image kept in the project — so beyond this the
+ * recorder refuses honestly instead of freezing the app. 12 fps × 120 s ≈ 1,440
+ * frames, which is already very heavy.
+ */
+export const MAX_RECORD_SEC = 120
+/** Past this, warn that the recording will make the project large. */
+export const HEAVY_RECORD_SEC = 30
+
+/** Parse whatever the user typed into a usable record length (seconds). */
+export function clampRecordSec(value: unknown, fallback = DEFAULT_RECORD_SEC): number {
+  const n = typeof value === 'string' ? Number(value.replace(/s$/i, '').trim()) : Number(value)
+  if (!Number.isFinite(n) || n <= 0) return fallback
+  return Math.round(Math.min(MAX_RECORD_SEC, Math.max(MIN_RECORD_SEC, n)) * 100) / 100
+}
 
 const words = (text: string) => text.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2)
 
@@ -82,7 +100,7 @@ export function componentCatalogFor(instruction: string, limit = 14): { slug: st
  */
 export function componentClip(slug: string, opts: { startSec: number; durationSec?: number; recordSec?: number; interact?: boolean; track?: number; x?: number; y?: number } ): StudioOverlayClip {
   const entry = findComponent(slug)
-  const recordSec = Math.min(10, Math.max(1.5, opts.recordSec ?? DEFAULT_RECORD_SEC))
+  const recordSec = clampRecordSec(opts.recordSec)
   return {
     id: uid(),
     kind: 'overlay',
@@ -130,4 +148,21 @@ export function fitComponentScale(imgW: number, imgH: number, pixelRatio: number
 
 export function isPendingComponent(clip: StudioClip): clip is StudioOverlayClip & { component: NonNullable<StudioOverlayClip['component']> } {
   return clip.kind === 'overlay' && Boolean(clip.component) && (clip.component!.status === 'pending' || clip.component!.status === 'recording')
+}
+
+/**
+ * Record now, place later (2.13). A shelf item is a component clip that is not
+ * on the timeline yet: the same recorder fills it, and Place copies it to the
+ * playhead as many times as the user wants.
+ */
+export function shelfComponent(slug: string, opts: { recordSec?: number; interact?: boolean }): StudioOverlayClip {
+  const clip = componentClip(slug, { startSec: 0, recordSec: opts.recordSec, interact: opts.interact })
+  return { ...clip, durationSec: clip.component!.recordSec }
+}
+
+/** A ready shelf recording, as a fresh timeline clip at `startSec` on the first free track. */
+export function placeShelfItem(doc: StudioDoc, item: StudioOverlayClip, startSec: number): { doc: StudioDoc; clip: StudioClip } {
+  const fresh: StudioOverlayClip = { ...item, id: uid(), startSec: Math.max(0, Math.round(startSec * 100) / 100), durationSec: Math.max(item.durationSec, 0.5) }
+  const placed = placeClip(doc, fresh)
+  return { doc: { ...doc, trackCount: placed.trackCount, clips: [...doc.clips, placed.clip] }, clip: placed.clip }
 }

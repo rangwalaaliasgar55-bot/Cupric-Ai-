@@ -7,7 +7,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/build-packs.mjs && node scripts/build-icons.mjs --check && tsc --noEmit && node scripts/check-renderer.mjs && node scripts/check-encode-dims.mjs && node scripts/check-keyframe-edit.mjs && node scripts/check-agent-edits.mjs && node scripts/check-ipc-allowlist.mjs && node scripts/check-ai-connections.mjs && node scripts/check-updater.mjs && node scripts/check-resources.mjs && node scripts/check-generated-package.mjs && node scripts/check-template-fill.mjs && node scripts/check-resource-apply.mjs && node scripts/check-automation-gate.mjs && node scripts/check-studio-surfaces.mjs && node scripts/check-voice.mjs && node scripts/check-scrub-perf.mjs && node scripts/check-progress-coverage.mjs && vite build",
+    "build": "node scripts/build-packs.mjs && node scripts/build-icons.mjs --check && tsc --noEmit && node scripts/check-renderer.mjs && node scripts/check-encode-dims.mjs && node scripts/check-keyframe-edit.mjs && node scripts/check-agent-edits.mjs && node scripts/check-ipc-allowlist.mjs && node scripts/check-ai-connections.mjs && node scripts/check-updater.mjs && node scripts/check-resources.mjs && node scripts/check-generated-package.mjs && node scripts/check-template-fill.mjs && node scripts/check-resource-apply.mjs && node scripts/check-automation-gate.mjs && node scripts/check-studio-surfaces.mjs && node scripts/check-voice.mjs && node scripts/check-encoders.mjs && node scripts/check-project-history.mjs && node scripts/check-diagnostics.mjs && node scripts/check-sandbox.mjs && node scripts/check-migration.mjs && node scripts/check-photo-import.mjs && node scripts/check-local-voice.mjs && node scripts/check-undo-audit.mjs && node scripts/check-scrub-perf.mjs && node scripts/check-progress-coverage.mjs && vite build",
     "typecheck": "tsc --noEmit",
     "packs:build": "node scripts/build-packs.mjs",
     "check:renderer": "node scripts/check-renderer.mjs && node scripts/check-encode-dims.mjs",
@@ -30,7 +30,16 @@
     "desktop": "concurrently -k -s first \"vite\" \"cross-env ELECTRON_START_URL=http://localhost:5173 electron .\"",
     "dist:win": "npm run build && electron-builder --win",
     "resources:sync": "node scripts/sync-resources.mjs",
-    "build-icons": "node scripts/build-icons.mjs"
+    "build-icons": "node scripts/build-icons.mjs",
+    "whisper:fetch": "node scripts/fetch-whisper.mjs",
+    "check:encoders": "node scripts/check-encoders.mjs",
+    "check:history": "node scripts/check-project-history.mjs",
+    "check:diagnostics": "node scripts/check-diagnostics.mjs",
+    "check:sandbox": "node scripts/check-sandbox.mjs",
+    "check:migration": "node scripts/check-migration.mjs",
+    "check:photo-import": "node scripts/check-photo-import.mjs",
+    "check:local-voice": "node scripts/check-local-voice.mjs",
+    "check:undo": "node scripts/check-undo-audit.mjs"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.3.0",
@@ -46,6 +55,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "electron-updater": "^6.8.9",
+    "heic2any": "^0.0.4",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "jszip": "^3.10.2",
@@ -141,7 +151,17 @@
     },
     "linux": {
       "icon": "build/icon.png"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "vendor/whisper",
+        "to": "whisper",
+        "filter": [
+          "**/*",
+          "!.gitkeep"
+        ]
+      }
+    ]
   },
   "optionalDependencies": {
     "ffmpeg-static": "^5.3.0",

@@ -1,0 +1,30 @@
+{
+  "state": {
+    "projects": [
+      {
+        "id": "p-old",
+        "name": "Launch teaser (saved by 0.5.0)",
+        "timeline": [{ "id": "t1", "sourceId": "s1" }],
+        "renderJobs": [],
+        "arenaAssets": [],
+        "studio": {
+          "aspect": "4:5",
+          "fps": 25,
+          "backgroundId": "lime-void",
+          "trackCount": 1,
+          "clips": [
+            { "id": "c1", "kind": "text", "track": 2, "startSec": 0, "durationSec": 3, "text": "Hello", "keyframes": [{ "time": 2, "x": 0.7 }, { "time": 0, "x": 0.2, "ease": "linear" }] },
+            { "id": "c2", "kind": "overlay", "track": 0, "startSec": 1, "durationSec": 4, "name": "Like button", "dataUrl": "", "source": "UI component", "x": 0.5, "y": 0.5, "scale": 1, "transitionIn": "fade", "transitionOut": "fade", "opacity": 1, "component": { "slug": "like-button", "status": "recording", "recordSec": 400, "interact": true } },
+            { "id": "c3", "kind": "video", "track": 0, "startSec": 5, "durationSec": 2, "mediaId": "m1", "fileName": "clip.mp4", "name": "clip.mp4", "transitionIn": "none", "transitionOut": "none", "opacity": 1 },
+            { "id": "c4", "kind": "hologram", "track": 1, "startSec": 0, "durationSec": 1, "name": "future kind" },
+            { "kind": "text", "track": 0, "startSec": 0, "durationSec": 1, "text": "no id" }
+          ]
+        }
+      },
+      { "id": "p-nostudio", "name": "Made before the Studio existed", "timeline": [], "renderJobs": [], "arenaAssets": [] }
+    ],
+    "activeProjectId": "p-old",
+    "view": "studio"
+  },
+  "version": 1
+}

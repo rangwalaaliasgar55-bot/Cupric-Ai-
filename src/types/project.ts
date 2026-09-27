@@ -330,6 +330,13 @@ export type StudioTextClip = StudioClipCommon & {
   anim: StudioTextAnim
   captionStyle: StudioCaptionStyle | null
   highlightWord: string | null
+  /**
+   * Text legibility (2.14). `auto` (default) paints a soft scrim only when the
+   * pixels under the text are low-contrast or busy; `on` always; `off` never.
+   */
+  legibility?: 'auto' | 'on' | 'off'
+  /** Scrim opacity 0–1 (default 0.55). */
+  scrimStrength?: number
 }
 
 export type StudioBackgroundClip = StudioClipCommon & {
@@ -462,4 +469,9 @@ export type StudioDoc = {
   customBackground?: StudioCustomBackground | null
   clips: StudioClip[]
   trackCount: number
+  /**
+   * Recorded components waiting to be placed (2.13 — record now, place later).
+   * Not on the timeline, never rendered; Place copies one to the playhead.
+   */
+  shelf?: StudioOverlayClip[]
 }

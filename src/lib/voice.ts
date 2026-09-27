@@ -8,9 +8,35 @@
  *    transcripts into the parser. If the API is missing, `isVoiceSupported()`
  *    returns false and the UI hides the button instead of pretending.
  *
- * Nothing here calls a network service: SpeechRecognition in Chromium does its
- * own thing, and when it is unavailable we simply do not offer the feature.
+ * Engines, in order (1.10):
+ *  1. Desktop with an offline engine (Whisper, then Windows Speech
+ *     Recognition — see electron/voice-engines.cjs): the mic is recorded
+ *     locally and transcribed by the main process. No network.
+ *  2. Otherwise Web Speech, which works in a browser but needs Google's
+ *     online service — unreachable from the packaged desktop app.
+ *  3. When that fails, one friendly message saying to type instead.
  */
+import { getIpc } from './bridge'
+import { LocalVoiceListener } from './localVoice'
+
+export type VoiceEngineStatus = { whisper: boolean; windows: boolean; engine: 'whisper' | 'windows' | null; whisperModel?: string | null }
+let engineStatus: VoiceEngineStatus | null = null
+
+/** Ask the desktop app which offline engines exist. Call once at startup. */
+export async function primeVoiceEngines(): Promise<VoiceEngineStatus | null> {
+  const ipc = getIpc()
+  if (!ipc) return null
+  try {
+    engineStatus = (await ipc.invoke('voice:status')) as VoiceEngineStatus
+  } catch {
+    engineStatus = null
+  }
+  return engineStatus
+}
+
+export function offlineVoiceEngine(): VoiceEngineStatus['engine'] {
+  return engineStatus?.engine ?? null
+}
 
 export type VoiceCommand =
   | { type: 'play' }
@@ -155,7 +181,7 @@ function recognitionCtor(): (new () => SpeechRecognitionLike) | null {
 }
 
 export function isVoiceSupported(): boolean {
-  return recognitionCtor() !== null
+  return offlineVoiceEngine() !== null || recognitionCtor() !== null
 }
 
 export type VoiceEvents = {
@@ -224,6 +250,10 @@ export function voiceErrorMessage(code: string): string {
       return 'No microphone was found. Plug one in or pick an input device in your system sound settings, then try again.'
     case 'language-not-supported':
       return 'Voice input doesn’t support this language here. Type your brief instead.'
+    case 'no-engine':
+      return 'Offline voice input isn’t installed. Add Whisper (run “npm run whisper:fetch”, or put whisper-cli and a ggml model in the app’s whisper folder) — or type your brief instead.'
+    case 'engine-failed':
+      return 'The offline speech engine couldn’t transcribe that. Type your brief instead, or copy a diagnostic report from Settings if it keeps happening.'
     case 'restart-loop':
       return 'Voice input keeps stopping on its own, so Cupric turned it off. Type your brief instead, or try the mic again later.'
     default:
@@ -256,9 +286,52 @@ export class VoiceListener {
     return this.running
   }
 
+  private local: LocalVoiceListener | null = null
+
+  /** Offline path: record locally, transcribe in the main process. */
+  private startLocal(): boolean {
+    const ipc = getIpc()
+    if (!ipc) return false
+    this.reported.clear()
+    const local = new LocalVoiceListener(
+      {
+        onFinal: (text) => {
+          this.events.onTranscript(text, true)
+          if (this.mode === 'dictation') return
+          const command = parseVoiceCommand(text)
+          if (command) this.events.onCommand(command, text)
+          else this.events.onUnrecognised?.(text)
+        },
+        onError: (code) => {
+          this.running = false
+          this.report(code)
+        },
+        onEnd: () => {
+          if (this.local === local) this.local = null
+          this.running = false
+          this.events.onEnd?.()
+        },
+      },
+      (wav, lang) => ipc.invoke('voice:transcribe', { wav, lang }),
+      this.lang,
+    )
+    this.local = local
+    this.running = true
+    void local.start().then((ok) => {
+      if (!ok) {
+        this.running = false
+        this.local = null
+        this.events.onEnd?.()
+      }
+    })
+    return true
+  }
+
   start() {
+    if (this.running) return false
+    if (offlineVoiceEngine()) return this.startLocal()
     const Ctor = recognitionCtor()
-    if (!Ctor || this.running) return false
+    if (!Ctor) return false
     const rec = new Ctor()
     this.reported.clear()
     this.restarts = []
@@ -331,6 +404,10 @@ export class VoiceListener {
 
   stop() {
     this.running = false
+    if (this.local) {
+      this.local.stop()
+      return
+    }
     try {
       this.rec?.stop()
     } catch {

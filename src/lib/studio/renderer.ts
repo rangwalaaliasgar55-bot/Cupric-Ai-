@@ -259,6 +259,129 @@ export function measureTextBlock(ctx: CanvasRenderingContext2D, clip: StudioText
   return { w: Math.min(1, (widest + pad * 2) / w), h: Math.min(1, (fontPx * 1.12 * lines.length + pad * 2) / h) }
 }
 
+
+/* ——— legibility (2.14) ——— */
+
+function hexToRgb(color: string): [number, number, number] | null {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim())
+  if (!m) return null
+  const hex = m[1].length === 3 ? m[1].split('').map((c) => c + c).join('') : m[1]
+  return [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)]
+}
+
+/** WCAG relative luminance of an sRGB colour, 0–1. */
+export function relativeLuminance(r: number, g: number, b: number): number {
+  const ch = (v: number) => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }
+  return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
+}
+
+export function contrastRatio(a: number, b: number): number {
+  const hi = Math.max(a, b)
+  const lo = Math.min(a, b)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+/**
+ * Decide whether text needs a scrim over a region with the given mean
+ * luminance and spread. Pure, so the rule is testable without a canvas.
+ * Returns the scrim tone to use, or null when the text already reads.
+ */
+export function legibilityVerdict(textLum: number, bgMean: number, bgSpread: number): 'dark' | 'light' | null {
+  const busy = bgSpread > 0.2
+  const lowContrast = contrastRatio(textLum, bgMean) < 4.5
+  if (!busy && !lowContrast) return null
+  // Light text gets a dark scrim, dark text a light one.
+  return textLum > 0.4 ? 'dark' : 'light'
+}
+
+function sampleRegionLuminance(ctx: CanvasRenderingContext2D, x: number, y: number, rw: number, rh: number, w: number, h: number): { mean: number; spread: number } | null {
+  if (typeof ctx.getImageData !== 'function' || !ctx.canvas) return null
+  const kx = (ctx.canvas.width || w) / w
+  const ky = (ctx.canvas.height || h) / h
+  const sx = Math.max(0, Math.floor(x * kx))
+  const sy = Math.max(0, Math.floor(y * ky))
+  const sw = Math.min((ctx.canvas.width || w) - sx, Math.ceil(rw * kx))
+  const sh = Math.min((ctx.canvas.height || h) - sy, Math.ceil(rh * ky))
+  if (sw < 2 || sh < 2) return null
+  let data: Uint8ClampedArray
+  try {
+    data = ctx.getImageData(sx, sy, sw, sh).data
+  } catch {
+    return null // tainted canvas — say nothing rather than guess
+  }
+  // ~600 samples on a fixed grid: cheap and deterministic.
+  const step = Math.max(1, Math.floor(Math.sqrt((sw * sh) / 600)))
+  let sum = 0
+  let sumSq = 0
+  let n = 0
+  for (let yy = 0; yy < sh; yy += step) {
+    for (let xx = 0; xx < sw; xx += step) {
+      const i = (yy * sw + xx) * 4
+      if (data[i + 3] === 0) continue
+      const l = relativeLuminance(data[i], data[i + 1], data[i + 2])
+      sum += l
+      sumSq += l * l
+      n += 1
+    }
+  }
+  if (!n) return null
+  const mean = sum / n
+  return { mean, spread: Math.sqrt(Math.max(0, sumSq / n - mean * mean)) }
+}
+
+function paintLegibilityScrim(
+  ctx: CanvasRenderingContext2D,
+  clip: StudioTextClip,
+  cx: number,
+  cy: number,
+  textW: number,
+  textH: number,
+  fontPx: number,
+  alpha: number,
+  w: number,
+  h: number,
+) {
+  const mode = clip.legibility ?? 'auto'
+  if (mode === 'off' || !clip.text.trim()) return
+  // Caption presets with their own plate already guarantee contrast.
+  if (clip.captionStyle === 'hormozi') return
+  const left = clip.align === 'left' ? cx : clip.align === 'right' ? cx - textW : cx - textW / 2
+  const padX = fontPx * 0.6
+  const padY = fontPx * 0.4
+  const rx = left - padX
+  const ry = cy - textH / 2 - padY
+  const rw = textW + padX * 2
+  const rh = textH + padY * 2
+  const rgb = hexToRgb(clip.color) ?? [255, 255, 255]
+  const textLum = relativeLuminance(rgb[0], rgb[1], rgb[2])
+  let tone: 'dark' | 'light' | null
+  if (mode === 'on') {
+    tone = textLum > 0.4 ? 'dark' : 'light'
+  } else {
+    const region = sampleRegionLuminance(ctx, rx, ry, rw, rh, w, h)
+    tone = region ? legibilityVerdict(textLum, region.mean, region.spread) : null
+  }
+  if (!tone) return
+  const strength = Math.max(0, Math.min(1, clip.scrimStrength ?? 0.55))
+  if (strength <= 0) return
+  ctx.save()
+  ctx.globalAlpha *= alpha
+  const color = tone === 'dark' ? `rgba(8,8,12,${strength})` : `rgba(250,249,245,${strength})`
+  // A soft-edged plate sized to the text block, never a full-frame tint.
+  ctx.shadowColor = color
+  ctx.shadowBlur = fontPx * 0.9
+  ctx.fillStyle = color
+  const r = Math.min(rh / 2, fontPx * 0.5)
+  ctx.beginPath()
+  if (typeof ctx.roundRect === 'function') ctx.roundRect(rx, ry, rw, rh, r)
+  else ctx.rect(rx, ry, rw, rh)
+  ctx.fill()
+  ctx.restore()
+}
+
 function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: number, w: number, h: number) {
   const progress = clipProgress(clip, t)
   const preset = captionPreset(clip.captionStyle)
@@ -306,6 +429,12 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
   // clipped. Measured off the real line box, not a guess.
   const widestLine = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0)
   const { x: cx, y: cy } = clampToSafeArea(rawCx, rawCy, widestLine, totalH, clip.align, w, h)
+
+  // Legibility (2.14): a soft scrim behind the text block when what is under
+  // it is too close to the text colour or too busy to read against. Measured
+  // from the pixels already painted this frame, so it is a pure function of
+  // the frame — preview and export make the same call.
+  paintLegibilityScrim(ctx, clip, cx, cy, widestLine, totalH, fontPx, alpha, w, h)
 
   if (clip.anim === 'glass-rise') {
     // Frosted plate rises with the text and clears as it settles.
@@ -934,9 +1063,12 @@ export function drawStudioFrame(
 }
 
 /** Canvas-drawable element for a media clip, or null. Audio is never drawable. */
-export function drawableElement(mediaId: string): CanvasImageSource | null {
+export function drawableElement(mediaId: string, quality: 'full' | 'preview' = 'full'): CanvasImageSource | null {
   const handle = getMedia(mediaId)
   if (!handle) return null
+  // Photo proxies (2.25): preview and scrubbing draw the downscaled copy;
+  // export asks for 'full' and always gets the original.
+  if (quality === 'preview' && handle.preview) return handle.preview
   const el = handle.element
   if (el instanceof HTMLAudioElement) return null
   if (el instanceof HTMLVideoElement && el.readyState < 2) return null

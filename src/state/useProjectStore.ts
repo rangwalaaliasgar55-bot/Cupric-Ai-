@@ -15,8 +15,11 @@ import type {
   VotingMode,
   StudioClip,
   StudioDoc,
+  StudioOverlayClip,
 } from '../types/project'
 import { getIpc } from '../lib/bridge'
+import { webAutosave } from '../lib/projectHistory'
+import { migratePersisted, PERSIST_VERSION } from './migrate'
 import { planWithRemotionCapabilities } from '../lib/remotionResources'
 import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
@@ -70,9 +73,13 @@ const desktopAwareStorage: StateStorage = {
     const ipc = getIpc()
     if (!ipc) {
       window.localStorage.setItem(name, value)
+      webAutosave(value)
       return
     }
-    void ipc.invoke('state:save', { key: name, value })
+    // Atomic write + rolling autosave snapshots happen in the main process.
+    ipc.invoke('state:save', { key: name, value }).catch((err: unknown) => {
+      console.error('[cupric] project save failed', err)
+    })
   },
   removeItem: (name) => {
     const ipc = getIpc()
@@ -178,9 +185,14 @@ type AppState = {
   setClipDuration: (pid: string, clipId: string, dur: number) => void
 
   /* Studio — the in-app editor */
-  patchStudio: (pid: string, patch: Partial<StudioDoc>) => void
+  patchStudio: (pid: string, patch: Partial<StudioDoc>, label?: string) => void
   addStudioClip: (pid: string, clip: StudioClip) => void
   updateStudioClip: (pid: string, clipId: string, patch: Partial<StudioClip>) => void
+  /**
+   * A component recording finished or failed (timeline clip or shelf item).
+   * Not an undo step — see applyBackground.
+   */
+  landComponentRecording: (pid: string, clipId: string, patch: Partial<StudioOverlayClip>) => void
   removeStudioClip: (pid: string, clipId: string) => void
   splitStudioClip: (pid: string, clipId: string, atSec: number) => void
   duplicateStudioClip: (pid: string, clipId: string) => void
@@ -245,6 +257,23 @@ export const useProjectStore = create<AppState>()(
             past,
             // Any new edit abandons the redo branch, as in every editor.
             future: [],
+          }
+        })
+
+      /**
+       * Background results (a component recording landing, or failing) are
+       * not user edits: they must not become an undo step, or Undo right after
+       * your own edit would undo the recording instead (and re-queue it).
+       * The same patch is applied to the present AND every history snapshot,
+       * so stepping back through your edits keeps the recording.
+       */
+      const applyBackground = (id: string, fn: (p: Project) => Project) =>
+        set((s) => {
+          const mapAll = (projects: Project[]) => projects.map((p) => (p.id === id ? fn(p) : p))
+          return {
+            projects: mapAll(s.projects),
+            past: s.past.map((e) => ({ ...e, projects: mapAll(e.projects) })),
+            future: s.future.map((e) => ({ ...e, projects: mapAll(e.projects) })),
           }
         })
 
@@ -502,8 +531,23 @@ export const useProjectStore = create<AppState>()(
 
         /* ——— Studio ——— */
 
-        patchStudio: (pid, patch) =>
-          updateProject(pid, (p) => ({ ...p, studio: { ...studioOf(p), ...patch } }), 'Change project settings'),
+        patchStudio: (pid, patch, label = 'Change project settings') =>
+          updateProject(pid, (p) => ({ ...p, studio: { ...studioOf(p), ...patch } }), label),
+
+        landComponentRecording: (pid, clipId, patch) =>
+          applyBackground(pid, (p) => {
+            if (!p.studio) return p
+            const doc = p.studio
+            const patchOne = <T extends StudioClip>(c: T): T => (c.id === clipId && c.kind === 'overlay' ? ({ ...c, ...patch } as T) : c)
+            return {
+              ...p,
+              studio: {
+                ...doc,
+                clips: doc.clips.map(patchOne),
+                ...(doc.shelf ? { shelf: doc.shelf.map(patchOne) } : {}),
+              },
+            }
+          }),
 
         addStudioClip: (pid, clip) =>
           updateProject(pid, (p) => {
@@ -655,28 +699,12 @@ export const useProjectStore = create<AppState>()(
     },
     {
       name: 'northframe-v1',
-      version: 1,
+      // Bump PERSIST_VERSION (src/state/migrate.ts) whenever the saved shape
+      // changes, and teach migratePersisted the step — check:migration runs
+      // real old-shaped projects through it.
+      version: PERSIST_VERSION,
       storage: createJSONStorage(() => desktopAwareStorage),
-      migrate: (persisted) => {
-        const state = persisted as Partial<AppState>
-        const starterNames = new Set(['Aurora Launch Teaser', 'Podcast Clip — Ep. 12', 'Logo Sting v2'])
-        return {
-          ...state,
-          projects: (state.projects ?? [])
-            .filter((project) => !starterNames.has(project.name))
-            .map((project) => ({
-              ...project,
-              studio: project.studio ?? emptyStudioDoc(),
-              timeline: (project.timeline ?? []).filter((clip) => Boolean(clip.sourceId)),
-              renderJobs: (project.renderJobs ?? []).filter((job) => Boolean(job.outputPath)),
-              arenaAssets: (project.arenaAssets ?? []).map((asset) =>
-                !asset.localPath && (asset.status === 'imported' || asset.status === 'rendered')
-                  ? { ...asset, status: 'awaiting-vote' as const }
-                  : asset,
-              ),
-            })),
-        }
-      },
+      migrate: (persisted, fromVersion) => migratePersisted(persisted, fromVersion) as unknown as AppState,
       partialize: (s) => ({
         projects: s.projects,
         activeProjectId: s.activeProjectId,
