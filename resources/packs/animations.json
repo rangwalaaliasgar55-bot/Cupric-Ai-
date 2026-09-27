@@ -2,7 +2,7 @@
   "id": "animations",
   "name": "Text animations",
   "description": "Caption and title animations, all pure functions of clip progress so preview and export match.",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "source": "Cupric Studio renderer",
   "license": "MIT",
   "items": [

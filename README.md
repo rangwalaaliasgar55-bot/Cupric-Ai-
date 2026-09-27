@@ -67,7 +67,7 @@ it can run offline after installation. Gemini requires either a saved key or a
 | **Timeline render** | Desktop timeline clips render to MP4 under app data. Arena clips are captured frame-by-frame through `window.__seek(t)`; footage clips are trimmed, cropped/scaled, optional silence cuts are applied, and segments are concatenated in timeline order. Browser mode records a downloadable WebM draft via `canvas.captureStream()`/`MediaRecorder`. |
 | **Progress/cancel** | Render progress streams over IPC. Cancel kills active FFmpeg processes and closes hidden capture windows. |
 | **Persistence** | Zustand state mirrors to `%APPDATA%/cupric-ai/projects.json` in Electron; browser localStorage remains the web-preview fallback. |
-| **Desktop hardening** | Single-instance lock, crash logs under `logs/`, renderer-crash reload screen, optional launch-on-login, GitHub updater check, and optional code signing docs. |
+| **Desktop hardening** | Single-instance lock, electron-log files (main + renderer) under `userData/logs/`, per-screen error boundaries with a Copy error / Go to Library fallback card (never a white screen), load-time validation of `projects.json`, renderer-crash reload screen, optional launch-on-login, GitHub updater check, and optional code signing docs. |
 
 ## Screens
 
@@ -180,6 +180,10 @@ updates** action in the Ask Gemini settings area.
 | `npm run typecheck` | TypeScript only. |
 | `npm run packs:build` | Regenerate `resources/packs/*.json` from the in-app registries. |
 | `npm run check:renderer` | Headless smoke test: every background, transition, animation and glass preset is rendered against a stub canvas and the voice grammar is asserted. |
+| `npm run check:bridge` | The desktop bridge stays read-only: ESLint ban on writes to `window.cupric`/`window.northframe` (self-tested), source grep, preload executed against a mocked contextBridge, a type-level fixture, and a scan of the built bundle. |
+| `npm run check:boot` | Builds, then boots the app (Electron, the packaged exe via `CUPRIC_BOOT_EXE`, or headless Chrome via `CUPRIC_BOOT_CHROME` with a read-only bridge) and visits every view with empty, corrupt and bad-shape `projects.json` — fails on any uncaught error, blank screen, or missing fallback card. |
+| `npm run check:schema` | `projects.json` load-time validation repairs bad saved data to defaults with warnings, never drops content. |
+| `npm run verify` | The release gate: `typecheck` → `check:renderer` → `check:bridge` → `check:boot`. |
 | `npm run desktop` | Vite + Electron together for desktop development. |
 | `npm run dist:win` | Build + package Windows NSIS and portable artifacts. |
 

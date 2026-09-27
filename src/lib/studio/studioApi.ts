@@ -1,7 +1,9 @@
 /**
  * Programmatic Studio API — scene, block, asset and variable management plus
  * event subscription, for scripts, plugins and automation. Exposed in the
- * renderer as `window.cupric.studio` while the Studio is open.
+ * renderer as `window.__cupricStudio` while the Studio is open. (Before
+ * 0.10.1 it was grafted onto `window.cupric.studio`, but `window.cupric` is the
+ * read-only contextBridge object — writing to it blanked the Studio.)
  *
  * Every mutation goes through the same validated edit-op path the AI agent
  * uses (validateStudioEditPlan → applyStudioEditPlan) or a pure helper, and
@@ -111,4 +113,5 @@ export function createStudioApi(b: StudioBridge) {
   }
 }
 
+/** The object published as `window.__cupricStudio` while the Studio is mounted. */
 export type StudioApi = ReturnType<typeof createStudioApi>
