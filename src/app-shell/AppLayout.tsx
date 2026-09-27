@@ -49,9 +49,12 @@ export function AppLayout() {
             <motion.div
               key={view}
               className="h-full"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
+              // Opacity only: screens are exactly viewport-height, so any
+              // translate — even a 6px entrance that a busy screen (Apex)
+              // never finishes — pushes their bottom edge out of the window.
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.16, ease: 'easeOut' }}
             >
               {SCREENS[view]}
