@@ -4,5 +4,5 @@
     <path d="M0-10V10M-10 0H10M-7.1-7.1 7.1 7.1M7.1-7.1-7.1 7.1"/>
   </g>
   <text x="36" y="26" fill="#F4F1EA" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="-.5">Cupric</text>
-  <text x="94" y="26" fill="#C8F542" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="-.5">AI</text>
+  <text x="99" y="26" fill="#C8F542" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="700" letter-spacing="-.5">AI</text>
 </svg>

@@ -121,7 +121,7 @@ export default function Player(props: PlayerProps) {
           <button type="button" aria-label="Restart" onClick={() => { setFrame(0); setPlaying(true); }} className="grid h-8 w-8 place-items-center rounded-lg bg-white/5 text-zinc-100 hover:bg-white/10"><RotateCcw size={14} /></button>
           {audio && doc.audio?.length ? <button type="button" aria-label={muted ? "Unmute" : "Mute"} onClick={() => setMuted(!muted)} className="grid h-8 w-8 place-items-center rounded-lg bg-white/5 text-zinc-100 hover:bg-white/10">{muted ? <VolumeX size={14} /> : <Volume2 size={14} />}</button> : null}
           <input aria-label="Seek" type="range" min={0} max={total - 1} value={Math.min(frame, total - 1)} onChange={(e) => { setPlaying(false); setFrame(Number(e.target.value)); }} className="h-1 flex-1 accent-indigo-400" />
-          <span className="w-24 text-right font-mono tabular-nums">{secs(frame)} / {secs(total)}</span>
+          <span className="shrink-0 whitespace-nowrap text-right font-mono tabular-nums">{secs(frame)} / {secs(total)}</span>
         </div>
       )}
     </div>

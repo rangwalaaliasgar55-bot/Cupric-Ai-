@@ -86,7 +86,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto px-3 font-mono text-xs text-muted/50">v0.7.6</div>
+      <div className="mt-auto px-3 font-mono text-xs text-muted/50">v{__APP_VERSION__}</div>
     </aside>
   )
 }

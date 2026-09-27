@@ -1,0 +1,12 @@
+# Check out LF on every OS (the Windows release runner defaults to CRLF,
+# which broke byte/regex checks of generated and source files).
+* text=auto eol=lf
+# Binaries are never converted.
+*.png binary
+*.ico binary
+*.jpg binary
+*.webp binary
+*.zip binary
+*.woff2 binary
+*.mp3 binary
+*.mp4 binary

@@ -114,7 +114,8 @@ export async function discoverLocalModels(): Promise<OpenCodeModel[]> {
   return results.flatMap((result) => (result.status === 'fulfilled' ? result.value : []))
 }
 
-export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string }
+export type ChatContentPart = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } }
+export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string | ChatContentPart[] }
 
 /** One non-streaming completion. Throws with a readable message on failure. */
 export async function chat(messages: ChatMessage[], settings = loadSettings()): Promise<string> {

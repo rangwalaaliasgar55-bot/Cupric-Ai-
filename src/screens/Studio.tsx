@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
   Boxes,
+  Component,
   Clapperboard,
   Download,
   Image as ImageIcon,
@@ -42,13 +44,20 @@ import {
   docDuration,
   MIN_CLIP_SEC,
   nextFreeStart,
+  resolveOverlaps,
   studioOf,
 } from '../lib/studio/doc'
 import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
 import { TRANSITIONS } from '../lib/studio/transitions'
-import { isVoiceSupported, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
+import { isVoiceSupported, parseVoiceCommand, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
+import { FOCUS_NOW_EVENT, VOICE_RUN_EVENT, publishPlayhead, setStudioMounted, takePendingVoicePhrase, type FocusNowDetail } from '../lib/studio/studioLink'
+import { useResourceApply } from './library/useResourceApply'
+import { componentCatalogFor, isPendingComponent, withComponent } from '../lib/studio/components'
+import { motionPatch } from '../lib/studio/motionDirector'
+import { ComponentRecorderHost } from './studio/ComponentRecorderHost'
+import { ComponentsPanel } from './studio/ComponentsPanel'
 import { hasMedia, registerFile } from '../lib/studio/media'
-import { readDragPayload, resourceToStudio } from '../lib/studio/resourceDrop'
+import { readDragPayload } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
@@ -65,6 +74,7 @@ import remotionCatalog from '../../resources/remotion/catalog.json'
 import {
   applyStudioEditPlan,
   describeStudioEditOp,
+  enrichThinPlan,
   localStudioEditPlan,
   validateStudioEditPlan,
   type StudioEditPlan,
@@ -83,7 +93,9 @@ export function Studio() {
   const splitStudioClip = useProjectStore((s) => s.splitStudioClip)
   const duplicateStudioClip = useProjectStore((s) => s.duplicateStudioClip)
   const reorderStudioTracks = useProjectStore((s) => s.reorderStudioTracks)
+  const settleStudioClip = useProjectStore((s) => s.settleStudioClip)
   const pushToast = useProjectStore((s) => s.pushToast)
+  const { apply: applyResourceItem } = useResourceApply()
   const setView = useProjectStore((s) => s.setView)
   const startAutomationJob = useProjectStore((s) => s.startAutomationJob)
 
@@ -102,11 +114,14 @@ export function Studio() {
   const [showSafeAreas, setShowSafeAreas] = useState(true)
   const [keyframeRecord, setKeyframeRecord] = useState(false)
   const [showResources, setShowResources] = useState(false)
+  const [showComponents, setShowComponents] = useState(false)
   const [agentInstruction, setAgentInstruction] = useState('')
   const [agentRevision, setAgentRevision] = useState('')
   const [agentPlanning, setAgentPlanning] = useState(false)
   const [agentPhase, setAgentPhase] = useState('')
   const [agentPlan, setAgentPlan] = useState<StudioEditPlan | null>(null)
+  const [timelineH, setTimelineH] = useState<number | null>(null)
+  const [showShortcuts, setShowShortcuts] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -122,6 +137,64 @@ export function Studio() {
   const issues = useMemo(() => lintStudioDoc(doc, { hasMedia }), [doc])
   const pid = project?.id ?? null
   const selected = useMemo(() => doc.clips.find((c) => c.id === selectedId) ?? null, [doc.clips, selectedId])
+
+  // A clip handed over from Lab / Arena / Footage: select it and show it.
+  useEffect(() => {
+    const id = takeStudioFocus()
+    if (!id) return
+    const clip = doc.clips.find((item) => item.id === id)
+    if (!clip) return
+    setSelectedId(clip.id)
+    setPlaying(false)
+    setTime(visibleMomentOf(clip))
+    // Runs once on mount; the store update has landed before navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Live line to Resources / Lab: they read the playhead and ask to focus
+  // what they just added (studioLink.ts).
+  useEffect(() => {
+    setStudioMounted(true)
+    return () => setStudioMounted(false)
+  }, [])
+  useEffect(() => publishPlayhead(time), [time])
+  useEffect(() => {
+    const onFocus = (event: Event) => {
+      const { clipId, atSec } = (event as CustomEvent<FocusNowDetail>).detail ?? { clipId: null, atSec: 0 }
+      setPlaying(false)
+      if (clipId) setSelectedId(clipId)
+      setTime(Math.max(0, atSec))
+    }
+    const onVoice = (event: Event) => runVoicePhraseNow(String((event as CustomEvent<string>).detail ?? ''))
+    window.addEventListener(FOCUS_NOW_EVENT, onFocus)
+    window.addEventListener(VOICE_RUN_EVENT, onVoice)
+    // A phrase applied from the Library before the Studio was open.
+    const pending = takePendingVoicePhrase()
+    if (pending) window.setTimeout(() => runVoicePhraseNow(pending), 250)
+    return () => {
+      window.removeEventListener(FOCUS_NOW_EVENT, onFocus)
+      window.removeEventListener(VOICE_RUN_EVENT, onVoice)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** A voice-command phrase from Resources runs exactly as if it were spoken. */
+  function runVoicePhraseNow(phrase: string) {
+    const first = phrase.split(/\s*\/\s*/)[0]?.trim() || phrase
+    // "make a video about …" needs your words: listen instead of guessing.
+    if (/…|\.\.\./.test(first)) {
+      pushToast('info', `Say “${first.replace(/\s*(…|\.\.\.)\s*$/, '')} …” followed by your idea — the microphone is on.`)
+      if (!voiceRef.current?.active) toggleVoiceRef.current()
+      return
+    }
+    const command = parseVoiceCommand(first) ?? parseVoiceCommand(phrase)
+    if (!command) {
+      pushToast('info', `“${first}” is not a command Cupric can run from here.`)
+      return
+    }
+    setHeard(`“${first}”`)
+    commandRef.current(command)
+  }
 
   const seek = useCallback(
     (t: number) => setTime(clamp(t, 0, Math.max(0, duration))),
@@ -143,6 +216,16 @@ export function Studio() {
 
       const key = e.key.toLowerCase()
       const mod = e.metaKey || e.ctrlKey
+
+      if (e.key === '?') {
+        e.preventDefault()
+        setShowShortcuts((shown) => !shown)
+        return
+      }
+      if (e.key === 'Escape' && showShortcuts) {
+        setShowShortcuts(false)
+        return
+      }
 
       if (mod && key === 'z') {
         e.preventDefault()
@@ -211,6 +294,19 @@ export function Studio() {
         return
       }
 
+      // Alt + arrows nudge the selected layer (Shift for bigger steps).
+      if (e.altKey && e.key.startsWith('Arrow') && selectedId && pid) {
+        const clip = doc.clips.find((c) => c.id === selectedId)
+        if (clip && 'x' in clip && typeof clip.x === 'number' && typeof clip.y === 'number') {
+          e.preventDefault()
+          const step = e.shiftKey ? 0.05 : 0.005
+          const dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0
+          const dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0
+          updateStudioClip(pid, selectedId, { x: Math.min(1, Math.max(0, clip.x + dx)), y: Math.min(1, Math.max(0, clip.y + dy)) } as Partial<StudioClip>)
+          return
+        }
+      }
+
       // Arrows nudge the playhead a frame at a time; Shift makes it a second.
       if (!mod && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
         e.preventDefault()
@@ -238,7 +334,7 @@ export function Studio() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [doc, duration, pid, playing, redo, removeStudioClip, seek, selectedId, splitStudioClip, time, undo, updateStudioClip])
+  }, [doc, duration, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitStudioClip, time, undo, updateStudioClip])
 
   useEffect(() => {
     if (time > duration) setTime(duration)
@@ -253,6 +349,7 @@ export function Studio() {
     }
   }, [])
 
+  const toggleVoiceRef = useRef<() => void>(() => {})
   const toggleVoice = useCallback(() => {
     if (voiceRef.current?.active) {
       voiceRef.current.stop()
@@ -321,6 +418,8 @@ export function Studio() {
           aspect: doc.aspect,
           fps: doc.fps,
           trackCount: doc.trackCount,
+          durationSec: Math.round(duration * 100) / 100,
+          playheadSec: Math.round(time * 100) / 100,
           selectedId,
           // Names only: the agent uses these attributed libraries as visual
           // vocabulary, then translates the idea into Cupric's safe native
@@ -330,9 +429,13 @@ export function Studio() {
             skiperUi: relevantNames(skiperCatalog.items),
             remotionPackages: relevantNames(remotionCatalog.packages ?? []),
           },
+          // The UI components the agent may place with addComponent (best
+          // matches for this request; slugs are validated on return).
+          components: componentCatalogFor(instruction),
           clips: doc.clips.map((clip) => ({
             id: clip.id,
             kind: clip.kind,
+            ...(clip.kind === 'overlay' && clip.component ? { component: clip.component.slug } : {}),
             name: clip.name,
             track: clip.track,
             startSec: clip.startSec,
@@ -347,24 +450,28 @@ export function Studio() {
         try {
           raw = await ipc.invoke('studio:planEdits', { instruction, context })
         } catch (err) {
-          const local = localStudioEditPlan(instruction, doc, selectedId)
-          raw = { ...local, warning: `Live agent unavailable: ${humanError(err, 'AI connection')}` }
+          // No network, no key, quota spent or a local server that is off: the
+          // built-in motion engine still plans a real edit.
+          const local = localStudioEditPlan(instruction, doc, selectedId, { time })
+          raw = { ...local, warning: `Planned offline with Cupric's motion engine. ${humanError(err, 'AI connection')}` }
         }
       } else {
-        raw = localStudioEditPlan(instruction, doc, selectedId)
+        raw = localStudioEditPlan(instruction, doc, selectedId, { time })
       }
+      let plan: StudioEditPlan
       try {
-        setAgentPlan(validateStudioEditPlan(raw, doc))
+        plan = validateStudioEditPlan(raw, doc)
       } catch (validationError) {
         // A provider can answer successfully but still omit IDs or invent an
         // unsupported property. Treat malformed output like a provider outage:
         // preserve the user's instruction and return a useful local preview.
-        const local = localStudioEditPlan(instruction, doc, selectedId)
-        setAgentPlan(validateStudioEditPlan({
+        const local = localStudioEditPlan(instruction, doc, selectedId, { time })
+        plan = validateStudioEditPlan({
           ...local,
-          warning: `The live response was unsafe or incomplete, so Cupric rebuilt it locally: ${humanError(validationError, 'invalid edit plan')}`,
-        }, doc))
+          warning: `The live response was unsafe or incomplete, so Cupric rebuilt it locally with its motion engine (${humanError(validationError, 'invalid edit plan')}).`,
+        }, doc)
       }
+      setAgentPlan(enrichThinPlan(plan, instruction, doc, selectedId))
     } catch (err) {
       pushToast('error', humanError(err, 'Could not plan that edit'))
     } finally {
@@ -393,6 +500,11 @@ export function Studio() {
     }
   }
 
+  /** The document as it is right now — not as it was when this render began. */
+  function liveDoc(): StudioDoc {
+    return studioOf(useProjectStore.getState().projects.find((item) => item.id === projectId))
+  }
+
   async function onFiles(files: FileList | null) {
     if (!files?.length) return
     setImporting(true)
@@ -401,46 +513,73 @@ export function Studio() {
       for (const file of Array.from(files)) {
         if (/\.(?:zip|html?)$/i.test(file.name)) {
           const generated = await readGeneratedPackage(file)
-          const piece = parseGeneratedHtml(generated.html)
-          if (!piece) throw new Error(`${file.name} has HTML, but no readable scene manifest, scene array, headings or paragraphs`)
-          const clips = piecesToStudioClips(piece, doc, generated.name.replace(/\.html?$/i, ''))
-          if (!clips.length) throw new Error(`${file.name} did not contain any editable scenes`)
-          for (const clip of clips) addStudioClip(projectId, clip)
+          // Never refuses: manifest → scene arrays in any script → timed markup
+          // → visible text → copy in scripts → <title> → a title card.
+          const piece = parseGeneratedHtml(generated.html, { scripts: generated.scripts, name: file.name })!
+          const current = liveDoc()
+          const label = file.name.replace(/\.(?:zip|html?)$/i, '').replace(/\s*\(\d+\)$/, '').slice(0, 28)
+          const sceneClips = piecesToStudioClips(piece, current, label)
+          const base = sceneClips.length ? Math.min(...sceneClips.map((c) => c.startSec)) : nextFreeStart(current, 0, 0, 1)
+          const span = Math.max(piece.durationSec, 3)
 
-          // ZIP media is not left trapped behind HTML. Each referenced asset is
-          // registered through the same media store as a normal file import and
-          // becomes an independently movable, resizable and replaceable clip.
-          let assetCursor = 0
-          let importedAssets = 0
-          const imageDuration = Math.max(1, piece.durationSec / Math.max(1, generated.assets.filter((asset) => asset.file.type.startsWith('image/')).length))
+          // ZIP media is not left trapped behind HTML. Each asset is registered
+          // through the same media store as a normal file import and becomes an
+          // independently movable, resizable and replaceable clip underneath
+          // the scene text.
+          const mediaClips: StudioClip[] = []
+          const images = generated.assets.filter((asset) => asset.file.type.startsWith('image/'))
+          const imageDuration = Math.max(1.5, span / Math.max(1, images.length))
+          let cursor = base
           for (const asset of generated.assets) {
-            const handle = await registerFile(asset.file)
-            if (handle.kind === 'audio') {
-              const audioTrack = Math.max(0, doc.trackCount - 1)
-              const audioClip = defaultAudioClip(0, audioTrack, {
-                id: handle.id,
-                fileName: handle.fileName,
-                localPath: handle.localPath,
-                durationSec: handle.durationSec,
-              })
-              addStudioClip(projectId, audioClip)
-              importedAssets += 1
-              continue
+            try {
+              const handle = await registerFile(asset.file)
+              if (handle.kind === 'audio') {
+                mediaClips.push(defaultAudioClip(base, Math.max(0, current.trackCount - 1), { id: handle.id, fileName: handle.fileName, localPath: handle.localPath, durationSec: handle.durationSec }))
+                continue
+              }
+              // A scene that references this file in its own markup owns it:
+              // the image sits exactly under that scene's text.
+              const baseName = (path: string) => path.split(/[\\/]/).pop()?.toLowerCase() ?? ''
+              const owner = piece.scenes.find((scene) => scene.media?.some((src) => baseName(src) === baseName(asset.sourcePath)))
+              const anchored = owner && handle.kind === 'image'
+              const assetDuration = anchored ? Math.max(0.5, owner.to - owner.from) : handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : imageDuration
+              mediaClips.push({
+                id: uid(), kind: handle.kind, track: 0, startSec: Math.round((anchored ? base + owner.from : cursor) * 100) / 100, durationSec: assetDuration,
+                name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28), transitionIn: 'fade', transitionOut: 'none', opacity: 1,
+                mediaId: handle.id, fileName: handle.fileName, localPath: handle.localPath, trimInSec: 0,
+                sourceDurationSec: handle.kind === 'video' ? handle.durationSec : 0, speed: 1, volume: 1,
+                fit: 'cover', x: 0.5, y: 0.5, scale: 1, posterDataUrl: handle.posterDataUrl,
+              } as StudioMediaClip)
+              if (!anchored) cursor += assetDuration
+            } catch {
+              generated.notes.push(`Skipped ${asset.sourcePath} (unsupported or damaged).`)
             }
-            const assetDuration = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : imageDuration
-            const mediaClip: StudioMediaClip = {
-              id: uid(), kind: handle.kind, track: 0, startSec: assetCursor, durationSec: assetDuration,
-              name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28), transitionIn: 'fade', transitionOut: 'none', opacity: 1,
-              mediaId: handle.id, fileName: handle.fileName, localPath: handle.localPath, trimInSec: 0,
-              sourceDurationSec: handle.kind === 'video' ? handle.durationSec : 0, speed: 1, volume: 1,
-              fit: 'cover', x: 0.5, y: 0.5, scale: 1, posterDataUrl: handle.posterDataUrl,
-            }
-            addStudioClip(projectId, mediaClip)
-            assetCursor += assetDuration
-            importedAssets += 1
           }
-          setSelectedId(clips[0].id)
-          pushToast('success', `Broke ${file.name} into ${clips.length} editable scene clips${importedAssets ? ` plus ${importedAssets} editable media assets` : ''} (${piece.via}).`)
+
+          // One undo step, built from the live document, overlaps resolved.
+          const aspect = current.clips.length === 0 && piece.size
+            ? (piece.size[0] > piece.size[1] * 1.2 ? '16:9' : piece.size[1] > piece.size[0] * 1.2 ? '9:16' : '1:1')
+            : current.aspect
+          const next = resolveOverlaps({ ...current, aspect, trackCount: Math.max(current.trackCount, 3), clips: [...current.clips, ...mediaClips, ...sceneClips] })
+          patchStudio(projectId, next)
+          if (sceneClips[0]) {
+            setSelectedId(sceneClips[0].id)
+            setTime(sceneClips[0].startSec + Math.min(0.8, sceneClips[0].durationSec / 2))
+          }
+          const how = {
+            manifest: 'from its Cupric manifest',
+            'scene-array': 'from its scene list',
+            'timed-markup': 'from its timed markup',
+            'scene-blocks': 'scene by scene, with each scene’s own timing',
+            headings: 'from the text on screen',
+            'script-copy': 'from copy in its scripts',
+            title: 'as a title card — no scene copy was found, so rename it',
+          }[piece.via]
+          const titles = piece.scenes.filter((scene) => scene.role !== 'sub').length
+          pushToast(
+            'success',
+            `Imported ${file.name}: ${titles} editable scene${titles === 1 ? '' : 's'}${mediaClips.length ? ` + ${mediaClips.length} media clip${mediaClips.length === 1 ? '' : 's'}` : ''} ${how}.${generated.notes.length ? ` ${generated.notes[0]}` : ''}`,
+          )
           continue
         }
         const handle = await registerFile(file)
@@ -514,30 +653,20 @@ export function Studio() {
       pushToast('info', 'Nothing droppable in that drag — try a card from Library → Resource packs.')
       return
     }
-    const result = resourceToStudio(doc, payload, time)
-    if (!result.ok) {
-      pushToast('info', result.reason)
-      return
-    }
-    if ('action' in result) {
-      sessionStorage.setItem('cupric:lab-open', result.labSlug)
-      setView('lab')
-      pushToast('info', result.message)
-      return
-    }
-    if ('clip' in result) {
-      addStudioClip(projectId, result.clip)
-      setSelectedId(result.clip.id)
-    } else {
-      patchStudio(projectId, result.docPatch)
-    }
-    pushToast('success', result.message)
+    // Same path as the Apply button: a drop lands at the playhead.
+    void applyResourceItem(payload, { atSec: time, selectedId })
   }
 
   function addText() {
-    const clip = defaultTextClip(time, Math.min(1, doc.trackCount - 1))
+    // Above the media, at the playhead; the store lifts it to a free layer if
+    // something is already there.
+    const clip = defaultTextClip(Math.round(time * 100) / 100, Math.max(1, Math.min(doc.trackCount - 1, 1)))
     addStudioClip(projectId, clip)
     setSelectedId(clip.id)
+    setPlaying(false)
+    // Park the playhead where the entrance has finished, so the new words are
+    // actually visible on the canvas while you type them.
+    setTime(clip.startSec + Math.min(0.8, clip.durationSec / 2))
   }
 
   function addBackgroundClip() {
@@ -559,13 +688,15 @@ export function Studio() {
 
   function addSticker() {
     const track = Math.min(1, doc.trackCount - 1)
-    const clip = defaultStickerClip(nextFreeStart(doc, track, time, 2), track)
+    // At the playhead, like text: the store stacks it on the first free
+    // track (creating one) instead of pushing it later in time.
+    const clip = defaultStickerClip(Math.round(time * 100) / 100, track)
     addStudioClip(projectId, clip)
     setSelectedId(clip.id)
   }
 
   function addGlassClip(shape: 'panel' | 'lens' = 'panel', presetId = 'hero') {
-    const clip = defaultGlassClip(nextFreeStart(doc, Math.min(1, doc.trackCount - 1), time, 3), Math.min(1, doc.trackCount - 1), presetId, shape)
+    const clip = defaultGlassClip(Math.round(time * 100) / 100, Math.min(1, doc.trackCount - 1), presetId, shape)
     addStudioClip(projectId, clip)
     setSelectedId(clip.id)
   }
@@ -691,10 +822,25 @@ export function Studio() {
   }
 
   commandRef.current = runVoiceCommand
+  toggleVoiceRef.current = toggleVoice
+
+  /** A UI component at the playhead; the recorder captures its real animation. */
+  function addComponentAt(slug: string, opts: { recordSec: number; interact: boolean }) {
+    const added = withComponent(doc, slug, { startSec: time, recordSec: opts.recordSec, durationSec: Math.max(opts.recordSec, 3), interact: opts.interact })
+    const withMotion = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
+    patchStudio(projectId, { trackCount: added.doc.trackCount, clips: added.doc.clips.map((c) => (c.id === withMotion.id ? withMotion : c)) })
+    setSelectedId(withMotion.id)
+    setPlaying(false)
+    setTime(visibleMomentOf(withMotion))
+  }
 
   async function runExport(asMp4 = false) {
     if (duration <= 0) {
       pushToast('error', 'Add a clip before exporting.')
+      return
+    }
+    if (doc.clips.some(isPendingComponent)) {
+      pushToast('info', 'A component is still recording its animation — export as soon as it lands on the timeline.')
       return
     }
     setPlaying(false)
@@ -741,12 +887,18 @@ export function Studio() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {showShortcuts && <ShortcutSheet onClose={() => setShowShortcuts(false)} />}
       {/* Toolbar */}
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line px-6 py-3">
-        <h1 className="mr-2 text-base font-semibold">Studio</h1>
+      {/* One row at every width: the add-strip scrolls sideways instead of
+          wrapping, so the preview never loses a whole row of height. */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-line px-6 py-2.5">
+        <h1 className="mr-2 shrink-0 text-base font-semibold">Studio</h1>
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5 pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-28px),transparent)] [scrollbar-width:none] [&>button]:shrink-0"
+          onWheel={(e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY }}
+        >
 
-        <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={importing || exporting}>
-          {importing ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Import media / HTML / ZIP
+        <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={importing || exporting} title="Import video, images, audio, an HTML page or a generated ZIP package">
+          {importing ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Import
         </Button>
         <input
           ref={fileRef}
@@ -784,19 +936,32 @@ export function Studio() {
           variant="outline"
           onClick={() => selectedId && splitStudioClip(projectId, selectedId, time)}
           disabled={!selectedId || exporting}
+          title={selectedId ? 'Split the selected clip at the playhead (S)' : 'Select a clip to split it'}
         >
           <Scissors size={13} /> Split
         </Button>
-        {!selectedId && (
-          <span className="text-xs text-muted">Select a clip to split it</span>
-        )}
         <Button
           size="sm"
           variant={showResources ? 'primary' : 'outline'}
-          onClick={() => setShowResources((shown) => !shown)}
+          onClick={() => {
+            setShowResources((shown) => !shown)
+            setShowComponents(false)
+          }}
           disabled={exporting}
         >
           <Boxes size={13} /> Resources
+        </Button>
+        <Button
+          size="sm"
+          variant={showComponents ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowComponents((shown) => !shown)
+            setShowResources(false)
+          }}
+          disabled={exporting}
+          title="Every UI component, recorded with its real animation"
+        >
+          <Component size={13} /> Components
         </Button>
 
         <Button
@@ -809,7 +974,9 @@ export function Studio() {
           {listening ? <Mic size={13} /> : <MicOff size={13} />} {listening ? 'Listening' : voiceSupported ? 'Voice' : 'Voice setup'}
         </Button>
 
-        <div className="ml-auto flex items-center gap-1.5">
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5">
           <IconButton label="Zoom out" onClick={() => setZoom((z) => Math.max(0, z - 1))} disabled={zoom === 0}>
             <ZoomOut size={15} />
           </IconButton>
@@ -866,7 +1033,7 @@ export function Studio() {
           type="button"
           variant="ghost"
           disabled={agentPlanning || exporting || doc.clips.length === 0}
-          onClick={() => void planAgentEdit(agentInstruction.trim() || 'Auto edit and polish the complete timeline. Read all clip names, copy, timing and duration. Apply context-appropriate bundled typography, automatic keyword highlighting, purposeful text animation, varied native transitions, safe-area placement, track hierarchy, and subtle two-keyframe motion on visual clips. Preserve meaning and source media.')}
+          onClick={() => void planAgentEdit(agentInstruction.trim() || 'Auto edit and polish the complete timeline. Read all clip names, copy, timing and duration. Apply context-appropriate bundled typography, automatic keyword highlighting, purposeful text animation, varied native transitions, safe-area placement, track hierarchy, and purposeful keyframe motion on visual clips. Match the style to the content. Preserve meaning and source media.')}
           title="Analyze the complete timeline and preview an automatic edit"
         >
           Auto polish
@@ -876,7 +1043,7 @@ export function Studio() {
           type="button"
           variant="ghost"
           disabled={agentPlanning || exporting || doc.clips.length === 0}
-          onClick={() => void planAgentEdit('Create a cohesive automatic effects pass without deleting or rewriting source content. Choose a different suitable native transition at scene boundaries, animate and highlight the strongest existing word in each important caption, and add subtle start/end keyframes to images and videos. Keep effects restrained and readable.')}
+          onClick={() => void planAgentEdit('Create a cohesive automatic effects pass without deleting or rewriting source content. Choose a different suitable native transition at scene boundaries, animate and highlight the strongest existing word in each important caption, and add gentle start/end keyframes to images and videos. Keep effects readable.')}
           title="Automatically choose native effects, then show every change for approval"
         >
           Auto effects
@@ -1026,8 +1193,15 @@ export function Studio() {
         </div>
       )}
 
+      <ComponentRecorderHost projectId={projectId} doc={doc} />
+
       {/* Shared resources + stage + inspector */}
       <div className="flex min-h-0 flex-1">
+        {showComponents && (
+          <aside className="w-[360px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio components">
+            <ComponentsPanel onAdd={addComponentAt} />
+          </aside>
+        )}
         {showResources && (
           <aside className="w-[420px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio resources">
             <div className="mb-3">
@@ -1091,7 +1265,9 @@ export function Studio() {
           </div>
 
           {/* Transport */}
-          <div className="flex shrink-0 items-center gap-2 border-t border-line px-6 py-2">
+          {/* A size container: labels never wrap; on narrow panels the least
+              important bits (project info, long labels) step out instead. */}
+          <div className="@container flex shrink-0 items-center gap-2 flex-wrap gap-y-1.5 whitespace-nowrap border-t border-line px-4 py-2 [&>*]:shrink-0">
             <IconButton label="Back to start" onClick={() => seek(0)}>
               <SkipBack size={15} />
             </IconButton>
@@ -1105,6 +1281,9 @@ export function Studio() {
             <IconButton label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted((m) => !m)}>
               {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
             </IconButton>
+            <span className="mr-1 font-mono text-xs text-muted tabular-nums">
+              {fmtClock(time)} / {fmtClock(duration)}
+            </span>
             <button
               type="button"
               aria-pressed={showSafeAreas}
@@ -1119,6 +1298,7 @@ export function Studio() {
             <button
               type="button"
               aria-pressed={keyframeRecord}
+              aria-label="Keyframe record"
               title="When enabled, canvas transforms record a keyframe at the playhead"
               onClick={() => setKeyframeRecord((recording) => !recording)}
               className={cx(
@@ -1126,14 +1306,19 @@ export function Studio() {
                 keyframeRecord ? 'border-danger/60 bg-danger/10 text-danger' : 'border-line text-muted hover:text-text',
               )}
             >
-              ● Keyframe record
+              ● <span className="@max-[36rem]:hidden">Keyframe </span>record
             </button>
-            <span className="font-mono text-xs text-muted tabular-nums">
-              {fmtClock(time)} / {fmtClock(duration)}
-            </span>
-            <span className="ml-auto font-mono text-xs text-muted tabular-nums">
+            <span className="ml-auto font-mono text-xs text-muted tabular-nums @max-[44rem]:hidden">
               {doc.aspect} · {doc.fps}fps · {doc.clips.length} clip{doc.clips.length === 1 ? '' : 's'}
             </span>
+            <button
+              type="button"
+              onClick={() => setShowShortcuts(true)}
+              title="Keyboard shortcuts (?)"
+              className="ml-auto rounded-md border border-line px-2 py-1 font-mono text-xs text-muted transition-colors hover:text-text @min-[44rem]:ml-0"
+            >
+              ?<span className="@max-[40rem]:hidden"> Shortcuts</span>
+            </button>
             {lastExport && (
               <a
                 href={lastExport.url}
@@ -1145,7 +1330,32 @@ export function Studio() {
             )}
           </div>
 
-          <div className="h-[46%] min-h-[190px] shrink-0">
+          {/* Drag to resize the timeline, like any NLE. */}
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize timeline"
+            title="Drag to resize the timeline · double-click to fit tracks"
+            onDoubleClick={() => setTimelineH(null)}
+            onPointerDown={(e) => {
+              e.preventDefault()
+              const column = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect()
+              const move = (ev: PointerEvent) => setTimelineH(clamp(column.bottom - ev.clientY, 120, column.height - 180))
+              const up = () => {
+                window.removeEventListener('pointermove', move)
+                window.removeEventListener('pointerup', up)
+              }
+              window.addEventListener('pointermove', move)
+              window.addEventListener('pointerup', up)
+            }}
+            className="group relative h-1.5 shrink-0 cursor-row-resize bg-line/40 transition-colors hover:bg-accent/50"
+          >
+            <span className="absolute left-1/2 top-1/2 h-0.5 w-10 -translate-x-1/2 -translate-y-1/2 rounded bg-muted/50 group-hover:bg-accent-ink/70" />
+          </div>
+          <div
+            className="min-h-[120px] shrink-0"
+            style={{ height: timelineH ?? `min(40%, ${Math.max(150, 44 + doc.trackCount * 62)}px)` }}
+          >
             <StudioTimeline
               doc={doc}
               time={time}
@@ -1159,6 +1369,7 @@ export function Studio() {
               }}
               onPatchClip={(id, patch) => updateStudioClip(projectId, id, patch)}
               onReorderTrack={(from, to) => reorderStudioTracks(projectId, from, to)}
+              onSettleClip={(id) => settleStudioClip(projectId, id)}
             />
           </div>
         </div>
@@ -1189,6 +1400,47 @@ export function Studio() {
             </p>
           </div>
         </aside>
+      </div>
+    </div>
+  )
+}
+
+const SHORTCUTS: Array<[string, string]> = [
+  ['Space', 'Play / pause'],
+  ['J · L', 'Back / forward half a second (L plays)'],
+  ['← →', 'Step one frame (Shift: one second)'],
+  ['K', 'Add a keyframe to the selected clip at the playhead'],
+  ['S', 'Split the selected clip at the playhead'],
+  ['I · O', 'Trim the selected clip’s in / out point to the playhead'],
+  ['Alt + arrows', 'Nudge the selected layer (Shift: bigger steps)'],
+  ['Double-click text', 'Edit it right on the canvas (Enter to finish)'],
+  ['Drag on canvas', 'Snaps to centre and safe areas (hold Alt to place freely)'],
+  ['Delete', 'Remove the selected clip'],
+  ['Ctrl/⌘ + Z', 'Undo (Shift: redo)'],
+  ['?', 'Show or hide this sheet'],
+]
+
+function ShortcutSheet({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-6 backdrop-blur-sm" onClick={onClose} role="presentation">
+      <div
+        role="dialog"
+        aria-label="Studio keyboard shortcuts"
+        className="w-full max-w-lg rounded-2xl border border-line bg-panel p-5 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold">Studio shortcuts</h2>
+          <button type="button" onClick={onClose} className="rounded-md px-2 py-1 text-xs text-muted hover:text-text">Close · Esc</button>
+        </div>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+          {SHORTCUTS.map(([keys, what]) => (
+            <div key={keys} className="contents">
+              <dt><kbd className="rounded-md border border-line bg-bg px-1.5 py-0.5 font-mono text-[11px] text-text">{keys}</kbd></dt>
+              <dd className="text-muted">{what}</dd>
+            </div>
+          ))}
+        </dl>
       </div>
     </div>
   )

@@ -16,6 +16,8 @@ const invokeChannels = new Set([
   'dialog:pickArena',
   'arena:import',
   'arena:previewPath',
+  'arena:readHtml',
+  'capture:rect',
   'arena:openBuilder',
   'dialog:pickFootage', 'dialog:pickFolder',
   'footage:analyze',

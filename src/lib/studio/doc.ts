@@ -284,3 +284,76 @@ export function snapTime(doc: StudioDoc, time: number, ignoreId: string, extra: 
   }
   return Math.max(0, Math.round(best * 100) / 100)
 }
+
+/* ——— Overlap-free placement ————————————————————————————————————————————————
+ * Two clips on one track at the same time is never what anybody wants: the
+ * later one silently hides the earlier. CapCut's answer, used here, is to lift
+ * the newcomer onto the next free layer and create that layer when needed.
+ */
+
+/** Hard ceiling for auto-created layers; the timeline scrolls past a handful. */
+export const MAX_TRACKS = 24
+
+const OVERLAP_EPS = 0.005
+
+export function trackIsFree(doc: Pick<StudioDoc, 'clips'>, track: number, start: number, end: number, ignoreId?: string): boolean {
+  return !doc.clips.some(
+    (c) => c.id !== ignoreId && c.track === track && c.startSec < end - OVERLAP_EPS && clipEnd(c) > start + OVERLAP_EPS,
+  )
+}
+
+/**
+ * Where a clip can live without covering anything: its own track if that is
+ * free, otherwise the nearest free track above it, otherwise a brand-new top
+ * track. Only when all MAX_TRACKS are busy does it fall back to the first free
+ * start time on the requested track.
+ */
+export function placeClip(doc: Pick<StudioDoc, 'clips' | 'trackCount'>, clip: StudioClip): { clip: StudioClip; trackCount: number } {
+  const start = Math.max(0, clip.startSec)
+  const end = start + Math.max(MIN_CLIP_SEC, clip.durationSec)
+  const want = clamp(Math.round(clip.track), 0, MAX_TRACKS - 1)
+  let trackCount = Math.max(doc.trackCount, want + 1)
+  for (let track = want; track < MAX_TRACKS; track += 1) {
+    if (trackIsFree(doc, track, start, end, clip.id)) {
+      trackCount = Math.min(MAX_TRACKS, Math.max(trackCount, track + 1))
+      return { clip: normaliseClip({ ...clip, track, startSec: start } as StudioClip, trackCount), trackCount }
+    }
+  }
+  const later = nextFreeStart({ ...doc, clips: doc.clips.filter((c) => c.id !== clip.id) } as StudioDoc, want, start, clip.durationSec)
+  return { clip: normaliseClip({ ...clip, track: want, startSec: later } as StudioClip, trackCount), trackCount }
+}
+
+/** Re-place one existing clip (after a drag, trim or AI edit). */
+export function settleClip(doc: StudioDoc, clipId: string): StudioDoc {
+  const clip = doc.clips.find((c) => c.id === clipId)
+  if (!clip) return doc
+  const others = { ...doc, clips: doc.clips.filter((c) => c.id !== clipId) }
+  if (trackIsFree(others, clip.track, clip.startSec, clipEnd(clip))) return doc
+  const placed = placeClip(others, clip)
+  return { ...doc, trackCount: placed.trackCount, clips: doc.clips.map((c) => (c.id === clipId ? placed.clip : c)) }
+}
+
+/**
+ * Untangle a whole document. Media (video, image, background, audio) keeps its
+ * lane first; text, stickers, glass and overlays are lifted above whatever
+ * they collide with, which also keeps them visually on top.
+ */
+export function resolveOverlaps(doc: StudioDoc): StudioDoc {
+  const priority = (c: StudioClip) => (c.kind === 'background' ? 0 : c.kind === 'video' || c.kind === 'image' ? 1 : c.kind === 'audio' ? 2 : 3)
+  const ordered = [...doc.clips].sort((a, b) => priority(a) - priority(b) || a.track - b.track || a.startSec - b.startSec)
+  let working: StudioDoc = { ...doc, clips: [] }
+  let moved = false
+  for (const clip of ordered) {
+    if (trackIsFree(working, clip.track, clip.startSec, clipEnd(clip))) {
+      working = { ...working, trackCount: Math.max(working.trackCount, clip.track + 1), clips: [...working.clips, clip] }
+      continue
+    }
+    const placed = placeClip(working, clip)
+    moved = true
+    working = { ...working, trackCount: placed.trackCount, clips: [...working.clips, placed.clip] }
+  }
+  if (!moved) return doc
+  // Keep the caller's clip order stable (it is the undo / selection order).
+  const byId = new Map(working.clips.map((c) => [c.id, c]))
+  return { ...doc, trackCount: Math.min(MAX_TRACKS, working.trackCount), clips: doc.clips.map((c) => byId.get(c.id) ?? c) }
+}

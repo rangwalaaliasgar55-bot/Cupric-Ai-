@@ -246,6 +246,18 @@ export type StudioMask = {
  * trimming a clip carries its animation with it. Only the properties present
  * are animated; anything omitted keeps the clip's static value.
  */
+export type StudioEase =
+  | 'linear'
+  | 'ease-in'
+  | 'ease-out'
+  | 'ease-in-out'
+  | 'back-out'
+  | 'back-in'
+  | 'expo-out'
+  | 'expo-in-out'
+  | 'elastic-out'
+  | 'hold'
+
 export type StudioKeyframe = {
   at: number
   x?: number
@@ -254,7 +266,13 @@ export type StudioKeyframe = {
   rotation?: number
   opacity?: number
   /** Easing from this keyframe to the next. */
-  ease: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  /**
+   * How the value travels to the NEXT keyframe. The expressive eases are what
+   * make motion read as designed rather than mechanical: `back-out` overshoots
+   * and settles, `expo-out` snaps then glides, `elastic-out` springs, and
+   * `hold` jumps at the next key (a step / freeze).
+   */
+  ease: StudioEase
 }
 
 type StudioClipCommon = {
@@ -319,6 +337,22 @@ export type StudioBackgroundClip = StudioClipCommon & {
   backgroundId: string
 }
 
+/**
+ * A UI component (src/lab/components) living on the timeline. The Studio
+ * records its real React animation into `frames`; these settings say how, so
+ * the clip can be re-recorded at any time — by the user or by the agent.
+ */
+export type StudioComponentMeta = {
+  slug: string
+  /** pending → queued for the Studio recorder; ready → frames recorded. */
+  status: 'pending' | 'recording' | 'ready' | 'failed'
+  /** Seconds of motion to record (the clip loops it when longer). */
+  recordSec: number
+  /** Act the component out (hover, pointer path, clicks) while recording. */
+  interact: boolean
+  error?: string
+}
+
 export type StudioOverlayClip = StudioClipCommon & {
   kind: 'overlay'
   /** Still fallback (data URL) of a UI Lab demo or imported image. */
@@ -326,6 +360,12 @@ export type StudioOverlayClip = StudioClipCommon & {
   /** Optional pre-rendered deterministic animation frames from a React demo. */
   frames?: string[]
   frameFps?: number
+  /** Playback speed of the frame strip (1 = as recorded). */
+  playbackRate?: number
+  /** Loop the frame strip when the clip is longer than it (default true). */
+  loop?: boolean
+  /** Set when this overlay is a recorded UI component. */
+  component?: StudioComponentMeta
   source: string
   x: number
   y: number

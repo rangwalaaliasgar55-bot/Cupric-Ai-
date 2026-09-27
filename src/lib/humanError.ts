@@ -16,17 +16,66 @@
 type Rule = { match: RegExp; say: (raw: string) => string }
 
 /** Ordered — the first match wins, so put the specific ones first. */
+/** "Please retry in 40.515s" / "retryDelay":"40s" → 41 */
+function retrySeconds(raw: string): number | null {
+  const m = raw.match(/retry in\s+([\d.]+)\s*s/i) ?? raw.match(/retryDelay\W+([\d.]+)s/i)
+  return m ? Math.ceil(Number(m[1])) : null
+}
+
+function modelName(raw: string): string | null {
+  return raw.match(/model[\s:"]+([a-z0-9][\w.:/-]*(?:flash|pro|lite|gpt|claude|qwen|llama|gemma|deepseek|mistral)[\w.:/-]*)/i)?.[1]
+    ?? raw.match(/models\/([\w.-]+):generateContent/i)?.[1]
+    ?? null
+}
+
+function localServer(raw: string): string | null {
+  const m = raw.match(/https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\]):(\d+)/i)
+  if (!m) return null
+  const port = m[1]
+  const name = port === '11434' ? 'Ollama' : port === '1234' ? 'LM Studio' : port === '4096' ? 'OpenCode' : port === '8080' ? 'llama.cpp' : port === '1337' ? 'Atomic Chat' : 'local model'
+  return `${name} (port ${port})`
+}
+
 const RULES: Rule[] = [
+  {
+    match: /No live AI provider is configured|NO_PROVIDER/i,
+    say: () =>
+      'No AI model is set up yet, so Cupric used its built-in motion engine. For live AI, add a free Gemini key, an OpenRouter key, or start Ollama / LM Studio — Settings finds them automatically.',
+  },
+  {
+    match: /ran out of time before any provider answered|Studio auto edit timed out|timed out after/i,
+    say: () => 'The AI took too long to answer, so Cupric used its built-in motion engine instead. Try again later for a live plan.',
+  },
+  {
+    // First, because quota errors quote URLs, JSON and the word "fetching",
+    // which used to be misread as "no network" or "malformed reply".
+    match: /\b429\b|too many requests|quota|rate.?limit|resource_exhausted/i,
+    say: (raw) => {
+      const model = modelName(raw)
+      const wait = retrySeconds(raw)
+      const daily = /PerDay|per day|daily/i.test(raw)
+      const limit = raw.match(/limit:\s*(\d+)/i)?.[1]
+      const who = model ? `the free quota for ${model}` : 'the model provider\'s quota'
+      const when = daily
+        ? `It resets daily${limit ? ` (${limit} requests/day on the free tier)` : ''}`
+        : wait ? `It frees up in about ${wait}s` : 'It frees up shortly'
+      return `Used up ${who}. ${when}. Add a free local model (Ollama / LM Studio) or an OpenCode key in Settings to keep going`
+    },
+  },
   {
     match: /empty file|produced an empty/i,
     say: () => 'The recorder finished but produced nothing. Try a shorter export, or switch to WebM.',
   },
   {
-    match: /MediaRecorder|not supported|mimeType|codec/i,
+    match: /width not divisible by 2|height not divisible by 2/i,
+    say: () => 'The frame size was an odd number of pixels, which H.264 cannot encode. Update Cupric — renders are now snapped to even sizes automatically.',
+  },
+  {
+    match: /MediaRecorder|mimeType|codec not supported|isTypeSupported/i,
     say: () => 'This browser cannot record that format. The desktop app can — or export WebM here and convert after.',
   },
   {
-    match: /NotAllowedError|permission denied|denied/i,
+    match: /NotAllowedError|permission denied/i,
     say: () => 'Permission was refused. Check the microphone, camera or folder permission this needs and try again.',
   },
   {
@@ -42,7 +91,7 @@ const RULES: Rule[] = [
     say: () => 'The disk is full, so nothing could be written. Free some space and try again.',
   },
   {
-    match: /abort|cancell?ed/i,
+    match: /\babort(ed)?\b|cancell?ed/i,
     say: () => 'Cancelled. Nothing was saved.',
   },
   {
@@ -50,24 +99,25 @@ const RULES: Rule[] = [
     say: () => 'That took too long and Cupric stopped waiting. It is usually worth one more try.',
   },
   {
-    match: /fetch failed|ENOTFOUND|ECONNREFUSED|network|offline|EAI_AGAIN/i,
-    say: () => 'Cupric could not reach the network. Check the connection — everything already downloaded still works offline.',
+    // A local model server that is simply not running is not "no internet".
+    match: /(ECONNREFUSED|fetch failed|Failed to fetch|connect)[\s\S]*(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])|(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])[\s\S]*(ECONNREFUSED|fetch failed|Failed to fetch|not running)/i,
+    say: (raw) => `The ${localServer(raw) ?? 'local model'} server is not running, so nothing answered. Start it, or pick a different model in the Ask panel settings`,
   },
   {
-    match: /api key|unauthori[sz]ed|401|403/i,
+    match: /fetch failed|Failed to fetch|ENOTFOUND|ECONNREFUSED|ECONNRESET|network|offline|EAI_AGAIN/i,
+    say: () => 'Cupric could not reach the AI provider. Check the connection and the model base URL in Settings — everything already downloaded still works offline.',
+  },
+  {
+    match: /api key|unauthori[sz]ed|\b401\b|\b403\b|permission_denied/i,
     say: () => 'The model rejected the key. Add a working API key in Settings and try again.',
   },
   {
-    match: /429|rate limit|quota|resource_exhausted/i,
-    say: () => 'The model is rate-limiting us. Wait a minute, or switch provider in Settings.',
-  },
-  {
-    match: /safety|blocked|content policy/i,
+    match: /safety|blocked by|content policy/i,
     say: () => 'The model refused this one on safety grounds. Rephrasing the brief usually clears it.',
   },
   {
-    match: /JSON|unexpected token|parse/i,
-    say: () => 'The reply came back malformed, so Cupric threw it away rather than guess. Try again.',
+    match: /Unexpected token|JSON\.parse|in JSON at position|Unexpected end of JSON|is not valid JSON|malformed/i,
+    say: () => 'The model replied, but not in the format Cupric needs, so the reply was discarded instead of guessed at. Cupric retries with a stricter prompt automatically — try once more if this persists.',
   },
   {
     match: /__seek/i,
@@ -97,10 +147,17 @@ const MAX_LENGTH = 180
  */
 export function humanError(error: unknown, context = 'That'): string {
   const raw = error instanceof Error ? error.message : typeof error === 'string' ? error : ''
-  const trimmed = raw.trim()
+  // Electron wraps every main-process failure in
+  // "Error invoking remote method 'x': Error: …" — noise to a person.
+  const trimmed = raw
+    .replace(/^Error invoking remote method '[^']*':\s*/i, '')
+    .replace(/^(?:\w*Error:\s*)+/, '')
+    .replace(/^\[GoogleGenerativeAI Error\]:\s*/i, '')
+    .trim()
 
   for (const rule of RULES) {
-    if (rule.match.test(trimmed)) return sentence(rule.say(trimmed), context)
+    // Rule text is written by us, so it is never truncated mid-sentence.
+    if (rule.match.test(raw)) return sentence(rule.say(raw), context, false)
   }
 
   // A stack trace helps whoever wrote the code and nobody else. It is in the
@@ -121,10 +178,33 @@ export function humanError(error: unknown, context = 'That'): string {
 }
 
 /** Trim to a readable length, capitalise, and finish the sentence. */
-function sentence(text: string, context: string): string {
+function sentence(text: string, context: string, clip = true): string {
   const trimmed = text.trim()
   if (!trimmed) return `${context} failed.`
-  const clipped = trimmed.length > MAX_LENGTH ? `${trimmed.slice(0, MAX_LENGTH - 1).trimEnd()}…` : trimmed
+  const clipped = clip && trimmed.length > MAX_LENGTH ? `${trimmed.slice(0, MAX_LENGTH - 1).trimEnd()}…` : trimmed
   const capitalised = clipped.charAt(0).toUpperCase() + clipped.slice(1)
   return /[.!?…]$/.test(capitalised) ? capitalised : `${capitalised}.`
+}
+
+
+/**
+ * Collapse a list of messages to one line per distinct problem, most recent
+ * wording kept, with a repeat count. Used wherever warnings are listed.
+ */
+export function dedupeMessages(list: readonly string[] | null | undefined): Array<{ text: string; count: number }> {
+  const out = new Map<string, { text: string; count: number }>()
+  for (const raw of list ?? []) {
+    const prior = Number(String(raw).match(/\(×(\d+)\)$/)?.[1] ?? 1)
+    const cleaned = String(raw).replace(/\s*\(×\d+\)$/, '').trim()
+    // Rewrite only what a rule recognises (quota, offline, odd frame size…);
+    // an informational note is already written for a person.
+    const text = RULES.some((rule) => rule.match.test(cleaned))
+      ? humanError(cleaned, 'Cupric')
+      : cleaned.length > 320 ? `${cleaned.slice(0, 317).trimEnd()}…` : cleaned
+    const key = text.toLowerCase().replace(/\d{2,}(?:\.\d+)?|\d+\.\d+/g, '#').slice(0, 180)
+    const hit = out.get(key)
+    if (hit) hit.count += prior
+    else out.set(key, { text, count: prior })
+  }
+  return [...out.values()]
 }

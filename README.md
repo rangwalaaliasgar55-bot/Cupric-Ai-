@@ -45,8 +45,8 @@ npm run dist:win
 
 Outputs into `release/`:
 
-- `Cupric-AI-Setup-0.8.0.exe` — NSIS installer.
-- `Cupric-AI-0.8.0-x64-Portable.exe` — portable executable.
+- `Cupric-AI-Setup-0.9.0.exe` — NSIS installer.
+- `Cupric-AI-0.9.0-x64-Portable.exe` — portable executable.
 
 The packaged app loads the built `dist/` over `file://` and self-hosts fonts, so
 it can run offline after installation. Gemini requires either a saved key or a

@@ -205,12 +205,46 @@ export function stopSpeaking() {
 }
 
 /**
+ * Errors that will not fix themselves by retrying. `network` is the common one
+ * on the desktop build: Chromium's Web Speech sends audio to an online speech
+ * service that an Electron app is not always allowed to use. Restarting just
+ * fails again, which used to stack the same toast four times.
+ */
+const FATAL_VOICE_ERRORS = new Set(['network', 'not-allowed', 'service-not-allowed', 'audio-capture', 'language-not-supported', 'bad-grammar'])
+
+/** One plain sentence per Web Speech error code, never the raw code alone. */
+export function voiceErrorMessage(code: string): string {
+  switch (code) {
+    case 'network':
+    case 'service-not-allowed':
+      return 'Voice input needs an online speech service that isn’t reachable from this app right now. Type your brief instead — everything else keeps working.'
+    case 'not-allowed':
+      return 'Microphone access is blocked. Allow Cupric AI in your system’s microphone privacy settings, then try again.'
+    case 'audio-capture':
+      return 'No microphone was found. Plug one in or pick an input device in your system sound settings, then try again.'
+    case 'language-not-supported':
+      return 'Voice input doesn’t support this language here. Type your brief instead.'
+    case 'restart-loop':
+      return 'Voice input keeps stopping on its own, so Cupric turned it off. Type your brief instead, or try the mic again later.'
+    default:
+      return 'Voice input stopped unexpectedly. Try the mic again, or type your brief instead.'
+  }
+}
+
+/** A session that dies this many times this quickly, hearing nothing, is stuck. */
+const RESTART_LIMIT = 3
+const RESTART_WINDOW_MS = 8000
+
+/**
  * Continuous listener. `start()` is a no-op when unsupported, so callers do not
  * need to branch twice.
  */
 export class VoiceListener {
   private rec: SpeechRecognitionLike | null = null
   private running = false
+  /** Codes already reported this session: an error is said once, not per retry. */
+  private reported = new Set<string>()
+  private restarts: number[] = []
 
   constructor(
     private events: VoiceEvents,
@@ -226,11 +260,15 @@ export class VoiceListener {
     const Ctor = recognitionCtor()
     if (!Ctor || this.running) return false
     const rec = new Ctor()
+    this.reported.clear()
+    this.restarts = []
     rec.lang = this.lang
     rec.continuous = true
     rec.interimResults = true
 
     rec.onresult = (e: any) => {
+      // Hearing anything proves the session is healthy again.
+      this.restarts = []
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const result = e.results[i]
         const transcript: string = result[0]?.transcript ?? ''
@@ -247,14 +285,20 @@ export class VoiceListener {
       const code = e?.error ?? 'unknown'
       // `no-speech` and `aborted` are normal; only surface the real failures.
       if (code === 'no-speech' || code === 'aborted') return
-      this.events.onError?.(
-        code === 'not-allowed'
-          ? 'Microphone permission denied.'
-          : `Speech recognition error: ${code}`,
-      )
+      // Retrying cannot fix these; stop now so onend does not restart the loop.
+      if (FATAL_VOICE_ERRORS.has(code)) this.running = false
+      this.report(code)
     }
     rec.onend = () => {
       // Chromium ends the session every ~60s; restart while the user wants it.
+      if (this.running) {
+        const now = Date.now()
+        this.restarts = [...this.restarts.filter((at) => now - at < RESTART_WINDOW_MS), now]
+        if (this.restarts.length > RESTART_LIMIT) {
+          this.running = false
+          this.report('restart-loop')
+        }
+      }
       if (this.running) {
         try {
           rec.start()
@@ -277,6 +321,12 @@ export class VoiceListener {
       return false
     }
     return true
+  }
+
+  private report(code: string) {
+    if (this.reported.has(code)) return
+    this.reported.add(code)
+    this.events.onError?.(voiceErrorMessage(code))
   }
 
   stop() {

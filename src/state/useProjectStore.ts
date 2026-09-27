@@ -20,7 +20,7 @@ import { getIpc } from '../lib/bridge'
 import { planWithRemotionCapabilities } from '../lib/remotionResources'
 import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
-import { emptyStudioDoc, normaliseClip, reorderTracks, splitClipAt, studioOf } from '../lib/studio/doc'
+import { MAX_TRACKS, emptyStudioDoc, normaliseClip, placeClip, reorderTracks, settleClip, splitClipAt, studioOf } from '../lib/studio/doc'
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
 import { setSoundEnabled } from '../lib/sound'
 
@@ -186,6 +186,7 @@ type AppState = {
   duplicateStudioClip: (pid: string, clipId: string) => void
   reorderStudioTracks: (pid: string, from: number, to: number) => void
   addStudioTrack: (pid: string) => void
+  settleStudioClip: (pid: string, clipId: string) => void
 
   startRender: (
     pid: string,
@@ -363,10 +364,15 @@ export const useProjectStore = create<AppState>()(
           // A caller-supplied id makes a message idempotent — the updater can
           // announce the same downloaded version twice without stacking two
           // identical banners.
-          const id = options?.id ?? uid()
+          // The same text already on screen (a retry loop, a failing poll) is
+          // refreshed in place instead of stacking identical banners.
+          const same = get().toasts.find((t) => t.kind === kind && t.text.replace(/ \(×\d+\)$/, '') === text)
+          const id = options?.id ?? same?.id ?? uid()
+          const count = same ? Number(same.text.match(/\(×(\d+)\)$/)?.[1] ?? 1) + 1 : 1
+          const shown = count > 1 ? `${text} (×${count})` : text
           set((s) => {
             const without = s.toasts.filter((t) => t.id !== id)
-            return { toasts: [...without.slice(-3), { id, kind, text, sticky: options?.sticky, action: options?.action }] }
+            return { toasts: [...without.slice(-3), { id, kind, text: shown, sticky: options?.sticky, action: options?.action }] }
           })
           if (!options?.sticky) setTimeout(() => get().dismissToast(id), 4000)
         },
@@ -502,22 +508,34 @@ export const useProjectStore = create<AppState>()(
         addStudioClip: (pid, clip) =>
           updateProject(pid, (p) => {
             const doc = studioOf(p)
-            const trackCount = Math.max(doc.trackCount, clip.track + 1)
+            // Never stack a new clip on top of an existing one: lift it to the
+            // next free layer, creating that layer when needed.
+            const placed = placeClip(doc, clip)
             return {
               ...p,
-              studio: { ...doc, trackCount, clips: [...doc.clips, normaliseClip(clip, trackCount)] },
+              studio: { ...doc, trackCount: placed.trackCount, clips: [...doc.clips, placed.clip] },
             }
           }, 'Add clip'),
+
+        settleStudioClip: (pid, clipId) =>
+          updateProject(pid, (p) => {
+            const doc = studioOf(p)
+            const settled = settleClip(doc, clipId)
+            return settled === doc ? p : { ...p, studio: settled }
+          }, 'Edit clip'),
 
         updateStudioClip: (pid, clipId, patch) =>
           updateProject(pid, (p) => {
             const doc = studioOf(p)
+            // Dragging a clip above the top layer creates a new layer.
+            const trackCount = typeof patch.track === 'number' ? Math.min(MAX_TRACKS, Math.max(doc.trackCount, Math.round(patch.track) + 1)) : doc.trackCount
             return {
               ...p,
               studio: {
                 ...doc,
+                trackCount,
                 clips: doc.clips.map((c) =>
-                  c.id === clipId ? normaliseClip({ ...c, ...patch } as StudioClip, doc.trackCount) : c,
+                  c.id === clipId ? normaliseClip({ ...c, ...patch } as StudioClip, trackCount) : c,
                 ),
               },
             }
@@ -547,11 +565,8 @@ export const useProjectStore = create<AppState>()(
             const doc = studioOf(p)
             const clip = doc.clips.find((c) => c.id === clipId)
             if (!clip) return p
-            const copy = normaliseClip(
-              { ...clip, id: uid(), startSec: clip.startSec + clip.durationSec },
-              doc.trackCount,
-            )
-            return { ...p, studio: { ...doc, clips: [...doc.clips, copy] } }
+            const placed = placeClip(doc, { ...clip, id: uid(), startSec: clip.startSec + clip.durationSec })
+            return { ...p, studio: { ...doc, trackCount: placed.trackCount, clips: [...doc.clips, placed.clip] } }
           }, 'Duplicate clip'),
 
         reorderStudioTracks: (pid, from, to) =>
@@ -564,7 +579,7 @@ export const useProjectStore = create<AppState>()(
         addStudioTrack: (pid) =>
           updateProject(pid, (p) => {
             const doc = studioOf(p)
-            return { ...p, studio: { ...doc, trackCount: Math.min(8, doc.trackCount + 1) } }
+            return { ...p, studio: { ...doc, trackCount: Math.min(MAX_TRACKS, doc.trackCount + 1) } }
           }, 'Add track'),
 
         startRender: (pid, opts) => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { dedupeMessages, humanError } from '../lib/humanError'
 import { Mic, MicOff, Volume2 } from 'lucide-react'
 import { Card } from '../components/Card'
 import { Button } from '../components/Button'
@@ -173,7 +174,7 @@ export function Autonomous() {
           <p className="mt-2 text-sm text-muted">Cupric AI runs the creative pipeline while keeping review gates visible.</p>
         </div>
 
-        <Card>
+        <Card className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="text-sm font-medium">Project goal / brief</label>
             <div className="flex flex-wrap items-center gap-3">
@@ -250,7 +251,7 @@ export function Autonomous() {
         </Card>
 
         {job && (
-          <Card>
+          <Card className="p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-medium">{job.status === 'done' ? 'Production complete' : 'Production timeline'}</h2>
@@ -292,18 +293,29 @@ export function Autonomous() {
 
             {job.errorMessage && (
               <div className="mt-4 rounded-xl border border-danger/30 bg-danger/10 p-3 text-sm text-danger">
-                {job.errorMessage}
+                {humanError(job.errorMessage, 'The job')}
               </div>
             )}
 
-            {!!job.warnings?.length && (
-              <div className="mt-4 rounded-xl border border-line bg-bg/40 p-3 text-xs text-muted">
-                <div className="mb-1 font-semibold text-text">Warnings</div>
-                <ul className="list-disc space-y-1 pl-4">
-                  {job.warnings.slice(-4).map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}
-                </ul>
-              </div>
-            )}
+            {!!job.warnings?.length && (() => {
+              // One line per distinct problem, in plain words, with a count.
+              const notes = dedupeMessages(job.warnings)
+              return (
+                <details className="mt-4 rounded-xl border border-line bg-bg/40 p-3 text-xs text-muted" open={notes.length <= 3}>
+                  <summary className="cursor-pointer select-none font-semibold text-text">
+                    {notes.length} note{notes.length === 1 ? '' : 's'} from this run
+                  </summary>
+                  <ul className="mt-2 list-disc space-y-1.5 pl-4 leading-relaxed">
+                    {notes.map((note) => (
+                      <li key={note.text}>
+                        {note.text}
+                        {note.count > 1 && <span className="ml-1.5 rounded bg-panel-alt px-1.5 py-0.5 font-mono text-[10px] text-muted">×{note.count}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )
+            })()}
 
             <div className="mt-5 space-y-3">
               {job.steps.map(step => (

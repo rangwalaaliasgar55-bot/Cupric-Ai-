@@ -20,6 +20,7 @@ import { STUDIO_BACKGROUNDS } from './backgrounds'
 import { defaultGlassClip, defaultTextClip, nextFreeStart } from './doc'
 import { TEXT_ANIMATIONS, TRANSITIONS } from './transitions'
 import { planTemplateFill, templateSlots, type TemplateFillData } from './templateFill'
+import { findComponent, withComponent } from './components'
 
 /** Custom MIME so a drag from the Library can never be confused with a file. */
 export const RESOURCE_MIME = 'application/x-cupric-resource'
@@ -39,13 +40,20 @@ export type DropResult =
   | { ok: true; action: 'open-lab'; labSlug: string; message: string }
   | { ok: false; reason: string }
 
-export type ResourceDisposition = 'clip' | 'lab' | 'template' | 'reference'
+export type ResourceDisposition = 'clip' | 'scene' | 'lab' | 'template' | 'render' | 'font' | 'command' | 'reference'
 
-/** One classification drives every resource badge and drag expectation. */
-export function resourceDisposition(kind: string): ResourceDisposition {
-  if (kind === 'component') return 'lab'
+/**
+ * One classification drives every resource badge: it names what Apply (or a
+ * drop on the stage) produces — see resourceApply.ts, which implements it.
+ */
+export function resourceDisposition(kind: string, item?: { source?: string; data?: Record<string, unknown> }): ResourceDisposition {
+  if (kind === 'component') return item && (item.source || item.data?.source || item.data?.provider) ? 'scene' : 'lab'
   if (kind === 'saas-template') return 'template'
   if (['glass', 'background', 'animation', 'effect', 'transition'].includes(kind)) return 'clip'
+  if (kind === 'block' || kind === 'icon') return 'scene'
+  if (kind === 'template') return 'render'
+  if (kind === 'font') return 'font'
+  if (kind === 'voice') return 'command'
   return 'reference'
 }
 
@@ -216,15 +224,13 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
       return { ok: true, clip, message: `Added “${payload.name}” as a fully editable native text effect.` }
     }
 
-    case 'component':
-      // Lab demos are live React, not pixels. Route straight to the real
-      // deterministic capture flow rather than dropping an empty placeholder.
-      return {
-        ok: true,
-        action: 'open-lab',
-        labSlug: payload.id,
-        message: `Opening “${payload.name}” in the Lab. Choose the frame, then use “Send to Studio” to capture it as an overlay.`,
-      }
+    case 'component': {
+      // The real component, recorded with its real animation by the Studio's
+      // recorder (ComponentRecorderHost) — never a dead placeholder.
+      if (!findComponent(payload.id)) return { ok: false, reason: `“${payload.name}” is not a built-in component.` }
+      const added = withComponent(doc, payload.id, { startSec: atSec, recordSec: 4, durationSec: 4 })
+      return { ok: true, docPatch: { clips: added.doc.clips, trackCount: added.doc.trackCount }, message: `“${payload.name}” added — recording its real animation.` }
+    }
 
     case 'template':
       return {
@@ -236,18 +242,13 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
       const data = (payload.data ?? {}) as TemplateFillData
       const slots = templateSlots(data)
       if (!slots.length) return { ok: false, reason: `“${payload.name}” has no editable scenes.` }
-      if (slots.some((slot) => slot.kind !== 'text')) {
-        return {
-          ok: false,
-          reason: `“${payload.name}” needs media assignments. Click its Auto-fill button so Cupric can ask which footage belongs in each slot.`,
-        }
-      }
-      const assignments = Object.fromEntries(slots.map((slot) => [slot.id, { text: slot.defaultText }]))
-      const plan = planTemplateFill(doc, data, assignments, payload.name)
+      // Media slots never block: project footage fills them, else a designed
+      // placeholder panel does (see storyboard.ts).
+      const plan = planTemplateFill(doc, data, {}, payload.name, { atSec })
       if (!plan.clips.length) return { ok: false, reason: `“${payload.name}” did not produce any clips.` }
       return {
         ok: true,
-        docPatch: { clips: [...doc.clips, ...plan.clips] },
+        docPatch: { clips: plan.doc.clips, trackCount: plan.doc.trackCount },
         message: `Added “${payload.name}” as ${plan.clips.length} editable clips.`,
       }
     }

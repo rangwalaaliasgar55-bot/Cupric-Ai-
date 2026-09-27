@@ -1,17 +1,23 @@
-import { Suspense, useDeferredValue, useMemo, useRef, useState } from 'react'
+import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, FlaskConical, Loader2, Search, Wand2 } from 'lucide-react'
-import html2canvas from 'html2canvas'
+import { trimFrames } from '../lib/trimFrames'
+import { captureElement } from '../lib/capture'
 import { ProgressProvider } from '../lib/ProgressProvider'
 import { Button } from '../components/Button'
-import { availableSlugs, getDemo } from '../lab/demos'
+import { availableSlugs } from '../lab/demos'
+import { DemoFrame } from '../lab/DemoFrame'
 import { PreviewPlayContext } from '../lab/preview-play'
 import { categories, lab, type LabEntry } from '../lab/registry'
 import { groups } from '../lab/order'
-import type { StudioOverlayClip } from '../types/project'
-import { nextFreeStart, studioOf } from '../lib/studio/doc'
+import type { StudioClip } from '../types/project'
+import { docDuration, studioOf } from '../lib/studio/doc'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
+import { focusStudioClip } from '../lib/studio/focus'
+import { lastStudioPlayhead } from '../lib/studio/studioLink'
+import { withComponent } from '../lib/studio/components'
+import { motionPatch } from '../lib/studio/motionDirector'
 
 /**
  * UI Lab — the vendored lab.xevrion.dev catalogue running locally.
@@ -24,62 +30,60 @@ import { humanError } from '../lib/humanError'
 
 const ALL = 'all' as const
 
-function DemoFrame({
-  slug,
-  play,
-  className,
-  atSeconds,
-}: {
-  slug: string
-  play: boolean | null
-  className?: string
-  /**
-   * When set, the demo is driven from this instant instead of its own clock.
-   * Components that read the shared clock then render the same pixels every
-   * time — which is what makes a capture reproducible.
-   */
-  atSeconds?: number
-}) {
-  const Demo = getDemo(slug)
-  if (!Demo) {
-    return <div className="grid h-full place-items-center text-xs text-muted">No demo file</div>
-  }
-  const body = (
-    <PreviewPlayContext.Provider value={play}>
-      <Suspense
-        fallback={
-          <div className="grid h-full place-items-center">
-            <Loader2 size={16} className="animate-spin text-muted" />
-          </div>
-        }
-      >
-        <div className={cx('lab-canvas grid h-full w-full place-items-center overflow-hidden', className)}>
-          <Demo />
-        </div>
-      </Suspense>
-    </PreviewPlayContext.Provider>
-  )
-  return atSeconds === undefined ? body : <ProgressProvider seconds={atSeconds}>{body}</ProgressProvider>
+
+/** Mount a card's live demo only once it scrolls near the viewport. */
+function useNearViewport<T extends Element>(): [React.RefObject<T | null>, boolean] {
+  const ref = useRef<T | null>(null)
+  const [near, setNear] = useState(false)
+  useEffect(() => {
+    const node = ref.current
+    if (!node || near) return
+    if (typeof IntersectionObserver === 'undefined') {
+      setNear(true)
+      return
+    }
+    const observer = new IntersectionObserver((items) => {
+      if (items.some((item) => item.isIntersecting)) {
+        setNear(true)
+        observer.disconnect()
+      }
+    }, { rootMargin: '300px 0px' })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [near])
+  return [ref, near]
 }
 
 function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
   const [hover, setHover] = useState(false)
+  const [ref, near] = useNearViewport<HTMLDivElement>()
   return (
-    <button
-      type="button"
+    // A div with button semantics, not a <button>: the live demo inside
+    // renders its own buttons, and nested buttons are invalid HTML that
+    // browsers "repair" unpredictably.
+    <div
+      ref={ref}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open ${entry.name}`}
       onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onOpen() }
+      }}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onFocus={() => setHover(true)}
       onBlur={() => setHover(false)}
-      className="group overflow-hidden rounded-xl border border-line bg-panel text-left transition-colors duration-150 hover:border-accent/40"
+      className="group cursor-pointer overflow-hidden rounded-xl border border-line bg-panel text-left transition-colors duration-150 hover:border-accent/40 focus-visible:outline-2 focus-visible:outline-accent"
     >
       <div className="relative h-40 overflow-hidden border-b border-line">
         <div
+          inert
           className="pointer-events-none absolute inset-0"
           style={{ transform: `scale(${entry.previewScale ?? 1})`, transformOrigin: 'center' }}
         >
-          <DemoFrame slug={entry.slug} play={hover} />
+          {near ? <DemoFrame slug={entry.slug} play={hover} /> : <div className="lab-canvas h-full w-full" />}
         </div>
       </div>
       <div className="space-y-1 px-3 py-2.5">
@@ -91,7 +95,7 @@ function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
         </div>
         <p className="line-clamp-2 text-xs leading-relaxed text-muted">{entry.description}</p>
       </div>
-    </button>
+    </div>
   )
 }
 
@@ -114,7 +118,7 @@ export function Lab() {
   const stageRef = useRef<HTMLDivElement>(null)
 
   const project = useActiveProject()
-  const addStudioClip = useProjectStore((s) => s.addStudioClip)
+  const patchStudio = useProjectStore((s) => s.patchStudio)
   const setView = useProjectStore((s) => s.setView)
   const pushToast = useProjectStore((s) => s.pushToast)
 
@@ -138,46 +142,26 @@ export function Lab() {
    * then scrub and export its real motion instead of flattening the component
    * into the single screenshot that used to make Lab resources look broken.
    */
+  /**
+   * Put the component on the Studio timeline. The Studio's recorder plays it,
+   * acts it out and records its real animation into the clip (see
+   * ComponentRecorderHost), the same path as Studio → Components.
+   */
   async function sendToStudio() {
-    if (!open || !project || !stageRef.current) return
+    if (!open || !project) return
     setCapturing(true)
-    setCaptureProgress(0)
     try {
-      const frameFps = 8
-      const durationSec = 3
-      const frameCount = frameFps * durationSec
-      const frames: string[] = []
-      for (let frame = 0; frame < frameCount; frame += 1) {
-        setFreezeAt(frame / frameFps)
-        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-        const canvas = await html2canvas(stageRef.current, {
-          backgroundColor: null,
-          scale: 1,
-          logging: false,
-          useCORS: true,
-        })
-        frames.push(canvas.toDataURL('image/webp', 0.78))
-        setCaptureProgress(Math.round(((frame + 1) / frameCount) * 100))
-      }
       const doc = studioOf(project)
-      const track = Math.min(doc.trackCount - 1, 1)
-      const clip: StudioOverlayClip = {
-        id: uid(), kind: 'overlay', track,
-        startSec: nextFreeStart(doc, track, 0, durationSec), durationSec,
-        name: open.name, transitionIn: 'fade', transitionOut: 'fade', opacity: 1,
-        dataUrl: frames[0], frames, frameFps,
-        source: `UI Lab animated React capture · ${open.name}`,
-        x: 0.5, y: 0.5, scale: 0.8,
-      }
-      addStudioClip(project.id, clip)
-      pushToast('success', `${open.name} added as ${frames.length} scrub-safe animation frames.`)
+      const added = withComponent(doc, open.slug, { startSec: Math.min(lastStudioPlayhead(), docDuration(doc)), recordSec: 4, durationSec: 4 })
+      const clip = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
+      patchStudio(project.id, { trackCount: added.doc.trackCount, clips: added.doc.clips.map((c) => (c.id === clip.id ? clip : c)) })
+      focusStudioClip(clip.id)
+      pushToast('success', `${open.name} is on your timeline — the Studio is recording its real animation now.`)
       setView('studio')
     } catch (err) {
-      pushToast('error', humanError(err, 'Could not capture this React animation'))
+      pushToast('error', humanError(err, `Could not add ${open.name}`))
     } finally {
       setCapturing(false)
-      setCaptureProgress(0)
-      setFreezeAt(undefined)
     }
   }
 
@@ -215,7 +199,7 @@ export function Lab() {
             </Button>
             <Button size="sm" variant="primary" onClick={() => void sendToStudio()} disabled={!project || capturing}>
               {capturing ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
-              {capturing ? `Rendering ${captureProgress}%` : 'Add animated to Studio'}
+              {capturing ? 'Adding…' : 'Add animated to Studio'}
             </Button>
           </div>
         </div>

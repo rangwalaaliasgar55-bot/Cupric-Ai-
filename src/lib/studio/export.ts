@@ -11,6 +11,8 @@
  * isn't" behaviour this app is trying to avoid.
  */
 
+import { registrySources } from './sources'
+import { ensureDocFonts } from './fonts'
 import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { getIpc, isDesktop } from '../bridge'
 import { audioGainAt, clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
@@ -81,6 +83,11 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   if (duration <= 0) throw new Error('Nothing to export — the timeline is empty.')
   if (typeof MediaRecorder === 'undefined') throw new Error('This browser cannot record video (MediaRecorder missing).')
 
+  // Fonts chosen from Resources are downloaded on demand; wait for them so the
+  // export never bakes the fallback face into the video.
+  await ensureDocFonts(doc).catch(() => [])
+  await document.fonts?.ready.catch(() => undefined)
+
   const scale = options.scale ?? 1
   const [fullW, fullH] = sizeForAspect(doc.aspect)
   const width = Math.round((fullW * scale) / 2) * 2
@@ -133,7 +140,8 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
 
   const sources: FrameSources = {
     media: (clip) => drawableElement(clip.mediaId),
-    overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
+    // Same resolver as the preview, so animated Lab captures export animated.
+    overlay: registrySources.overlay,
     sticker: (clip, localSec) => stickerFrame(clip, localSec),
   }
 
@@ -285,7 +293,8 @@ export function captureStill(doc: StudioDoc, t: number, maxWidth = 640): string 
   if (!ctx) return null
   drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, {
     media: (clip) => drawableElement(clip.mediaId),
-    overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
+    // Same resolver as the preview, so animated Lab captures export animated.
+    overlay: registrySources.overlay,
     sticker: (clip, localSec) => stickerFrame(clip, localSec),
   })
   try {

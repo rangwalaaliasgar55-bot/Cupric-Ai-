@@ -3,6 +3,7 @@ import { getIpc } from './bridge'
 import { chat as openCodeChat, isConfigured as isOpenCodeConfigured } from './opencode'
 import { effectsPromptAppendix } from './effects'
 import { round1, slugify, uid } from './utils'
+import { humanError } from './humanError'
 
 /**
  * Gemini / OpenCode co-pilot.
@@ -260,24 +261,38 @@ export async function askGemini(userText: string, askCount: number): Promise<Gem
   return { ...local, source: 'local', fallbackReason }
 }
 
+/** An image attached to a chat message, already downscaled to a JPEG data URL. */
+export type ChatImage = { name: string; mimeType: string; dataUrl: string }
+export type ChatTurn = { role: 'user' | 'ai'; text: string }
+
 export async function askGeminiChat(
   text: string,
   ctx: { projectName: string | null; view: View },
+  extra: { images?: ChatImage[]; history?: ChatTurn[] } = {},
 ): Promise<string> {
   const api = getIpc()
+  const images = extra.images ?? []
+  const history = (extra.history ?? []).slice(-8)
 
-  // 1. Desktop: keys live in the main process, so ask it first.
+  // 1. Desktop: keys live in the main process, so ask it first. The main
+  //    process already walks every configured provider/model (Gemini models,
+  //    OpenCode, local servers) before giving up, so an error here is final.
   if (api) {
     try {
-      const reply = await api.invoke('gemini:chat', { text, ctx })
+      const reply = await api.invoke('gemini:chat', {
+        text,
+        ctx,
+        history,
+        images: images.map((image) => ({ mimeType: image.mimeType, data: image.dataUrl.split(',')[1] ?? '' })),
+      })
       if (typeof reply === 'string' && reply.trim()) return reply
       if (reply && typeof reply === 'object' && 'text' in reply) {
         const nested = (reply as { text?: unknown }).text
         if (typeof nested === 'string' && nested.trim()) return nested
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err || '')
-      return `The configured model could not be reached (${message}). Open the settings icon in this panel to pick another OpenCode model — the local presets cost nothing.`
+      const fallback = await geminiChatLocal(text, ctx)
+      return `${fallback}\n\n— ${humanError(err, 'The live model')} Every configured model was tried. Open the settings icon in this panel to add another provider; local Ollama / LM Studio models cost nothing.`
     }
   }
 
@@ -291,15 +306,20 @@ export async function askGeminiChat(
           content:
             'You are the assistant inside Cupric AI, a desktop short-form video editor with a Brief screen, an Arena import flow, a Footage desk, a CapCut-style Studio editor and a Render queue. Answer briefly and concretely about making and editing video in this app.',
         },
+        ...history.map((turn) => ({ role: turn.role === 'ai' ? ('assistant' as const) : ('user' as const), content: turn.text })),
         {
           role: 'user',
-          content: `Current screen: ${ctx.view}. Project: ${ctx.projectName ?? 'none open'}.\n\n${text}`,
+          content: images.length
+            ? [
+                { type: 'text' as const, text: `Current screen: ${ctx.view}. Project: ${ctx.projectName ?? 'none open'}.\n\n${text}` },
+                ...images.map((image) => ({ type: 'image_url' as const, image_url: { url: image.dataUrl } })),
+              ]
+            : `Current screen: ${ctx.view}. Project: ${ctx.projectName ?? 'none open'}.\n\n${text}`,
         },
       ])
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err || '')
       const fallback = await geminiChatLocal(text, ctx)
-      return `${fallback}\n\n(Live model error: ${message})`
+      return `${fallback}\n\n— ${humanError(err, 'The live model')}`
     }
   }
 

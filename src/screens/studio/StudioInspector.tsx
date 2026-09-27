@@ -1,5 +1,15 @@
-import { useRef } from 'react'
-import { Copy, Link2, Plus, Scissors, Trash2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import {
+  CAMERA_RECIPES,
+  EMPHASIS_RECIPES,
+  ENTRANCE_RECIPES,
+  EXIT_RECIPES,
+  MOTION_PRESETS,
+  describeMotionSpec,
+  motionPatch,
+  type MotionSpec,
+} from '../../lib/studio/motionDirector'
+import { Copy, Link2, Plus, RefreshCw, Scissors, Trash2, Type } from 'lucide-react'
 import type {
   StudioAudioClip,
   StudioBackgroundClip,
@@ -21,7 +31,13 @@ import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/t
 import { GLASS_PRESETS } from '../../lib/glass'
 import { STICKERS } from '../../lib/studio/lottie'
 import { hasMedia, registerFile } from '../../lib/studio/media'
+
+import { findComponent } from '../../lib/studio/components'
+import { applyResource } from '../../lib/studio/resourceApply'
 import { cx } from '../../lib/utils'
+
+/** Values of the built-in Font options; anything else came from Resources → Fonts. */
+const BUNDLED_FONT_VALUES = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
 
 type Props = {
   doc: StudioDoc
@@ -61,14 +77,16 @@ function Disclosure({
   summary,
   active,
   children,
+  defaultOpen,
 }: {
   label: string
   summary?: string
   active?: boolean
   children: React.ReactNode
+  defaultOpen?: boolean
 }) {
   return (
-    <details className="group rounded-lg border border-line bg-panel-alt/40 open:bg-panel-alt/70">
+    <details open={defaultOpen} className="group rounded-lg border border-line bg-panel-alt/40 open:bg-panel-alt/70">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2">
         <span className="flex items-center gap-2 text-xs font-medium text-text">
           {label}
@@ -108,9 +126,9 @@ function Slider({
           step={step}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="h-1 flex-1 accent-[var(--color-accent)]"
+          className="h-1 w-full min-w-0 flex-1 accent-[var(--color-accent)]"
         />
-        <span className="w-14 shrink-0 text-right font-mono text-xs text-muted tabular-nums">
+        <span className="w-12 shrink-0 text-right font-mono text-xs text-muted tabular-nums">
           {value.toFixed(step < 1 ? 2 : 0)}
           {suffix ?? ''}
         </span>
@@ -269,7 +287,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
                 title={bg.name}
               >
                 <span
-                  className="flex h-full w-full items-end px-2 pb-1 text-xs text-text/90"
+                  className="flex h-full w-full items-end px-2 pb-1 text-xs font-medium text-[#F4F1EA] [text-shadow:0_1px_2px_rgb(0_0_0/0.8)]"
                   // Preview uses the same CSS the Library copies out.
                   ref={(node) => {
                     if (node) node.setAttribute('style', `${bg.css};display:flex;height:100%;width:100%`)
@@ -307,6 +325,20 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
           <Trash2 size={13} /> Delete
         </Button>
       </div>
+
+      {/* What the clip IS comes first — its words, media or look — then timing,
+          motion and finishing. The text box used to sit below the fold. */}
+      {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
+      {(clip.kind === 'video' || clip.kind === 'image') && (
+        <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
+      )}
+      {clip.kind === 'background' && <BackgroundFields clip={clip as StudioBackgroundClip} onPatch={onPatch} />}
+      {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} doc={doc} onPatchDoc={onPatchDoc} />}
+      {clip.kind === 'glass' && <GlassFields clip={clip as StudioGlassClip} onPatch={onPatch} />}
+      {clip.kind === 'audio' && <AudioFields clip={clip as StudioAudioClip} onPatch={onPatch} />}
+      {clip.kind === 'sticker' && <StickerFields clip={clip as StudioStickerClip} onPatch={onPatch} />}
+
+      <MotionPresetFields clip={clip} onPatch={onPatch} />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Start (s)">
@@ -377,15 +409,6 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
       </div>
       <p className="-mt-1 text-xs leading-relaxed text-muted/70">{transitionInfo(clip.transitionIn).description}</p>
 
-      {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
-      {(clip.kind === 'video' || clip.kind === 'image') && (
-        <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
-      )}
-      {clip.kind === 'background' && <BackgroundFields clip={clip as StudioBackgroundClip} onPatch={onPatch} />}
-      {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
-      {clip.kind === 'glass' && <GlassFields clip={clip as StudioGlassClip} onPatch={onPatch} />}
-      {clip.kind === 'audio' && <AudioFields clip={clip as StudioAudioClip} onPatch={onPatch} />}
-      {clip.kind === 'sticker' && <StickerFields clip={clip as StudioStickerClip} onPatch={onPatch} />}
     </div>
   )
 }
@@ -473,6 +496,12 @@ function KeyframeFields({
                 <option value="ease-in">Ease in</option>
                 <option value="ease-out">Ease out</option>
                 <option value="ease-in-out">Ease in and out</option>
+                <option value="expo-out">Expo out — snap, then glide</option>
+                <option value="expo-in-out">Expo in and out</option>
+                <option value="back-out">Back out — overshoot and settle</option>
+                <option value="back-in">Back in — wind up, then leave</option>
+                <option value="elastic-out">Elastic — spring</option>
+                <option value="hold">Hold — step to next key</option>
               </select>
               <button
                 type="button"
@@ -755,18 +784,29 @@ function StickerFields({ clip, onPatch }: { clip: StudioStickerClip; onPatch: (p
 }
 
 function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const textRef = useRef<HTMLTextAreaElement>(null)
+  // A freshly added text clip is ready to type into straight away.
+  useEffect(() => {
+    if (clip.text === 'Your headline' && textRef.current) {
+      textRef.current.focus()
+      textRef.current.select()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clip.id])
   return (
-    <div className="space-y-4 border-t border-line pt-4">
-      <Field label="Text">
+    <div className="space-y-4">
+      <Field label="Text" hint="Type here and the canvas updates as you write.">
         <textarea
+          ref={textRef}
           value={clip.text}
           rows={3}
+          placeholder="Write your headline, caption or call to action"
           onChange={(e) => onPatch({ text: e.target.value, name: e.target.value.slice(0, 24) || 'Text' } as Partial<StudioClip>)}
           className={cx(inputCx, 'resize-y')}
         />
       </Field>
 
-      <Field label="Font" hint="Bundled locally so exports match the preview on every machine.">
+      <Field label="Font" hint="Six fonts ship with the app; any Google font from Resources → Fonts downloads once and is embedded in exports.">
         <select
           value={clip.fontFamily ?? 'Inter Variable'}
           onChange={(e) => onPatch({ fontFamily: e.target.value } as Partial<StudioClip>)}
@@ -778,6 +818,9 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
           <option value="Space Grotesk Variable">Space Grotesk — geometric tech</option>
           <option value="Playfair Display Variable">Playfair Display — cinematic serif</option>
           <option value="JetBrains Mono Variable">JetBrains Mono — technical</option>
+          {clip.fontFamily && !BUNDLED_FONT_VALUES.has(clip.fontFamily) && (
+            <option value={clip.fontFamily}>{clip.fontFamily} — from Resources</option>
+          )}
         </select>
       </Field>
 
@@ -1105,16 +1148,75 @@ function GlassFields({ clip, onPatch }: { clip: StudioGlassClip; onPatch: (p: Pa
   )
 }
 
-function OverlayFields({ clip, onPatch }: { clip: StudioOverlayClip; onPatch: (p: Partial<StudioClip>) => void }) {
+function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlayClip; onPatch: (p: Partial<StudioClip>) => void; doc: StudioDoc; onPatchDoc: (patch: Partial<StudioDoc>) => void }) {
+  const meta = clip.component
+  const entry = findComponent(meta?.slug)
+  const busy = meta?.status === 'pending' || meta?.status === 'recording'
+  const rerecord = (patch: Partial<NonNullable<StudioOverlayClip['component']>>) => {
+    if (!meta) return
+    onPatch({ component: { ...meta, ...patch, status: 'pending', error: undefined } } as Partial<StudioClip>)
+  }
+  /** Swap the recording for native layers you can type into (text, glass). */
+  const rebuild = () => {
+    if (!entry) return
+    const without = { ...doc, clips: doc.clips.filter((c) => c.id !== clip.id) }
+    const result = applyResource(without, { kind: 'block', id: entry.slug, name: entry.name, description: entry.description, data: { category: entry.category } }, { atSec: clip.startSec })
+    if (result.ok && result.type === 'doc') onPatchDoc({ clips: result.doc.clips, trackCount: result.doc.trackCount })
+  }
   return (
     <div className="space-y-4 border-t border-line pt-4">
-      <p className="truncate text-xs text-muted">From {clip.source}</p>
-      {clip.frames?.length ? (
-        <div className="rounded-lg border border-line bg-panel-alt p-2.5">
-          <p className="text-xs font-medium text-text">Animated React capture · {clip.frames.length} frames</p>
-          <p className="mt-0.5 text-[11px] text-muted">Scrub-safe motion; position, size, effects, keyframes and playback rate remain editable.</p>
-          <Slider label="Motion speed" value={(clip.frameFps ?? 8) / 8} min={0.5} max={2} step={0.25} suffix="×" onChange={(v) => onPatch({ frameFps: 8 * v } as Partial<StudioClip>)} />
+      {meta && entry ? (
+        <div className="space-y-3 rounded-lg border border-line bg-panel-alt p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-text">UI component · {entry.name}</p>
+              <p className="mt-0.5 text-[11px] text-muted">
+                {busy
+                  ? 'Recording its real animation…'
+                  : meta.status === 'failed'
+                    ? `Not recorded: ${meta.error ?? 'unknown error'}`
+                    : clip.frames?.length
+                      ? `${clip.frames.length} frames of real motion · loops while the clip runs`
+                      : 'A still — this component has no motion on its own. Turn on “Act it out” and record again.'}
+              </p>
+            </div>
+            <span className={cx('shrink-0 rounded-full border px-1.5 text-[10px]', meta.status === 'failed' ? 'border-danger/50 text-danger' : busy ? 'border-info/50 text-info' : 'border-accent/50 text-accent-text')}>
+              {busy ? 'recording' : meta.status}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Record length">
+              <select value={meta.recordSec} onChange={(e) => rerecord({ recordSec: Number(e.target.value) })} className={inputCx} disabled={busy} aria-label="Record length">
+                {[2, 3, 4, 6, 8, 10].map((sec) => (
+                  <option key={sec} value={sec}>{sec}s</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Performance">
+              <select value={meta.interact ? 'act' : 'watch'} onChange={(e) => rerecord({ interact: e.target.value === 'act' })} className={inputCx} disabled={busy} aria-label="Performance">
+                <option value="act">Act it out</option>
+                <option value="watch">Just watch</option>
+              </select>
+            </Field>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-muted">
+            <input type="checkbox" checked={clip.loop !== false} onChange={(e) => onPatch({ loop: e.target.checked } as Partial<StudioClip>)} />
+            Loop the animation when the clip is longer
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => rerecord({})} disabled={busy}>
+              <RefreshCw size={12} /> Record again
+            </Button>
+            <Button size="sm" variant="ghost" onClick={rebuild} disabled={busy} title="Replace the recording with native text and glass layers you can type into">
+              <Type size={12} /> Rebuild as editable layers
+            </Button>
+          </div>
         </div>
+      ) : (
+        <p className="truncate text-xs text-muted">From {clip.source}</p>
+      )}
+      {clip.frames?.length ? (
+        <Slider label="Motion speed" value={clip.playbackRate ?? 1} min={0.25} max={3} step={0.25} suffix="×" onChange={(v) => onPatch({ playbackRate: v } as Partial<StudioClip>)} />
       ) : null}
       <Slider label="Scale" value={clip.scale} min={0.1} max={2} step={0.05} suffix="×" onChange={(v) => onPatch({ scale: v } as Partial<StudioClip>)} />
       <div className="grid grid-cols-2 gap-3">
@@ -1122,5 +1224,76 @@ function OverlayFields({ clip, onPatch }: { clip: StudioOverlayClip; onPatch: (p
         <Slider label="Y" value={clip.y} min={0} max={1} step={0.01} onChange={(v) => onPatch({ y: v } as Partial<StudioClip>)} />
       </div>
     </div>
+  )
+}
+
+/**
+ * Motion presets — the same choreography engine the agent uses, one click
+ * away. Each choice rewrites the clip's keyframes with correct timing for
+ * its length; the keyframes stay fully editable afterwards.
+ */
+function MotionPresetFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const [spec, setSpec] = useState<MotionSpec>({ intensity: 1 })
+  if (clip.kind === 'audio') return null
+  const apply = (next: MotionSpec) => {
+    setSpec(next)
+    onPatch(motionPatch(clip, next))
+  }
+  const keyCount = clip.keyframes?.length ?? 0
+  const media = clip.kind === 'video' || clip.kind === 'image'
+  return (
+    <Disclosure label="Motion" summary={keyCount ? `${keyCount} keys` : 'None'} active={keyCount > 0} defaultOpen>
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-1.5">
+          {MOTION_PRESETS.filter((preset) => media || !preset.spec.camera).map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              title={preset.hint}
+              onClick={() => apply({ ...preset.spec })}
+              className="rounded-lg border border-line bg-panel-alt/60 px-2 py-1.5 text-left text-xs leading-tight text-text transition-colors hover:border-accent/60 hover:bg-accent/10"
+            >
+              <span className="block font-medium">{preset.label}</span>
+              <span className="block truncate text-[10px] text-muted">{preset.hint}</span>
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Entrance">
+            <select value={spec.entrance ?? 'none'} onChange={(e) => apply({ ...spec, entrance: e.target.value as MotionSpec['entrance'] })} className={inputCx}>
+              <option value="none">None</option>
+              {ENTRANCE_RECIPES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Exit">
+            <select value={spec.exit ?? 'none'} onChange={(e) => apply({ ...spec, exit: e.target.value as MotionSpec['exit'] })} className={inputCx}>
+              <option value="none">None</option>
+              {EXIT_RECIPES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </Field>
+          <Field label="While on screen">
+            <select value={spec.emphasis ?? 'none'} onChange={(e) => apply({ ...spec, emphasis: e.target.value as MotionSpec['emphasis'] })} className={inputCx}>
+              <option value="none">Hold still</option>
+              {EMPHASIS_RECIPES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Camera">
+            <select value={spec.camera ?? 'none'} onChange={(e) => apply({ ...spec, camera: e.target.value as MotionSpec['camera'] })} className={inputCx}>
+              <option value="none">None</option>
+              {CAMERA_RECIPES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </Field>
+        </div>
+        <Slider label="Intensity" value={spec.intensity ?? 1} min={0.3} max={2} step={0.1} onChange={(v) => apply({ ...spec, intensity: v })} />
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted">{describeMotionSpec(spec)}</p>
+          {keyCount > 0 && (
+            <button type="button" onClick={() => { setSpec({ intensity: 1 }); onPatch({ keyframes: [] }) }} className="text-xs text-muted underline-offset-2 hover:text-text hover:underline">
+              Clear motion
+            </button>
+          )}
+        </div>
+      </div>
+    </Disclosure>
   )
 }

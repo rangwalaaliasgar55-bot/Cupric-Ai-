@@ -14,10 +14,15 @@ for (const entry of index.packs) {
   assert.equal(pack.items.length, entry.itemCount, `${entry.id} item count must match the index`)
   total += pack.items.length
 }
-assert.equal(total, 3083, 'the complete resource catalogue must be bundled')
+assert.equal(total, 3080, 'the complete resource catalogue must be bundled')
 const reactBits = JSON.parse(await readFile(new URL('resources/packs/react-bits.json', root), 'utf8'))
 const skiper = JSON.parse(await readFile(new URL('resources/packs/skiper-ui.json', root), 'utf8'))
 const remotion = JSON.parse(await readFile(new URL('resources/packs/remotion.json', root), 'utf8'))
+{
+  const fonts = remotion.items.filter((item) => item.kind === 'font')
+  assert.equal(fonts.length, 1852, 'every loadable Google font from the Remotion catalogue must be listed')
+  assert.ok(fonts.every((item) => typeof item.data?.family === 'string' && item.data.family && Array.isArray(item.data?.weights) && item.data.weights.length), 'fonts must carry the family and weights Apply downloads')
+}
 assert.equal(reactBits.items.length, 209, 'all current React Bits references must be indexed')
 assert.ok(reactBits.items.every((item) => item.kind === 'saas-template' && item.data?.editable && item.data?.agentUsable), 'every React Bits reference must have an editable native storyboard')
 assert.ok(reactBits.items.every((item) => item.data?.sourceCopied === false && item.data?.intake === 'original-native-storyboard'), 'Commons-Clause React Bits source must not be redistributed or represented as copied')

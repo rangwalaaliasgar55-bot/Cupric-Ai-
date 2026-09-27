@@ -11,6 +11,7 @@ await build({ bundle: true, outfile: tmp, format: 'esm', platform: 'node', logLe
   contents: `
     export { validateStudioEditPlan, applyStudioEditPlan, localStudioEditPlan } from './src/lib/studio/editOps'
     export { emptyStudioDoc, defaultTextClip } from './src/lib/studio/doc'
+    export { COMPONENTS, componentCatalogFor, componentFromInstruction, fitComponentScale, isPendingComponent } from './src/lib/studio/components'
   `,
   resolveDir: root, sourcefile: 'check-agent-edits.ts', loader: 'ts',
 } })
@@ -62,7 +63,15 @@ assert.match(studio, />\s*Auto polish\s*</, 'Studio must offer content-directed 
 assert.match(studio, />\s*Auto effects\s*</, 'Studio must offer an automatic native effects pass')
 assert.match(studio, /motionReferences:[\s\S]*reactBits[\s\S]*skiperUi[\s\S]*remotionPackages/, 'agent context must expose the attributed motion libraries')
 assert.match(main, /translate every idea into only the native operations/, 'third-party references must resolve to safe editable operations')
-assert.match(main, /withTimeout\(generateStudioEditPlan[\s\S]*10_000/, 'Studio planning must fail over quickly instead of hanging forever')
+{
+  // The deadline may be a literal or a named constant, but it must exist and
+  // stay short: the renderer has a deterministic local plan to fall back to.
+  const call = main.match(/withTimeout\(generateStudioEditPlan\([^)]*\)[^,]*,\s*([A-Z_0-9]+|[\d_]+)/)
+  assert.ok(call, 'Studio planning must fail over quickly instead of hanging forever')
+  const raw = /^[\d_]+$/.test(call[1]) ? call[1] : main.match(new RegExp(`const ${call[1]} = ([\\d_]+)`))?.[1]
+  const ms = Number(String(raw || '').replace(/_/g, ''))
+  assert.ok(ms > 0 && ms <= 30_000, `Studio planning deadline must be at most 30s (got ${ms}ms)`)
+}
 assert.match(studio, /const relevantNames[\s\S]*slice\(0, limit\)/, 'model context must rank and cap resource names')
 assert.match(studio, /Reading timeline and selected clips[\s\S]*Validating a safe edit plan/, 'Auto edit must show meaningful planning progress')
 const autoLocal = mod.localStudioEditPlan('Analyze the timeline and make an automatic edit', doc, null)
@@ -72,5 +81,22 @@ const autoNext = mod.applyStudioEditPlan(doc, autoLocal.ops)
 assert.equal(autoNext.clips[0].highlightWord, 'Launch', 'local Auto edit must highlight a meaningful existing keyword')
 assert.notEqual(autoNext.clips[0].anim, 'none', 'local Auto edit must automatically apply native text motion')
 assert.match(studio, /live response was unsafe or incomplete[\s\S]*?rebuilt it locally/, 'malformed provider output must visibly fail over to a local plan')
+
+// UI components: the agent can place any of them; they arrive pending and are recorded live.
+const comp = mod.COMPONENTS.find((entry) => entry.name.length > 5 && !/\b(text|title|fade|glass|pop)\b/i.test(entry.name))
+assert.ok(mod.COMPONENTS.length >= 150, 'the whole component library must be available to the agent')
+const compPlan = mod.validateStudioEditPlan({ ops: [{ type: 'addComponent', slug: comp.slug, startSec: 0.5, durationSec: 4 }] }, doc)
+const compNext = mod.applyStudioEditPlan(doc, compPlan.ops)
+const placed = compNext.clips.find((c) => c.component?.slug === comp.slug)
+assert.ok(placed && placed.kind === 'overlay' && placed.component.status === 'pending', 'addComponent must place a pending component clip for the recorder')
+assert.ok(mod.isPendingComponent(placed), 'pending component clips must be picked up by the recorder')
+assert.ok(placed.keyframes?.length >= 2, 'agent-placed components must get purposeful entrance/exit motion')
+assert.equal(new Set(compNext.clips.map((c) => c.track)).size >= 1, true)
+assert.throws(() => mod.validateStudioEditPlan({ ops: [{ type: 'addComponent', slug: 'invented-widget', startSec: 0 }] }, doc), /component/i, 'agent may only place components that exist')
+const byName = mod.localStudioEditPlan(`add the ${comp.name} at the start`, doc, null)
+assert.ok(byName.ops.some((op) => op.type === 'addComponent' && op.slug === comp.slug), 'local planner must place a component named in the prompt')
+assert.ok(mod.componentCatalogFor('add a pricing card', 14).length > 0, 'the live agent must be shown a component catalog')
+const fitted = mod.fitComponentScale(640, 400, 2, '16:9')
+assert.ok(fitted > 0.15 && fitted <= 1, 'recorded components must be sized to read well in the frame')
 
 console.log('agent edit check passed — strict allowlist, local/live planning, preview and atomic apply are wired')

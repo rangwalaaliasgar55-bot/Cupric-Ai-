@@ -122,6 +122,50 @@ if (!/API key/i.test(humanError(new Error('401 Unauthorized')))) {
   console.error('  FAIL humanError: a 401 should point at the API key')
 }
 
+// --- listener: an unrecoverable error is reported once and never loops ------
+{
+  const { VoiceListener, voiceErrorMessage } = voice
+  let instances = 0
+  class FakeRecognition {
+    constructor() { instances += 1; this.starts = 0 }
+    start() {
+      this.starts += 1
+      if (this.starts > 20) throw new Error('runaway restart')
+      // Chromium in Electron: every session fails with `network`, then ends.
+      queueMicrotask(() => { this.onerror?.({ error: 'network' }); queueMicrotask(() => this.onend?.()) })
+    }
+    stop() {}
+  }
+  globalThis.window = { SpeechRecognition: FakeRecognition }
+  const errors = []
+  let ended = 0
+  const listener = new VoiceListener({ onTranscript() {}, onCommand() {}, onError: (m) => errors.push(m), onEnd: () => { ended += 1 } })
+  listener.start()
+  await new Promise((r) => setTimeout(r, 30))
+  check('network error reported exactly once', errors.length, 1)
+  check('network error does not restart the session', listener.active, false)
+  check('listener ends cleanly', ended, 1)
+  check('network message is human, not a raw code', /type your brief/i.test(errors[0] ?? '') && !/error: network/i.test(errors[0] ?? ''), true)
+  for (const code of ['network', 'not-allowed', 'audio-capture', 'restart-loop', 'weird-new-code']) {
+    const msg = voiceErrorMessage(code)
+    check(`voice message for ${code} is short and code-free`, msg.length > 20 && msg.length <= 200 && !msg.includes(code), true)
+  }
+
+  // A transient error that keeps ending the session must also stop, once.
+  class FlakyRecognition {
+    start() { queueMicrotask(() => { this.onerror?.({ error: 'no-speech' }); queueMicrotask(() => this.onend?.()) }) }
+    stop() {}
+  }
+  globalThis.window = { SpeechRecognition: FlakyRecognition }
+  const flakyErrors = []
+  const flaky = new VoiceListener({ onTranscript() {}, onCommand() {}, onError: (m) => flakyErrors.push(m) })
+  flaky.start()
+  await new Promise((r) => setTimeout(r, 30))
+  check('restart loop is detected and stopped', flaky.active, false)
+  check('restart loop is reported once', flakyErrors.length, 1)
+  delete globalThis.window
+}
+
 await rm(dir, { recursive: true, force: true })
 
 if (failures) {

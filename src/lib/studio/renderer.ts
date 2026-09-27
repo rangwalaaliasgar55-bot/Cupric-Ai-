@@ -240,6 +240,25 @@ export function clampToSafeArea(
   return { x: x + dx, y: nextTop + blockH / 2 }
 }
 
+/**
+ * The laid-out size of a text clip as a fraction of the frame, measured with
+ * exactly the font, wrapping and line height `drawTextClip` uses — so editor
+ * handles hug the painted text instead of guessing from character counts.
+ * Takes a context rather than creating one so this module stays DOM-free.
+ */
+export function measureTextBlock(ctx: CanvasRenderingContext2D, clip: StudioTextClip, w: number, h: number): { w: number; h: number } {
+  const preset = captionPreset(clip.captionStyle)
+  const fontPx = Math.max(12, (clip.fontSizePct / 100) * h)
+  ctx.save()
+  ctx.font = `${clip.weight} ${fontPx}px '${clip.fontFamily || 'Inter Variable'}', Inter, system-ui, sans-serif`
+  const raw = preset.uppercase ? clip.text.toUpperCase() : clip.text
+  const lines = wrapLines(ctx, raw || ' ', w * 0.86)
+  const widest = lines.reduce((max, line) => Math.max(max, ctx.measureText(line).width), 0)
+  ctx.restore()
+  const pad = fontPx * 0.25
+  return { w: Math.min(1, (widest + pad * 2) / w), h: Math.min(1, (fontPx * 1.12 * lines.length + pad * 2) / h) }
+}
+
 function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: number, w: number, h: number) {
   const progress = clipProgress(clip, t)
   const preset = captionPreset(clip.captionStyle)
@@ -462,8 +481,15 @@ function drawGlassClip(ctx: CanvasRenderingContext2D, clip: StudioGlassClip, t: 
 
   if (clip.label.trim()) {
     ctx.save()
-    const fontPx = Math.max(12, boxH * 0.22)
+    // Sized to the panel, then shrunk until it fits inside the panel's width:
+    // a long label used to spill past both edges of a small pill.
+    let fontPx = Math.max(12, boxH * 0.26)
     ctx.font = `600 ${fontPx}px 'Inter Variable', Inter, system-ui, sans-serif`
+    const labelW = ctx.measureText(clip.label).width
+    if (labelW > boxW * 0.84) {
+      fontPx = Math.max(10, fontPx * ((boxW * 0.84) / labelW))
+      ctx.font = `600 ${fontPx}px 'Inter Variable', Inter, system-ui, sans-serif`
+    }
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = clip.labelColor
@@ -481,6 +507,18 @@ const EASES: Record<StudioKeyframe['ease'], (p: number) => number> = {
   'ease-in': (p) => p * p * p,
   'ease-out': (p) => 1 - Math.pow(1 - p, 3),
   'ease-in-out': (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2),
+  // Overshoot a touch, then settle — the "designed" entrance.
+  'back-out': (p) => 1 + 2.70158 * Math.pow(p - 1, 3) + 1.70158 * Math.pow(p - 1, 2),
+  // Wind up slightly before leaving — a purposeful exit.
+  'back-in': (p) => 2.70158 * p * p * p - 1.70158 * p * p,
+  // Fast start, long glide: the premium UI / title curve.
+  'expo-out': (p) => (p >= 1 ? 1 : 1 - Math.pow(2, -10 * p)),
+  'expo-in-out': (p) =>
+    p <= 0 ? 0 : p >= 1 ? 1 : p < 0.5 ? Math.pow(2, 20 * p - 10) / 2 : (2 - Math.pow(2, -20 * p + 10)) / 2,
+  // A damped spring for stickers, icons and playful pops.
+  'elastic-out': (p) => (p <= 0 ? 0 : p >= 1 ? 1 : Math.pow(2, -10 * p) * Math.sin((p * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1),
+  // Step: hold this value, then cut to the next key.
+  hold: (p) => (p >= 1 ? 1 : 0),
 }
 
 /** The animated properties, resolved at time `t`. */
@@ -762,8 +800,63 @@ function drawClipContent(
         const dh = sh * base * clip.scale
         ctx.drawImage(source, clip.x * width - dw / 2, clip.y * height - dh / 2, dw, dh)
       }
+    } else if (clip.component) {
+      drawComponentPlaceholder(ctx, clip, t, width, height)
     }
   }
+}
+
+/**
+ * A component clip whose frames are not recorded yet (just added, queued by
+ * the agent, or failed): a labelled card instead of an empty frame, so the
+ * timeline never shows "nothing happened".
+ */
+function drawComponentPlaceholder(ctx: CanvasRenderingContext2D, clip: Extract<StudioClip, { kind: 'overlay' }>, t: number, width: number, height: number) {
+  const status = clip.component?.status ?? 'pending'
+  const w = Math.min(width * 0.62, height * 0.9)
+  const h = Math.min(height * 0.3, w * 0.45)
+  const x = clip.x * width - w / 2
+  const y = clip.y * height - h / 2
+  const r = Math.min(h * 0.18, 28)
+  ctx.save()
+  ctx.beginPath()
+  ctx.moveTo(x + r, y)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
+  ctx.closePath()
+  ctx.fillStyle = 'rgba(20, 22, 28, 0.86)'
+  ctx.fill()
+  ctx.lineWidth = Math.max(1.5, h * 0.012)
+  ctx.strokeStyle = status === 'failed' ? 'rgba(255, 120, 110, 0.7)' : 'rgba(200, 245, 66, 0.55)'
+  ctx.stroke()
+  // A sweeping highlight says "working on it" while recording is pending.
+  if (status !== 'failed') {
+    const sweep = ((t * 0.6) % 1) * (w + h) - h
+    const grad = ctx.createLinearGradient(x + sweep, y, x + sweep + h, y + h)
+    grad.addColorStop(0, 'rgba(255,255,255,0)')
+    grad.addColorStop(0.5, 'rgba(255,255,255,0.07)')
+    grad.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = grad
+    ctx.fill()
+  }
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillStyle = '#F4F1EA'
+  let size = h * 0.2
+  ctx.font = `700 ${size}px 'Inter Variable', Inter, system-ui, sans-serif`
+  const label = clip.name || 'Component'
+  const measured = ctx.measureText(label).width
+  if (measured > w * 0.86) {
+    size *= (w * 0.86) / measured
+    ctx.font = `700 ${size}px 'Inter Variable', Inter, system-ui, sans-serif`
+  }
+  ctx.fillText(label, x + w / 2, y + h * 0.42)
+  ctx.font = `500 ${h * 0.11}px 'Inter Variable', Inter, system-ui, sans-serif`
+  ctx.fillStyle = status === 'failed' ? 'rgba(255, 150, 140, 0.95)' : 'rgba(200, 245, 66, 0.9)'
+  ctx.fillText(status === 'failed' ? 'Recording failed · select to retry' : 'Recording its animation…', x + w / 2, y + h * 0.68)
+  ctx.restore()
 }
 
 /* ——— main entry ——— */

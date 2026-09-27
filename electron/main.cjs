@@ -63,7 +63,7 @@ const MAX_RENDER_DURATION_SEC = 180
 const DEFAULT_SILENCE_NOISE_DB = -35
 const DEFAULT_SILENCE_MIN_DURATION = 0.8
 const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
-const GEMINI_FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-flash-lite']
+const GEMINI_FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-2.0-flash']
 
 const renderJobs = new Map()
 const automationRunStates = new Map()
@@ -507,7 +507,58 @@ ipcMain.handle('state:clear', () => {
 function automationFile() { return userDataPath('automation', 'jobs.json') }
 function automationJobs() { return readJson(automationFile(), []) }
 function saveAutomationJobs(jobs) { writeJson(automationFile(), jobs) }
+/**
+ * One readable line per distinct problem.
+ *
+ * Jobs are resumed, retried and re-gated, and each pass used to push the same
+ * message again — plus raw provider dumps (a Gemini 429 is ~2 KB of JSON). The
+ * review report ended up listing one error a dozen times. Warnings are
+ * normalised and de-duplicated wherever they are stored, with a count when
+ * something really did happen more than once.
+ */
+function tidyWarning(raw) {
+  let text = String(raw ?? '')
+    .replace(/Error invoking remote method '[^']+':\s*/g, '')
+    .replace(/\[GoogleGenerativeAI Error\]:?\s*/g, '')
+    .replace(/^(?:Error:\s*)+/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const daily = /PerDay|per day|daily/i.test(text)
+  // Cut provider JSON / stack dumps down to the sentence before them.
+  const dump = text.search(/\s\[\{\s*"@type"|\s\{\s*"error"|\s+at\s+\S+\s+\(|\n\s+at\s/)
+  if (dump > 40) text = `${text.slice(0, dump).trim()}…`
+  if (/\b429\b|quota|rate.?limit|resource_exhausted/i.test(text)) {
+    const model = text.match(/models\/([\w.-]+)|model[:\s]+([\w.-]*gemini[\w.-]*)/i)
+    const name = model ? (model[1] || model[2]) : ''
+    const lead = text.match(/^[^.:(]*?(?:unavailable|fell back|failed)[^.:(]*[.:]?/i)?.[0]?.replace(/[.:]$/, '') || 'Live AI was rate-limited'
+    text = `${lead}: ${name ? `${name} ` : 'the AI provider '}is out of free quota${daily ? ' for today' : ' for now'}. Cupric used the next available model or its built-in fallback.`
+  }
+  return text.length > 420 ? `${text.slice(0, 417).trimEnd()}…` : text
+}
+
+function tidyWarnings(list) {
+  const order = []
+  const counts = new Map()
+  const firstText = new Map()
+  for (const item of Array.isArray(list) ? list : []) {
+    const text = tidyWarning(String(item ?? '').replace(/\s*\(×\d+\)$/, ''))
+    if (!text) continue
+    const previous = String(item ?? '').match(/\(×(\d+)\)$/)
+    // Collapse retry delays and timestamps, keep small ordinals ("Candidate 2").
+    const key = text.toLowerCase().replace(/\d{2,}(?:\.\d+)?|\d+\.\d+/g, '#').slice(0, 180)
+    if (!counts.has(key)) {
+      order.push(key)
+      firstText.set(key, text)
+      counts.set(key, previous ? Number(previous[1]) : 1)
+    } else {
+      counts.set(key, counts.get(key) + 1)
+    }
+  }
+  return order.map((key) => (counts.get(key) > 1 ? `${firstText.get(key)} (×${counts.get(key)})` : firstText.get(key)))
+}
+
 function patchAutomation(id, patch) {
+  if (patch && Array.isArray(patch.warnings)) patch = { ...patch, warnings: tidyWarnings(patch.warnings) }
   const jobs = automationJobs()
   const next = jobs.map(j => j.id === id ? { ...j, ...patch, updatedAt: new Date().toISOString() } : j)
   saveAutomationJobs(next)
@@ -749,22 +800,16 @@ function extractHtmlFromModel(text) {
 }
 
 async function generateCandidateHtml(prompt) {
-  const provider = aiSettings().provider
-  if (provider === 'opencode') {
-    return extractHtmlFromModel(
-      await callOpenCode(
-        [
-          { role: 'system', content: 'You are a motion-graphics engineer. Return ONLY a complete single-file index.html. No prose, no markdown fences.' },
-          { role: 'user', content: prompt },
-        ],
-        { temperature: 0.85 },
-      ),
-    )
-  }
-  const key = geminiApiKey()
-  if (!key) throw new Error('Gemini API key is not configured')
-  const result = await runGeminiGenerateContent(key, prompt, { temperature: 0.85, maxOutputTokens: 8192 })
-  return extractHtmlFromModel(result.response.text())
+  // Same router as everything else: a Gemini 429 falls through to the next
+  // Gemini model, OpenCode, or a running local model instead of ending the
+  // battle with "No AI candidate passed the render contract".
+  const reply = await completeWithFallback({
+    system: 'You are a motion-graphics engineer. Return ONLY a complete single-file index.html. No prose, no markdown fences.',
+    user: prompt,
+    temperature: 0.85,
+    deadlineMs: 150_000,
+  })
+  return extractHtmlFromModel(reply.text)
 }
 
 const CANDIDATE_COUNT = 3
@@ -1072,7 +1117,8 @@ function generationGuideFor(job, rundown) {
   }
 }
 
-function writeAutomationReview(job, root, rundown, warnings) {
+function writeAutomationReview(job, root, rundown, rawWarnings) {
+  const warnings = tidyWarnings(rawWarnings)
   const reviewReportPath = path.join(root, 'review-report.json')
   const generationGuide = generationGuideFor(job, rundown)
   const sequenceMd = generationGuide.sequence.map(s => `- ${s.index}. ${s.from}-${s.to}s **${s.type}** — "${s.copy}"; motion: ${s.motion}`).join('\n')
@@ -1088,7 +1134,7 @@ async function runAutomationPipeline(jobId) {
   let warnings = []
   try {
     let job = ensureAutomationActive(jobId, state)
-    warnings = Array.isArray(job.warnings) ? [...job.warnings] : []
+    warnings = tidyWarnings(Array.isArray(job.warnings) ? job.warnings : [])
     const root = automationRoot(job.id)
     ensureDir(root)
 
@@ -1153,8 +1199,10 @@ async function runAutomationPipeline(jobId) {
           warnings.push(err?.message || String(err))
         }
       }
-      job.reviewReportPath = writeAutomationReview({ ...job, outputPath: null }, root, rundown, warnings.concat(message))
-      patchAutomation(job.id, { reviewReportPath: job.reviewReportPath, warnings: warnings.concat(message) })
+      // The gate message is status, not a new problem: keep exactly one copy.
+      const gateWarnings = warnings.includes(message) ? warnings : warnings.concat(message)
+      job.reviewReportPath = writeAutomationReview({ ...job, outputPath: null }, root, rundown, gateWarnings)
+      patchAutomation(job.id, { reviewReportPath: job.reviewReportPath, warnings: gateWarnings })
       waitAutomationStep(job.id, 3, message)
       return
     }
@@ -1258,11 +1306,59 @@ ipcMain.handle('automation:openOutput', (_e, p) => { if (p?.outputPath) shell.sh
 // Gemini IPC
 // ---------------------------------------------------------------------------
 
+/**
+ * Pull the JSON object out of whatever a model wrote around it.
+ *
+ * Models wrap JSON in fences, prefix it with "Sure! Here is…", leave trailing
+ * commas, use smart quotes, or emit <think>…</think> blocks first. Each of
+ * those used to surface as "The reply came back malformed". This finds the
+ * first balanced object, repairs the common slips, and only then gives up.
+ */
+function firstBalancedObject(raw) {
+  const start = raw.indexOf('{')
+  if (start < 0) return null
+  let depth = 0
+  let inString = false
+  let escaped = false
+  for (let i = start; i < raw.length; i += 1) {
+    const ch = raw[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (ch === '\\') escaped = true
+      else if (ch === '"') inString = false
+      continue
+    }
+    if (ch === '"') inString = true
+    else if (ch === '{') depth += 1
+    else if (ch === '}') {
+      depth -= 1
+      if (depth === 0) return raw.slice(start, i + 1)
+    }
+  }
+  return null
+}
+
 function parseJsonFromModel(text) {
-  const raw = String(text || '').trim()
-  const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)
-  const candidate = fence ? fence[1] : raw.match(/\{[\s\S]*\}/)?.[0] || raw
-  return JSON.parse(candidate)
+  const raw = String(text || '')
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .trim()
+  const fence = raw.match(/```(?:json|JSON)?\s*([\s\S]*?)```/)
+  const candidates = [fence?.[1], firstBalancedObject(fence?.[1] || ''), firstBalancedObject(raw), raw].filter(Boolean)
+  let lastError
+  for (const candidate of candidates) {
+    for (const attempt of [candidate, candidate.replace(/,(\s*[}\]])/g, '$1'), stripJsonComments(candidate).replace(/,(\s*[}\]])/g, '$1')]) {
+      try {
+        return JSON.parse(attempt)
+      } catch (err) {
+        lastError = err
+      }
+    }
+  }
+  const error = new Error(`Model reply is not valid JSON (${lastError?.message || 'no object found'})`)
+  error.code = 'BAD_JSON'
+  throw error
 }
 
 function clampNumber(value, min, max, fallback) {
@@ -1432,8 +1528,29 @@ ipcMain.handle('ai:testConnection', async (_event, payload = {}) => {
   }
 })
 
+/**
+ * Why a fetch failed, in words. Node's fetch throws a bare "fetch failed" and
+ * hides ECONNREFUSED / ENOTFOUND in `cause`, which is why a stopped local
+ * OpenCode server used to be reported as "Cupric could not reach the network".
+ */
+async function fetchOrExplain(url, init) {
+  try {
+    return await fetch(url, init)
+  } catch (err) {
+    if (err?.name === 'TimeoutError' || err?.name === 'AbortError') throw new Error(`Request to ${new URL(url).origin} timed out`)
+    const code = err?.cause?.code || err?.code || ''
+    const origin = (() => { try { return new URL(url).origin } catch { return url } })()
+    const why = code === 'ECONNREFUSED'
+      ? 'is not running (connection refused)'
+      : code === 'ENOTFOUND' || code === 'EAI_AGAIN'
+        ? 'could not be found (DNS / offline)'
+        : `could not be reached${code ? ` (${code})` : ''}`
+    throw new Error(`fetch failed: ${origin} ${why}`)
+  }
+}
+
 async function callOpenCode(messages, options = {}) {
-  const cfg = aiSettings()
+  const cfg = { ...aiSettings(), ...(options.override || {}) }
   if (!cfg.openCodeBaseUrl) throw new Error('OpenCode/OpenAI-compatible base URL is not configured')
   const inheritedKey = resolveOpenCodeApiKey(cfg.openCodeBaseUrl, cfg.openCodeModel)
   const apiKey = cfg.openCodeApiKey || inheritedKey
@@ -1448,22 +1565,63 @@ async function callOpenCode(messages, options = {}) {
     headers['X-Title'] = 'Cupric AI'
   }
   if (apiKey) headers.authorization = `Bearer ${apiKey}`
-  const result = await fetch(url, {
+  const body = {
+    model: cfg.openCodeModel,
+    messages,
+    temperature: options.temperature ?? 0.55,
+    stream: false,
+    ...(options.json ? { response_format: { type: 'json_object' } } : {}),
+  }
+  let result = await fetchOrExplain(url, {
     method: 'POST',
     headers,
-    signal: AbortSignal.timeout(options.timeoutMs ?? 18_000),
-    body: JSON.stringify({
-      model: cfg.openCodeModel,
-      messages,
-      temperature: options.temperature ?? 0.55,
-      ...(options.json ? { response_format: { type: 'json_object' } } : {}),
-    }),
+    signal: AbortSignal.timeout(options.timeoutMs ?? 30_000),
+    body: JSON.stringify(body),
   })
-  if (!result.ok) throw new Error(`OpenCode model request failed (${result.status}): ${(await result.text()).slice(0, 1000)}`)
+  // Plenty of local servers reject response_format; ask again without it
+  // rather than failing a request that would otherwise work.
+  if (!result.ok && options.json && (result.status === 400 || result.status === 422)) {
+    delete body.response_format
+    result = await fetchOrExplain(url, { method: 'POST', headers, signal: AbortSignal.timeout(options.timeoutMs ?? 30_000), body: JSON.stringify(body) })
+  }
+  if (!result.ok) throw new Error(`OpenCode model ${cfg.openCodeModel} at ${baseUrl} failed (${result.status}): ${(await result.text()).slice(0, 600)}`)
   const data = await result.json()
-  const text = data?.choices?.[0]?.message?.content || data?.message?.content || ''
-  if (!text) throw new Error('OpenCode model returned an empty response')
+  const content = data?.choices?.[0]?.message?.content ?? data?.message?.content ?? data?.choices?.[0]?.text ?? ''
+  const text = Array.isArray(content) ? content.map((part) => part?.text || '').join('') : String(content || '')
+  if (!text.trim()) throw new Error('OpenCode model returned an empty response')
   return text
+}
+
+// ——— provider routing, quota awareness and fallback ————————————————————————
+
+/**
+ * Models that just told us they are out of quota, and until when.
+ *
+ * Retrying a 429 three times with backoff — what the old code did — burns the
+ * free tier faster and still fails. A per-model cooldown means the next
+ * request goes straight to a model that can answer.
+ */
+const aiCooldowns = new Map()
+
+function isQuotaError(err) {
+  return /\b429\b|too many requests|quota|rate.?limit|resource_exhausted/i.test(err?.message || String(err))
+}
+
+function quotaCooldownMs(err) {
+  const message = err?.message || String(err)
+  if (/PerDay|per day|daily/i.test(message)) return 60 * 60 * 1000
+  const m = message.match(/retry in\s+([\d.]+)\s*s/i) || message.match(/retryDelay\W+([\d.]+)s/i)
+  return Math.min(10 * 60 * 1000, Math.max(15_000, (m ? Number(m[1]) + 2 : 60) * 1000))
+}
+
+function coolingDown(key) {
+  const entry = aiCooldowns.get(key)
+  if (!entry) return false
+  if (Date.now() >= entry.until) {
+    aiCooldowns.delete(key)
+    return false
+  }
+  return true
 }
 
 function geminiModelCandidates() {
@@ -1473,19 +1631,167 @@ function geminiModelCandidates() {
     .filter((model) => model && !seen.has(model) && seen.add(model))
 }
 
+/**
+ * Try every Gemini model in turn. Each model has its own free-tier bucket, so
+ * a 429 on one is a reason to move to the next, not to stop.
+ */
 async function runGeminiGenerateContent(key, prompt, generationConfig) {
   let lastError
-  for (const modelName of geminiModelCandidates()) {
+  const candidates = geminiModelCandidates()
+  const ready = candidates.filter((model) => !coolingDown(`gemini:${model}`))
+  if (!ready.length) {
+    const soonest = Math.min(...candidates.map((model) => aiCooldowns.get(`gemini:${model}`)?.until || Date.now()))
+    const error = new Error(`429 quota: every Gemini model (${candidates.join(', ')}) is rate-limited; retry in ${Math.max(1, Math.round((soonest - Date.now()) / 1000))}s`)
+    error.code = 'QUOTA'
+    throw error
+  }
+  for (const modelName of ready) {
     try {
       const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: modelName, ...(generationConfig ? { generationConfig } : {}) })
-      return await model.generateContent(prompt)
+      const result = await model.generateContent(prompt)
+      result.modelName = modelName
+      return result
     } catch (err) {
       lastError = err
-      logLine('gemini-model-failed', err?.message || String(err), { model: modelName })
-      if (!/404|not found|no longer available|not available|not supported/i.test(err?.message || String(err))) break
+      const message = err?.message || String(err)
+      logLine('gemini-model-failed', message.slice(0, 400), { model: modelName })
+      if (isQuotaError(err)) {
+        aiCooldowns.set(`gemini:${modelName}`, { until: Date.now() + quotaCooldownMs(err), reason: 'quota' })
+        continue
+      }
+      if (/404|not found|no longer available|not available|not supported|invalid model/i.test(message)) {
+        aiCooldowns.set(`gemini:${modelName}`, { until: Date.now() + 6 * 60 * 60 * 1000, reason: 'missing' })
+        continue
+      }
+      if (/\b5\d\d\b|overload|unavailable|high demand|timed out|timeout/i.test(message)) continue
+      break
     }
   }
   throw lastError
+}
+
+/** Local OpenAI-compatible servers worth probing when nothing else answers. */
+const LOCAL_AI_ENDPOINTS = [
+  'http://localhost:11434/v1',
+  'http://localhost:1234/v1',
+  'http://localhost:4096/v1',
+  'http://127.0.0.1:8080/v1',
+  'http://127.0.0.1:1337/v1',
+]
+let localAiCache = { at: 0, found: null }
+
+async function discoverRunningLocalModel() {
+  if (Date.now() - localAiCache.at < 60_000) return localAiCache.found
+  const configured = normalizedBaseUrl(aiSettings().openCodeBaseUrl)
+  const probes = LOCAL_AI_ENDPOINTS.filter((base) => base !== configured).map(async (base) => {
+    const response = await fetch(`${base}/models`, { signal: AbortSignal.timeout(900) })
+    if (!response.ok) throw new Error(String(response.status))
+    const data = await response.json()
+    const models = (Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : [])
+      .map((m) => String(m?.id || m?.name || m?.model || ''))
+      .filter((id) => id && !/embed|whisper|tts|rerank/i.test(id))
+    if (!models.length) throw new Error('no chat models')
+    return { baseUrl: base, model: models[0] }
+  })
+  const settled = await Promise.allSettled(probes)
+  const found = settled.find((r) => r.status === 'fulfilled')?.value || null
+  localAiCache = { at: Date.now(), found }
+  return found
+}
+
+/**
+ * The ordered list of things that can answer right now: the chosen provider,
+ * then the other one, then any local model server that happens to be running.
+ */
+async function aiRoutes() {
+  const cfg = aiSettings()
+  const routes = []
+  const gemini = Boolean(geminiApiKey())
+  const opencode = hasOpenCodeAccess()
+  const order = cfg.provider === 'opencode' ? ['opencode', 'gemini'] : ['gemini', 'opencode']
+  for (const provider of order) {
+    if (provider === 'gemini' && gemini) routes.push({ provider: 'gemini', label: 'Gemini' })
+    if (provider === 'opencode' && opencode && !coolingDown(`opencode:${cfg.openCodeBaseUrl}|${cfg.openCodeModel}`)) {
+      routes.push({ provider: 'opencode', label: `OpenCode · ${cfg.openCodeModel}` })
+    }
+  }
+  const local = await discoverRunningLocalModel().catch(() => null)
+  if (local) routes.push({ provider: 'opencode', label: `Local · ${local.model}`, override: { openCodeBaseUrl: local.baseUrl, openCodeModel: local.model, openCodeApiKey: '' } })
+  return routes
+}
+
+/**
+ * One completion from whichever route can answer, within a deadline.
+ *
+ * `images` are `{ mimeType, data(base64) }`; they go to Gemini as inline data
+ * and to OpenAI-compatible servers as image_url parts. With `json`, a reply
+ * that does not parse gets exactly one stricter repair round on the same route
+ * before moving on.
+ */
+async function completeWithFallback({ system, user, json = false, temperature = 0.4, images = [], history = [], deadlineMs = 45_000, validate }) {
+  const routes = await aiRoutes()
+  if (!routes.length) {
+    const error = new Error('No live AI provider is configured and no local model server (Ollama, LM Studio, OpenCode) is running')
+    error.code = 'NO_PROVIDER'
+    throw error
+  }
+  const deadline = Date.now() + deadlineMs
+  const failures = []
+  for (const route of routes) {
+    const remaining = deadline - Date.now()
+    if (remaining < 2500) break
+    try {
+      const ask = async (extraInstruction = '') => {
+        const userText = extraInstruction ? `${user}\n\n${extraInstruction}` : user
+        if (route.provider === 'gemini') {
+          const historyText = history.length ? `Conversation so far:\n${history.map((h) => `${h.role === 'ai' ? 'Assistant' : 'User'}: ${h.text}`).join('\n')}\n\n` : ''
+          const parts = [{ text: `${system}\n\n${historyText}${userText}` }, ...images.map((image) => ({ inlineData: { mimeType: image.mimeType || 'image/jpeg', data: image.data } }))]
+          const result = await withTimeout(
+            runGeminiGenerateContent(geminiApiKey(), images.length ? parts : parts[0].text, { ...(json ? { responseMimeType: 'application/json' } : {}), temperature }),
+            Math.max(2000, deadline - Date.now()),
+            'Gemini request',
+          )
+          return { text: result.response.text(), model: result.modelName || geminiModel() }
+        }
+        const userContent = images.length
+          ? [{ type: 'text', text: userText }, ...images.map((image) => ({ type: 'image_url', image_url: { url: `data:${image.mimeType || 'image/jpeg'};base64,${image.data}` } }))]
+          : userText
+        const text = await callOpenCode([
+          { role: 'system', content: system },
+          ...history.map((h) => ({ role: h.role === 'ai' ? 'assistant' : 'user', content: h.text })),
+          { role: 'user', content: userContent },
+        ], { json, temperature, override: route.override, timeoutMs: Math.max(2000, deadline - Date.now()) })
+        return { text, model: route.override?.openCodeModel || aiSettings().openCodeModel }
+      }
+      let reply = await ask()
+      if (json) {
+        let parsed
+        try {
+          parsed = parseJsonFromModel(reply.text)
+          if (validate) validate(parsed)
+        } catch (err) {
+          if (deadline - Date.now() < 3000) throw err
+          logLine('ai-json-repair', err?.message || String(err), { route: route.label })
+          reply = await ask(`Your previous reply could not be used (${String(err?.message || err).slice(0, 200)}). Reply again with ONLY one valid JSON object — no markdown, no prose, no comments, no trailing commas.`)
+          parsed = parseJsonFromModel(reply.text)
+          if (validate) validate(parsed)
+        }
+        return { ...reply, parsed, route: route.label }
+      }
+      return { ...reply, route: route.label }
+    } catch (err) {
+      failures.push(`${route.label}: ${err?.message || String(err)}`)
+      logLine('ai-route-failed', (err?.message || String(err)).slice(0, 600), { route: route.label })
+      if (route.provider === 'opencode' && !route.override && isQuotaError(err)) {
+        const cfg = aiSettings()
+        aiCooldowns.set(`opencode:${cfg.openCodeBaseUrl}|${cfg.openCodeModel}`, { until: Date.now() + quotaCooldownMs(err), reason: 'quota' })
+      }
+    }
+  }
+  // Report the most useful failure first: quota beats "connection refused".
+  const ordered = [...failures].sort((a, b) => Number(isQuotaError(b)) - Number(isQuotaError(a)))
+  const error = new Error(ordered.length ? ordered.join(' | ').slice(0, 1800) : 'The AI request ran out of time before any provider answered')
+  throw error
 }
 
 async function generateGeminiRundown(prompt, history, context) {
@@ -1493,14 +1799,6 @@ async function generateGeminiRundown(prompt, history, context) {
   if (!key) throw new Error('Gemini API key is not configured')
   const result = await runGeminiGenerateContent(key, geminiRundownPrompt(prompt, history, context), { responseMimeType: 'application/json' })
   return normalizeRundown(parseJsonFromModel(result.response.text()), prompt)
-}
-
-async function generateOpenCodeRundown(prompt, history, context) {
-  const text = await callOpenCode([
-    { role: 'system', content: 'You are Cupric AI creative director. Return STRICT JSON only, no markdown.' },
-    { role: 'user', content: geminiRundownPrompt(prompt, history, context) },
-  ], { json: true })
-  return normalizeRundown(parseJsonFromModel(text), prompt)
 }
 
 function delay(ms) {
@@ -1520,66 +1818,69 @@ function retryableAiError(err) {
 }
 
 async function generateRundown(prompt, history, context) {
-  const primary = aiSettings().provider
-  const available = {
-    gemini: Boolean(geminiApiKey()),
-    opencode: hasOpenCodeAccess(),
-  }
-  const providers = [primary, primary === 'gemini' ? 'opencode' : 'gemini']
-    .filter((provider, index, all) => all.indexOf(provider) === index && available[provider])
-  if (!providers.length) throw new Error('No live AI provider is configured')
-
-  let lastError
-  for (const provider of providers) {
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        return provider === 'opencode'
-          ? await generateOpenCodeRundown(prompt, history, context)
-          : await generateGeminiRundown(prompt, history, context)
-      } catch (err) {
-        lastError = err
-        logLine('ai-rundown-retry', err?.message || String(err), { provider, attempt: attempt + 1 })
-        if (!retryableAiError(err) || attempt === 2) break
-        // Short exponential backoff handles transient Gemini/OpenRouter demand
-        // without making an invalid key feel like a frozen button.
-        await delay(400 * (3 ** attempt))
-      }
-    }
-    logLine('ai-rundown-provider-fallback', lastError?.message || String(lastError), { from: provider })
-  }
-  throw lastError
+  const reply = await completeWithFallback({
+    system: 'You are Cupric AI creative director. Return STRICT JSON only, no markdown.',
+    user: geminiRundownPrompt(prompt, history, context),
+    json: true,
+    temperature: 0.6,
+    deadlineMs: 60_000,
+    validate: (value) => {
+      if (!value || typeof value !== 'object' || !Array.isArray(value.scenes)) throw new Error('rundown JSON needs a scenes array')
+    },
+  })
+  logLine('ai-rundown-route', reply.route)
+  return normalizeRundown(reply.parsed, prompt)
 }
 
 async function generateStudioEditPlan(instruction, studioContext) {
-  const schemaPrompt = `You are the edit-planning agent inside Cupric AI Studio. Return STRICT JSON only.
-The user instruction must become a small batch of allowlisted, non-destructive edit operations. Never invent clip IDs.
+  const schemaPrompt = `You are the edit-planning agent inside Cupric AI Studio — a senior motion designer and editor. Return STRICT JSON only.
+The user instruction must become a batch of allowlisted, non-destructive edit operations. Never invent clip IDs.
 
 OUTPUT:
 {"summary":string,"ops":[operation]}
 
 OPERATIONS:
+- {"type":"applyMotion","clipId":string,"motion":{"entrance"?:E,"emphasis"?:M,"exit"?:X,"camera"?:C,"intensity"?:number}}
+  PREFERRED way to animate. Cupric's motion engine writes the keyframes with correct timing for the clip length,
+  relative to the clip's resting position/size, with professional eases. intensity 0.5 subtle · 1 standard · 1.5 punchy.
+  E entrance: fade-in, rise-in, drop-in, slide-in-left, slide-in-right, scale-pop, zoom-in, spin-in, whip-in, blur-focus
+  M while on screen: pulse, heartbeat, shake, wiggle, float, breathe
+  X exit: fade-out, sink-out, rise-out, slide-out-left, slide-out-right, zoom-out, pop-out
+  C camera (video/image): ken-burns-in, ken-burns-out, pan-left, pan-right, push-in, drift-up, dolly-punch
+  Or {"motion":{"preset":"title-pop"|"editorial"|"lower-third"|"hype"|"sticker"|"whip"|"ken-burns"|"punch"|"calm"}}
 - {"type":"patchClip","clipId":string,"patch":{allowed properties}}
-  Allowed patch properties: x, y, scale, rotation, opacity, fontSizePct, color, fontFamily, weight, align, highlightWord, text, anim, transitionIn, transitionOut, volume. highlightWord must be an exact word already present in that text clip.
+  Allowed: x, y, scale, rotation, opacity, fontSizePct, color, fontFamily, weight(400|600|800), align, highlightWord, text, anim, transitionIn, transitionOut, volume, durationSec, startSec, name.
+  highlightWord must be an exact word already present in that text clip.
   Fonts: Inter Variable, Manrope Variable, DM Sans Variable, Space Grotesk Variable, Playfair Display Variable, JetBrains Mono Variable.
-  Animations: none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
+  Text animations (content-level): none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
   Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
+- {"type":"addText","text":string,"track":number,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"fontSizePct"?:number,"weight"?:400|600|800,"align"?:"left"|"center"|"right","color"?:"#rrggbb","fontFamily"?:string,"anim"?:string,"highlightWord"?:string,"motion"?:{...as applyMotion}}
+- {"type":"setKeyframe","clipId":string,"at":number,"values":{"x"?,"y"?,"scale"?,"rotation"?,"opacity"?},"ease":"linear"|"ease-in"|"ease-out"|"ease-in-out"|"expo-out"|"expo-in-out"|"back-out"|"back-in"|"elastic-out"|"hold"}
+  Only for custom paths applyMotion cannot express. scale and opacity are MULTIPLIERS of the clip's own value (1 = rest). x/y are absolute 0..1. The ease on a key controls travel to the NEXT key.
+- {"type":"clearKeyframes","clipId":string}
 - {"type":"moveClip","clipId":string,"track":number?,"startSec":number?}
 - {"type":"deleteClip","clipId":string}
-- {"type":"addText","text":string,"track":number,"startSec":number,"durationSec":number,"color":string?,"fontFamily":string?,"anim":string?}
-- {"type":"setKeyframe","clipId":string,"at":number,"values":{"x":number?,"y":number?,"scale":number?,"rotation":number?,"opacity":number?},"ease":"linear"|"ease-in"|"ease-out"|"ease-in-out"?}
 - {"type":"reorderTrack","from":number,"to":number}
 - {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
+- {"type":"addComponent","slug":string,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"interact"?:boolean,"motion"?:{...as applyMotion}}
+  Places a real animated UI component (buttons, toggles, counters, cards, loaders, charts…). Cupric plays the actual component,
+  acts it out (hover, clicks) and records its genuine animation into an editable overlay clip. slug MUST be one of
+  STUDIO CONTEXT.components[].slug. Use one when the user asks for a UI element, a product/app demo moment, or a named component.
 
-Track 0 is the bottom layer. x/y are normalized 0..1. Keyframe times are local to the clip. The context may include attributed motionReferences from React Bits, Skiper UI and Remotion: use their names as creative vocabulary, but translate every idea into only the native operations above. Never claim to install or execute an upstream component.
+Track 0 is the bottom layer; higher tracks draw on top. Overlapping clips on one track are automatically lifted to a free track, so you may place text anywhere. Keyframe times are local to the clip. The context may include attributed motionReferences from React Bits, Skiper UI and Remotion: use their names as creative vocabulary, but translate every idea into only the native operations above. Never claim to install or execute an upstream component.
 
-EDITING STANDARD:
-- Read the whole timeline before changing it. Preserve source meaning and maintain readable title/action-safe placement.
-- Pick bundled fonts and hex colors that fit the subject instead of applying the same look every time. For important text, set highlightWord to the strongest existing keyword and combine it with a readable weight and animation.
-- For broad Auto edit requests, inspect every supplied clip and propose a coherent effect pass: varied scene-boundary transitions, contextual text animation, keyword highlighting, typography hierarchy and subtle two-keyframe visual motion. Do not merely return applyStylePreset.
-- Use moveClip for intentional T1/T2/T3 layering and timing. Use two or more setKeyframe operations when the request calls for movement; animation must have a start and destination.
-- Position, scale, rotation and opacity may be animated on visual clips. Avoid motion with no visual purpose.
-- Use native transitions sparingly at scene boundaries. Keep text concise and on screen long enough to read.
-- Prefer 4–12 precise operations for an automatic edit, fewer for a narrow request. Every operation must make a visible change.
+MOTION PLAYBOOK (follow it):
+- Every animated element has a purpose: enter to be noticed, live while it is read, leave so the next idea can land. Motion with no purpose is noise.
+- Hierarchy: the hero title gets the most expressive entrance (scale-pop / blur-focus / rise-in); supporting lines get quieter entrances; never give every layer the same move.
+- Lower thirds (y > 0.72) slide in and out from the side. CTAs pop in and pulse once. Stickers spin/pop in and float.
+- Video and photos get a slow camera move (ken-burns-in/out, pan, drift); alternate directions between consecutive shots. Photos always need one.
+- Energy by genre: social/reels → intensity 1.3, zoom-in / scale-pop / dolly-punch, zoom-in or push-up transitions. Cinematic/brand → intensity 0.8–0.9, blur-focus / rise-in, liquid-dissolve / blur / lens-sweep. Minimal → 0.6, fade / rise.
+- Reading time: a line needs about 0.8s + 0.3s per word on screen, at rest. If a text clip is shorter, patch durationSec.
+- Typography: hero weight 800 and the largest size; supporting weight 600 at ~60% of the hero size; pick one highlightWord per important line (a number, a name or the strongest noun).
+- Don't double-animate: a keyframed entrance replaces fade-up/pop text animations and non-media transitions (the engine handles this). word-reveal or typewriter can accompany a subtle entrance on long lines.
+- Transitions only at real cuts between media clips, varied, never the same twice in a row.
+- For broad requests (auto edit, polish, make it better/cinematic/professional) touch EVERY visible clip: typography + highlight + applyMotion for text; transition + camera applyMotion for media; applyMotion for stickers/overlays/glass. 2 ops per clip is normal. Do not merely return applyStylePreset or a single fade.
+- For narrow requests, change only what was asked, precisely.
 Do not return prose outside JSON.
 
 STUDIO CONTEXT:
@@ -1587,51 +1888,35 @@ ${JSON.stringify(studioContext)}
 
 USER INSTRUCTION:
 ${instruction}`
-  const primary = aiSettings().provider
-  const available = { gemini: Boolean(geminiApiKey()), opencode: hasOpenCodeAccess() }
-  const providers = [primary, primary === 'gemini' ? 'opencode' : 'gemini'].filter((provider, index, all) => all.indexOf(provider) === index && available[provider])
-  if (!providers.length) throw new Error('No live AI provider is configured')
-  let lastError
-  for (const provider of providers) {
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      try {
-        if (provider === 'opencode') {
-          const text = await callOpenCode([
-            { role: 'system', content: 'Return only valid JSON edit operations for Cupric AI Studio.' },
-            { role: 'user', content: schemaPrompt },
-          ], { json: true, temperature: 0.2 })
-          return { ...parseJsonFromModel(text), source: 'live' }
-        }
-        const result = await runGeminiGenerateContent(geminiApiKey(), schemaPrompt, { responseMimeType: 'application/json', temperature: 0.2 })
-        return { ...parseJsonFromModel(result.response.text()), source: 'live' }
-      } catch (err) {
-        lastError = err
-        logLine('studio-edit-plan-retry', err?.message || String(err), { provider, attempt: attempt + 1 })
-        if (!retryableAiError(err) || attempt === 2) break
-        await delay(400 * (3 ** attempt))
-      }
-    }
-  }
-  throw lastError
+  const reply = await completeWithFallback({
+    system: 'You are the senior motion designer and editor inside Cupric AI Studio. Return only one valid JSON object of edit operations.',
+    user: schemaPrompt,
+    json: true,
+    temperature: 0.25,
+    deadlineMs: STUDIO_PLAN_DEADLINE_MS - 2000,
+    validate: (value) => {
+      if (!value || typeof value !== 'object' || !Array.isArray(value.ops) || value.ops.length === 0) throw new Error('edit plan JSON needs a non-empty ops array')
+    },
+  })
+  return { ...reply.parsed, source: 'live', model: reply.model, route: reply.route }
 }
 
-async function liveAiChat(text, ctx) {
-  const provider = aiSettings().provider
-  if (provider === 'opencode') {
-    return callOpenCode([
-      { role: 'system', content: 'You are Cupric AI desktop creative copilot. Be concise, practical, and specific. Help with video creation, rendering, resources, prompts, and edits.' },
-      { role: 'user', content: `Context: ${JSON.stringify(ctx || {})}\nUser: ${text}` },
-    ])
-  }
-  const key = geminiApiKey()
-  if (!key) throw new Error('Gemini API key is not configured')
-  const result = await runGeminiGenerateContent(
-    key,
-    `You are Cupric AI's desktop creative copilot. Be concise, practical, and specific. Context: ${JSON.stringify(
-      ctx || {},
-    )}. User: ${text}`,
-  )
-  return result.response.text()
+// Long enough for one fallback hop (Gemini → a local/OpenCode model), short
+// enough that the renderer's deterministic local plan takes over quickly.
+const STUDIO_PLAN_DEADLINE_MS = 25_000
+
+async function liveAiChat(text, ctx, extra = {}) {
+  const images = Array.isArray(extra.images) ? extra.images.filter((image) => image && typeof image.data === 'string' && image.data.length < 12_000_000).slice(0, 4) : []
+  const history = Array.isArray(extra.history) ? extra.history.slice(-8).map((h) => ({ role: h?.role === 'ai' ? 'ai' : 'user', text: String(h?.text || '').slice(0, 4000) })) : []
+  const reply = await completeWithFallback({
+    system: "You are Cupric AI's desktop creative copilot: a senior video editor and motion designer. Be concise, practical and specific. Help with video creation, keyframe animation, typography, transitions, rendering, resources, prompts and edits. When images are attached, look at them carefully and refer to what is actually in them.",
+    user: `Context: ${JSON.stringify(ctx || {})}\nUser: ${text}`,
+    images,
+    history,
+    temperature: 0.6,
+    deadlineMs: 60_000,
+  })
+  return reply.text
 }
 
 ipcMain.handle('gemini:ask', async (_event, payload) => {
@@ -1658,11 +1943,11 @@ ipcMain.handle('gemini:ask', async (_event, payload) => {
     }
   }
 })
-ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.text || '', payload?.ctx || {}))
+ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.text || '', payload?.ctx || {}, { images: payload?.images, history: payload?.history }))
 ipcMain.handle('studio:planEdits', async (_event, payload) => {
   const instruction = String(payload?.instruction || '').trim().slice(0, 2000)
   if (!instruction) throw new Error('Describe the edit you want first')
-  return withTimeout(generateStudioEditPlan(instruction, payload?.context || {}), 10_000, 'Studio auto edit')
+  return withTimeout(generateStudioEditPlan(instruction, payload?.context || {}), STUDIO_PLAN_DEADLINE_MS, 'Studio auto edit')
 })
 
 // ---------------------------------------------------------------------------
@@ -1719,11 +2004,17 @@ function extractZipSafely(zipPath, outDir) {
 }
 
 async function createHiddenWindow(width, height) {
+  // Offscreen capture windows must be exactly the target size. Without
+  // enableLargerThanScreen the OS clamps a 1920×1080 window to the work area
+  // (e.g. 1759×894 on a small or scaled display) and libx264 then refuses the
+  // odd width. Frames are also resized and padded later as a second guard.
   const win = new BrowserWindow({
     show: false,
     width,
     height,
     useContentSize: true,
+    enableLargerThanScreen: true,
+    resizable: false,
     backgroundColor: '#000000',
     webPreferences: {
       sandbox: true,
@@ -1731,9 +2022,36 @@ async function createHiddenWindow(width, height) {
       nodeIntegration: false,
       webSecurity: true,
       backgroundThrottling: false,
+      zoomFactor: 1,
     },
   })
+  try {
+    win.setContentSize(width, height)
+  } catch {
+    /* some platforms refuse while hidden; frames are normalised anyway */
+  }
   return win
+}
+
+/**
+ * capturePage returns device pixels, so on a 125 % or 150 % display — or when
+ * the window was clamped — the image is not the size we asked for. Normalise
+ * every frame to the exact (even) target before it reaches the encoder.
+ */
+function exactFrame(img, width, height) {
+  const size = img.getSize()
+  if (size.width === width && size.height === height) return img
+  return img.resize({ width, height, quality: 'best' })
+}
+
+/**
+ * The last guard before libx264: fit any input inside an even W×H canvas.
+ * Handles odd sizes, DPI-scaled frames and wrong aspect ratios alike.
+ */
+function evenFrameFilter(width, height) {
+  const w = evenInt(width, 1920)
+  const h = evenInt(height, 1080)
+  return `scale=${w}:${h}:force_original_aspect_ratio=decrease:flags=lanczos,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=black,setsar=1,format=yuv420p`
 }
 
 async function captureArena(indexPath, timeSec = 1.5, width = 1280, height = 720) {
@@ -1801,6 +2119,27 @@ ipcMain.handle('arena:previewPath', async (_event, localPath) => {
  * Same containment rule as the preview path — only files inside Cupric's own
  * project data — and a size cap, because this is parsed in the renderer.
  */
+/**
+ * Capture a rectangle of the calling window, exactly as Chromium painted it.
+ *
+ * UI Lab components use oklch(), color-mix(), backdrop-filter, canvas and
+ * WebGL — none of which DOM-to-canvas libraries reproduce (html2canvas throws
+ * on oklch outright). The compositor's own pixels are always right.
+ */
+ipcMain.handle('capture:rect', async (event, rect) => {
+  const x = Math.max(0, Math.floor(Number(rect?.x) || 0))
+  const y = Math.max(0, Math.floor(Number(rect?.y) || 0))
+  const width = Math.max(1, Math.min(4096, Math.ceil(Number(rect?.width) || 0)))
+  const height = Math.max(1, Math.min(4096, Math.ceil(Number(rect?.height) || 0)))
+  const image = await event.sender.capturePage({ x, y, width, height })
+  if (image.isEmpty()) throw new Error('The capture came back empty — keep the component on screen while it renders.')
+  // capturePage returns device pixels; hand back CSS-pixel size so frames
+  // stay light and consistent across 100 % / 150 % displays.
+  const sized = image.getSize().width > width * 1.05 ? image.resize({ width, height, quality: 'best' }) : image
+  const format = rect?.format === 'png' ? 'png' : 'jpeg'
+  return format === 'png' ? sized.toDataURL() : `data:image/jpeg;base64,${sized.toJPEG(88).toString('base64')}`
+})
+
 ipcMain.handle('arena:readHtml', async (_event, localPath) => {
   if (!localPath) throw new Error('No file path provided')
   const root = userDataPath('projects')
@@ -2033,6 +2372,9 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
     '-hide_banner',
     '-v', 'error',
     '-i', source,
+    // A canvas sized from the window can be odd (e.g. 1759×894); H.264 in
+    // yuv420p needs even sides, so round down to the nearest even pixel.
+    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos,setsar=1',
     '-c:v', 'libx264',
     '-preset', 'medium',
     '-crf', crf,
@@ -2279,7 +2621,7 @@ async function renderArenaSegment(state, source, ctx) {
       const t = (Number(source.in) || 0) + i / ctx.fps
       await win.webContents.executeJavaScript(`window.__seek(${JSON.stringify(t)})`, true)
       await win.webContents.executeJavaScript('new Promise((resolve) => requestAnimationFrame(() => resolve(true)))', true)
-      const img = await win.webContents.capturePage()
+      const img = exactFrame(await win.webContents.capturePage(), ctx.target.width, ctx.target.height)
       await fsp.writeFile(path.join(frameDir, `${String(i + 1).padStart(6, '0')}.png`), img.toPNG())
       ctx.onUnits(frameCount > 1 ? i + 1 : frameCount)
     }
@@ -2291,10 +2633,16 @@ async function renderArenaSegment(state, source, ctx) {
   await runProcess(state, ffmpegPath, [
     '-y',
     '-hide_banner',
+    // A PNG sequence feeds faster than libx264 consumes it; the default
+    // 8-packet queue produced "thread_queue_size" warnings and stalls.
+    '-thread_queue_size',
+    '512',
     '-framerate',
     String(ctx.fps),
     '-i',
     path.join(frameDir, '%06d.png'),
+    '-thread_queue_size',
+    '512',
     '-f',
     'lavfi',
     '-t',
@@ -2308,7 +2656,7 @@ async function renderArenaSegment(state, source, ctx) {
     '-r',
     String(ctx.fps),
     '-vf',
-    'setsar=1,format=yuv420p',
+    evenFrameFilter(ctx.target.width, ctx.target.height),
     '-c:v',
     'libx264',
     '-preset',
@@ -2644,6 +2992,9 @@ function createWindow() {
     height: 900,
     minWidth: 1120,
     minHeight: 720,
+    // Taskbar / alt-tab / dock icon while running. Generated by
+    // scripts/build-icons.mjs from the same mark the sidebar shows.
+    icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: isMac ? '#00000000' : '#0B0B10',
     ...(isMac
       ? {

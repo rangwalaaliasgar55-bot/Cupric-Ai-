@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Send, Sparkles, X, Settings } from 'lucide-react'
-import { askGeminiChat } from '../lib/gemini'
+import { ImagePlus, Send, Sparkles, X, Settings } from 'lucide-react'
+import { askGeminiChat, type ChatImage } from '../lib/gemini'
 import {
   discoverLocalModels,
   isConfigured as isOpenCodeConfigured,
@@ -14,7 +14,32 @@ import { cx } from '../lib/utils'
 import { getIpc } from '../lib/bridge'
 import { humanError } from '../lib/humanError'
 
-type ChatMsg = { role: 'user' | 'ai'; text: string }
+type ChatMsg = { role: 'user' | 'ai'; text: string; images?: ChatImage[] }
+
+/** Keep attachments small enough for any provider's request limit. */
+const MAX_IMAGES = 4
+const MAX_IMAGE_EDGE = 1600
+
+async function fileToChatImage(file: File): Promise<ChatImage> {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image()
+      el.onload = () => resolve(el)
+      el.onerror = () => reject(new Error(`${file.name} is not a readable image`))
+      el.src = url
+    })
+    const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(img.naturalWidth, img.naturalHeight))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * scale))
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * scale))
+    canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.86)
+    return { name: file.name || 'image.jpg', mimeType: 'image/jpeg', dataUrl }
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
 
 type AiProvider = 'gemini' | 'opencode'
 
@@ -60,6 +85,11 @@ export function AskPanel() {
     },
   ])
   const [input, setInput] = useState('')
+  const [pending, setPending] = useState<ChatImage[]>([])
+  const [dragOver, setDragOver] = useState(false)
+  const [preview, setPreview] = useState<ChatImage | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [apiKey, setApiKey] = useState('')
@@ -272,15 +302,44 @@ export function AskPanel() {
     if (result?.status !== 'installing') setUpdateStatus(result?.message || result?.status || 'Update could not start')
   }
 
+  // Always show the newest message — the old list never scrolled to it.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }, [msgs, busy])
+
+  async function attach(files: FileList | File[] | null) {
+    const list = Array.from(files ?? []).filter((file) => file.type.startsWith('image/'))
+    if (!list.length) return
+    const room = Math.max(0, MAX_IMAGES - pending.length)
+    const picked = list.slice(0, room)
+    try {
+      const images = await Promise.all(picked.map(fileToChatImage))
+      setPending((current) => [...current, ...images].slice(0, MAX_IMAGES))
+    } catch (err) {
+      useProjectStore.getState().pushToast('error', humanError(err, 'Could not attach that image'))
+    }
+    if (list.length > room) useProjectStore.getState().pushToast('info', `Up to ${MAX_IMAGES} images per message.`)
+  }
+
   async function send(textArg?: string) {
-    const text = (textArg ?? input).trim()
-    if (!text || busy) return
+    const typed = (textArg ?? input).trim()
+    const images = textArg ? [] : pending
+    if ((!typed && !images.length) || busy) return
+    const text = typed || 'What do you see in this image, and how would you use it in a short video?'
     setInput('')
-    setMsgs((m) => [...m, { role: 'user', text }])
+    setPending([])
+    const history = msgs.slice(-8).map((m) => ({ role: m.role, text: m.text }))
+    setMsgs((m) => [...m, { role: 'user', text, images }])
     setBusy(true)
-    const reply = await askGeminiChat(text, { projectName: active?.name ?? null, view })
-    setMsgs((m) => [...m, { role: 'ai', text: reply } satisfies ChatMsg])
-    setBusy(false)
+    try {
+      const reply = await askGeminiChat(text, { projectName: active?.name ?? null, view }, { images, history })
+      setMsgs((m) => [...m, { role: 'ai', text: reply } satisfies ChatMsg])
+    } catch (err) {
+      setMsgs((m) => [...m, { role: 'ai', text: humanError(err, 'The assistant') } satisfies ChatMsg])
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -293,7 +352,7 @@ export function AskPanel() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 48, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 400, damping: 36 }}
-          className="fixed inset-y-0 right-0 z-40 flex w-[360px] flex-col border-l border-line bg-panel"
+          className="fixed inset-y-0 right-0 z-40 flex w-[min(420px,100vw)] flex-col overflow-hidden border-l border-line bg-panel shadow-2xl"
         >
           <div className="flex items-center gap-2.5 border-b border-line px-4 py-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-accent-ink">
@@ -319,7 +378,7 @@ export function AskPanel() {
           </div>
 
           {showSettings && (
-            <div className="space-y-3 border-b border-line bg-panel-alt p-3">
+            <div className="max-h-[62%] shrink-0 space-y-3 overflow-y-auto overscroll-contain border-b border-line bg-panel-alt p-3">
               <form
                 className="space-y-2"
                 onSubmit={(e) => {
@@ -486,7 +545,22 @@ export function AskPanel() {
               </div>
             </div>
           )}
-          <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          <div
+            ref={scrollRef}
+            className={cx('min-h-0 flex-1 space-y-3 overflow-y-auto overscroll-contain p-4', dragOver && 'bg-accent/5 outline-2 -outline-offset-4 outline-dashed outline-accent/50')}
+            onDragOver={(e) => {
+              if (Array.from(e.dataTransfer.items).some((item) => item.type.startsWith('image/'))) {
+                e.preventDefault()
+                setDragOver(true)
+              }
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault()
+              setDragOver(false)
+              void attach(e.dataTransfer.files)
+            }}
+          >
             {msgs.map((m, i) => (
               <motion.div
                 key={i}
@@ -501,7 +575,22 @@ export function AskPanel() {
                     m.role === 'user' ? 'bg-panel-alt text-text' : 'border border-line bg-bg/40 text-text',
                   )}
                 >
-                  {m.text}
+                  {m.images && m.images.length > 0 && (
+                    <div className={cx('mb-2 grid gap-1.5', m.images.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
+                      {m.images.map((image, index) => (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => setPreview(image)}
+                          className="overflow-hidden rounded-lg border border-line bg-bg"
+                          title={`Open ${image.name}`}
+                        >
+                          <img src={image.dataUrl} alt={image.name} className="block max-h-48 w-full object-contain" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="whitespace-pre-wrap break-words">{m.text}</div>
                 </div>
               </motion.div>
             ))}
@@ -529,30 +618,91 @@ export function AskPanel() {
                 </button>
               ))}
             </div>
+            {pending.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {pending.map((image, index) => (
+                  <div key={index} className="group relative h-14 w-14 overflow-hidden rounded-lg border border-line bg-bg">
+                    <img src={image.dataUrl} alt={image.name} className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      aria-label={`Remove ${image.name}`}
+                      onClick={() => setPending((current) => current.filter((_, i) => i !== index))}
+                      className="absolute right-0.5 top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white"
+                    >
+                      <X size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <form
-              className="flex items-center gap-2"
+              className="flex items-end gap-2"
               onSubmit={(e) => {
                 e.preventDefault()
                 send()
               }}
             >
               <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={(e) => {
+                  void attach(e.target.files)
+                  e.target.value = ''
+                }}
+              />
+              <button
+                type="button"
+                aria-label="Attach images"
+                title="Attach images (or paste / drop them)"
+                onClick={() => fileRef.current?.click()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-panel-alt text-muted hover:text-text"
+              >
+                <ImagePlus size={15} />
+              </button>
+              <textarea
                 value={input}
+                rows={1}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask anything…"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    send()
+                  }
+                }}
+                onPaste={(e) => {
+                  const files = Array.from(e.clipboardData.files).filter((file) => file.type.startsWith('image/'))
+                  if (files.length) {
+                    e.preventDefault()
+                    void attach(files)
+                  }
+                }}
+                placeholder="Ask anything, or paste an image…"
                 aria-label="Ask Cupric AI"
-                className="h-9 flex-1 rounded-lg border border-line bg-panel-alt px-3 text-sm placeholder:text-muted/70"
+                className="max-h-32 min-h-9 flex-1 resize-none rounded-lg border border-line bg-panel-alt px-3 py-2 text-sm leading-snug placeholder:text-muted/70 [field-sizing:content]"
               />
               <button
                 type="submit"
                 aria-label="Send"
-                disabled={!input.trim() || busy}
+                disabled={(!input.trim() && !pending.length) || busy}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-ink transition-transform duration-150 hover:bg-accent-hover active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
               >
                 <Send size={15} />
               </button>
             </form>
           </div>
+          {preview && (
+            <button
+              type="button"
+              aria-label="Close image preview"
+              onClick={() => setPreview(null)}
+              className="absolute inset-0 z-10 flex items-center justify-center bg-black/80 p-4"
+            >
+              <img src={preview.dataUrl} alt={preview.name} className="max-h-full max-w-full rounded-lg object-contain" />
+            </button>
+          )}
         </motion.aside>
       )}
     </AnimatePresence>

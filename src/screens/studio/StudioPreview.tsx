@@ -11,7 +11,8 @@ import type {
 } from '../../types/project'
 import { audioGainAt, clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
 import { getMedia } from '../../lib/studio/media'
-import { drawStudioFrame, keyframeValuesAt } from '../../lib/studio/renderer'
+import { drawStudioFrame, keyframeValuesAt, measureTextBlock } from '../../lib/studio/renderer'
+import { docFontFamilies, ensureDocFonts, FONTS_CHANGED_EVENT } from '../../lib/studio/fonts'
 import { patchTransformKeyframe } from '../../lib/studio/keyframeEdit'
 import { registrySources } from '../../lib/studio/sources'
 
@@ -56,6 +57,8 @@ export function StudioPreview({
   const frameRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef(time)
   timeRef.current = time
+  const playingRef = useRef(playing)
+  playingRef.current = playing
 
   const [width, height] = previewSizeForAspect(doc.aspect)
 
@@ -120,6 +123,27 @@ export function StudioPreview({
     return () => window.clearTimeout(retry)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc, time, playing, muted, width, height])
+
+  // Custom fonts (Resources → Fonts) download on demand. Load whatever this
+  // document uses, and repaint the moment a face arrives — otherwise titles
+  // stay in the fallback font until the next scrub.
+  const fontKey = docFontFamilies(doc).join('|')
+  useEffect(() => {
+    if (fontKey) void ensureDocFonts(doc)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontKey])
+  useEffect(() => {
+    const repaint = () => {
+      if (!playingRef.current) syncAndDraw(timeRef.current, false)
+    }
+    window.addEventListener(FONTS_CHANGED_EVENT, repaint)
+    document.fonts?.addEventListener?.('loadingdone', repaint)
+    return () => {
+      window.removeEventListener(FONTS_CHANGED_EVENT, repaint)
+      document.fonts?.removeEventListener?.('loadingdone', repaint)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Playing: one rAF loop owns the clock.
   useEffect(() => {
@@ -200,9 +224,17 @@ export function StudioPreview({
 type Box = { x: number; y: number; w: number; h: number }
 
 /** Normalised (0–1) box for the clips that have a position on the stage. */
-function boxOf(clip: StudioClip): Box | null {
+let measureCtx: CanvasRenderingContext2D | null = null
+
+function boxOf(clip: StudioClip, frameAspect = 16 / 9): Box | null {
   if (clip.kind === 'text') {
     const text = clip as StudioTextClip
+    measureCtx ??= document.createElement('canvas').getContext('2d')
+    if (measureCtx) {
+      // Measure at a nominal 1080-high frame; the result is normalised.
+      const size = measureTextBlock(measureCtx, text, 1080 * frameAspect, 1080)
+      return { x: text.x, y: text.y, w: size.w, h: size.h }
+    }
     // Text has no stored size, only a font size, so the box is an estimate of
     // the painted line — good enough to grab, and it never drives the render.
     const h = (text.fontSizePct / 100) * 1.5
@@ -215,7 +247,13 @@ function boxOf(clip: StudioClip): Box | null {
   }
   if (clip.kind === 'overlay') {
     const overlay = clip as StudioOverlayClip
-    return { x: overlay.x, y: overlay.y, w: 0.5 * overlay.scale, h: 0.32 * overlay.scale }
+    // Mirror the renderer: the image is fitted inside the frame by its own
+    // aspect ratio, then scaled. A fixed guess made the handles lie.
+    const image = registrySources.overlay(overlay, 0) as HTMLImageElement | null
+    const sw = image?.naturalWidth || 16
+    const sh = image?.naturalHeight || 10
+    const base = Math.min(frameAspect / sw, 1 / sh)
+    return { x: overlay.x, y: overlay.y, w: (sw * base * overlay.scale) / frameAspect, h: sh * base * overlay.scale }
   }
   if (clip.kind === 'glass') {
     const glass = clip as StudioGlassClip
@@ -247,9 +285,14 @@ function TransformHandles({
   const [drag, setDrag] = useState<
     { mode: 'move' | 'scale' | 'rotate'; startX: number; startY: number; box: Box; startRotation: number; startScale: number } | null
   >(null)
+  // Snap guides shown while moving (normalised positions) and the inline
+  // text editor opened by double-clicking a text layer.
+  const [guides, setGuides] = useState<{ v: number[]; h: number[]; readout: string } | null>(null)
+  const [editing, setEditing] = useState<string | null>(null)
   const active = time >= clip.startSec && time < clip.startSec + clip.durationSec
   const values = keyframeValuesAt(clip, time)
-  const baseBox = boxOf(clip)
+  const frameRect = frame.current?.getBoundingClientRect()
+  const baseBox = boxOf(clip, frameRect && frameRect.height > 0 ? frameRect.width / frameRect.height : 16 / 9)
   const box = baseBox ? {
     ...baseBox,
     x: values?.x ?? baseBox.x,
@@ -291,8 +334,31 @@ function TransformHandles({
         return
       }
       if (drag.mode === 'move') {
-        const x = Math.min(1, Math.max(0, drag.box.x + dx))
-        const y = Math.min(1, Math.max(0, drag.box.y + dy))
+        let x = Math.min(1, Math.max(0, drag.box.x + dx))
+        let y = Math.min(1, Math.max(0, drag.box.y + dy))
+        // Magnetic guides, like every pro editor: the frame centre and the
+        // title/action-safe edges pull the layer's centre or edges in when
+        // it gets within a few pixels. Hold Alt to place freely.
+        const v: number[] = []
+        const h: number[] = []
+        if (!event.altKey) {
+          const snapAxis = (pos: number, half: number, px: number, lines: number[], hit: number[]) => {
+            const tol = 6 / px
+            let best: { d: number; pos: number; line: number } | null = null
+            for (const line of lines) {
+              for (const [edge, offset] of [[pos, 0], [pos - half, half], [pos + half, -half]] as const) {
+                const d = Math.abs(edge - line)
+                if (d < tol && (!best || d < best.d)) best = { d, pos: line + offset, line }
+              }
+            }
+            if (!best) return pos
+            hit.push(best.line)
+            return best.pos
+          }
+          x = snapAxis(x, drag.box.w / 2, rect.width, [0.5, 0.05, 0.95, 0.1, 0.9], v)
+          y = snapAxis(y, drag.box.h / 2, rect.height, [0.5, 0.05, 0.95, 0.1, 0.9], h)
+        }
+        setGuides({ v, h, readout: `${Math.round(x * 100)}% · ${Math.round(y * 100)}%` })
         patchTransform({ x, y }, { x, y } as Partial<StudioClip>)
         return
       }
@@ -326,7 +392,7 @@ function TransformHandles({
         onPatch({ scale: Math.min(4, Math.max(0.2, (clip as StudioStickerClip).scale * factor)) } as Partial<StudioClip>)
       }
     }
-    const onUp = () => setDrag(null)
+    const onUp = () => { setDrag(null); setGuides(null) }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp, { once: true })
     return () => {
@@ -350,16 +416,56 @@ function TransformHandles({
     transform: rotation ? `rotate(${rotation}deg)` : undefined,
   }
 
+  const isText = clip.kind === 'text'
+  const commitText = (value: string) => {
+    setEditing(null)
+    const next = value.replace(/\s+$/, '')
+    if (isText && next && next !== (clip as StudioTextClip).text) onPatch({ text: next } as Partial<StudioClip>)
+  }
+
   return (
+    <>
+    {guides && (
+      <div className="pointer-events-none absolute inset-0 z-20" aria-hidden>
+        {guides.v.map((g) => <span key={`v${g}`} className="absolute top-0 bottom-0 w-px bg-accent shadow-[0_0_6px_var(--color-accent)]" style={{ left: `${g * 100}%` }} />)}
+        {guides.h.map((g) => <span key={`h${g}`} className="absolute left-0 right-0 h-px bg-accent shadow-[0_0_6px_var(--color-accent)]" style={{ top: `${g * 100}%` }} />)}
+        <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-md bg-black/75 px-2 py-0.5 font-mono text-[10px] text-white tabular-nums">{guides.readout}</span>
+      </div>
+    )}
     <div
       role="presentation"
       className="absolute cursor-move rounded-sm border border-dashed border-accent/80 bg-accent/5"
       style={style}
+      title={isText ? 'Drag to move · double-click to edit text · Alt to skip snapping' : 'Drag to move · Alt to skip snapping'}
+      onDoubleClick={(event) => {
+        if (!isText) return
+        event.preventDefault()
+        event.stopPropagation()
+        setDrag(null)
+        setEditing((clip as StudioTextClip).text)
+      }}
       onPointerDown={(event) => {
+        if (editing !== null) return
         event.preventDefault()
         setDrag({ mode: 'move', startX: event.clientX, startY: event.clientY, box, startRotation: rotation, startScale: values?.scale ?? 1 })
       }}
     >
+      {editing !== null && (
+        <textarea
+          autoFocus
+          aria-label="Edit text on canvas"
+          defaultValue={editing}
+          onFocus={(event) => event.currentTarget.select()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onKeyDown={(event) => {
+            event.stopPropagation()
+            if (event.key === 'Escape') { event.preventDefault(); setEditing(null) }
+            if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); commitText(event.currentTarget.value) }
+          }}
+          onBlur={(event) => commitText(event.currentTarget.value)}
+          className="absolute left-1/2 top-1/2 z-30 min-h-[2.5rem] w-[max(100%,12rem)] -translate-x-1/2 -translate-y-1/2 resize-none rounded-md border border-accent bg-black/85 p-2 text-center text-sm font-semibold text-white shadow-xl outline-none"
+        />
+      )}
       <span
         role="presentation"
         title="Drag to rotate · hold Shift for 15° steps"
@@ -387,5 +493,6 @@ function TransformHandles({
         className="absolute -bottom-1.5 -right-1.5 h-3 w-3 cursor-nwse-resize rounded-sm border border-bg bg-accent"
       />
     </div>
+    </>
   )
 }

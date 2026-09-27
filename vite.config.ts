@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import { fileURLToPath, URL } from 'node:url'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
-import { createReadStream, statSync } from 'node:fs'
+import { createReadStream, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 
 /**
@@ -15,8 +15,13 @@ import path from 'node:path'
 function serveResources() {
   const rootDir = fileURLToPath(new URL('./resources', import.meta.url))
   const handler = (req: any, res: any, next: () => void) => {
-    const url: string = (req.url ?? '').split('?')[0]
+    const [url, query = ''] = String(req.url ?? '').split('?')
     if (!url.startsWith('/resources/')) return next()
+    // Source files `import catalog from '../resources/x.json'` — Vite turns
+    // those into `/resources/x.json?import` module requests. Serving raw JSON
+    // for them (application/json) made every module fail and blanked the app.
+    if (/(^|&)(import|raw|url|inline|worker|t=)/.test(query)) return next()
+    if (req.headers?.['sec-fetch-dest'] === 'script') return next()
     const rel = decodeURIComponent(url.slice('/resources/'.length))
     const file = path.join(rootDir, rel)
     // Never escape the resources directory.
@@ -54,8 +59,12 @@ function serveResources() {
 }
 
 // base './' so the built bundle loads over file:// inside Electron
+const appVersion = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version as string
+
 export default defineConfig({
   base: './',
+  // One source of truth for the version shown in the sidebar.
+  define: { __APP_VERSION__: JSON.stringify(appVersion) },
   plugins: [react(), tailwindcss(), serveResources()],
   resolve: {
     alias: {
