@@ -17,7 +17,7 @@
  * Usage: node scripts/build-icons.mjs [--check]
  *   --check  fail if any committed icon differs from what this script makes.
  */
-import { deflateSync } from 'node:zlib'
+import { deflateSync, inflateSync } from 'node:zlib'
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -183,6 +183,53 @@ function outputs() {
   ]
 }
 
+/* ——— --check compares what the icons ARE, not incidental bytes ———
+ * Git on Windows checks text out with CRLF, and zlib's compressed stream can
+ * differ between platforms/CPUs for identical pixels, so a byte-exact check
+ * fails a release build for no real reason. Compare the SVG with normalised
+ * line endings and PNG/ICO by header + decoded pixel rows.
+ */
+function pngPixels(buf) {
+  if (buf.length < 8 || buf.readUInt32BE(0) !== 0x89504e47) return buf
+  const parts = []
+  const idat = []
+  for (let o = 8; o + 8 <= buf.length; ) {
+    const len = buf.readUInt32BE(o)
+    const type = buf.toString('latin1', o + 4, o + 8)
+    const data = buf.subarray(o + 8, o + 8 + len)
+    if (type === 'IHDR') parts.push(Buffer.from(data))
+    else if (type === 'IDAT') idat.push(data)
+    o += 12 + len
+  }
+  try {
+    parts.push(inflateSync(Buffer.concat(idat)))
+  } catch {
+    return buf
+  }
+  return Buffer.concat(parts)
+}
+
+function icoPixels(buf) {
+  if (buf.length < 6 || buf.readUInt16LE(2) !== 1) return buf
+  const count = buf.readUInt16LE(4)
+  const parts = [buf.subarray(0, 6)]
+  for (let i = 0; i < count; i++) {
+    const o = 6 + i * 16
+    if (o + 16 > buf.length) return buf
+    const len = buf.readUInt32LE(o + 8)
+    const at = buf.readUInt32LE(o + 12)
+    parts.push(buf.subarray(o, o + 8), pngPixels(buf.subarray(at, at + len)))
+  }
+  return Buffer.concat(parts)
+}
+
+export function canonicalIcon(rel, buf) {
+  if (rel.endsWith('.svg')) return Buffer.from(buf.toString('utf8').replace(/\r\n/g, '\n'))
+  if (rel.endsWith('.png')) return pngPixels(buf)
+  if (rel.endsWith('.ico')) return icoPixels(buf)
+  return buf
+}
+
 const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
 if (isMain) {
   const check = process.argv.includes('--check')
@@ -190,7 +237,7 @@ if (isMain) {
   for (const [rel, data] of outputs()) {
     const file = path.join(root, rel)
     if (check) {
-      if (!existsSync(file) || !readFileSync(file).equals(data)) {
+      if (!existsSync(file) || !canonicalIcon(rel, readFileSync(file)).equals(canonicalIcon(rel, data))) {
         console.error(`stale icon: ${rel} — run node scripts/build-icons.mjs`)
         stale++
       }
