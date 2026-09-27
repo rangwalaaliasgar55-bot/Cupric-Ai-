@@ -34,14 +34,17 @@ import {
   type PackIndex,
   type PackItem,
 } from '../../lib/packs'
-import { defaultGlassClip, defaultTextClip, docDuration, nextFreeStart, studioOf } from '../../lib/studio/doc'
-import type { StudioClip, StudioTextAnim, StudioTransition } from '../../types/project'
+import { docDuration, studioOf } from '../../lib/studio/doc'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { EASE_SOFT } from '../../lib/motion'
 import { useReducedMotion } from '../../lib/use-reduced-motion'
-import { resourceDisposition, resourceToStudio, writeDragPayload } from '../../lib/studio/resourceDrop'
+import { resourceDisposition, writeDragPayload, type ResourceDisposition } from '../../lib/studio/resourceDrop'
 import { planTemplateFill, templateSlots, type TemplateAssignments, type TemplateFillData } from '../../lib/studio/templateFill'
-import { copyText, uid } from '../../lib/utils'
+import { applyLabel } from '../../lib/studio/resourceApply'
+import { classifyResource } from '../../lib/studio/resourceLook'
+import { briefLines, storyboardCopy, type BriefSource } from '../../lib/studio/storyboard'
+import { requestStudioFocus, studioPlayhead } from '../../lib/studio/studioLink'
+import { useResourceApply } from './useResourceApply'
 
 const KIND_ICON = {
   glass: Sparkles,
@@ -61,6 +64,18 @@ const KIND_ICON = {
   'saas-template': Film,
 } as const
 
+/** What Apply produces, in the reader's words. */
+const DISPOSITION_LABEL: Record<ResourceDisposition, string> = {
+  clip: 'Native clip',
+  scene: 'Builds a scene',
+  lab: 'Animated capture',
+  template: 'Storyboard',
+  render: 'Renders to clip',
+  font: 'Font',
+  command: 'Voice command',
+  reference: 'Link',
+}
+
 type Source = 'memory' | 'cache' | 'network' | 'local' | 'none'
 
 const SOURCE_LABEL: Record<Source, string> = {
@@ -73,8 +88,7 @@ const SOURCE_LABEL: Record<Source, string> = {
 
 export function PackBrowser() {
   const project = useActiveProject()
-  const addStudioClip = useProjectStore((s) => s.addStudioClip)
-  const updateStudioClip = useProjectStore((s) => s.updateStudioClip)
+  const { apply, progress } = useResourceApply()
   const patchStudio = useProjectStore((s) => s.patchStudio)
   const setView = useProjectStore((s) => s.setView)
   const pushToast = useProjectStore((s) => s.pushToast)
@@ -155,11 +169,27 @@ export function PackBrowser() {
     () => templateFill ? templateSlots((templateFill.data ?? {}) as TemplateFillData) : [],
     [templateFill],
   )
+  const fillOptions = useMemo(() => {
+    if (!templateFill || !project) return undefined
+    const doc = studioOf(project)
+    return {
+      atSec: studioPlayhead() ?? docDuration(doc),
+      brief: briefLines(project as unknown as BriefSource),
+      brandName: project.name,
+      archetype: classifyResource({ name: templateFill.name, category: String((templateFill.data as { category?: string } | undefined)?.category ?? ''), description: templateFill.description }),
+    }
+    // Snapshotted when the dialog opens so the preview does not jump while typing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [templateFill])
+  const fillCopy = useMemo(
+    () => (fillOptions ? storyboardCopy(fillSlots, {}, fillOptions) : []),
+    [fillOptions, fillSlots],
+  )
   const fillPlan = useMemo(
     () => templateFill && project
-      ? planTemplateFill(studioOf(project), (templateFill.data ?? {}) as TemplateFillData, templateAssignments, templateFill.name)
+      ? planTemplateFill(studioOf(project), (templateFill.data ?? {}) as TemplateFillData, templateAssignments, templateFill.name, fillOptions)
       : null,
-    [project, templateAssignments, templateFill],
+    [fillOptions, project, templateAssignments, templateFill],
   )
 
   async function download() {
@@ -171,132 +201,32 @@ export function PackBrowser() {
     else pushToast('success', `All ${result.ok} packs are available offline.`)
   }
 
-  /** Every "Add to Studio" path goes through the normal store actions. */
-  function addToStudio(item: PackItem) {
+  /** Every card's Apply goes through the one shared path (also used by stage drops). */
+  async function addToStudio(item: PackItem) {
+    const ok = await apply(item)
+    if (ok) markUsed(item)
+  }
+
+  /** Templates: the full review dialog, pre-filled with what Apply would use. */
+  function customizeTemplate(item: PackItem) {
     if (!project) {
-      pushToast('info', 'Open a project first.')
+      pushToast('info', 'Open or create a project first — templates apply to its timeline.')
       setView('home')
       return
     }
-    const doc = studioOf(project)
-    const at = docDuration(doc)
-    const topTrack = Math.min(1, doc.trackCount - 1)
-
-    if (item.kind === 'saas-template') {
-      const slots = templateSlots((item.data ?? {}) as TemplateFillData)
-      setTemplateAssignments(Object.fromEntries(slots.map((slot) => [slot.id, { text: slot.defaultText }])))
-      setTemplateFill(item)
-      return
-    }
-
-    if (item.kind === 'glass') {
-      const clip = defaultGlassClip(nextFreeStart(doc, topTrack, at, 3), topTrack, item.id, item.id === 'lens' ? 'lens' : 'panel')
-      addStudioClip(project.id, clip)
-      pushToast('success', `“${item.name}” glass added to the Studio.`)
-    } else if (item.kind === 'background') {
-      const studioNative = (item.data as { studio?: boolean } | undefined)?.studio
-      if (studioNative === false) {
-        // Chrome gradients are not Studio presets — the canvas cannot paint
-        // them, so hand over the CSS rather than adding a clip that renders black.
-        void copyText(item.css ?? '')
-        pushToast('info', `“${item.name}” is a chrome gradient — CSS copied instead.`)
-        markUsed(item)
-        return
-      }
-      const clip: StudioClip = {
-        id: uid(),
-        kind: 'background',
-        track: 0,
-        startSec: nextFreeStart(doc, 0, at, 4),
-        durationSec: 4,
-        name: item.name,
-        transitionIn: 'fade',
-        transitionOut: 'fade',
-        opacity: 1,
-        backgroundId: item.id,
-      }
-      addStudioClip(project.id, clip)
-      patchStudio(project.id, { backgroundId: item.id })
-      pushToast('success', `“${item.name}” added as a background clip and set as the stage.`)
-    } else if (item.kind === 'transition') {
-      const last = [...doc.clips].sort((a, b) => a.startSec - b.startSec).pop()
-      if (!last) {
-        pushToast('info', 'Add a clip first — a transition needs something to run on.')
-        return
-      }
-      updateStudioClip(project.id, last.id, { transitionIn: item.id as StudioTransition })
-      pushToast('success', `“${item.name}” set as the in-transition on “${last.name}”.`)
-    } else if (item.kind === 'animation') {
-      const lastText = [...doc.clips].filter((c) => c.kind === 'text').sort((a, b) => a.startSec - b.startSec).pop()
-      if (lastText) {
-        updateStudioClip(project.id, lastText.id, { anim: item.id as StudioTextAnim } as Partial<StudioClip>)
-        pushToast('success', `“${item.name}” applied to “${lastText.name}”.`)
-      } else {
-        const clip = defaultTextClip(nextFreeStart(doc, topTrack, at, 3), topTrack)
-        clip.anim = item.id as StudioTextAnim
-        addStudioClip(project.id, clip)
-        pushToast('success', `New caption added with the “${item.name}” animation.`)
-      }
-    } else if (item.kind === 'effect') {
-      const result = resourceToStudio(doc, { kind: item.kind, id: item.id, name: item.name, description: item.description, data: item.data }, at)
-      if (!result.ok) {
-        pushToast('info', result.reason)
-        return
-      }
-      if ('clip' in result) addStudioClip(project.id, result.clip)
-      else if ('docPatch' in result) patchStudio(project.id, result.docPatch)
-      pushToast('success', result.message)
-    } else if (item.kind === 'voice') {
-      void copyText(item.name.replace(/"/g, ''))
-      pushToast('info', 'Phrase copied — press Voice in the Studio and say it.')
-    } else if (item.kind === 'source') {
-      // Sources are links, not material: hand over the cue the prompt builder
-      // wants and open the site in the user's own browser.
-      const data = item.data as { url?: string; promptCue?: string } | undefined
-      void copyText(data?.promptCue ?? item.description)
-      if (data?.url) window.open(data.url, '_blank', 'noopener,noreferrer')
-      pushToast('success', `Prompt cue for “${item.name}” copied.`)
-    } else if (item.kind === 'template') {
-      const data = item.data as { file?: string; durationSec?: number; fps?: number } | undefined
-      void copyText(data?.file ?? item.id)
-      pushToast('info', `“${item.name}” — ${data?.durationSec ?? 0}s at ${data?.fps ?? 30}fps. Path copied; open it from the Render screen.`)
-    } else if (item.kind === 'component') {
-      sessionStorage.setItem('cupric:lab-open', item.id)
-      setView('lab')
-      pushToast('info', `Opening “${item.name}” in Lab — choose “Add animated to Studio” to render its React motion.`)
-    } else if (item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider') {
-      const data = item.data as { source?: string; url?: string } | undefined
-      const source = data?.source ?? data?.url
-      if (source) window.open(source, '_blank', 'noopener,noreferrer')
-      const explanation = item.kind === 'font'
-        ? 'a font catalogue reference, not an embedded clip'
-        : item.kind === 'skill'
-          ? 'an agent skill used while planning renders, not visual media'
-          : item.kind === 'icon'
-            ? 'an icon-set reference; import an exported SVG or image to edit it'
-            : item.kind === 'block'
-              ? 'an upstream UI block; use a capturable Lab component for a clip'
-              : 'a generation-provider reference, not timeline media'
-      pushToast('info', `“${item.name}” is ${explanation}.${source ? ' Opening its upstream source.' : ''}`)
-    }
-    markUsed(item)
+    setTemplateAssignments({})
+    setTemplateFill(item)
   }
 
   function applyTemplateFill() {
     if (!project || !templateFill || !fillPlan) return
-    if (fillPlan.missing.length) {
-      pushToast('info', `Choose media for ${fillPlan.missing.map((slot) => slot.label).join(', ')} before applying.`)
-      return
-    }
-    const doc = studioOf(project)
     // One patch means the entire auto-fill is one undo step, never N silent
     // clip mutations. The plan shown in the dialog is exactly what is applied.
-    patchStudio(project.id, {
-      clips: [...doc.clips, ...fillPlan.clips],
-      backgroundId: 'grid-haze',
-    })
+    patchStudio(project.id, { clips: fillPlan.doc.clips, trackCount: fillPlan.doc.trackCount })
+    requestStudioFocus(fillPlan.focusId, fillPlan.startSec + 0.8)
     markUsed(templateFill)
-    pushToast('success', `“${templateFill.name}” auto-filled ${fillPlan.clips.length} slots as one undoable edit.`, {
+    const inStudio = studioPlayhead() !== null
+    pushToast('success', `“${templateFill.name}” applied: ${fillPlan.clips.length} layers as one undoable edit.`, inStudio ? undefined : {
       action: { label: 'Open Studio', run: () => setView('studio') },
     })
     setTemplateFill(null)
@@ -395,14 +325,9 @@ export function PackBrowser() {
           <AnimatePresence mode="popLayout" initial={false}>
             {visibleItems.map((item, i) => {
               const Icon = KIND_ICON[item.kind] ?? Layers
-              const disposition = resourceDisposition(item.kind)
-              const dispositionLabel = disposition === 'clip'
-                ? 'Drops as clip'
-                : disposition === 'lab'
-                  ? 'Open in Lab'
-                  : disposition === 'template'
-                    ? 'Auto-fill'
-                    : 'Reference only'
+              const disposition = resourceDisposition(item.kind, item)
+              const dispositionLabel = DISPOSITION_LABEL[disposition]
+              const rendering = progress?.id === item.id
               return (
                 <motion.div
                   key={item.id}
@@ -442,7 +367,7 @@ export function PackBrowser() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <div className="min-w-0 flex-1 basis-32 truncate text-sm font-semibold" title={item.name}>{item.name}</div>
-                        <Badge tone={disposition === 'clip' ? 'accent' : disposition === 'lab' ? 'info' : 'neutral'}>
+                        <Badge tone={disposition === 'reference' ? 'neutral' : disposition === 'clip' || disposition === 'template' ? 'accent' : 'info'}>
                           {dispositionLabel}
                         </Badge>
                       </div>
@@ -458,31 +383,33 @@ export function PackBrowser() {
                             .replace(/\/$/, '')
                         : item.id}
                     </span>
-                    {used.has(item.id) ? (
-                      <Badge tone="accent">
-                        <Check size={11} /> Added
-                      </Badge>
-                    ) : (
-                      <Button size="sm" variant="outline" onClick={() => addToStudio(item)}>
-                        {item.kind === 'effect' ? (
-                          <><Wand2 size={12} /> Add effect</>
-                        ) : item.kind === 'voice' || item.kind === 'template' ? (
-                          <><Copy size={12} /> Copy</>
-                        ) : item.kind === 'source' ? (
-                          <>
-                            <ExternalLink size={12} /> Open
-                          </>
-                        ) : item.kind === 'component' ? (
-                          'Open in Lab'
-                        ) : item.kind === 'saas-template' ? (
-                          'Auto-fill template'
-                        ) : item.kind === 'font' || item.kind === 'skill' || item.kind === 'icon' || item.kind === 'block' || item.kind === 'provider' ? (
-                          'Open source'
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {item.kind === 'saas-template' && (
+                        <Button size="sm" variant="ghost" onClick={() => customizeTemplate(item)} aria-label={`Customize ${item.name}`}>
+                          Customize
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant={used.has(item.id) ? 'ghost' : 'outline'}
+                        onClick={() => void addToStudio(item)}
+                        disabled={rendering}
+                        aria-label={`${applyLabel(item)}: ${item.name}`}
+                        title={used.has(item.id) ? 'Applied — click to apply again' : undefined}
+                      >
+                        {rendering ? (
+                          <><Loader2 size={12} className="animate-spin" /> {progress?.pct ?? 0}%</>
+                        ) : used.has(item.id) ? (
+                          <><Check size={12} /> Again</>
+                        ) : disposition === 'reference' ? (
+                          <><ExternalLink size={12} /> {applyLabel(item)}</>
+                        ) : disposition === 'command' ? (
+                          <><Mic size={12} /> {applyLabel(item)}</>
                         ) : (
-                          'Add to Studio'
+                          <><Wand2 size={12} /> Apply</>
                         )}
                       </Button>
-                    )}
+                    </div>
                   </div>
                 </motion.div>
               )
@@ -513,13 +440,13 @@ export function PackBrowser() {
             <div>
               <p className="font-mono text-xs uppercase tracking-widest text-accent-text">Template auto-fill</p>
               <h2 className="mt-1 text-lg font-semibold">{templateFill?.name}</h2>
-              <p className="mt-1 text-xs text-muted">Assign each placeholder, review the exact timeline diff, then accept it as one undoable action.</p>
+              <p className="mt-1 text-xs text-muted">Every slot is already filled — from your brief, your footage or designed defaults. Change anything, review the exact timeline diff, then accept it as one undoable action.</p>
             </div>
             <Badge tone="info">{fillPlan?.durationSec ?? 0}s preview</Badge>
           </div>
 
           <div className="mt-5 space-y-3">
-            {fillSlots.map((slot) => {
+            {fillSlots.map((slot, slotIndex) => {
               const media = project ? studioOf(project).clips.filter((clip) =>
                 clip.kind === 'video' || clip.kind === 'image' || clip.kind === 'overlay' || clip.kind === 'sticker',
               ) : []
@@ -531,7 +458,9 @@ export function PackBrowser() {
                   </span>
                   {slot.kind === 'text' ? (
                     <input
-                      value={templateAssignments[slot.id]?.text ?? slot.defaultText}
+                      value={templateAssignments[slot.id]?.text ?? ''}
+                      placeholder={fillCopy[slotIndex] ?? slot.defaultText}
+                      aria-label={`${slot.label} text`}
                       onChange={(event) => setTemplateAssignments((current) => ({
                         ...current,
                         [slot.id]: { ...current[slot.id], text: event.target.value },
@@ -547,12 +476,12 @@ export function PackBrowser() {
                       }))}
                       className="mt-2 h-9 w-full rounded-lg border border-line bg-bg px-3 text-sm"
                     >
-                      <option value="">Choose {slot.kind === 'logo' ? 'a logo/image clip' : 'footage from Studio'}…</option>
+                      <option value="">{slot.kind === 'logo' ? 'Auto: glass mark with your project name' : media.length ? 'Auto: next unused clip from your project' : 'Auto: placeholder panel (drop media later)'}</option>
                       {media.map((clip) => <option key={clip.id} value={clip.id}>{clip.name} · {clip.kind}</option>)}
                     </select>
                   )}
                   {slot.kind !== 'text' && media.length === 0 && (
-                    <p className="mt-2 text-xs text-danger">Import media into Studio first. This slot will not silently create a placeholder.</p>
+                    <p className="mt-2 text-xs text-muted">No footage in this project yet — a designed “Drop your media here” panel fills the slot, and you can swap it any time.</p>
                   )}
                 </label>
               )
@@ -563,7 +492,7 @@ export function PackBrowser() {
             <div className="text-xs font-semibold">Proposed timeline diff</div>
             <ul className="mt-2 space-y-1 text-xs text-muted">
               {(fillPlan?.changes ?? []).map((change) => <li key={change}>+ {change}</li>)}
-              {(fillPlan?.missing ?? []).map((slot) => <li key={slot.id} className="text-danger">! {slot.label} still needs {slot.kind}</li>)}
+              {(fillPlan?.missing ?? []).map((slot) => <li key={slot.id} className="text-info">• {slot.label}: placeholder until you import media</li>)}
             </ul>
           </div>
 
@@ -572,7 +501,7 @@ export function PackBrowser() {
               setTemplateFill(null)
               setTemplateAssignments({})
             }}>Reject</Button>
-            <Button onClick={applyTemplateFill} disabled={!fillPlan || fillPlan.missing.length > 0 || fillPlan.clips.length === 0}>
+            <Button variant="primary" onClick={applyTemplateFill} disabled={!fillPlan || fillPlan.clips.length === 0}>
               Accept & auto-fill
             </Button>
           </div>

@@ -31,6 +31,9 @@ import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/t
 import { GLASS_PRESETS } from '../../lib/glass'
 import { STICKERS } from '../../lib/studio/lottie'
 import { hasMedia, registerFile } from '../../lib/studio/media'
+
+/** Values of the built-in Font options; anything else came from Resources → Fonts. */
+const BUNDLED_FONT_VALUES = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
 import { cx } from '../../lib/utils'
 
 type Props = {
@@ -800,7 +803,7 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
         />
       </Field>
 
-      <Field label="Font" hint="Bundled locally so exports match the preview on every machine.">
+      <Field label="Font" hint="Six fonts ship with the app; any Google font from Resources → Fonts downloads once and is embedded in exports.">
         <select
           value={clip.fontFamily ?? 'Inter Variable'}
           onChange={(e) => onPatch({ fontFamily: e.target.value } as Partial<StudioClip>)}
@@ -812,6 +815,9 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
           <option value="Space Grotesk Variable">Space Grotesk — geometric tech</option>
           <option value="Playfair Display Variable">Playfair Display — cinematic serif</option>
           <option value="JetBrains Mono Variable">JetBrains Mono — technical</option>
+          {clip.fontFamily && !BUNDLED_FONT_VALUES.has(clip.fontFamily) && (
+            <option value={clip.fontFamily}>{clip.fontFamily} — from Resources</option>
+          )}
         </select>
       </Field>
 

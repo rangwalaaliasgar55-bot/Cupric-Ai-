@@ -14,6 +14,7 @@ import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
 import { focusStudioClip } from '../lib/studio/focus'
+import { studioPlayhead, takeLabAutocapture } from '../lib/studio/studioLink'
 
 /**
  * UI Lab — the vendored lab.xevrion.dev catalogue running locally.
@@ -135,7 +136,14 @@ function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
 export function Lab() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>(ALL)
+  // Resources → Apply on a component: open it and capture it automatically.
+  const [autoCapture] = useState(() => takeLabAutocapture())
+  const autoStarted = useRef(false)
   const [open, setOpen] = useState<LabEntry | null>(() => {
+    if (autoCapture) {
+      const entry = lab.find((item) => item.slug === autoCapture.slug)
+      if (entry) return entry
+    }
     const slug = sessionStorage.getItem('cupric:lab-open')
     if (slug) sessionStorage.removeItem('cupric:lab-open')
     return slug ? lab.find((entry) => entry.slug === slug) ?? null : null
@@ -175,7 +183,27 @@ export function Lab() {
    * then scrub and export its real motion instead of flattening the component
    * into the single screenshot that used to make Lab resources look broken.
    */
-  async function sendToStudio() {
+  useEffect(() => {
+    if (!autoCapture || autoStarted.current || !open || open.slug !== autoCapture.slug || !project) return
+    let cancelled = false
+    void (async () => {
+      // Wait for the lazily loaded demo to mount (Suspense), then one settle beat.
+      const deadline = performance.now() + 8000
+      while (!cancelled && performance.now() < deadline && !stageRef.current?.querySelector('.lab-canvas')) {
+        await new Promise((resolve) => setTimeout(resolve, 100))
+      }
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      if (cancelled || autoStarted.current) return
+      autoStarted.current = true
+      await sendToStudio({ atSec: autoCapture.atSec, returnTo: autoCapture.returnTo })
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, project])
+
+  async function sendToStudio(opts: { atSec?: number; returnTo?: 'studio' | 'library' } = {}) {
     if (!open || !project || !stageRef.current) return
     setCapturing(true)
     setCaptureProgress(0)
@@ -221,7 +249,9 @@ export function Lab() {
       const track = Math.max(1, Math.min(doc.trackCount - 1, 1))
       const clip: StudioOverlayClip = {
         id: uid(), kind: 'overlay', track,
-        startSec: nextFreeStart(doc, track, 0, durationSec), durationSec,
+        // At the playhead the resource was applied at (the store lifts it to a
+        // free track); otherwise the first gap on the overlay track.
+        startSec: opts.atSec !== undefined ? Math.round(opts.atSec * 100) / 100 : (studioPlayhead() ?? nextFreeStart(doc, track, 0, durationSec)), durationSec,
         name: open.name, transitionIn: 'fade', transitionOut: 'fade', opacity: 1,
         dataUrl: frames[0], ...(animated ? { frames, frameFps } : {}),
         source: `UI Lab ${animated ? 'animated ' : ''}React capture · ${open.name}`,
@@ -229,13 +259,15 @@ export function Lab() {
       }
       addStudioClip(project.id, clip)
       focusStudioClip(clip.id)
+      const backToLibrary = opts.returnTo === 'library'
       pushToast(
         'success',
         animated
           ? `${open.name} added to Studio as a ${durationSec}s animated clip (${frames.length} frames${method === 'compositor' ? ', pixel-exact' : ''}).`
           : `${open.name} added to Studio. It is static until you interact with it, so it was added as a still.`,
+        backToLibrary ? { action: { label: 'Open Studio', run: () => setView('studio') } } : undefined,
       )
-      setView('studio')
+      setView(backToLibrary ? 'library' : 'studio')
     } catch (err) {
       pushToast('error', humanError(err, `Could not capture ${open.name}`))
     } finally {

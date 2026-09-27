@@ -48,9 +48,11 @@ import {
 } from '../lib/studio/doc'
 import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
 import { TRANSITIONS } from '../lib/studio/transitions'
-import { isVoiceSupported, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
+import { isVoiceSupported, parseVoiceCommand, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
+import { FOCUS_NOW_EVENT, VOICE_RUN_EVENT, publishPlayhead, setStudioMounted, takePendingVoicePhrase, type FocusNowDetail } from '../lib/studio/studioLink'
+import { useResourceApply } from './library/useResourceApply'
 import { hasMedia, registerFile } from '../lib/studio/media'
-import { readDragPayload, resourceToStudio } from '../lib/studio/resourceDrop'
+import { readDragPayload } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
@@ -88,6 +90,7 @@ export function Studio() {
   const reorderStudioTracks = useProjectStore((s) => s.reorderStudioTracks)
   const settleStudioClip = useProjectStore((s) => s.settleStudioClip)
   const pushToast = useProjectStore((s) => s.pushToast)
+  const { apply: applyResourceItem } = useResourceApply()
   const setView = useProjectStore((s) => s.setView)
   const startAutomationJob = useProjectStore((s) => s.startAutomationJob)
 
@@ -141,6 +144,51 @@ export function Studio() {
     // Runs once on mount; the store update has landed before navigation.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Live line to Resources / Lab: they read the playhead and ask to focus
+  // what they just added (studioLink.ts).
+  useEffect(() => {
+    setStudioMounted(true)
+    return () => setStudioMounted(false)
+  }, [])
+  useEffect(() => publishPlayhead(time), [time])
+  useEffect(() => {
+    const onFocus = (event: Event) => {
+      const { clipId, atSec } = (event as CustomEvent<FocusNowDetail>).detail ?? { clipId: null, atSec: 0 }
+      setPlaying(false)
+      if (clipId) setSelectedId(clipId)
+      setTime(Math.max(0, atSec))
+    }
+    const onVoice = (event: Event) => runVoicePhraseNow(String((event as CustomEvent<string>).detail ?? ''))
+    window.addEventListener(FOCUS_NOW_EVENT, onFocus)
+    window.addEventListener(VOICE_RUN_EVENT, onVoice)
+    // A phrase applied from the Library before the Studio was open.
+    const pending = takePendingVoicePhrase()
+    if (pending) window.setTimeout(() => runVoicePhraseNow(pending), 250)
+    return () => {
+      window.removeEventListener(FOCUS_NOW_EVENT, onFocus)
+      window.removeEventListener(VOICE_RUN_EVENT, onVoice)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  /** A voice-command phrase from Resources runs exactly as if it were spoken. */
+  function runVoicePhraseNow(phrase: string) {
+    const first = phrase.split(/\s*\/\s*/)[0]?.trim() || phrase
+    // "make a video about …" needs your words: listen instead of guessing.
+    if (/…|\.\.\./.test(first)) {
+      pushToast('info', `Say “${first.replace(/\s*(…|\.\.\.)\s*$/, '')} …” followed by your idea — the microphone is on.`)
+      if (!voiceRef.current?.active) toggleVoiceRef.current()
+      return
+    }
+    const command = parseVoiceCommand(first) ?? parseVoiceCommand(phrase)
+    if (!command) {
+      pushToast('info', `“${first}” is not a command Cupric can run from here.`)
+      return
+    }
+    setHeard(`“${first}”`)
+    commandRef.current(command)
+  }
 
   const seek = useCallback(
     (t: number) => setTime(clamp(t, 0, Math.max(0, duration))),
@@ -295,6 +343,7 @@ export function Studio() {
     }
   }, [])
 
+  const toggleVoiceRef = useRef<() => void>(() => {})
   const toggleVoice = useCallback(() => {
     if (voiceRef.current?.active) {
       voiceRef.current.stop()
@@ -594,24 +643,8 @@ export function Studio() {
       pushToast('info', 'Nothing droppable in that drag — try a card from Library → Resource packs.')
       return
     }
-    const result = resourceToStudio(doc, payload, time)
-    if (!result.ok) {
-      pushToast('info', result.reason)
-      return
-    }
-    if ('action' in result) {
-      sessionStorage.setItem('cupric:lab-open', result.labSlug)
-      setView('lab')
-      pushToast('info', result.message)
-      return
-    }
-    if ('clip' in result) {
-      addStudioClip(projectId, result.clip)
-      setSelectedId(result.clip.id)
-    } else {
-      patchStudio(projectId, result.docPatch)
-    }
-    pushToast('success', result.message)
+    // Same path as the Apply button: a drop lands at the playhead.
+    void applyResourceItem(payload, { atSec: time, selectedId })
   }
 
   function addText() {
@@ -779,6 +812,7 @@ export function Studio() {
   }
 
   commandRef.current = runVoiceCommand
+  toggleVoiceRef.current = toggleVoice
 
   async function runExport(asMp4 = false) {
     if (duration <= 0) {

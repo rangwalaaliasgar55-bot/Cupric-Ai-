@@ -39,13 +39,20 @@ export type DropResult =
   | { ok: true; action: 'open-lab'; labSlug: string; message: string }
   | { ok: false; reason: string }
 
-export type ResourceDisposition = 'clip' | 'lab' | 'template' | 'reference'
+export type ResourceDisposition = 'clip' | 'scene' | 'lab' | 'template' | 'render' | 'font' | 'command' | 'reference'
 
-/** One classification drives every resource badge and drag expectation. */
-export function resourceDisposition(kind: string): ResourceDisposition {
-  if (kind === 'component') return 'lab'
+/**
+ * One classification drives every resource badge: it names what Apply (or a
+ * drop on the stage) produces — see resourceApply.ts, which implements it.
+ */
+export function resourceDisposition(kind: string, item?: { source?: string; data?: Record<string, unknown> }): ResourceDisposition {
+  if (kind === 'component') return item && (item.source || item.data?.source || item.data?.provider) ? 'scene' : 'lab'
   if (kind === 'saas-template') return 'template'
   if (['glass', 'background', 'animation', 'effect', 'transition'].includes(kind)) return 'clip'
+  if (kind === 'block' || kind === 'icon') return 'scene'
+  if (kind === 'template') return 'render'
+  if (kind === 'font') return 'font'
+  if (kind === 'voice') return 'command'
   return 'reference'
 }
 

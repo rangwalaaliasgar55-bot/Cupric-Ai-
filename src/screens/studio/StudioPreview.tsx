@@ -12,6 +12,7 @@ import type {
 import { audioGainAt, clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
 import { getMedia } from '../../lib/studio/media'
 import { drawStudioFrame, keyframeValuesAt, measureTextBlock } from '../../lib/studio/renderer'
+import { docFontFamilies, ensureDocFonts, FONTS_CHANGED_EVENT } from '../../lib/studio/fonts'
 import { patchTransformKeyframe } from '../../lib/studio/keyframeEdit'
 import { registrySources } from '../../lib/studio/sources'
 
@@ -56,6 +57,8 @@ export function StudioPreview({
   const frameRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef(time)
   timeRef.current = time
+  const playingRef = useRef(playing)
+  playingRef.current = playing
 
   const [width, height] = previewSizeForAspect(doc.aspect)
 
@@ -120,6 +123,27 @@ export function StudioPreview({
     return () => window.clearTimeout(retry)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc, time, playing, muted, width, height])
+
+  // Custom fonts (Resources → Fonts) download on demand. Load whatever this
+  // document uses, and repaint the moment a face arrives — otherwise titles
+  // stay in the fallback font until the next scrub.
+  const fontKey = docFontFamilies(doc).join('|')
+  useEffect(() => {
+    if (fontKey) void ensureDocFonts(doc)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fontKey])
+  useEffect(() => {
+    const repaint = () => {
+      if (!playingRef.current) syncAndDraw(timeRef.current, false)
+    }
+    window.addEventListener(FONTS_CHANGED_EVENT, repaint)
+    document.fonts?.addEventListener?.('loadingdone', repaint)
+    return () => {
+      window.removeEventListener(FONTS_CHANGED_EVENT, repaint)
+      document.fonts?.removeEventListener?.('loadingdone', repaint)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Playing: one rAF loop owns the clock.
   useEffect(() => {

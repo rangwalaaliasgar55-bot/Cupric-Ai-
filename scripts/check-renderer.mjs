@@ -545,7 +545,7 @@ if (mod.parseVoiceCommand('add text hello world')?.text !== 'hello world') failu
   checks += 3
   if (!result.ok || !('docPatch' in result)) failures.push('resources: transition stage drop was refused with a clip available')
   else if (result.docPatch.clips?.[0]?.transitionIn !== 'fade') failures.push('resources: transition did not target the nearest clip')
-  if (mod.resourceDisposition('component') !== 'lab' || mod.resourceDisposition('font') !== 'reference') failures.push('resources: disposition badges do not match drop behavior')
+  if (mod.resourceDisposition('component') !== 'lab' || mod.resourceDisposition('font') !== 'font' || mod.resourceDisposition('source') !== 'reference' || mod.resourceDisposition('template') !== 'render') failures.push('resources: disposition badges do not match drop behavior')
 }
 
 // Autonomous output must hand back editable clips, not stop at an MP4.

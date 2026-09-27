@@ -67,6 +67,18 @@ export function templateSlots(data: TemplateFillData): TemplateSlot[] {
     }))
 }
 
+/**
+ * Copy that reads on screen: a scene line longer than ~110 characters is a
+ * paragraph, not a title. Keep the first sentence, else cut at a word.
+ */
+export function tidyCopy(text: string, max = 110): string {
+  const clean = text.replace(/\s+/g, ' ').trim()
+  if (clean.length <= max) return clean
+  const sentence = clean.split(/(?<=[.!?])\s/)[0]
+  if (sentence.length <= max && sentence.length >= 12) return sentence.replace(/\.$/, '')
+  return clean.slice(0, max).replace(/\s+\S*$/, '').replace(/[\s,;:–—-]+$/, '') + '…'
+}
+
 /* ——— Layout helpers ——————————————————————————————————————————————— */
 
 /** Frame width over height. Type and panel sizes are fractions of height. */
@@ -252,6 +264,32 @@ function monogram(name: string): string {
   return letters || 'C'
 }
 
+/**
+ * The words each slot will show: what the user typed, else the project's
+ * brief in order, else the template's own line — with generic filler
+ * ("Replace with your content") swapped for copy that fits the archetype.
+ */
+export function storyboardCopy(
+  slots: TemplateSlot[],
+  assignments: TemplateAssignments,
+  opts: { brief?: string[]; archetype?: Archetype } = {},
+): string[] {
+  const brief = (opts.brief ?? []).filter(Boolean)
+  const archetype = opts.archetype ?? 'generic'
+  return slots.map((slot, i) => {
+    const typed = assignments[slot.id]?.text?.trim()
+    if (typed) return tidyCopy(typed, 140)
+    if (slot.kind !== 'text') return tidyCopy(slot.defaultText)
+    const textIndex = slots.slice(0, i).filter((s) => s.kind === 'text').length
+    if (brief[textIndex]) return tidyCopy(brief[textIndex])
+    if (GENERIC_COPY.test(slot.defaultText)) {
+      const sample = SAMPLE_COPY[archetype]
+      return i === slots.length - 1 ? sample.cta : i === 0 ? sample.title : sample.body
+    }
+    return tidyCopy(slot.defaultText)
+  })
+}
+
 export function buildStoryboard(
   doc: StudioDoc,
   data: TemplateFillData,
@@ -267,20 +305,7 @@ export function buildStoryboard(
   const aspect = doc.aspect
 
   // Scene timing first (reading time can stretch a scene), then placement.
-  const texts = slots.map((slot, i) => {
-    const typed = assignments[slot.id]?.text?.trim()
-    if (typed) return typed
-    if (slot.kind !== 'text') return slot.defaultText
-    // The brief fills text scenes in order; generic template lines always
-    // yield to it, and so does the template's own title card.
-    const textIndex = slots.slice(0, i).filter((s) => s.kind === 'text').length
-    if (brief[textIndex]) return brief[textIndex]
-    if (GENERIC_COPY.test(slot.defaultText)) {
-      const sample = SAMPLE_COPY[archetype]
-      return i === slots.length - 1 ? sample.cta : i === 0 ? sample.title : sample.body
-    }
-    return slot.defaultText
-  })
+  const texts = storyboardCopy(slots, assignments, { brief, archetype })
   const durations = slots.map((slot, i) => (slot.kind === 'text' ? Math.max(slot.durationSec, Math.min(8, readingTimeSec(texts[i]) + 0.6)) : slot.durationSec))
   const total = Math.max(0.5, durations.reduce((sum, d) => sum + d, 0))
 
