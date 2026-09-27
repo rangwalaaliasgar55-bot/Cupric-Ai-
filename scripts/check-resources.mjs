@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url)
 const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
 const index = JSON.parse(await readFile(new URL('resources/packs/index.json', root), 'utf8'))
 assert.equal(index.version, pkg.version, 'bundled pack index must match the application version')
-assert.equal(index.packs.length, 16, 'all 16 resource packs must be indexed')
+assert.equal(index.packs.length, 17, 'all 17 resource packs must be indexed')
 let total = 0
 for (const entry of index.packs) {
   const pack = JSON.parse(await readFile(new URL(`resources/packs/${entry.id}.json`, root), 'utf8'))
@@ -14,7 +14,7 @@ for (const entry of index.packs) {
   assert.equal(pack.items.length, entry.itemCount, `${entry.id} item count must match the index`)
   total += pack.items.length
 }
-assert.equal(total, 3527, 'the complete resource catalogue must be bundled')
+assert.equal(total, 3543, 'the complete resource catalogue must be bundled')
 const reactBits = JSON.parse(await readFile(new URL('resources/packs/react-bits.json', root), 'utf8'))
 const skiper = JSON.parse(await readFile(new URL('resources/packs/skiper-ui.json', root), 'utf8'))
 const remotion = JSON.parse(await readFile(new URL('resources/packs/remotion.json', root), 'utf8'))
@@ -56,4 +56,15 @@ const studio = await readFile(new URL('src/screens/Studio.tsx', root), 'utf8')
 assert.match(studio, /<PackBrowser \/>/, 'Studio must mount the same resource browser as Library')
 assert.match(studio, /All Library resources/, 'Studio resource drawer must be discoverable')
 
+// Every pack has unique item ids (React keys, apply-by-id, finder results).
+for (const entry of index.packs) {
+  const p = JSON.parse(await readFile(new URL(`resources/packs/${entry.id}.json`, root), 'utf8'))
+  const seen = new Set()
+  for (const item of p.items) { assert.ok(!seen.has(item.id), `duplicate id ${entry.id}/${item.id}`); seen.add(item.id) }
+}
+const ess = JSON.parse(await readFile(new URL('resources/packs/essentials.json', root), 'utf8'))
+for (const id of ['framer-motion', 'gsap', 'font-inter', 'font-geist', 'font-satoshi', 'simple-icons', 'logo-dev', 'lucide']) {
+  const it = ess.items.find((x) => x.id === id)
+  assert.ok(it && /^https:\/\//.test(it.data.url) && it.data.license, `essentials must include ${id} with url + license`)
+}
 console.log(`resource check passed — ${index.packs.length} bundled packs, ${total} items, shared by Library and Studio`)

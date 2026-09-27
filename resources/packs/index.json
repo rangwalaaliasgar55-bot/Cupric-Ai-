@@ -29,7 +29,7 @@
       "name": "Backgrounds & gradients",
       "description": "Studio stage backgrounds — gradients, mesh gradients and patterns — with the CSS twin used by the app and by Arena HTML.",
       "itemCount": 42,
-      "bytes": 19730
+      "bytes": 20003
     },
     {
       "id": "effects",
@@ -64,7 +64,7 @@
       "name": "PanelUI catalogue",
       "description": "All 135 PanelUI components and 21 chart visualisations as editable Cupric-native Studio storyboards. React Native source stays upstream; Cupric uses its own deterministic renderer.",
       "itemCount": 172,
-      "bytes": 191624
+      "bytes": 191655
     },
     {
       "id": "saas-video",
@@ -107,6 +107,13 @@
       "description": "Indexed component libraries used as pattern references by the agent, the generation prompt and Cupric's own chrome. Mantine is MIT; Pixel Perfect and Sora UI declare no license, so they are linked and attributed, never copied.",
       "itemCount": 436,
       "bytes": 404389
+    },
+    {
+      "id": "essentials",
+      "name": "Essentials — libraries, fonts, icons, media",
+      "description": "Hand-picked free resources: animation libraries (Framer Motion, GSAP), fonts (Inter, Geist, Satoshi, Fontsource), icons and logos (Simple Icons, Logo.dev, Lucide, Phosphor, Tabler), illustrations, Lottie, stock media and palettes. Each entry links to the original with its license.",
+      "itemCount": 16,
+      "bytes": 12592
     },
     {
       "id": "components",

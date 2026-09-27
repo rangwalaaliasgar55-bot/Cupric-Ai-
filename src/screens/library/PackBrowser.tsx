@@ -22,6 +22,7 @@ import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { ProgressBar } from '../../components/ProgressBar'
 import { Modal } from '../../components/Modal'
+import { ResourceFinder } from './ResourceFinder'
 import { GlassPanel } from '../../components/glass'
 import {
   downloadAllPacks,
@@ -241,6 +242,7 @@ export function PackBrowser() {
 
   return (
     <section className="space-y-4">
+      <ResourceFinder onOpen={(packId, name) => { setActive(packId); setQuery(name) }} />
       <GlassPanel className="flex flex-wrap items-center gap-3 px-4 py-3" preset="frost" radius={14}>
         <div className="min-w-0 flex-1 basis-72">
           <h2 className="flex items-center gap-2 text-sm font-semibold">

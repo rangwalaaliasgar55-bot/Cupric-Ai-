@@ -118,7 +118,8 @@ packs.push({
     ...mod.GRADIENT_PRESETS.map((g) => ({
       id: `chrome-${g.id}`,
       kind: 'background',
-      name: g.name,
+      // Same names as stage backgrounds — label them so lists aren't ambiguous.
+      name: `${g.name} (app chrome)`,
       description: 'App-chrome gradient (stage and thumbnails only).',
       css: g.css,
       data: { group: 'chrome', studio: false },
@@ -223,8 +224,10 @@ try {
     version: VERSION,
     source: `${panel.source} (${panel.package} ${panel.upstreamVersion}, ${panel.platform})`,
     license: panel.license,
-    items: panel.entries.map((entry) => ({
-      id: `panelui-${entry.slug}`,
+    items: panel.entries.map((entry, _i, all) => ({
+      // Slugs like `index` repeat across groups: keep the first id stable and
+      // qualify later ones by group so every id is unique (React keys, apply).
+      id: all.findIndex((e) => e.slug === entry.slug) === _i ? `panelui-${entry.slug}` : `panelui-${entry.group}-${entry.slug}`,
       kind: 'saas-template',
       name: entry.name,
       description: `${entry.description || `PanelUI ${entry.group} entry`} · editable Cupric-native storyboard`,
@@ -508,6 +511,13 @@ try {
   packs.push(JSON.parse(await readFile(path.join(outDir, 'ui-libraries.json'), 'utf8')))
 } catch {
   console.warn('resources/packs/ui-libraries.json not readable — skipping the UI libraries pack')
+}
+
+// Hand-picked free essentials (libraries, fonts, icons, media) — curated file.
+try {
+  packs.push(JSON.parse(await readFile(path.join(outDir, 'essentials.json'), 'utf8')))
+} catch {
+  console.warn('resources/packs/essentials.json not readable — skipping Essentials')
 }
 
 // The vendored lab components are listed from their generated registry.

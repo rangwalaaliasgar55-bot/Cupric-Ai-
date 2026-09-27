@@ -21,3 +21,4 @@ vendor/whisper/*
 .source-project-check.mjs
 .mask-track-check.mjs
 .physics-check.mjs
+.check-resource-finder.mjs
