@@ -166,6 +166,17 @@ if (!/API key/i.test(humanError(new Error('401 Unauthorized')))) {
   delete globalThis.window
 }
 
+{
+  // A spoken brief must wait for confirmation before an autonomous job starts.
+  const { readFileSync } = await import('node:fs')
+  const studio = readFileSync('src/screens/Studio.tsx', 'utf8')
+  const caseBody = studio.slice(studio.indexOf("case 'make-video'"), studio.indexOf("case 'undo'"))
+  check('make-video does not start a job directly', caseBody.includes('startAutomationJob('), false)
+  check('make-video asks for confirmation', caseBody.includes('setPendingBrief(command.brief)'), true)
+  check('confirmation banner offers Start/Cancel', /Confirm voice brief[\s\S]{0,600}Start job[\s\S]{0,200}Cancel/.test(studio), true)
+  check('spoken yes/cancel answer the pending brief', /answerPending\(transcript\)\) return/.test(studio), true)
+}
+
 await rm(dir, { recursive: true, force: true })
 
 if (failures) {

@@ -38,4 +38,4 @@ Every UI Lab component (190 of them) can now be added from inside the Studio, wi
 
 ## Known limitation
 
-- Voice control in the desktop app is still being rebuilt so it can work fully offline. That work comes in the next release.
+- Voice control in the desktop app runs offline (Whisper, falling back to Windows Speech). A spoken "make a video…" now waits for "yes" before it starts a job. It still needs a hands-on pass on Windows hardware.

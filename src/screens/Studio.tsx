@@ -119,6 +119,20 @@ export function Studio() {
   const [lastExport, setLastExport] = useState<{ url: string; fileName: string } | null>(null)
   const [listening, setListening] = useState(false)
   const [heard, setHeard] = useState<string | null>(null)
+  // A spoken brief launches a whole autonomous job, so it waits for a yes
+  // (spoken or clicked) — a misheard phrase must never start rendering.
+  const [pendingBrief, setPendingBriefState] = useState<string | null>(null)
+  const pendingBriefRef = useRef<string | null>(null)
+  const setPendingBrief = (b: string | null) => { pendingBriefRef.current = b; setPendingBriefState(b) }
+  const confirmBriefRef = useRef<(yes: boolean) => void>(() => {})
+  /** True when the utterance answered a pending brief confirmation. */
+  const answerPending = (transcript: string): boolean => {
+    if (!pendingBriefRef.current) return false
+    const t = transcript.trim().toLowerCase()
+    if (/^(yes|yeah|yep|start( it)?|go( ahead)?|confirm|do it)\b/.test(t)) { confirmBriefRef.current(true); return true }
+    if (/^(no|nope|cancel|stop|never ?mind)\b/.test(t)) { confirmBriefRef.current(false); return true }
+    return false
+  }
   const [showVoiceHelp, setShowVoiceHelp] = useState(false)
   const [showChecks, setShowChecks] = useState(false)
   const [showSafeAreas, setShowSafeAreas] = useState(true)
@@ -219,6 +233,24 @@ export function Studio() {
     }
     setHeard(`“${first}”`)
     commandRef.current(command)
+  }
+
+  confirmBriefRef.current = (yes: boolean) => {
+    const brief = pendingBriefRef.current
+    setPendingBrief(null)
+    if (!brief) return
+    if (!yes) { speak('Cancelled.', { interrupt: true }); pushToast('info', 'Voice brief cancelled — nothing was started.'); return }
+    startAutomationJob({
+      brief: brief,
+      footageFolder: null,
+      outputFolder: null,
+      aspect: doc.aspect === '4:5' ? '1:1' : doc.aspect, // the pipeline renders 16:9, 9:16 or 1:1
+      fps: doc.fps === 60 ? 60 : 30,
+      quality: 'draft',
+      mode: 'auto-draft',
+      votingMode: 'local-scoring',
+    })
+    speak(`Starting an autonomous job for ${brief}.`, { interrupt: true })
   }
 
   const seek = useCallback(
@@ -457,9 +489,11 @@ export function Studio() {
       },
       onCommand: (command, transcript) => {
         setHeard(transcript)
+        if (answerPending(transcript)) return
         commandRef.current(command)
       },
       onUnrecognised: (transcript) => {
+        if (answerPending(transcript)) return
         setHeard(`\u201c${transcript}\u201d \u2014 not a command`)
       },
       onError: (message) => {
@@ -959,17 +993,8 @@ export function Studio() {
         // Same store action the Autonomous screen calls — speaking a brief in
         // the Studio hands the whole sentence to the pipeline rather than
         // trying to build it clip by clip.
-        startAutomationJob({
-          brief: command.brief,
-          footageFolder: null,
-          outputFolder: null,
-          aspect: doc.aspect === '4:5' ? '1:1' : doc.aspect, // the pipeline renders 16:9, 9:16 or 1:1
-          fps: doc.fps === 60 ? 60 : 30,
-          quality: 'draft',
-          mode: 'auto-draft',
-          votingMode: 'local-scoring',
-        })
-        speak(`Starting an autonomous job for ${command.brief}.`, { interrupt: true })
+        setPendingBrief(command.brief)
+        speak(`I heard: ${command.brief}. Say yes to start the job, or cancel.`, { interrupt: true })
         break
       }
       case 'undo':
@@ -1342,6 +1367,14 @@ export function Studio() {
               <Button size="sm" variant="primary" onClick={acceptAgentPlan}>Accept all</Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {pendingBrief && (
+        <div role="alertdialog" aria-label="Confirm voice brief" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-accent/40 bg-accent/10 px-6 py-2">
+          <span className="min-w-0 flex-1 text-xs text-text">Start an autonomous job for <b>“{pendingBrief}”</b>? Say “yes” or “cancel”.</span>
+          <Button size="sm" variant="primary" onClick={() => confirmBriefRef.current(true)}>Start job</Button>
+          <Button size="sm" variant="outline" onClick={() => confirmBriefRef.current(false)}>Cancel</Button>
         </div>
       )}
 
