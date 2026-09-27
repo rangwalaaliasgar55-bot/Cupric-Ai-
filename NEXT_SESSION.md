@@ -247,3 +247,9 @@ Hardware follow-up: verify beat analysis on long MP3s and reframe on real 4K foo
 - **TTS:** not run on real OS voices here (no Windows/macOS in the sandbox). The command shapes are tested.
 - **Visuals:** no visual review of the reskin (no headless browser).
 - **Scene batch:** the "Export every scene" batch renders one scene after another in the renderer.
+
+## Agent kit (ObsidianUI + smarter component use)
+- `src/lab/obsidian/`: `ob-flip-text`, `ob-text-stream`, `ob-click-spark`, `ob-marquee-band` — Cupric re-implementations of ObsidianUI (MIT, gitlab.com/Atharvsinh-codez/ObsidianUI) ideas, pure functions of the stage clock. V-Prism / Liquid Metal were skipped (three.js + postprocessing + GLTF; framecn shaders already cover the look). The rest of ObsidianUI is shadcn UI or web-only interaction (hover, drag, scroll).
+- `src/lab/propConfigs.ts`: the ONE prop registry (framecn + ob). Every non-shader component gets a universal `fontFamily` prop; `FramecnStage` applies it with scoped CSS that keeps monospace text mono.
+- Agent: `setComponentProps` op (edit words/colours/font inside a placed component, re-records); `addComponent.track`; category-aware default motion (self-animating components only fade); `addText` without motion eases on/off; `INTENT_PICKS` + `COMPONENT_USE` lead the catalogue by intent; prompt has COMPONENT PLAYBOOK, TYPOGRAPHY & COLOUR, SMOOTHNESS sections.
+- Check: `npm run check:agent-kit`.

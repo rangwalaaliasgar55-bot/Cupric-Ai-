@@ -67,7 +67,8 @@ export type StudioEditOp =
   | { type: 'reorderTrack'; from: number; to: number }
   | { type: 'applyStylePreset'; preset: 'editorial' | 'bold-social' | 'minimal' }
   /** Place a UI component (src/lab/components); the Studio records its real animation. */
-  | { type: 'addComponent'; slug: string; startSec: number; durationSec: number; x?: number; y?: number; interact?: boolean; motion?: MotionSpec; /** Also add a clicking cursor when the component is interactive (cursorNeeded decides). */ cursor?: boolean; /** framecn props (text, colours…) validated against the component's controls. */ props?: Record<string, string | number | boolean> }
+  | { type: 'setComponentProps'; clipId: string; /** Merged over the clip's current props; the component re-records. */ props: Record<string, string | number | boolean> }
+  | { type: 'addComponent'; slug: string; startSec: number; durationSec: number; x?: number; y?: number; interact?: boolean; motion?: MotionSpec; /** Also add a clicking cursor when the component is interactive (cursorNeeded decides). */ cursor?: boolean; /** framecn props (text, colours…) validated against the component's controls. */ props?: Record<string, string | number | boolean>; /** Preferred layer (0 = bottom, for shader backgrounds); moved up if busy. */ track?: number }
   /* 2.11 — expansion: every new subsystem is reachable by the agent too. */
   | { type: 'rippleDelete'; clipId: string }
   | { type: 'closeGaps'; track?: number }
@@ -94,6 +95,14 @@ const BLEND_MODES = new Set<StudioBlendMode>(['normal', 'multiply', 'screen', 'o
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
 const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out', 'back-out', 'back-in', 'expo-out', 'expo-in-out', 'elastic-out', 'hold', 'bezier'])
 const KEYFRAME_SCALABLE = ['shape', 'overlay', 'sticker', 'video', 'image', 'text', 'glass']
+
+/** Default motion for an agent-placed component, by what kind of component it is. */
+export function defaultComponentMotion(slug: string): MotionSpec {
+  const category = findComponent(slug)?.category
+  if (category === 'shaders' || category === 'scenes' || category === 'transitions') return { entrance: 'fade-in', exit: 'fade-out', intensity: 0.6 }
+  if (category === 'captions' || category === 'motion' || category === 'text') return { entrance: 'fade-in', exit: 'fade-out', intensity: 0.5 }
+  return { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }
+}
 
 /** Accept a motion spec from a model, dropping anything it made up. */
 function readMotionSpec(value: unknown): MotionSpec | null {
@@ -261,6 +270,16 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       if (!finite(op.from) || !finite(op.to)) throw new Error(`Operation ${index + 1} has invalid tracks`)
       return { type, from: op.from, to: op.to }
     }
+    if (type === 'setComponentProps') {
+      const clipId = requireClip()
+      const clip = doc.clips.find((item) => item.id === clipId)!
+      const slug = clip.kind === 'overlay' ? (clip as StudioOverlayClip).component?.slug : undefined
+      if (!slug) throw new Error(`Operation ${index + 1}: “${clip.name}” is not a component clip`)
+      const props = validateComponentProps(slug, op.props)
+      if (typeof props.fontFamily === 'string' && props.fontFamily && !FONTS.has(props.fontFamily)) throw new Error(fontError(props.fontFamily))
+      if (!Object.keys(props).length) throw new Error(`Operation ${index + 1} sets no props`)
+      return { type, clipId, props }
+    }
     if (type === 'addComponent') {
       const slug = String(op.slug ?? op.component ?? '').trim()
       if (!findComponent(slug)) throw new Error(`Unknown component “${slug}”`)
@@ -270,11 +289,14 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       const x = unit(op.x)
       const y = unit(op.y)
       const motion = op.motion === undefined ? null : readMotionSpec(op.motion)
+      const props = op.props !== undefined ? validateComponentProps(slug, op.props) : undefined
+      if (props && typeof props.fontFamily === 'string' && props.fontFamily && !FONTS.has(props.fontFamily)) throw new Error(fontError(props.fontFamily))
       return {
         type,
         slug,
+        ...(finite(op.track) ? { track: clamp(Math.round(op.track as number), 0, MAX_TRACKS - 1) } : {}),
         ...(op.cursor === true ? { cursor: true } : {}),
-        ...(op.props !== undefined ? { props: validateComponentProps(slug, op.props) } : {}),
+        ...(props ? { props } : {}),
         startSec: op.startSec as number,
         durationSec,
         ...(x !== undefined ? { x } : {}),
@@ -399,6 +421,7 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'setDucking') return op.enabled ? `Duck music under speech${op.amountDb !== undefined ? ` by ${op.amountDb} dB` : ''}` : 'Turn ducking off'
   if (op.type === 'addTestimonialGrid') return `Add ${op.count} empty testimonial card${op.count > 1 ? 's' : ''} at ${op.startSec.toFixed(2)}s (you fill in real quotes)`
   if (op.type === 'addCaptions') return `Add captions from the transcript at ${op.startSec.toFixed(2)}s`
+  if (op.type === 'setComponentProps') return `Update ${name}: ${Object.entries(op.props).map(([k, v]) => `${k} = ${typeof v === 'string' ? `“${v.slice(0, 40)}”` : v}`).join(', ')} (re-records)`
   if (op.type === 'addComponent') return `Add the “${findComponent(op.slug)?.name ?? op.slug}” component at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s (its real animation is recorded)${op.cursor ? ' · with a clicking cursor if it is interactive' : ''}${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
   return `Apply ${op.preset} style across the timeline`
 }
@@ -446,7 +469,10 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       if (op.weight) clip.weight = op.weight
       if (op.align) clip.align = op.align
       if (op.highlightWord) clip.highlightWord = op.highlightWord
-      const finalClip = op.motion ? ({ ...clip, ...motionPatch(clip, op.motion) } as StudioClip) : clip
+      // No motion and no text animation would hard-cut the text on and off;
+      // an editor always eases it, so default to a quiet rise and fade.
+      const textMotion: MotionSpec | undefined = op.motion ?? (op.anim ? undefined : { entrance: 'rise-in', exit: 'fade-out', intensity: 0.7 })
+      const finalClip = textMotion ? ({ ...clip, ...motionPatch(clip, textMotion) } as StudioClip) : clip
       next = { ...next, clips: [...next.clips, finalClip] }
     } else if (op.type === 'applyMotion') next = { ...next, clips: next.clips.map((clip) => clip.id === op.clipId ? ({ ...clip, ...motionPatch(clip, op.motion) } as StudioClip) : clip) }
     else if (op.type === 'clearKeyframes') next = { ...next, clips: next.clips.map((clip) => clip.id === op.clipId ? { ...clip, keyframes: [] } : clip) }
@@ -457,6 +483,11 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       return { ...clip, keyframes: [...keys, { at, ease: op.ease ?? 'ease-in-out', ...op.values }].sort((a, b) => a.at - b.at) }
     }) }
     else if (op.type === 'reorderTrack') next = reorderTracks(next, op.from, op.to)
+    else if (op.type === 'setComponentProps') next = { ...next, clips: next.clips.map((clip) => {
+      const ov = clip as StudioOverlayClip
+      if (clip.id !== op.clipId || !ov.component) return clip
+      return { ...ov, component: { ...ov.component, props: { ...(ov.component.props ?? {}), ...op.props }, status: 'pending' } } as StudioClip
+    }) }
     else if (op.type === 'addComponent') {
       const added = withComponent(next, op.slug, {
         startSec: op.startSec,
@@ -466,9 +497,12 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
         ...(op.x !== undefined ? { x: op.x } : {}),
         ...(op.y !== undefined ? { y: op.y } : {}),
         ...(op.interact !== undefined ? { interact: op.interact } : {}),
+        ...(op.track !== undefined ? { track: op.track } : {}),
       })
-      // A component never just pops on: default to a clean rise in / fade out.
-      const motion: MotionSpec = op.motion ?? { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }
+      // A component never just pops on — but full-frame pieces that animate
+      // themselves (scenes, shaders, transitions, captions, kinetic type)
+      // only cross-fade: rising a whole background looks broken.
+      const motion: MotionSpec = op.motion ?? defaultComponentMotion(op.slug)
       const ov = added.clip as StudioOverlayClip
       const base = op.props && ov.component ? { ...ov, component: { ...ov.component, props: op.props } } : added.clip
       const clip = { ...base, ...motionPatch(base, motion) } as StudioClip

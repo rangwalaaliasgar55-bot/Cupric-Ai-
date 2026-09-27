@@ -68,7 +68,7 @@ import { TRANSITIONS } from '../lib/studio/transitions'
 import { isVoiceSupported, parseVoiceCommand, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
 import { FOCUS_NOW_EVENT, VOICE_RUN_EVENT, publishPlayhead, setStudioMounted, takePendingVoicePhrase, type FocusNowDetail } from '../lib/studio/studioLink'
 import { useResourceApply } from './library/useResourceApply'
-import { componentCatalogFor, isPendingComponent, placeShelfItem, shelfComponent, withComponent } from '../lib/studio/components'
+import { componentCatalogFor, componentPropsSummary, isPendingComponent, placeShelfItem, shelfComponent, withComponent } from '../lib/studio/components'
 import { motionPatch } from '../lib/studio/motionDirector'
 import { ComponentRecorderHost } from './studio/ComponentRecorderHost'
 import { ComponentsPanel } from './studio/ComponentsPanel'
@@ -567,14 +567,14 @@ export function Studio() {
           },
           // The UI components the agent may place with addComponent (best
           // matches for this request; slugs are validated on return).
-          components: componentCatalogFor(instruction),
+          components: componentCatalogFor(instruction, 18, doc.clips.map((c) => (c.kind === 'text' ? c.text : c.name) ?? '').join(' ').slice(0, 2000)),
           // Fonts the agent may use: bundled + the user's own (e.g. Fontshare
           // downloads). Fontshare families not added yet are only suggested.
           fonts: fontChoicesForAgent(userFontFamilies()),
           clips: doc.clips.map((clip) => ({
             id: clip.id,
             kind: clip.kind,
-            ...(clip.kind === 'overlay' && clip.component ? { component: clip.component.slug } : {}),
+            ...(clip.kind === 'overlay' && clip.component ? { component: clip.component.slug, ...(clip.component.props ? { componentProps: clip.component.props } : {}), ...(componentPropsSummary(clip.component.slug) ? { settableProps: componentPropsSummary(clip.component.slug) } : {}) } : {}),
             name: clip.name,
             track: clip.track,
             startSec: clip.startSec,

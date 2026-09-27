@@ -199,18 +199,18 @@ export function CursorFields({ clip, doc, onPatch }: { clip: StudioCursorClip; d
 export function FramecnFields({ clip, onPatch }: { clip: StudioOverlayClip; onPatch: (p: Partial<StudioClip>) => void }) {
   const slug = clip.component?.slug ?? ''
   const [configs, setConfigs] = useState<Record<string, ComponentConfig> | null>(null)
-  useEffect(() => { let live = true; void import('../../lab/framecn/configs').then((m) => live && setConfigs(m.FRAMECN_CONFIGS)); return () => { live = false } }, [])
+  useEffect(() => { let live = true; void import('../../lab/propConfigs').then((m) => live && setConfigs(m.PROP_CONFIGS)); return () => { live = false } }, [])
   const config = configs?.[slug]
   const saved = clip.component?.props ?? {}
   const [draft, setDraft] = useState<Record<string, string | number | boolean>>(saved)
   useEffect(() => setDraft(clip.component?.props ?? {}), [clip.id]) // eslint-disable-line react-hooks/exhaustive-deps
-  if (!slug.startsWith('fc-')) return null
+  if (!slug.startsWith('fc-') && !slug.startsWith('ob-')) return null
   if (!config) return <p className="text-xs text-muted">Loading component settings…</p>
   const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
   const apply = () => clip.component && onPatch({ component: { ...clip.component, props: draft, status: 'pending' } } as Partial<StudioClip>)
   return (
     <div className="cu-section space-y-2.5 px-3 py-3">
-      <div className="flex items-center justify-between text-xs font-medium text-text">Component settings <span className="text-[11px] font-normal text-muted">framecn · MIT</span></div>
+      <div className="flex items-center justify-between text-xs font-medium text-text">Component settings <span className="text-[11px] font-normal text-muted">{slug.startsWith('ob-') ? 'after ObsidianUI · MIT' : 'framecn · MIT'}</span></div>
       {Object.entries(config.controls).map(([key, c]) => {
         const v = draft[key] ?? c.default
         const set = (val: string | number | boolean) => setDraft((d) => ({ ...d, [key]: val }))

@@ -1,4 +1,5 @@
 import framecn from "./framecn/entries.json";
+import { OBSIDIAN_ENTRIES } from "./obsidian/entries";
 // Metadata only. Component code lives in demos.ts, so pages that need just
 // a name or description never pull in every demo.
 
@@ -1731,8 +1732,15 @@ export const framecnEntries: LabEntry[] = framecn.entries.map((e) => ({
 }));
 lab.push(...framecnEntries);
 
+// Cupric re-implementations of ObsidianUI ideas (MIT) — see src/lab/obsidian.
+export const obsidianEntries: LabEntry[] = OBSIDIAN_ENTRIES.map((e) => ({
+  slug: e.slug, name: e.name, category: e.category as Category, description: e.description, keywords: e.keywords, isNew: true,
+}));
+lab.push(...obsidianEntries);
+
 // `bun run new` names every file after its slug, so the path follows from it.
 export function sourceUrl(slug: string) {
+  if (slug.startsWith("ob-")) return "https://gitlab.com/Atharvsinh-codez/ObsidianUI/-/tree/main/src/components/block";
   if (slug.startsWith("fc-")) return `https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/${slug.slice(3)}`;
   return `${REPO}/blob/main/src/lab/components/${slug}.tsx`;
 }

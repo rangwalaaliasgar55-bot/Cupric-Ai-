@@ -25,3 +25,4 @@ vendor/whisper/*
 .check-creative-tools.mjs
 .check-shapes-cursor-3d.mjs
 .check-framecn-fonts.mjs
+.check-agent-kit.mjs
