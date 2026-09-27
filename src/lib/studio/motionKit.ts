@@ -57,7 +57,7 @@ export function addCursorTo(doc: StudioDoc, targetId: string, opts: { force?: bo
   if (target.kind === 'cursor') return { doc, changed: false, reason: 'That is already a cursor.' }
   const verdict = cursorVerdictFor(target)
   if (!verdict.needed && !opts.force) return { doc, changed: false, reason: verdict.reason, verdict }
-  const cur = cursorForTarget({ id: target.id, x: typeof target.x === 'number' ? target.x : 0.5, y: typeof target.y === 'number' ? target.y : 0.5, startSec: target.startSec, durationSec: target.durationSec, track: target.track }, opts.action ?? verdict.action, uid())
+  const cur = cursorForTarget({ id: target.id, x: typeof target.x === 'number' ? target.x : 0.5, y: typeof target.y === 'number' ? target.y : 0.5, startSec: target.startSec, durationSec: target.durationSec, track: target.track, name: target.name }, opts.action ?? verdict.action, uid())
   if (opts.style) cur.style = opts.style
   const clips = doc.clips.map((c) => (c.id === target.id && c.kind === 'overlay' && c.component && !c.component.interact ? { ...c, component: { ...c.component, interact: true, status: c.component.status === 'ready' ? 'pending' as const : c.component.status } } : c))
   return { doc: { ...doc, clips: [...clips, cur], trackCount: Math.max(doc.trackCount, cur.track + 1) }, changed: true, clipId: cur.id, verdict }

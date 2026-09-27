@@ -1,7 +1,7 @@
 {
   "id": "motion-kit",
   "name": "Motion kit — fonts, shapes, cursor, 3D",
-  "description": "What Cupric's shapes library, cursor clicks, 3D tilt and rich captions build on: the video-grade fonts (all bundled, OFL) and the Javis.jl ideas (MIT, concepts only). Shapes and the cursor live in the Studio toolbar.",
+  "description": "Fonts, shapes, cursor, 3D: bundled OFL video fonts, 21 Fontshare families (link-only — download them yourself, then Add fonts), and the Javis.jl ideas (MIT).",
   "version": "0.9.0",
   "source": "curated",
   "license": "Per item (see each entry)",
@@ -182,6 +182,468 @@
         "font",
         "sans",
         "tech"
+      ]
+    },
+    {
+      "id": "fontshare-satoshi",
+      "kind": "source",
+      "name": "Satoshi (Fontshare)",
+      "description": "The modern SaaS/creator default — clean geometric titles and captions. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/satoshi",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Satoshi by Indian Type Foundry — https://www.fontshare.com/fonts/satoshi",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Satoshi for headline text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "headline"
+      ]
+    },
+    {
+      "id": "fontshare-clash-display",
+      "kind": "source",
+      "name": "Clash Display (Fontshare)",
+      "description": "Hype hooks and launch titles with sharp character. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/clash-display",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Clash Display by Indian Type Foundry — https://www.fontshare.com/fonts/clash-display",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Clash Display for display text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "display"
+      ]
+    },
+    {
+      "id": "fontshare-general-sans",
+      "kind": "source",
+      "name": "General Sans (Fontshare)",
+      "description": "Neutral, highly legible captions and lower thirds. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/general-sans",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "General Sans by Indian Type Foundry — https://www.fontshare.com/fonts/general-sans",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest General Sans for caption text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "caption"
+      ]
+    },
+    {
+      "id": "fontshare-cabinet-grotesk",
+      "kind": "source",
+      "name": "Cabinet Grotesk (Fontshare)",
+      "description": "Bold editorial headlines, agency reels. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/cabinet-grotesk",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Cabinet Grotesk by Indian Type Foundry — https://www.fontshare.com/fonts/cabinet-grotesk",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Cabinet Grotesk for display text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "display"
+      ]
+    },
+    {
+      "id": "fontshare-clash-grotesk",
+      "kind": "source",
+      "name": "Clash Grotesk (Fontshare)",
+      "description": "Tech titles that need more warmth than Inter. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/clash-grotesk",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Clash Grotesk by Indian Type Foundry — https://www.fontshare.com/fonts/clash-grotesk",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Clash Grotesk for headline text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "headline"
+      ]
+    },
+    {
+      "id": "fontshare-switzer",
+      "kind": "source",
+      "name": "Switzer (Fontshare)",
+      "description": "Swiss-style explainers and data labels. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/switzer",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Switzer by Indian Type Foundry — https://www.fontshare.com/fonts/switzer",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Switzer for body text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "body"
+      ]
+    },
+    {
+      "id": "fontshare-supreme",
+      "kind": "source",
+      "name": "Supreme (Fontshare)",
+      "description": "Friendly rounded captions, lifestyle. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/supreme",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Supreme by Indian Type Foundry — https://www.fontshare.com/fonts/supreme",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Supreme for caption text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "caption"
+      ]
+    },
+    {
+      "id": "fontshare-chillax",
+      "kind": "source",
+      "name": "Chillax (Fontshare)",
+      "description": "Playful, soft brand titles. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/chillax",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Chillax by Indian Type Foundry — https://www.fontshare.com/fonts/chillax",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Chillax for headline text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "headline"
+      ]
+    },
+    {
+      "id": "fontshare-ranade",
+      "kind": "source",
+      "name": "Ranade (Fontshare)",
+      "description": "Calm humanist body text and quotes. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/ranade",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Ranade by Indian Type Foundry — https://www.fontshare.com/fonts/ranade",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Ranade for body text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "body"
+      ]
+    },
+    {
+      "id": "fontshare-panchang",
+      "kind": "source",
+      "name": "Panchang (Fontshare)",
+      "description": "Extra-wide futuristic titles, gaming, sport. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/panchang",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Panchang by Indian Type Foundry — https://www.fontshare.com/fonts/panchang",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Panchang for display text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "display"
+      ]
+    },
+    {
+      "id": "fontshare-excon",
+      "kind": "source",
+      "name": "Excon (Fontshare)",
+      "description": "Techy condensed titles and HUD labels. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/excon",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Excon by Indian Type Foundry — https://www.fontshare.com/fonts/excon",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Excon for display text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "display"
+      ]
+    },
+    {
+      "id": "fontshare-stardom",
+      "kind": "source",
+      "name": "Stardom (Fontshare)",
+      "description": "Glam fashion and beauty titles. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/stardom",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Stardom by Indian Type Foundry — https://www.fontshare.com/fonts/stardom",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Stardom for display text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "display"
+      ]
+    },
+    {
+      "id": "fontshare-tanker",
+      "kind": "source",
+      "name": "Tanker (Fontshare)",
+      "description": "Heavy poster punch words. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/tanker",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Tanker by Indian Type Foundry — https://www.fontshare.com/fonts/tanker",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Tanker for display text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "display"
+      ]
+    },
+    {
+      "id": "fontshare-zodiak",
+      "kind": "source",
+      "name": "Zodiak (Fontshare)",
+      "description": "Luxury serif titles and italic emphasis. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/zodiak",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Zodiak by Indian Type Foundry — https://www.fontshare.com/fonts/zodiak",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Zodiak for emphasis text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "emphasis"
+      ]
+    },
+    {
+      "id": "fontshare-sentient",
+      "kind": "source",
+      "name": "Sentient (Fontshare)",
+      "description": "Soft editorial serif, storytelling. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/sentient",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Sentient by Indian Type Foundry — https://www.fontshare.com/fonts/sentient",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Sentient for emphasis text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "emphasis"
+      ]
+    },
+    {
+      "id": "fontshare-boska",
+      "kind": "source",
+      "name": "Boska (Fontshare)",
+      "description": "High-contrast magazine serif, italic emphasis words. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/boska",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Boska by Indian Type Foundry — https://www.fontshare.com/fonts/boska",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Boska for emphasis text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "emphasis"
+      ]
+    },
+    {
+      "id": "fontshare-author",
+      "kind": "source",
+      "name": "Author (Fontshare)",
+      "description": "Literary quotes and testimonials. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/author",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Author by Indian Type Foundry — https://www.fontshare.com/fonts/author",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Author for emphasis text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "emphasis"
+      ]
+    },
+    {
+      "id": "fontshare-bespoke-serif",
+      "kind": "source",
+      "name": "Bespoke Serif (Fontshare)",
+      "description": "Premium brand serif, food and hospitality. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/bespoke-serif",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Bespoke Serif by Indian Type Foundry — https://www.fontshare.com/fonts/bespoke-serif",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Bespoke Serif for emphasis text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "emphasis"
+      ]
+    },
+    {
+      "id": "fontshare-gambetta",
+      "kind": "source",
+      "name": "Gambetta (Fontshare)",
+      "description": "Readable serif body and subtitles for docs. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/gambetta",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Gambetta by Indian Type Foundry — https://www.fontshare.com/fonts/gambetta",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Gambetta for body text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "body"
+      ]
+    },
+    {
+      "id": "fontshare-telma",
+      "kind": "source",
+      "name": "Telma (Fontshare)",
+      "description": "Quirky rounded display, kids and food. Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/telma",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Telma by Indian Type Foundry — https://www.fontshare.com/fonts/telma",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Telma for display text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "display"
+      ]
+    },
+    {
+      "id": "fontshare-kihim",
+      "kind": "source",
+      "name": "Kihim (Fontshare)",
+      "description": "Experimental art titles (decorative, use sparingly). Free under the ITF Free Font License — download it yourself from Fontshare, then Text → Your fonts → Add fonts (the licence does not let apps hand it out).",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/kihim",
+        "license": "ITF-FFL (free; no redistribution by apps)",
+        "provider": "Fontshare",
+        "attribution": "Kihim by Indian Type Foundry — https://www.fontshare.com/fonts/kihim",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Suggest Kihim for display text when it fits; the user must add it first.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "motion-kit",
+        "font",
+        "fontshare",
+        "display"
       ]
     }
   ]

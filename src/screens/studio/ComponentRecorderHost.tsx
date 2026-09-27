@@ -156,7 +156,7 @@ function RecorderCard({
         </div>
         {/* Natural size, on screen: exactly what lands in the video. */}
         <div ref={stageRef} className="lab-canvas relative flex h-[min(400px,62vh)] w-full items-center justify-center overflow-hidden p-6">
-          <DemoFrame slug={meta.slug} play forceMotion className="place-items-center" />
+          <DemoFrame slug={meta.slug} play forceMotion props={meta.props} className="place-items-center" />
         </div>
         <div className="h-1 w-full bg-panel-alt">
           <div className="h-full bg-accent transition-[width] duration-200" style={{ width: `${pct}%` }} />

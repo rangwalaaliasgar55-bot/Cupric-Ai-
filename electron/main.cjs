@@ -1932,6 +1932,8 @@ OPERATIONS:
   highlightWord must be an exact word already present in that text clip.
   Also allowed: tiltX/turnY (-89..89 degrees, 3D on ANY clip), perspective (200..8000), and for text emphasisColor, boxColor, accentColor ("#rrggbb"), textGlow (0..1).
   Fonts (video-grade): Geist Variable, Inter Variable, Montserrat Variable (bold captions), Poppins, Outfit Variable, Manrope Variable, DM Sans Variable, Space Grotesk Variable, Bebas Neue / Anton (condensed hype titles, uppercase), Instrument Serif / Playfair Display Variable (italic emphasis), JetBrains Mono Variable (code/stats).
+  Also any family in STUDIO CONTEXT.fonts (source "yours" = fonts the user added, e.g. Satoshi / Clash Display from Fontshare — prefer them when they fit the mood). Pair ONE headline/caption family with ONE emphasis family (emphasisFont); never use more than two families in a video. Pick colours from the brand kit and in-between tints; keep text contrast >= 4.5:1 on its background.
+  Fontshare fonts NOT in STUDIO CONTEXT.fonts cannot be used: say which one would suit and that it is free at fontshare.com (download and drop the zip into Cupric).
   RICH CAPTIONS inside text: *word* = serif italic emphasis, ==words== = colour highlight box, {words} = accent colour, ^30^ = big number, newline = stacked lines. Emphasise 1–2 words per caption, never whole sentences.
   Text animations (content-level): none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
   Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
@@ -1948,7 +1950,7 @@ OPERATIONS:
 - {"type":"deleteClip","clipId":string}
 - {"type":"reorderTrack","from":number,"to":number}
 - {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
-- {"type":"addComponent","slug":string,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"interact"?:boolean,"cursor"?:true (adds a clicking pointer when the component is interactive),"motion"?:{...as applyMotion}}
+- {"type":"addComponent","slug":string,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"interact"?:boolean,"cursor"?:true (adds a clicking pointer when the component is interactive),"props"?:{only keys listed in that component's context "props" — e.g. set the real headline text, brand colours},"motion"?:{...as applyMotion}}
 - {"type":"rippleDelete","clipId":string}
 - {"type":"closeGaps","track"?:number}
 - {"type":"addMarker","at":number,"label"?:string}
@@ -1965,6 +1967,7 @@ OPERATIONS:
   Places a real animated UI component (buttons, toggles, counters, cards, loaders, charts…). Cupric plays the actual component,
   acts it out (hover, clicks) and records its genuine animation into an editable overlay clip. slug MUST be one of
   STUDIO CONTEXT.components[].slug. Use one when the user asks for a UI element, a product/app demo moment, or a named component.
+  fc-* slugs are framecn video components: captions (karaoke, neon, editorial emphasis), kinetic typography, transitions, full scenes (browser flow, dashboard populate, device assemble) and WebGL shader backgrounds. Always pass props with the user's real words and brand colours instead of leaving demo text.
 
 Track 0 is the bottom layer; higher tracks draw on top. Overlapping clips on one track are automatically lifted to a free track, so you may place text anywhere. Keyframe times are local to the clip. The context may include attributed motionReferences from React Bits, Skiper UI and Remotion: use their names as creative vocabulary, but translate every idea into only the native operations above. Never claim to install or execute an upstream component.
 

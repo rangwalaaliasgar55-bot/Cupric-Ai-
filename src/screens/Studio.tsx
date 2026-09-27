@@ -39,6 +39,8 @@ import {
   ZoomOut,
 } from 'lucide-react'
 import { ShapePicker } from './studio/ShapePicker'
+import { fontChoicesForAgent } from '../lib/studio/fontStyles'
+import { userFontFamilies, userFontsReady } from '../lib/studio/userFonts'
 import { addCursorTo, addShape as addShapeKit } from '../lib/studio/motionKit'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
@@ -119,6 +121,7 @@ export function Studio() {
   const [muted, setMuted] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [shapeOpen, setShapeOpen] = useState(false)
+  useEffect(() => { void userFontsReady() }, [])
   const [zoom, setZoom] = useState(3)
   const [importing, setImporting] = useState(false)
   const [exportPct, setExportPct] = useState<number | null>(null)
@@ -565,6 +568,9 @@ export function Studio() {
           // The UI components the agent may place with addComponent (best
           // matches for this request; slugs are validated on return).
           components: componentCatalogFor(instruction),
+          // Fonts the agent may use: bundled + the user's own (e.g. Fontshare
+          // downloads). Fontshare families not added yet are only suggested.
+          fonts: fontChoicesForAgent(userFontFamilies()),
           clips: doc.clips.map((clip) => ({
             id: clip.id,
             kind: clip.kind,

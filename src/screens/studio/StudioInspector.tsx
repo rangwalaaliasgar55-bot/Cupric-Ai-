@@ -29,7 +29,8 @@ import type {
 import { Button } from '../../components/Button'
 import { ClipProFields } from './ClipProFields'
 import { CurveEditor } from './CurveEditor'
-import { CursorFields, RichTextFields, ShapeFields, ThreeDFields } from './InspectorExtras'
+import { FontStudio, useUserFonts } from './FontStudio'
+import { FramecnFields, CursorFields, RichTextFields, ShapeFields, ThreeDFields } from './InspectorExtras'
 import { STUDIO_BACKGROUNDS } from '../../lib/studio/backgrounds'
 import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/transitions'
 import { GLASS_PRESETS } from '../../lib/glass'
@@ -381,6 +382,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
           motion and finishing. The text box used to sit below the fold. */}
       {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
       {clip.kind === 'text' && <RichTextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
+      {clip.kind === 'overlay' && (clip as StudioOverlayClip).component?.slug?.startsWith('fc-') && <FramecnFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
       {clip.kind === 'shape' && <ShapeFields clip={clip} onPatch={onPatch} />}
       {clip.kind === 'cursor' && <CursorFields clip={clip} doc={doc} onPatch={onPatch} />}
       {(clip.kind === 'video' || clip.kind === 'image') && (
@@ -893,6 +895,7 @@ function StickerFields({ clip, onPatch }: { clip: StudioStickerClip; onPatch: (p
 }
 
 function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const userFonts = useUserFonts()
   const textRef = useRef<HTMLTextAreaElement>(null)
   // A freshly added text clip is ready to type into straight away.
   useEffect(() => {
@@ -926,11 +929,17 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
               {VIDEO_FONTS.filter((f) => f.role === role).map((f) => <option key={f.family} value={f.family}>{f.label} — {f.bestFor.split(',')[0]}</option>)}
             </optgroup>
           ))}
-          {clip.fontFamily && !BUNDLED_FONT_VALUES.has(clip.fontFamily) && (
+          {userFonts.length > 0 && (
+            <optgroup label="Your fonts">
+              {userFonts.map((f) => <option key={f} value={f}>{f}</option>)}
+            </optgroup>
+          )}
+          {clip.fontFamily && !BUNDLED_FONT_VALUES.has(clip.fontFamily) && !userFonts.includes(clip.fontFamily) && (
             <option value={clip.fontFamily}>{clip.fontFamily} — from Resources</option>
           )}
         </select>
       </Field>
+      <FontStudio clip={clip} onPatch={onPatch} />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Animation">

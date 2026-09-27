@@ -11,6 +11,7 @@
  *
  * DOM-free: bundled by the Node checks and by the agent planner.
  */
+import { FRAMECN_CONFIGS } from '../../lab/framecn/configs'
 import type { StudioAspect, StudioClip, StudioDoc, StudioOverlayClip } from '../../types/project'
 import { categories, lab, type LabEntry } from '../../lab/registry'
 import { uid } from '../utils'
@@ -88,10 +89,38 @@ export function componentFromInstruction(instruction: string): ComponentEntry | 
 }
 
 /** Compact catalogue lines for a model prompt: the best matches for this request. */
-export function componentCatalogFor(instruction: string, limit = 14): { slug: string; name: string; category: string; does: string }[] {
+export function componentCatalogFor(instruction: string, limit = 14): { slug: string; name: string; category: string; does: string; props?: string }[] {
   const ranked = rankComponents(instruction, limit)
   const pool = ranked.length >= 6 ? ranked : [...ranked, ...COMPONENTS.filter((e) => !ranked.includes(e)).slice(0, limit - ranked.length)]
-  return pool.map((entry) => ({ slug: entry.slug, name: entry.name, category: entry.category, does: entry.description.slice(0, 90) }))
+  return pool.map((entry) => {
+    const props = componentPropsSummary(entry.slug)
+    return { slug: entry.slug, name: entry.name, category: entry.category, does: entry.description.slice(0, 90), ...(props ? { props } : {}) }
+  })
+}
+
+/** "text:text, color:#hex, fontSize:24–200" — what the agent may set via addComponent.props. */
+export function componentPropsSummary(slug: string): string | null {
+  const cfg = FRAMECN_CONFIGS[slug]
+  if (!cfg) return null
+  return Object.entries(cfg.controls).map(([k, c]) => `${k}:${c.type === 'number' ? `${c.min}–${c.max}` : c.type === 'color' ? '#hex' : c.type === 'select' ? c.options.join('|') : c.type}`).join(', ')
+}
+
+/** Validate agent/user props against the component's own controls. Throws with a readable reason. */
+export function validateComponentProps(slug: string, value: unknown): Record<string, string | number | boolean> {
+  const cfg = FRAMECN_CONFIGS[slug]
+  if (!cfg) throw new Error(`“${slug}” has no settable props`)
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error('props must be an object')
+  const out: Record<string, string | number | boolean> = {}
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    const c = cfg.controls[k]
+    if (!c) throw new Error(`“${slug}” has no prop “${k}” — allowed: ${Object.keys(cfg.controls).join(', ')}`)
+    if (c.type === 'number') { if (typeof v !== 'number' || !Number.isFinite(v)) throw new Error(`${k} must be a number`); out[k] = Math.min(c.max, Math.max(c.min, v)) }
+    else if (c.type === 'boolean') { if (typeof v !== 'boolean') throw new Error(`${k} must be true/false`); out[k] = v }
+    else if (c.type === 'color') { if (typeof v !== 'string' || (v !== c.default && !/^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([^)]{1,60}\)|[a-z]{3,20})$/i.test(v.trim()))) throw new Error(`${k} must be a colour (#hex, rgb(), hsl() or a CSS colour name)`); out[k] = v }
+    else if (c.type === 'select') { if ((typeof v !== 'string' && typeof v !== 'number') || ![...c.options, c.default].map(String).includes(String(v))) throw new Error(`${k} must be one of ${c.options.join(', ')}`); out[k] = v }
+    else { if (typeof v !== 'string' || v.length > 400) throw new Error(`${k} must be text under 400 characters`); out[k] = v }
+  }
+  return out
 }
 
 /**

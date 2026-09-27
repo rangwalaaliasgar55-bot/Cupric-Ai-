@@ -118,9 +118,16 @@
     {
       "id": "motion-kit",
       "name": "Motion kit — fonts, shapes, cursor, 3D",
-      "description": "What Cupric's shapes library, cursor clicks, 3D tilt and rich captions build on: the video-grade fonts (all bundled, OFL) and the Javis.jl ideas (MIT, concepts only). Shapes and the cursor live in the Studio toolbar.",
-      "itemCount": 8,
-      "bytes": 6658
+      "description": "Fonts, shapes, cursor, 3D: bundled OFL video fonts, 21 Fontshare families (link-only — download them yourself, then Add fonts), and the Javis.jl ideas (MIT).",
+      "itemCount": 29,
+      "bytes": 25658
+    },
+    {
+      "id": "framecn",
+      "name": "framecn — video captions, type, transitions, scenes, shaders",
+      "description": "112 video components from framecn.dev (MIT), vendored into src/lab/framecn. Captions, kinetic typography, transitions, full product scenes and WebGL shader backgrounds; each records into the Studio with editable props.",
+      "itemCount": 112,
+      "bytes": 65920
     },
     {
       "id": "components",

@@ -1,5 +1,7 @@
-import type { StudioShapeAnim, StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition } from '../../types/project'
+import type { StudioOverlayClip, StudioShapeAnim, StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition } from '../../types/project'
 import { VIDEO_FONT_FAMILIES } from './videoFonts'
+import { isUserFont } from './userFonts'
+import { fontshareFont } from './fontStyles'
 import { SHAPES, shapeById } from './shapes'
 import { addCursorTo, addShape as addShapeKit } from './motionKit'
 import { closeGaps as closeGapsOp, addMarker as addMarkerOp, rippleDelete as rippleDeleteOp } from './timelineOps'
@@ -10,7 +12,7 @@ import { clampRecordSec } from './components'
 import { clamp } from '../utils'
 import { PHONE_DESIGNS } from './phone'
 import { MAX_TRACKS, defaultTextClip, docDuration, normaliseClip, reorderTracks, resolveOverlaps, aspectRatio } from './doc'
-import { componentFromInstruction, findComponent, withComponent } from './components'
+import { componentFromInstruction, findComponent, validateComponentProps, withComponent } from './components'
 import { studioPlayhead } from './studioLink'
 import {
   ALL_RECIPE_IDS,
@@ -65,7 +67,7 @@ export type StudioEditOp =
   | { type: 'reorderTrack'; from: number; to: number }
   | { type: 'applyStylePreset'; preset: 'editorial' | 'bold-social' | 'minimal' }
   /** Place a UI component (src/lab/components); the Studio records its real animation. */
-  | { type: 'addComponent'; slug: string; startSec: number; durationSec: number; x?: number; y?: number; interact?: boolean; motion?: MotionSpec; /** Also add a clicking cursor when the component is interactive (cursorNeeded decides). */ cursor?: boolean }
+  | { type: 'addComponent'; slug: string; startSec: number; durationSec: number; x?: number; y?: number; interact?: boolean; motion?: MotionSpec; /** Also add a clicking cursor when the component is interactive (cursorNeeded decides). */ cursor?: boolean; /** framecn props (text, colours…) validated against the component's controls. */ props?: Record<string, string | number | boolean> }
   /* 2.11 — expansion: every new subsystem is reachable by the agent too. */
   | { type: 'rippleDelete'; clipId: string }
   | { type: 'closeGaps'; track?: number }
@@ -83,9 +85,10 @@ export type StudioEditOp =
 
 export type StudioEditPlan = { summary: string; ops: StudioEditOp[]; source: 'live' | 'local'; warning?: string }
 
-const PATCH_KEYS = new Set(['tiltX', 'turnY', 'perspective', 'emphasisColor', 'boxColor', 'accentColor', 'textGlow', 'x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume', 'durationSec', 'startSec', 'name'])
+const PATCH_KEYS = new Set(['tiltX', 'turnY', 'perspective', 'emphasisColor', 'emphasisFont', 'boxColor', 'accentColor', 'textGlow', 'x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume', 'durationSec', 'startSec', 'name'])
 const TEXT_KEYS = new Set(['fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim'])
-const FONTS = VIDEO_FONT_FAMILIES
+const FONTS = { has: (f: string) => VIDEO_FONT_FAMILIES.has(f) || isUserFont(f) }
+const fontError = (f: unknown) => fontshareFont(String(f)) ? `“${f}” is a Fontshare font the user has not added yet — use a bundled font and suggest they download it free from Fontshare and drop the zip into Cupric` : `Unknown font “${f}”`
 const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', 'word-reveal', 'shimmer', 'slide-left', 'glass-rise', 'liquid-wave', 'kinetic'])
 const BLEND_MODES = new Set<StudioBlendMode>(['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'soft-light', 'difference', 'add'])
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
@@ -150,7 +153,7 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
         if ((key === 'x' || key === 'y') && !('x' in clip) && clip.kind !== 'video' && clip.kind !== 'image') throw new Error(`Property “${key}” does not apply to this clip`)
         if (key === 'scale' && !['overlay', 'sticker', 'video', 'image'].includes(clip.kind)) throw new Error('Scale only applies to visual clips')
         if (key === 'volume' && clip.kind !== 'audio' && clip.kind !== 'video' && clip.kind !== 'image') throw new Error('Volume only applies to media and audio clips')
-        if (key === 'fontFamily' && !FONTS.has(String(item))) throw new Error(`Unknown bundled font “${item}”`)
+        if ((key === 'fontFamily' || key === 'emphasisFont') && !FONTS.has(String(item))) throw new Error(fontError(item))
         if (key === 'color' && !/^#[0-9a-f]{6}$/i.test(String(item))) throw new Error(`Invalid colour “${item}”`)
         if (key === 'text' && (typeof item !== 'string' || item.length > 500)) throw new Error('Text must contain at most 500 characters')
         if (key === 'highlightWord') {
@@ -195,7 +198,7 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       if (typeof op.text !== 'string' || !op.text.trim() || op.text.length > 500) throw new Error(`Operation ${index + 1} needs 1–500 characters of text`)
       if (![op.track, op.startSec, op.durationSec].every(finite) || (op.startSec as number) < 0 || (op.durationSec as number) < 0.2) throw new Error(`Operation ${index + 1} has invalid timing`)
       if (op.color !== undefined && (typeof op.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(op.color))) throw new Error(`Operation ${index + 1} has an invalid colour`)
-      if (op.fontFamily !== undefined && !FONTS.has(String(op.fontFamily))) throw new Error(`Unknown bundled font “${op.fontFamily}”`)
+      if (op.fontFamily !== undefined && !FONTS.has(String(op.fontFamily))) throw new Error(fontError(op.fontFamily))
       const anim = op.anim === undefined ? undefined : String(op.anim) as StudioTextAnim
       if (anim && !ANIMS.has(anim)) throw new Error(`Unknown animation “${anim}”`)
       const motion = op.motion === undefined ? null : readMotionSpec(op.motion)
@@ -271,6 +274,7 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
         type,
         slug,
         ...(op.cursor === true ? { cursor: true } : {}),
+        ...(op.props !== undefined ? { props: validateComponentProps(slug, op.props) } : {}),
         startSec: op.startSec as number,
         durationSec,
         ...(x !== undefined ? { x } : {}),
@@ -465,7 +469,9 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       })
       // A component never just pops on: default to a clean rise in / fade out.
       const motion: MotionSpec = op.motion ?? { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }
-      const clip = { ...added.clip, ...motionPatch(added.clip, motion) } as StudioClip
+      const ov = added.clip as StudioOverlayClip
+      const base = op.props && ov.component ? { ...ov, component: { ...ov.component, props: op.props } } : added.clip
+      const clip = { ...base, ...motionPatch(base, motion) } as StudioClip
       next = { ...added.doc, clips: added.doc.clips.map((c) => (c.id === clip.id ? clip : c)) }
       if (op.cursor) {
         const withCursor = addCursorTo(next, clip.id)

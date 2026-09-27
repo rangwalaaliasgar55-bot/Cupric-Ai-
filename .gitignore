@@ -24,3 +24,4 @@ vendor/whisper/*
 .check-resource-finder.mjs
 .check-creative-tools.mjs
 .check-shapes-cursor-3d.mjs
+.check-framecn-fonts.mjs

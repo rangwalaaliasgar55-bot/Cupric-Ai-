@@ -28,6 +28,13 @@ export const VIDEO_FONTS: VideoFont[] = [
   { family: 'Anton', label: 'Anton', role: 'display', bestFor: 'Bold YouTube thumbnails-style punch words', customize: 'Single heavy weight; use for 1–3 words, add stroke or shadow over footage.', weights: [400, 400] },
   { family: 'Instrument Serif', label: 'Instrument Serif', role: 'emphasis', bestFor: 'Elegant italic emphasis words (“a *woman* over 30”), luxury, editorial', customize: 'Use the italic for single emphasised words inside a sans line, tinted with the accent colour, ~1.1× size.', italic: true, weights: [400, 400] },
   { family: 'Playfair Display Variable', label: 'Playfair Display', role: 'emphasis', bestFor: 'Classic serif titles, quotes, testimonials', customize: 'Italic for pull-quotes; weight 500–700 for titles.', italic: true, weights: [400, 900] },
+  { family: 'Plus Jakarta Sans Variable', label: 'Plus Jakarta Sans', role: 'headline', bestFor: 'Premium SaaS and fintech titles', customize: 'Weight 700–800, tracking −2%; pairs with Fraunces italic for emphasis.', weights: [200, 800] },
+  { family: 'Bricolage Grotesque Variable', label: 'Bricolage Grotesque', role: 'headline', bestFor: 'Characterful creator/brand titles with personality', customize: 'Weight 700–800; big and tight (line-height 0.95).', weights: [200, 800] },
+  { family: 'Syne Variable', label: 'Syne', role: 'display', bestFor: 'Art-direction, fashion, agency reels', customize: 'Weight 700–800 gets wide and dramatic — keep to 1–4 words.', weights: [400, 800] },
+  { family: 'Unbounded Variable', label: 'Unbounded', role: 'display', bestFor: 'Web3, gaming, futuristic hype titles', customize: 'Weight 600–900, all caps optional; give it room — it is wide.', weights: [200, 900] },
+  { family: 'Archivo Black', label: 'Archivo Black', role: 'display', bestFor: 'Heavy sale / promo punch lines', customize: 'Single black weight; box behind it or a thick stroke on footage.', weights: [400, 400] },
+  { family: 'Fraunces Variable', label: 'Fraunces', role: 'emphasis', bestFor: 'Warm soft-serif emphasis, food, lifestyle, books', customize: 'Italic 400–600 for emphasis words; upright 700 for cosy titles.', italic: true, weights: [100, 900] },
+  { family: 'DM Serif Display', label: 'DM Serif Display', role: 'emphasis', bestFor: 'High-contrast magazine headlines and quotes', customize: 'Use large (10%+ of frame); italic for pull-quotes.', italic: true, weights: [400, 400] },
   { family: 'JetBrains Mono Variable', label: 'JetBrains Mono', role: 'mono', bestFor: 'Code, timecodes, numbers that tick', customize: 'Weight 500–700; use for counters so digits do not jitter.', weights: [100, 800] },
 ]
 

@@ -527,6 +527,29 @@ try {
   console.warn('resources/packs/motion-kit.json not readable — skipping Motion kit')
 }
 
+// framecn (MIT) video components — vendored + recorded like lab components.
+try {
+  const fc = JSON.parse(await readFile(path.join(root, 'src', 'lab', 'framecn', 'entries.json'), 'utf8'))
+  packs.push({
+    id: 'framecn',
+    name: 'framecn — video captions, type, transitions, scenes, shaders',
+    description: `${fc.count} video components from framecn.dev (MIT), vendored into src/lab/framecn. Captions, kinetic typography, transitions, full product scenes and WebGL shader backgrounds; each records into the Studio with editable props.`,
+    version: VERSION,
+    source: fc.source,
+    license: 'MIT (framecn); shaders via @paper-design/shaders-react (Apache-2.0)',
+    items: fc.entries.map((e) => ({
+      id: e.slug,
+      kind: 'component',
+      name: e.name,
+      description: e.description,
+      data: { category: e.category, license: 'MIT', attribution: `framecn — ${fc.repo}`, upstream: `${fc.repo}/tree/main/registry/bases/editframe/components/${e.dir}` },
+      tags: ['component', 'framecn', 'video', e.category],
+    })),
+  })
+} catch {
+  console.warn('src/lab/framecn/entries.json not readable — skipping the framecn pack')
+}
+
 // The vendored lab components are listed from their generated registry.
 try {
   const registry = JSON.parse(await readFile(path.join(root, 'resources', 'ui-lab', 'registry.json'), 'utf8'))

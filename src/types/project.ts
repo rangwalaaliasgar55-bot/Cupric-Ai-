@@ -462,6 +462,8 @@ export type StudioComponentMeta = {
   recordSec: number
   /** Act the component out (hover, pointer path, clicks) while recording. */
   interact: boolean
+  /** Props for props-driven components (framecn text, colours, sizes). Changing them re-records. */
+  props?: Record<string, string | number | boolean>
   error?: string
 }
 
@@ -596,7 +598,7 @@ export type StudioShapeClip = StudioClipCommon & {
   labelColor?: string
 }
 
-export type StudioCursorStyle = 'arrow' | 'hand' | 'dot' | 'ring' | 'touch'
+export type StudioCursorStyle = 'auto' | 'arrow' | 'hand' | 'dot' | 'ring' | 'touch' | 'ibeam'
 
 /**
  * Animated cursor: glides from `from` to the target and clicks there. When
@@ -621,6 +623,10 @@ export type StudioCursorClip = StudioClipCommon & {
   color: string
   rippleColor: string
   targetClipId?: string | null
+  /** Multi-stop journey: click k happens at stops[min(k, stops.length-1)] (default: the single x/y target). */
+  stops?: Array<{ x: number; y: number }>
+  /** Motion-blur trail while moving fast (default on). */
+  trail?: boolean
 }
 
 /**

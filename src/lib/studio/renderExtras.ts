@@ -97,47 +97,41 @@ export function drawShape(ctx: CanvasRenderingContext2D, clip: StudioShapeClip, 
 
 /* ─────────────────────────────── cursor ─────────────────────────────── */
 
-export function drawCursor(ctx: CanvasRenderingContext2D, clip: StudioCursorClip, t: number, w: number, h: number) {
-  const f = cursorAt(clip, Math.max(0, t - clip.startSec))
-  if (f.alpha <= 0) return
-  const size = Math.max(10, h * 0.032 * (clip.size || 1))
-  ctx.save()
-  ctx.globalAlpha *= f.alpha
-  // Ripples first (under the pointer).
-  for (const r of f.ripples) {
-    ctx.beginPath()
-    ctx.arc(r.x * w, r.y * h, size * (0.4 + r.p * 1.6), 0, Math.PI * 2)
-    ctx.strokeStyle = clip.rippleColor
-    ctx.globalAlpha = f.alpha * r.alpha * 0.9
-    ctx.lineWidth = Math.max(1.5, size * 0.12 * (1 - r.p * 0.6))
-    ctx.stroke()
-    ctx.globalAlpha = f.alpha * r.alpha * 0.25
-    ctx.fillStyle = clip.rippleColor
-    ctx.fill()
-  }
-  ctx.globalAlpha = f.alpha
-  const px = f.x * w, py = f.y * h
-  ctx.translate(px, py)
-  ctx.scale(f.press, f.press)
+type PointerStyle = Exclude<StudioCursorClip['style'], 'auto'>
+
+function drawPointer(ctx: CanvasRenderingContext2D, style: PointerStyle, size: number, color: string) {
   ctx.shadowColor = 'rgba(0,0,0,0.45)'
   ctx.shadowBlur = size * 0.35
   ctx.shadowOffsetY = size * 0.08
   ctx.lineJoin = 'round'
-  if (clip.style === 'dot' || clip.style === 'touch') {
+  if (style === 'ibeam') {
+    // Text I-beam, centred on the insertion point.
+    const s = size / 24
     ctx.beginPath()
-    ctx.arc(0, 0, size * (clip.style === 'touch' ? 0.55 : 0.32), 0, Math.PI * 2)
-    ctx.fillStyle = clip.style === 'touch' ? 'rgba(255,255,255,0.55)' : clip.color
+    ctx.moveTo(-4 * s, -11 * s); ctx.quadraticCurveTo(0, -11 * s, 0, -8 * s); ctx.quadraticCurveTo(0, -11 * s, 4 * s, -11 * s)
+    ctx.moveTo(0, -8 * s); ctx.lineTo(0, 8 * s)
+    ctx.moveTo(-4 * s, 11 * s); ctx.quadraticCurveTo(0, 11 * s, 0, 8 * s); ctx.quadraticCurveTo(0, 11 * s, 4 * s, 11 * s)
+    ctx.lineCap = 'round'
+    ctx.lineWidth = Math.max(2.5, s * 4.2); ctx.strokeStyle = '#0b0b10'; ctx.stroke()
+    ctx.shadowBlur = 0
+    ctx.lineWidth = Math.max(1.2, s * 2); ctx.strokeStyle = color; ctx.stroke()
+    return
+  }
+  if (style === 'dot' || style === 'touch') {
+    ctx.beginPath()
+    ctx.arc(0, 0, size * (style === 'touch' ? 0.55 : 0.32), 0, Math.PI * 2)
+    ctx.fillStyle = style === 'touch' ? 'rgba(255,255,255,0.55)' : color
     ctx.fill()
     ctx.lineWidth = size * 0.06
     ctx.strokeStyle = 'rgba(0,0,0,0.35)'
     ctx.stroke()
-  } else if (clip.style === 'ring') {
+  } else if (style === 'ring') {
     ctx.beginPath()
     ctx.arc(0, 0, size * 0.45, 0, Math.PI * 2)
     ctx.lineWidth = size * 0.1
-    ctx.strokeStyle = clip.color
+    ctx.strokeStyle = color
     ctx.stroke()
-  } else if (clip.style === 'hand') {
+  } else if (style === 'hand') {
     // Pointing hand: rounded finger + palm silhouette, tip at (0,0).
     const s = size / 24
     ctx.beginPath()
@@ -156,7 +150,7 @@ export function drawCursor(ctx: CanvasRenderingContext2D, clip: StudioCursorClip
     ctx.lineTo(-2.5 * s, 3 * s)
     ctx.quadraticCurveTo(-2.5 * s, 0, 0, 0)
     ctx.closePath()
-    ctx.fillStyle = clip.color
+    ctx.fillStyle = color
     ctx.fill()
     ctx.shadowBlur = 0
     ctx.lineWidth = Math.max(1, s * 1.4)
@@ -174,13 +168,67 @@ export function drawCursor(ctx: CanvasRenderingContext2D, clip: StudioCursorClip
     ctx.lineTo(9 * s, 15.5 * s)
     ctx.lineTo(16.5 * s, 15.5 * s)
     ctx.closePath()
-    ctx.fillStyle = clip.color
+    ctx.fillStyle = color
     ctx.fill()
     ctx.shadowBlur = 0
     ctx.lineWidth = Math.max(1, s * 1.5)
     ctx.strokeStyle = '#0b0b10'
     ctx.stroke()
   }
+}
+
+export function drawCursor(ctx: CanvasRenderingContext2D, clip: StudioCursorClip, t: number, w: number, h: number) {
+  const local = Math.max(0, t - clip.startSec)
+  const f = cursorAt(clip, local)
+  if (f.alpha <= 0) return
+  const size = Math.max(10, h * 0.032 * (clip.size || 1))
+  const style: PointerStyle = clip.style === 'auto' || !clip.style ? (f.toTarget < 0.035 && clip.action !== 'drag' ? 'hand' : 'arrow') : clip.style
+  // Velocity (px/s) from a frame earlier — drives the lean and the trail.
+  const prev = cursorAt(clip, Math.max(0, local - 1 / 60))
+  const vx = (f.x - prev.x) * w * 60, vy = (f.y - prev.y) * h * 60
+  const speed = Math.hypot(vx, vy)
+  ctx.save()
+  ctx.globalAlpha *= f.alpha
+  const base = ctx.globalAlpha
+  // Ripples (under the pointer): outer ring + soft fill.
+  for (const r of f.ripples) {
+    ctx.beginPath()
+    ctx.arc(r.x * w, r.y * h, size * (0.4 + r.p * 1.7), 0, Math.PI * 2)
+    ctx.strokeStyle = clip.rippleColor
+    ctx.globalAlpha = base * r.alpha * 0.9
+    ctx.lineWidth = Math.max(1.5, size * 0.12 * (1 - r.p * 0.6))
+    ctx.stroke()
+    ctx.globalAlpha = base * r.alpha * 0.18
+    ctx.fillStyle = clip.rippleColor
+    ctx.fill()
+  }
+  const px = f.x * w, py = f.y * h
+  if (f.flash > 0) {
+    const g = ctx.createRadialGradient(px, py, 0, px, py, size * 1.3)
+    g.addColorStop(0, clip.rippleColor)
+    g.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.globalAlpha = base * f.flash * 0.45
+    ctx.fillStyle = g
+    ctx.beginPath(); ctx.arc(px, py, size * 1.3, 0, Math.PI * 2); ctx.fill()
+  }
+  const lean = Math.max(-0.16, Math.min(0.16, vx / (size * 90)))
+  // Motion-blur trail: fading ghosts along the recent path when moving fast.
+  if (clip.trail !== false && speed > size * 6) {
+    for (let i = 3; i >= 1; i--) {
+      const g = cursorAt(clip, Math.max(0, local - i * 0.016))
+      ctx.save()
+      ctx.globalAlpha = base * Math.min(0.28, speed / (size * 120)) / i
+      ctx.translate(g.x * w, g.y * h)
+      ctx.rotate(lean)
+      drawPointer(ctx, style, size, clip.color)
+      ctx.restore()
+    }
+  }
+  ctx.globalAlpha = base
+  ctx.translate(px, py)
+  ctx.rotate(lean)
+  ctx.scale(f.press, f.press)
+  drawPointer(ctx, style, size, clip.color)
   ctx.restore()
 }
 

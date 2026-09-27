@@ -1,3 +1,11 @@
+## Latest: framecn, fonts, cursor v2
+- `check:framecn-fonts` has 721 assertions, and every framecn component is server-rendered in the check.
+- Not verified in a real browser. Eyeball these:
+  - shader components (WebGL) recording in the Studio;
+  - Add fonts with a real Fontshare zip;
+  - the cursor Auto style swapping arrow to hand.
+- Refresh framecn: `gh repo clone shadcn-labs/framecn /tmp/framecn -- --depth 1 && node scripts/vendor-framecn.mjs /tmp/framecn && node scripts/build-packs.mjs`
+
 ## Latest: Motion kit (3D, shapes, cursor, fonts, rich captions)
 - Covered in MOTION_KIT.md. Check: `check:shapes-cursor-3d` (221 assertions, in the build).
 - Not verified in a real browser yet (no headless browser in the sandbox). Eyeball the 3D projection seams, the rich-caption line heights, and the cursor on a recorded component.

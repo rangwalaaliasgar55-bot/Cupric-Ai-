@@ -41,3 +41,25 @@ Kinetic and word-reveal animate each word.
 ## Javis.jl (MIT): ideas adopted, no code copied
 Draw-on stroke reveals, actions scheduled on frame ranges, and parent→child linking
 (the cursor is linked to its target).
+
+## framecn (MIT): 112 video components in the Components tab
+Categories: Captions (15), Text (27), Transitions (14), Scenes (23), Shaders & backgrounds (21), Motion primitives (10).
+- Vendored verbatim into `src/lab/framecn` by `scripts/vendor-framecn.mjs <clone>`; only import paths change.
+- Editframe is proprietary and is **not** included. Cupric's own `editframe-shim.tsx` provides the only two names the components use.
+- Shaders use `@paper-design/shaders-react` (Apache-2.0).
+- Each component has its own settings (text, colours, sizes) in the inspector. **Apply & re-record** records it again through the single component recorder.
+- The agent passes `props` on `addComponent`; they are validated against the component's controls.
+- Upstream quirk handled: 3 components default to font weights missing from their own options, so a control's default is always accepted.
+
+## Fonts: bundled, yours, and Fontshare
+- 20 bundled OFL families. New this round: Plus Jakarta Sans, Bricolage Grotesque, Syne, Unbounded, Archivo Black, Fraunces, DM Serif Display.
+- **Your fonts:** Text inspector → Add fonts takes a .zip, .woff2, .otf or .ttf. Family, weight and italic are read from the font's own tables. Fonts are stored in IndexedDB on this computer and embedded in exports.
+- **Fontshare:** Satoshi, Clash Display, General Sans, Cabinet Grotesk, Switzer, Zodiak and others are ITF Free Font License fonts. That licence forbids apps from offering them to users, even via the API. So Cupric lists 21 verified families with links; the user downloads one and adds the zip. The agent only uses Fontshare fonts the user has added and otherwise suggests them.
+- **Suggested looks:** reads the mood of the words (tech, luxury, hype, fitness, education, story, friendly) and builds complete looks: headline and emphasis pairing, weight, animation, and colours from the Brand Kit plus in-between tones, all readable on dark.
+
+## Cursor v2
+- Human aim: fast launch, long deceleration, a small overshoot that springs back, and a slight idle drift. It lands exactly on the target at the click.
+- The pointer leans into its motion and leaves a motion-blur trail.
+- On click: press, rebound, flash and a double ripple.
+- Styles: Auto (arrow while travelling, hand over the target), Arrow, Hand, I-beam for inputs, Dot, Ring, Touch.
+- **Click journeys:** multiple stops, each clicked in turn on alternating arcs.

@@ -15,69 +15,131 @@
 import type { StudioCursorClip } from '../../types/project'
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2)
 const easeOut = (t: number) => 1 - (1 - t) ** 3
 
 export const CLICK_PRESS_SEC = 0.14
-export const RIPPLE_SEC = 0.45
+export const RIPPLE_SEC = 0.5
+const REBOUND_SEC = 0.2
 
 export type CursorFrame = {
   x: number
   y: number
-  /** Pointer scale (press = < 1). */
+  /** Pointer scale (press < 1, rebound slightly > 1). */
   press: number
   /** Ripple rings currently visible: radius progress 0–1 and alpha. */
   ripples: Array<{ x: number; y: number; p: number; alpha: number }>
-  /** 0–1 press depth to apply to the linked target. */
+  /** 0–1 press depth to apply to the linked target (negative = hover lift). */
   targetPress: number
   alpha: number
+  /** 0–1 click flash intensity (bright bloom under the tip). */
+  flash: number
+  /** Distance (normalised) to the stop being approached — "auto" style swaps arrow → hand when close. */
+  toTarget: number
 }
 
-/** Cursor state at clip-local time `local` (seconds). */
-export function cursorAt(c: Pick<StudioCursorClip, 'x' | 'y' | 'fromX' | 'fromY' | 'clicks' | 'action' | 'toX' | 'toY' | 'durationSec'>, local: number): CursorFrame {
+type CursorInput = Pick<StudioCursorClip, 'x' | 'y' | 'fromX' | 'fromY' | 'clicks' | 'action' | 'toX' | 'toY' | 'durationSec'> & { stops?: Array<{ x: number; y: number }> }
+
+/** Human "aim" easing: quick launch, long deceleration into the target (cubic-bezier .3,0,.15,1). */
+function aimEase(t: number): number {
+  const x1 = 0.3, x2 = 0.15, y1 = 0, y2 = 1
+  const bx = (u: number) => 3 * u * (1 - u) ** 2 * x1 + 3 * u * u * (1 - u) * x2 + u ** 3
+  const by = (u: number) => 3 * u * (1 - u) ** 2 * y1 + 3 * u * u * (1 - u) * y2 + u ** 3
+  let u = t
+  for (let i = 0; i < 6; i++) {
+    const d = (bx(u + 1e-4) - bx(u)) / 1e-4 || 1
+    u = clamp01(u - (bx(u) - t) / d)
+  }
+  return by(u)
+}
+
+type Seg = { depart: number; arrive: number; click: number; from: { x: number; y: number }; to: { x: number; y: number }; k: number }
+
+function segments(c: CursorInput): { segs: Seg[]; clicks: number[] } {
   const dur = Math.max(0.1, c.durationSec)
   const clicks = (c.clicks?.length ? c.clicks : [0.6]).map((f) => clamp01(f) * dur).sort((a, b) => a - b)
-  const first = clicks[0]
-  // Arrive a little before the first click, so the pointer "aims" then clicks.
-  const arrive = Math.max(0.05, first - Math.min(0.25, first * 0.3))
-  let x: number, y: number
-  if (local <= arrive) {
-    const p = easeInOut(clamp01(local / arrive))
-    // Quadratic arc: control point lifted perpendicular to the travel.
-    const mx = (c.fromX + c.x) / 2, my = (c.fromY + c.y) / 2
-    const dx = c.x - c.fromX, dy = c.y - c.fromY
-    const cxp = mx - dy * 0.18, cyp = my + dx * 0.18
-    const u = 1 - p
-    x = u * u * c.fromX + 2 * u * p * cxp + p * p * c.x
-    y = u * u * c.fromY + 2 * u * p * cyp + p * p * c.y
-  } else if (c.action === 'drag' && c.toX !== undefined && c.toY !== undefined && local > first) {
-    const p = easeInOut(clamp01((local - first) / Math.max(0.2, dur - first - 0.3)))
-    x = c.x + (c.toX - c.x) * p
-    y = c.y + (c.toY - c.y) * p
-  } else {
-    x = c.x
-    y = c.y
+  const stops = c.stops?.length ? c.stops : [{ x: c.x, y: c.y }]
+  const segs: Seg[] = []
+  let prev = { x: c.fromX, y: c.fromY }
+  let prevEnd = 0
+  clicks.forEach((click, k) => {
+    const to = stops[Math.min(k, stops.length - 1)]
+    const gap = click - prevEnd
+    const aim = Math.min(0.24, Math.max(0.06, gap * 0.3))
+    segs.push({ depart: prevEnd, arrive: Math.max(prevEnd + 0.05, click - aim), click, from: prev, to, k })
+    prev = to
+    prevEnd = click + CLICK_PRESS_SEC
+  })
+  return { segs, clicks }
+}
+
+function travel(seg: Seg, t: number): { x: number; y: number } {
+  const dx = seg.to.x - seg.from.x, dy = seg.to.y - seg.from.y
+  const len = Math.hypot(dx, dy)
+  if (len < 1e-4) return { ...seg.to }
+  const ux = dx / len, uy = dy / len
+  // Overshoot a touch past the target, then spring back (settle) before the click.
+  const ov = Math.min(0.014, len * 0.05)
+  const end = { x: seg.to.x + ux * ov, y: seg.to.y + uy * ov }
+  if (t <= seg.arrive) {
+    const p = aimEase(clamp01((t - seg.depart) / Math.max(0.05, seg.arrive - seg.depart)))
+    const side = seg.k % 2 === 0 ? 1 : -1 // alternate arc sides on multi-stop journeys
+    const arc = len * 0.16 * side
+    const c1 = { x: seg.from.x + dx * 0.28 - uy * arc, y: seg.from.y + dy * 0.28 + ux * arc }
+    const c2 = { x: end.x - dx * 0.22 - uy * arc * 0.45, y: end.y - dy * 0.22 + ux * arc * 0.45 }
+    const q = 1 - p
+    return {
+      x: q ** 3 * seg.from.x + 3 * q * q * p * c1.x + 3 * q * p * p * c2.x + p ** 3 * end.x,
+      y: q ** 3 * seg.from.y + 3 * q * q * p * c1.y + 3 * q * p * p * c2.y + p ** 3 * end.y,
+    }
   }
+  // Damped spring from the overshoot back onto the target, exactly on it at the click.
+  const tau = t - seg.arrive
+  const land = clamp01((seg.click - t) / 0.06)
+  const k = ov * Math.exp(-16 * tau) * Math.cos(tau * 26) * land
+  // Tiny deterministic hand drift while aiming (zero at the click).
+  const drift = 0.0012 * land * clamp01(tau / 0.1)
+  return { x: seg.to.x + ux * k + Math.sin(t * 7.3 + seg.k) * drift, y: seg.to.y + uy * k + Math.cos(t * 5.9 + seg.k * 2) * drift }
+}
+
+/** Cursor state at clip-local time `local` (seconds). Pure: preview = export. */
+export function cursorAt(c: CursorInput, local: number): CursorFrame {
+  const dur = Math.max(0.1, c.durationSec)
+  const { segs, clicks } = segments(c)
+  const last = segs[segs.length - 1]
+  const active = segs.find((s) => local <= s.click + CLICK_PRESS_SEC) ?? last
+  let pos = travel(active, Math.min(local, active.click))
+  if (local > last.click && c.action === 'drag' && c.toX !== undefined && c.toY !== undefined) {
+    const p = aimEase(clamp01((local - last.click - 0.08) / Math.max(0.2, dur - last.click - 0.35)))
+    pos = { x: last.to.x + (c.toX - last.to.x) * p, y: last.to.y + (c.toY - last.to.y) * p }
+  } else if (local > last.click) pos = { ...last.to }
   let press = 1
   let targetPress = 0
+  let flash = 0
   const ripples: CursorFrame['ripples'] = []
   if (c.action !== 'hover') {
-    const moments = c.action === 'double-click' ? clicks.flatMap((t) => [t, t + 0.18]) : clicks
-    for (const t of moments) {
-      const d = local - t
-      if (c.action === 'drag' && d >= 0) { press = 0.82; targetPress = 0.6; continue } // held down while dragging
+    const moments = c.action === 'double-click' ? segs.flatMap((s) => [{ t: s.click, at: s.to }, { t: s.click + 0.18, at: s.to }]) : segs.map((s) => ({ t: s.click, at: s.to }))
+    for (const m of moments) {
+      const d = local - m.t
+      if (c.action === 'drag' && d >= 0) { press = 0.84; targetPress = 0.6; continue } // held while dragging
       if (d >= -CLICK_PRESS_SEC / 2 && d <= CLICK_PRESS_SEC) {
-        const k = d < 0 ? 1 - (-d / (CLICK_PRESS_SEC / 2)) : 1 - d / CLICK_PRESS_SEC
-        press = Math.min(press, 1 - 0.18 * clamp01(k))
-        targetPress = Math.max(targetPress, clamp01(k))
+        const kk = d < 0 ? 1 - -d / (CLICK_PRESS_SEC / 2) : 1 - d / CLICK_PRESS_SEC
+        press = Math.min(press, 1 - 0.2 * clamp01(kk))
+        targetPress = Math.max(targetPress, clamp01(kk))
+      } else if (d > CLICK_PRESS_SEC && d <= CLICK_PRESS_SEC + REBOUND_SEC) {
+        press = Math.max(press, 1 + 0.06 * Math.sin(Math.PI * ((d - CLICK_PRESS_SEC) / REBOUND_SEC)))
       }
-      if (d >= 0 && d <= RIPPLE_SEC) ripples.push({ x: c.x, y: c.y, p: easeOut(d / RIPPLE_SEC), alpha: 1 - d / RIPPLE_SEC })
+      if (d >= 0 && d <= 0.22) flash = Math.max(flash, 1 - d / 0.22)
+      if (d >= 0 && d <= RIPPLE_SEC) ripples.push({ x: m.at.x, y: m.at.y, p: easeOut(d / RIPPLE_SEC), alpha: 1 - d / RIPPLE_SEC })
+      const d2 = d - 0.08 // second, softer ring
+      if (d2 >= 0 && d2 <= RIPPLE_SEC) ripples.push({ x: m.at.x, y: m.at.y, p: easeOut(d2 / RIPPLE_SEC) * 0.7, alpha: (1 - d2 / RIPPLE_SEC) * 0.5 })
     }
-  } else if (local > arrive) {
-    targetPress = -clamp01((local - arrive) / 0.2) // negative = hover lift
+  } else if (local > segs[0].arrive) {
+    targetPress = -clamp01((local - segs[0].arrive) / 0.2)
   }
   const alpha = clamp01(local / 0.12) * clamp01((dur - local) / 0.18)
-  return { x, y, press, ripples, targetPress, alpha }
+  const toTarget = Math.hypot(pos.x - active.to.x, pos.y - active.to.y)
+  void clicks
+  return { x: pos.x, y: pos.y, press, ripples, targetPress, alpha, flash, toTarget }
 }
 
 /* ───────────────────────────── need rules ───────────────────────────── */
@@ -110,11 +172,11 @@ export function cursorNeeded(item: { name?: string; description?: string; catego
  * Default cursor clip for a target: approaches from the lower right (where
  * a right-handed user's pointer rests), clicks at 55% of the clip.
  */
-export function cursorForTarget(target: { id: string; x: number; y: number; startSec: number; durationSec: number; track: number }, action: StudioCursorClip['action'], id: string): StudioCursorClip {
+export function cursorForTarget(target: { id: string; x: number; y: number; startSec: number; durationSec: number; track: number; name?: string }, action: StudioCursorClip['action'], id: string): StudioCursorClip {
   const dur = Math.min(Math.max(1.6, target.durationSec), 4)
   return {
     id, kind: 'cursor', name: action === 'drag' ? 'Cursor drag' : action === 'hover' ? 'Cursor hover' : 'Cursor click',
-    style: 'arrow', action,
+    style: /\b(input|field|search|email|text ?box|textarea)\b/i.test(target.name ?? '') ? 'ibeam' : 'auto', action, trail: true,
     x: target.x, y: target.y,
     fromX: Math.min(0.95, target.x + 0.22), fromY: Math.min(0.95, target.y + 0.25),
     toX: action === 'drag' ? Math.max(0.05, target.x - 0.2) : undefined, toY: action === 'drag' ? target.y : undefined,

@@ -1,4 +1,6 @@
-import type { StudioClip, StudioCursorClip, StudioDoc, StudioShapeAnim, StudioShapeClip, StudioTextClip } from '../../types/project'
+import { useEffect, useState } from 'react'
+import type { ComponentConfig } from '../../lab/framecn/customizer-config'
+import type { StudioOverlayClip, StudioClip, StudioCursorClip, StudioDoc, StudioShapeAnim, StudioShapeClip, StudioTextClip } from '../../types/project'
 import { SHAPES, shapeById } from '../../lib/studio/shapes'
 import { cursorNeeded } from '../../lib/studio/cursor'
 import { RICH_DEFAULTS, RICH_PRESETS } from '../../lib/studio/richText'
@@ -135,7 +137,7 @@ export function CursorFields({ clip, doc, onPatch }: { clip: StudioCursorClip; d
       <div className="grid grid-cols-2 gap-2">
         <Row label="Pointer">
           <select className={inputCx} value={clip.style} onChange={(e) => onPatch({ style: e.target.value } as Partial<StudioClip>)}>
-            <option value="arrow">Arrow</option><option value="hand">Hand</option><option value="dot">Dot</option><option value="ring">Ring</option><option value="touch">Touch (mobile)</option>
+            <option value="auto">Auto (arrow → hand on target)</option><option value="arrow">Arrow</option><option value="hand">Hand</option><option value="ibeam">I-beam (text inputs)</option><option value="dot">Dot</option><option value="ring">Ring</option><option value="touch">Touch (mobile)</option>
           </select>
         </Row>
         <Row label="Action">
@@ -161,9 +163,66 @@ export function CursorFields({ clip, doc, onPatch }: { clip: StudioCursorClip; d
         <Range label="From Y" value={clip.fromY} min={0} max={1} step={0.005} onChange={(v) => onPatch({ fromY: v } as Partial<StudioClip>)} />
       </div>
       <Range label="Size" value={clip.size} min={0.5} max={3} step={0.05} suffix="×" onChange={(v) => onPatch({ size: v } as Partial<StudioClip>)} />
+      <label className="flex items-center gap-2 text-xs text-muted"><input type="checkbox" checked={clip.trail !== false} onChange={(e) => onPatch({ trail: e.target.checked } as Partial<StudioClip>)} /> Motion-blur trail</label>
+      {clip.action !== 'hover' && clip.action !== 'drag' && (
+        <div className="space-y-1.5 rounded-lg border border-line p-2">
+          <div className="flex items-center justify-between text-xs"><span className="font-medium text-text">Click journey</span>
+            <button type="button" className="cu-chip px-2 py-0.5 text-[11px]" onClick={() => {
+              const stops = clip.stops?.length ? clip.stops : [{ x: clip.x, y: clip.y }]
+              if (stops.length >= 6) return
+              const lastStop = stops[stops.length - 1]
+              const nextStops = [...stops, { x: Math.min(0.92, lastStop.x + 0.15), y: Math.min(0.9, lastStop.y + 0.08) }]
+              const n = nextStops.length
+              onPatch({ stops: nextStops, clicks: nextStops.map((_, i) => Math.round(((i + 1) / (n + 0.6)) * 100) / 100) } as Partial<StudioClip>)
+            }}>+ Add click stop</button>
+          </div>
+          {(clip.stops ?? []).map((st, i) => (
+            <div key={i} className="grid grid-cols-[auto_1fr_1fr_auto] items-center gap-1.5 text-[11px] text-muted">
+              <span>#{i + 1}</span>
+              <input type="range" min={0} max={1} step={0.005} value={st.x} aria-label={`Stop ${i + 1} X`} onChange={(e) => onPatch({ stops: clip.stops!.map((q, j) => (j === i ? { ...q, x: Number(e.target.value) } : q)), ...(i === 0 ? { x: Number(e.target.value) } : {}) } as Partial<StudioClip>)} />
+              <input type="range" min={0} max={1} step={0.005} value={st.y} aria-label={`Stop ${i + 1} Y`} onChange={(e) => onPatch({ stops: clip.stops!.map((q, j) => (j === i ? { ...q, y: Number(e.target.value) } : q)), ...(i === 0 ? { y: Number(e.target.value) } : {}) } as Partial<StudioClip>)} />
+              <button type="button" className="text-muted hover:text-danger" aria-label={`Remove stop ${i + 1}`} onClick={() => { const stops = clip.stops!.filter((_, j) => j !== i); onPatch({ stops: stops.length > 1 ? stops : undefined, clicks: (stops.length ? stops : [0]).map((_, k, a) => Math.round(((k + 1) / (a.length + 0.6)) * 100) / 100) } as Partial<StudioClip>) }}>✕</button>
+            </div>
+          ))}
+          {!clip.stops?.length && <p className="text-[11px] text-muted">One click on the target. Add stops for a walkthrough: the pointer arcs from each click to the next.</p>}
+        </div>
+      )}
       <div className="flex gap-3 text-xs text-muted">
         <label className="flex items-center gap-1.5"><input type="color" value={clip.color} onChange={(e) => onPatch({ color: e.target.value } as Partial<StudioClip>)} className="h-6 w-6 rounded border border-line bg-transparent" aria-label="Cursor colour" /> Pointer</label>
         <label className="flex items-center gap-1.5"><input type="color" value={clip.rippleColor} onChange={(e) => onPatch({ rippleColor: e.target.value } as Partial<StudioClip>)} className="h-6 w-6 rounded border border-line bg-transparent" aria-label="Click ripple colour" /> Click ripple</label>
+      </div>
+    </div>
+  )
+}
+
+/** framecn component props (from its own customizer config); applying re-records the clip. */
+export function FramecnFields({ clip, onPatch }: { clip: StudioOverlayClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const slug = clip.component?.slug ?? ''
+  const [configs, setConfigs] = useState<Record<string, ComponentConfig> | null>(null)
+  useEffect(() => { let live = true; void import('../../lab/framecn/configs').then((m) => live && setConfigs(m.FRAMECN_CONFIGS)); return () => { live = false } }, [])
+  const config = configs?.[slug]
+  const saved = clip.component?.props ?? {}
+  const [draft, setDraft] = useState<Record<string, string | number | boolean>>(saved)
+  useEffect(() => setDraft(clip.component?.props ?? {}), [clip.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  if (!slug.startsWith('fc-')) return null
+  if (!config) return <p className="text-xs text-muted">Loading component settings…</p>
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
+  const apply = () => clip.component && onPatch({ component: { ...clip.component, props: draft, status: 'pending' } } as Partial<StudioClip>)
+  return (
+    <div className="cu-section space-y-2.5 px-3 py-3">
+      <div className="flex items-center justify-between text-xs font-medium text-text">Component settings <span className="text-[11px] font-normal text-muted">framecn · MIT</span></div>
+      {Object.entries(config.controls).map(([key, c]) => {
+        const v = draft[key] ?? c.default
+        const set = (val: string | number | boolean) => setDraft((d) => ({ ...d, [key]: val }))
+        if (c.type === 'text') return <Row key={key} label={c.label}><input className={inputCx} value={String(v)} onChange={(e) => set(e.target.value)} /></Row>
+        if (c.type === 'color') return <label key={key} className="flex items-center gap-2 text-xs text-muted"><input type="color" value={String(v).startsWith('#') && String(v).length === 7 ? String(v) : '#ffffff'} onChange={(e) => set(e.target.value)} className="h-6 w-6 rounded border border-line bg-transparent" aria-label={c.label} />{c.label}</label>
+        if (c.type === 'number') return <Range key={key} label={c.label} value={Number(v)} min={c.min} max={c.max} step={c.step} onChange={set} />
+        if (c.type === 'boolean') return <label key={key} className="flex items-center gap-2 text-xs text-muted"><input type="checkbox" checked={Boolean(v)} onChange={(e) => set(e.target.checked)} />{c.label}</label>
+        return <Row key={key} label={c.label}><select className={inputCx} value={String(v)} onChange={(e) => set(e.target.value)}>{[...new Set([...c.options, String(c.default)])].map((o) => <option key={o} value={o}>{o}</option>)}</select></Row>
+      })}
+      <div className="flex gap-2">
+        <button type="button" disabled={!dirty} onClick={apply} className={cx('cu-chip px-3 py-1 text-xs', dirty ? 'border-accent text-accent' : 'opacity-50')}>Apply & re-record</button>
+        {Object.keys(saved).length > 0 && <button type="button" className="cu-chip px-3 py-1 text-xs" onClick={() => { setDraft({}); clip.component && onPatch({ component: { ...clip.component, props: undefined, status: 'pending' } } as Partial<StudioClip>) }}>Reset to defaults</button>}
       </div>
     </div>
   )

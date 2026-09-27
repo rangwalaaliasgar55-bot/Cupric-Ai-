@@ -12,7 +12,9 @@
 import type { StudioDoc } from '../../types/project'
 
 /** Families that ship with the app (see styles.css) — never downloaded. */
-const BUNDLED = new Set(['inter', 'inter variable', 'jetbrains mono', 'jetbrains mono variable', 'manrope', 'manrope variable', 'playfair display', 'playfair display variable', 'dm sans', 'dm sans variable', 'space grotesk', 'space grotesk variable', 'geist', 'geist variable', 'montserrat', 'montserrat variable', 'poppins', 'outfit', 'outfit variable', 'bebas neue', 'anton', 'instrument serif', 'system-ui', 'sans-serif', 'serif', 'monospace'])
+const BUNDLED = new Set(['inter', 'inter variable', 'jetbrains mono', 'jetbrains mono variable', 'manrope', 'manrope variable', 'playfair display', 'playfair display variable', 'dm sans', 'dm sans variable', 'space grotesk', 'space grotesk variable', 'geist', 'geist variable', 'montserrat', 'montserrat variable', 'poppins', 'outfit', 'outfit variable', 'bebas neue', 'anton', 'instrument serif', 'syne', 'syne variable', 'unbounded', 'unbounded variable', 'bricolage grotesque', 'bricolage grotesque variable', 'fraunces', 'fraunces variable', 'dm serif display', 'plus jakarta sans', 'plus jakarta sans variable', 'archivo black', 'system-ui', 'sans-serif', 'serif', 'monospace'])
+
+import { isUserFont, userFontsReady } from './userFonts'
 
 const CACHE_NAME = 'cupric-fonts-v1'
 const pending = new Map<string, Promise<boolean>>()
@@ -61,6 +63,8 @@ export function parseFontCss(css: string): Face[] {
 export function ensureFont(family: string, weights: number[] = [400, 600, 800]): Promise<boolean> {
   const name = family.trim()
   if (!name || isBundledFont(name) || typeof document === 'undefined' || !('fonts' in document)) return Promise.resolve(true)
+  // Fonts the user added (e.g. downloaded from Fontshare) live on this machine — never fetched.
+  if (isUserFont(name)) return userFontsReady().then(() => true)
   const key = name.toLowerCase()
   const existing = pending.get(key)
   if (existing) return existing

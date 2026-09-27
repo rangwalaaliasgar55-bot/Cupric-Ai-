@@ -1,3 +1,4 @@
+import framecn from "./framecn/entries.json";
 // Metadata only. Component code lives in demos.ts, so pages that need just
 // a name or description never pull in every demo.
 
@@ -13,6 +14,12 @@ export const categories = [
   { id: "objects", label: "Objects" },
   { id: "playground", label: "Playground" },
   { id: "text", label: "Text" },
+  // framecn (MIT) video components — see src/lab/framecn.
+  { id: "captions", label: "Captions" },
+  { id: "scenes", label: "Scenes" },
+  { id: "transitions", label: "Transitions" },
+  { id: "shaders", label: "Shaders & backgrounds" },
+  { id: "motion", label: "Motion primitives" },
 ] as const;
 
 export type Category = (typeof categories)[number]["id"];
@@ -1713,7 +1720,19 @@ export function getEntry(slug: string) {
 
 const REPO = "https://github.com/xevrion/ui-lab";
 
+// framecn (MIT) video components, vendored by scripts/vendor-framecn.mjs.
+export const framecnEntries: LabEntry[] = framecn.entries.map((e) => ({
+  slug: e.slug,
+  name: e.name,
+  category: e.category as Category,
+  description: e.description,
+  keywords: `framecn video ${e.category} ${e.dir.replace(/-/g, " ")}`,
+  isNew: true,
+}));
+lab.push(...framecnEntries);
+
 // `bun run new` names every file after its slug, so the path follows from it.
 export function sourceUrl(slug: string) {
+  if (slug.startsWith("fc-")) return `https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/${slug.slice(3)}`;
   return `${REPO}/blob/main/src/lab/components/${slug}.tsx`;
 }
