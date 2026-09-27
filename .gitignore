@@ -17,3 +17,4 @@ vendor/whisper/*
 .proxies-check.mjs
 .auto-captions-check.mjs
 .component-director-check.mjs
+.editor-upgrades-check.mjs

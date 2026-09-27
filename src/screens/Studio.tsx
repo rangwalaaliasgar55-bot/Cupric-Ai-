@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { StudioProPanel } from './studio/StudioProPanel'
+import { ClipContextMenu } from './studio/ClipContextMenu'
+import { applyClipAction, getClipboard, setClipboard, type ClipActionId } from '../lib/studio/clipActions'
+import { makeProxy } from '../lib/studio/proxy'
+import { emitDiff, emitStudio } from '../lib/studio/studioEvents'
+import { createStudioApi } from '../lib/studio/studioApi'
 import { unfilledPlaceholders } from '../lib/studio/layouts'
 import { addMarker, jumpMarker, rippleDelete, rollEdit, slipClip, trimEndTo, trimStartTo, type EditResult } from '../lib/studio/timelineOps'
 import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
@@ -131,6 +136,7 @@ export function Studio() {
   const [agentPlan, setAgentPlan] = useState<StudioEditPlan | null>(null)
   const [timelineH, setTimelineH] = useState<number | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [clipMenuAt, setClipMenuAt] = useState<{ clipId: string; x: number; y: number } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -146,6 +152,14 @@ export function Studio() {
   const issues = useMemo(() => lintStudioDoc(doc, { hasMedia }), [doc])
   const pid = project?.id ?? null
   const selected = useMemo(() => doc.clips.find((c) => c.id === selectedId) ?? null, [doc.clips, selectedId])
+  const runClipAction = useCallback((clipId: string | null, action: ClipActionId) => {
+    if (!pid) return
+    const r = applyClipAction(doc, clipId, action, { time, clipboard: getClipboard() })
+    if (r.clipboard) setClipboard(r.clipboard)
+    if (r.doc) patchStudio(pid, { clips: r.doc.clips, trackCount: r.doc.trackCount }, r.label)
+    if (r.select !== undefined) setSelectedId(r.select)
+    if (r.message) pushToast('info', r.message)
+  }, [doc, time, pid, patchStudio, pushToast])
 
   // A clip handed over from Lab / Arena / Footage: select it and show it.
   useEffect(() => {
@@ -241,6 +255,17 @@ export function Studio() {
         if (e.shiftKey) redo()
         else undo()
         return
+      }
+      // Clip actions (copy/cut/paste/duplicate/lock/hide/mute/arrange): the
+      // same pure table as the right-click menu, one undo step each.
+      if (mod && !e.altKey && pid) {
+        const map: Record<string, ClipActionId> = { c: 'copy', x: 'cut', v: 'paste', d: 'duplicate', l: 'lock', h: 'hide', m: 'mute', ']': 'bring-forward', '[': 'send-backward' }
+        const action = map[key]
+        if (action) {
+          e.preventDefault()
+          runClipAction(selectedId, action)
+          return
+        }
       }
       if (mod && key === 'y') {
         e.preventDefault()
@@ -353,6 +378,7 @@ export function Studio() {
           return
         }
         if (!selectedId) { pushToast('info', 'Select a clip first.'); return }
+        if (doc.clips.find((c) => c.id === selectedId)?.locked) { pushToast('info', 'That clip is locked — unlock it to edit (Ctrl+L).'); return }
         if (key === 'q') commit(trimStartTo(doc, selectedId, time), 'Trim start to playhead')
         else if (key === 'w') commit(trimEndTo(doc, selectedId, time), 'Trim end to playhead')
         else if (key === '[' || key === ']') commit(slipClip(doc, selectedId, (key === ']' ? 1 : -1) * frame * (e.shiftKey ? 10 : 1)), 'Slip clip')
@@ -362,17 +388,47 @@ export function Studio() {
       }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && pid) {
         e.preventDefault()
+        if (doc.clips.find((c) => c.id === selectedId)?.locked) { pushToast('info', 'That clip is locked — unlock it to delete (Ctrl+L).'); return }
         removeStudioClip(pid, selectedId)
         setSelectedId(null)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [doc, duration, patchStudio, pushToast, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitStudioClip, time, undo, updateStudioClip])
+  }, [doc, duration, patchStudio, pushToast, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitStudioClip, time, undo, updateStudioClip, runClipAction])
 
   useEffect(() => {
     if (time > duration) setTime(duration)
   }, [duration, time])
+
+  // Event bus: every doc change (UI, agent, undo, voice) → clip/timeline events.
+  const prevDocRef = useRef<StudioDoc | null>(null)
+  useEffect(() => {
+    emitDiff(prevDocRef.current, doc)
+    prevDocRef.current = doc
+  }, [doc])
+  useEffect(() => emitStudio('selection:change', { clipId: selectedId }), [selectedId])
+  useEffect(() => emitStudio('time:change', { time }), [time])
+
+  // Scripting API (window.cupric.studio) — reads live state through refs.
+  const apiState = useRef({ doc, selectedId, time })
+  apiState.current = { doc, selectedId, time }
+  useEffect(() => {
+    if (!pid) return
+    const api = createStudioApi({
+      getDoc: () => apiState.current.doc,
+      commit: (next, label) => patchStudio(pid, next, label),
+      getSelected: () => apiState.current.selectedId,
+      select: (id) => setSelectedId(id),
+      getTime: () => apiState.current.time,
+      seek: (t) => seek(t),
+    })
+    const w = window as unknown as { cupric?: Record<string, unknown> }
+    w.cupric = { ...(w.cupric ?? {}), studio: api }
+    return () => {
+      if (w.cupric?.studio === api) delete w.cupric.studio
+    }
+  }, [pid, patchStudio, seek])
 
   // The listener is created once and torn down on unmount; commands are
   // dispatched through a ref so the handler always sees fresh state.
@@ -855,7 +911,7 @@ export function Studio() {
           brief: command.brief,
           footageFolder: null,
           outputFolder: null,
-          aspect: doc.aspect,
+          aspect: doc.aspect === '4:5' ? '1:1' : doc.aspect, // the pipeline renders 16:9, 9:16 or 1:1
           fps: doc.fps === 60 ? 60 : 30,
           quality: 'draft',
           mode: 'auto-draft',
@@ -1397,10 +1453,23 @@ export function Studio() {
                 </div>
               </div>
             ) : (
+              <div
+                className="contents"
+                onContextMenu={(e) => {
+                  // Canvas right-click acts on the selected clip (same menu as the timeline).
+                  e.preventDefault()
+                  if (selected) setClipMenuAt({ clipId: selected.id, x: e.clientX, y: e.clientY })
+                  else pushToast('info', 'Select a clip on the canvas or timeline, then right-click for its actions.')
+                }}
+              >
               <StudioPreview
                 doc={previewDoc?.doc ?? doc}
                 selected={selected}
-                onPatchSelected={(patch) => selectedId && updateStudioClip(projectId, selectedId, patch)}
+                onPatchSelected={(patch) => {
+                  if (!selectedId) return
+                  if (selected?.locked) { pushToast('info', 'That clip is locked — unlock it to move it (Ctrl+L).'); return }
+                  updateStudioClip(projectId, selectedId, patch)
+                }}
                 time={time}
                 playing={playing}
                 muted={muted}
@@ -1413,6 +1482,7 @@ export function Studio() {
                   setTime(duration)
                 }}
               />
+              </div>
             )}
           </div>
 
@@ -1523,7 +1593,23 @@ export function Studio() {
               onReorderTrack={(from, to) => reorderStudioTracks(projectId, from, to)}
               onSettleClip={(id) => settleStudioClip(projectId, id)}
               onDropAt={onTimelineDrop}
+              onClipContextMenu={(clipId, x, y) => { setSelectedId(clipId); setClipMenuAt({ clipId, x, y }) }}
             />
+            {clipMenuAt && doc.clips.some((c) => c.id === clipMenuAt.clipId) && (
+              <ClipContextMenu
+                clip={doc.clips.find((c) => c.id === clipMenuAt.clipId)!}
+                x={clipMenuAt.x}
+                y={clipMenuAt.y}
+                time={time}
+                hasClipboard={!!getClipboard()}
+                extra={(() => {
+                  const c = doc.clips.find((x) => x.id === clipMenuAt.clipId)
+                  return c?.kind === 'video' ? [{ id: 'proxy', label: 'Make preview proxy', run: () => void makeProxy((c as StudioMediaClip).mediaId).then((st) => st.error && pushToast('info', st.error)) }] : []
+                })()}
+                onAction={(action) => runClipAction(clipMenuAt.clipId, action)}
+                onClose={() => setClipMenuAt(null)}
+              />
+            )}
           </div>
         </div>
 
@@ -1576,6 +1662,11 @@ const SHORTCUTS: Array<[string, string]> = [
   ['M', 'Drop a marker at the playhead'],
   ['; · \'', 'Jump to the previous / next marker'],
   ['Ctrl/⌘ + Z', 'Undo (Shift: redo)'],
+  ['Right-click a clip', 'Context menu: split, duplicate, copy, lock, hide, flip, arrange…'],
+  ['Ctrl/⌘ + C · X · V', 'Copy · cut · paste at the playhead'],
+  ['Ctrl/⌘ + D', 'Duplicate the selected clip'],
+  ['Ctrl/⌘ + L · H · M', 'Lock · hide · mute the selected clip'],
+  ['Ctrl/⌘ + [ · ]', 'Send backward · bring forward a track'],
   ['?', 'Show or hide this sheet'],
 ]
 

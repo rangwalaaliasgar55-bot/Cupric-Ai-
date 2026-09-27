@@ -2005,6 +2005,7 @@ OPERATIONS:
 - {"type":"setAudioRole","clipId":string,"role":"music"|"voice"|"sfx"}
 - {"type":"setDucking","enabled":boolean,"amountDb"?:-30..-3}
 - {"type":"addTestimonialGrid","count":1..4,"startSec":number}  (EMPTY placeholders — never write testimonials)
+- {"type":"phoneDesign","clipId":"...","design":"product-launch"|"hero-product"|"app-scroll"|"notification"|"social-post"|"minimal"}  (animated phone mockup; copy stays placeholder for the user to edit)
 - {"type":"addCaptions","transcript":string,"startSec":number,"durationSec":number}  (only the user's own words)
   Places a real animated UI component (buttons, toggles, counters, cards, loaders, charts…). Cupric plays the actual component,
   acts it out (hover, clicks) and records its genuine animation into an editable overlay clip. slug MUST be one of

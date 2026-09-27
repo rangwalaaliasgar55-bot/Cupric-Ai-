@@ -27,6 +27,7 @@ import { getMedia, overlayImage, proxyMode } from './media'
 import { applyPixelGrade, chromaKey } from './color'
 import { bezierEase } from './curves'
 import { compareDivider, deviceGeometry } from './layouts'
+import { drawPhone, type DrawMedia } from './phone'
 import { kineticWord } from './textTools'
 import type { StudioBlendMode, StudioDevice } from '../../types/project'
 
@@ -934,7 +935,9 @@ function drawClipContent(
     ctx.save()
     ctx.translate(targetX, targetY)
     const device = clip.device && clip.device !== 'none' ? clip.device : null
-    if (source && device) {
+    if (device === 'phone' && clip.phone) {
+      drawPhone(ctx, clip.phone, { x: 0, y: 0, w: targetW, h: targetH }, Math.max(0, t - clip.startSec), clip.durationSec, phoneMedia(ctx, source))
+    } else if (source && device) {
       drawInDevice(ctx, device, 0, 0, targetW, targetH, (x, y, sw2, sh2) => {
         const [sw, sh] = sourceSize(source)
         drawFit(ctx, source, sw, sh, sw2, sh2, 'cover', x, y)
@@ -1010,7 +1013,9 @@ function drawClipContent(
         const base = Math.min(width / sw, height / sh)
         const dw = sw * base * clip.scale
         const dh = sh * base * clip.scale
-        if (clip.device && clip.device !== 'none') {
+        if (clip.device === 'phone' && clip.phone) {
+          drawPhone(ctx, clip.phone, { x: clip.x * width - dw / 2, y: clip.y * height - dh / 2, w: dw, h: dh }, Math.max(0, t - clip.startSec), clip.durationSec, phoneMedia(ctx, source))
+        } else if (clip.device && clip.device !== 'none') {
           drawInDevice(ctx, clip.device, clip.x * width - dw / 2, clip.y * height - dh / 2, dw, dh, (x, y, w2, h2) => {
             drawFit(ctx, source, sw, sh, w2, h2, 'cover', x, y)
           })
@@ -1124,6 +1129,12 @@ export function drawStudioFrame(
       ctx.rotate((rotation * Math.PI) / 180)
       ctx.translate(-cx, -cy)
     }
+    if (clip.flipX || clip.flipY) {
+      const { cx, cy } = clipCentre(clip, width, height)
+      ctx.translate(cx, cy)
+      ctx.scale(clip.flipX ? -1 : 1, clip.flipY ? -1 : 1)
+      ctx.translate(-cx, -cy)
+    }
 
     const grade = gradeFilter(clip.grade)
     const mask = clip.mask
@@ -1209,6 +1220,19 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.arcTo(x, y + h, x, y, rr)
   ctx.arcTo(x, y, x + w, y, rr)
   ctx.closePath()
+}
+
+/** Phone screen painter: cover-fit, or a top→bottom scroll for tall screenshots. */
+function phoneMedia(ctx: CanvasRenderingContext2D, source: CanvasImageSource | null): DrawMedia {
+  return (x, y, w, h, scroll) => {
+    if (!source) return
+    const [sw, sh] = sourceSize(source)
+    if (!sw || !sh) return
+    if (scroll !== null && sh / sw > h / w) {
+      const dh = (w * sh) / sw
+      ctx.drawImage(source, x, y - (dh - h) * scroll, w, dh)
+    } else drawFit(ctx, source, sw, sh, w, h, 'cover', x, y)
+  }
 }
 
 /** Paint a device body and draw `content` clipped into its screen. */

@@ -37,6 +37,7 @@ export function safeAreas(aspect: StudioAspect): Array<{ id: string; label: stri
     { id: 'action', label: 'Action safe', x: 0.05, y: 0.05, w: 0.9, h: 0.9 },
     { id: 'title', label: 'Title safe', x: 0.1, y: 0.1, w: 0.8, h: 0.8 },
   ]
+  if (aspect === '4:5') boxes.push({ id: 'grid', label: 'Profile-grid crop (3:4)', x: 0.0625, y: 0, w: 0.875, h: 1 })
   if (aspect === '9:16') boxes.push({ id: 'social', label: 'Social UI clear', x: 0.06, y: 0.12, w: 0.76, h: 0.66 })
   return boxes
 }

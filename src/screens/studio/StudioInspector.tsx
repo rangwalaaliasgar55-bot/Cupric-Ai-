@@ -37,6 +37,8 @@ import { hasMedia, registerFile } from '../../lib/studio/media'
 import { clampRecordSec, findComponent, MAX_RECORD_SEC } from '../../lib/studio/components'
 import { applyResource } from '../../lib/studio/resourceApply'
 import { cx } from '../../lib/utils'
+import { CHANNEL_PRESETS, matchingPreset, presetLabel, presetWarnings } from '../../lib/studio/formats'
+import { docDuration, sizeForAspect } from '../../lib/studio/doc'
 
 /** Values of the built-in Font options; anything else came from Resources → Fonts. */
 const BUNDLED_FONT_VALUES = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
@@ -150,8 +152,8 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
         </div>
 
         <Field label="Aspect">
-          <div className="grid grid-cols-3 gap-1.5">
-            {(['9:16', '1:1', '16:9'] as const).map((aspect) => (
+          <div className="grid grid-cols-4 gap-1.5">
+            {(['9:16', '4:5', '1:1', '16:9'] as const).map((aspect) => (
               <button
                 key={aspect}
                 type="button"
@@ -167,6 +169,49 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
               </button>
             ))}
           </div>
+        </Field>
+
+        <Field label="Channel preset">
+          <select
+            className="w-full rounded-lg border border-line bg-panel-alt px-2.5 py-1.5 text-sm text-text"
+            value={matchingPreset(doc)?.id ?? ''}
+            onChange={(e) => {
+              const p = CHANNEL_PRESETS.find((x) => x.id === e.target.value)
+              if (p) onPatchDoc({ aspect: p.aspect, resolution: p.resolution, fps: p.fps })
+            }}
+          >
+            <option value="">Custom</option>
+            {(['Social', 'Video', 'Ultra HD'] as const).map((g) => (
+              <optgroup key={g} label={g}>
+                {CHANNEL_PRESETS.filter((p) => p.group === g).map((p) => <option key={p.id} value={p.id}>{presetLabel(p)}</option>)}
+              </optgroup>
+            ))}
+          </select>
+          {(() => {
+            const p = matchingPreset(doc)
+            const warn = p ? presetWarnings(p, docDuration(doc)) : []
+            return warn.map((w) => <p key={w} className="mt-1 text-xs text-muted">{w}</p>)
+          })()}
+        </Field>
+
+        <Field label="Resolution">
+          <div className="grid grid-cols-4 gap-1.5">
+            {(['720p', '1080p', '1440p', '2160p'] as const).map((res) => (
+              <button
+                key={res}
+                type="button"
+                title={sizeForAspect(doc.aspect, res).join('×')}
+                onClick={() => onPatchDoc({ resolution: res })}
+                className={cx(
+                  'rounded-lg border px-2 py-1.5 font-mono text-xs transition-colors duration-150',
+                  (doc.resolution ?? '1080p') === res ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-panel-alt text-muted hover:text-text',
+                )}
+              >
+                {res === '2160p' ? '4K' : res}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 font-mono text-[11px] text-muted">Exports at {sizeForAspect(doc.aspect, doc.resolution).join('×')}</p>
         </Field>
 
         <Field label="Frame rate">

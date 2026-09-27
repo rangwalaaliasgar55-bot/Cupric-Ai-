@@ -34,7 +34,10 @@ export function captionsForClip(doc: StudioDoc, clip: StudioMediaClip | StudioAu
   if (!timed.length) return { doc, captions: [] }
   const track = Math.min(23, doc.trackCount)
   const captions = captionsFromTranscript('', { startSec: 0, durationSec: 0, track, maxWords, words: timed })
-  return { doc: { ...doc, trackCount: Math.min(24, Math.max(doc.trackCount, track + 1)), clips: [...doc.clips, ...captions] }, captions }
+  // The words stay on the source clip (source seconds): speech tightening and
+  // word-timed components read them later, through any trim or split.
+  const clips = doc.clips.map((c) => (c.id === clip.id ? ({ ...c, words: words.map((w) => ({ word: w.word, start: w.start, end: w.end })) } as typeof c) : c))
+  return { doc: { ...doc, trackCount: Math.min(24, Math.max(doc.trackCount, track + 1)), clips: [...clips, ...captions] }, captions }
 }
 
 export async function transcribeClip(clip: StudioMediaClip | StudioAudioClip, lang = 'en'): Promise<Transcription> {

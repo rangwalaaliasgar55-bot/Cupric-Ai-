@@ -15,6 +15,7 @@ import { registrySources } from './sources'
 import { ensureDocFonts } from './fonts'
 import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { getIpc, isDesktop } from '../bridge'
+import { resolveForOutput } from './resolve'
 import { clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
 import { mixGainAt } from './audioMix'
 import { getMedia, overlayImage } from './media'
@@ -79,7 +80,8 @@ function rampGain(ctx: AudioContext, el: HTMLMediaElement, value: number) {
   gain.gain.linearRampToValueAtTime(value, now + 0.02)
 }
 
-export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}): Promise<ExportResult> {
+export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = {}): Promise<ExportResult> {
+  const doc = resolveForOutput(editDoc)
   const duration = docDuration(doc)
   if (duration <= 0) throw new Error('Nothing to export — the timeline is empty.')
   if (typeof MediaRecorder === 'undefined') throw new Error('This browser cannot record video (MediaRecorder missing).')
@@ -90,7 +92,7 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   await document.fonts?.ready.catch(() => undefined)
 
   const scale = options.scale ?? 1
-  const [fullW, fullH] = sizeForAspect(doc.aspect)
+  const [fullW, fullH] = sizeForAspect(doc.aspect, doc.resolution)
   const width = Math.round((fullW * scale) / 2) * 2
   const height = Math.round((fullH * scale) / 2) * 2
 
@@ -288,7 +290,8 @@ export function canExportMp4(): boolean {
 }
 
 /** Single PNG still of the composition at `t` — used for thumbnails/posters. */
-export function captureStill(doc: StudioDoc, t: number, maxWidth = 640): string | null {
+export function captureStill(editDoc: StudioDoc, t: number, maxWidth = 640): string | null {
+  const doc = resolveForOutput(editDoc)
   const [fullW, fullH] = sizeForAspect(doc.aspect)
   const scale = Math.min(1, maxWidth / fullW)
   const canvas = document.createElement('canvas')

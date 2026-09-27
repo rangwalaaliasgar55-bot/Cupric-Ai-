@@ -15,6 +15,14 @@ import { buildBeforeAfter, buildCollage, buildFromAssets, buildTestimonialGrid, 
 import { captionsFromTranscript } from '../../lib/studio/textTools'
 import { captionsForClip, transcribeClip } from '../../lib/studio/autoCaptions'
 import { componentOps, directComponents } from '../../lib/studio/componentDirector'
+import { deleteScene, duplicateScene, loadScene, removeVariable, renameScene, saveScene, setVariable, updateScene } from '../../lib/studio/scenes'
+import { variablesUsed } from '../../lib/studio/resolve'
+import { reframePatch, snapCutsToBeats, tightenClip, timelineBeats } from '../../lib/studio/autoEdit'
+import { analyseBeats, analyseSubject } from '../../lib/studio/autoEditAnalysis'
+import { aspectRatio } from '../../lib/studio/doc'
+import { DEFAULT_PHONE, PHONE_DESIGNS, PHONE_FRAME_COLORS, PHONE_MOTIONS, defaultApp } from '../../lib/studio/phone'
+import type { StudioPhoneApp, StudioPhoneStyle } from '../../types/project'
+import { emitStudio } from '../../lib/studio/studioEvents'
 import { applyStudioEditPlan, describeStudioEditOp } from '../../lib/studio/editOps'
 import { computeScopes, type Scopes } from '../../lib/studio/color'
 import { removeMarker } from '../../lib/studio/timelineOps'
@@ -60,6 +68,10 @@ async function refsFrom(files: FileList | null): Promise<{ refs: MediaRef[]; err
 
 export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selectedId }: Props) {
   const [transcribing, setTranscribing] = useState(false)
+  const [sceneName, setSceneName] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
+  const [varName, setVarName] = useState('')
+  const [varValue, setVarValue] = useState('')
   const [pending, setPending] = useState<{ doc: StudioDoc; label: string; notes?: string[] } | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const suggestions = useMemo(() => suggestEdits(doc), [doc])
@@ -229,6 +241,217 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
             setCompare([])
           }} />
         </label>
+      </Section>
+
+      <Section title="Phone Studio">
+        {(() => {
+          const sel = doc.clips.find((c) => c.id === selectedId && (c.kind === 'image' || c.kind === 'video' || c.kind === 'overlay'))
+          if (!sel) return <p className="text-xs text-muted">Select a product photo, screenshot, video or recorded component. Phone Studio puts it on an animated phone screen you can fully edit.</p>
+          const phone = (sel as { phone?: StudioPhoneStyle | null }).phone
+          const on = (sel as { device?: string }).device === 'phone' && !!phone
+          const put = (next: StudioPhoneStyle | null, label: string) =>
+            onCommit({ ...doc, clips: doc.clips.map((c) => (c.id === sel.id ? ({ ...c, device: next ? 'phone' : 'none', phone: next, ...(next && c.kind !== 'overlay' ? { fit: 'contain' } : {}) } as typeof c) : c)) }, label)
+          const setApp = (patch: Partial<StudioPhoneApp>) => phone?.app && put({ ...phone, app: { ...phone.app, ...patch } as StudioPhoneApp }, 'Edit phone screen')
+          return (
+            <div className="space-y-2.5">
+              <div className="grid grid-cols-2 gap-1.5">
+                {PHONE_DESIGNS.map((d) => (
+                  <button key={d.id} type="button" title={d.detail} onClick={() => put(structuredClone(d.style), `Phone design: ${d.label}`)} className="rounded-lg border border-line bg-panel-alt px-2 py-1.5 text-left text-xs text-text hover:border-accent">
+                    <span className="font-medium">{d.label}</span>
+                    <span className="mt-0.5 block text-[11px] leading-snug text-muted">{d.detail}</span>
+                  </button>
+                ))}
+              </div>
+              {on && phone && (
+                <>
+                  <div>
+                    <p className="mb-1 text-[11px] font-medium text-muted">Frame colour</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {PHONE_FRAME_COLORS.map((c) => (
+                        <button key={c.id} type="button" aria-label={c.label} title={c.label} onClick={() => put({ ...phone, frameColor: c.color }, 'Phone frame colour')} className={`h-6 w-6 rounded-full border-2 ${phone.frameColor === c.color ? 'border-accent' : 'border-line'}`} style={{ background: c.color }} />
+                      ))}
+                      <input type="color" aria-label="Custom frame colour" value={phone.frameColor} onChange={(e) => put({ ...phone, frameColor: e.target.value }, 'Phone frame colour')} className="h-6 w-8 cursor-pointer rounded border border-line bg-transparent" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <label className="text-[11px] text-muted">Motion
+                      <select className={inputCx} value={phone.motion} onChange={(e) => put({ ...phone, motion: e.target.value as StudioPhoneStyle['motion'] }, 'Phone motion')}>
+                        {PHONE_MOTIONS.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-[11px] text-muted">Camera
+                      <select className={inputCx} value={phone.island} onChange={(e) => put({ ...phone, island: e.target.value as StudioPhoneStyle['island'] }, 'Phone camera')}>
+                        <option value="island">Dynamic island</option><option value="notch">Notch</option><option value="none">None</option>
+                      </select>
+                    </label>
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-xs text-text">
+                    {(['buttons', 'glare', 'scroll'] as const).map((k) => (
+                      <label key={k} className="flex items-center gap-1.5"><input type="checkbox" checked={phone[k]} onChange={(e) => put({ ...phone, [k]: e.target.checked }, `Phone ${k}`)} />{k === 'scroll' ? 'Scroll tall screenshot' : k === 'glare' ? 'Glass glare' : 'Side buttons'}</label>
+                    ))}
+                  </div>
+                  <label className="block text-[11px] text-muted">Screen
+                    <select className={inputCx} value={phone.app?.kind ?? 'none'} onChange={(e) => put({ ...phone, app: e.target.value === 'none' ? null : defaultApp(e.target.value as StudioPhoneApp['kind']) }, 'Phone screen')}>
+                      <option value="none">Just the media</option><option value="product">Product page (animated)</option><option value="lockscreen">Lock screen + notifications</option><option value="social">Social post (like animation)</option>
+                    </select>
+                  </label>
+                  {phone.app?.kind === 'product' && (
+                    <div className="space-y-1.5">
+                      <input className={inputCx} aria-label="Product name" value={phone.app.title} onChange={(e) => setApp({ title: e.target.value })} />
+                      <input className={inputCx} aria-label="Subtitle" value={phone.app.subtitle} onChange={(e) => setApp({ subtitle: e.target.value })} />
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <input className={inputCx} aria-label="Price" placeholder="Price" value={phone.app.price} onChange={(e) => setApp({ price: e.target.value })} />
+                        <input className={inputCx} aria-label="Button" placeholder="Button" value={phone.app.cta} onChange={(e) => setApp({ cta: e.target.value })} />
+                        <input className={inputCx} aria-label="Badge" placeholder="Badge" value={phone.app.badge} onChange={(e) => setApp({ badge: e.target.value })} />
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted">
+                        <label className="flex items-center gap-1">Rating <input className={`${inputCx} w-16`} type="number" min={0} max={5} step={0.1} placeholder="—" value={phone.app.rating ?? ''} onChange={(e) => setApp({ rating: e.target.value === '' ? null : Math.max(0, Math.min(5, Number(e.target.value))) })} /></label>
+                        <span>only shown if you enter your real rating</span>
+                      </div>
+                      <label className="flex items-center gap-2 text-xs text-muted">Accent <input type="color" value={phone.app.accent} onChange={(e) => setApp({ accent: e.target.value })} /></label>
+                    </div>
+                  )}
+                  {phone.app?.kind === 'lockscreen' && (
+                    <div className="space-y-1.5">
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <input className={inputCx} aria-label="Time" value={phone.app.time} onChange={(e) => setApp({ time: e.target.value })} />
+                        <input className={inputCx} aria-label="Date" value={phone.app.date} onChange={(e) => setApp({ date: e.target.value })} />
+                      </div>
+                      {phone.app.notifications.map((n, i) => (
+                        <div key={i} className="space-y-1 rounded-md border border-line p-1.5">
+                          {(['app', 'title', 'body'] as const).map((k) => (
+                            <input key={k} className={inputCx} aria-label={`Notification ${i + 1} ${k}`} placeholder={k} value={n[k]} onChange={(e) => phone.app?.kind === 'lockscreen' && setApp({ notifications: phone.app.notifications.map((x, j) => (j === i ? { ...x, [k]: e.target.value } : x)) })} />
+                          ))}
+                          <button type="button" className="text-[11px] text-muted hover:text-danger" onClick={() => phone.app?.kind === 'lockscreen' && setApp({ notifications: phone.app.notifications.filter((_, j) => j !== i) })}>Remove</button>
+                        </div>
+                      ))}
+                      {phone.app.notifications.length < 4 && <Button size="sm" variant="outline" onClick={() => phone.app?.kind === 'lockscreen' && setApp({ notifications: [...phone.app.notifications, { app: 'Your app', title: 'Notification title', body: 'Message' }] })}>Add notification</Button>}
+                    </div>
+                  )}
+                  {phone.app?.kind === 'social' && (
+                    <div className="space-y-1.5">
+                      <input className={inputCx} aria-label="Handle" value={phone.app.handle} onChange={(e) => setApp({ handle: e.target.value })} />
+                      <textarea className={`${inputCx} h-16`} aria-label="Caption" value={phone.app.caption} onChange={(e) => setApp({ caption: e.target.value })} />
+                      <input className={inputCx} aria-label="Likes line" placeholder="Likes line (optional — only real numbers)" value={phone.app.likes} onChange={(e) => setApp({ likes: e.target.value })} />
+                    </div>
+                  )}
+                  <Button size="sm" variant="outline" onClick={() => put(null, 'Remove phone')}>Remove phone</Button>
+                </>
+              )}
+              {!on && <Button size="sm" variant="outline" onClick={() => put({ ...DEFAULT_PHONE }, 'Put on phone')}>Put on a phone</Button>}
+            </div>
+          )
+        })()}
+      </Section>
+
+      <Section title="Auto-edit" open>
+        {(() => {
+          const sel = doc.clips.find((c) => c.id === selectedId)
+          const music = (sel?.kind === 'audio' ? sel : doc.clips.find((c) => c.kind === 'audio' && (c.role ?? 'music') === 'music')) as StudioAudioClip | undefined
+          const beats = timelineBeats(doc)
+          const run = async (label: string, fn: () => Promise<void>) => {
+            setBusy(label)
+            setMsg(null)
+            try { await fn() } catch (err) { setMsg(err instanceof Error ? err.message : String(err)) } finally { setBusy(null) }
+          }
+          return (
+            <div className="space-y-2">
+              <div className="rounded-md border border-line p-2">
+                <p className="text-xs font-medium text-text">Beat sync</p>
+                <p className="text-xs text-muted">{music?.beats ? `${music.name}: ${music.beats.bpm} BPM, ${music.beats.times.length} beats (${beats.length} on the timeline).` : music ? `Analyse “${music.name}” to find its beats.` : 'Add a music clip first.'}</p>
+                <div className="mt-1.5 flex gap-1.5">
+                  <Button size="sm" variant="outline" disabled={!music || !!busy} onClick={() => music && run('beats', async () => {
+                    const r = await analyseBeats(music)
+                    onCommit({ ...doc, clips: doc.clips.map((c) => (c.id === music.id ? { ...c, beats: r } as StudioAudioClip : c)) }, 'Analyse beats')
+                    setMsg(`Found ${r.times.length} beats at ${r.bpm} BPM.`)
+                  })}>{busy === 'beats' ? 'Analysing…' : 'Analyse beats'}</Button>
+                  <Button size="sm" variant="outline" disabled={!beats.length} onClick={() => {
+                    const r = snapCutsToBeats(doc)
+                    if (!r.moved) return setMsg(r.skipped[0] ?? 'Every main-track cut is already on a beat (or more than 0.3 s from one).')
+                    propose(r.doc, `Snap ${r.moved} cuts to the beat`, r.skipped)
+                  }}>Snap cuts to beats</Button>
+                  <Button size="sm" variant="outline" disabled={!beats.length} onClick={() => {
+                    const markers = beats.map((at, i) => ({ id: `beat-${i}`, at: Math.round(at * 1000) / 1000, label: `Beat ${i + 1}`, color: 'info' as const }))
+                    propose({ ...doc, markers: [...(doc.markers ?? []).filter((m) => !m.id.startsWith('beat-')), ...markers] }, 'Beat markers')
+                  }}>Beats → markers</Button>
+                </div>
+              </div>
+              <div className="rounded-md border border-line p-2">
+                <p className="text-xs font-medium text-text">Tighten speech</p>
+                <p className="text-xs text-muted">{sel && (sel.kind === 'video' || sel.kind === 'audio') ? (sel.words?.length ? `Removes “um/uh” and pauses over 0.6 s from “${sel.name}”, using its ${sel.words.length} word timings.` : 'Run Auto-captions on this clip first — tightening needs its word timings.') : 'Select a transcribed video or audio clip.'}</p>
+                <Button size="sm" variant="outline" className="mt-1.5" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length} onClick={() => {
+                  if (!sel) return
+                  const r = tightenClip(doc, sel.id)
+                  if (!r.cuts) return setMsg(r.reason ?? 'Nothing to tighten.')
+                  propose(r.doc, `Tighten speech (−${r.removedSec.toFixed(1)} s)`, [`${r.cuts} cuts; captions and overlays after the clip move with the words.`])
+                }}>Tighten</Button>
+              </div>
+              <div className="rounded-md border border-line p-2">
+                <p className="text-xs font-medium text-text">Smart reframe</p>
+                <p className="text-xs text-muted">{sel?.kind === 'video' ? `Follows the subject (faces, then motion) so landscape footage works in ${doc.aspect}. A heuristic tracker — check the preview.` : 'Select a landscape video clip in a portrait or square edit.'}</p>
+                <Button size="sm" variant="outline" className="mt-1.5" disabled={sel?.kind !== 'video' || !!busy} onClick={() => sel?.kind === 'video' && run('reframe', async () => {
+                  const clip = sel as StudioMediaClip
+                  const a = await analyseSubject(clip, (p) => setMsg(`Analysing frames… ${p}%`))
+                  const r = reframePatch(clip, a.samples, aspectRatio(doc.aspect), a.srcW / Math.max(1, a.srcH))
+                  if (r.reason) return setMsg(r.reason)
+                  setMsg(null)
+                  propose({ ...doc, clips: doc.clips.map((c) => (c.id === clip.id ? ({ ...c, ...r.patch } as StudioMediaClip) : c)) }, 'Smart reframe', [`${r.patch.keyframes?.length ?? 0} pan keyframes`])
+                })}>{busy === 'reframe' ? 'Tracking…' : 'Reframe'}</Button>
+              </div>
+            </div>
+          )
+        })()}
+      </Section>
+
+      <Section title={`Scenes (${(doc.scenes ?? []).length})`}>
+        <p className="text-xs text-muted">Save the whole edit as a named scene, try something else, and load any scene back. Loading is one undo step.</p>
+        <div className="flex gap-1.5">
+          <input className={inputCx} placeholder="Scene name" value={sceneName} onChange={(e) => setSceneName(e.target.value)} />
+          <Button size="sm" variant="outline" onClick={() => {
+            try {
+              const r = saveScene(doc, sceneName)
+              onCommit(r.doc, `Save scene “${r.scene.name}”`)
+              emitStudio('scene:save', { id: r.scene.id, name: r.scene.name })
+              setSceneName('')
+            } catch (err) { setMsg(err instanceof Error ? err.message : String(err)) }
+          }}>Save</Button>
+        </div>
+        {(doc.scenes ?? []).map((sc) => (
+          <div key={sc.id} className="rounded-md border border-line p-2">
+            <input aria-label="Scene name" className="w-full bg-transparent text-xs font-medium text-text outline-none" defaultValue={sc.name} onBlur={(e) => e.target.value !== sc.name && onCommit(renameScene(doc, sc.id, e.target.value), 'Rename scene')} />
+            <p className="text-[11px] text-muted">{sc.doc.clips.length} clips · {sc.doc.aspect} · saved {new Date(sc.savedAt).toLocaleString()}</p>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              <Button size="sm" variant="outline" onClick={() => { onCommit(loadScene(doc, sc.id), `Load scene “${sc.name}”`); emitStudio('scene:load', { id: sc.id, name: sc.name }) }}>Load</Button>
+              <Button size="sm" variant="outline" onClick={() => onCommit(updateScene(doc, sc.id), `Update scene “${sc.name}”`)}>Overwrite</Button>
+              <Button size="sm" variant="outline" onClick={() => { try { onCommit(duplicateScene(doc, sc.id), 'Duplicate scene') } catch (err) { setMsg(err instanceof Error ? err.message : String(err)) } }}>Duplicate</Button>
+              <Button size="sm" variant="outline" onClick={() => onCommit(deleteScene(doc, sc.id), `Delete scene “${sc.name}”`)}>Delete</Button>
+            </div>
+          </div>
+        ))}
+      </Section>
+
+      <Section title={`Variables (${(doc.variables ?? []).length})`}>
+        <p className="text-xs text-muted">Type <code className="font-mono text-text">{'{{name}}'}</code> in any text; it shows the value here in preview and export. Change a value once to update every title — handy for prices, names and dates.</p>
+        {(() => {
+          const used = variablesUsed(doc)
+          const defined = new Set((doc.variables ?? []).map((v) => v.name.toLowerCase()))
+          const missing = used.filter((u) => !defined.has(u))
+          return missing.length ? <p className="text-xs text-danger">Used but not defined: {missing.map((m) => `{{${m}}}`).join(', ')} — shown as typed until you add them.</p> : null
+        })()}
+        {(doc.variables ?? []).map((v) => (
+          <div key={v.name} className="flex items-center gap-1.5">
+            <code className="w-28 shrink-0 truncate font-mono text-xs text-text">{`{{${v.name}}}`}</code>
+            <input aria-label={`Value of ${v.name}`} className={inputCx} defaultValue={v.value} onBlur={(e) => e.target.value !== v.value && onCommit(setVariable(doc, v.name, e.target.value), `Set {{${v.name}}}`)} />
+            <Button size="sm" variant="outline" aria-label={`Remove ${v.name}`} onClick={() => onCommit(removeVariable(doc, v.name), `Remove {{${v.name}}}`)}>×</Button>
+          </div>
+        ))}
+        <div className="flex gap-1.5">
+          <input className={inputCx} placeholder="name" value={varName} onChange={(e) => setVarName(e.target.value)} />
+          <input className={inputCx} placeholder="value" value={varValue} onChange={(e) => setVarValue(e.target.value)} />
+          <Button size="sm" variant="outline" onClick={() => {
+            try { onCommit(setVariable(doc, varName, varValue), `Set {{${varName}}}`); setVarName(''); setVarValue('') } catch (err) { setMsg(err instanceof Error ? err.message : String(err)) }
+          }}>Add</Button>
+        </div>
       </Section>
 
       <Section title={`Smart components (${smartMoments.length})`}>

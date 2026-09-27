@@ -177,7 +177,9 @@ export type LibraryItem =
  * rendered deterministically to a canvas by src/lib/studio/renderer.ts.
  * ———————————————————————————————————————————————————————————————— */
 
-export type StudioAspect = '16:9' | '9:16' | '1:1'
+export type StudioAspect = '16:9' | '9:16' | '1:1' | '4:5'
+/** Export size by short side: 720p … 2160p (Ultra HD). */
+export type StudioResolution = '720p' | '1080p' | '1440p' | '2160p'
 export type StudioTextAnim =
   | 'none'
   | 'fade-up'
@@ -229,6 +231,24 @@ export type StudioBlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'da
 
 /** 2.15 — device frame drawn around a media/overlay clip. */
 export type StudioDevice = 'none' | 'phone' | 'laptop' | 'browser'
+
+/** Phone Studio — animated phone mockup with an editable, animated screen. */
+export type StudioPhoneMotion = 'none' | 'float' | 'tilt-in' | 'spin-reveal' | 'rise' | 'hero-zoom' | 'swing'
+export type StudioPhoneApp =
+  | { kind: 'product'; title: string; subtitle: string; price: string; cta: string; badge: string; rating: number | null; accent: string }
+  | { kind: 'lockscreen'; time: string; date: string; notifications: Array<{ app: string; title: string; body: string }> }
+  | { kind: 'social'; handle: string; caption: string; likes: string; accent: string }
+export type StudioPhoneStyle = {
+  frameColor: string
+  island: 'island' | 'notch' | 'none'
+  buttons: boolean
+  glare: boolean
+  motion: StudioPhoneMotion
+  /** Tall screenshots scroll top → bottom across the clip. */
+  scroll: boolean
+  /** Animated app UI drawn on the screen over the clip's media. */
+  app: StudioPhoneApp | null
+}
 
 /** 2.7 — a named point on the timeline. */
 export type StudioMarker = { id: string; at: number; label: string; color: 'lime' | 'info' | 'danger' }
@@ -325,10 +345,24 @@ type StudioClipCommon = {
   blendMode?: StudioBlendMode
   /** 2.3 — absent means no LUT. */
   lut?: StudioLut | null
+  /** Locked clips cannot be moved, trimmed or deleted until unlocked. */
+  locked?: boolean
+  /** Hidden clips stay on the timeline but are not drawn or heard. */
+  hidden?: boolean
+  /** Muted clips are drawn but silent. */
+  muted?: boolean
+  /** Mirror about the clip's own centre. */
+  flipX?: boolean
+  flipY?: boolean
 }
+
+/** A transcribed word in SOURCE-file seconds (survives trims and splits). */
+export type StudioWord = { word: string; start: number; end: number }
 
 export type StudioMediaClip = StudioClipCommon & {
   kind: 'video' | 'image'
+  /** Transcript words with timing (auto-captions); drives speech tightening. */
+  words?: StudioWord[] | null
   /** Runtime handle into the media registry (object URLs are never persisted). */
   mediaId: string
   fileName: string
@@ -346,6 +380,8 @@ export type StudioMediaClip = StudioClipCommon & {
   posterDataUrl?: string | null
   /** 2.15 — device mockup frame. */
   device?: StudioDevice
+  /** Phone Studio settings (used when device is 'phone'). */
+  phone?: StudioPhoneStyle | null
   /**
    * 2.21 — before/after. This clip is the AFTER; `beforeMediaId` is drawn on
    * the left of a divider. Both images come from the user — never generated.
@@ -419,6 +455,8 @@ export type StudioOverlayClip = StudioClipCommon & {
   scale: number
   /** 2.15 — device mockup frame. */
   device?: StudioDevice
+  /** Phone Studio settings (used when device is 'phone'). */
+  phone?: StudioPhoneStyle | null
 }
 
 /**
@@ -430,6 +468,10 @@ export type StudioOverlayClip = StudioClipCommon & {
  * the same gain from the same numbers.
  */
 export type StudioAudioClip = StudioClipCommon & {
+  /** Transcript words with timing, in source seconds. */
+  words?: StudioWord[] | null
+  /** Detected beats in SOURCE seconds + tempo (Analyse beats). */
+  beats?: { bpm: number; times: number[] } | null
   kind: 'audio'
   mediaId: string
   fileName: string
@@ -528,4 +570,10 @@ export type StudioDoc = {
   loudnessTarget?: number | null
   /** Part 4 — licence + attribution of anything imported from a link. */
   credits?: Array<{ url: string; source: string; sourceLicense: string | null; attribution: string | null }>
+  /** Export resolution (short side). Default 1080p. */
+  resolution?: StudioResolution
+  /** Dynamic-content variables: `{{name}}` in any text resolves to `value`. */
+  variables?: Array<{ name: string; value: string }>
+  /** Named scenes saved inside the project (whole-doc snapshots, minus scenes). */
+  scenes?: Array<{ id: string; name: string; savedAt: string; doc: Omit<StudioDoc, 'scenes'> }>
 }

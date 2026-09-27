@@ -27,6 +27,7 @@ import type { StudioClip, StudioDoc, StudioTextClip } from '../../types/project'
 import { COMPONENTS, findComponent, rankComponents, type ComponentEntry } from './components'
 import { docDuration } from './doc'
 import type { StudioEditOp } from './editOps'
+import { wordsToTimeline } from './autoCaptions'
 import { styleFromContent, STYLE_INTENSITY, type DirectionStyle, type MotionSpec } from './motionDirector'
 
 export type ComponentCue =
@@ -113,6 +114,9 @@ export function directComponents(doc: StudioDoc, opts: DirectorOptions = {}): Co
   const lines = (doc.clips.filter((c) => c.kind === 'text') as StudioTextClip[])
     .filter((t) => t.text.trim().length >= 3 && t.durationSec >= 1.2)
     .sort((a, b) => a.startSec - b.startSec || a.id.localeCompare(b.id))
+  // Spoken words (timeline seconds) from any transcribed clip: a component
+  // lands ON the word that makes the claim, not just somewhere in the line.
+  const spoken = doc.clips.flatMap((c) => ((c.kind === 'video' || c.kind === 'audio') && c.words?.length && !c.hidden ? wordsToTimeline(c.words, c) : []))
   const out: ComponentMoment[] = []
   const seenCues = new Map<ComponentCue, number>()
   for (const line of lines) {
@@ -124,7 +128,10 @@ export function directComponents(doc: StudioDoc, opts: DirectorOptions = {}): Co
     if (lastSame !== undefined && line.startSec - lastSame < 15) continue
     // Land after the words start (read the claim, then see it proven).
     const lead = Math.min(0.6, line.durationSec * 0.2)
-    const startSec = Math.round((line.startSec + lead) * 100) / 100
+    // Single word first ("₹499"), then word pairs for multi-word cues ("sign up").
+    const inLine = (w: { start: number }) => w.start >= line.startSec - 1 && w.start <= line.startSec + line.durationSec
+    const cueWord = spoken.find((w) => inLine(w) && rule.test.test(w.word)) ?? spoken.find((w, i) => inLine(w) && rule.test.test(`${w.word} ${spoken[i + 1]?.word ?? ''}`))
+    const startSec = Math.round((cueWord ? Math.max(0, cueWord.start) : line.startSec + lead) * 100) / 100
     const durationSec = Math.round(Math.max(2, Math.min(6, line.durationSec - lead + 0.8, total - startSec)) * 100) / 100
     if (durationSec < 1.5) continue
     if (busy.some(([a, b]) => overlaps(startSec, startSec + durationSec, a, b, 0.75))) continue
@@ -145,7 +152,7 @@ export function directComponents(doc: StudioDoc, opts: DirectorOptions = {}): Co
       y,
       interact: rule.role === 'cta' || rule.role === 'control',
       motion: motionFor(rule.role, style, fromLeft),
-      reason: `“${line.text.slice(0, 48)}${line.text.length > 48 ? '…' : ''}” — ${rule.why}. ${entry.name}, ${style} motion, ${y > 0.5 ? 'below' : 'above'} the line.`,
+      reason: `“${line.text.slice(0, 48)}${line.text.length > 48 ? '…' : ''}” — ${rule.why}. ${entry.name}, ${style} motion, ${y > 0.5 ? 'below' : 'above'} the line${cueWord ? `, landing on the spoken word “${cueWord.word}”` : ''}.`,
     })
     used.add(entry.slug)
     busy.push([startSec, startSec + durationSec])

@@ -19,7 +19,7 @@ import type { Project, StudioClip, StudioDoc, StudioKeyframe } from '../types/pr
 
 export const PERSIST_VERSION = 2
 
-const ASPECTS = new Set(['16:9', '9:16', '1:1'])
+const ASPECTS = new Set(['16:9', '9:16', '1:1', '4:5'])
 const FPS = new Set([24, 30, 60])
 const STARTER_NAMES = new Set(['Aurora Launch Teaser', 'Podcast Clip — Ep. 12', 'Logo Sting v2'])
 

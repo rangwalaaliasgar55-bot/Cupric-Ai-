@@ -5,7 +5,8 @@ import { TEXT_PRESETS, applyTextPreset, captionsFromTranscript } from './textToo
 import { DEFAULT_DUCKING } from './audioMix'
 import { clampRecordSec } from './components'
 import { clamp } from '../utils'
-import { MAX_TRACKS, defaultTextClip, docDuration, normaliseClip, reorderTracks, resolveOverlaps } from './doc'
+import { PHONE_DESIGNS } from './phone'
+import { MAX_TRACKS, defaultTextClip, docDuration, normaliseClip, reorderTracks, resolveOverlaps, aspectRatio } from './doc'
 import { componentFromInstruction, findComponent, withComponent } from './components'
 import { studioPlayhead } from './studioLink'
 import {
@@ -64,6 +65,7 @@ export type StudioEditOp =
   | { type: 'addMarker'; at: number; label?: string }
   | { type: 'setBlend'; clipId: string; mode: StudioBlendMode }
   | { type: 'setDevice'; clipId: string; device: StudioDevice }
+  | { type: 'phoneDesign'; clipId: string; design: string }
   | { type: 'productMotion'; clipId: string; preset: ProductPreset }
   | { type: 'logoReveal'; clipId: string; reveal: LogoReveal }
   | { type: 'textPreset'; clipId: string; preset: string }
@@ -273,6 +275,14 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       if (kind !== 'video' && kind !== 'image' && kind !== 'overlay') throw new Error('Device frames go on video, image or component clips')
       return { type, clipId, device }
     }
+    if (type === 'phoneDesign') {
+      const design = String(op.design ?? '')
+      if (!PHONE_DESIGNS.some((d) => d.id === design)) throw new Error(`Unknown phone design “${design}” (use ${PHONE_DESIGNS.map((d) => d.id).join(', ')})`)
+      const clipId = requireClip()
+      const kind = doc.clips.find((c) => c.id === clipId)?.kind
+      if (kind !== 'video' && kind !== 'image' && kind !== 'overlay') throw new Error('Phone designs go on video, image or component clips')
+      return { type, clipId, design }
+    }
     if (type === 'productMotion' || type === 'logoReveal') {
       const clipId = requireClip()
       const kind = doc.clips.find((c) => c.id === clipId)?.kind
@@ -351,6 +361,7 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'closeGaps') return op.track === undefined ? 'Close gaps on every track' : `Close gaps on T${op.track + 1}`
   if (op.type === 'addMarker') return `Marker “${op.label ?? 'Marker'}” at ${op.at.toFixed(2)}s`
   if (op.type === 'setBlend') return `Blend ${name}: ${op.mode}`
+  if (op.type === 'phoneDesign') return `Put ${name} on an animated phone (${PHONE_DESIGNS.find((d) => d.id === op.design)?.label ?? op.design})`
   if (op.type === 'setDevice') return op.device === 'none' ? `Remove device frame from ${name}` : `Put ${name} in a ${op.device} frame`
   if (op.type === 'productMotion') return `Product motion on ${name}: ${op.preset}`
   if (op.type === 'logoReveal') return `Logo reveal on ${name}: ${op.reveal}`
@@ -432,6 +443,9 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
     else if (op.type === 'addCaptions') {
       const caps = captionsFromTranscript(op.transcript, { startSec: op.startSec, durationSec: op.durationSec, track: Math.min(MAX_TRACKS - 1, next.trackCount) })
       next = { ...next, trackCount: Math.min(MAX_TRACKS, next.trackCount + 1), clips: [...next.clips, ...caps] }
+    } else if (op.type === 'phoneDesign') {
+      const design = PHONE_DESIGNS.find((d) => d.id === op.design)
+      if (design) next = { ...next, clips: next.clips.map((clip) => (clip.id === op.clipId ? ({ ...clip, device: 'phone', phone: structuredClone(design.style), ...(clip.kind !== 'overlay' ? { fit: 'contain' } : {}) } as StudioClip) : clip)) }
     } else if (op.type === 'setBlend' || op.type === 'setDevice' || op.type === 'productMotion' || op.type === 'logoReveal' || op.type === 'textPreset' || op.type === 'setAudioRole') {
       next = {
         ...next,
@@ -523,7 +537,7 @@ function polishPlan(doc: StudioDoc, instruction: string): StudioEditPlan {
       // Fit inside title-safe (80% of the width) for this aspect: bold display
       // glyphs average ~0.6 em, and a line wraps only between words, so the
       // longest word — or the whole line when it is short — must fit.
-      const frameW = doc.aspect === '9:16' ? 9 / 16 : doc.aspect === '1:1' ? 1 : 16 / 9
+      const frameW = aspectRatio(doc.aspect)
       const heroText = hero?.text ?? ''
       const longestWord = Math.max(1, ...heroText.split(/\s+/).map((w) => w.length))
       const fitChars = heroText.length <= 14 ? Math.max(longestWord, heroText.length) : longestWord

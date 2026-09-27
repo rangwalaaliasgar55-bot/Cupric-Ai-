@@ -13,6 +13,7 @@ import { DEFAULT_DUCKING } from './audioMix'
 import { unfilledPlaceholders } from './layouts'
 import { componentOps, directComponents } from './componentDirector'
 import { applyStudioEditPlan } from './editOps'
+import { pacingIssues, snapCutsToBeats, tightenClip } from './autoEdit'
 
 export type Suggestion = {
   id: string
@@ -101,6 +102,22 @@ export function suggestEdits(doc: StudioDoc): Suggestion[] {
   if (holes.length) {
     out.push({ id: 'placeholders', title: `${holes.length} placeholder${holes.length > 1 ? 's' : ''} still need real content`, detail: 'Testimonials are never written for you. Fill them in or remove them — Accept removes them.', severity: 'warn', apply: (d) => ({ ...d, clips: d.clips.filter((c) => !holes.some((h) => h.id === c.id)) }) })
   }
+
+  // Beat sync: main-track cuts near (but off) the analysed music beats.
+  const beatSnap = snapCutsToBeats(doc)
+  if (beatSnap.moved > 0) {
+    out.push({ id: 'beat-sync', title: `Snap ${beatSnap.moved} cut${beatSnap.moved > 1 ? 's' : ''} to the beat`, detail: 'Rolls each main-track cut onto the nearest music beat (within 0.3 s). Clip lengths change; the overall edit does not.', severity: 'info', apply: (d) => snapCutsToBeats(d).doc })
+  }
+
+  // Tighten speech: transcribed clips with fillers or long pauses.
+  for (const c of doc.clips) {
+    if ((c.kind !== 'video' && c.kind !== 'audio') || !c.words?.length || c.locked) continue
+    const r = tightenClip(doc, c.id)
+    if (r.cuts > 0) out.push({ id: `tighten-${c.id}`, title: `Tighten “${c.name}” — remove ${r.removedSec.toFixed(1)} s`, detail: `${r.cuts} filler word${r.cuts > 1 ? 's' : ''} / long pause${r.cuts > 1 ? 's' : ''} cut using the word timings; captions and overlays after it move with the words.`, severity: 'info', apply: (d) => tightenClip(d, c.id).doc })
+  }
+
+  // Pacing: a hook in the first second, punch-ins on long static shots.
+  for (const p of pacingIssues(doc)) out.push({ id: `pacing-${p.id}`, title: p.title, detail: p.detail, severity: 'info', apply: p.apply })
 
   // Smart components: lines whose claim a real UI component can SHOW.
   const moments = directComponents(doc)

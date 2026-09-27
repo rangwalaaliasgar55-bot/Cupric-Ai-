@@ -9,6 +9,7 @@ import type {
   StudioStickerClip,
   StudioTextClip,
 } from '../../types/project'
+import { resolveForOutput } from '../../lib/studio/resolve'
 import { clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
 import { safeAreas } from '../../lib/studio/textTools'
 import { mixGainAt } from '../../lib/studio/audioMix'
@@ -44,7 +45,7 @@ type Props = {
  * scrubbing, playing and exporting all go through `drawStudioFrame`.
  */
 export function StudioPreview({
-  doc,
+  doc: editDoc,
   time,
   playing,
   muted,
@@ -56,6 +57,8 @@ export function StudioPreview({
   showSafeAreas = false,
   keyframeRecord = false,
 }: Props) {
+  // Hidden / muted / {{variables}} resolved exactly as the exporter does.
+  const doc = resolveForOutput(editDoc)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef(time)
@@ -206,9 +209,9 @@ export function StudioPreview({
           <div className="absolute inset-[10%] rounded border border-dashed border-accent/60">
             <span className="absolute left-1 top-0.5 text-[9px] font-medium uppercase tracking-wide text-accent-text/80">title safe</span>
           </div>
-          {doc.aspect === '9:16' &&
-            safeAreas('9:16')
-              .filter((b) => b.id === 'social')
+          {(doc.aspect === '9:16' || doc.aspect === '4:5') &&
+            safeAreas(doc.aspect)
+              .filter((b) => b.id === 'social' || b.id === 'grid')
               .map((b) => (
                 <div key={b.id} className="absolute rounded border border-dashed border-info/70" style={{ left: `${b.x * 100}%`, top: `${b.y * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%` }}>
                   <span className="absolute bottom-0.5 left-1 text-[9px] font-medium uppercase tracking-wide text-info">clear of app UI</span>

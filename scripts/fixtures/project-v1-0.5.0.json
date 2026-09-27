@@ -8,7 +8,7 @@
         "renderJobs": [],
         "arenaAssets": [],
         "studio": {
-          "aspect": "4:5",
+          "aspect": "21:9",
           "fps": 25,
           "backgroundId": "lime-void",
           "trackCount": 1,

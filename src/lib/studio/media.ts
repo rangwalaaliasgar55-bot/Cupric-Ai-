@@ -93,6 +93,11 @@ export function getMedia(mediaId: string | null | undefined): MediaHandle | null
   return registry.get(mediaId) ?? null
 }
 
+/** Every registered asset (the scripting API's asset list). */
+export function listMedia(): MediaHandle[] {
+  return [...registry.values()]
+}
+
 export function hasMedia(mediaId: string | null | undefined): boolean {
   return Boolean(mediaId && registry.has(mediaId))
 }

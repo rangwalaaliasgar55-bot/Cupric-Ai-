@@ -156,3 +156,14 @@ Windows hardware pass for 1.10/2.24; web-only Arena capture paths still use same
   - It's surfaced as a suggestion and in the Pro tools "Smart components" section.
   - `check:director`.
 - The real-machine checklist is in `HARDWARE_TEST_PLAN.md`.
+
+## Editor upgrades batch (formats · context menu · scenes/variables · events/API · auto-edit · Phone Studio)
+Studied openvideodev/react-video-editor and sambowenhughes/a-react-video-editor (no code copied; ideas re-implemented on Cupric's pure doc model).
+- Formats: 4:5 feed, 720p–2160p (Ultra HD), channel presets (`formats.ts`) with length warnings.
+- Per-clip context menu + hotkeys (copy/cut/paste/duplicate/split/arrange/flip/hide/mute/lock) — `clipActions.ts`, `ClipContextMenu.tsx`. Locked clips refuse with a reason.
+- Output pass `resolve.ts` (hidden, muted, `{{variables}}`) shared by preview + export.
+- Scenes + Variables panels (`scenes.ts`); event bus `studioEvents.ts`; scripting API `window.cupricStudio` (`studioApi.ts`), mutations go through validated ops.
+- Auto-edit (`autoEdit.ts`, pure): beat detection + snap cuts, tighten speech (fillers/pauses), smart reframe, pacing. Analysis via WebAudio/canvas in `autoEditAnalysis.ts`.
+- Phone Studio (`phone.ts`): coloured frame/bezel/island mockup, 6 motions, product/lock-screen/social animated screens, screenshot scroll; ProPanel section + `phoneDesign` agent op. Ratings/likes are blank unless typed by the user.
+- Check: `npm run check:editor-upgrades` (141 assertions).
+Hardware follow-up: verify beat analysis on long MP3s and reframe on real 4K footage on Windows.
