@@ -200,7 +200,7 @@ export default function MotionEngineStudio() {
         <div className="flex min-w-0 items-center overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 p-1 text-xs [scrollbar-width:none]">
           <button
             onClick={() => setActiveTab('editor')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-medium transition-all ${
               activeTab === 'editor' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -209,16 +209,16 @@ export default function MotionEngineStudio() {
           </button>
           <button
             onClick={() => setActiveTab('catalog')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-medium transition-all ${
               activeTab === 'catalog' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
-            <span>Asset Catalog (100+)</span>
+            <span>Asset Catalog</span>
           </button>
           <button
             onClick={() => setActiveTab('motion')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-medium transition-all ${
               activeTab === 'motion' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -227,7 +227,7 @@ export default function MotionEngineStudio() {
           </button>
           <button
             onClick={() => setActiveTab('ai')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 font-medium transition-all ${
               activeTab === 'ai' ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'
             }`}
           >
@@ -245,10 +245,11 @@ export default function MotionEngineStudio() {
           )}
           <button
             onClick={handleExportRender}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm"
+            title="Export composition"
+            className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-1.5 text-xs font-semibold text-slate-200 shadow-sm transition-all hover:bg-slate-700"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Export Composition</span>
+            <span>Export</span>
           </button>
         </div>
       </header>

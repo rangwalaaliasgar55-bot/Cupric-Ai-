@@ -645,13 +645,15 @@ export function Studio() {
 
   function addSticker() {
     const track = Math.min(1, doc.trackCount - 1)
-    const clip = defaultStickerClip(nextFreeStart(doc, track, time, 2), track)
+    // At the playhead, like text: the store stacks it on the first free
+    // track (creating one) instead of pushing it later in time.
+    const clip = defaultStickerClip(Math.round(time * 100) / 100, track)
     addStudioClip(projectId, clip)
     setSelectedId(clip.id)
   }
 
   function addGlassClip(shape: 'panel' | 'lens' = 'panel', presetId = 'hero') {
-    const clip = defaultGlassClip(nextFreeStart(doc, Math.min(1, doc.trackCount - 1), time, 3), Math.min(1, doc.trackCount - 1), presetId, shape)
+    const clip = defaultGlassClip(Math.round(time * 100) / 100, Math.min(1, doc.trackCount - 1), presetId, shape)
     addStudioClip(projectId, clip)
     setSelectedId(clip.id)
   }
@@ -1183,7 +1185,9 @@ export function Studio() {
           </div>
 
           {/* Transport */}
-          <div className="flex shrink-0 items-center gap-2 border-t border-line px-6 py-2">
+          {/* A size container: labels never wrap; on narrow panels the least
+              important bits (project info, long labels) step out instead. */}
+          <div className="@container flex shrink-0 items-center gap-2 flex-wrap gap-y-1.5 whitespace-nowrap border-t border-line px-4 py-2 [&>*]:shrink-0">
             <IconButton label="Back to start" onClick={() => seek(0)}>
               <SkipBack size={15} />
             </IconButton>
@@ -1197,6 +1201,9 @@ export function Studio() {
             <IconButton label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted((m) => !m)}>
               {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
             </IconButton>
+            <span className="mr-1 font-mono text-xs text-muted tabular-nums">
+              {fmtClock(time)} / {fmtClock(duration)}
+            </span>
             <button
               type="button"
               aria-pressed={showSafeAreas}
@@ -1211,6 +1218,7 @@ export function Studio() {
             <button
               type="button"
               aria-pressed={keyframeRecord}
+              aria-label="Keyframe record"
               title="When enabled, canvas transforms record a keyframe at the playhead"
               onClick={() => setKeyframeRecord((recording) => !recording)}
               className={cx(
@@ -1218,21 +1226,18 @@ export function Studio() {
                 keyframeRecord ? 'border-danger/60 bg-danger/10 text-danger' : 'border-line text-muted hover:text-text',
               )}
             >
-              ● Keyframe record
+              ● <span className="@max-[36rem]:hidden">Keyframe </span>record
             </button>
-            <span className="font-mono text-xs text-muted tabular-nums">
-              {fmtClock(time)} / {fmtClock(duration)}
-            </span>
-            <span className="ml-auto font-mono text-xs text-muted tabular-nums">
+            <span className="ml-auto font-mono text-xs text-muted tabular-nums @max-[44rem]:hidden">
               {doc.aspect} · {doc.fps}fps · {doc.clips.length} clip{doc.clips.length === 1 ? '' : 's'}
             </span>
             <button
               type="button"
               onClick={() => setShowShortcuts(true)}
               title="Keyboard shortcuts (?)"
-              className="rounded-md border border-line px-2 py-1 font-mono text-xs text-muted transition-colors hover:text-text"
+              className="ml-auto rounded-md border border-line px-2 py-1 font-mono text-xs text-muted transition-colors hover:text-text @min-[44rem]:ml-0"
             >
-              ? Shortcuts
+              ?<span className="@max-[40rem]:hidden"> Shortcuts</span>
             </button>
             {lastExport && (
               <a

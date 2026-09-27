@@ -1,7 +1,10 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, Tabs } from "radix-ui";
-import { Check, Copy, Cpu, Download, ExternalLink, MonitorPlay, Save, Search, X, Zap, Box } from "lucide-react";
+import { Check, Copy, Cpu, Download, ExternalLink, MonitorPlay, Play, Save, Search, X, Zap, Box } from "lucide-react";
+import { getMotionPreset } from "@/motion/presets";
+import { entranceProgress } from "@/core/animation";
+import { TYPO_PRESETS } from "@/render/text";
 import "@/registry";
 import { allAssets, scoreAsset } from "@/core/registry";
 import type { AssetDef } from "@/core/types";
@@ -18,12 +21,43 @@ function useInView<T extends Element>() {
 }
 const perfColor = (v: string) => (v === "high" ? "text-amber-400" : v === "medium" ? "text-sky-400" : "text-emerald-400");
 
+/* The resting frame a card shows before hover. 45% through the clip is a fine
+ * poster for loops and scenes, but an entrance has long settled by then, so
+ * every Fade / Fade Up / Fade Left looked like the same finished square. Those
+ * posters are taken mid-move instead, where each preset looks like itself. */
+const PREVIEW_ENTER_DELAY = 10;
+function posterFrame(a: AssetDef): number | undefined {
+  const [kind, id] = [a.kind, a.id.slice(a.id.indexOf(":") + 1)];
+  if (kind === "motion") {
+    const preset = getMotionPreset(id);
+    if (preset?.kind !== "entrance") return undefined;
+    // Eases and springs front-load the move (easeOutCubic is ~88% done at half
+    // time), so find the first frame whose *eased* progress is under way.
+    const cfg = { preset: id, delay: PREVIEW_ENTER_DELAY };
+    for (let f = PREVIEW_ENTER_DELAY + 1; f < PREVIEW_ENTER_DELAY + preset.duration * 3; f += 1) {
+      if (entranceProgress(cfg, f, 30) >= 0.45) return f;
+    }
+    return PREVIEW_ENTER_DELAY + Math.round(preset.duration * 0.3);
+  }
+  if (kind === "typography") {
+    const t = TYPO_PRESETS[id];
+    if (!t || t.special) return undefined;
+    const sample = "Motion, precisely.";
+    const units = t.split === "char" ? sample.replace(/\s/g, "").length : t.split === "word" ? sample.split(/\s+/).length : 1;
+    return Math.round(units * t.stagger * 0.5 + (t.duration ?? 18) * 0.5);
+  }
+  return undefined;
+}
+
 function Card({ a, onOpen }: { a: AssetDef; onOpen: () => void }) {
   const [ref, seen] = useInView<HTMLButtonElement>();
   const doc = useMemo(() => (seen && a.preview ? a.preview() : null), [seen, a]);
   return (
     <button ref={ref} type="button" onClick={onOpen} className="group flex flex-col overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] text-left transition hover:border-white/15 hover:bg-white/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-400">
-      <div className="aspect-video w-full bg-zinc-950">{doc ? <Player doc={doc} thumbnail controls={false} quality="medium" maxPixels={480 * 270} /> : null}</div>
+      <div className="relative aspect-video w-full bg-zinc-950">
+        {doc ? <Player doc={doc} thumbnail thumbFrame={posterFrame(a)} controls={false} quality="medium" maxPixels={480 * 270} /> : null}
+        <span aria-hidden className="pointer-events-none absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] text-zinc-200 opacity-80 backdrop-blur transition group-hover:opacity-0"><Play size={10} /> hover to play</span>
+      </div>
       <div className="flex flex-1 flex-col gap-1.5 p-3.5">
         <div className="flex items-center justify-between gap-2"><span className="truncate text-sm font-medium text-zinc-100">{a.name}</span><span className="shrink-0 rounded-full bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400">{a.kind}</span></div>
         <p className="line-clamp-2 text-xs leading-relaxed text-zinc-500">{a.description}</p>

@@ -312,7 +312,7 @@ export function PackBrowser() {
   return (
     <section className="space-y-4">
       <GlassPanel className="flex flex-wrap items-center gap-3 px-4 py-3" preset="frost" radius={14}>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 basis-72">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
             Resource packs
             {index && (
@@ -331,13 +331,15 @@ export function PackBrowser() {
             ({PACKS_BASE.replace('https://', '')}) is used only as a fallback.
           </p>
         </div>
-        <span className="font-mono text-xs text-muted tabular-nums">
+        <div className="flex shrink-0 items-center gap-3">
+        <span className="whitespace-nowrap font-mono text-xs text-muted tabular-nums">
           {offline.downloaded.length}/{offline.total || '—'} cached
         </span>
         <Button size="sm" variant={fullyOffline ? 'outline' : 'primary'} onClick={() => void download()} disabled={downloading !== null}>
           {downloading ? <Loader2 size={13} className="animate-spin" /> : fullyOffline ? <RefreshCw size={13} /> : <CloudDownload size={13} />}
           {downloading ? 'Downloading…' : fullyOffline ? 'Refresh' : 'Download all'}
         </Button>
+        </div>
       </GlassPanel>
 
       {downloading && (
@@ -387,7 +389,9 @@ export function PackBrowser() {
           Could not load the “{active}” pack. It is not cached and the repository could not be reached.
         </div>
       ) : (
-        <motion.div layout className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        /* Columns from the space the grid actually has, not the window: the same
+            browser lives full-width in Library and in Studio's narrow side panel. */
+        <motion.div layout className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3">
           <AnimatePresence mode="popLayout" initial={false}>
             {visibleItems.map((item, i) => {
               const Icon = KIND_ICON[item.kind] ?? Layers
@@ -436,8 +440,8 @@ export function PackBrowser() {
                       <Icon size={14} />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <div className="min-w-0 flex-1 truncate text-sm font-semibold">{item.name}</div>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <div className="min-w-0 flex-1 basis-32 truncate text-sm font-semibold" title={item.name}>{item.name}</div>
                         <Badge tone={disposition === 'clip' ? 'accent' : disposition === 'lab' ? 'info' : 'neutral'}>
                           {dispositionLabel}
                         </Badge>
@@ -446,7 +450,7 @@ export function PackBrowser() {
                     </div>
                   </div>
                   <div className="mt-auto flex items-center justify-between gap-2 pt-0.5">
-                    <span className="truncate font-mono text-[11px] text-muted/70">
+                    <span className="min-w-0 truncate font-mono text-[11px] text-muted/70">
                       {/* A source's id means nothing to the reader; its domain does. */}
                       {item.kind === 'source'
                         ? ((item.data as { url?: string } | undefined)?.url ?? '')

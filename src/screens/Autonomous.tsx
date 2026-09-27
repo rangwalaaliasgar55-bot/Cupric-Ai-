@@ -174,7 +174,7 @@ export function Autonomous() {
           <p className="mt-2 text-sm text-muted">Cupric AI runs the creative pipeline while keeping review gates visible.</p>
         </div>
 
-        <Card>
+        <Card className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="text-sm font-medium">Project goal / brief</label>
             <div className="flex flex-wrap items-center gap-3">
@@ -251,7 +251,7 @@ export function Autonomous() {
         </Card>
 
         {job && (
-          <Card>
+          <Card className="p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="font-medium">{job.status === 'done' ? 'Production complete' : 'Production timeline'}</h2>

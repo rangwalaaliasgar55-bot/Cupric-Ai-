@@ -5,7 +5,7 @@ type Variant = 'primary' | 'outline' | 'ghost' | 'danger'
 type Size = 'sm' | 'md'
 
 const base =
-  'inline-flex select-none items-center justify-center gap-2 rounded-lg font-medium ' +
+  'inline-flex shrink-0 select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium ' +
   'transition-[background-color,border-color,color,transform] duration-150 ease-out ' +
   'active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40'
 
