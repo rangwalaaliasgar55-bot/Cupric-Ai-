@@ -501,6 +501,15 @@ try {
   console.warn('resources/skiper/catalog.json not readable — skipping Skiper UI')
 }
 
+// Curated link-only UI library index (Mantine, Pixel Perfect UI, Sora UI).
+// Hand-maintained in resources/packs/ui-libraries.json — carried through as-is
+// so regenerating packs never drops it.
+try {
+  packs.push(JSON.parse(await readFile(path.join(outDir, 'ui-libraries.json'), 'utf8')))
+} catch {
+  console.warn('resources/packs/ui-libraries.json not readable — skipping the UI libraries pack')
+}
+
 // The vendored lab components are listed from their generated registry.
 try {
   const registry = JSON.parse(await readFile(path.join(root, 'resources', 'ui-lab', 'registry.json'), 'utf8'))

@@ -262,6 +262,66 @@
       ]
     },
     {
+      "id": "physics-stack",
+      "kind": "background",
+      "name": "Physics: Stack knock-over",
+      "description": "physics · renders identically on the canvas and in CSS",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "physics",
+        "studio": true
+      },
+      "tags": [
+        "background",
+        "physics"
+      ]
+    },
+    {
+      "id": "physics-drop",
+      "kind": "background",
+      "name": "Physics: Drop & pile",
+      "description": "physics · renders identically on the canvas and in CSS",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "physics",
+        "studio": true
+      },
+      "tags": [
+        "background",
+        "physics"
+      ]
+    },
+    {
+      "id": "physics-explosion",
+      "kind": "background",
+      "name": "Physics: Explosion",
+      "description": "physics · renders identically on the canvas and in CSS",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "physics",
+        "studio": true
+      },
+      "tags": [
+        "background",
+        "physics"
+      ]
+    },
+    {
+      "id": "physics-dominoes",
+      "kind": "background",
+      "name": "Physics: Dominoes",
+      "description": "physics · renders identically on the canvas and in CSS",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "physics",
+        "studio": true
+      },
+      "tags": [
+        "background",
+        "physics"
+      ]
+    },
+    {
       "id": "chrome-void",
       "kind": "background",
       "name": "Void",
@@ -507,6 +567,66 @@
       "name": "Studio White",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background:#F4F1EA;",
+      "data": {
+        "group": "chrome",
+        "studio": false
+      },
+      "tags": [
+        "background",
+        "chrome"
+      ]
+    },
+    {
+      "id": "chrome-physics-stack",
+      "kind": "background",
+      "name": "Physics: Stack knock-over",
+      "description": "App-chrome gradient (stage and thumbnails only).",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "chrome",
+        "studio": false
+      },
+      "tags": [
+        "background",
+        "chrome"
+      ]
+    },
+    {
+      "id": "chrome-physics-drop",
+      "kind": "background",
+      "name": "Physics: Drop & pile",
+      "description": "App-chrome gradient (stage and thumbnails only).",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "chrome",
+        "studio": false
+      },
+      "tags": [
+        "background",
+        "chrome"
+      ]
+    },
+    {
+      "id": "chrome-physics-explosion",
+      "kind": "background",
+      "name": "Physics: Explosion",
+      "description": "App-chrome gradient (stage and thumbnails only).",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "chrome",
+        "studio": false
+      },
+      "tags": [
+        "background",
+        "chrome"
+      ]
+    },
+    {
+      "id": "chrome-physics-dominoes",
+      "kind": "background",
+      "name": "Physics: Dominoes",
+      "description": "App-chrome gradient (stage and thumbnails only).",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
       "data": {
         "group": "chrome",
         "studio": false

@@ -169,8 +169,8 @@ export function Autonomous() {
     <div className="h-full overflow-y-auto p-8">
       <div className="mx-auto max-w-4xl space-y-5">
         <div>
-          <p className="font-mono text-xs uppercase tracking-widest text-accent-text">Autonomous production</p>
-          <h1 className="mt-2 text-3xl font-semibold">One brief. Finished MP4.</h1>
+          <p className="cu-eyebrow !text-accent-text">Autonomous production</p>
+          <h1 className="mt-2 text-h1 font-semibold">One brief. Finished MP4.</h1>
           <p className="mt-2 text-sm text-muted">Cupric AI runs the creative pipeline while keeping review gates visible.</p>
         </div>
 

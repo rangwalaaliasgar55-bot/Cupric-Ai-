@@ -14,7 +14,7 @@ for (const entry of index.packs) {
   assert.equal(pack.items.length, entry.itemCount, `${entry.id} item count must match the index`)
   total += pack.items.length
 }
-assert.equal(total, 3519, 'the complete resource catalogue must be bundled')
+assert.equal(total, 3527, 'the complete resource catalogue must be bundled')
 const reactBits = JSON.parse(await readFile(new URL('resources/packs/react-bits.json', root), 'utf8'))
 const skiper = JSON.parse(await readFile(new URL('resources/packs/skiper-ui.json', root), 'utf8'))
 const remotion = JSON.parse(await readFile(new URL('resources/packs/remotion.json', root), 'utf8'))

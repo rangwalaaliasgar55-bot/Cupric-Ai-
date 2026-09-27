@@ -69,7 +69,7 @@ export function ComponentsPanel({
       </div>
 
       {selected ? (
-        <div className="rounded-xl border border-line bg-panel">
+        <div className="cu-panel">
           <div className="lab-canvas relative h-44 overflow-hidden rounded-t-xl">
             <DemoFrame key={selected.slug} slug={selected.slug} play forceMotion className="origin-center scale-[0.8] place-items-center" />
           </div>
@@ -123,7 +123,7 @@ export function ComponentsPanel({
       )}
 
       {shelf.length > 0 && (
-        <div className="rounded-xl border border-line bg-panel p-2">
+        <div className="cu-panel p-2">
           <div className="mb-1 px-1 text-[11px] font-semibold uppercase tracking-wide text-muted">Recorded · ready to place</div>
           <ul className="space-y-1" aria-label="Recorded components">
             {shelf.map((item) => {
@@ -160,7 +160,7 @@ export function ComponentsPanel({
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search components…"
           aria-label="Search components"
-          className="h-8 w-full rounded-lg border border-line bg-panel pl-8 pr-3 text-xs placeholder:text-muted/70"
+          className="h-8 w-full cu-panel pl-8 pr-3 text-xs placeholder:text-muted/70"
         />
       </div>
       <div className="flex flex-wrap gap-1">

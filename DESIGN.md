@@ -145,3 +145,18 @@ Bridge: `src/lib/bridge.ts` — prefer `window.cupric`, legacy alias `window.nor
 3. New screen → `src/screens/`, register in `AppLayout` + `Sidebar` `NAV`.
 4. Effects / gradients → `src/lib/effects.ts` / `gradients.ts`, surface in Library.
 5. Anything async → same signature in `src/lib/` for web + desktop paths.
+
+## 0.9 reskin — typography and surfaces
+
+- **UI face:** Geist Variable (OFL, bundled via `@fontsource-variable/geist`), with Inter Variable as the fallback. Body text uses `--tracking-ui` (−0.006em). Headings h1–h4 are weight 600, use `--tracking-display` (−0.022em) and balanced wrapping.
+- **Display scale (Mantine heading sizes):** `text-h1` 34px, `text-h2` 26px, `text-h3` 22px. The UI scale (12/13/14/16/20/28) is unchanged, so dense Studio panels keep their density.
+- **Surfaces:**
+  - `.cu-panel` is the gradient panel with a 1px top sheen (`--shadow-sheen`) plus `--shadow-1`. `Card` uses it, and `Card interactive` adds a hover lift.
+  - `.cu-eyebrow` is the uppercase section label; `.cu-page-title` is the page H1.
+  - `.cu-dot-grid` is the empty-state backdrop.
+- **Buttons:**
+  - Primary gets the sheen, plus `--shadow-accent-glow` on hover (a Magic UI-style shine).
+  - Outline gets a tinted fill and a lighter border on hover.
+  - Sizes follow Mantine: sm is 32px, md is 36px.
+- **Empty states:** a static Aceternity-style accent spotlight sits behind an accent icon tile. There is no motion, so the renderer-purity rules don't apply.
+- **Nav:** the active item gets a filled pill with the sheen and an accent icon; the spring rail marker is kept.

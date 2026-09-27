@@ -43,7 +43,7 @@ export function ClipContextMenu({ clip, x, y, time, hasClipboard, extra = [], on
       role="menu"
       tabIndex={-1}
       aria-label={`${clip.name} actions`}
-      className="fixed z-[100] w-60 rounded-xl border border-line bg-panel p-1 shadow-2xl outline-none"
+      className="fixed z-[100] w-60 cu-panel p-1 shadow-2xl outline-none"
       style={{ left, top: Math.max(8, top) }}
       onContextMenu={(e) => e.preventDefault()}
       onKeyDown={(e) => {

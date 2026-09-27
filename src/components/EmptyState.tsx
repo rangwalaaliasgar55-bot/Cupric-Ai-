@@ -19,17 +19,19 @@ export function EmptyState({
   return (
     <div
       className={cx(
-        'flex min-h-56 w-full flex-col items-center justify-center gap-2.5 ' +
+        'cu-dot-grid relative flex min-h-56 w-full flex-col items-center justify-center gap-2.5 overflow-hidden ' +
           'rounded-xl border border-dashed border-line bg-panel/40 px-8 py-12 text-center',
         className,
       )}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
-        <Icon size={19} />
+      {/* Aceternity-style spotlight behind the icon; static, no motion. */}
+      <div aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-56 w-56 -translate-x-1/2 -translate-y-[70%] rounded-full bg-accent/[0.07] blur-3xl" />
+      <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl border border-line bg-gradient-to-b from-panel-alt to-panel text-accent-text shadow-[var(--shadow-sheen),var(--shadow-2)]">
+        <Icon size={20} />
       </div>
-      <div className="text-base font-semibold">{title}</div>
-      {hint && <p className="max-w-sm text-sm leading-relaxed text-muted">{hint}</p>}
-      {action && <div className="mt-2">{action}</div>}
+      <div className="relative mt-1 text-md font-semibold tracking-[var(--tracking-display)]">{title}</div>
+      {hint && <p className="relative max-w-sm text-sm leading-relaxed text-muted">{hint}</p>}
+      {action && <div className="relative mt-2">{action}</div>}
     </div>
   )
 }

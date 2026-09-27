@@ -1126,8 +1126,8 @@ export function Studio() {
       {/* Toolbar */}
       {/* One row at every width: the add-strip scrolls sideways instead of
           wrapping, so the preview never loses a whole row of height. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-line px-6 py-2.5">
-        <h1 className="mr-2 shrink-0 text-base font-semibold">Studio</h1>
+      <div className="flex shrink-0 items-center gap-2 border-b border-line bg-panel/50 px-6 py-2.5 shadow-[var(--shadow-sheen)] backdrop-blur-xl">
+        <h1 className="mr-2 shrink-0 text-md font-semibold">Studio</h1>
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5 pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-28px),transparent)] [scrollbar-width:none] [&>button]:shrink-0"
           onWheel={(e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY }}
         >
@@ -1349,7 +1349,7 @@ export function Studio() {
                       }
                     }}
                     placeholder="Example: keep it calmer and use Space Grotesk"
-                    className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel px-2.5 text-xs"
+                    className="h-8 min-w-0 flex-1 cu-panel px-2.5 text-xs"
                   />
                   <Button
                     size="sm"

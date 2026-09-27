@@ -44,7 +44,8 @@ export function Sidebar() {
     <aside className="relative z-10 flex h-full w-44 shrink-0 flex-col border-r border-line bg-panel/80 px-3 py-3 backdrop-blur-xl">
       <img src={logoUrl} alt="Cupric AI" className="mb-4 h-10 w-full" />
 
-      <nav aria-label="Primary" className="flex flex-col gap-1">
+      <div className="cu-eyebrow mb-1.5 px-3">Workspace</div>
+      <nav aria-label="Primary" className="flex flex-col gap-0.5">
         {NAV.map((item) => {
           const reason = disabledReason(item)
           const isActive = view === item.view
@@ -58,9 +59,9 @@ export function Sidebar() {
                 disabled={!!reason}
                 onClick={() => setView(item.view)}
                 className={cx(
-                  'relative flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors duration-150',
+                  'relative flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium transition-colors duration-150',
                   isActive
-                    ? 'text-accent-text'
+                    ? 'bg-panel-alt text-text shadow-[var(--shadow-sheen)]'
                     : reason
                       ? 'cursor-not-allowed text-muted/35'
                       : 'text-muted hover:bg-panel-alt hover:text-text',
@@ -73,7 +74,7 @@ export function Sidebar() {
                     className="absolute -left-3 h-6 w-[3px] rounded-r-full bg-accent"
                   />
                 )}
-                <Icon size={18} className="shrink-0" />
+                <Icon size={18} className={cx('shrink-0', isActive && 'text-accent-text')} />
                 <span className="truncate">{item.label}</span>
               </button>
               {reason && (

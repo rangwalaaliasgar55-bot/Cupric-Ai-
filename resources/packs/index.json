@@ -28,8 +28,8 @@
       "id": "backgrounds",
       "name": "Backgrounds & gradients",
       "description": "Studio stage backgrounds — gradients, mesh gradients and patterns — with the CSS twin used by the app and by Arena HTML.",
-      "itemCount": 34,
-      "bytes": 16650
+      "itemCount": 42,
+      "bytes": 19730
     },
     {
       "id": "effects",
@@ -102,18 +102,18 @@
       "bytes": 103377
     },
     {
-      "id": "components",
-      "name": "Lab components",
-      "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
-      "itemCount": 192,
-      "bytes": 63695
-    },
-    {
       "id": "ui-libraries",
       "name": "UI libraries (Mantine · Pixel Perfect · Sora UI)",
       "description": "Indexed component libraries used as pattern references by the agent, the generation prompt and Cupric's own chrome. Mantine is MIT; Pixel Perfect and Sora UI declare no license, so they are linked and attributed, never copied.",
       "itemCount": 436,
-      "bytes": 326481
+      "bytes": 404389
+    },
+    {
+      "id": "components",
+      "name": "Lab components",
+      "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
+      "itemCount": 192,
+      "bytes": 64445
     }
   ]
 }

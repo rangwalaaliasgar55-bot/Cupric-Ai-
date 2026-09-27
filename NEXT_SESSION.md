@@ -167,3 +167,43 @@ Studied openvideodev/react-video-editor and sambowenhughes/a-react-video-editor 
 - Phone Studio (`phone.ts`): coloured frame/bezel/island mockup, 6 motions, product/lock-screen/social animated screens, screenshot scroll; ProPanel section + `phoneDesign` agent op. Ratings/likes are blank unless typed by the user.
 - Check: `npm run check:editor-upgrades` (141 assertions).
 Hardware follow-up: verify beat analysis on long MP3s and reframe on real 4K footage on Windows.
+
+## Session: import / tracking / physics / reach / reskin (commits 38e2c58 → HEAD)
+
+**Done, with checks passing:**
+- **Multi-file ZIP import** (`check:source-project`, 38 assertions):
+  - Chapter maps become one named clip per chapter; scene components become overlays; keyframe arrays become Studio keyframes.
+  - The audio engine maps to the audio track; WebGL/particle scenes map to a background layer; palette, fps, duration and fonts go to the doc.
+  - An unknown project shape gets an explicit refusal message.
+- **Object-tracked masks** (`check:mask-track`): per-frame tracking.
+- **Physics:** real Rapier physics layers (`check:physics`). 3D_SPEC status has been corrected.
+- **Resource reach** (`check:resource-reach`):
+  - `electron/resource-context.cjs` searches every non-font, non-voice pack (1661 items across 16 packs) and gives each scene a beat.
+  - Beats: opener → mesh/particles; stat → count-up; testimonial/logo → marquee/stagger; gallery → native scroll; CTA → magnetic/spotlight.
+  - Each scene gets a background, main and accent layer. The candidate prompt carries the scene plan.
+- **UI library pack** (`resources/packs/ui-libraries.json`, carried through by build-packs):
+  - Mantine (128 items, MIT) plus Pixel Perfect UI (301) and Sora UI (7). Pixel Perfect and Sora UI have no verified license, so they are link-only.
+- **The 8 SaaS primitives** now all exist as Lab components: bento-grid and mesh-gradient were added, and both are in `resources/ui-lab/registry.json`.
+- **Editor:**
+  - Slide trim (Alt+[ / Alt+]).
+  - Nested sequences: Scenes → "Nest at playhead"; flattened in `resolveForOutput`, so preview and export agree.
+  - Already present: scopes, proxies, ripple/roll/slip, and the multi-aspect export queue.
+- **Voice:**
+  - Offline Whisper, falling back to Windows Speech.
+  - A spoken brief now needs a yes (spoken or clicked) before a job starts.
+- **Reskin:**
+  - Geist Variable UI font, Mantine heading scale, sheen surfaces (`.cu-panel`), restyled Button/Card/EmptyState/Segmented/nav, and Library/Autonomous/Studio headers.
+  - Documented in DESIGN.md.
+
+**Still open (be honest with users):**
+- **Voice** still needs a hands-on pass on Windows hardware (see HARDWARE_TEST_PLAN.md).
+- **Nested sequences:**
+  - A sequence clip has no dedicated inspector (placement uses the generic fields).
+  - The nested content is a snapshot of the saved scene. Use "Overwrite" on the scene to refresh it.
+- **Export queue:** runs jobs in sequence in the renderer, not in a separate background process.
+- **Reskin:**
+  - The shared primitives and headers are restyled.
+  - Many one-off inline class strings in the Studio sub-panels still use the older flat look.
+  - It has not been visually checked, because there is no headless browser in the sandbox.
+- **Optional ideas not started:** speed ramping UI, one-click repurpose, TTS voiceover, Brand Kit panel, batch variants.
+  - Auto-captions already exist.
