@@ -10,9 +10,13 @@ import { stickerFrame } from './lottie'
 import { getMedia, overlayImage } from './media'
 import { drawableElement, type FrameSources } from './renderer'
 
-/** Preview convenience: resolve media straight from the runtime registry. */
+/**
+ * Preview convenience: resolve media straight from the runtime registry.
+ * Photos resolve to their preview proxy here; the exporter builds its own
+ * sources with full-resolution media.
+ */
 export const registrySources: FrameSources = {
-  media: (clip) => drawableElement(clip.mediaId),
+  media: (clip) => drawableElement(clip.mediaId, 'preview'),
   overlay: (clip, localSec = 0) => {
     const frames = clip.frames?.length ? clip.frames : null
     if (!frames) return clip.dataUrl ? overlayImage(`${clip.id}:${clip.dataUrl.length}:${clip.dataUrl.slice(-16)}`, clip.dataUrl) : null

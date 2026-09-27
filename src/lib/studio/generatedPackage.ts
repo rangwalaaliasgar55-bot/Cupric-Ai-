@@ -15,6 +15,8 @@ export type GeneratedPackage = {
    * App.tsx as often as in the HTML, so the scene parser reads all of it.
    */
   scripts: string
+  /** Every readable text file with its path (for multi-file source projects). */
+  sources: Array<{ path: string; text: string }>
   /** Package-level notes for the user (skipped files, limits). */
   notes: string[]
 }
@@ -67,7 +69,7 @@ function mediaReferences(html: string, htmlPath: string) {
  * JavaScript, too many assets. It returns what it found and explains the rest.
  */
 export async function readGeneratedPackage(file: File): Promise<GeneratedPackage> {
-  if (/\.html?$/i.test(file.name)) return { html: await file.text(), name: file.name, assets: [], scripts: '', notes: [] }
+  if (/\.html?$/i.test(file.name)) return { html: await file.text(), name: file.name, assets: [], scripts: '', sources: [], notes: [] }
   if (!/\.zip$/i.test(file.name)) throw new Error('Choose a .zip, .html or .htm package')
   if (file.size > 250 * 1024 * 1024) throw new Error('Generated zip packages are limited to 250 MB')
 
@@ -90,6 +92,7 @@ export async function readGeneratedPackage(file: File): Promise<GeneratedPackage
 
   // Everything else that is text: scripts, JSON, JSX, other pages.
   let corpus = ''
+  const sources: Array<{ path: string; text: string }> = []
   const textEntries = files
     .filter((entry) => entry !== primary && TEXT_EXT.test(entry.name))
     .sort((a, b) => Number(/scene|story|script|data|timeline|film|app|main|index/i.test(b.name)) - Number(/scene|story|script|data|timeline|film|app|main|index/i.test(a.name)))
@@ -102,7 +105,10 @@ export async function readGeneratedPackage(file: File): Promise<GeneratedPackage
     if (size > MAX_TEXT_FILE) continue
     try {
       const text = await entry.async('text')
-      if (text.length <= MAX_TEXT_FILE) corpus += `\n/* ${entry.name} */\n${text}`
+      if (text.length <= MAX_TEXT_FILE) {
+        corpus += `\n/* ${entry.name} */\n${text}`
+        sources.push({ path: entry.name, text })
+      }
     } catch {
       /* unreadable entry: skip */
     }
@@ -131,5 +137,5 @@ export async function readGeneratedPackage(file: File): Promise<GeneratedPackage
     }
   }
   if (!primary && !corpus && !assets.length) throw new Error(`${file.name} contains no HTML, code or media that Cupric can edit`)
-  return { html, name: primary?.name.split('/').pop() || file.name, assets, scripts: corpus, notes }
+  return { html, name: primary?.name.split('/').pop() || file.name, assets, scripts: corpus, sources, notes }
 }

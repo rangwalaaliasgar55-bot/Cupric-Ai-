@@ -13,6 +13,7 @@ import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx } from '../lib/utils'
 import { getIpc } from '../lib/bridge'
 import { humanError } from '../lib/humanError'
+import { ProjectSafetyPanel } from './ProjectSafetyPanel'
 
 type ChatMsg = { role: 'user' | 'ai'; text: string; images?: ChatImage[] }
 
@@ -543,6 +544,7 @@ export function AskPanel() {
                 <div className="mt-1 text-xs text-muted/70">Checks at launch and every four hours. Downloaded releases install on quit, or immediately with the button above.</div>
                 {updateStatus && <div className="mt-1 font-mono text-[11px] text-muted/70">{updateStatus}</div>}
               </div>
+              <ProjectSafetyPanel />
             </div>
           )}
           <div

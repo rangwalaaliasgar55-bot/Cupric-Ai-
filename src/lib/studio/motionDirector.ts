@@ -110,8 +110,8 @@ export const MOTION_PRESETS: Array<{ id: string; label: string; hint: string; sp
   { id: 'calm', label: 'Calm focus', hint: 'Barely-there focus pull', spec: { entrance: 'blur-focus', emphasis: 'breathe', exit: 'fade-out', intensity: 0.6 } },
 ]
 
-const POSITIONED = new Set(['text', 'overlay', 'glass', 'sticker', 'video', 'image'])
-const SCALABLE = new Set(['text', 'overlay', 'glass', 'sticker', 'video', 'image'])
+const POSITIONED = new Set(['shape', 'text', 'overlay', 'glass', 'sticker', 'video', 'image'])
+const SCALABLE = new Set(['shape', 'text', 'overlay', 'glass', 'sticker', 'video', 'image'])
 
 type Rest = { x?: number; y?: number; scale?: number; rotation: number; opacity: number }
 

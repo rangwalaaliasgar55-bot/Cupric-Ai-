@@ -1,13 +1,13 @@
 {
   "name": "cupric-ai",
   "private": true,
-  "version": "0.9.0",
+  "version": "0.10.0",
   "description": "Cupric AI — desktop creator tool for short-form video: in-app Studio editor with liquid-glass effects, Gemini and free-model chat, Arena import, footage analysis, offline UI resource catalogs, and Electron packaging.",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/build-packs.mjs && node scripts/build-icons.mjs --check && tsc --noEmit && node scripts/check-renderer.mjs && node scripts/check-encode-dims.mjs && node scripts/check-keyframe-edit.mjs && node scripts/check-agent-edits.mjs && node scripts/check-ipc-allowlist.mjs && node scripts/check-ai-connections.mjs && node scripts/check-updater.mjs && node scripts/check-resources.mjs && node scripts/check-generated-package.mjs && node scripts/check-template-fill.mjs && node scripts/check-resource-apply.mjs && node scripts/check-automation-gate.mjs && node scripts/check-studio-surfaces.mjs && node scripts/check-voice.mjs && node scripts/check-scrub-perf.mjs && node scripts/check-progress-coverage.mjs && vite build",
+    "build": "node scripts/build-packs.mjs && node scripts/build-icons.mjs --check && tsc --noEmit && node scripts/check-renderer.mjs && node scripts/check-encode-dims.mjs && node scripts/check-keyframe-edit.mjs && node scripts/check-agent-edits.mjs && node scripts/check-ipc-allowlist.mjs && node scripts/check-ai-connections.mjs && node scripts/check-updater.mjs && node scripts/check-resources.mjs && node scripts/check-generated-package.mjs && node scripts/check-template-fill.mjs && node scripts/check-resource-apply.mjs && node scripts/check-automation-gate.mjs && node scripts/check-studio-surfaces.mjs && node scripts/check-voice.mjs && node scripts/check-encoders.mjs && node scripts/check-project-history.mjs && node scripts/check-diagnostics.mjs && node scripts/check-sandbox.mjs && node scripts/check-migration.mjs && node scripts/check-photo-import.mjs && node scripts/check-local-voice.mjs && node scripts/check-undo-audit.mjs && node scripts/check-pro-features.mjs && node scripts/check-editor-upgrades.mjs && node scripts/check-source-project.mjs && node scripts/check-mask-track.mjs && node scripts/check-physics.mjs && node scripts/check-resource-reach.mjs && node scripts/check-shapes-cursor-3d.mjs && node scripts/check-framecn-fonts.mjs && node scripts/check-agent-kit.mjs && node scripts/check-resource-finder.mjs && node scripts/check-creative-tools.mjs && node scripts/check-proxies.mjs && node scripts/check-auto-captions.mjs && node scripts/check-component-director.mjs && node scripts/check-scrub-perf.mjs && node scripts/check-progress-coverage.mjs && vite build",
     "typecheck": "tsc --noEmit",
     "packs:build": "node scripts/build-packs.mjs",
     "check:renderer": "node scripts/check-renderer.mjs && node scripts/check-encode-dims.mjs",
@@ -30,22 +30,62 @@
     "desktop": "concurrently -k -s first \"vite\" \"cross-env ELECTRON_START_URL=http://localhost:5173 electron .\"",
     "dist:win": "npm run build && electron-builder --win",
     "resources:sync": "node scripts/sync-resources.mjs",
-    "build-icons": "node scripts/build-icons.mjs"
+    "build-icons": "node scripts/build-icons.mjs",
+    "whisper:fetch": "node scripts/fetch-whisper.mjs",
+    "check:encoders": "node scripts/check-encoders.mjs",
+    "check:history": "node scripts/check-project-history.mjs",
+    "check:diagnostics": "node scripts/check-diagnostics.mjs",
+    "check:sandbox": "node scripts/check-sandbox.mjs",
+    "check:migration": "node scripts/check-migration.mjs",
+    "check:photo-import": "node scripts/check-photo-import.mjs",
+    "check:local-voice": "node scripts/check-local-voice.mjs",
+    "check:undo": "node scripts/check-undo-audit.mjs",
+    "check:pro": "node scripts/check-pro-features.mjs",
+    "check:proxies": "node scripts/check-proxies.mjs",
+    "check:captions": "node scripts/check-auto-captions.mjs",
+    "check:director": "node scripts/check-component-director.mjs",
+    "check:editor-upgrades": "node scripts/check-editor-upgrades.mjs",
+    "check:source-project": "node scripts/check-source-project.mjs",
+    "check:mask-track": "node scripts/check-mask-track.mjs",
+    "check:physics": "node scripts/check-physics.mjs",
+    "check:resource-reach": "node scripts/check-resource-reach.mjs",
+    "check:finder": "node scripts/check-resource-finder.mjs",
+    "check:creative": "node scripts/check-creative-tools.mjs",
+    "check:shapes-cursor-3d": "node scripts/check-shapes-cursor-3d.mjs",
+    "check:framecn-fonts": "node scripts/check-framecn-fonts.mjs",
+    "check:agent-kit": "node scripts/check-agent-kit.mjs"
   },
   "dependencies": {
+    "@dimforge/rapier3d-compat": "~0.12.0",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
     "@fontsource-variable/dm-sans": "^5.3.0",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/inter": "^5.1.0",
     "@fontsource-variable/jetbrains-mono": "^5.1.0",
     "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource-variable/montserrat": "^5.3.0",
+    "@fontsource-variable/outfit": "^5.3.0",
     "@fontsource-variable/playfair-display": "^5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource-variable/syne": "^5.3.0",
+    "@fontsource-variable/unbounded": "^5.3.0",
+    "@fontsource/anton": "^5.3.0",
+    "@fontsource/archivo-black": "^5.3.0",
+    "@fontsource/bebas-neue": "^5.3.0",
+    "@fontsource/dm-serif-display": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "@fontsource/poppins": "^5.3.0",
     "@google/generative-ai": "^0.24.1",
+    "@paper-design/shaders-react": "^0.0.76",
     "@remotion/player": "^4.0.529",
     "adm-zip": "^0.6.1",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "electron-updater": "^6.8.9",
+    "heic2any": "^0.0.4",
     "html-to-image": "^1.11.13",
     "html2canvas": "^1.4.1",
     "jszip": "^3.10.2",
@@ -141,7 +181,17 @@
     },
     "linux": {
       "icon": "build/icon.png"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "vendor/whisper",
+        "to": "whisper",
+        "filter": [
+          "**/*",
+          "!.gitkeep"
+        ]
+      }
+    ]
   },
   "optionalDependencies": {
     "ffmpeg-static": "^5.3.0",

@@ -1,3 +1,4 @@
+import { ATTRIBUTION_PLACEHOLDER, TESTIMONIAL_PLACEHOLDER } from './layouts'
 /**
  * Document checks.
  *
@@ -42,6 +43,22 @@ function timeOverlap(a: StudioClip, b: StudioClip) {
 export function lintStudioDoc(doc: StudioDoc, opts: { hasMedia?: (mediaId: string) => boolean } = {}): DocIssue[] {
   const issues: DocIssue[] = []
   const texts = doc.clips.filter((c): c is StudioTextClip => c.kind === 'text')
+
+  // 2.20 — testimonial placeholders are never shipped silently.
+  for (const clip of texts) {
+    if (clip.text === TESTIMONIAL_PLACEHOLDER || clip.text === ATTRIBUTION_PLACEHOLDER) {
+      issues.push({
+        id: `placeholder:${clip.id}`,
+        severity: 'warning',
+        clipId: clip.id,
+        message: `“${clip.name}” is still a placeholder.`,
+        hint: 'Paste a real quote you have permission to use, or delete the card. Cupric never writes testimonials.',
+      })
+    }
+  }
+  if (doc.clips.some((c) => (c.kind === 'video' || c.kind === 'image') && c.compare && opts.hasMedia && !opts.hasMedia(c.compare.beforeMediaId))) {
+    issues.push({ id: 'compare-missing', severity: 'error', message: 'A before/after has lost its “before” file.', hint: 'Pick the before image again in the inspector.' })
+  }
 
   for (const clip of doc.clips) {
     if ((clip.kind === 'video' || clip.kind === 'image' || clip.kind === 'audio') && opts.hasMedia) {

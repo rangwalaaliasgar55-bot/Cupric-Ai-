@@ -19,29 +19,42 @@ import { recordComponent } from '../../lib/studio/componentRecorder'
 import { useProjectStore } from '../../state/useProjectStore'
 
 export function ComponentRecorderHost({ projectId, doc }: { projectId: string; doc: StudioDoc }) {
-  const updateStudioClip = useProjectStore((s) => s.updateStudioClip)
+  const landRecording = useProjectStore((s) => s.landComponentRecording)
   const pushToast = useProjectStore((s) => s.pushToast)
   const [skipped, setSkipped] = useState<Set<string>>(new Set())
+  // Timeline clips first, then shelf recordings (2.13 — record now, place
+  // later). Both go through this one recorder; there is no second path.
   const queue = useMemo(
-    () => doc.clips.filter((clip) => isPendingComponent(clip) && !skipped.has(clip.id)).sort((a, b) => a.startSec - b.startSec),
-    [doc.clips, skipped],
+    () => [
+      ...doc.clips.filter((clip) => isPendingComponent(clip) && !skipped.has(clip.id)).sort((a, b) => a.startSec - b.startSec),
+      ...(doc.shelf ?? []).filter((clip) => isPendingComponent(clip) && !skipped.has(clip.id)),
+    ],
+    [doc.clips, doc.shelf, skipped],
   )
   const current = queue[0] as (StudioClip & { kind: 'overlay' }) | undefined
   if (!current?.component) return null
+  const onShelf = (doc.shelf ?? []).some((item) => item.id === current.id)
+  // Recording results land without an undo step (2.31 audit): Undo after
+  // your own edit must undo your edit, not the recording.
+  const update = (patch: Partial<StudioClip>) => landRecording(projectId, current.id, patch as never)
   return (
     <RecorderCard
       key={`${current.id}:${current.component.slug}:${current.component.recordSec}:${current.component.interact}`}
       clip={current}
       remaining={queue.length}
       aspect={doc.aspect}
-      onDone={(patch) => updateStudioClip(projectId, current.id, patch as Partial<StudioClip>)}
+      onShelf={onShelf}
+      onDone={(patch) => {
+        update(patch as Partial<StudioClip>)
+        if (onShelf) pushToast('success', `“${current.name}” recorded — place it from Components whenever you like.`)
+      }}
       onCancel={() => {
         setSkipped((prev) => new Set(prev).add(current.id))
-        updateStudioClip(projectId, current.id, { component: { ...current.component!, status: 'failed', error: 'Recording cancelled' } } as Partial<StudioClip>)
+        update({ component: { ...current.component!, status: 'failed', error: 'Recording cancelled' } } as Partial<StudioClip>)
         pushToast('info', `Stopped recording “${current.name}”. Select it and press Record again any time.`)
       }}
       onError={(message) => {
-        updateStudioClip(projectId, current.id, { component: { ...current.component!, status: 'failed', error: message } } as Partial<StudioClip>)
+        update({ component: { ...current.component!, status: 'failed', error: message } } as Partial<StudioClip>)
         pushToast('error', message, { id: `component-${current.id}` })
       }}
     />
@@ -52,6 +65,7 @@ function RecorderCard({
   clip,
   remaining,
   aspect,
+  onShelf = false,
   onDone,
   onCancel,
   onError,
@@ -59,6 +73,7 @@ function RecorderCard({
   clip: StudioClip & { kind: 'overlay' }
   remaining: number
   aspect: StudioDoc['aspect']
+  onShelf?: boolean
   onDone: (patch: Record<string, unknown>) => void
   onCancel: () => void
   onError: (message: string) => void
@@ -131,7 +146,7 @@ function RecorderCard({
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">Recording “{clip.name}”</div>
             <div className="text-xs text-muted">
-              {phase === 'loading' ? 'Loading the component…' : phase === 'finishing' ? 'Placing it on your timeline…' : `${meta.interact ? 'Acting it out' : 'Capturing'} · ${meta.recordSec}s of real animation · ${pct}%`}
+              {phase === 'loading' ? 'Loading the component…' : phase === 'finishing' ? onShelf ? 'Saving it to the shelf…' : 'Placing it on your timeline…' : `${meta.interact ? 'Acting it out' : 'Capturing'} · ${meta.recordSec}s of real animation · ${pct}%`}
               {remaining > 1 ? ` · ${remaining - 1} more queued` : ''}
             </div>
           </div>
@@ -141,7 +156,7 @@ function RecorderCard({
         </div>
         {/* Natural size, on screen: exactly what lands in the video. */}
         <div ref={stageRef} className="lab-canvas relative flex h-[min(400px,62vh)] w-full items-center justify-center overflow-hidden p-6">
-          <DemoFrame slug={meta.slug} play forceMotion className="place-items-center" />
+          <DemoFrame slug={meta.slug} play forceMotion props={meta.props} className="place-items-center" />
         </div>
         <div className="h-1 w-full bg-panel-alt">
           <div className="h-full bg-accent transition-[width] duration-200" style={{ width: `${pct}%` }} />

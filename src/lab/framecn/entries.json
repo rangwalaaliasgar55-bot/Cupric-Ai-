@@ -1,0 +1,905 @@
+{
+ "source": "https://www.framecn.dev/docs/components",
+ "repo": "https://github.com/shadcn-labs/framecn",
+ "license": "MIT",
+ "vendoredAt": "2026-09-27",
+ "count": 112,
+ "entries": [
+  {
+   "slug": "fc-ai-generate-overlay",
+   "dir": "ai-generate-overlay",
+   "name": "AI Generate Overlay",
+   "category": "scenes",
+   "description": "Source image blurs under a shimmering dot grid and a pulsing 'Generating…' pill before a new image fades in.",
+   "configName": "aiGenerateOverlayConfig"
+  },
+  {
+   "slug": "fc-ai-generation-canvas",
+   "dir": "ai-generation-canvas",
+   "name": "AI Generation Canvas",
+   "category": "scenes",
+   "description": "A prompt input transforms into a header, then a skeleton dashboard flips into populated cards.",
+   "configName": "aiGenerationCanvasConfig"
+  },
+  {
+   "slug": "fc-animated-bar-chart",
+   "dir": "animated-bar-chart",
+   "name": "Animated Bar Chart",
+   "category": "scenes",
+   "description": "Bars spring up from the baseline in a staggered cascade.",
+   "configName": "animatedBarChartConfig"
+  },
+  {
+   "slug": "fc-animated-line-chart",
+   "dir": "animated-line-chart",
+   "name": "Animated Line Chart",
+   "category": "scenes",
+   "description": "Line chart whose SVG path draws on from left to right with a leading dot.",
+   "configName": "animatedLineChartConfig"
+  },
+  {
+   "slug": "fc-backdrop",
+   "dir": "backdrop",
+   "name": "Backdrop",
+   "category": "motion",
+   "description": "Layout wrapper providing a background fill with optional padding, radius, and shadow.",
+   "configName": "backdropConfig"
+  },
+  {
+   "slug": "fc-blur-out-up",
+   "dir": "blur-out-up",
+   "name": "Blur Out Up",
+   "category": "text",
+   "description": "Words blur and drift upward while fading out, staggered per word.",
+   "configName": "blurOutUpConfig"
+  },
+  {
+   "slug": "fc-blur-reveal",
+   "dir": "blur-reveal",
+   "name": "Blur Reveal",
+   "category": "text",
+   "description": "Text fades in from a heavy blur into sharp focus.",
+   "configName": "blurRevealConfig"
+  },
+  {
+   "slug": "fc-bottom-up-letters",
+   "dir": "bottom-up-letters",
+   "name": "bottom-up-letters",
+   "category": "text",
+   "description": "",
+   "configName": "bottomUpLettersConfig"
+  },
+  {
+   "slug": "fc-bounding-box-selector",
+   "dir": "bounding-box-selector",
+   "name": "Bounding Box Selector",
+   "category": "motion",
+   "description": "Figma-style selection rectangle appears around any element.",
+   "configName": "boundingBoxSelectorConfig"
+  },
+  {
+   "slug": "fc-browser-flow",
+   "dir": "browser-flow",
+   "name": "Browser Flow",
+   "category": "scenes",
+   "description": "Full Safari/Chrome simulation: typed URL, progress bar, page render, scroll, and a virtual cursor click.",
+   "configName": "browserFlowConfig"
+  },
+  {
+   "slug": "fc-caption-clip-wipe",
+   "dir": "caption-clip-wipe",
+   "name": "Caption Clip Wipe",
+   "category": "captions",
+   "description": "Words reveal left-to-right via clip-path; keywords turn gold on speak; the group exits with a wipe.",
+   "configName": "captionClipWipeConfig"
+  },
+  {
+   "slug": "fc-caption-editorial-emphasis",
+   "dir": "caption-editorial-emphasis",
+   "name": "Caption Editorial Emphasis",
+   "category": "captions",
+   "description": "Headline-style captions that emphasise specific words using accent colors and weight shifts.",
+   "configName": "captionEditorialEmphasisConfig"
+  },
+  {
+   "slug": "fc-caption-emoji-pop",
+   "dir": "caption-emoji-pop",
+   "name": "Caption Emoji Pop",
+   "category": "captions",
+   "description": "Captions with emoji that pop in alongside words.",
+   "configName": "captionEmojiPopConfig"
+  },
+  {
+   "slug": "fc-caption-glitch-rgb",
+   "dir": "caption-glitch-rgb",
+   "name": "Caption Glitch RGB",
+   "category": "captions",
+   "description": "Captions with a glitchy RGB-split effect on each word.",
+   "configName": "captionGlitchRgbConfig"
+  },
+  {
+   "slug": "fc-caption-gradient-fill",
+   "dir": "caption-gradient-fill",
+   "name": "Caption Gradient Fill",
+   "category": "captions",
+   "description": "Captions where words fill with a horizontal gradient from left to right.",
+   "configName": "captionGradientFillConfig"
+  },
+  {
+   "slug": "fc-caption-highlight",
+   "dir": "caption-highlight",
+   "name": "Caption Highlight",
+   "category": "captions",
+   "description": "Word-by-word captions with an accent-colored highlight background that sweeps in behind each spoken word.",
+   "configName": "captionHighlightConfig"
+  },
+  {
+   "slug": "fc-caption-kinetic-slam",
+   "dir": "caption-kinetic-slam",
+   "name": "Caption Kinetic Slam",
+   "category": "captions",
+   "description": "Dynamic word-by-word captions: each word pops in with a springy scale/opacity entrance, then drops out in an overlapping ripple.",
+   "configName": "captionKineticSlamConfig"
+  },
+  {
+   "slug": "fc-caption-matrix-decode",
+   "dir": "caption-matrix-decode",
+   "name": "Caption Matrix Decode",
+   "category": "captions",
+   "description": "Matrix-style green text decodes from blur to sharp on each word.",
+   "configName": "captionMatrixDecodeConfig"
+  },
+  {
+   "slug": "fc-caption-neon-accent",
+   "dir": "caption-neon-accent",
+   "name": "Caption Neon Accent",
+   "category": "captions",
+   "description": "Captions where words glow with a bright neon accent border and subtle glow.",
+   "configName": "captionNeonAccentConfig"
+  },
+  {
+   "slug": "fc-caption-neon-glow",
+   "dir": "caption-neon-glow",
+   "name": "Caption Neon Glow",
+   "category": "captions",
+   "description": "Captions with a neon glow effect on each word.",
+   "configName": "captionNeonGlowConfig"
+  },
+  {
+   "slug": "fc-caption-parallax-layers",
+   "dir": "caption-parallax-layers",
+   "name": "Caption Parallax Layers",
+   "category": "captions",
+   "description": "Multi-layer captions where background and foreground words move at different depths, creating a parallax depth effect.",
+   "configName": "captionParallaxLayersConfig"
+  },
+  {
+   "slug": "fc-caption-particle-burst",
+   "dir": "caption-particle-burst",
+   "name": "Caption Particle Burst",
+   "category": "captions",
+   "description": "Captions where each word explodes into particles as it exits.",
+   "configName": "captionParticleBurstConfig"
+  },
+  {
+   "slug": "fc-caption-pill-karaoke",
+   "dir": "caption-pill-karaoke",
+   "name": "Caption Pill Karaoke",
+   "category": "captions",
+   "description": "Karaoke-style captions where each word sits inside a pill-shaped background.",
+   "configName": "captionPillKaraokeConfig"
+  },
+  {
+   "slug": "fc-caption-texture",
+   "dir": "caption-texture",
+   "name": "Caption Texture",
+   "category": "captions",
+   "description": "Captions filled with a rich gradient texture that animates across words.",
+   "configName": "captionTextureConfig"
+  },
+  {
+   "slug": "fc-caption-weight-shift",
+   "dir": "caption-weight-shift",
+   "name": "Caption Weight Shift",
+   "category": "captions",
+   "description": "Font weight animates from 100 to 900 when each word is spoken, back to thin after.",
+   "configName": "captionWeightShiftConfig"
+  },
+  {
+   "slug": "fc-chat-to-preview-layout",
+   "dir": "chat-to-preview-layout",
+   "name": "Chat to Preview Layout",
+   "category": "scenes",
+   "description": "Two-column layout where chat shrinks and preview expands.",
+   "configName": "chatToPreviewLayoutConfig"
+  },
+  {
+   "slug": "fc-chromatic-aberration-wipe",
+   "dir": "chromatic-aberration-wipe",
+   "name": "Chromatic Aberration Wipe",
+   "category": "transitions",
+   "description": "An ultra-fast slide transition with an RGB glitch on the peak frames.",
+   "configName": "chromaticAberrationWipeConfig"
+  },
+  {
+   "slug": "fc-code-accordion",
+   "dir": "code-accordion",
+   "name": "Code Accordion",
+   "category": "scenes",
+   "description": "A code window that springs a range of lines closed and replaces them with a \"N lines collapsed\" placeholder.",
+   "configName": "codeAccordionConfig"
+  },
+  {
+   "slug": "fc-code-diff-wipe",
+   "dir": "code-diff-wipe",
+   "name": "Code Diff Wipe",
+   "category": "scenes",
+   "description": "Before/after code reveal via clip-path wipe with a handle marker.",
+   "configName": "codeDiffWipeConfig"
+  },
+  {
+   "slug": "fc-confetti",
+   "dir": "confetti",
+   "name": "Confetti",
+   "category": "motion",
+   "description": "Deterministic CSS-animated particle burst celebration effect.",
+   "configName": "confettiConfig"
+  },
+  {
+   "slug": "fc-cursor-flow",
+   "dir": "cursor-flow",
+   "name": "Cursor Flow",
+   "category": "motion",
+   "description": "A realistic mouse that arcs along cubic Bezier paths, pauses, and clicks targets that dip in response.",
+   "configName": "cursorFlowConfig"
+  },
+  {
+   "slug": "fc-dashboard-populate",
+   "dir": "dashboard-populate",
+   "name": "Dashboard Populate",
+   "category": "scenes",
+   "description": "An empty dashboard cascades to life with KPI count-ups, bar bounces, line traces, and a donut fill.",
+   "configName": "dashboardPopulateConfig"
+  },
+  {
+   "slug": "fc-data-flow-pipes",
+   "dir": "data-flow-pipes",
+   "name": "Data Flow Pipes",
+   "category": "scenes",
+   "description": "Glowing data packets travel along SVG bezier pipes between system nodes, leaving fading trails.",
+   "configName": "dataFlowPipesConfig"
+  },
+  {
+   "slug": "fc-device-mockup-zoom",
+   "dir": "device-mockup-zoom",
+   "name": "Device Mockup Zoom",
+   "category": "transitions",
+   "description": "Pull back from a UI to reveal it inside a device frame.",
+   "configName": "deviceMockupZoomConfig"
+  },
+  {
+   "slug": "fc-directional-wipe",
+   "dir": "directional-wipe",
+   "name": "Directional Wipe",
+   "category": "transitions",
+   "description": "Slide one scene in while pushing the other out.",
+   "configName": "directionalWipeConfig"
+  },
+  {
+   "slug": "fc-drag-and-drop-flow",
+   "dir": "drag-and-drop-flow",
+   "name": "Drag and Drop Flow",
+   "category": "scenes",
+   "description": "Simulated file drag into a dropzone followed by upload progress.",
+   "configName": "dragAndDropFlowConfig"
+  },
+  {
+   "slug": "fc-dynamic-grid",
+   "dir": "dynamic-grid",
+   "name": "Dynamic Grid",
+   "category": "shaders",
+   "description": "Subtle moving grid background with configurable cell size and direction.",
+   "configName": "dynamicGridConfig"
+  },
+  {
+   "slug": "fc-ecosystem-constellation",
+   "dir": "ecosystem-constellation",
+   "name": "Ecosystem Constellation",
+   "category": "scenes",
+   "description": "A central logo orbited by integration satellites with pulsing data lines.",
+   "configName": "ecosystemConstellationConfig"
+  },
+  {
+   "slug": "fc-fade-through",
+   "dir": "fade-through",
+   "name": "fade-through",
+   "category": "transitions",
+   "description": "",
+   "configName": "fadeThroughConfig"
+  },
+  {
+   "slug": "fc-focus-blur-resolve",
+   "dir": "focus-blur-resolve",
+   "name": "Focus Blur Resolve",
+   "category": "text",
+   "description": "Text resolves into focus from a blurred, shifted state, then blurs back out on exit.",
+   "configName": "focusBlurResolveConfig"
+  },
+  {
+   "slug": "fc-frosted-glass-wipe",
+   "dir": "frosted-glass-wipe",
+   "name": "Frosted Glass Wipe",
+   "category": "transitions",
+   "description": "Elegant scene transition through a sliding pane of frosted glass.",
+   "configName": "frostedGlassWipeConfig"
+  },
+  {
+   "slug": "fc-glass-code-block",
+   "dir": "glass-code-block",
+   "name": "Glass Code Block",
+   "category": "scenes",
+   "description": "A premium frosted-glass code editor window with a regex tokenizer and line-by-line stagger reveal.",
+   "configName": "glassCodeBlockConfig"
+  },
+  {
+   "slug": "fc-grid-pixelate-wipe",
+   "dir": "grid-pixelate-wipe",
+   "name": "Grid Pixelate Wipe",
+   "category": "transitions",
+   "description": "Dissolve from one scene to the next through a deterministic grid of mask cells.",
+   "configName": "gridPixelateWipeConfig"
+  },
+  {
+   "slug": "fc-hero-device-assemble",
+   "dir": "hero-device-assemble",
+   "name": "Hero Device Assemble",
+   "category": "scenes",
+   "description": "Floating device layers spring together into a laptop or phone mockup, then the screen wakes with a shimmer.",
+   "configName": "heroDeviceAssembleConfig"
+  },
+  {
+   "slug": "fc-image-expand-to-fullscreen",
+   "dir": "image-expand-to-fullscreen",
+   "name": "Image Expand To Fullscreen",
+   "category": "scenes",
+   "description": "An image lifts out of a feed post and morphs into a fullscreen editor with toolbars sliding in.",
+   "configName": "imageExpandToFullscreenConfig"
+  },
+  {
+   "slug": "fc-infinite-bento-pan",
+   "dir": "infinite-bento-pan",
+   "name": "Infinite Bento Pan",
+   "category": "scenes",
+   "description": "A camera diagonally drifts across an oversized bento grid behind a soft vignette.",
+   "configName": "infiniteBentoPanConfig"
+  },
+  {
+   "slug": "fc-infinite-marquee",
+   "dir": "infinite-marquee",
+   "name": "Infinite Marquee",
+   "category": "text",
+   "description": "Seamlessly looping horizontal text strip with optional stroke style.",
+   "configName": "infiniteMarqueeConfig"
+  },
+  {
+   "slug": "fc-inline-highlight",
+   "dir": "inline-highlight",
+   "name": "Inline Highlight",
+   "category": "text",
+   "description": "Animates one word inside a sentence from a base color to a brand color.",
+   "configName": "inlineHighlightConfig"
+  },
+  {
+   "slug": "fc-kinetic-type-mask",
+   "dir": "kinetic-type-mask",
+   "name": "Kinetic Type Mask",
+   "category": "transitions",
+   "description": "Use giant typography as a window into the next scene.",
+   "configName": "kineticTypeMaskConfig"
+  },
+  {
+   "slug": "fc-landing-code-showcase",
+   "dir": "landing-code-showcase",
+   "name": "Landing Code Showcase",
+   "category": "scenes",
+   "description": "Magical split-screen: code types itself on the left while the preview reactively re-renders on the right with sparks and tactile bounce.",
+   "configName": "landingCodeShowcaseConfig"
+  },
+  {
+   "slug": "fc-line-by-line-slide",
+   "dir": "line-by-line-slide",
+   "name": "line-by-line-slide",
+   "category": "text",
+   "description": "",
+   "configName": "lineByLineSlideConfig"
+  },
+  {
+   "slug": "fc-live-code-compilation",
+   "dir": "live-code-compilation",
+   "name": "Live Code Compilation",
+   "category": "scenes",
+   "description": "Split-screen where typed code on the left snaps a live UI preview on the right, HMR-style.",
+   "configName": "liveCodeCompilationConfig"
+  },
+  {
+   "slug": "fc-logo-enter",
+   "dir": "logo-enter",
+   "name": "Logo Enter",
+   "category": "motion",
+   "description": "Row of overlapping logo circles that spring in one by one.",
+   "configName": "logoEnterConfig"
+  },
+  {
+   "slug": "fc-marker-highlight",
+   "dir": "marker-highlight",
+   "name": "Marker Highlight",
+   "category": "text",
+   "description": "Colored marker block draws behind a phrase as the text color shifts.",
+   "configName": "markerHighlightConfig"
+  },
+  {
+   "slug": "fc-mask-reveal-up",
+   "dir": "mask-reveal-up",
+   "name": "mask-reveal-up",
+   "category": "text",
+   "description": "",
+   "configName": "maskRevealUpConfig"
+  },
+  {
+   "slug": "fc-masked-slide-reveal",
+   "dir": "masked-slide-reveal",
+   "name": "Masked Slide Reveal",
+   "category": "text",
+   "description": "Words slide up out of an invisible horizontal mask, one after another.",
+   "configName": "maskedSlideRevealConfig"
+  },
+  {
+   "slug": "fc-matrix-decode",
+   "dir": "matrix-decode",
+   "name": "Matrix Decode",
+   "category": "text",
+   "description": "Random scramble resolves left-to-right into the target text.",
+   "configName": "matrixDecodeConfig"
+  },
+  {
+   "slug": "fc-mesh-gradient-bg",
+   "dir": "mesh-gradient-bg",
+   "name": "Mesh Gradient Background",
+   "category": "shaders",
+   "description": "Living gradient with amorphous color blobs slowly drifting across the frame.",
+   "configName": "meshGradientBgConfig"
+  },
+  {
+   "slug": "fc-micro-scale-fade",
+   "dir": "micro-scale-fade",
+   "name": "micro-scale-fade",
+   "category": "text",
+   "description": "",
+   "configName": "microScaleFadeConfig"
+  },
+  {
+   "slug": "fc-morphing-modal",
+   "dir": "morphing-modal",
+   "name": "Morphing Modal",
+   "category": "transitions",
+   "description": "A bento card lifts off the grid and blooms into a full-screen modal driven by a single heavy spring.",
+   "configName": "morphingModalConfig"
+  },
+  {
+   "slug": "fc-per-character-rise",
+   "dir": "per-character-rise",
+   "name": "Per Character Rise",
+   "category": "text",
+   "description": "Characters rise from below with a smooth spring-like easing, staggered one frame apart.",
+   "configName": "perCharacterRiseConfig"
+  },
+  {
+   "slug": "fc-per-word-crossfade",
+   "dir": "per-word-crossfade",
+   "name": "per-word-crossfade",
+   "category": "transitions",
+   "description": "",
+   "configName": "perWordCrossfadeConfig"
+  },
+  {
+   "slug": "fc-perspective-marquee",
+   "dir": "perspective-marquee",
+   "name": "Perspective Marquee",
+   "category": "text",
+   "description": "A 3D-tilted infinite marquee with depth-of-field blur on items rolling toward the horizon.",
+   "configName": "perspectiveMarqueeConfig"
+  },
+  {
+   "slug": "fc-pipeline-journey",
+   "dir": "pipeline-journey",
+   "name": "Pipeline Journey",
+   "category": "scenes",
+   "description": "A Kanban ticket arcs across columns triggering landings and a final confetti burst.",
+   "configName": "pipelineJourneyConfig"
+  },
+  {
+   "slug": "fc-pricing-tier-focus",
+   "dir": "pricing-tier-focus",
+   "name": "Pricing Tier Focus",
+   "category": "scenes",
+   "description": "Three pricing cards where the focused tier rises and brightens while siblings dim and blur.",
+   "configName": "pricingTierFocusConfig"
+  },
+  {
+   "slug": "fc-product-launch-trailer",
+   "dir": "product-launch-trailer",
+   "name": "Product Launch Trailer",
+   "category": "scenes",
+   "description": "Cinematic Product Hunt teaser: pulsing logo, zoom-through transition, 3D bento fly-over, and a confetti version drop.",
+   "configName": "productLaunchTrailerConfig"
+  },
+  {
+   "slug": "fc-progress-steps",
+   "dir": "progress-steps",
+   "name": "Progress Steps",
+   "category": "scenes",
+   "description": "Multi-step pipeline with sequentially activating nodes and filling lines.",
+   "configName": "progressStepsConfig"
+  },
+  {
+   "slug": "fc-pulsing-indicator",
+   "dir": "pulsing-indicator",
+   "name": "Pulsing Indicator",
+   "category": "motion",
+   "description": "Continuous pulsing dot with ping ring for loading or live states.",
+   "configName": "pulsingIndicatorConfig"
+  },
+  {
+   "slug": "fc-rgb-glitch-text",
+   "dir": "rgb-glitch-text",
+   "name": "RGB Glitch Text",
+   "category": "text",
+   "description": "Three RGB-offset text copies jitter for a brief glitch window.",
+   "configName": "rgbGlitchTextConfig"
+  },
+  {
+   "slug": "fc-scale-down-fade",
+   "dir": "scale-down-fade",
+   "name": "Scale Down Fade",
+   "category": "text",
+   "description": "Text enters scaling down into place with a fade, then shrinks and fades out.",
+   "configName": "scaleDownFadeConfig"
+  },
+  {
+   "slug": "fc-shader-color-panels",
+   "dir": "shader-color-panels",
+   "name": "Shader Color Panels",
+   "category": "shaders",
+   "description": "Overlapping translucent color panels sliding past each other.",
+   "configName": "shaderColorPanelsConfig"
+  },
+  {
+   "slug": "fc-shader-dithering",
+   "dir": "shader-dithering",
+   "name": "Shader Dithering",
+   "category": "shaders",
+   "description": "Ordered-dither shading over an animated gradient field.",
+   "configName": "shaderDitheringConfig"
+  },
+  {
+   "slug": "fc-shader-dot-orbit",
+   "dir": "shader-dot-orbit",
+   "name": "Shader Dot Orbit",
+   "category": "shaders",
+   "description": "Dots orbiting on concentric paths across the frame.",
+   "configName": "shaderDotOrbitConfig"
+  },
+  {
+   "slug": "fc-shader-god-rays",
+   "dir": "shader-god-rays",
+   "name": "Shader God Rays",
+   "category": "shaders",
+   "description": "Volumetric light rays radiating from an off-screen source.",
+   "configName": "shaderGodRaysConfig"
+  },
+  {
+   "slug": "fc-shader-grain-gradient",
+   "dir": "shader-grain-gradient",
+   "name": "Shader Grain Gradient",
+   "category": "shaders",
+   "description": "Grainy multi-stop gradient that drifts slowly with film-grain texture over the blend.",
+   "configName": "shaderGrainGradientConfig"
+  },
+  {
+   "slug": "fc-shader-liquid-metal",
+   "dir": "shader-liquid-metal",
+   "name": "Shader Liquid Metal",
+   "category": "shaders",
+   "description": "Molten metallic surface with flowing specular highlights.",
+   "configName": "shaderLiquidMetalConfig"
+  },
+  {
+   "slug": "fc-shader-mesh-gradient",
+   "dir": "shader-mesh-gradient",
+   "name": "Shader Mesh Gradient",
+   "category": "shaders",
+   "description": "WebGL mesh gradient backdrop driven per-frame for deterministic Editframe renders.",
+   "configName": "shaderMeshGradientConfig"
+  },
+  {
+   "slug": "fc-shader-metaballs",
+   "dir": "shader-metaballs",
+   "name": "Shader Metaballs",
+   "category": "shaders",
+   "description": "Organic blobs merging and splitting like lava.",
+   "configName": "shaderMetaballsConfig"
+  },
+  {
+   "slug": "fc-shader-neuro-noise",
+   "dir": "shader-neuro-noise",
+   "name": "Shader Neuro Noise",
+   "category": "shaders",
+   "description": "Organic neural-web noise field that slowly morphs.",
+   "configName": "shaderNeuroNoiseConfig"
+  },
+  {
+   "slug": "fc-shader-perlin-noise",
+   "dir": "shader-perlin-noise",
+   "name": "Shader Perlin Noise",
+   "category": "shaders",
+   "description": "Classic Perlin noise clouds drifting across the frame.",
+   "configName": "shaderPerlinNoiseConfig"
+  },
+  {
+   "slug": "fc-shader-pulsing-border",
+   "dir": "shader-pulsing-border",
+   "name": "Shader Pulsing Border",
+   "category": "shaders",
+   "description": "Glowing border frame that pulses around the edges.",
+   "configName": "shaderPulsingBorderConfig"
+  },
+  {
+   "slug": "fc-shader-simplex-noise",
+   "dir": "shader-simplex-noise",
+   "name": "Shader Simplex Noise",
+   "category": "shaders",
+   "description": "Simplex noise flow field, smoother than Perlin.",
+   "configName": "shaderSimplexNoiseConfig"
+  },
+  {
+   "slug": "fc-shader-smoke-ring",
+   "dir": "shader-smoke-ring",
+   "name": "Shader Smoke Ring",
+   "category": "shaders",
+   "description": "Soft smoke ring curling and dissipating in place.",
+   "configName": "shaderSmokeRingConfig"
+  },
+  {
+   "slug": "fc-shader-spiral",
+   "dir": "shader-spiral",
+   "name": "Shader Spiral",
+   "category": "shaders",
+   "description": "Rotating spiral arms radiating from the center.",
+   "configName": "shaderSpiralConfig"
+  },
+  {
+   "slug": "fc-shader-swirl",
+   "dir": "shader-swirl",
+   "name": "Shader Swirl",
+   "category": "shaders",
+   "description": "Concentric bands swirling around a center point.",
+   "configName": "shaderSwirlConfig"
+  },
+  {
+   "slug": "fc-shader-voronoi",
+   "dir": "shader-voronoi",
+   "name": "Shader Voronoi",
+   "category": "shaders",
+   "description": "Animated Voronoi cells shifting and re-tessellating.",
+   "configName": "shaderVoronoiConfig"
+  },
+  {
+   "slug": "fc-shader-warp",
+   "dir": "shader-warp",
+   "name": "Shader Warp",
+   "category": "shaders",
+   "description": "Domain-warped color field that folds and stretches like liquid.",
+   "configName": "shaderWarpConfig"
+  },
+  {
+   "slug": "fc-shader-water",
+   "dir": "shader-water",
+   "name": "Shader Water",
+   "category": "shaders",
+   "description": "Caustic water-surface ripples with subtle refraction.",
+   "configName": "shaderWaterConfig"
+  },
+  {
+   "slug": "fc-shared-axis-y",
+   "dir": "shared-axis-y",
+   "name": "shared-axis-y",
+   "category": "transitions",
+   "description": "",
+   "configName": "sharedAxisYConfig"
+  },
+  {
+   "slug": "fc-shared-axis-z",
+   "dir": "shared-axis-z",
+   "name": "shared-axis-z",
+   "category": "transitions",
+   "description": "",
+   "configName": "sharedAxisZConfig"
+  },
+  {
+   "slug": "fc-shimmer-sweep",
+   "dir": "shimmer-sweep",
+   "name": "Shimmer Sweep",
+   "category": "text",
+   "description": "Light shine sweeps across muted text via background-clip:text.",
+   "configName": "shimmerSweepConfig"
+  },
+  {
+   "slug": "fc-short-slide-right",
+   "dir": "short-slide-right",
+   "name": "short-slide-right",
+   "category": "text",
+   "description": "",
+   "configName": "shortSlideRightConfig"
+  },
+  {
+   "slug": "fc-simulated-cursor",
+   "dir": "simulated-cursor",
+   "name": "Simulated Cursor",
+   "category": "motion",
+   "description": "Animated mouse cursor moving between waypoints with click ripple feedback.",
+   "configName": "simulatedCursorConfig"
+  },
+  {
+   "slug": "fc-slot-machine-roll",
+   "dir": "slot-machine-roll",
+   "name": "Slot Machine Roll",
+   "category": "text",
+   "description": "Vertical reel scrolls characters from one value to another.",
+   "configName": "slotMachineRollConfig"
+  },
+  {
+   "slug": "fc-soft-blur-in",
+   "dir": "soft-blur-in",
+   "name": "soft-blur-in",
+   "category": "text",
+   "description": "",
+   "configName": "softBlurInConfig"
+  },
+  {
+   "slug": "fc-spatial-push",
+   "dir": "spatial-push",
+   "name": "Spatial Push",
+   "category": "transitions",
+   "description": "A new scene physically presses the old one back into the frame.",
+   "configName": "spatialPushConfig"
+  },
+  {
+   "slug": "fc-spotlight-card",
+   "dir": "spotlight-card",
+   "name": "Spotlight Card",
+   "category": "shaders",
+   "description": "A card with a moonlight-cool radial spotlight that follows a synthetic cursor and lights up its microborder.",
+   "configName": "spotlightCardConfig"
+  },
+  {
+   "slug": "fc-spring-pop-in",
+   "dir": "spring-pop-in",
+   "name": "Spring Pop In",
+   "category": "motion",
+   "description": "Elastic spring-driven scale-in wrapper for any child element.",
+   "configName": "springPopInConfig"
+  },
+  {
+   "slug": "fc-spring-scale-in",
+   "dir": "spring-scale-in",
+   "name": "spring-scale-in",
+   "category": "text",
+   "description": "",
+   "configName": "springScaleInConfig"
+  },
+  {
+   "slug": "fc-staggered-bento-grid",
+   "dir": "staggered-bento-grid",
+   "name": "Staggered Bento Grid",
+   "category": "scenes",
+   "description": "Cards pop into a bento grid one after another with a spring.",
+   "configName": "staggeredBentoGridConfig"
+  },
+  {
+   "slug": "fc-staggered-fade-up",
+   "dir": "staggered-fade-up",
+   "name": "Staggered Fade Up",
+   "category": "text",
+   "description": "Words fade in and slide up one after another with a configurable delay.",
+   "configName": "staggeredFadeUpConfig"
+  },
+  {
+   "slug": "fc-strikethrough-replace",
+   "dir": "strikethrough-replace",
+   "name": "Strikethrough Replace",
+   "category": "text",
+   "description": "Draws a strike line across old text then reveals new text in its place.",
+   "configName": "strikethroughReplaceConfig"
+  },
+  {
+   "slug": "fc-success-confetti",
+   "dir": "success-confetti",
+   "name": "Success Confetti",
+   "category": "motion",
+   "description": "Deterministic seeded confetti burst with optional headline.",
+   "configName": "successConfettiConfig"
+  },
+  {
+   "slug": "fc-swipe-transition-wipe",
+   "dir": "swipe-transition-wipe",
+   "name": "Swipe Transition Wipe",
+   "category": "transitions",
+   "description": "Two scenes laid out side-by-side flick across the screen with a parallax background and a darkening outgoing layer.",
+   "configName": "swipeTransitionWipeConfig"
+  },
+  {
+   "slug": "fc-terminal-simulator",
+   "dir": "terminal-simulator",
+   "name": "Terminal Simulator",
+   "category": "scenes",
+   "description": "Terminal window that types out commands and rolls old lines off the top.",
+   "configName": "terminalSimulatorConfig"
+  },
+  {
+   "slug": "fc-terminal-to-browser-deploy",
+   "dir": "terminal-to-browser-deploy",
+   "name": "Terminal to Browser Deploy",
+   "category": "scenes",
+   "description": "A CLI deploy completes, the terminal blurs back, and a browser window springs from the deploy URL.",
+   "configName": "terminalToBrowserDeployConfig"
+  },
+  {
+   "slug": "fc-text-fade-replace",
+   "dir": "text-fade-replace",
+   "name": "Text Fade Replace",
+   "category": "text",
+   "description": "Cross-fades between two strings on the same line without layout shift.",
+   "configName": "textFadeReplaceConfig"
+  },
+  {
+   "slug": "fc-toast-notification",
+   "dir": "toast-notification",
+   "name": "Toast Notification",
+   "category": "motion",
+   "description": "System-style toast pops in, holds, then slides out.",
+   "configName": "toastNotificationConfig"
+  },
+  {
+   "slug": "fc-top-down-letters",
+   "dir": "top-down-letters",
+   "name": "Top Down Letters",
+   "category": "text",
+   "description": "Letters animate in from top to bottom.",
+   "configName": "topDownLettersConfig"
+  },
+  {
+   "slug": "fc-tracking-in",
+   "dir": "tracking-in",
+   "name": "Tracking In",
+   "category": "text",
+   "description": "Letter-spacing collapses and blur clears with a springy motion.",
+   "configName": "trackingInConfig"
+  },
+  {
+   "slug": "fc-typewriter",
+   "dir": "typewriter",
+   "name": "Typewriter",
+   "category": "text",
+   "description": "Character-by-character text reveal with a deterministic blinking cursor.",
+   "configName": "typewriterConfig"
+  },
+  {
+   "slug": "fc-zoom-through-transition",
+   "dir": "zoom-through-transition",
+   "name": "Zoom Through Transition",
+   "category": "transitions",
+   "description": "Aggressively scale into the center of an element.",
+   "configName": "zoomThroughTransitionConfig"
+  }
+ ]
+}

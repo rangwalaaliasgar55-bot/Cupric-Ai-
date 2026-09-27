@@ -177,7 +177,9 @@ export type LibraryItem =
  * rendered deterministically to a canvas by src/lib/studio/renderer.ts.
  * ———————————————————————————————————————————————————————————————— */
 
-export type StudioAspect = '16:9' | '9:16' | '1:1'
+export type StudioAspect = '16:9' | '9:16' | '1:1' | '4:5'
+/** Export size by short side: 720p … 2160p (Ultra HD). */
+export type StudioResolution = '720p' | '1080p' | '1440p' | '2160p'
 export type StudioTextAnim =
   | 'none'
   | 'fade-up'
@@ -188,6 +190,8 @@ export type StudioTextAnim =
   | 'shimmer'
   | 'glass-rise'
   | 'liquid-wave'
+  /** 2.18 — per-word kinetic run: each word lands on its own beat. */
+  | 'kinetic'
 export type StudioTransition =
   | 'none'
   | 'fade'
@@ -213,6 +217,41 @@ export type StudioGradeNode =
   | { id: 'balance'; enabled: boolean; exposure: number; temperature: number }
   | { id: 'contrast'; enabled: boolean; contrast: number; fade: number }
   | { id: 'look'; enabled: boolean; saturation: number; hue: number }
+  /**
+   * 2.3 — colour wheels. Lift/gamma/gain per channel, each -100..100. Needs
+   * the pixels, so a clip with this node takes the scratch-layer path.
+   */
+  | { id: 'wheels'; enabled: boolean; lift: [number, number, number]; gamma: [number, number, number]; gain: [number, number, number] }
+
+/** 2.3 — a parsed .cube 3D LUT (size ≤ 33), applied after the grade. */
+export type StudioLut = { name: string; size: number; /** size³ × RGB, 0–1, red fastest. */ data: number[]; strength: number }
+
+/** 2.6 — how a clip composites onto what is below it. */
+export type StudioBlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'soft-light' | 'difference' | 'add'
+
+/** 2.15 — device frame drawn around a media/overlay clip. */
+export type StudioDevice = 'none' | 'phone' | 'laptop' | 'browser'
+
+/** Phone Studio — animated phone mockup with an editable, animated screen. */
+export type StudioPhoneMotion = 'none' | 'float' | 'tilt-in' | 'spin-reveal' | 'rise' | 'hero-zoom' | 'swing'
+export type StudioPhoneApp =
+  | { kind: 'product'; title: string; subtitle: string; price: string; cta: string; badge: string; rating: number | null; accent: string }
+  | { kind: 'lockscreen'; time: string; date: string; notifications: Array<{ app: string; title: string; body: string }> }
+  | { kind: 'social'; handle: string; caption: string; likes: string; accent: string }
+export type StudioPhoneStyle = {
+  frameColor: string
+  island: 'island' | 'notch' | 'none'
+  buttons: boolean
+  glare: boolean
+  motion: StudioPhoneMotion
+  /** Tall screenshots scroll top → bottom across the clip. */
+  scroll: boolean
+  /** Animated app UI drawn on the screen over the clip's media. */
+  app: StudioPhoneApp | null
+}
+
+/** 2.7 — a named point on the timeline. */
+export type StudioMarker = { id: string; at: number; label: string; color: 'lime' | 'info' | 'danger' }
 
 /**
  * Per-clip matte.
@@ -223,7 +262,11 @@ export type StudioGradeNode =
  * tool (or by the automation pipeline) is imported and used as the alpha.
  */
 export type StudioMask = {
-  shape: 'rect' | 'ellipse' | 'luma' | 'matte'
+  shape: 'rect' | 'ellipse' | 'luma' | 'matte' | 'chroma'
+  /** 2.6 — chroma key: colour to remove (threshold = tolerance, softness = edge). */
+  keyColor?: string
+  /** 2.6 — pull the key colour's spill out of the edges (0–1). */
+  spill?: number
   /** Normalised geometry for the shape masks. */
   x: number
   y: number
@@ -237,7 +280,14 @@ export type StudioMask = {
   softness: number
   /** Greyscale or alpha image used as the matte, for `shape: 'matte'`. */
   matteDataUrl?: string | null
+  /**
+   * Object tracking: the box centre (and size, if it scaled) at clip-local
+   * times, produced by "Track subject". When present the rect/ellipse follows it.
+   */
+  track?: StudioMaskTrackPoint[] | null
 }
+
+export type StudioMaskTrackPoint = { at: number; x: number; y: number; w?: number; h?: number; confidence?: number }
 
 /**
  * One keyframe on a clip's own timeline.
@@ -257,6 +307,8 @@ export type StudioEase =
   | 'expo-in-out'
   | 'elastic-out'
   | 'hold'
+  /** 2.2 — custom curve from the curve editor; control points in `bezier`. */
+  | 'bezier'
 
 export type StudioKeyframe = {
   at: number
@@ -265,6 +317,15 @@ export type StudioKeyframe = {
   scale?: number
   rotation?: number
   opacity?: number
+  /** 3D tilt / turn in degrees (see StudioClipCommon). */
+  tiltX?: number
+  turnY?: number
+  /** Focus: gaussian blur in px at 1080p (0 = sharp). */
+  blur?: number
+  /** Bloom / glow intensity 0–1 (brightness lift + soft halo). */
+  glow?: number
+  /** Colour drift: hue rotation in degrees. */
+  hue?: number
   /** Easing from this keyframe to the next. */
   /**
    * How the value travels to the NEXT keyframe. The expressive eases are what
@@ -273,6 +334,8 @@ export type StudioKeyframe = {
    * `hold` jumps at the next key (a step / freeze).
    */
   ease: StudioEase
+  /** 2.2 — CSS-style cubic-bezier control points (x1, y1, x2, y2) for ease 'bezier'. */
+  bezier?: [number, number, number, number]
 }
 
 type StudioClipCommon = {
@@ -288,16 +351,40 @@ type StudioClipCommon = {
   opacity: number
   /** Degrees clockwise about the clip's own centre. Absent means 0. */
   rotation?: number
+  /** 3D: tilt about the horizontal axis in degrees (top away = positive). */
+  tiltX?: number
+  /** 3D: turn about the vertical axis in degrees (right side away = positive). */
+  turnY?: number
+  /** 3D camera distance in px at 1080p (smaller = stronger perspective). Default 1600. */
+  perspective?: number
   /** Up to three grade nodes, applied in array order. Absent means ungraded. */
   grade?: StudioGradeNode[] | null
   /** Absent means the clip fills its own bounds with no matte. */
   mask?: StudioMask | null
   /** Property animation, sorted by `at`. Absent means the clip is static. */
   keyframes?: StudioKeyframe[] | null
+  /** 2.6 — absent means normal. */
+  blendMode?: StudioBlendMode
+  /** 2.3 — absent means no LUT. */
+  lut?: StudioLut | null
+  /** Locked clips cannot be moved, trimmed or deleted until unlocked. */
+  locked?: boolean
+  /** Hidden clips stay on the timeline but are not drawn or heard. */
+  hidden?: boolean
+  /** Muted clips are drawn but silent. */
+  muted?: boolean
+  /** Mirror about the clip's own centre. */
+  flipX?: boolean
+  flipY?: boolean
 }
+
+/** A transcribed word in SOURCE-file seconds (survives trims and splits). */
+export type StudioWord = { word: string; start: number; end: number }
 
 export type StudioMediaClip = StudioClipCommon & {
   kind: 'video' | 'image'
+  /** Transcript words with timing (auto-captions); drives speech tightening. */
+  words?: StudioWord[] | null
   /** Runtime handle into the media registry (object URLs are never persisted). */
   mediaId: string
   fileName: string
@@ -313,6 +400,17 @@ export type StudioMediaClip = StudioClipCommon & {
   y?: number
   scale?: number
   posterDataUrl?: string | null
+  /** 2.15 — device mockup frame. */
+  device?: StudioDevice
+  /** Phone Studio settings (used when device is 'phone'). */
+  phone?: StudioPhoneStyle | null
+  /**
+   * 2.21 — before/after. This clip is the AFTER; `beforeMediaId` is drawn on
+   * the left of a divider. Both images come from the user — never generated.
+   */
+  compare?: { beforeMediaId: string; beforeFileName: string; mode: 'sweep' | 'static'; position: number } | null
+  /** 2.16 — the parametric product-photo preset that wrote this clip's keyframes. */
+  motionPreset?: string | null
 }
 
 export type StudioTextClip = StudioClipCommon & {
@@ -330,6 +428,20 @@ export type StudioTextClip = StudioClipCommon & {
   anim: StudioTextAnim
   captionStyle: StudioCaptionStyle | null
   highlightWord: string | null
+  /** Rich markup colours: *emphasis* (serif italic), ==highlight box==, {accent}, ^big^. */
+  emphasisColor?: string
+  emphasisFont?: string
+  boxColor?: string
+  accentColor?: string
+  /** Soft glow behind the glyphs (0–1), like creator hook titles. */
+  textGlow?: number
+  /**
+   * Text legibility (2.14). `auto` (default) paints a soft scrim only when the
+   * pixels under the text are low-contrast or busy; `on` always; `off` never.
+   */
+  legibility?: 'auto' | 'on' | 'off'
+  /** Scrim opacity 0–1 (default 0.55). */
+  scrimStrength?: number
 }
 
 export type StudioBackgroundClip = StudioClipCommon & {
@@ -350,6 +462,8 @@ export type StudioComponentMeta = {
   recordSec: number
   /** Act the component out (hover, pointer path, clicks) while recording. */
   interact: boolean
+  /** Props for props-driven components (framecn text, colours, sizes). Changing them re-records. */
+  props?: Record<string, string | number | boolean>
   error?: string
 }
 
@@ -370,6 +484,10 @@ export type StudioOverlayClip = StudioClipCommon & {
   x: number
   y: number
   scale: number
+  /** 2.15 — device mockup frame. */
+  device?: StudioDevice
+  /** Phone Studio settings (used when device is 'phone'). */
+  phone?: StudioPhoneStyle | null
 }
 
 /**
@@ -381,6 +499,10 @@ export type StudioOverlayClip = StudioClipCommon & {
  * the same gain from the same numbers.
  */
 export type StudioAudioClip = StudioClipCommon & {
+  /** Transcript words with timing, in source seconds. */
+  words?: StudioWord[] | null
+  /** Detected beats in SOURCE seconds + tempo (Analyse beats). */
+  beats?: { bpm: number; times: number[] } | null
   kind: 'audio'
   mediaId: string
   fileName: string
@@ -392,6 +514,10 @@ export type StudioAudioClip = StudioClipCommon & {
   volume: number
   fadeInSec: number
   fadeOutSec: number
+  /** 2.4 — music ducks under voice when doc ducking is on. Absent = music. */
+  role?: 'music' | 'voice' | 'sfx'
+  /** 2.4 — cached waveform peaks (0–1), ~100 per second, for the timeline. */
+  peaks?: number[] | null
 }
 
 export type StudioGlassClip = StudioClipCommon & {
@@ -441,6 +567,84 @@ export type StudioClip =
   | StudioOverlayClip
   | StudioGlassClip
   | StudioStickerClip
+  | StudioSequenceClip
+  | StudioShapeClip
+  | StudioCursorClip
+
+export type StudioShapeAnim = 'none' | 'draw-on' | 'pop' | 'grow' | 'spin-in' | 'pulse' | 'wiggle' | 'draw-then-fill'
+
+/** Vector shape drawn natively (crisp at any size); see lib/studio/shapes.ts. */
+export type StudioShapeClip = StudioClipCommon & {
+  kind: 'shape'
+  shape: string
+  x: number
+  y: number
+  /** Width as a fraction of frame width; height = w × aspect (in px terms). */
+  w: number
+  aspect: number
+  fill: string | null
+  stroke: string | null
+  /** Stroke width in px at 1080p. */
+  strokeWidth: number
+  anim: StudioShapeAnim
+  /** Regular polygon sides / star points when the shape takes them. */
+  sides?: number
+  /** Corner radius 0–0.5 of the short side (rects, pills, badges). */
+  radius?: number
+  /** Soft glow 0–1. */
+  glow?: number
+  /** Optional text inside (badges, bubbles, buttons). */
+  label?: string
+  labelColor?: string
+}
+
+export type StudioCursorStyle = 'auto' | 'arrow' | 'hand' | 'dot' | 'ring' | 'touch' | 'ibeam'
+
+/**
+ * Animated cursor: glides from `from` to the target and clicks there. When
+ * `targetClipId` is set the target reacts (press-in) on each click.
+ */
+export type StudioCursorClip = StudioClipCommon & {
+  kind: 'cursor'
+  style: StudioCursorStyle
+  /** Target point (normalised). */
+  x: number
+  y: number
+  fromX: number
+  fromY: number
+  /** Click moments as fractions of the clip (0–1). */
+  clicks: number[]
+  action: 'click' | 'double-click' | 'hover' | 'drag'
+  /** Drag end point for action 'drag'. */
+  toX?: number
+  toY?: number
+  /** Size multiplier (1 = 3.2% of frame height). */
+  size: number
+  color: string
+  rippleColor: string
+  targetClipId?: string | null
+  /** Multi-stop journey: click k happens at stops[min(k, stops.length-1)] (default: the single x/y target). */
+  stops?: Array<{ x: number; y: number }>
+  /** Motion-blur trail while moving fast (default on). */
+  trail?: boolean
+}
+
+/**
+ * Nested sequence: a saved scene (another complete edit) placed as ONE clip.
+ * It stays a single, movable, trimmable block on the timeline; preview and
+ * export flatten it in the shared output pass (resolveForOutput), so its
+ * video, audio, text and effects play exactly as in the original edit.
+ */
+export type StudioSequenceClip = StudioClipCommon & {
+  kind: 'sequence'
+  sceneId: string
+  /** Seconds into the nested edit where this clip starts playing. */
+  trimInSec: number
+  /** Placement of the nested frame (0.5/0.5/1 = full frame). */
+  x: number
+  y: number
+  scale: number
+}
 
 /**
  * Stage background that is not one of the shipped presets.
@@ -462,4 +666,25 @@ export type StudioDoc = {
   customBackground?: StudioCustomBackground | null
   clips: StudioClip[]
   trackCount: number
+  /**
+   * Recorded components waiting to be placed (2.13 — record now, place later).
+   * Not on the timeline, never rendered; Place copies one to the playhead.
+   */
+  shelf?: StudioOverlayClip[]
+  /** 2.7 — timeline markers (M). Snap targets; never rendered. */
+  markers?: StudioMarker[]
+  /** Colour tokens imported with a source project (or set by the user). */
+  palette?: Array<{ name: string; color: string }>
+  /** 2.4 — auto-duck music under voice clips. */
+  ducking?: { enabled: boolean; amountDb: number; fadeSec: number } | null
+  /** 2.4 — loudness target for export normalisation (LUFS, e.g. -14). null = off. */
+  loudnessTarget?: number | null
+  /** Part 4 — licence + attribution of anything imported from a link. */
+  credits?: Array<{ url: string; source: string; sourceLicense: string | null; attribution: string | null }>
+  /** Export resolution (short side). Default 1080p. */
+  resolution?: StudioResolution
+  /** Dynamic-content variables: `{{name}}` in any text resolves to `value`. */
+  variables?: Array<{ name: string; value: string }>
+  /** Named scenes saved inside the project (whole-doc snapshots, minus scenes). */
+  scenes?: Array<{ id: string; name: string; savedAt: string; doc: Omit<StudioDoc, 'scenes'> }>
 }

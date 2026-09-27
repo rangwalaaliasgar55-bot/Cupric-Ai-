@@ -38,7 +38,7 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
             className={cx(
               'inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors duration-150',
-              active ? 'border-line bg-panel text-text' : 'border-transparent text-muted hover:text-text',
+              active ? 'border-line bg-panel text-text shadow-[var(--shadow-sheen),var(--shadow-1)]' : 'border-transparent text-muted hover:text-text',
             )}
           >
             {o.icon}

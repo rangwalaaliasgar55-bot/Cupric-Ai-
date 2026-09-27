@@ -1,3 +1,4 @@
+import { ARENA_SCENE_CSP, inlineBlobAssets, openSandboxedScene, type SandboxedScene } from './studio/htmlTemplateCapture'
 import JSZip from 'jszip'
 
 export type BrowserArenaImportResult = {
@@ -110,47 +111,29 @@ function ensureSeekFunction(html: string) {
   }
 }
 
-function loadHiddenIframe(src: string, width = 1280, height = 720): Promise<HTMLIFrameElement> {
-  return new Promise((resolve, reject) => {
-    const iframe = document.createElement('iframe')
-    iframe.src = src
-    iframe.style.position = 'fixed'
-    iframe.style.left = '-100000px'
-    iframe.style.top = '0'
-    iframe.style.width = `${width}px`
-    iframe.style.height = `${height}px`
-    iframe.style.border = '0'
-    iframe.onload = () => resolve(iframe)
-    iframe.onerror = () => reject(new Error('Imported Arena HTML could not be loaded'))
-    document.body.appendChild(iframe)
-  })
-}
-
+/**
+ * Thumbnail through the same opaque-origin sandbox as every other HTML
+ * capture (2.28): imported Arena HTML is third-party code and must never run
+ * with the app's origin.
+ */
 async function captureArenaThumbnail(src: string): Promise<string | null> {
-  const iframe = await loadHiddenIframe(src)
+  let scene: SandboxedScene | null = null
   try {
-    const win = iframe.contentWindow as (Window & { __seek?: (time: number) => void | Promise<void> }) | null
-    const doc = iframe.contentDocument
-    if (!win || !doc || typeof win.__seek !== 'function') return null
-    await win.__seek(1.5)
-    await new Promise((resolve) => requestAnimationFrame(resolve))
-    const { default: html2canvas } = await import('html2canvas')
-    const element = (doc.getElementById('scene') || doc.body || doc.documentElement) as HTMLElement
-    const canvas = await html2canvas(element, {
-      backgroundColor: '#0B0B10',
-      logging: false,
-      useCORS: true,
-      width: 1280,
-      height: 720,
-      windowWidth: 1280,
-      windowHeight: 720,
-      scale: 0.5,
-    })
+    const html = await inlineBlobAssets(await (await fetch(src)).text())
+    scene = await openSandboxedScene(html, 1280, 720, { csp: ARENA_SCENE_CSP })
+    const canvas = document.createElement('canvas')
+    canvas.width = 640
+    canvas.height = 360
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.fillStyle = '#0B0B10'
+    ctx.fillRect(0, 0, 640, 360)
+    await scene.drawFrame(1.5, ctx, 640, 360)
     return canvas.toDataURL('image/png')
   } catch {
     return null
   } finally {
-    iframe.remove()
+    scene?.close()
   }
 }
 

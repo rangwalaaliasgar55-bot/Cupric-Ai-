@@ -2,7 +2,7 @@
   "id": "backgrounds",
   "name": "Backgrounds & gradients",
   "description": "Studio stage backgrounds — gradients, mesh gradients and patterns — with the CSS twin used by the app and by Arena HTML.",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "source": "Cupric tokens, catalogue shape after ibelick",
   "license": "MIT",
   "items": [
@@ -262,9 +262,69 @@
       ]
     },
     {
+      "id": "physics-stack",
+      "kind": "background",
+      "name": "Physics: Stack knock-over",
+      "description": "physics · renders identically on the canvas and in CSS",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "physics",
+        "studio": true
+      },
+      "tags": [
+        "background",
+        "physics"
+      ]
+    },
+    {
+      "id": "physics-drop",
+      "kind": "background",
+      "name": "Physics: Drop & pile",
+      "description": "physics · renders identically on the canvas and in CSS",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "physics",
+        "studio": true
+      },
+      "tags": [
+        "background",
+        "physics"
+      ]
+    },
+    {
+      "id": "physics-explosion",
+      "kind": "background",
+      "name": "Physics: Explosion",
+      "description": "physics · renders identically on the canvas and in CSS",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "physics",
+        "studio": true
+      },
+      "tags": [
+        "background",
+        "physics"
+      ]
+    },
+    {
+      "id": "physics-dominoes",
+      "kind": "background",
+      "name": "Physics: Dominoes",
+      "description": "physics · renders identically on the canvas and in CSS",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "physics",
+        "studio": true
+      },
+      "tags": [
+        "background",
+        "physics"
+      ]
+    },
+    {
       "id": "chrome-void",
       "kind": "background",
-      "name": "Void",
+      "name": "Void (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background:#0B0B10;",
       "data": {
@@ -279,7 +339,7 @@
     {
       "id": "chrome-lime-void",
       "kind": "background",
-      "name": "Lime Void",
+      "name": "Lime Void (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(200,245,66,0.14), transparent 70%), #0B0B10;",
       "data": {
@@ -294,7 +354,7 @@
     {
       "id": "chrome-grid-haze",
       "kind": "background",
-      "name": "Grid Haze",
+      "name": "Grid Haze (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background-color:#0B0B10;background-image:radial-gradient(ellipse 70% 50% at 50% 30%,rgba(200,245,66,0.08),transparent),linear-gradient(rgba(255,255,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.03) 1px,transparent 1px);background-size:100% 100%,48px 48px,48px 48px;",
       "data": {
@@ -309,7 +369,7 @@
     {
       "id": "chrome-dot-field",
       "kind": "background",
-      "name": "Dot Field",
+      "name": "Dot Field (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background-color:#0B0B10;background-image:radial-gradient(rgba(255,255,255,0.08) 1px,transparent 1px);background-size:24px 24px;",
       "data": {
@@ -324,7 +384,7 @@
     {
       "id": "chrome-blue-orbit",
       "kind": "background",
-      "name": "Blue Orbit",
+      "name": "Blue Orbit (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background: radial-gradient(circle at 80% 20%, rgba(79,182,232,0.16), transparent 45%), radial-gradient(circle at 20% 80%, rgba(200,245,66,0.08), transparent 40%), #0B0B10;",
       "data": {
@@ -339,7 +399,7 @@
     {
       "id": "chrome-warm-paper",
       "kind": "background",
-      "name": "Warm Paper",
+      "name": "Warm Paper (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background: linear-gradient(160deg, #1a1410 0%, #0f0c0a 50%, #0B0B10 100%);",
       "data": {
@@ -354,7 +414,7 @@
     {
       "id": "chrome-aurora",
       "kind": "background",
-      "name": "Aurora Drift",
+      "name": "Aurora Drift (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background: radial-gradient(ellipse 60% 40% at 25% 25%, rgba(200,245,66,0.16), transparent 60%), radial-gradient(ellipse 50% 45% at 75% 70%, rgba(79,182,232,0.18), transparent 60%), #0B0B10;",
       "data": {
@@ -369,7 +429,7 @@
     {
       "id": "chrome-spotlight",
       "kind": "background",
-      "name": "Spotlight",
+      "name": "Spotlight (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background: radial-gradient(circle at 50% 0%, rgba(244,241,234,0.14), transparent 55%), #0B0B10;",
       "data": {
@@ -384,7 +444,7 @@
     {
       "id": "chrome-lime-wash",
       "kind": "background",
-      "name": "Lime Wash",
+      "name": "Lime Wash (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background: linear-gradient(140deg, #16210a 0%, #0f1408 45%, #0B0B10 100%);",
       "data": {
@@ -399,7 +459,7 @@
     {
       "id": "chrome-mesh-lagoon",
       "kind": "background",
-      "name": "Mesh Lagoon",
+      "name": "Mesh Lagoon (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background-color:#0B0B10;background-image:radial-gradient(at 18% 22%,rgba(79,182,232,0.30) 0px,transparent 55%),radial-gradient(at 82% 18%,rgba(200,245,66,0.20) 0px,transparent 50%),radial-gradient(at 68% 82%,rgba(120,88,232,0.24) 0px,transparent 55%),radial-gradient(at 22% 78%,rgba(79,182,232,0.16) 0px,transparent 50%);",
       "data": {
@@ -414,7 +474,7 @@
     {
       "id": "chrome-mesh-ember",
       "kind": "background",
-      "name": "Mesh Ember",
+      "name": "Mesh Ember (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background-color:#0B0B10;background-image:radial-gradient(at 26% 14%,rgba(255,138,76,0.26) 0px,transparent 52%),radial-gradient(at 78% 30%,rgba(232,74,106,0.22) 0px,transparent 50%),radial-gradient(at 50% 88%,rgba(200,245,66,0.14) 0px,transparent 55%);",
       "data": {
@@ -429,7 +489,7 @@
     {
       "id": "chrome-liquid-chrome",
       "kind": "background",
-      "name": "Liquid Chrome",
+      "name": "Liquid Chrome (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background:conic-gradient(from 210deg at 50% 50%,#0B0B10,#1b2430,#3a4757,#0f141b,#2b3542,#0B0B10);",
       "data": {
@@ -444,7 +504,7 @@
     {
       "id": "chrome-liquid-lime",
       "kind": "background",
-      "name": "Liquid Lime",
+      "name": "Liquid Lime (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background-color:#0B0B10;background-image:radial-gradient(at 30% 30%,rgba(200,245,66,0.28) 0px,transparent 50%),radial-gradient(at 70% 70%,rgba(200,245,66,0.12) 0px,transparent 45%),linear-gradient(120deg,rgba(255,255,255,0.03),transparent 60%);",
       "data": {
@@ -459,7 +519,7 @@
     {
       "id": "chrome-noise-veil",
       "kind": "background",
-      "name": "Noise Veil",
+      "name": "Noise Veil (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background-color:#0B0B10;background-image:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(244,241,234,0.10),transparent 60%),repeating-linear-gradient(0deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 1px,transparent 1px,transparent 3px);",
       "data": {
@@ -474,7 +534,7 @@
     {
       "id": "chrome-glass-stage",
       "kind": "background",
-      "name": "Glass Stage",
+      "name": "Glass Stage (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background:linear-gradient(180deg,#141821 0%,#0B0B10 60%),radial-gradient(ellipse 60% 30% at 50% 100%,rgba(200,245,66,0.12),transparent 70%);",
       "data": {
@@ -489,7 +549,7 @@
     {
       "id": "chrome-violet-dusk",
       "kind": "background",
-      "name": "Violet Dusk",
+      "name": "Violet Dusk (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background:linear-gradient(160deg,#1b1430 0%,#120f1f 45%,#0B0B10 100%);",
       "data": {
@@ -504,9 +564,69 @@
     {
       "id": "chrome-studio-white",
       "kind": "background",
-      "name": "Studio White",
+      "name": "Studio White (app chrome)",
       "description": "App-chrome gradient (stage and thumbnails only).",
       "css": "background:#F4F1EA;",
+      "data": {
+        "group": "chrome",
+        "studio": false
+      },
+      "tags": [
+        "background",
+        "chrome"
+      ]
+    },
+    {
+      "id": "chrome-physics-stack",
+      "kind": "background",
+      "name": "Physics: Stack knock-over (app chrome)",
+      "description": "App-chrome gradient (stage and thumbnails only).",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "chrome",
+        "studio": false
+      },
+      "tags": [
+        "background",
+        "chrome"
+      ]
+    },
+    {
+      "id": "chrome-physics-drop",
+      "kind": "background",
+      "name": "Physics: Drop & pile (app chrome)",
+      "description": "App-chrome gradient (stage and thumbnails only).",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "chrome",
+        "studio": false
+      },
+      "tags": [
+        "background",
+        "chrome"
+      ]
+    },
+    {
+      "id": "chrome-physics-explosion",
+      "kind": "background",
+      "name": "Physics: Explosion (app chrome)",
+      "description": "App-chrome gradient (stage and thumbnails only).",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
+      "data": {
+        "group": "chrome",
+        "studio": false
+      },
+      "tags": [
+        "background",
+        "chrome"
+      ]
+    },
+    {
+      "id": "chrome-physics-dominoes",
+      "kind": "background",
+      "name": "Physics: Dominoes (app chrome)",
+      "description": "App-chrome gradient (stage and thumbnails only).",
+      "css": "linear-gradient(180deg,#15151b,#0b0b10)",
       "data": {
         "group": "chrome",
         "studio": false

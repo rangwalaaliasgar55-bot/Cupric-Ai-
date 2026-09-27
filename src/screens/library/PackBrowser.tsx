@@ -22,6 +22,7 @@ import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { ProgressBar } from '../../components/ProgressBar'
 import { Modal } from '../../components/Modal'
+import { ResourceFinder } from './ResourceFinder'
 import { GlassPanel } from '../../components/glass'
 import {
   downloadAllPacks,
@@ -241,6 +242,7 @@ export function PackBrowser() {
 
   return (
     <section className="space-y-4">
+      <ResourceFinder onOpen={(packId, name) => { setActive(packId); setQuery(name) }} />
       <GlassPanel className="flex flex-wrap items-center gap-3 px-4 py-3" preset="frost" radius={14}>
         <div className="min-w-0 flex-1 basis-72">
           <h2 className="flex items-center gap-2 text-sm font-semibold">
@@ -285,7 +287,7 @@ export function PackBrowser() {
           <select
             value={active}
             onChange={(event) => setActive(event.target.value)}
-            className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel px-2 text-xs font-medium text-text"
+            className="h-8 min-w-0 flex-1 cu-panel px-2 text-xs font-medium text-text"
           >
             {(index?.packs ?? []).map((entry) => (
               <option key={entry.id} value={entry.id}>{entry.name} · {entry.itemCount.toLocaleString()}</option>
@@ -299,7 +301,7 @@ export function PackBrowser() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search this pack…"
             aria-label="Search pack"
-            className="h-8 w-full rounded-lg border border-line bg-panel pl-8 pr-3 text-xs placeholder:text-muted/70"
+            className="h-8 w-full cu-panel pl-8 pr-3 text-xs placeholder:text-muted/70"
           />
         </div>
       </div>
@@ -349,7 +351,7 @@ export function PackBrowser() {
                       data: item.data,
                     })
                   }
-                  className="group flex cursor-grab flex-col gap-2.5 rounded-xl border border-line bg-panel p-3.5 transition-colors duration-150 hover:border-text/25 active:cursor-grabbing"
+                  className="group flex cursor-grab flex-col gap-2.5 cu-panel p-3.5 transition-colors duration-150 hover:border-text/25 active:cursor-grabbing"
                 >
                   {item.css && (
                     <div
@@ -435,7 +437,7 @@ export function PackBrowser() {
         label={templateFill ? `Auto-fill ${templateFill.name}` : 'Auto-fill template'}
         widthClass="max-w-3xl"
       >
-        <div className="max-h-[80vh] overflow-y-auto rounded-xl border border-line bg-panel p-5">
+        <div className="max-h-[80vh] overflow-y-auto cu-panel p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-mono text-xs uppercase tracking-widest text-accent-text">Template auto-fill</p>

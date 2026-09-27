@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { onPhysicsReady } from '../../lib/studio/physics'
 import type {
   StudioAudioClip,
   StudioClip,
@@ -9,8 +10,12 @@ import type {
   StudioStickerClip,
   StudioTextClip,
 } from '../../types/project'
-import { audioGainAt, clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
-import { getMedia } from '../../lib/studio/media'
+import { resolveForOutput } from '../../lib/studio/resolve'
+import { clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
+import { safeAreas } from '../../lib/studio/textTools'
+import { mixGainAt } from '../../lib/studio/audioMix'
+import { getMedia, previewVideoOf } from '../../lib/studio/media'
+import { PROXY_EVENT } from '../../lib/studio/proxy'
 import { drawStudioFrame, keyframeValuesAt, measureTextBlock } from '../../lib/studio/renderer'
 import { docFontFamilies, ensureDocFonts, FONTS_CHANGED_EVENT } from '../../lib/studio/fonts'
 import { patchTransformKeyframe } from '../../lib/studio/keyframeEdit'
@@ -41,7 +46,7 @@ type Props = {
  * scrubbing, playing and exporting all go through `drawStudioFrame`.
  */
 export function StudioPreview({
-  doc,
+  doc: editDoc,
   time,
   playing,
   muted,
@@ -53,6 +58,8 @@ export function StudioPreview({
   showSafeAreas = false,
   keyframeRecord = false,
 }: Props) {
+  // Hidden / muted / {{variables}} resolved exactly as the exporter does.
+  const doc = resolveForOutput(editDoc)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const timeRef = useRef(time)
@@ -71,8 +78,12 @@ export function StudioPreview({
     for (const clip of doc.clips) {
       if (clip.kind !== 'video') continue
       const media = clip as StudioMediaClip
-      const el = getMedia(media.mediaId)?.element
-      if (!(el instanceof HTMLVideoElement)) continue
+      const handle = getMedia(media.mediaId)
+      const el = previewVideoOf(handle)
+      if (!el) continue
+      // Only one element per clip may play: if the proxy drives, the original rests.
+      const other = handle?.element instanceof HTMLVideoElement && handle.element !== el ? handle.element : handle?.previewVideo && handle.previewVideo !== el ? handle.previewVideo : null
+      if (other && !other.paused) other.pause()
       const active = t >= media.startSec && t < clipEnd(media)
       el.muted = muted || media.volume <= 0
       el.volume = Math.min(1, Math.max(0, media.volume))
@@ -96,7 +107,7 @@ export function StudioPreview({
       const el = getMedia(audio.mediaId)?.element
       if (!(el instanceof HTMLAudioElement)) continue
       const active = t >= audio.startSec && t < clipEnd(audio)
-      el.volume = muted ? 0 : audioGainAt(audio, t)
+      el.volume = muted ? 0 : mixGainAt(doc, audio, t)
       el.muted = muted || el.volume <= 0
       if (active && isPlaying) {
         const want = sourceTimeFor(audio, t)
@@ -124,6 +135,9 @@ export function StudioPreview({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc, time, playing, muted, width, height])
 
+  // Physics layers load their WASM engine on first use; repaint when it lands.
+  useEffect(() => onPhysicsReady(() => { if (!playingRef.current) syncAndDraw(timeRef.current, false) }), [])
+
   // Custom fonts (Resources → Fonts) download on demand. Load whatever this
   // document uses, and repaint the moment a face arrives — otherwise titles
   // stay in the fallback font until the next scrub.
@@ -137,9 +151,11 @@ export function StudioPreview({
       if (!playingRef.current) syncAndDraw(timeRef.current, false)
     }
     window.addEventListener(FONTS_CHANGED_EVENT, repaint)
+    window.addEventListener(PROXY_EVENT, repaint)
     document.fonts?.addEventListener?.('loadingdone', repaint)
     return () => {
       window.removeEventListener(FONTS_CHANGED_EVENT, repaint)
+      window.removeEventListener(PROXY_EVENT, repaint)
       document.fonts?.removeEventListener?.('loadingdone', repaint)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -169,8 +185,8 @@ export function StudioPreview({
       cancelAnimationFrame(raf)
       for (const clip of doc.clips) {
         if (clip.kind !== 'video' && clip.kind !== 'audio') continue
-        const el = getMedia((clip as StudioMediaClip | StudioAudioClip).mediaId)?.element
-        if (el instanceof HTMLMediaElement && !el.paused) el.pause()
+        const h = getMedia((clip as StudioMediaClip | StudioAudioClip).mediaId)
+        for (const el of [h?.element, h?.previewVideo]) if (el instanceof HTMLMediaElement && !el.paused) el.pause()
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -197,6 +213,14 @@ export function StudioPreview({
           <div className="absolute inset-[10%] rounded border border-dashed border-accent/60">
             <span className="absolute left-1 top-0.5 text-[9px] font-medium uppercase tracking-wide text-accent-text/80">title safe</span>
           </div>
+          {(doc.aspect === '9:16' || doc.aspect === '4:5') &&
+            safeAreas(doc.aspect)
+              .filter((b) => b.id === 'social' || b.id === 'grid')
+              .map((b) => (
+                <div key={b.id} className="absolute rounded border border-dashed border-info/70" style={{ left: `${b.x * 100}%`, top: `${b.y * 100}%`, width: `${b.w * 100}%`, height: `${b.h * 100}%` }}>
+                  <span className="absolute bottom-0.5 left-1 text-[9px] font-medium uppercase tracking-wide text-info">clear of app UI</span>
+                </div>
+              ))}
         </div>
       )}
       {!playing && selected && onPatchSelected && (

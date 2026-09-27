@@ -8,6 +8,10 @@ const invokeChannels = new Set([
   'state:save',
   'state:load',
   'state:clear',
+  'state:recoveryInfo', 'state:listVersions', 'state:snapshotNow', 'state:restoreVersion',
+  'diag:report',
+  'voice:status', 'voice:tts', 'voice:transcribe', 'voice:transcribeMedia',
+  'media:proxy', 'media:proxyDelete',
   'gemini:ask',
   'gemini:chat',
   'ai:testConnection',
@@ -33,7 +37,7 @@ const invokeChannels = new Set([
   'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput', 'automation:openArena',
 ])
 
-const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error'])
+const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress'])
 
 function assertChannel(channel, allowed) {
   if (!allowed.has(channel)) throw new Error(`IPC channel is not exposed: ${channel}`)

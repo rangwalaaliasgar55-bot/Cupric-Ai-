@@ -1,4 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { StudioProPanel } from './studio/StudioProPanel'
+import { ClipContextMenu } from './studio/ClipContextMenu'
+import { applyClipAction, getClipboard, setClipboard, type ClipActionId } from '../lib/studio/clipActions'
+import { makeProxy } from '../lib/studio/proxy'
+import { emitDiff, emitStudio } from '../lib/studio/studioEvents'
+import { createStudioApi } from '../lib/studio/studioApi'
+import { unfilledPlaceholders } from '../lib/studio/layouts'
+import { reframeForAspect } from '../lib/studio/creativeTools'
+import { addMarker, jumpMarker, rippleDelete, rollEdit, slideClip, slipClip, trimEndTo, trimStartTo, type EditResult } from '../lib/studio/timelineOps'
 import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
   Boxes,
@@ -20,6 +29,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   Sticker,
+  Shapes,
+  MousePointerClick,
   Square,
   Type as TypeIcon,
   Volume2,
@@ -27,6 +38,10 @@ import {
   ZoomIn,
   ZoomOut,
 } from 'lucide-react'
+import { ShapePicker } from './studio/ShapePicker'
+import { fontChoicesForAgent } from '../lib/studio/fontStyles'
+import { userFontFamilies, userFontsReady } from '../lib/studio/userFonts'
+import { addCursorTo, addShape as addShapeKit } from '../lib/studio/motionKit'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { NoProject } from '../components/NoProject'
@@ -46,13 +61,14 @@ import {
   nextFreeStart,
   resolveOverlaps,
   studioOf,
+  MAX_TRACKS,
 } from '../lib/studio/doc'
 import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
 import { TRANSITIONS } from '../lib/studio/transitions'
 import { isVoiceSupported, parseVoiceCommand, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
 import { FOCUS_NOW_EVENT, VOICE_RUN_EVENT, publishPlayhead, setStudioMounted, takePendingVoicePhrase, type FocusNowDetail } from '../lib/studio/studioLink'
 import { useResourceApply } from './library/useResourceApply'
-import { componentCatalogFor, isPendingComponent, withComponent } from '../lib/studio/components'
+import { componentCatalogFor, componentPropsSummary, isPendingComponent, placeShelfItem, shelfComponent, withComponent } from '../lib/studio/components'
 import { motionPatch } from '../lib/studio/motionDirector'
 import { ComponentRecorderHost } from './studio/ComponentRecorderHost'
 import { ComponentsPanel } from './studio/ComponentsPanel'
@@ -68,6 +84,7 @@ import { getIpc } from '../lib/bridge'
 import { patchTransformKeyframe } from '../lib/studio/keyframeEdit'
 import { parseGeneratedHtml, piecesToStudioClips } from '../lib/studio/importHtml'
 import { readGeneratedPackage } from '../lib/studio/generatedPackage'
+import { detectSourceProject, scanSources, sourceProjectToClips, unrecognizedMessage } from '../lib/studio/sourceProject'
 import reactBitsCatalog from '../../resources/react-bits/catalog.json'
 import skiperCatalog from '../../resources/skiper/catalog.json'
 import remotionCatalog from '../../resources/remotion/catalog.json'
@@ -103,17 +120,39 @@ export function Studio() {
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [shapeOpen, setShapeOpen] = useState(false)
+  useEffect(() => { void userFontsReady() }, [])
   const [zoom, setZoom] = useState(3)
   const [importing, setImporting] = useState(false)
   const [exportPct, setExportPct] = useState<number | null>(null)
   const [lastExport, setLastExport] = useState<{ url: string; fileName: string } | null>(null)
   const [listening, setListening] = useState(false)
   const [heard, setHeard] = useState<string | null>(null)
+  // A spoken brief launches a whole autonomous job, so it waits for a yes
+  // (spoken or clicked) — a misheard phrase must never start rendering.
+  const [pendingBrief, setPendingBriefState] = useState<string | null>(null)
+  const pendingBriefRef = useRef<string | null>(null)
+  const setPendingBrief = (b: string | null) => { pendingBriefRef.current = b; setPendingBriefState(b) }
+  const confirmBriefRef = useRef<(yes: boolean) => void>(() => {})
+  /** True when the utterance answered a pending brief confirmation. */
+  const answerPending = (transcript: string): boolean => {
+    if (!pendingBriefRef.current) return false
+    const t = transcript.trim().toLowerCase()
+    if (/^(yes|yeah|yep|start( it)?|go( ahead)?|confirm|do it)\b/.test(t)) { confirmBriefRef.current(true); return true }
+    if (/^(no|nope|cancel|stop|never ?mind)\b/.test(t)) { confirmBriefRef.current(false); return true }
+    return false
+  }
   const [showVoiceHelp, setShowVoiceHelp] = useState(false)
   const [showChecks, setShowChecks] = useState(false)
   const [showSafeAreas, setShowSafeAreas] = useState(true)
   const [keyframeRecord, setKeyframeRecord] = useState(false)
   const [showResources, setShowResources] = useState(false)
+  const [showPro, setShowPro] = useState(false)
+  /** A proposed edit shown on the stage but not yet committed (2.9 preview/accept). */
+  const [previewDoc, setPreviewDoc] = useState<{ doc: StudioDoc; label: string } | null>(null)
+  useEffect(() => {
+    if (!showPro) setPreviewDoc(null)
+  }, [showPro])
   const [showComponents, setShowComponents] = useState(false)
   const [agentInstruction, setAgentInstruction] = useState('')
   const [agentRevision, setAgentRevision] = useState('')
@@ -122,6 +161,7 @@ export function Studio() {
   const [agentPlan, setAgentPlan] = useState<StudioEditPlan | null>(null)
   const [timelineH, setTimelineH] = useState<number | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
+  const [clipMenuAt, setClipMenuAt] = useState<{ clipId: string; x: number; y: number } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -137,6 +177,14 @@ export function Studio() {
   const issues = useMemo(() => lintStudioDoc(doc, { hasMedia }), [doc])
   const pid = project?.id ?? null
   const selected = useMemo(() => doc.clips.find((c) => c.id === selectedId) ?? null, [doc.clips, selectedId])
+  const runClipAction = useCallback((clipId: string | null, action: ClipActionId) => {
+    if (!pid) return
+    const r = applyClipAction(doc, clipId, action, { time, clipboard: getClipboard() })
+    if (r.clipboard) setClipboard(r.clipboard)
+    if (r.doc) patchStudio(pid, { clips: r.doc.clips, trackCount: r.doc.trackCount }, r.label)
+    if (r.select !== undefined) setSelectedId(r.select)
+    if (r.message) pushToast('info', r.message)
+  }, [doc, time, pid, patchStudio, pushToast])
 
   // A clip handed over from Lab / Arena / Footage: select it and show it.
   useEffect(() => {
@@ -196,6 +244,24 @@ export function Studio() {
     commandRef.current(command)
   }
 
+  confirmBriefRef.current = (yes: boolean) => {
+    const brief = pendingBriefRef.current
+    setPendingBrief(null)
+    if (!brief) return
+    if (!yes) { speak('Cancelled.', { interrupt: true }); pushToast('info', 'Voice brief cancelled — nothing was started.'); return }
+    startAutomationJob({
+      brief: brief,
+      footageFolder: null,
+      outputFolder: null,
+      aspect: doc.aspect === '4:5' ? '1:1' : doc.aspect, // the pipeline renders 16:9, 9:16 or 1:1
+      fps: doc.fps === 60 ? 60 : 30,
+      quality: 'draft',
+      mode: 'auto-draft',
+      votingMode: 'local-scoring',
+    })
+    speak(`Starting an autonomous job for ${brief}.`, { interrupt: true })
+  }
+
   const seek = useCallback(
     (t: number) => setTime(clamp(t, 0, Math.max(0, duration))),
     [duration],
@@ -232,6 +298,17 @@ export function Studio() {
         if (e.shiftKey) redo()
         else undo()
         return
+      }
+      // Clip actions (copy/cut/paste/duplicate/lock/hide/mute/arrange): the
+      // same pure table as the right-click menu, one undo step each.
+      if (mod && !e.altKey && pid) {
+        const map: Record<string, ClipActionId> = { c: 'copy', x: 'cut', v: 'paste', d: 'duplicate', l: 'lock', h: 'hide', m: 'mute', ']': 'bring-forward', '[': 'send-backward' }
+        const action = map[key]
+        if (action) {
+          e.preventDefault()
+          runClipAction(selectedId, action)
+          return
+        }
       }
       if (mod && key === 'y') {
         e.preventDefault()
@@ -326,19 +403,76 @@ export function Studio() {
         splitStudioClip(pid, selectedId, time)
         return
       }
+      // 2.1 / 2.7 pro timeline keys — each one labelled undo step, and a
+      // toast explaining why when it cannot apply (no silent no-ops).
+      if (!mod && pid && (key === 'q' || key === 'w' || key === 'm' || key === '[' || key === ']' || key === ';' || key === "'" || ((e.key === 'Delete' || e.key === 'Backspace') && e.shiftKey) || (e.altKey && (e.key === ',' || e.key === '.' || e.code === 'BracketLeft' || e.code === 'BracketRight')))) {
+        e.preventDefault()
+        const commit = (r: EditResult, label: string) => {
+          if (!r.changed) pushToast('info', r.reason ?? 'Nothing to change here.')
+          else patchStudio(pid, { clips: r.doc.clips, markers: r.doc.markers, trackCount: r.doc.trackCount }, label)
+          return r.changed
+        }
+        const frame = 1 / doc.fps
+        if (key === 'm') { commit(addMarker(doc, time), 'Add marker'); return }
+        if (key === ';' || key === "'") {
+          const to = jumpMarker(doc, time, key === "'" ? 1 : -1)
+          if (to === null) pushToast('info', (doc.markers ?? []).length ? 'No more markers that way.' : 'Press M to drop a marker first.')
+          else seek(to)
+          return
+        }
+        if (!selectedId) { pushToast('info', 'Select a clip first.'); return }
+        if (doc.clips.find((c) => c.id === selectedId)?.locked) { pushToast('info', 'That clip is locked — unlock it to edit (Ctrl+L).'); return }
+        if (key === 'q') commit(trimStartTo(doc, selectedId, time), 'Trim start to playhead')
+        else if (key === 'w') commit(trimEndTo(doc, selectedId, time), 'Trim end to playhead')
+        else if ((e.code === 'BracketLeft' || e.code === 'BracketRight') && e.altKey) commit(slideClip(doc, selectedId, (e.code === 'BracketRight' ? 1 : -1) * frame * (e.shiftKey ? 10 : 1)), 'Slide clip')
+        else if (key === '[' || key === ']') commit(slipClip(doc, selectedId, (key === ']' ? 1 : -1) * frame * (e.shiftKey ? 10 : 1)), 'Slip clip')
+        else if (e.key === ',' || e.key === '.') commit(rollEdit(doc, selectedId, (e.key === '.' ? 1 : -1) * frame * (e.shiftKey ? 10 : 1)), 'Roll edit')
+        else if (commit(rippleDelete(doc, selectedId), 'Ripple delete')) setSelectedId(null)
+        return
+      }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId && pid) {
         e.preventDefault()
+        if (doc.clips.find((c) => c.id === selectedId)?.locked) { pushToast('info', 'That clip is locked — unlock it to delete (Ctrl+L).'); return }
         removeStudioClip(pid, selectedId)
         setSelectedId(null)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [doc, duration, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitStudioClip, time, undo, updateStudioClip])
+  }, [doc, duration, patchStudio, pushToast, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitStudioClip, time, undo, updateStudioClip, runClipAction])
 
   useEffect(() => {
     if (time > duration) setTime(duration)
   }, [duration, time])
+
+  // Event bus: every doc change (UI, agent, undo, voice) → clip/timeline events.
+  const prevDocRef = useRef<StudioDoc | null>(null)
+  useEffect(() => {
+    emitDiff(prevDocRef.current, doc)
+    prevDocRef.current = doc
+  }, [doc])
+  useEffect(() => emitStudio('selection:change', { clipId: selectedId }), [selectedId])
+  useEffect(() => emitStudio('time:change', { time }), [time])
+
+  // Scripting API (window.cupric.studio) — reads live state through refs.
+  const apiState = useRef({ doc, selectedId, time })
+  apiState.current = { doc, selectedId, time }
+  useEffect(() => {
+    if (!pid) return
+    const api = createStudioApi({
+      getDoc: () => apiState.current.doc,
+      commit: (next, label) => patchStudio(pid, next, label),
+      getSelected: () => apiState.current.selectedId,
+      select: (id) => setSelectedId(id),
+      getTime: () => apiState.current.time,
+      seek: (t) => seek(t),
+    })
+    const w = window as unknown as { cupric?: Record<string, unknown> }
+    w.cupric = { ...(w.cupric ?? {}), studio: api }
+    return () => {
+      if (w.cupric?.studio === api) delete w.cupric.studio
+    }
+  }, [pid, patchStudio, seek])
 
   // The listener is created once and torn down on unmount; commands are
   // dispatched through a ref so the handler always sees fresh state.
@@ -364,9 +498,11 @@ export function Studio() {
       },
       onCommand: (command, transcript) => {
         setHeard(transcript)
+        if (answerPending(transcript)) return
         commandRef.current(command)
       },
       onUnrecognised: (transcript) => {
+        if (answerPending(transcript)) return
         setHeard(`\u201c${transcript}\u201d \u2014 not a command`)
       },
       onError: (message) => {
@@ -431,11 +567,14 @@ export function Studio() {
           },
           // The UI components the agent may place with addComponent (best
           // matches for this request; slugs are validated on return).
-          components: componentCatalogFor(instruction),
+          components: componentCatalogFor(instruction, 18, doc.clips.map((c) => (c.kind === 'text' ? c.text : c.name) ?? '').join(' ').slice(0, 2000)),
+          // Fonts the agent may use: bundled + the user's own (e.g. Fontshare
+          // downloads). Fontshare families not added yet are only suggested.
+          fonts: fontChoicesForAgent(userFontFamilies()),
           clips: doc.clips.map((clip) => ({
             id: clip.id,
             kind: clip.kind,
-            ...(clip.kind === 'overlay' && clip.component ? { component: clip.component.slug } : {}),
+            ...(clip.kind === 'overlay' && clip.component ? { component: clip.component.slug, ...(clip.component.props ? { componentProps: clip.component.props } : {}), ...(componentPropsSummary(clip.component.slug) ? { settableProps: componentPropsSummary(clip.component.slug) } : {}) } : {}),
             name: clip.name,
             track: clip.track,
             startSec: clip.startSec,
@@ -505,7 +644,8 @@ export function Studio() {
     return studioOf(useProjectStore.getState().projects.find((item) => item.id === projectId))
   }
 
-  async function onFiles(files: FileList | null) {
+  /** `at` (2.10): a drop on the timeline lands where it was dropped. */
+  async function onFiles(files: FileList | null, at?: { sec: number; track: number }) {
     if (!files?.length) return
     setImporting(true)
     let start = nextFreeStart(doc, 0, 0, 0.1)
@@ -513,9 +653,58 @@ export function Studio() {
       for (const file of Array.from(files)) {
         if (/\.(?:zip|html?)$/i.test(file.name)) {
           const generated = await readGeneratedPackage(file)
+          const isZip = /\.zip$/i.test(file.name)
+          const arenaShape = /id=["']scene["']|window\.__seek/.test(generated.html)
+          // Second first-class shape: a multi-file React/Vite film project.
+          const sourceProject = isZip && !arenaShape ? detectSourceProject(generated.sources, generated.html) : null
+          if (sourceProject) {
+            const current = liveDoc()
+            const base = Math.round(current.clips.reduce((m, c) => Math.max(m, c.startSec + c.durationSec), 0) * 100) / 100
+            const imp = sourceProjectToClips(sourceProject, current, base, () => uid())
+            const trackCount = Math.min(MAX_TRACKS, Math.max(current.trackCount, imp.tracksUsed + 1))
+            const media: StudioClip[] = []
+            for (const asset of generated.assets) {
+              try {
+                const handle = await registerFile(asset.file)
+                if (handle.kind === 'audio') {
+                  media.push(defaultAudioClip(base, trackCount - 1, { id: handle.id, fileName: handle.fileName, localPath: handle.localPath, durationSec: handle.durationSec }))
+                } else if (handle.kind === 'video') {
+                  media.push({
+                    id: uid(), kind: 'video', track: 0, startSec: base, durationSec: Math.max(0.2, Math.min(handle.durationSec, sourceProject.durationSec)),
+                    name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28), transitionIn: 'fade', transitionOut: 'none', opacity: 1,
+                    mediaId: handle.id, fileName: handle.fileName, localPath: handle.localPath, trimInSec: 0, sourceDurationSec: handle.durationSec,
+                    speed: 1, volume: 1, fit: 'cover', x: 0.5, y: 0.5, scale: 1, posterDataUrl: handle.posterDataUrl,
+                  } as StudioMediaClip)
+                } else {
+                  imp.notes.push(`${handle.fileName} was added to the media bin.`)
+                }
+              } catch {
+                imp.notes.push(`Skipped ${asset.sourcePath} (unsupported or damaged).`)
+              }
+            }
+            const next = resolveOverlaps({
+              ...current, trackCount,
+              palette: imp.palette.length ? imp.palette : current.palette,
+              markers: [...(current.markers ?? []), ...imp.markers],
+              clips: [...current.clips, ...media, ...imp.clips],
+            })
+            patchStudio(projectId, next)
+            const first = imp.clips.find((c) => c.kind === 'overlay') ?? imp.clips[0]
+            if (first) { setSelectedId(first.id); setTime(first.startSec + Math.min(0.8, first.durationSec / 2)) }
+            const audioCount = media.filter((c) => c.kind === 'audio').length
+            pushToast('success', `Imported ${file.name} — ${imp.summary}${audioCount ? `, ${audioCount} audio track${audioCount === 1 ? '' : 's'}` : ''}.${imp.notes.length ? ` ${imp.notes.join(' ')}` : ''}`)
+            continue
+          }
           // Never refuses: manifest → scene arrays in any script → timed markup
           // → visible text → copy in scripts → <title> → a title card.
           const piece = parseGeneratedHtml(generated.html, { scripts: generated.scripts, name: file.name })!
+          // A zip that matched neither shape used to "succeed" as a text-only
+          // title card. Say so instead, so the user knows nothing real came in.
+          const scan = scanSources(generated.sources, generated.html)
+          if (isZip && !arenaShape && (piece.via === 'title' || (piece.via === 'script-copy' && scan.codeFiles >= 2 && (scan.shellHtml || !generated.html)))) {
+            pushToast('error', unrecognizedMessage(file.name, generated.sources, generated.html))
+            continue
+          }
           const current = liveDoc()
           const label = file.name.replace(/\.(?:zip|html?)$/i, '').replace(/\s*\(\d+\)$/, '').slice(0, 28)
           const sceneClips = piecesToStudioClips(piece, current, label)
@@ -586,9 +775,9 @@ export function Studio() {
         if (handle.kind === 'audio') {
           // Music gets its own track (the last one) so it never fights the
           // picture tracks for space when the edit is re-stacked.
-          const audioTrack = Math.max(0, doc.trackCount - 1)
+          const audioTrack = at ? at.track : Math.max(0, doc.trackCount - 1)
           const clip: StudioAudioClip = defaultAudioClip(
-            nextFreeStart(doc, audioTrack, 0, Math.max(0.2, handle.durationSec)),
+            at ? Math.round(at.sec * 100) / 100 : nextFreeStart(doc, audioTrack, 0, Math.max(0.2, handle.durationSec)),
             audioTrack,
             { id: handle.id, fileName: handle.fileName, localPath: handle.localPath, durationSec: handle.durationSec },
           )
@@ -597,11 +786,11 @@ export function Studio() {
           continue
         }
         const durationSec = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : 4
-        start = nextFreeStart(doc, 0, start, durationSec)
+        start = at ? Math.round(at.sec * 100) / 100 : nextFreeStart(doc, 0, start, durationSec)
         const clip: StudioMediaClip = {
           id: uid(),
           kind: handle.kind,
-          track: 0,
+          track: at?.track ?? 0,
           startSec: start,
           durationSec,
           name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28),
@@ -641,6 +830,20 @@ export function Studio() {
    * actually draw is refused out loud instead of being inserted as a dead
    * placeholder — that silent placeholder was the original bug.
    */
+  /** 2.10 — one drop path: files and resource cards land at the pointer on the timeline. */
+  function onTimelineDrop(data: DataTransfer, sec: number, track: number) {
+    if (data.files?.length) {
+      void onFiles(data.files, { sec, track })
+      return
+    }
+    const payload = readDragPayload(data)
+    if (!payload) {
+      pushToast('info', 'Nothing droppable in that drag — try a file or a card from Resources.')
+      return
+    }
+    void applyResourceItem(payload, { atSec: sec, selectedId })
+  }
+
   function onStageDrop(event: DragEvent<HTMLDivElement>) {
     event.preventDefault()
     setDropActive(false)
@@ -693,6 +896,27 @@ export function Studio() {
     const clip = defaultStickerClip(Math.round(time * 100) / 100, track)
     addStudioClip(projectId, clip)
     setSelectedId(clip.id)
+  }
+
+  function addShapeAt(id: string) {
+    const r = addShapeKit(doc, id, Math.round(time * 100) / 100)
+    setShapeOpen(false)
+    if (!r.changed) { pushToast('error', r.reason ?? 'Shape not added'); return }
+    patchStudio(projectId, { clips: r.doc.clips, trackCount: r.doc.trackCount }, 'Add shape')
+    if (r.clipId) setSelectedId(r.clipId)
+  }
+
+  /** Cursor click on the selected clip — refuses with the reason when a pointer would be noise. */
+  function addCursorClick(force = false) {
+    if (!selectedId) { pushToast('info', 'Select the button, toggle or component the cursor should click.'); return }
+    const r = addCursorTo(doc, selectedId, { force })
+    if (!r.changed) {
+      pushToast('info', `${r.reason ?? 'No cursor added.'}${r.verdict && !r.verdict.needed ? ' Shift-click Cursor to add one anyway.' : ''}`)
+      return
+    }
+    patchStudio(projectId, { clips: r.doc.clips, trackCount: r.doc.trackCount }, 'Add cursor click')
+    pushToast('success', r.verdict?.reason ?? 'Cursor added.')
+    if (r.clipId) setSelectedId(r.clipId)
   }
 
   function addGlassClip(shape: 'panel' | 'lens' = 'panel', presetId = 'hero') {
@@ -802,17 +1026,8 @@ export function Studio() {
         // Same store action the Autonomous screen calls — speaking a brief in
         // the Studio hands the whole sentence to the pipeline rather than
         // trying to build it clip by clip.
-        startAutomationJob({
-          brief: command.brief,
-          footageFolder: null,
-          outputFolder: null,
-          aspect: doc.aspect,
-          fps: doc.fps === 60 ? 60 : 30,
-          quality: 'draft',
-          mode: 'auto-draft',
-          votingMode: 'local-scoring',
-        })
-        speak(`Starting an autonomous job for ${command.brief}.`, { interrupt: true })
+        setPendingBrief(command.brief)
+        speak(`I heard: ${command.brief}. Say yes to start the job, or cancel.`, { interrupt: true })
         break
       }
       case 'undo':
@@ -834,31 +1049,93 @@ export function Studio() {
     setTime(visibleMomentOf(withMotion))
   }
 
-  async function runExport(asMp4 = false) {
-    if (duration <= 0) {
-      pushToast('error', 'Add a clip before exporting.')
+  /** Record a component without placing it (2.13). Place it later from the shelf. */
+  function recordComponentToShelf(slug: string, opts: { recordSec: number; interact: boolean }) {
+    const item = shelfComponent(slug, opts)
+    patchStudio(projectId, { shelf: [item, ...(doc.shelf ?? [])] }, 'Record component to shelf')
+  }
+
+  function placeFromShelf(id: string) {
+    const item = (doc.shelf ?? []).find((entry) => entry.id === id)
+    if (!item) return
+    if (!item.frames?.length && !item.dataUrl) {
+      pushToast('info', `“${item.name}” has not finished recording yet.`)
       return
     }
+    const placed = placeShelfItem(doc, item, time)
+    patchStudio(projectId, { trackCount: placed.doc.trackCount, clips: placed.doc.clips }, 'Place recorded component')
+    setSelectedId(placed.clip.id)
+    setPlaying(false)
+  }
+
+  function removeFromShelf(id: string) {
+    patchStudio(projectId, { shelf: (doc.shelf ?? []).filter((entry) => entry.id !== id) }, 'Remove recorded component')
+  }
+
+  /**
+   * 2.7 — export queue: render the same edit at several aspect ratios one
+   * after another (clip geometry is normalised, so it reframes). Stop cancels
+   * the current job and the rest of the queue.
+   */
+  const [exportQueue, setExportQueue] = useState<Array<{ aspect: StudioDoc['aspect']; status: 'queued' | 'running' | 'done' | 'failed' | 'cancelled' }>>([])
+  async function runExportQueue(aspects: StudioDoc['aspect'][], asMp4: boolean) {
+    if (duration <= 0) return pushToast('error', 'Add a clip before exporting.')
+    setExportQueue(aspects.map((aspect) => ({ aspect, status: 'queued' })))
+    for (let i = 0; i < aspects.length; i += 1) {
+      setExportQueue((q) => q.map((job, j) => (j === i ? { ...job, status: 'running' } : job)))
+      const outcome = await runExport(asMp4, aspects[i])
+      setExportQueue((q) => q.map((job, j) => (j === i ? { ...job, status: outcome } : job)))
+      if (outcome === 'cancelled') {
+        setExportQueue((q) => q.map((job, j) => (j > i ? { ...job, status: 'cancelled' } : job)))
+        break
+      }
+    }
+  }
+
+  /** Batch export: every saved scene (e.g. variants) rendered one after another. */
+  async function runSceneBatch(asMp4: boolean) {
+    const scenes = doc.scenes ?? []
+    if (!scenes.length) return pushToast('info', 'No saved scenes yet — build variants or save a scene first.')
+    for (let i = 0; i < scenes.length; i += 1) {
+      pushToast('info', `Rendering scene ${i + 1} of ${scenes.length}: ${scenes[i].name}`)
+      const outcome = await runExport(asMp4, undefined, { doc: { ...scenes[i].doc, scenes } as StudioDoc, tag: slugify(scenes[i].name) })
+      if (outcome === 'cancelled') break
+    }
+  }
+
+  async function runExport(asMp4 = false, aspect?: StudioDoc['aspect'], override?: { doc: StudioDoc; tag: string }): Promise<'done' | 'failed' | 'cancelled'> {
+    if (duration <= 0) {
+      pushToast('error', 'Add a clip before exporting.')
+      return 'failed'
+    }
+    const unfilled = unfilledPlaceholders(doc)
+    if (unfilled.length) {
+      pushToast('error', `${unfilled.length} testimonial placeholder${unfilled.length > 1 ? 's are' : ' is'} still empty. Fill in real quotes or delete the cards before exporting.`)
+      return 'failed'
+    }
+    const target = override ? override.doc : aspect ? reframeForAspect(doc, aspect) : doc
+    const suffix = (override ? `-${override.tag}` : '') + (aspect ? `-${aspect.replace(':', 'x')}` : '')
     if (doc.clips.some(isPendingComponent)) {
       pushToast('info', 'A component is still recording its animation — export as soon as it lands on the timeline.')
-      return
+      return 'failed'
     }
     setPlaying(false)
     setExportPct(0)
     const signal = { cancelled: false }
     cancelRef.current = signal
     try {
-      const result = await exportStudio(doc, {
-        fileName: `${slugify(project?.name ?? 'cupric-studio')}-studio`,
+      const result = await exportStudio(target, {
+        fileName: `${slugify(project?.name ?? 'cupric-studio')}-studio${suffix}`,
         scale: 1,
         onProgress: setExportPct,
         signal,
       })
       if (result.cancelled) {
         pushToast('info', 'Export cancelled')
+        return 'cancelled'
       } else if (asMp4) {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
-        const mp4 = await convertToMp4(result.blob, slugify(project?.name ?? 'cupric-studio'), doc.fps)
+        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null)
         setLastExport({ url: result.url, fileName: result.fileName })
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)`)
         cueDone()
@@ -873,9 +1150,11 @@ export function Studio() {
         pushToast('success', `Exported ${result.fileName}`)
         cueDone()
       }
+      return 'done'
     } catch (err) {
       pushToast('error', humanError(err, 'Export'))
       cueProblem()
+      return 'failed'
     } finally {
       setExportPct(null)
       cancelRef.current = null
@@ -891,8 +1170,8 @@ export function Studio() {
       {/* Toolbar */}
       {/* One row at every width: the add-strip scrolls sideways instead of
           wrapping, so the preview never loses a whole row of height. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-line px-6 py-2.5">
-        <h1 className="mr-2 shrink-0 text-base font-semibold">Studio</h1>
+      <div className="flex shrink-0 items-center gap-2 border-b border-line bg-panel/50 px-6 py-2.5 shadow-[var(--shadow-sheen)] backdrop-blur-xl">
+        <h1 className="mr-2 shrink-0 text-md font-semibold">Studio</h1>
         <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5 pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-28px),transparent)] [scrollbar-width:none] [&>button]:shrink-0"
           onWheel={(e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY }}
         >
@@ -903,7 +1182,7 @@ export function Studio() {
         <input
           ref={fileRef}
           type="file"
-          accept="video/*,image/*,audio/*,.zip,.html,.htm"
+          accept="video/*,image/*,.heic,.heif,audio/*,.zip,.html,.htm"
           multiple
           className="hidden"
           onChange={(e) => void onFiles(e.target.files)}
@@ -931,6 +1210,15 @@ export function Studio() {
         <Button size="sm" variant="outline" onClick={addSticker} disabled={exporting}>
           <Sticker size={13} /> Sticker
         </Button>
+        <div className="relative">
+          <Button size="sm" variant="outline" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} aria-expanded={shapeOpen}>
+            <Shapes size={13} /> Shape
+          </Button>
+          {shapeOpen && <ShapePicker onPick={addShapeAt} onClose={() => setShapeOpen(false)} />}
+        </div>
+        <Button size="sm" variant="outline" onClick={(e) => addCursorClick(e.shiftKey)} disabled={exporting} title="Animated cursor that clicks the selected clip — only added where an interaction needs showing">
+          <MousePointerClick size={13} /> Cursor
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -946,6 +1234,7 @@ export function Studio() {
           onClick={() => {
             setShowResources((shown) => !shown)
             setShowComponents(false)
+            setShowPro(false)
           }}
           disabled={exporting}
         >
@@ -957,11 +1246,25 @@ export function Studio() {
           onClick={() => {
             setShowComponents((shown) => !shown)
             setShowResources(false)
+            setShowPro(false)
           }}
           disabled={exporting}
           title="Every UI component, recorded with its real animation"
         >
           <Component size={13} /> Components
+        </Button>
+        <Button
+          size="sm"
+          variant={showPro ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowPro((shown) => !shown)
+            setShowResources(false)
+            setShowComponents(false)
+          }}
+          disabled={exporting}
+          title="Suggestions, build-from-assets, layouts, captions, markers, scopes, import from link"
+        >
+          <Sparkles size={13} /> Pro tools
         </Button>
 
         <Button
@@ -1010,6 +1313,29 @@ export function Studio() {
           >
             <Download size={13} /> {mp4Supported ? 'Render MP4' : 'MP4 needs desktop'}
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void runExportQueue(['9:16', '1:1', '16:9'], mp4Supported)}
+            disabled={exporting || duration <= 0}
+            title="Queue the edit at 9:16, 1:1 and 16:9 — rendered one after another"
+          >
+            <Download size={13} /> All sizes
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void runSceneBatch(mp4Supported)}
+            disabled={exporting || !(doc.scenes ?? []).length}
+            title={(doc.scenes ?? []).length ? `Render all ${(doc.scenes ?? []).length} saved scenes / variants, one after another` : 'Save scenes or build variants first'}
+          >
+            <Download size={13} /> Export every scene
+          </Button>
+          {exportQueue.length > 0 && (
+            <span className="font-mono text-xs text-muted" role="status" aria-label="Export queue">
+              {exportQueue.map((j) => `${j.aspect} ${j.status === 'done' ? '✓' : j.status === 'running' ? '…' : j.status === 'queued' ? '·' : '✕'}`).join('  ')}
+            </span>
+          )}
         </div>
       </div>
 
@@ -1085,7 +1411,7 @@ export function Studio() {
                       }
                     }}
                     placeholder="Example: keep it calmer and use Space Grotesk"
-                    className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-panel px-2.5 text-xs"
+                    className="h-8 min-w-0 flex-1 cu-panel px-2.5 text-xs"
                   />
                   <Button
                     size="sm"
@@ -1103,6 +1429,14 @@ export function Studio() {
               <Button size="sm" variant="primary" onClick={acceptAgentPlan}>Accept all</Button>
             </div>
           </div>
+        </div>
+      )}
+
+      {pendingBrief && (
+        <div role="alertdialog" aria-label="Confirm voice brief" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-accent/40 bg-accent/10 px-6 py-2">
+          <span className="min-w-0 flex-1 text-xs text-text">Start an autonomous job for <b>“{pendingBrief}”</b>? Say “yes” or “cancel”.</span>
+          <Button size="sm" variant="primary" onClick={() => confirmBriefRef.current(true)}>Start job</Button>
+          <Button size="sm" variant="outline" onClick={() => confirmBriefRef.current(false)}>Cancel</Button>
         </div>
       )}
 
@@ -1198,12 +1532,34 @@ export function Studio() {
       {/* Shared resources + stage + inspector */}
       <div className="flex min-h-0 flex-1">
         {showComponents && (
-          <aside className="w-[360px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio components">
-            <ComponentsPanel onAdd={addComponentAt} />
+          <aside className="w-[360px] shrink-0 overflow-y-auto border-r border-line bg-gradient-to-b from-panel/80 to-bg px-4 py-4 shadow-[inset_-1px_0_0_rgb(255_255_255/0.03)]" aria-label="Studio components">
+            <ComponentsPanel
+              onAdd={addComponentAt}
+              onRecordToShelf={recordComponentToShelf}
+              shelf={doc.shelf ?? []}
+              onPlaceShelf={placeFromShelf}
+              onRemoveShelf={removeFromShelf}
+            />
+          </aside>
+        )}
+        {showPro && (
+          <aside className="w-[380px] shrink-0 overflow-y-auto border-r border-line bg-gradient-to-b from-panel/80 to-bg px-4 py-4 shadow-[inset_-1px_0_0_rgb(255_255_255/0.03)]" aria-label="Studio pro tools">
+            <StudioProPanel
+              doc={doc}
+              time={time}
+              selectedId={selectedId}
+              onSeek={seek}
+              onImportFiles={(files) => void onFiles(files, { sec: time, track: Math.max(0, ...doc.clips.filter((c) => c.kind === 'audio').map((c) => c.track), doc.trackCount) })}
+              onPreview={(next, label) => setPreviewDoc(next ? { doc: next, label } : null)}
+              onCommit={(next, label) => {
+                const { ...patch } = next
+                patchStudio(projectId, patch, label)
+              }}
+            />
           </aside>
         )}
         {showResources && (
-          <aside className="w-[420px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio resources">
+          <aside className="w-[420px] shrink-0 overflow-y-auto border-r border-line bg-gradient-to-b from-panel/80 to-bg px-4 py-4 shadow-[inset_-1px_0_0_rgb(255_255_255/0.03)]" aria-label="Studio resources">
             <div className="mb-3">
               <h2 className="text-sm font-semibold">All Library resources</h2>
               <p className="mt-1 text-xs text-muted">The same 15 bundled packs available in Library. Drag compatible items directly onto the stage.</p>
@@ -1228,7 +1584,7 @@ export function Studio() {
             }}
             onDrop={onStageDrop}
           >
-            {doc.clips.length === 0 ? (
+            {doc.clips.length === 0 && !previewDoc ? (
               <div className="max-w-md rounded-xl border border-dashed border-line bg-panel/40 px-8 py-12 text-center">
                 <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
                   <Clapperboard size={19} />
@@ -1245,10 +1601,23 @@ export function Studio() {
                 </div>
               </div>
             ) : (
+              <div
+                className="contents"
+                onContextMenu={(e) => {
+                  // Canvas right-click acts on the selected clip (same menu as the timeline).
+                  e.preventDefault()
+                  if (selected) setClipMenuAt({ clipId: selected.id, x: e.clientX, y: e.clientY })
+                  else pushToast('info', 'Select a clip on the canvas or timeline, then right-click for its actions.')
+                }}
+              >
               <StudioPreview
-                doc={doc}
+                doc={previewDoc?.doc ?? doc}
                 selected={selected}
-                onPatchSelected={(patch) => selectedId && updateStudioClip(projectId, selectedId, patch)}
+                onPatchSelected={(patch) => {
+                  if (!selectedId) return
+                  if (selected?.locked) { pushToast('info', 'That clip is locked — unlock it to move it (Ctrl+L).'); return }
+                  updateStudioClip(projectId, selectedId, patch)
+                }}
                 time={time}
                 playing={playing}
                 muted={muted}
@@ -1261,6 +1630,7 @@ export function Studio() {
                   setTime(duration)
                 }}
               />
+              </div>
             )}
           </div>
 
@@ -1370,11 +1740,28 @@ export function Studio() {
               onPatchClip={(id, patch) => updateStudioClip(projectId, id, patch)}
               onReorderTrack={(from, to) => reorderStudioTracks(projectId, from, to)}
               onSettleClip={(id) => settleStudioClip(projectId, id)}
+              onDropAt={onTimelineDrop}
+              onClipContextMenu={(clipId, x, y) => { setSelectedId(clipId); setClipMenuAt({ clipId, x, y }) }}
             />
+            {clipMenuAt && doc.clips.some((c) => c.id === clipMenuAt.clipId) && (
+              <ClipContextMenu
+                clip={doc.clips.find((c) => c.id === clipMenuAt.clipId)!}
+                x={clipMenuAt.x}
+                y={clipMenuAt.y}
+                time={time}
+                hasClipboard={!!getClipboard()}
+                extra={(() => {
+                  const c = doc.clips.find((x) => x.id === clipMenuAt.clipId)
+                  return c?.kind === 'video' ? [{ id: 'proxy', label: 'Make preview proxy', run: () => void makeProxy((c as StudioMediaClip).mediaId).then((st) => st.error && pushToast('info', st.error)) }] : []
+                })()}
+                onAction={(action) => runClipAction(clipMenuAt.clipId, action)}
+                onClose={() => setClipMenuAt(null)}
+              />
+            )}
           </div>
         </div>
 
-        <aside className={cx('w-80 shrink-0 overflow-y-auto border-l border-line bg-panel px-5 py-4')}>
+        <aside className={cx('w-80 shrink-0 overflow-y-auto border-l border-line bg-gradient-to-b from-panel-alt/60 to-panel px-5 py-4 shadow-[inset_1px_0_0_rgb(255_255_255/0.04)]')}>
           <StudioInspector
             doc={doc}
             time={time}
@@ -1416,7 +1803,19 @@ const SHORTCUTS: Array<[string, string]> = [
   ['Double-click text', 'Edit it right on the canvas (Enter to finish)'],
   ['Drag on canvas', 'Snaps to centre and safe areas (hold Alt to place freely)'],
   ['Delete', 'Remove the selected clip'],
+  ['Shift + Delete', 'Ripple delete — remove and close the gap'],
+  ['Q · W', 'Trim the selected clip’s start / end to the playhead'],
+  ['[ · ]', 'Slip the source under the clip a frame (Shift: 10)'],
+  ['Alt + [ · ]', 'Slide the clip between its neighbours (Shift: 10 frames)'],
+  ['Alt + , / .', 'Roll the cut after the selected clip'],
+  ['M', 'Drop a marker at the playhead'],
+  ['; · \'', 'Jump to the previous / next marker'],
   ['Ctrl/⌘ + Z', 'Undo (Shift: redo)'],
+  ['Right-click a clip', 'Context menu: split, duplicate, copy, lock, hide, flip, arrange…'],
+  ['Ctrl/⌘ + C · X · V', 'Copy · cut · paste at the playhead'],
+  ['Ctrl/⌘ + D', 'Duplicate the selected clip'],
+  ['Ctrl/⌘ + L · H · M', 'Lock · hide · mute the selected clip'],
+  ['Ctrl/⌘ + [ · ]', 'Send backward · bring forward a track'],
   ['?', 'Show or hide this sheet'],
 ]
 
@@ -1436,7 +1835,7 @@ function ShortcutSheet({ onClose }: { onClose: () => void }) {
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
           {SHORTCUTS.map(([keys, what]) => (
             <div key={keys} className="contents">
-              <dt><kbd className="rounded-md border border-line bg-bg px-1.5 py-0.5 font-mono text-[11px] text-text">{keys}</kbd></dt>
+              <dt><kbd className="cu-input px-1.5 py-0.5 font-mono text-[11px] text-text">{keys}</kbd></dt>
               <dd className="text-muted">{what}</dd>
             </div>
           ))}

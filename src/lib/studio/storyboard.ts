@@ -83,7 +83,7 @@ export function tidyCopy(text: string, max = 110): string {
 
 /** Frame width over height. Type and panel sizes are fractions of height. */
 export function frameRatio(aspect: StudioDoc['aspect']): number {
-  return aspect === '9:16' ? 9 / 16 : aspect === '1:1' ? 1 : 16 / 9
+  return aspect === '9:16' ? 9 / 16 : aspect === '1:1' ? 1 : aspect === '4:5' ? 4 / 5 : 16 / 9
 }
 
 /**

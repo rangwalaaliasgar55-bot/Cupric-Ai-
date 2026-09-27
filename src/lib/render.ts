@@ -1,3 +1,4 @@
+import { ARENA_SCENE_CSP, inlineBlobAssets, openSandboxedScene } from './studio/htmlTemplateCapture'
 export type RenderUpdate = (pct: number) => void
 import type { SceneRundown } from '../types/project'
 import { getIpc } from './bridge'
@@ -232,48 +233,6 @@ async function renderFootageSource(source: RenderSource, context: BrowserRenderC
   video.pause()
 }
 
-function loadIframe(src: string, width: number, height: number): Promise<HTMLIFrameElement> {
-  return new Promise((resolve, reject) => {
-    const iframe = document.createElement('iframe')
-    iframe.src = src
-    iframe.style.position = 'fixed'
-    iframe.style.left = '-100000px'
-    iframe.style.top = '0'
-    iframe.style.width = `${width}px`
-    iframe.style.height = `${height}px`
-    iframe.style.border = '0'
-    iframe.style.pointerEvents = 'none'
-    iframe.onload = () => resolve(iframe)
-    iframe.onerror = () => reject(new Error('Arena HTML preview could not be loaded for browser rendering'))
-    document.body.appendChild(iframe)
-  })
-}
-
-async function captureArenaFrame(iframe: HTMLIFrameElement, context: BrowserRenderContext, t: number) {
-  const win = iframe.contentWindow as (Window & { __seek?: (time: number) => void | Promise<void> }) | null
-  const doc = iframe.contentDocument
-  if (!win || !doc) throw new Error('Arena HTML is not accessible for browser capture')
-  if (typeof win.__seek !== 'function') throw new Error('Arena HTML must expose window.__seek(t)')
-  await win.__seek(t)
-  await nextFrame()
-  const { default: html2canvas } = await import('html2canvas')
-  const element = (doc.getElementById('scene') || doc.body || doc.documentElement) as HTMLElement
-  const shot = await html2canvas(element, {
-    backgroundColor: '#0B0B10',
-    logging: false,
-    useCORS: true,
-    allowTaint: true,
-    width: context.width,
-    height: context.height,
-    windowWidth: context.width,
-    windowHeight: context.height,
-    scale: 1,
-  })
-  context.ctx.fillStyle = '#0B0B10'
-  context.ctx.fillRect(0, 0, context.width, context.height)
-  context.ctx.drawImage(shot, 0, 0, context.width, context.height)
-}
-
 function sceneAt(rundown: SceneRundown, time: number) {
   return rundown.scenes.find((scene) => time >= scene.from && time < scene.to) || rundown.scenes[rundown.scenes.length - 1]
 }
@@ -354,19 +313,32 @@ async function renderArenaSource(source: RenderSource, context: BrowserRenderCon
   const src = source.htmlPath || source.arenaPath || source.localPath
   if (!src) throw new Error('Arena source is missing')
   const duration = durationOfSource(source)
-  const iframe = await loadIframe(src, context.width, context.height)
+  // Imported Arena HTML is third-party code: it runs only inside the
+  // opaque-origin sandbox (2.28), never with the app's origin.
+  let html: string
+  try {
+    html = await inlineBlobAssets(await (await fetch(src)).text())
+  } catch {
+    throw new Error('Arena HTML could not be read for browser rendering. Re-import the Arena file.')
+  }
+  const scene = await openSandboxedScene(html, context.width, context.height, { csp: ARENA_SCENE_CSP })
   const captureFps = Math.min(12, context.fps)
   const frameDuration = 1 / captureFps
   try {
     for (let t = 0; t < duration && !context.cancelled(); t += frameDuration) {
+      const began = performance.now()
       const sourceTime = (Number(source.in) || 0) + t
-      await captureArenaFrame(iframe, context, sourceTime)
+      context.ctx.fillStyle = '#0B0B10'
+      context.ctx.fillRect(0, 0, context.width, context.height)
+      await scene.drawFrame(sourceTime, context.ctx, context.width, context.height)
       drawProgress(context.ctx, context.width, context.height, t / duration)
       context.onUpdate(Math.min(99, ((context.elapsedBefore + t) / context.totalDuration) * 100))
-      await new Promise((resolve) => window.setTimeout(resolve, frameDuration * 1000))
+      // Real-time recorder: hold each frame for its slot, minus capture time.
+      const wait = frameDuration * 1000 - (performance.now() - began)
+      if (wait > 0) await new Promise((resolve) => window.setTimeout(resolve, wait))
     }
   } finally {
-    iframe.remove()
+    scene.close()
   }
 }
 

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, Type as TypeIcon, Video } from 'lucide-react'
+import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, Type as TypeIcon, Video, Lock, EyeOff, VolumeX , Shapes, MousePointerClick } from 'lucide-react'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
+import { markerTimes } from '../../lib/studio/timelineOps'
 import { moveKeyframeTime } from '../../lib/studio/keyframeEdit'
 import { getMedia } from '../../lib/studio/media'
 import { clamp, cx, fmtClock } from '../../lib/utils'
@@ -21,6 +22,10 @@ type Props = {
   onPatchClip: (id: string, patch: Partial<StudioClip>) => void
   onReorderTrack: (from: number, to: number) => void
   onSettleClip?: (id: string) => void
+  /** 2.10 — a file or resource dropped on a lane, at the pointer's time and track. */
+  onDropAt?: (data: DataTransfer, sec: number, track: number) => void
+  /** Right-click on a clip: open the clip context menu at the pointer. */
+  onClipContextMenu?: (clipId: string, x: number, y: number) => void
 }
 
 type Drag =
@@ -37,6 +42,8 @@ function clipIcon(clip: StudioClip) {
   if (clip.kind === 'overlay') return Layers
   if (clip.kind === 'glass') return Sparkles
   if (clip.kind === 'sticker') return Sticker
+  if (clip.kind === 'shape') return Shapes
+  if (clip.kind === 'cursor') return MousePointerClick
   return Music
 }
 
@@ -52,6 +59,10 @@ function clipTint(clip: StudioClip, selected: boolean): string {
             ? 'bg-[rgb(226_75_74/0.14)] border-[rgb(226_75_74/0.38)]'
             : clip.kind === 'glass'
               ? 'bg-[rgb(255_255_255/0.10)] border-[rgb(255_255_255/0.32)] backdrop-blur-sm'
+              : clip.kind === 'shape'
+                ? 'bg-[rgb(200_245_66/0.10)] border-[rgb(200_245_66/0.34)]'
+              : clip.kind === 'cursor'
+                ? 'bg-[rgb(79_182_232/0.12)] border-[rgb(79_182_232/0.40)]'
               : clip.kind === 'sticker'
                 ? 'bg-[rgb(255_196_92/0.16)] border-[rgb(255_196_92/0.44)]'
                 : clip.kind === 'audio'
@@ -85,7 +96,7 @@ function tickStep(pps: number): number {
   return 10
 }
 
-export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, onSeek, onPatchClip, onReorderTrack, onSettleClip }: Props) {
+export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, onSeek, onPatchClip, onReorderTrack, onSettleClip, onDropAt, onClipContextMenu }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const laneRef = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
@@ -134,7 +145,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
 
       if (drag.mode === 'move') {
         const rawStart = t - drag.grabOffsetSec
-        const start = snapTime(doc, rawStart, clip.id, [time], 8 / pps)
+        const start = snapTime(doc, rawStart, clip.id, [time, ...markerTimes(doc)], 8 / pps)
         // Rows are drawn top layer first, so dragging DOWN means a LOWER track.
         // Dragging above the top row opens a new layer.
         const rowDelta = Math.round((event.clientY - drag.pointerStartY) / (ROW_H + ROW_GAP))
@@ -145,7 +156,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
 
       if (drag.mode === 'trim-start') {
         const maxShift = drag.originDuration - MIN_CLIP_SEC
-        const snapped = snapTime(doc, t, clip.id, [time], 8 / pps)
+        const snapped = snapTime(doc, t, clip.id, [time, ...markerTimes(doc)], 8 / pps)
         const shift = clamp(snapped - drag.originStart, -drag.originStart, maxShift)
         const patch: Partial<StudioClip> = {
           startSec: drag.originStart + shift,
@@ -163,7 +174,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       }
 
       // trim-end
-      const snapped = snapTime(doc, t, clip.id, [time], 8 / pps)
+      const snapped = snapTime(doc, t, clip.id, [time, ...markerTimes(doc)], 8 / pps)
       onPatchClip(clip.id, { durationSec: Math.max(MIN_CLIP_SEC, snapped - clip.startSec) })
     }
 
@@ -266,7 +277,26 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
             </div>
 
             {/* Lanes */}
-            <div ref={laneRef} className="relative" style={{ width }} onPointerDown={() => onSelect(null)}>
+            <div
+              ref={laneRef}
+              className="relative"
+              style={{ width }}
+              onPointerDown={() => onSelect(null)}
+              onDragOver={(e) => {
+                if (!onDropAt) return
+                e.preventDefault()
+                e.dataTransfer.dropEffect = 'copy'
+              }}
+              onDrop={(e) => {
+                if (!onDropAt) return
+                e.preventDefault()
+                e.stopPropagation()
+                const rect = e.currentTarget.getBoundingClientRect()
+                const row = Math.max(0, Math.min(tracks.length - 1, Math.floor((e.clientY - rect.top) / (ROW_H + ROW_GAP))))
+                const at = snapTime(doc, timeAt(e.clientX), '', [time, ...markerTimes(doc)], 8 / pps)
+                onDropAt(e.dataTransfer, at, tracks[row])
+              }}
+            >
               {tracks.map((track) => (
                 <div
                   key={track}
@@ -291,10 +321,19 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                               onSelect(clip.id)
                             }
                           }}
+                          onContextMenu={(e) => {
+                            if (!onClipContextMenu) return
+                            e.preventDefault()
+                            e.stopPropagation()
+                            onClipContextMenu(clip.id, e.clientX, e.clientY)
+                          }}
                           onPointerDown={(e) => {
+                            if (e.button === 2) return
                             e.stopPropagation()
                             e.preventDefault()
                             onSelect(clip.id)
+                            // Locked clips select but never drag.
+                            if (clip.locked) return
                             setDrag({
                               mode: 'move',
                               id: clip.id,
@@ -305,8 +344,9 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                           }}
                           className={cx(
                             'group absolute top-[3px] flex items-center gap-2 overflow-hidden rounded-lg border px-2 text-xs',
-                            'cursor-grab active:cursor-grabbing select-none',
+                            clip.locked ? 'cursor-default select-none' : 'cursor-grab active:cursor-grabbing select-none',
                             clipTint(clip, selected),
+                            clip.hidden && 'opacity-40 [background-image:repeating-linear-gradient(135deg,transparent_0_6px,rgb(0_0_0/0.25)_6px_12px)]',
                           )}
                           style={{
                             left: clip.startSec * pps,
@@ -326,6 +366,9 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                           <span className="relative flex min-w-0 items-center gap-1.5">
                             <Icon size={13} className="shrink-0 opacity-80" />
                             <span className="truncate font-medium text-text">{clip.name}</span>
+                            {clip.locked && <Lock size={11} className="shrink-0 text-muted" aria-label="Locked" />}
+                            {clip.hidden && <EyeOff size={11} className="shrink-0 text-muted" aria-label="Hidden" />}
+                            {clip.muted && <VolumeX size={11} className="shrink-0 text-muted" aria-label="Muted" />}
                           </span>
                           <span className="relative ml-auto hidden font-mono text-xs text-muted tabular-nums sm:inline">
                             {clip.durationSec.toFixed(1)}s
@@ -356,6 +399,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                               e.stopPropagation()
                               e.preventDefault()
                               onSelect(clip.id)
+                              if (clip.locked) return
                               setDrag({
                                 mode: 'trim-start',
                                 id: clip.id,
@@ -375,6 +419,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                               e.stopPropagation()
                               e.preventDefault()
                               onSelect(clip.id)
+                              if (clip.locked) return
                               setDrag({ mode: 'trim-end', id: clip.id, originDuration: clip.durationSec })
                             }}
                             className="absolute inset-y-0 right-0 w-2 cursor-ew-resize bg-text/0 hover:bg-text/25"
@@ -382,6 +427,13 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                         </div>
                       )
                     })}
+                </div>
+              ))}
+
+              {/* Markers (2.7): M drops one, ; and ' jump between them, clips snap to them. */}
+              {(doc.markers ?? []).map((m) => (
+                <div key={m.id} className="pointer-events-none absolute -top-7 bottom-0 z-[9] w-px bg-info/70" style={{ left: m.at * pps }} title={`${m.label} · ${m.at.toFixed(2)}s`}>
+                  <span className="absolute -left-[5px] top-0 h-2.5 w-2.5 rotate-45 rounded-[2px] bg-info" aria-label={`Marker ${m.label}`} />
                 </div>
               ))}
 

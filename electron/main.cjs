@@ -8,6 +8,14 @@ const { spawn } = require('child_process')
 const { GoogleGenerativeAI } = require('@google/generative-ai')
 const AdmZip = require('adm-zip')
 const { approveManualArenaGate, isManualArenaGateBlocked } = require('./automation-gate.cjs')
+const resourceContext = require('./resource-context.cjs')
+const projectHistory = require('./project-history.cjs')
+const diagnostics = require('./diagnostics.cjs')
+const encoders = require('./encoders.cjs')
+const proxies = require('./proxies.cjs')
+const tts = require('./tts.cjs')
+const { migrateSettings } = require('./settings-migration.cjs')
+const voiceEngines = require('./voice-engines.cjs')
 
 let autoUpdater
 try {
@@ -429,6 +437,7 @@ function publicSettings() {
       ? Number(settings.silenceMinDuration)
       : DEFAULT_SILENCE_MIN_DURATION,
     updateChannel: settings.updateChannel || 'latest',
+    hardwareEncoding: settings.hardwareEncoding === 'off' ? 'off' : 'auto',
   }
 }
 
@@ -467,6 +476,12 @@ function applySettingsPatch(patch) {
     const v = Number(patch.silenceNoiseDb)
     if (Number.isFinite(v)) settings.silenceNoiseDb = Math.max(-90, Math.min(-5, v))
   }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'hardwareEncoding')) {
+    settings.hardwareEncoding = patch.hardwareEncoding === 'off' ? 'off' : 'auto'
+    // Re-detect on the next render with the new preference.
+    encoderSession.result = null
+    encoderSession.disabledReason = null
+  }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'silenceMinDuration')) {
     const v = Number(patch.silenceMinDuration)
     if (Number.isFinite(v)) settings.silenceMinDuration = Math.max(0.1, Math.min(10, v))
@@ -483,18 +498,116 @@ ipcMain.handle('settings:get', () => publicSettings())
 ipcMain.handle('settings:hasKey', () => publicSettings().hasKey)
 ipcMain.handle('settings:set', (_event, patch) => applySettingsPatch(patch || {}))
 ipcMain.handle('settings:autoLaunch', (_event, enabled) => applySettingsPatch({ autoLaunch: Boolean(enabled) }))
+// Autosave / crash recovery / version history (2.26): atomic writes, a
+// rolling set of snapshots, recovery from the newest valid one when the main
+// file is unreadable. Logic lives in project-history.cjs so it is testable.
+let stateRecovery = { previousSessionCrashed: false, recoveredFrom: null }
 ipcMain.handle('state:save', (_event, payload) => {
   const value = typeof payload === 'string' ? payload : payload?.value ?? JSON.stringify(payload ?? null)
-  ensureDir(path.dirname(stateFile()))
-  fs.writeFileSync(stateFile(), String(value), 'utf8')
+  try {
+    projectHistory.save(app.getPath('userData'), String(value))
+  } catch (err) {
+    logLine('state-save-failed', err?.message || String(err))
+    throw err
+  }
   return true
 })
 ipcMain.handle('state:load', () => {
-  try {
-    return fs.readFileSync(stateFile(), 'utf8')
-  } catch {
-    return null
+  const result = projectHistory.load(app.getPath('userData'))
+  if (result.recoveredFrom) {
+    stateRecovery = { ...stateRecovery, recoveredFrom: result.recoveredFrom }
+    logLine('state-recovered', 'projects.json was unreadable; restored the newest valid autosave', { from: result.recoveredFrom })
   }
+  return result.text
+})
+ipcMain.handle('state:recoveryInfo', () => stateRecovery)
+
+// One-click diagnostic report (2.27). Redaction lives in diagnostics.cjs.
+function recentLogLines(maxFiles = 2) {
+  try {
+    const dir = userDataPath('logs')
+    const files = fs.readdirSync(dir).filter((f) => f.endsWith('.log')).sort().slice(-maxFiles)
+    return files.flatMap((f) => fs.readFileSync(path.join(dir, f), 'utf8').split(/\r?\n/)).slice(-2000)
+  } catch {
+    return []
+  }
+}
+/* ——— 2.7 video proxies ——————————————————————————————————————————————— */
+const proxyJobs = new Map()
+
+ipcMain.handle('media:proxy', async (event, payload) => {
+  const sourcePath = payload?.path
+  const stat = proxies.validateSource(sourcePath)
+  ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
+  if (!ffmpegPath) throw new Error('FFmpeg is unavailable, so proxies cannot be made. Set CUPRIC_FFMPEG_PATH or reinstall.')
+  const dir = userDataPath('proxies')
+  ensureDir(dir)
+  const outPath = path.join(dir, `${proxies.proxyKey(sourcePath, stat)}.mp4`)
+  if (fs.existsSync(outPath) && fs.statSync(outPath).size > 1024) return { path: outPath, url: pathToFileURL(outPath).toString(), cached: true }
+  // One job per output: two clips of the same file share one transcode.
+  if (!proxyJobs.has(outPath)) {
+    const tmp = `${outPath}.part.mp4`
+    const durationSec = Number(payload?.durationSec) || 0
+    const job = runProcess(null, ffmpegPath, proxies.proxyArgs(sourcePath, tmp), {
+      onStdout: (chunk) => {
+        const pct = proxies.progressFrom(chunk, durationSec)
+        if (pct !== null && !event.sender.isDestroyed()) event.sender.send('media:proxyProgress', { path: sourcePath, pct })
+      },
+    })
+      .then(async () => {
+        await fsp.rename(tmp, outPath)
+        return outPath
+      })
+      .catch(async (err) => {
+        await fsp.rm(tmp, { force: true })
+        throw new Error(`Proxy failed: ${String(err?.message || err).slice(-400)}`)
+      })
+      .finally(() => proxyJobs.delete(outPath))
+    proxyJobs.set(outPath, job)
+  }
+  const done = await proxyJobs.get(outPath)
+  return { path: done, url: pathToFileURL(done).toString(), cached: false }
+})
+
+ipcMain.handle('media:proxyDelete', async (_event, payload) => {
+  const stat = proxies.validateSource(payload?.path)
+  const outPath = path.join(userDataPath('proxies'), `${proxies.proxyKey(payload.path, stat)}.mp4`)
+  await fsp.rm(outPath, { force: true })
+  return { deleted: true }
+})
+
+ipcMain.handle('diag:report', (_event, payload) => {
+  const settings = publicSettings()
+  return diagnostics.buildReport({
+    appVersion: app.getVersion(),
+    packaged: app.isPackaged,
+    platform: process.platform,
+    osRelease: os.release(),
+    arch: process.arch,
+    versions: process.versions,
+    media: mediaToolStatus(),
+    encoder: typeof videoEncoderState === 'function' ? videoEncoderState() : null,
+    ai: settings,
+    recovery: stateRecovery,
+    versionCount: projectHistory.listVersions(app.getPath('userData')).length,
+    logLines: recentLogLines(),
+    rendererErrors: Array.isArray(payload?.rendererErrors) ? payload.rendererErrors.map(String).slice(-40) : [],
+    homeDir: os.homedir(),
+  })
+})
+ipcMain.handle('state:listVersions', () => projectHistory.listVersions(app.getPath('userData')))
+ipcMain.handle('state:snapshotNow', () => {
+  try {
+    const text = fs.readFileSync(stateFile(), 'utf8')
+    return { id: projectHistory.snapshot(app.getPath('userData'), text, 'manual') }
+  } catch (err) {
+    throw new Error(`Nothing saved yet to keep as a version (${err?.message || String(err)}).`)
+  }
+})
+ipcMain.handle('state:restoreVersion', (_event, payload) => {
+  const result = projectHistory.restore(app.getPath('userData'), String(payload?.id || ''))
+  logLine('state-restored', 'Restored an earlier version', result)
+  return result
 })
 ipcMain.handle('state:clear', () => {
   fs.rmSync(stateFile(), { force: true })
@@ -690,65 +803,9 @@ function packsDir() {
   return candidates.find((dir) => dir && fs.existsSync(dir)) || ''
 }
 
-/**
- * Pick the registered components, templates and sources that actually relate to
- * this brief, so the model composes with the Lab/Resources catalogue instead of
- * inventing everything from a blank page.
- *
- * Matching is deliberately dumb (token overlap on name/description/tags): the
- * catalogue is small, and a wrong-but-plausible suggestion costs the model
- * nothing, while a missed one costs us the whole point of having a registry.
- */
+/** Resource selection by beat across every bundled pack — see electron/resource-context.cjs. */
 function automationResourceContext(brief, rundown) {
-  const dir = packsDir()
-  if (!dir) return { components: [], templates: [], sources: [], prompt: '' }
-
-  const haystack = `${brief || ''} ${rundown?.style || ''} ${(rundown?.scenes || []).map((s) => `${s.type} ${s.copy} ${s.motion}`).join(' ')}`
-  const words = Array.from(new Set(String(haystack).toLowerCase().match(/[a-z][a-z0-9-]{2,}/g) || []))
-  const STOP = new Set(['the', 'and', 'for', 'with', 'this', 'that', 'from', 'into', 'your', 'our', 'video', 'scene', 'motion', 'seconds'])
-  const terms = words.filter((w) => !STOP.has(w))
-
-  const load = (id) => {
-    try {
-      const pack = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'))
-      return Array.isArray(pack?.items) ? pack.items : []
-    } catch {
-      return []
-    }
-  }
-
-  const scoreItem = (item) => {
-    const text = `${item.name} ${item.description} ${(item.tags || []).join(' ')}`.toLowerCase()
-    return terms.reduce((n, term) => (text.includes(term) ? n + 1 : n), 0)
-  }
-
-  const top = (items, limit) =>
-    items
-      .map((item) => ({ item, score: scoreItem(item) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit)
-      .filter((entry, index) => entry.score > 0 || index < Math.min(3, limit))
-      .map((entry) => entry.item)
-
-  const components = top(load('components'), 12)
-  const templates = top(load('templates'), 4)
-  const sources = top(load('sources'), 6)
-
-  const lines = []
-  if (components.length) {
-    lines.push('REGISTERED UI COMPONENTS you may re-create in HTML/CSS (from the Cupric UI Lab registry — match their behaviour, not their React code):')
-    lines.push(...components.map((c) => `- ${c.name}: ${c.description}`))
-  }
-  if (templates.length) {
-    lines.push('', 'EXISTING CUPRIC SCENE TEMPLATES whose structure is already proven to render (mirror their timing shape):')
-    lines.push(...templates.map((t) => `- ${t.name} (${t.data?.durationSec ?? '?'}s): ${t.description}`))
-  }
-  if (sources.length) {
-    lines.push('', 'HOUSE STYLE CUES from the Cupric sources catalogue:')
-    lines.push(...sources.map((s) => `- ${s.name}: ${s.data?.promptCue || s.description}`))
-  }
-
-  return { components, templates, sources, prompt: lines.join('\n') }
+  return resourceContext.automationResourceContext(brief, rundown, packsDir())
 }
 
 /**
@@ -900,7 +957,7 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
   const resources = automationResourceContext(job?.brief, rundown)
   const basePrompt = rundown.arenaPrompt || arenaPromptOf(rundown)
   const prompt = resources.prompt
-    ? `${basePrompt}\n\nCOMPOSE WITH CUPRIC'S OWN RESOURCE LIBRARY:\n${resources.prompt}\n\nUse at least two of the registered components or templates above as structural elements of the piece, re-implemented in inline HTML/CSS/SVG.`
+    ? `${basePrompt}\n\nCOMPOSE WITH CUPRIC'S OWN RESOURCE LIBRARY:\n${resources.prompt}\n\nFollow the scene-by-scene direction: give each scene the motion its beat calls for and layer its background/main/accent resources, re-implemented in inline HTML/CSS/SVG.`
     : basePrompt
 
   const candidates = []
@@ -981,6 +1038,8 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
       components: resources.components.map((c) => c.id),
       templates: resources.templates.map((t) => t.id),
       sources: resources.sources.map((s) => s.id),
+      scenePlan: resources.scenes.map((p) => ({ beat: p.beat, layers: Object.fromEntries(Object.entries(p.layers).map(([k, v]) => [k, v.id])) })),
+      searched: resources.searched.total,
     },
     prompt,
     attempts,
@@ -1728,6 +1787,9 @@ async function aiRoutes() {
  * that does not parse gets exactly one stricter repair round on the same route
  * before moving on.
  */
+/** 1.8 — backoff schedule for transient AI errors, per route. */
+const AI_BACKOFF_MS = [1000, 4000]
+
 async function completeWithFallback({ system, user, json = false, temperature = 0.4, images = [], history = [], deadlineMs = 45_000, validate }) {
   const routes = await aiRoutes()
   if (!routes.length) {
@@ -1763,7 +1825,24 @@ async function completeWithFallback({ system, user, json = false, temperature = 
         ], { json, temperature, override: route.override, timeoutMs: Math.max(2000, deadline - Date.now()) })
         return { text, model: route.override?.openCodeModel || aiSettings().openCodeModel }
       }
-      let reply = await ask()
+      // 1.8 — transient failures (503 / overload / timeouts / plain rate
+      // limits) get the same route again after 1 s, then 4 s, while the
+      // deadline allows. A quota exhaustion moves straight to the next route
+      // (retrying it only burns the remaining quota and the user's time).
+      const askWithBackoff = async (extra = '') => {
+        for (let attempt = 0; ; attempt += 1) {
+          try {
+            return await ask(extra)
+          } catch (err) {
+            const wait = AI_BACKOFF_MS[attempt]
+            const quota = /quota|resource_exhausted|exceeded your current/i.test(err?.message || String(err))
+            if (wait === undefined || quota || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
+            logLine('ai-backoff', `${route.label}: retry in ${wait}ms`, { error: (err?.message || String(err)).slice(0, 200) })
+            await delay(wait)
+          }
+        }
+      }
+      let reply = await askWithBackoff()
       if (json) {
         let parsed
         try {
@@ -1851,10 +1930,19 @@ OPERATIONS:
 - {"type":"patchClip","clipId":string,"patch":{allowed properties}}
   Allowed: x, y, scale, rotation, opacity, fontSizePct, color, fontFamily, weight(400|600|800), align, highlightWord, text, anim, transitionIn, transitionOut, volume, durationSec, startSec, name.
   highlightWord must be an exact word already present in that text clip.
-  Fonts: Inter Variable, Manrope Variable, DM Sans Variable, Space Grotesk Variable, Playfair Display Variable, JetBrains Mono Variable.
+  Also allowed: tiltX/turnY (-89..89 degrees, 3D on ANY clip), perspective (200..8000), and for text emphasisColor, boxColor, accentColor ("#rrggbb"), textGlow (0..1).
+  Fonts (video-grade): Geist Variable, Inter Variable, Montserrat Variable (bold captions), Poppins, Outfit Variable, Manrope Variable, DM Sans Variable, Space Grotesk Variable, Bebas Neue / Anton (condensed hype titles, uppercase), Instrument Serif / Playfair Display Variable (italic emphasis), JetBrains Mono Variable (code/stats).
+  Also any family in STUDIO CONTEXT.fonts (source "yours" = fonts the user added, e.g. Satoshi / Clash Display from Fontshare — prefer them when they fit the mood). Pair ONE headline/caption family with ONE emphasis family (emphasisFont); never use more than two families in a video. Pick colours from the brand kit and in-between tints; keep text contrast >= 4.5:1 on its background.
+  Fontshare fonts NOT in STUDIO CONTEXT.fonts cannot be used: say which one would suit and that it is free at fontshare.com (download and drop the zip into Cupric).
+  RICH CAPTIONS inside text: *word* = serif italic emphasis, ==words== = colour highlight box, {words} = accent colour, ^30^ = big number, newline = stacked lines. Emphasise 1–2 words per caption, never whole sentences.
   Text animations (content-level): none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
   Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
 - {"type":"addText","text":string,"track":number,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"fontSizePct"?:number,"weight"?:400|600|800,"align"?:"left"|"center"|"right","color"?:"#rrggbb","fontFamily"?:string,"anim"?:string,"highlightWord"?:string,"motion"?:{...as applyMotion}}
+- {"type":"addShape","shape":id,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"w"?:0.01..1.5 (width, fraction of frame),"fill"?:"#rrggbb"|null,"stroke"?:"#rrggbb"|null,"anim"?:"draw-on"|"draw-then-fill"|"pop"|"grow"|"spin-in"|"pulse"|"wiggle"|"none","label"?:string}
+  Shapes: rectangle rounded-rect pill circle ellipse ring arc semicircle triangle diamond pentagon hexagon octagon polygon parallelogram trapezoid star sparkle burst seal sunburst arrow block-arrow curved-arrow loop-arrow double-arrow chevron elbow-arrow speech-bubble thought-bubble callout-box lower-third underline circle-scribble strike highlight-bar brackets frame button progress-bar toggle play browser check cross plus heart lightning pin quote-marks cloud line wave zigzag spiral blob.
+  How editors use them: curved-arrow/elbow-arrow point FROM a caption TO the thing (before→after); underline/circle-scribble/highlight-bar mark ONE key word or number (draw-on, 0.4s); burst/seal/sparkle for price/NEW badges (pop); check/cross for do-vs-don't; lower-third/callout-box behind names; brackets/frame to isolate a detail. One accent shape per beat; match the brand accent; keep stroke 6–10px.
+- {"type":"addCursor","clipId":string,"action"?:"click"|"double-click"|"hover"|"drag","force"?:true}
+  Adds a pointer that travels to that clip and clicks it (the clip presses in; recorded components are re-recorded interacting). Use ONLY for interactive UI — buttons, toggles, inputs, menus, app/website demos, tutorials. Never on backgrounds, text-only reveals, loaders, charts or decorative motion; the app refuses those unless force is true, and you should not force it.
 - {"type":"setKeyframe","clipId":string,"at":number,"values":{"x"?,"y"?,"scale"?,"rotation"?,"opacity"?},"ease":"linear"|"ease-in"|"ease-out"|"ease-in-out"|"expo-out"|"expo-in-out"|"back-out"|"back-in"|"elastic-out"|"hold"}
   Only for custom paths applyMotion cannot express. scale and opacity are MULTIPLIERS of the clip's own value (1 = rest). x/y are absolute 0..1. The ease on a key controls travel to the NEXT key.
 - {"type":"clearKeyframes","clipId":string}
@@ -1862,10 +1950,30 @@ OPERATIONS:
 - {"type":"deleteClip","clipId":string}
 - {"type":"reorderTrack","from":number,"to":number}
 - {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
-- {"type":"addComponent","slug":string,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"interact"?:boolean,"motion"?:{...as applyMotion}}
+- {"type":"setComponentProps","clipId":string,"props":{...}}  Change the text, colours, sizes or font INSIDE an existing component clip (STUDIO CONTEXT.clips[].componentProps are its current values, settableProps the allowed keys). Merged over the current props; the component re-records itself. Use it whenever the user asks to change a component's words, colour or font — never delete and re-add.
+- {"type":"addComponent","slug":string,"startSec":number,"durationSec":number,"track"?:number (0 = bottom layer, use for shader backgrounds),"x"?:0..1,"y"?:0..1,"interact"?:boolean,"cursor"?:true (adds a clicking pointer when the component is interactive),"props"?:{only keys listed in that component's context "props" — e.g. set the real headline text, brand colours},"motion"?:{...as applyMotion}}
+- {"type":"rippleDelete","clipId":string}
+- {"type":"closeGaps","track"?:number}
+- {"type":"addMarker","at":number,"label"?:string}
+- {"type":"setBlend","clipId":string,"mode":"normal"|"multiply"|"screen"|"overlay"|"darken"|"lighten"|"color-dodge"|"soft-light"|"difference"|"add"}
+- {"type":"setDevice","clipId":string,"device":"none"|"phone"|"laptop"|"browser"}  (video/image/component clips)
+- {"type":"productMotion","clipId":string,"preset":"subtle"|"push-in"|"orbit"|"hero-reveal"}  (image/video)
+- {"type":"logoReveal","clipId":string,"reveal":"scale-pop"|"blur-rise"|"spin-settle"|"wipe-on"}  (image/video)
+- {"type":"textPreset","clipId":string,"preset":"title"|"subtitle"|"lower-third"|"caption"|"quote"|"cta"|"kinetic"}
+- {"type":"setAudioRole","clipId":string,"role":"music"|"voice"|"sfx"}
+- {"type":"setDucking","enabled":boolean,"amountDb"?:-30..-3}
+- {"type":"addTestimonialGrid","count":1..4,"startSec":number}  (EMPTY placeholders — never write testimonials)
+- {"type":"phoneDesign","clipId":"...","design":"product-launch"|"hero-product"|"app-scroll"|"notification"|"social-post"|"minimal"}  (animated phone mockup; copy stays placeholder for the user to edit)
+- {"type":"addCaptions","transcript":string,"startSec":number,"durationSec":number}  (only the user's own words)
   Places a real animated UI component (buttons, toggles, counters, cards, loaders, charts…). Cupric plays the actual component,
   acts it out (hover, clicks) and records its genuine animation into an editable overlay clip. slug MUST be one of
   STUDIO CONTEXT.components[].slug. Use one when the user asks for a UI element, a product/app demo moment, or a named component.
+  fc-* slugs are framecn video components: captions (karaoke, neon, editorial emphasis), kinetic typography, transitions, full scenes (browser flow, dashboard populate, device assemble) and WebGL shader backgrounds. Always pass props with the user's real words and brand colours instead of leaving demo text.
+  ob-* slugs (after ObsidianUI): ob-flip-text (3D letter-flip title), ob-text-stream ("We make ___" stepping word list; items = comma-separated words), ob-click-spark (transparent spark burst to lay over a click/press), ob-marquee-band (tilted crossing tape bands of phrases for launches/sales).
+  mb-* slugs (motion-board set): mb-chart-morph (bars → line through the tops → final value badge; values = comma-separated numbers), mb-masked-type (colour rises inside one big word + subline), mb-elastic-type (letters stretch on a locked baseline), mb-shutter-reveal (staggered slats uncover art, badge lands), mb-search-results (search pill types a query, result cards stage in; results = "title|meta, title|meta").
+- Motion timing grammar (use it when choosing starts/durations and when explaining): every beat is forward (≈2.2 s, ease-in-out) → HOLD long enough to read (≈2× the forward) → quick return or cut (≈1.4 s). Move one shared element across states instead of cutting between them (button → player, bars → line, search → results). Stagger siblings 0.1–0.35 s, never all at once. Big type gets one idea per beat.
+  Every component with text also accepts props.fontFamily = one family from STUDIO CONTEXT.fonts, so the component's type matches the rest of the edit (monospace/code text stays mono).
+  Each catalogue line has "use": follow it for track, length and placement.
 
 Track 0 is the bottom layer; higher tracks draw on top. Overlapping clips on one track are automatically lifted to a free track, so you may place text anywhere. Keyframe times are local to the clip. The context may include attributed motionReferences from React Bits, Skiper UI and Remotion: use their names as creative vocabulary, but translate every idea into only the native operations above. Never claim to install or execute an upstream component.
 
@@ -1881,6 +1989,24 @@ MOTION PLAYBOOK (follow it):
 - Transitions only at real cuts between media clips, varied, never the same twice in a row.
 - For broad requests (auto edit, polish, make it better/cinematic/professional) touch EVERY visible clip: typography + highlight + applyMotion for text; transition + camera applyMotion for media; applyMotion for stickers/overlays/glass. 2 ops per clip is normal. Do not merely return applyStylePreset or a single fade.
 - For narrow requests, change only what was asked, precisely.
+
+COMPONENT PLAYBOOK (how a senior editor uses them):
+- Pick by the job, not the name: hook/hero line → kinetic text (fc-blur-reveal, fc-per-character-rise, ob-flip-text, ob-text-stream); spoken lines → one caption style for the WHOLE video (fc-caption-*); numbers → odometer / stat-counter / fc-animated-bar-chart with the real figure; product/app → fc-browser-flow, fc-dashboard-populate, fc-hero-device-assemble; code → fc-terminal-simulator, fc-glass-code-block; mood/premium → one fc-shader-* or mesh gradient background on track 0 spanning the scene; cuts → one fc-* transition (0.6–1.2 s) centred on the join; launch/sale → ob-marquee-band, fc-success-confetti; clicks → ob-click-spark on the track above the pressed element, starting 0.05 s before the press.
+- Text inside components is real copy: set every text prop (text, items, prefix, title…) to the user's words, colour props to the brand kit, fontFamily to the edit's headline or caption font. Never leave demo words like "BlurReveal" or "Now live".
+- Keep one visual system: at most 2 font families, 1 accent colour, 1 caption style, 1 background family per video. Reuse the same transition family with varied directions rather than a different effect at every cut.
+- Density: one hero component per beat (3–6 s); accents (spark, confetti, marquee) are brief. Do not stack two full-frame scenes at the same time. Components must not cover faces or the key product; place with x/y and leave safe margins (5% sides, 10% top/bottom for 9:16).
+- When a request needs more than one step, return all of them in ONE plan, in order (e.g. background shader → headline component → captions → transition → motion on existing clips).
+
+TYPOGRAPHY & COLOUR:
+- Hook/title: display or condensed family, weight 800, the largest size, 2–6 words per line. Captions: a clean sans at weight 600–800, 1 emphasised word per line via rich markup. Serif italic only for emphasis words.
+- Colour: text on dark = #f4f1ea-ish off-white, on light = near-black; accent only on the one word/number that matters; keep contrast ≥ 4.5:1. Derive tints from the brand kit instead of inventing new hues.
+
+SMOOTHNESS (every edit must feel continuous):
+- Nothing hard-cuts on or off: every added text/component/shape gets an entrance and an exit (the engine defaults to a soft rise/fade if you omit motion, but choose the right one).
+- Overlap beats by 0.2–0.4 s so the next element enters while the previous leaves; stagger sibling elements by 0.08–0.15 s; never start two hero entrances on the same frame.
+- Entrances 0.35–0.7 s ease-out (expo-out / back-out for pop), exits 0.25–0.45 s ease-in, faster than entrances. Camera moves span the whole shot and are slow (intensity ≤ 1).
+- Land key moments on the beat: a number reveal, click spark or cut sits on a marker or a change in the voice when there is one.
+- Components that animate themselves (captions, scenes, shaders, transitions, kinetic text) get only a gentle fade in/out, never an extra rise or pop.
 Do not return prose outside JSON.
 
 STUDIO CONTEXT:
@@ -2367,7 +2493,8 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
 
   const fps = Number(payload?.fps) > 0 ? Math.round(Number(payload.fps)) : 30
   const crf = String(Math.max(14, Math.min(32, Number(payload?.crf) || 18)))
-  const args = [
+  // Hardware encoder when one works (2.24); an explicit CRF keeps libx264.
+  const buildArgs = (videoArgs) => [
     '-y',
     '-hide_banner',
     '-v', 'error',
@@ -2375,20 +2502,20 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
     // A canvas sized from the window can be odd (e.g. 1759×894); H.264 in
     // yuv420p needs even sides, so round down to the nearest even pixel.
     '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos,setsar=1',
-    '-c:v', 'libx264',
-    '-preset', 'medium',
-    '-crf', crf,
-    '-pix_fmt', 'yuv420p',
+    ...videoArgs,
     // MediaRecorder writes variable frame rate; pin it so players seek correctly.
     '-r', String(fps),
     '-movflags', '+faststart',
+    ...encoders.loudnormArgs(payload?.loudnessTarget),
     '-c:a', 'aac',
     '-b:a', '192k',
     outputPath,
   ]
 
+  const softwareArgs = ['-c:v', 'libx264', '-preset', 'medium', '-crf', crf, '-profile:v', 'high', '-pix_fmt', 'yuv420p']
   try {
-    await runProcess(null, ffmpegPath, args)
+    if (payload?.crf) await runProcess(null, ffmpegPath, buildArgs(softwareArgs))
+    else await runEncode(null, 'final', buildArgs)
   } catch (err) {
     await fsp.rm(source, { force: true })
     throw new Error(`FFmpeg could not convert the recording: ${err?.message || String(err)}`)
@@ -2407,6 +2534,126 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
 })
 
 ipcMain.handle('media:status', () => mediaToolStatus())
+
+/* ——— offline voice input (1.10) ——— */
+// Whisper (whisper.cpp) first, Windows Speech Recognition second; the
+// renderer shows its existing friendly message when neither is available.
+let windowsSpeechAvailable = null
+
+function whisperSetup() {
+  return voiceEngines.findWhisper({
+    env: process.env,
+    dirs: [
+      process.resourcesPath ? path.join(process.resourcesPath, 'whisper') : null,
+      userDataPath('whisper'),
+      path.join(__dirname, '..', 'vendor', 'whisper'),
+    ],
+    platform: process.platform,
+    exists: (p) => fs.existsSync(p),
+    list: (d) => fs.readdirSync(d),
+  })
+}
+
+async function probeWindowsSpeech() {
+  if (process.platform !== 'win32') return false
+  if (windowsSpeechAvailable !== null) return windowsSpeechAvailable
+  try {
+    const { stdout } = await runProcess(null, 'powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', voiceEngines.WINDOWS_SPEECH_PROBE])
+    windowsSpeechAvailable = Number(String(stdout).trim()) > 0
+  } catch (err) {
+    windowsSpeechAvailable = false
+    logLine('voice-windows-probe-failed', err?.message || String(err))
+  }
+  return windowsSpeechAvailable
+}
+
+ipcMain.handle('voice:tts', async (_event, payload) => tts.synthesize(payload))
+
+ipcMain.handle('voice:status', async () => {
+  const whisper = whisperSetup()
+  const windows = await probeWindowsSpeech()
+  return {
+    whisper: Boolean(whisper),
+    windows,
+    engine: whisper ? 'whisper' : windows ? 'windows' : null,
+    whisperModel: whisper ? path.basename(whisper.model) : null,
+  }
+})
+
+ipcMain.handle('voice:transcribe', async (_event, payload) => {
+  const bytes = payload?.wav
+  if (!bytes || !bytes.byteLength) return { text: '', engine: null }
+  if (bytes.byteLength > 8 * 1024 * 1024) throw new Error('That recording is too long to transcribe in one go.')
+  const dir = userDataPath('voice-tmp')
+  ensureDir(dir)
+  const base = path.join(dir, `utt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+  const wavPath = `${base}.wav`
+  await fsp.writeFile(wavPath, Buffer.from(bytes))
+  const failures = []
+  try {
+    const whisper = whisperSetup()
+    if (whisper) {
+      try {
+        await runProcess(null, whisper.bin, voiceEngines.whisperArgs({ model: whisper.model, wavPath, outBase: base, lang: payload?.lang, threads: Math.max(1, os.cpus().length - 1) }), { cwd: path.dirname(whisper.bin) })
+        const text = voiceEngines.cleanTranscript(await fsp.readFile(`${base}.txt`, 'utf8').catch(() => ''))
+        return { text, engine: 'whisper' }
+      } catch (err) {
+        failures.push(`Whisper: ${String(err?.message || err).slice(0, 300)}`)
+      }
+    }
+    if (await probeWindowsSpeech()) {
+      try {
+        const { stdout } = await runProcess(null, 'powershell.exe', voiceEngines.windowsSpeechArgs(wavPath))
+        return { text: voiceEngines.cleanTranscript(stdout), engine: 'windows' }
+      } catch (err) {
+        failures.push(`Windows Speech: ${String(err?.message || err).slice(0, 300)}`)
+      }
+    }
+    if (failures.length) logLine('voice-transcribe-failed', failures.join(' | '))
+    const error = new Error(failures.length ? 'Offline speech recognition failed on this recording.' : 'No offline speech engine is installed.')
+    error.code = failures.length ? 'engine-failed' : 'no-engine'
+    throw error
+  } finally {
+    fsp.rm(wavPath, { force: true }).catch(() => {})
+    fsp.rm(`${base}.txt`, { force: true }).catch(() => {})
+  }
+})
+
+/**
+ * Auto-captions: transcribe a whole clip on disk WITH word timings.
+ * Whisper gives per-word times; Windows Speech gives per-phrase times (the
+ * reply says which, so the UI never overstates accuracy).
+ */
+ipcMain.handle('voice:transcribeMedia', async (_event, payload) => {
+  const sourcePath = payload?.path
+  if (typeof sourcePath !== 'string' || !path.isAbsolute(sourcePath) || !fs.existsSync(sourcePath)) throw new Error('That clip has no file on disk to transcribe — import it from disk in the desktop app.')
+  if (!/\.(mp4|mov|m4v|mkv|webm|avi|mp3|wav|m4a|aac|flac|ogg|opus)$/i.test(sourcePath)) throw new Error('Only audio and video files can be transcribed.')
+  ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
+  if (!ffmpegPath) throw new Error('FFmpeg is unavailable, so the clip’s audio cannot be read.')
+  const whisper = whisperSetup()
+  const windows = !whisper && (await probeWindowsSpeech())
+  if (!whisper && !windows) {
+    const error = new Error('No offline speech engine is installed. Run `npm run whisper:fetch` (or install Windows Speech) to enable auto-captions.')
+    error.code = 'no-engine'
+    throw error
+  }
+  const dir = userDataPath('voice-tmp')
+  ensureDir(dir)
+  const base = path.join(dir, `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+  const wavPath = `${base}.wav`
+  try {
+    await runProcess(null, ffmpegPath, voiceEngines.extractWavArgs(sourcePath, wavPath))
+    if (whisper) {
+      await runProcess(null, whisper.bin, voiceEngines.whisperWordArgs({ model: whisper.model, wavPath, outBase: base, lang: payload?.lang, threads: Math.max(1, os.cpus().length - 1) }), { cwd: path.dirname(whisper.bin) })
+      const words = voiceEngines.parseWhisperWords(await fsp.readFile(`${base}.json`, 'utf8'))
+      return { engine: 'whisper', timing: 'word', words }
+    }
+    const { stdout } = await runProcess(null, 'powershell.exe', voiceEngines.windowsTimedArgs(wavPath))
+    return { engine: 'windows', timing: 'phrase', words: voiceEngines.parseWindowsPhrases(stdout) }
+  } finally {
+    for (const ext of ['.wav', '.json', '.txt']) fsp.rm(`${base}${ext}`, { force: true }).catch(() => {})
+  }
+})
 
 ipcMain.handle('dialog:pickFolder', async () => {
   const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
@@ -2483,6 +2730,57 @@ function crfForQuality(quality) {
 
 function presetForQuality(quality) {
   return quality === 'final' ? 'slow' : 'veryfast'
+}
+
+/* ——— hardware-accelerated encoding (2.24) ——— */
+// Detected once per session (a tiny real test encode per candidate), then
+// reused. If a hardware encoder fails mid-render the segment is re-encoded
+// with libx264 and hardware is disabled for the rest of the session.
+const encoderSession = { result: null, pending: null, disabledReason: null }
+
+function hardwareEncodingMode() {
+  const mode = readSettings().hardwareEncoding
+  return mode === 'off' ? 'off' : 'auto'
+}
+
+async function currentVideoEncoder() {
+  if (encoderSession.disabledReason) return encoders.SOFTWARE
+  if (encoderSession.result) return encoderSession.result.name
+  if (!encoderSession.pending) {
+    encoderSession.pending = encoders
+      .detect((args) => runProcess(null, ffmpegPath, args), process.platform, hardwareEncodingMode())
+      .then((result) => {
+        encoderSession.result = result
+        logLine('video-encoder', result.reason, { name: result.name, tried: result.tried })
+        return result
+      })
+      .finally(() => { encoderSession.pending = null })
+  }
+  return (await encoderSession.pending).name
+}
+
+function videoEncoderState() {
+  const r = encoderSession.result
+  if (!r) return encoderSession.disabledReason ? { name: encoders.SOFTWARE, hardware: false, tried: [], reason: encoderSession.disabledReason } : null
+  if (encoderSession.disabledReason) return { name: encoders.SOFTWARE, hardware: false, tried: r.tried, reason: encoderSession.disabledReason }
+  return r
+}
+
+/**
+ * Run an FFmpeg encode whose video arguments come from the chosen encoder.
+ * `build(videoArgs)` returns the full argument list.
+ */
+async function runEncode(state, quality, build, options) {
+  const name = await currentVideoEncoder()
+  try {
+    return await runProcess(state, ffmpegPath, build(encoders.videoArgs(name, quality)), options)
+  } catch (err) {
+    if (!encoders.isHardware(name) || state?.cancelled) throw err
+    encoderSession.disabledReason = `${name} failed during a render; switched to libx264 for this session.`
+    logLine('video-encoder-fallback', encoderSession.disabledReason, { error: String(err?.message || err).slice(-600) })
+    if (state) state.encoderSwitched = true
+    return runProcess(state, ffmpegPath, build(encoders.videoArgs(encoders.SOFTWARE, quality)), options)
+  }
 }
 
 function renderOutputName(name) {
@@ -2630,7 +2928,7 @@ async function renderArenaSegment(state, source, ctx) {
     if (!win.isDestroyed()) win.destroy()
   }
 
-  await runProcess(state, ffmpegPath, [
+  await runEncode(state, ctx.quality, (v) => [
     '-y',
     '-hide_banner',
     // A PNG sequence feeds faster than libx264 consumes it; the default
@@ -2657,12 +2955,7 @@ async function renderArenaSegment(state, source, ctx) {
     String(ctx.fps),
     '-vf',
     evenFrameFilter(ctx.target.width, ctx.target.height),
-    '-c:v',
-    'libx264',
-    '-preset',
-    presetForQuality(ctx.quality),
-    '-crf',
-    crfForQuality(ctx.quality),
+    ...v,
     '-c:a',
     'aac',
     '-ar',
@@ -2686,19 +2979,12 @@ async function renderFootageInterval(state, source, interval, ctx, hasAudio) {
 
   const progressArgs = ['-progress', 'pipe:2', '-nostats']
   const base = ['-y', '-hide_banner', ...progressArgs, '-ss', String(start), '-t', String(duration), '-i', source.videoPath || source.footagePath]
-  const output = [
+  const output = (v) => [
     '-vf',
     vf,
     '-r',
     String(ctx.fps),
-    '-c:v',
-    'libx264',
-    '-preset',
-    presetForQuality(ctx.quality),
-    '-crf',
-    crfForQuality(ctx.quality),
-    '-pix_fmt',
-    'yuv420p',
+    ...v,
     '-c:a',
     'aac',
     '-ar',
@@ -2708,12 +2994,12 @@ async function renderFootageInterval(state, source, interval, ctx, hasAudio) {
     '-shortest',
     segmentPath,
   ]
-  const args = hasAudio
-    ? [...base, '-map', '0:v:0', '-map', '0:a:0', ...output]
-    : [...base, '-f', 'lavfi', '-t', String(duration), '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000', '-map', '0:v:0', '-map', '1:a:0', ...output]
+  const args = (v) => hasAudio
+    ? [...base, '-map', '0:v:0', '-map', '0:a:0', ...output(v)]
+    : [...base, '-f', 'lavfi', '-t', String(duration), '-i', 'anullsrc=channel_layout=stereo:sample_rate=48000', '-map', '0:v:0', '-map', '1:a:0', ...output(v)]
 
   let lastUnits = 0
-  await runProcess(state, ffmpegPath, args, {
+  await runEncode(state, ctx.quality, args, {
     onStderr: (text) => {
       const seconds = ffmpegProgressSeconds(text)
       if (seconds !== null) {
@@ -2755,7 +3041,13 @@ async function concatSegments(state, segments, outputPath, ctx) {
   const listPath = path.join(ctx.workDir, 'concat.txt')
   const body = segments.map((segment) => `file '${String(segment.path).replace(/'/g, "'\\''")}'`).join(os.EOL)
   fs.writeFileSync(listPath, body, 'utf8')
-  await runProcess(state, ffmpegPath, ['-y', '-hide_banner', '-f', 'concat', '-safe', '0', '-i', listPath, '-c', 'copy', '-movflags', '+faststart', outputPath])
+  // Segments are stream-copied when they all came from one encoder. If a
+  // hardware encoder failed part-way (see runEncode), the segments differ,
+  // so they are re-encoded together instead of risking a broken file.
+  const codec = state?.encoderSwitched
+    ? [...encoders.videoArgs(encoders.SOFTWARE, 'final'), '-c:a', 'aac', '-ar', '48000', '-ac', '2']
+    : ['-c', 'copy']
+  await runProcess(state, ffmpegPath, ['-y', '-hide_banner', '-f', 'concat', '-safe', '0', '-i', listPath, ...codec, '-movflags', '+faststart', outputPath])
 }
 
 ipcMain.handle('render:start', async (event, job) => {
@@ -3033,6 +3325,23 @@ function createWindow() {
 app.setAppUserModelId(APP_ID)
 wireUpdater()
 app.whenReady().then(() => {
+  // settings.json migration (2.29): once per launch, backed up first.
+  try {
+    if (fs.existsSync(settingsFile())) {
+      const migrated = migrateSettings(readSettings())
+      if (migrated.changed) {
+        fs.copyFileSync(settingsFile(), `${settingsFile()}.v${migrated.fromVersion}.bak`)
+        writeSettings(migrated.settings)
+        logLine('settings-migrated', `settings.json upgraded from v${migrated.fromVersion}`)
+      }
+    }
+  } catch (err) {
+    logLine('settings-migration-failed', err?.message || String(err))
+  }
+  try {
+    stateRecovery.previousSessionCrashed = projectHistory.beginSession(app.getPath('userData'))
+    if (stateRecovery.previousSessionCrashed) logLine('unclean-exit', 'The previous session did not close cleanly')
+  } catch {}
   createWindow()
   if (autoUpdater && !DEV_URL) autoUpdater.checkForUpdatesAndNotify().catch((err) => logLine('updater-launch-failed', err?.message || String(err)))
   startPeriodicUpdateChecks()
@@ -3051,4 +3360,5 @@ app.on('before-quit', () => {
     }
   }
 })
+app.on('will-quit', () => projectHistory.endSession(app.getPath('userData')))
 app.on('window-all-closed', () => app.quit())

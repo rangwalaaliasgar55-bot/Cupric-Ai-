@@ -9,6 +9,7 @@ import { ProgressProvider } from '../lib/ProgressProvider'
 import { cx } from '../lib/utils'
 import { getDemo } from './demos'
 import { PreviewPlayContext } from './preview-play'
+import { DemoPropsContext, type DemoProps } from './demo-props'
 
 export function DemoFrame({
   slug,
@@ -16,7 +17,10 @@ export function DemoFrame({
   className,
   atSeconds,
   forceMotion,
+  props,
 }: {
+  /** Per-clip props (framecn text/colours); omitted = the demo's defaults. */
+  props?: DemoProps | null
   slug: string
   play: boolean | null
   className?: string
@@ -37,6 +41,7 @@ export function DemoFrame({
     return <div className="grid h-full place-items-center text-xs text-muted">No demo file</div>
   }
   const body = (
+    <DemoPropsContext.Provider value={props ?? null}>
     <PreviewPlayContext.Provider value={play}>
       <Suspense
         fallback={
@@ -50,6 +55,7 @@ export function DemoFrame({
         </div>
       </Suspense>
     </PreviewPlayContext.Provider>
+    </DemoPropsContext.Provider>
   )
   const driven = atSeconds === undefined ? body : <ProgressProvider seconds={atSeconds}>{body}</ProgressProvider>
   return forceMotion ? <MotionConfig reducedMotion="never">{driven}</MotionConfig> : driven

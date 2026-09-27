@@ -1,5 +1,5 @@
 {
-  "version": "0.9.0",
+  "version": "0.10.0",
   "updated": "2026-09-27",
   "repo": "rangwalaaliasgar55-bot/Cupric-Ai-",
   "packs": [
@@ -8,105 +8,133 @@
       "name": "Liquid Glass",
       "description": "Refracting glass materials for the app chrome and for the Studio canvas. One parameter set drives the DOM (backdrop-filter + SVG displacement) and the exported video (canvas).",
       "itemCount": 6,
-      "bytes": 3464
+      "bytes": 3465
     },
     {
       "id": "transitions",
       "name": "Transitions",
       "description": "Every transition the Studio renderer implements, including the glass and liquid families.",
       "itemCount": 10,
-      "bytes": 2981
+      "bytes": 2982
     },
     {
       "id": "animations",
       "name": "Text animations",
       "description": "Caption and title animations, all pure functions of clip progress so preview and export match.",
-      "itemCount": 9,
-      "bytes": 2681
+      "itemCount": 10,
+      "bytes": 2972
     },
     {
       "id": "backgrounds",
       "name": "Backgrounds & gradients",
       "description": "Studio stage backgrounds — gradients, mesh gradients and patterns — with the CSS twin used by the app and by Arena HTML.",
-      "itemCount": 34,
-      "bytes": 16650
+      "itemCount": 42,
+      "bytes": 20004
     },
     {
       "id": "effects",
       "name": "Effects",
       "description": "Effect cues shared by the Arena prompt builder and the local renderer.",
       "itemCount": 10,
-      "bytes": 4336
+      "bytes": 4337
     },
     {
       "id": "voice",
       "name": "Voice commands",
       "description": "The Studio voice grammar. Each entry is a phrase the parser in src/lib/voice.ts accepts.",
       "itemCount": 14,
-      "bytes": 2935
+      "bytes": 2936
     },
     {
       "id": "sources",
       "name": "Sources",
       "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
       "itemCount": 77,
-      "bytes": 51076
+      "bytes": 51077
     },
     {
       "id": "templates",
       "name": "Video templates",
       "description": "Self-contained HTML scenes under resources/effects. Each exposes window.__seek(t) and a source manifest, so the desktop renderer can capture it frame by frame into an MP4 with no network.",
       "itemCount": 6,
-      "bytes": 3934
+      "bytes": 3935
     },
     {
       "id": "panelui",
       "name": "PanelUI catalogue",
       "description": "All 135 PanelUI components and 21 chart visualisations as editable Cupric-native Studio storyboards. React Native source stays upstream; Cupric uses its own deterministic renderer.",
       "itemCount": 172,
-      "bytes": 191624
+      "bytes": 191656
     },
     {
       "id": "saas-video",
       "name": "SaaS video templates",
       "description": "Editable, local-first blueprints for product launches, feature demos and growth videos.",
       "itemCount": 8,
-      "bytes": 7873
+      "bytes": 7874
     },
     {
       "id": "external-ui",
       "name": "External UI & motion resources",
       "description": "Indexed icons, UI blocks, motion components and design tools from Its Hover, Great UI, Bencho, Spell UI and DesignEng. Entries link to the original source and are available to the video/agent adapters.",
       "itemCount": 149,
-      "bytes": 89303
+      "bytes": 89304
     },
     {
       "id": "remotion",
       "name": "Remotion toolkit",
       "description": "Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.",
       "itemCount": 2080,
-      "bytes": 1161736
+      "bytes": 1161737
     },
     {
       "id": "react-bits",
       "name": "React Bits storyboards",
       "description": "All 209 current React Bits ideas as attributed references plus original, editable Cupric-native storyboards. No upstream component source is redistributed.",
       "itemCount": 209,
-      "bytes": 233083
+      "bytes": 233084
     },
     {
       "id": "skiper-ui",
       "name": "Skiper UI blueprints",
       "description": "All 106 supplied Skiper UI ideas as attributed, editable Studio storyboards.",
       "itemCount": 106,
-      "bytes": 103377
+      "bytes": 103378
+    },
+    {
+      "id": "ui-libraries",
+      "name": "UI libraries (Mantine · Pixel Perfect · Sora UI)",
+      "description": "Indexed component libraries used as pattern references by the agent, the generation prompt and Cupric's own chrome. Mantine is MIT; Pixel Perfect and Sora UI declare no license, so they are linked and attributed, never copied.",
+      "itemCount": 436,
+      "bytes": 404390
+    },
+    {
+      "id": "essentials",
+      "name": "Essentials — libraries, fonts, icons, media",
+      "description": "Hand-picked free resources: animation libraries (Framer Motion, GSAP), fonts (Inter, Geist, Satoshi, Fontsource), icons and logos (Simple Icons, Logo.dev, Lucide, Phosphor, Tabler), illustrations, Lottie, stock media and palettes. Each entry links to the original with its license.",
+      "itemCount": 16,
+      "bytes": 12593
+    },
+    {
+      "id": "motion-kit",
+      "name": "Motion kit — fonts, shapes, cursor, 3D",
+      "description": "Fonts, shapes, cursor, 3D: bundled OFL video fonts, 21 Fontshare families (link-only — download them yourself, then Add fonts), and the Javis.jl ideas (MIT).",
+      "itemCount": 29,
+      "bytes": 25659
+    },
+    {
+      "id": "framecn",
+      "name": "framecn — video captions, type, transitions, scenes, shaders",
+      "description": "112 video components from framecn.dev (MIT), vendored into src/lab/framecn. Captions, kinetic typography, transitions, full product scenes and WebGL shader backgrounds; each records into the Studio with editable props.",
+      "itemCount": 112,
+      "bytes": 65921
     },
     {
       "id": "components",
       "name": "Lab components",
       "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
-      "itemCount": 190,
-      "bytes": 63695
+      "itemCount": 192,
+      "bytes": 64446
     }
   ]
 }

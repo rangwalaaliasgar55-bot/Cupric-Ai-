@@ -226,8 +226,9 @@ export function Library() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-6xl space-y-5 px-6 py-6">
         <div>
-          <h1 className="text-lg font-bold">Library</h1>
-          <p className="text-sm text-muted">
+          <p className="cu-eyebrow">Resources</p>
+          <h1 className="cu-page-title mt-1">Library</h1>
+          <p className="mt-1 max-w-3xl text-sm text-muted">
             Glass materials, transitions, animations, gradients, effects and voice commands — fetched from the Cupric
             repository and addable straight to the Studio. Rundowns and brand presets live below.
           </p>
@@ -248,7 +249,7 @@ export function Library() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search the library…"
               aria-label="Search library"
-              className="h-9 w-full rounded-lg border border-line bg-panel pl-9 pr-3 text-sm placeholder:text-muted/70"
+              className="h-9 w-full cu-panel pl-9 pr-3 text-sm placeholder:text-muted/70"
             />
           </div>
           <Segmented

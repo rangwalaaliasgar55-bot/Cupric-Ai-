@@ -6,6 +6,7 @@
 
 import type {
   StudioAspect,
+  StudioResolution,
   StudioAudioClip,
   StudioClip,
   StudioDoc,
@@ -34,10 +35,21 @@ export function studioOf(project: { studio?: StudioDoc } | null | undefined): St
   return project?.studio ?? emptyStudioDoc()
 }
 
-export function sizeForAspect(aspect: StudioAspect): [number, number] {
-  if (aspect === '9:16') return [1080, 1920]
-  if (aspect === '1:1') return [1080, 1080]
-  return [1920, 1080]
+const SHORT_SIDE: Record<StudioResolution, number> = { '720p': 720, '1080p': 1080, '1440p': 1440, '2160p': 2160 }
+
+/** Frame size for an aspect at a resolution (short side), always even. */
+export function sizeForAspect(aspect: StudioAspect, resolution: StudioResolution = '1080p'): [number, number] {
+  const s = SHORT_SIDE[resolution] ?? 1080
+  const even = (n: number) => Math.round(n / 2) * 2
+  if (aspect === '9:16') return [s, even((s * 16) / 9)]
+  if (aspect === '1:1') return [s, s]
+  if (aspect === '4:5') return [s, even((s * 5) / 4)]
+  return [even((s * 16) / 9), s]
+}
+
+/** Width ÷ height of an aspect. */
+export function aspectRatio(aspect: StudioAspect): number {
+  return aspect === '9:16' ? 9 / 16 : aspect === '1:1' ? 1 : aspect === '4:5' ? 4 / 5 : 16 / 9
 }
 
 /** Preview size keeps the export aspect but stays cheap to draw every frame. */

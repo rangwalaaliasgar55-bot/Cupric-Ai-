@@ -2,7 +2,7 @@
   "id": "panelui",
   "name": "PanelUI catalogue",
   "description": "All 135 PanelUI components and 21 chart visualisations as editable Cupric-native Studio storyboards. React Native source stays upstream; Cupric uses its own deterministic renderer.",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "source": "https://github.com/panel-ui/PanelUI (panelui-native 0.102.1, react-native)",
   "license": "MIT — Copyright (c) 2026 Khalid Abdi",
   "items": [
@@ -3232,7 +3232,7 @@
       ]
     },
     {
-      "id": "panelui-index",
+      "id": "panelui-components-index",
       "kind": "saas-template",
       "name": "Components",
       "description": "Every component module in PanelUI, by what it is for — 135 component modules, each with its anatomy, props and variants. · editable Cupric-native storyboard",
@@ -7231,7 +7231,7 @@
       ]
     },
     {
-      "id": "panelui-icons",
+      "id": "panelui-reference-icons",
       "kind": "saas-template",
       "name": "Icons API",
       "description": "Every icon and icon support export available from the package root. · editable Cupric-native storyboard",
@@ -7274,7 +7274,7 @@
       ]
     },
     {
-      "id": "panelui-index",
+      "id": "panelui-reference-index",
       "kind": "saas-template",
       "name": "Public API",
       "description": "Every supported root export from panelui-native — 1398 symbols across 162 modules. · editable Cupric-native storyboard",

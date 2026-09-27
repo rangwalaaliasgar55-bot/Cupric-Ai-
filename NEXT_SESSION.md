@@ -1,3 +1,15 @@
+## Latest: framecn, fonts, cursor v2
+- `check:framecn-fonts` has 721 assertions, and every framecn component is server-rendered in the check.
+- Not verified in a real browser. Eyeball these:
+  - shader components (WebGL) recording in the Studio;
+  - Add fonts with a real Fontshare zip;
+  - the cursor Auto style swapping arrow to hand.
+- Refresh framecn: `gh repo clone shadcn-labs/framecn /tmp/framecn -- --depth 1 && node scripts/vendor-framecn.mjs /tmp/framecn && node scripts/build-packs.mjs`
+
+## Latest: Motion kit (3D, shapes, cursor, fonts, rich captions)
+- Covered in MOTION_KIT.md. Check: `check:shapes-cursor-3d` (221 assertions, in the build).
+- Not verified in a real browser yet (no headless browser in the sandbox). Eyeball the 3D projection seams, the rich-caption line heights, and the cursor on a recorded component.
+
 # NEXT_SESSION.md — Cupric AI implementation status
 
 ## Current status (v0.4.0)
@@ -93,3 +105,158 @@ If `ffmpeg-static` fails to download, set:
 CUPRIC_FFMPEG_PATH=C:\path\to\ffmpeg.exe
 CUPRIC_FFPROBE_PATH=C:\path\to\ffprobe.exe
 ```
+
+## Master-prompt progress (2026-09-27 session)
+
+Done, each with a `check:*` script chained into `npm run build`:
+2.13 component length + recorded shelf · 2.14 legibility scrim · 2.24 HW encoding (NVENC/QSV/VideoToolbox → libx264) ·
+2.25/2.30 photo previews, HEIC + EXIF · 2.26 autosave snapshots + restore · 2.27 diagnostic report · 2.28 sandboxed capture ·
+2.29 schema migration · 2.31 undo re-audit (`check:undo`, runs against the real store) · 1.10 offline voice (Whisper → Windows Speech).
+
+Needs a hardware pass: 1.10 on Windows (`npm run whisper:fetch`, then speak), and 2.24 on NVENC/QSV/Apple machines.
+
+Still open: 2.1–2.12, 2.15–2.23, verify 1.4 and 1.8, Part 4. `editOps.ts` still caps agent recordSec at 6.
+The web-build-only Arena capture paths (`captureArenaThumbnail`, `captureArenaFrame`) still use same-origin iframes.
+
+Third-party licenses: heic2any/libheif is LGPL-3.0 (dynamically loaded JS/wasm, unmodified).
+whisper.cpp and the ggml models are MIT. Both are fetched and bundled with attribution, not rebranded.
+
+
+## Master-prompt progress — Part 2 remainder (same day, second pass)
+
+New subsystems, all covered by `npm run check:pro` (193 assertions, chained into `build`):
+- 2.1 Q/W trim-to-playhead, Shift+Delete ripple, [ ] slip, Alt+, / . roll (`timelineOps.ts`)
+- 2.2 custom bezier ease + curve editor (`curves.ts`, `CurveEditor.tsx`). On-canvas keyframe drag was already shipped (record mode).
+- 2.3 lift/gamma/gain wheels, .cube LUTs, histogram/waveform/vectorscope (`color.ts`, Pro tools → Scopes)
+- 2.4 auto-ducking (the same gain in preview and export), BS.1770 LUFS maths, loudnorm on MP4 export. Timeline waveforms were already shipped.
+- 2.5 text presets, captions from a transcript, 9:16 social-UI safe guide
+- 2.6 blend modes, chroma key with spill
+- 2.7 markers (M, ; '), snapping, "All sizes" export queue. **Video proxies NOT done**; photo proxies are done.
+- 2.8 / 2.10: the Studio already used Library's PackBrowser; the timeline is now a drop target (files + resource cards).
+- 2.9 suggestions with preview → accept (`suggestions.ts`)
+- 2.11 12 new agent ops; the component recordSec cap of 6 s is removed
+- 2.12 AI rewrites with a labelled rule-based fallback
+- 2.15 device mockups · 2.16 product-photo presets · 2.17 auto grade · 2.18 kinetic words · 2.19 collage ·
+  2.20 testimonial grid (placeholders only; export blocks unfilled ones) · 2.21 before/after · 2.22 logo reveals ·
+  2.23 build-from-assets (product/startup/business)
+- 1.4 track reorder: verified as already shipped. 1.8: added 1 s / 4 s backoff; the rest was verified as already shipped.
+- Part 4: `resourceLinks.ts` licence check (blocks CapCut/DaFont/paid marketplaces/social posts; GitHub licence lookup; rights confirmation for unknown sources; Credits on the doc)
+
+Still open: video proxies; real Whisper word timestamps for captions (the API accepts `words`, but voice:transcribe returns text only);
+Windows hardware pass for 1.10/2.24; web-only Arena capture paths still use same-origin iframes.
+
+## Session: proxies, timed captions, Arena sandbox, component director
+- **2.7 Video proxies**:
+  - `electron/proxies.cjs` defines the rules: 540p, GOP 12, cached by path, size and mtime.
+  - `media:proxy` / `media:proxyDelete` IPC.
+  - `src/lib/studio/proxy.ts` auto-makes proxies on import (Auto/Always/Off).
+  - The preview draws `previewVideo`; export always reads the original.
+  - Controls live in the Inspector "Preview proxy" box.
+  - `check:proxies` runs a real FFmpeg transcode.
+- **Auto-captions with timing**:
+  - `voice:transcribeMedia` extracts audio with FFmpeg, then runs Whisper `-ml 1 -sow -oj`, which gives per-word timing.
+  - The fallback, Windows Speech, gives per-phrase timing, and the UI says so.
+  - `src/lib/studio/autoCaptions.ts` maps source time to timeline time through trim and speed.
+  - `check:captions`. Whisper itself has not been run here (no model can be downloaded in the sandbox).
+- **Arena web capture sandboxed**:
+  - `openSandboxedScene()` in `htmlTemplateCapture.ts` is now the only way to create an iframe.
+  - The thumbnail (`browserMedia.ts`) and browser render (`render.ts`) both use it.
+  - `inlineBlobAssets()` inlines the zip assets.
+  - `check:sandbox` fails if any other file creates an iframe.
+- **Component director**:
+  - `src/lib/studio/componentDirector.ts` decides when, which, how and where from the text cues. It emits `addComponent` ops.
+  - It's surfaced as a suggestion and in the Pro tools "Smart components" section.
+  - `check:director`.
+- The real-machine checklist is in `HARDWARE_TEST_PLAN.md`.
+
+## Editor upgrades batch (formats · context menu · scenes/variables · events/API · auto-edit · Phone Studio)
+Studied openvideodev/react-video-editor and sambowenhughes/a-react-video-editor (no code copied; ideas re-implemented on Cupric's pure doc model).
+- Formats: 4:5 feed, 720p–2160p (Ultra HD), channel presets (`formats.ts`) with length warnings.
+- Per-clip context menu + hotkeys (copy/cut/paste/duplicate/split/arrange/flip/hide/mute/lock) — `clipActions.ts`, `ClipContextMenu.tsx`. Locked clips refuse with a reason.
+- Output pass `resolve.ts` (hidden, muted, `{{variables}}`) shared by preview + export.
+- Scenes + Variables panels (`scenes.ts`); event bus `studioEvents.ts`; scripting API `window.cupricStudio` (`studioApi.ts`), mutations go through validated ops.
+- Auto-edit (`autoEdit.ts`, pure): beat detection + snap cuts, tighten speech (fillers/pauses), smart reframe, pacing. Analysis via WebAudio/canvas in `autoEditAnalysis.ts`.
+- Phone Studio (`phone.ts`): coloured frame/bezel/island mockup, 6 motions, product/lock-screen/social animated screens, screenshot scroll; ProPanel section + `phoneDesign` agent op. Ratings/likes are blank unless typed by the user.
+- Check: `npm run check:editor-upgrades` (141 assertions).
+Hardware follow-up: verify beat analysis on long MP3s and reframe on real 4K footage on Windows.
+
+## Session: import / tracking / physics / reach / reskin (commits 38e2c58 → HEAD)
+
+**Done, with checks passing:**
+- **Multi-file ZIP import** (`check:source-project`, 38 assertions):
+  - Chapter maps become one named clip per chapter; scene components become overlays; keyframe arrays become Studio keyframes.
+  - The audio engine maps to the audio track; WebGL/particle scenes map to a background layer; palette, fps, duration and fonts go to the doc.
+  - An unknown project shape gets an explicit refusal message.
+- **Object-tracked masks** (`check:mask-track`): per-frame tracking.
+- **Physics:** real Rapier physics layers (`check:physics`). 3D_SPEC status has been corrected.
+- **Resource reach** (`check:resource-reach`):
+  - `electron/resource-context.cjs` searches every non-font, non-voice pack (1661 items across 16 packs) and gives each scene a beat.
+  - Beats: opener → mesh/particles; stat → count-up; testimonial/logo → marquee/stagger; gallery → native scroll; CTA → magnetic/spotlight.
+  - Each scene gets a background, main and accent layer. The candidate prompt carries the scene plan.
+- **UI library pack** (`resources/packs/ui-libraries.json`, carried through by build-packs):
+  - Mantine (128 items, MIT) plus Pixel Perfect UI (301) and Sora UI (7). Pixel Perfect and Sora UI have no verified license, so they are link-only.
+- **The 8 SaaS primitives** now all exist as Lab components: bento-grid and mesh-gradient were added, and both are in `resources/ui-lab/registry.json`.
+- **Editor:**
+  - Slide trim (Alt+[ / Alt+]).
+  - Nested sequences: Scenes → "Nest at playhead"; flattened in `resolveForOutput`, so preview and export agree.
+  - Already present: scopes, proxies, ripple/roll/slip, and the multi-aspect export queue.
+- **Voice:**
+  - Offline Whisper, falling back to Windows Speech.
+  - A spoken brief now needs a yes (spoken or clicked) before a job starts.
+- **Reskin:**
+  - Geist Variable UI font, Mantine heading scale, sheen surfaces (`.cu-panel`), restyled Button/Card/EmptyState/Segmented/nav, and Library/Autonomous/Studio headers.
+  - Documented in DESIGN.md.
+
+**Still open (be honest with users):**
+- **Voice** still needs a hands-on pass on Windows hardware (see HARDWARE_TEST_PLAN.md).
+- **Nested sequences:**
+  - A sequence clip has no dedicated inspector (placement uses the generic fields).
+  - The nested content is a snapshot of the saved scene. Use "Overwrite" on the scene to refresh it.
+- **Export queue:** runs jobs in sequence in the renderer, not in a separate background process.
+- **Reskin:**
+  - The shared primitives and headers are restyled.
+  - Many one-off inline class strings in the Studio sub-panels still use the older flat look.
+  - It has not been visually checked, because there is no headless browser in the sandbox.
+- **Optional ideas not started:** speed ramping UI, one-click repurpose, TTS voiceover, Brand Kit panel, batch variants.
+  - Auto-captions already exist.
+
+## Session: finder, essentials, creative tools, Studio panel reskin
+
+- **Resource Finder** (`src/lib/resourceFinder.ts`, `check:finder`):
+  - Lives at the top of the pack browser.
+  - Takes a plain-language description and maps it to intents, with stemming and one-typo fuzzy matching.
+  - Searches all 17 packs, returns results in a fixed order with at most 6 per pack, and explains every match.
+- **Essentials pack:**
+  - Framer Motion, GSAP, Inter, Geist, Satoshi, Simple Icons, Logo.dev, Lucide.
+  - Also Fontsource, Phosphor, Tabler, unDraw, LottieFiles, Pexels, Mixkit, Coolors.
+  - Every entry carries its url and license. The curated file is carried through by build-packs.
+- **Bugs fixed:**
+  - Duplicate PanelUI ids (panelui-index ×3, panelui-icons ×2).
+  - 21 ambiguous background names; chrome variants are now labelled "(app chrome)".
+  - `check:resources` now enforces unique ids.
+- **Creative tools** (`src/lib/studio/creativeTools.ts`, `StudioCreativePanel.tsx`, `check:creative`):
+  - Speed ramps: 5 presets with continuous source footage; later clips on the track ripple.
+  - Repurpose reframe: text size is held against the short side, and text is kept in the safe area. "All sizes" now uses it.
+  - Brand Kit: colours, font and logo on the project. Text colour is picked for contrast, the logo is stamped once, and the background changes only when asked.
+  - Simple Icons: logo lookup via the CDN (online only).
+  - Batch variants: saved as scenes, with an "Export every scene" batch.
+  - Offline TTS voiceover (`electron/tts.cjs`, IPC `voice:tts`): Windows SAPI, macOS `say`, eSpeak NG. Text goes in via env/stdin only.
+- **Studio panel reskin:** new `.cu-section`, `.cu-input` and `.cu-chip` classes applied across Inspector, ClipProFields, ProPanel, Timeline and drawers; the side drawers have gradient surfaces.
+
+**Open:**
+- **TTS:** not run on real OS voices here (no Windows/macOS in the sandbox). The command shapes are tested.
+- **Visuals:** no visual review of the reskin (no headless browser).
+- **Scene batch:** the "Export every scene" batch renders one scene after another in the renderer.
+
+## Agent kit (ObsidianUI + smarter component use)
+- `src/lab/obsidian/`: `ob-flip-text`, `ob-text-stream`, `ob-click-spark`, `ob-marquee-band` — Cupric re-implementations of ObsidianUI (MIT, gitlab.com/Atharvsinh-codez/ObsidianUI) ideas, pure functions of the stage clock. V-Prism / Liquid Metal were skipped (three.js + postprocessing + GLTF; framecn shaders already cover the look). The rest of ObsidianUI is shadcn UI or web-only interaction (hover, drag, scroll).
+- `src/lab/propConfigs.ts`: the ONE prop registry (framecn + ob). Every non-shader component gets a universal `fontFamily` prop; `FramecnStage` applies it with scoped CSS that keeps monospace text mono.
+- Agent: `setComponentProps` op (edit words/colours/font inside a placed component, re-records); `addComponent.track`; category-aware default motion (self-animating components only fade); `addText` without motion eases on/off; `INTENT_PICKS` + `COMPONENT_USE` lead the catalogue by intent; prompt has COMPONENT PLAYBOOK, TYPOGRAPHY & COLOUR, SMOOTHNESS sections.
+- Check: `npm run check:agent-kit`.
+
+## v0.10.0 — motion-board set
+- `src/lab/obsidian/board.tsx`: mb-chart-morph, mb-masked-type, mb-elastic-type, mb-shutter-reveal, mb-search-results.
+  These are Cupric originals written after a user-pasted motion board. That board had no licence, so no code, fonts or images were copied.
+  All share `cycleAt(t)` (forward 2.2 s → hold 4.4 s → return 1.4 s, pure).
+- The agent prompt (main.cjs) now teaches that timing grammar. Intent picks include the mb-* slugs, and check-agent-kit covers them.
+- Not yet built from the board: button→player, card→workspace, tabs, dashboard zoom, dock, glass lens, spring stack, text reflow, perspective, flowing paths, particle logo.

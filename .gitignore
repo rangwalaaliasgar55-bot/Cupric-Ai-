@@ -7,3 +7,22 @@ release/
 # Generated pack mirror only — main tracks public/resources/README.md and the
 # avatars pulled by `npm run resources:sync`, so do not ignore the whole tree.
 public/resources/packs/
+# Offline Whisper (npm run whisper:fetch) — binaries and models, ~60 MB+
+vendor/whisper/*
+!vendor/whisper/.gitkeep
+# Check-script scratch bundles
+.*-check.mjs
+.undo-audit-check.mjs
+.pro-features-check.mjs
+.proxies-check.mjs
+.auto-captions-check.mjs
+.component-director-check.mjs
+.editor-upgrades-check.mjs
+.source-project-check.mjs
+.mask-track-check.mjs
+.physics-check.mjs
+.check-resource-finder.mjs
+.check-creative-tools.mjs
+.check-shapes-cursor-3d.mjs
+.check-framecn-fonts.mjs
+.check-agent-kit.mjs

@@ -4,8 +4,8 @@
   "license": "MIT",
   "vendoredAt": "2026-09-26",
   "vendoredInto": "src/lab/components",
-  "total": 190,
-  "vendoredCount": 190,
+  "total": 192,
+  "vendoredCount": 192,
   "categories": [
     {
       "id": "buttons",
@@ -1985,6 +1985,28 @@
       "previewScale": 0.65,
       "vendored": true,
       "file": "src/lab/components/signature-pad.tsx"
+    },
+    {
+      "slug": "bento-grid",
+      "name": "Bento grid",
+      "category": "cards",
+      "description": "Feature tiles of mixed sizes build in one after another, then their accent glows drift so the grid keeps breathing.",
+      "keywords": "bento grid features tiles saas",
+      "previewScale": 0.8,
+      "vendored": true,
+      "file": "src/lab/components/bento-grid.tsx",
+      "origin": "cupric"
+    },
+    {
+      "slug": "mesh-gradient",
+      "name": "Mesh gradient",
+      "category": "cards",
+      "description": "Soft colour blobs drift on slow co-prime orbits behind a headline — an opener/hero backdrop that never visibly loops.",
+      "keywords": "mesh gradient hero opener background drift",
+      "previewScale": 0.8,
+      "vendored": true,
+      "file": "src/lab/components/mesh-gradient.tsx",
+      "origin": "cupric"
     }
   ]
 }

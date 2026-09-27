@@ -1,0 +1,2026 @@
+{
+  "id": "framecn",
+  "name": "framecn — video captions, type, transitions, scenes, shaders",
+  "description": "112 video components from framecn.dev (MIT), vendored into src/lab/framecn. Captions, kinetic typography, transitions, full product scenes and WebGL shader backgrounds; each records into the Studio with editable props.",
+  "version": "0.10.0",
+  "source": "https://www.framecn.dev/docs/components",
+  "license": "MIT (framecn); shaders via @paper-design/shaders-react (Apache-2.0)",
+  "items": [
+    {
+      "id": "fc-ai-generate-overlay",
+      "kind": "component",
+      "name": "AI Generate Overlay",
+      "description": "Source image blurs under a shimmering dot grid and a pulsing 'Generating…' pill before a new image fades in.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/ai-generate-overlay"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-ai-generation-canvas",
+      "kind": "component",
+      "name": "AI Generation Canvas",
+      "description": "A prompt input transforms into a header, then a skeleton dashboard flips into populated cards.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/ai-generation-canvas"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-animated-bar-chart",
+      "kind": "component",
+      "name": "Animated Bar Chart",
+      "description": "Bars spring up from the baseline in a staggered cascade.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/animated-bar-chart"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-animated-line-chart",
+      "kind": "component",
+      "name": "Animated Line Chart",
+      "description": "Line chart whose SVG path draws on from left to right with a leading dot.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/animated-line-chart"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-backdrop",
+      "kind": "component",
+      "name": "Backdrop",
+      "description": "Layout wrapper providing a background fill with optional padding, radius, and shadow.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/backdrop"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-blur-out-up",
+      "kind": "component",
+      "name": "Blur Out Up",
+      "description": "Words blur and drift upward while fading out, staggered per word.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/blur-out-up"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-blur-reveal",
+      "kind": "component",
+      "name": "Blur Reveal",
+      "description": "Text fades in from a heavy blur into sharp focus.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/blur-reveal"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-bottom-up-letters",
+      "kind": "component",
+      "name": "bottom-up-letters",
+      "description": "",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/bottom-up-letters"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-bounding-box-selector",
+      "kind": "component",
+      "name": "Bounding Box Selector",
+      "description": "Figma-style selection rectangle appears around any element.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/bounding-box-selector"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-browser-flow",
+      "kind": "component",
+      "name": "Browser Flow",
+      "description": "Full Safari/Chrome simulation: typed URL, progress bar, page render, scroll, and a virtual cursor click.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/browser-flow"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-caption-clip-wipe",
+      "kind": "component",
+      "name": "Caption Clip Wipe",
+      "description": "Words reveal left-to-right via clip-path; keywords turn gold on speak; the group exits with a wipe.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-clip-wipe"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-editorial-emphasis",
+      "kind": "component",
+      "name": "Caption Editorial Emphasis",
+      "description": "Headline-style captions that emphasise specific words using accent colors and weight shifts.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-editorial-emphasis"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-emoji-pop",
+      "kind": "component",
+      "name": "Caption Emoji Pop",
+      "description": "Captions with emoji that pop in alongside words.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-emoji-pop"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-glitch-rgb",
+      "kind": "component",
+      "name": "Caption Glitch RGB",
+      "description": "Captions with a glitchy RGB-split effect on each word.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-glitch-rgb"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-gradient-fill",
+      "kind": "component",
+      "name": "Caption Gradient Fill",
+      "description": "Captions where words fill with a horizontal gradient from left to right.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-gradient-fill"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-highlight",
+      "kind": "component",
+      "name": "Caption Highlight",
+      "description": "Word-by-word captions with an accent-colored highlight background that sweeps in behind each spoken word.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-highlight"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-kinetic-slam",
+      "kind": "component",
+      "name": "Caption Kinetic Slam",
+      "description": "Dynamic word-by-word captions: each word pops in with a springy scale/opacity entrance, then drops out in an overlapping ripple.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-kinetic-slam"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-matrix-decode",
+      "kind": "component",
+      "name": "Caption Matrix Decode",
+      "description": "Matrix-style green text decodes from blur to sharp on each word.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-matrix-decode"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-neon-accent",
+      "kind": "component",
+      "name": "Caption Neon Accent",
+      "description": "Captions where words glow with a bright neon accent border and subtle glow.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-neon-accent"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-neon-glow",
+      "kind": "component",
+      "name": "Caption Neon Glow",
+      "description": "Captions with a neon glow effect on each word.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-neon-glow"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-parallax-layers",
+      "kind": "component",
+      "name": "Caption Parallax Layers",
+      "description": "Multi-layer captions where background and foreground words move at different depths, creating a parallax depth effect.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-parallax-layers"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-particle-burst",
+      "kind": "component",
+      "name": "Caption Particle Burst",
+      "description": "Captions where each word explodes into particles as it exits.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-particle-burst"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-pill-karaoke",
+      "kind": "component",
+      "name": "Caption Pill Karaoke",
+      "description": "Karaoke-style captions where each word sits inside a pill-shaped background.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-pill-karaoke"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-texture",
+      "kind": "component",
+      "name": "Caption Texture",
+      "description": "Captions filled with a rich gradient texture that animates across words.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-texture"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-caption-weight-shift",
+      "kind": "component",
+      "name": "Caption Weight Shift",
+      "description": "Font weight animates from 100 to 900 when each word is spoken, back to thin after.",
+      "data": {
+        "category": "captions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/caption-weight-shift"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "captions"
+      ]
+    },
+    {
+      "id": "fc-chat-to-preview-layout",
+      "kind": "component",
+      "name": "Chat to Preview Layout",
+      "description": "Two-column layout where chat shrinks and preview expands.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/chat-to-preview-layout"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-chromatic-aberration-wipe",
+      "kind": "component",
+      "name": "Chromatic Aberration Wipe",
+      "description": "An ultra-fast slide transition with an RGB glitch on the peak frames.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/chromatic-aberration-wipe"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-code-accordion",
+      "kind": "component",
+      "name": "Code Accordion",
+      "description": "A code window that springs a range of lines closed and replaces them with a \"N lines collapsed\" placeholder.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/code-accordion"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-code-diff-wipe",
+      "kind": "component",
+      "name": "Code Diff Wipe",
+      "description": "Before/after code reveal via clip-path wipe with a handle marker.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/code-diff-wipe"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-confetti",
+      "kind": "component",
+      "name": "Confetti",
+      "description": "Deterministic CSS-animated particle burst celebration effect.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/confetti"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-cursor-flow",
+      "kind": "component",
+      "name": "Cursor Flow",
+      "description": "A realistic mouse that arcs along cubic Bezier paths, pauses, and clicks targets that dip in response.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/cursor-flow"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-dashboard-populate",
+      "kind": "component",
+      "name": "Dashboard Populate",
+      "description": "An empty dashboard cascades to life with KPI count-ups, bar bounces, line traces, and a donut fill.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/dashboard-populate"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-data-flow-pipes",
+      "kind": "component",
+      "name": "Data Flow Pipes",
+      "description": "Glowing data packets travel along SVG bezier pipes between system nodes, leaving fading trails.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/data-flow-pipes"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-device-mockup-zoom",
+      "kind": "component",
+      "name": "Device Mockup Zoom",
+      "description": "Pull back from a UI to reveal it inside a device frame.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/device-mockup-zoom"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-directional-wipe",
+      "kind": "component",
+      "name": "Directional Wipe",
+      "description": "Slide one scene in while pushing the other out.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/directional-wipe"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-drag-and-drop-flow",
+      "kind": "component",
+      "name": "Drag and Drop Flow",
+      "description": "Simulated file drag into a dropzone followed by upload progress.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/drag-and-drop-flow"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-dynamic-grid",
+      "kind": "component",
+      "name": "Dynamic Grid",
+      "description": "Subtle moving grid background with configurable cell size and direction.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/dynamic-grid"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-ecosystem-constellation",
+      "kind": "component",
+      "name": "Ecosystem Constellation",
+      "description": "A central logo orbited by integration satellites with pulsing data lines.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/ecosystem-constellation"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-fade-through",
+      "kind": "component",
+      "name": "fade-through",
+      "description": "",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/fade-through"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-focus-blur-resolve",
+      "kind": "component",
+      "name": "Focus Blur Resolve",
+      "description": "Text resolves into focus from a blurred, shifted state, then blurs back out on exit.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/focus-blur-resolve"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-frosted-glass-wipe",
+      "kind": "component",
+      "name": "Frosted Glass Wipe",
+      "description": "Elegant scene transition through a sliding pane of frosted glass.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/frosted-glass-wipe"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-glass-code-block",
+      "kind": "component",
+      "name": "Glass Code Block",
+      "description": "A premium frosted-glass code editor window with a regex tokenizer and line-by-line stagger reveal.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/glass-code-block"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-grid-pixelate-wipe",
+      "kind": "component",
+      "name": "Grid Pixelate Wipe",
+      "description": "Dissolve from one scene to the next through a deterministic grid of mask cells.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/grid-pixelate-wipe"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-hero-device-assemble",
+      "kind": "component",
+      "name": "Hero Device Assemble",
+      "description": "Floating device layers spring together into a laptop or phone mockup, then the screen wakes with a shimmer.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/hero-device-assemble"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-image-expand-to-fullscreen",
+      "kind": "component",
+      "name": "Image Expand To Fullscreen",
+      "description": "An image lifts out of a feed post and morphs into a fullscreen editor with toolbars sliding in.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/image-expand-to-fullscreen"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-infinite-bento-pan",
+      "kind": "component",
+      "name": "Infinite Bento Pan",
+      "description": "A camera diagonally drifts across an oversized bento grid behind a soft vignette.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/infinite-bento-pan"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-infinite-marquee",
+      "kind": "component",
+      "name": "Infinite Marquee",
+      "description": "Seamlessly looping horizontal text strip with optional stroke style.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/infinite-marquee"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-inline-highlight",
+      "kind": "component",
+      "name": "Inline Highlight",
+      "description": "Animates one word inside a sentence from a base color to a brand color.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/inline-highlight"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-kinetic-type-mask",
+      "kind": "component",
+      "name": "Kinetic Type Mask",
+      "description": "Use giant typography as a window into the next scene.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/kinetic-type-mask"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-landing-code-showcase",
+      "kind": "component",
+      "name": "Landing Code Showcase",
+      "description": "Magical split-screen: code types itself on the left while the preview reactively re-renders on the right with sparks and tactile bounce.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/landing-code-showcase"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-line-by-line-slide",
+      "kind": "component",
+      "name": "line-by-line-slide",
+      "description": "",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/line-by-line-slide"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-live-code-compilation",
+      "kind": "component",
+      "name": "Live Code Compilation",
+      "description": "Split-screen where typed code on the left snaps a live UI preview on the right, HMR-style.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/live-code-compilation"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-logo-enter",
+      "kind": "component",
+      "name": "Logo Enter",
+      "description": "Row of overlapping logo circles that spring in one by one.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/logo-enter"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-marker-highlight",
+      "kind": "component",
+      "name": "Marker Highlight",
+      "description": "Colored marker block draws behind a phrase as the text color shifts.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/marker-highlight"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-mask-reveal-up",
+      "kind": "component",
+      "name": "mask-reveal-up",
+      "description": "",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/mask-reveal-up"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-masked-slide-reveal",
+      "kind": "component",
+      "name": "Masked Slide Reveal",
+      "description": "Words slide up out of an invisible horizontal mask, one after another.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/masked-slide-reveal"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-matrix-decode",
+      "kind": "component",
+      "name": "Matrix Decode",
+      "description": "Random scramble resolves left-to-right into the target text.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/matrix-decode"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-mesh-gradient-bg",
+      "kind": "component",
+      "name": "Mesh Gradient Background",
+      "description": "Living gradient with amorphous color blobs slowly drifting across the frame.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/mesh-gradient-bg"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-micro-scale-fade",
+      "kind": "component",
+      "name": "micro-scale-fade",
+      "description": "",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/micro-scale-fade"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-morphing-modal",
+      "kind": "component",
+      "name": "Morphing Modal",
+      "description": "A bento card lifts off the grid and blooms into a full-screen modal driven by a single heavy spring.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/morphing-modal"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-per-character-rise",
+      "kind": "component",
+      "name": "Per Character Rise",
+      "description": "Characters rise from below with a smooth spring-like easing, staggered one frame apart.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/per-character-rise"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-per-word-crossfade",
+      "kind": "component",
+      "name": "per-word-crossfade",
+      "description": "",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/per-word-crossfade"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-perspective-marquee",
+      "kind": "component",
+      "name": "Perspective Marquee",
+      "description": "A 3D-tilted infinite marquee with depth-of-field blur on items rolling toward the horizon.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/perspective-marquee"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-pipeline-journey",
+      "kind": "component",
+      "name": "Pipeline Journey",
+      "description": "A Kanban ticket arcs across columns triggering landings and a final confetti burst.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/pipeline-journey"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-pricing-tier-focus",
+      "kind": "component",
+      "name": "Pricing Tier Focus",
+      "description": "Three pricing cards where the focused tier rises and brightens while siblings dim and blur.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/pricing-tier-focus"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-product-launch-trailer",
+      "kind": "component",
+      "name": "Product Launch Trailer",
+      "description": "Cinematic Product Hunt teaser: pulsing logo, zoom-through transition, 3D bento fly-over, and a confetti version drop.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/product-launch-trailer"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-progress-steps",
+      "kind": "component",
+      "name": "Progress Steps",
+      "description": "Multi-step pipeline with sequentially activating nodes and filling lines.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/progress-steps"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-pulsing-indicator",
+      "kind": "component",
+      "name": "Pulsing Indicator",
+      "description": "Continuous pulsing dot with ping ring for loading or live states.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/pulsing-indicator"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-rgb-glitch-text",
+      "kind": "component",
+      "name": "RGB Glitch Text",
+      "description": "Three RGB-offset text copies jitter for a brief glitch window.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/rgb-glitch-text"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-scale-down-fade",
+      "kind": "component",
+      "name": "Scale Down Fade",
+      "description": "Text enters scaling down into place with a fade, then shrinks and fades out.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/scale-down-fade"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-shader-color-panels",
+      "kind": "component",
+      "name": "Shader Color Panels",
+      "description": "Overlapping translucent color panels sliding past each other.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-color-panels"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-dithering",
+      "kind": "component",
+      "name": "Shader Dithering",
+      "description": "Ordered-dither shading over an animated gradient field.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-dithering"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-dot-orbit",
+      "kind": "component",
+      "name": "Shader Dot Orbit",
+      "description": "Dots orbiting on concentric paths across the frame.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-dot-orbit"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-god-rays",
+      "kind": "component",
+      "name": "Shader God Rays",
+      "description": "Volumetric light rays radiating from an off-screen source.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-god-rays"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-grain-gradient",
+      "kind": "component",
+      "name": "Shader Grain Gradient",
+      "description": "Grainy multi-stop gradient that drifts slowly with film-grain texture over the blend.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-grain-gradient"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-liquid-metal",
+      "kind": "component",
+      "name": "Shader Liquid Metal",
+      "description": "Molten metallic surface with flowing specular highlights.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-liquid-metal"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-mesh-gradient",
+      "kind": "component",
+      "name": "Shader Mesh Gradient",
+      "description": "WebGL mesh gradient backdrop driven per-frame for deterministic Editframe renders.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-mesh-gradient"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-metaballs",
+      "kind": "component",
+      "name": "Shader Metaballs",
+      "description": "Organic blobs merging and splitting like lava.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-metaballs"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-neuro-noise",
+      "kind": "component",
+      "name": "Shader Neuro Noise",
+      "description": "Organic neural-web noise field that slowly morphs.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-neuro-noise"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-perlin-noise",
+      "kind": "component",
+      "name": "Shader Perlin Noise",
+      "description": "Classic Perlin noise clouds drifting across the frame.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-perlin-noise"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-pulsing-border",
+      "kind": "component",
+      "name": "Shader Pulsing Border",
+      "description": "Glowing border frame that pulses around the edges.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-pulsing-border"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-simplex-noise",
+      "kind": "component",
+      "name": "Shader Simplex Noise",
+      "description": "Simplex noise flow field, smoother than Perlin.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-simplex-noise"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-smoke-ring",
+      "kind": "component",
+      "name": "Shader Smoke Ring",
+      "description": "Soft smoke ring curling and dissipating in place.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-smoke-ring"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-spiral",
+      "kind": "component",
+      "name": "Shader Spiral",
+      "description": "Rotating spiral arms radiating from the center.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-spiral"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-swirl",
+      "kind": "component",
+      "name": "Shader Swirl",
+      "description": "Concentric bands swirling around a center point.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-swirl"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-voronoi",
+      "kind": "component",
+      "name": "Shader Voronoi",
+      "description": "Animated Voronoi cells shifting and re-tessellating.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-voronoi"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-warp",
+      "kind": "component",
+      "name": "Shader Warp",
+      "description": "Domain-warped color field that folds and stretches like liquid.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-warp"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shader-water",
+      "kind": "component",
+      "name": "Shader Water",
+      "description": "Caustic water-surface ripples with subtle refraction.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-water"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-shared-axis-y",
+      "kind": "component",
+      "name": "shared-axis-y",
+      "description": "",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shared-axis-y"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-shared-axis-z",
+      "kind": "component",
+      "name": "shared-axis-z",
+      "description": "",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shared-axis-z"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-shimmer-sweep",
+      "kind": "component",
+      "name": "Shimmer Sweep",
+      "description": "Light shine sweeps across muted text via background-clip:text.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shimmer-sweep"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-short-slide-right",
+      "kind": "component",
+      "name": "short-slide-right",
+      "description": "",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/short-slide-right"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-simulated-cursor",
+      "kind": "component",
+      "name": "Simulated Cursor",
+      "description": "Animated mouse cursor moving between waypoints with click ripple feedback.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/simulated-cursor"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-slot-machine-roll",
+      "kind": "component",
+      "name": "Slot Machine Roll",
+      "description": "Vertical reel scrolls characters from one value to another.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/slot-machine-roll"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-soft-blur-in",
+      "kind": "component",
+      "name": "soft-blur-in",
+      "description": "",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/soft-blur-in"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-spatial-push",
+      "kind": "component",
+      "name": "Spatial Push",
+      "description": "A new scene physically presses the old one back into the frame.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/spatial-push"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-spotlight-card",
+      "kind": "component",
+      "name": "Spotlight Card",
+      "description": "A card with a moonlight-cool radial spotlight that follows a synthetic cursor and lights up its microborder.",
+      "data": {
+        "category": "shaders",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/spotlight-card"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "shaders"
+      ]
+    },
+    {
+      "id": "fc-spring-pop-in",
+      "kind": "component",
+      "name": "Spring Pop In",
+      "description": "Elastic spring-driven scale-in wrapper for any child element.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/spring-pop-in"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-spring-scale-in",
+      "kind": "component",
+      "name": "spring-scale-in",
+      "description": "",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/spring-scale-in"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-staggered-bento-grid",
+      "kind": "component",
+      "name": "Staggered Bento Grid",
+      "description": "Cards pop into a bento grid one after another with a spring.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/staggered-bento-grid"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-staggered-fade-up",
+      "kind": "component",
+      "name": "Staggered Fade Up",
+      "description": "Words fade in and slide up one after another with a configurable delay.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/staggered-fade-up"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-strikethrough-replace",
+      "kind": "component",
+      "name": "Strikethrough Replace",
+      "description": "Draws a strike line across old text then reveals new text in its place.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/strikethrough-replace"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-success-confetti",
+      "kind": "component",
+      "name": "Success Confetti",
+      "description": "Deterministic seeded confetti burst with optional headline.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/success-confetti"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-swipe-transition-wipe",
+      "kind": "component",
+      "name": "Swipe Transition Wipe",
+      "description": "Two scenes laid out side-by-side flick across the screen with a parallax background and a darkening outgoing layer.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/swipe-transition-wipe"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    },
+    {
+      "id": "fc-terminal-simulator",
+      "kind": "component",
+      "name": "Terminal Simulator",
+      "description": "Terminal window that types out commands and rolls old lines off the top.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/terminal-simulator"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-terminal-to-browser-deploy",
+      "kind": "component",
+      "name": "Terminal to Browser Deploy",
+      "description": "A CLI deploy completes, the terminal blurs back, and a browser window springs from the deploy URL.",
+      "data": {
+        "category": "scenes",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/terminal-to-browser-deploy"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "scenes"
+      ]
+    },
+    {
+      "id": "fc-text-fade-replace",
+      "kind": "component",
+      "name": "Text Fade Replace",
+      "description": "Cross-fades between two strings on the same line without layout shift.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/text-fade-replace"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-toast-notification",
+      "kind": "component",
+      "name": "Toast Notification",
+      "description": "System-style toast pops in, holds, then slides out.",
+      "data": {
+        "category": "motion",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/toast-notification"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "motion"
+      ]
+    },
+    {
+      "id": "fc-top-down-letters",
+      "kind": "component",
+      "name": "Top Down Letters",
+      "description": "Letters animate in from top to bottom.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/top-down-letters"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-tracking-in",
+      "kind": "component",
+      "name": "Tracking In",
+      "description": "Letter-spacing collapses and blur clears with a springy motion.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/tracking-in"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-typewriter",
+      "kind": "component",
+      "name": "Typewriter",
+      "description": "Character-by-character text reveal with a deterministic blinking cursor.",
+      "data": {
+        "category": "text",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/typewriter"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "text"
+      ]
+    },
+    {
+      "id": "fc-zoom-through-transition",
+      "kind": "component",
+      "name": "Zoom Through Transition",
+      "description": "Aggressively scale into the center of an element.",
+      "data": {
+        "category": "transitions",
+        "license": "MIT",
+        "attribution": "framecn — https://github.com/shadcn-labs/framecn",
+        "upstream": "https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/zoom-through-transition"
+      },
+      "tags": [
+        "component",
+        "framecn",
+        "video",
+        "transitions"
+      ]
+    }
+  ]
+}

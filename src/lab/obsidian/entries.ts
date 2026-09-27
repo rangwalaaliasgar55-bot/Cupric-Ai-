@@ -1,0 +1,13 @@
+// Metadata for the ObsidianUI-inspired components (see ./LICENSE). Kept apart from
+// configs.ts so the lab registry stays metadata-only.
+export const OBSIDIAN_ENTRIES = [
+  { slug: 'ob-flip-text', component: 'FlipText', name: 'Flip text', category: 'motion', description: 'Every letter flips on its X axis in a sine-staggered wave, then holds long enough to read.', keywords: 'obsidianui kinetic typography 3d flip letters title hook' },
+  { slug: 'ob-text-stream', component: 'TextStream', name: 'Text stream', category: 'motion', description: 'A small caps prefix over an endless stream of words that steps one by one, the active word in your accent.', keywords: 'obsidianui rotating words we build hook headline cycle list ticker' },
+  { slug: 'ob-click-spark', component: 'ClickSpark', name: 'Click spark', category: 'motion', description: 'Radial spark bursts on a fixed beat, transparent, to lay over a button press or cursor click.', keywords: 'obsidianui click burst sparkle tap effect overlay cursor press' },
+  { slug: 'ob-marquee-band', component: 'MarqueeBand', name: 'Marquee band', category: 'motion', description: 'Tilted tape bands of repeating phrases scrolling forever, one crossing the other.', keywords: 'obsidianui marquee ticker tape scrolling banner launch loop' },
+  { slug: 'mb-chart-morph', component: 'ChartMorph', name: 'Chart morph', category: 'motion', description: 'Bars narrow into a line drawn through their tops, then the final value lands in a badge. Same data, second read.', keywords: 'motion board chart bars line graph data stats growth morph numbers' },
+  { slug: 'mb-masked-type', component: 'MaskedType', name: 'Masked type', category: 'text', description: 'Colour rises through the letter shapes of one big word while a subline slides up out of a mask.', keywords: 'motion board masked text fill knockout title hero headline reveal' },
+  { slug: 'mb-elastic-type', component: 'ElasticType', name: 'Elastic type', category: 'text', description: 'Letters stretch tall and narrow from a locked baseline, peaking at the centre letter.', keywords: 'motion board elastic stretch variable type kinetic title hook' },
+  { slug: 'mb-shutter-reveal', component: 'ShutterReveal', name: 'Shutter reveal', category: 'transitions', description: 'Vertical slats retract in a stagger to uncover the art, then a badge lands.', keywords: 'motion board shutter blinds image reveal product drop launch' },
+  { slug: 'mb-search-results', component: 'SearchResults', name: 'Search to results', category: 'scenes', description: 'A search pill opens, the query types itself, and result cards stage in one by one: an app-demo moment.', keywords: 'motion board search bar typing results app demo product ui walkthrough' },
+] as const

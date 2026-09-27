@@ -15,9 +15,12 @@ import { registrySources } from './sources'
 import { ensureDocFonts } from './fonts'
 import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { getIpc, isDesktop } from '../bridge'
-import { audioGainAt, clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
+import { resolveForOutput } from './resolve'
+import { clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
+import { mixGainAt } from './audioMix'
 import { getMedia, overlayImage } from './media'
 import { stickerFrame } from './lottie'
+import { ensurePhysicsFor } from './physics'
 import { drawableElement, drawStudioFrame, type FrameSources } from './renderer'
 
 export type ExportOptions = {
@@ -78,7 +81,8 @@ function rampGain(ctx: AudioContext, el: HTMLMediaElement, value: number) {
   gain.gain.linearRampToValueAtTime(value, now + 0.02)
 }
 
-export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}): Promise<ExportResult> {
+export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = {}): Promise<ExportResult> {
+  const doc = resolveForOutput(editDoc)
   const duration = docDuration(doc)
   if (duration <= 0) throw new Error('Nothing to export — the timeline is empty.')
   if (typeof MediaRecorder === 'undefined') throw new Error('This browser cannot record video (MediaRecorder missing).')
@@ -86,10 +90,12 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   // Fonts chosen from Resources are downloaded on demand; wait for them so the
   // export never bakes the fallback face into the video.
   await ensureDocFonts(doc).catch(() => [])
+  // Physics layers must never be baked as the loading placeholder.
+  await ensurePhysicsFor(doc)
   await document.fonts?.ready.catch(() => undefined)
 
   const scale = options.scale ?? 1
-  const [fullW, fullH] = sizeForAspect(doc.aspect)
+  const [fullW, fullH] = sizeForAspect(doc.aspect, doc.resolution)
   const width = Math.round((fullW * scale) / 2) * 2
   const height = Math.round((fullH * scale) / 2) * 2
 
@@ -100,6 +106,8 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   if (!ctx) throw new Error('Could not create a 2D canvas context for export.')
 
   const videoClips = doc.clips.filter((c): c is StudioMediaClip => c.kind === 'video')
+  // Export reads the ORIGINAL files (2.7): silence any preview proxy first.
+  for (const clip of videoClips) getMedia(clip.mediaId)?.previewVideo?.pause()
   const audioClips = doc.clips.filter((c): c is StudioAudioClip => c.kind === 'audio')
 
   // — audio mix —
@@ -210,7 +218,7 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
           if (el.paused) void el.play().catch(() => undefined)
           // Ramp instead of assign: stepping gain once per frame is audible as
           // zipper noise, and a fade is exactly where it would be heard.
-          if (audioCtx) rampGain(audioCtx, el, audioGainAt(clip, elapsed))
+          if (audioCtx) rampGain(audioCtx, el, mixGainAt(doc, clip, elapsed))
         } else {
           if (audioCtx) rampGain(audioCtx, el, 0)
           if (!el.paused) el.pause()
@@ -265,6 +273,7 @@ export async function convertToMp4(
   blob: Blob,
   fileName: string,
   fps: number,
+  loudnessTarget: number | null = null,
 ): Promise<{ outputPath: string; bytes: number }> {
   const ipc = getIpc()
   if (!isDesktop() || !ipc) throw new Error('MP4 conversion needs the desktop app (FFmpeg runs in the main process).')
@@ -273,6 +282,7 @@ export async function convertToMp4(
     bytes: new Uint8Array(buffer),
     fileName,
     fps,
+    loudnessTarget,
   })
   return result
 }
@@ -283,7 +293,8 @@ export function canExportMp4(): boolean {
 }
 
 /** Single PNG still of the composition at `t` — used for thumbnails/posters. */
-export function captureStill(doc: StudioDoc, t: number, maxWidth = 640): string | null {
+export function captureStill(editDoc: StudioDoc, t: number, maxWidth = 640): string | null {
+  const doc = resolveForOutput(editDoc)
   const [fullW, fullH] = sizeForAspect(doc.aspect)
   const scale = Math.min(1, maxWidth / fullW)
   const canvas = document.createElement('canvas')

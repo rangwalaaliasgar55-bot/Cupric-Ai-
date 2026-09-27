@@ -118,7 +118,8 @@ packs.push({
     ...mod.GRADIENT_PRESETS.map((g) => ({
       id: `chrome-${g.id}`,
       kind: 'background',
-      name: g.name,
+      // Same names as stage backgrounds — label them so lists aren't ambiguous.
+      name: `${g.name} (app chrome)`,
       description: 'App-chrome gradient (stage and thumbnails only).',
       css: g.css,
       data: { group: 'chrome', studio: false },
@@ -223,8 +224,10 @@ try {
     version: VERSION,
     source: `${panel.source} (${panel.package} ${panel.upstreamVersion}, ${panel.platform})`,
     license: panel.license,
-    items: panel.entries.map((entry) => ({
-      id: `panelui-${entry.slug}`,
+    items: panel.entries.map((entry, _i, all) => ({
+      // Slugs like `index` repeat across groups: keep the first id stable and
+      // qualify later ones by group so every id is unique (React keys, apply).
+      id: all.findIndex((e) => e.slug === entry.slug) === _i ? `panelui-${entry.slug}` : `panelui-${entry.group}-${entry.slug}`,
       kind: 'saas-template',
       name: entry.name,
       description: `${entry.description || `PanelUI ${entry.group} entry`} · editable Cupric-native storyboard`,
@@ -499,6 +502,52 @@ try {
   })
 } catch {
   console.warn('resources/skiper/catalog.json not readable — skipping Skiper UI')
+}
+
+// Curated link-only UI library index (Mantine, Pixel Perfect UI, Sora UI).
+// Hand-maintained in resources/packs/ui-libraries.json — carried through as-is
+// so regenerating packs never drops it.
+try {
+  packs.push(JSON.parse(await readFile(path.join(outDir, 'ui-libraries.json'), 'utf8')))
+} catch {
+  console.warn('resources/packs/ui-libraries.json not readable — skipping the UI libraries pack')
+}
+
+// Hand-picked free essentials (libraries, fonts, icons, media) — curated file.
+try {
+  packs.push(JSON.parse(await readFile(path.join(outDir, 'essentials.json'), 'utf8')))
+} catch {
+  console.warn('resources/packs/essentials.json not readable — skipping Essentials')
+}
+
+// Motion kit — fonts, Javis.jl concepts (curated file).
+try {
+  packs.push(JSON.parse(await readFile(path.join(outDir, 'motion-kit.json'), 'utf8')))
+} catch {
+  console.warn('resources/packs/motion-kit.json not readable — skipping Motion kit')
+}
+
+// framecn (MIT) video components — vendored + recorded like lab components.
+try {
+  const fc = JSON.parse(await readFile(path.join(root, 'src', 'lab', 'framecn', 'entries.json'), 'utf8'))
+  packs.push({
+    id: 'framecn',
+    name: 'framecn — video captions, type, transitions, scenes, shaders',
+    description: `${fc.count} video components from framecn.dev (MIT), vendored into src/lab/framecn. Captions, kinetic typography, transitions, full product scenes and WebGL shader backgrounds; each records into the Studio with editable props.`,
+    version: VERSION,
+    source: fc.source,
+    license: 'MIT (framecn); shaders via @paper-design/shaders-react (Apache-2.0)',
+    items: fc.entries.map((e) => ({
+      id: e.slug,
+      kind: 'component',
+      name: e.name,
+      description: e.description,
+      data: { category: e.category, license: 'MIT', attribution: `framecn — ${fc.repo}`, upstream: `${fc.repo}/tree/main/registry/bases/editframe/components/${e.dir}` },
+      tags: ['component', 'framecn', 'video', e.category],
+    })),
+  })
+} catch {
+  console.warn('src/lab/framecn/entries.json not readable — skipping the framecn pack')
 }
 
 // The vendored lab components are listed from their generated registry.

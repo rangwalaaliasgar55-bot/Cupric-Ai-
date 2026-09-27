@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { VIDEO_FONT_FAMILIES, VIDEO_FONTS, fontInfo } from '../../lib/studio/videoFonts'
 import {
   CAMERA_RECIPES,
   EMPHASIS_RECIPES,
@@ -26,18 +27,26 @@ import type {
   StudioTextClip,
 } from '../../types/project'
 import { Button } from '../../components/Button'
+import { ClipProFields } from './ClipProFields'
+import { CurveEditor } from './CurveEditor'
+import { FontStudio, useUserFonts } from './FontStudio'
+import { FramecnFields, CursorFields, RichTextFields, ShapeFields, ThreeDFields } from './InspectorExtras'
 import { STUDIO_BACKGROUNDS } from '../../lib/studio/backgrounds'
 import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/transitions'
 import { GLASS_PRESETS } from '../../lib/glass'
 import { STICKERS } from '../../lib/studio/lottie'
 import { hasMedia, registerFile } from '../../lib/studio/media'
 
-import { findComponent } from '../../lib/studio/components'
+import { clampRecordSec, findComponent, MAX_RECORD_SEC } from '../../lib/studio/components'
 import { applyResource } from '../../lib/studio/resourceApply'
 import { cx } from '../../lib/utils'
+import { CHANNEL_PRESETS, matchingPreset, presetLabel, presetWarnings } from '../../lib/studio/formats'
+import { docDuration, sizeForAspect } from '../../lib/studio/doc'
+import { applyTrack, sourceFrameMap, trackBox, trackSummary } from '../../lib/studio/maskTrack'
+import { sampleLumaFrames } from '../../lib/studio/autoEditAnalysis'
 
 /** Values of the built-in Font options; anything else came from Resources → Fonts. */
-const BUNDLED_FONT_VALUES = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
+const BUNDLED_FONT_VALUES = VIDEO_FONT_FAMILIES
 
 type Props = {
   doc: StudioDoc
@@ -62,7 +71,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 const inputCx =
-  'w-full rounded-lg border border-line bg-panel-alt px-2.5 py-1.5 text-base text-text placeholder:text-muted/60'
+  'w-full cu-input px-2.5 py-1.5 text-base text-text placeholder:text-muted/60'
 
 
 /**
@@ -86,7 +95,7 @@ function Disclosure({
   defaultOpen?: boolean
 }) {
   return (
-    <details open={defaultOpen} className="group rounded-lg border border-line bg-panel-alt/40 open:bg-panel-alt/70">
+    <details open={defaultOpen} className="group cu-section">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2">
         <span className="flex items-center gap-2 text-xs font-medium text-text">
           {label}
@@ -148,8 +157,8 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
         </div>
 
         <Field label="Aspect">
-          <div className="grid grid-cols-3 gap-1.5">
-            {(['9:16', '1:1', '16:9'] as const).map((aspect) => (
+          <div className="grid grid-cols-4 gap-1.5">
+            {(['9:16', '4:5', '1:1', '16:9'] as const).map((aspect) => (
               <button
                 key={aspect}
                 type="button"
@@ -165,6 +174,49 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
               </button>
             ))}
           </div>
+        </Field>
+
+        <Field label="Channel preset">
+          <select
+            className="w-full cu-input px-2.5 py-1.5 text-sm text-text"
+            value={matchingPreset(doc)?.id ?? ''}
+            onChange={(e) => {
+              const p = CHANNEL_PRESETS.find((x) => x.id === e.target.value)
+              if (p) onPatchDoc({ aspect: p.aspect, resolution: p.resolution, fps: p.fps })
+            }}
+          >
+            <option value="">Custom</option>
+            {(['Social', 'Video', 'Ultra HD'] as const).map((g) => (
+              <optgroup key={g} label={g}>
+                {CHANNEL_PRESETS.filter((p) => p.group === g).map((p) => <option key={p.id} value={p.id}>{presetLabel(p)}</option>)}
+              </optgroup>
+            ))}
+          </select>
+          {(() => {
+            const p = matchingPreset(doc)
+            const warn = p ? presetWarnings(p, docDuration(doc)) : []
+            return warn.map((w) => <p key={w} className="mt-1 text-xs text-muted">{w}</p>)
+          })()}
+        </Field>
+
+        <Field label="Resolution">
+          <div className="grid grid-cols-4 gap-1.5">
+            {(['720p', '1080p', '1440p', '2160p'] as const).map((res) => (
+              <button
+                key={res}
+                type="button"
+                title={sizeForAspect(doc.aspect, res).join('×')}
+                onClick={() => onPatchDoc({ resolution: res })}
+                className={cx(
+                  'rounded-lg border px-2 py-1.5 font-mono text-xs transition-colors duration-150',
+                  (doc.resolution ?? '1080p') === res ? 'border-accent bg-accent text-accent-ink' : 'border-line bg-panel-alt text-muted hover:text-text',
+                )}
+              >
+                {res === '2160p' ? '4K' : res}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 font-mono text-[11px] text-muted">Exports at {sizeForAspect(doc.aspect, doc.resolution).join('×')}</p>
         </Field>
 
         <Field label="Frame rate">
@@ -329,6 +381,10 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
       {/* What the clip IS comes first — its words, media or look — then timing,
           motion and finishing. The text box used to sit below the fold. */}
       {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
+      {clip.kind === 'text' && <RichTextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
+      {clip.kind === 'overlay' && (clip as StudioOverlayClip).component?.slug?.startsWith('fc-') && <FramecnFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
+      {clip.kind === 'shape' && <ShapeFields clip={clip} onPatch={onPatch} />}
+      {clip.kind === 'cursor' && <CursorFields clip={clip} doc={doc} onPatch={onPatch} />}
       {(clip.kind === 'video' || clip.kind === 'image') && (
         <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
       )}
@@ -337,6 +393,8 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
       {clip.kind === 'glass' && <GlassFields clip={clip as StudioGlassClip} onPatch={onPatch} />}
       {clip.kind === 'audio' && <AudioFields clip={clip as StudioAudioClip} onPatch={onPatch} />}
       {clip.kind === 'sticker' && <StickerFields clip={clip as StudioStickerClip} onPatch={onPatch} />}
+
+      <ClipProFields doc={doc} clip={clip} onPatch={onPatch} onPatchDoc={onPatchDoc} />
 
       <MotionPresetFields clip={clip} onPatch={onPatch} />
 
@@ -373,10 +431,11 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
         suffix="°"
         onChange={(v) => onPatch({ rotation: v === 0 ? undefined : v })}
       />
+      {clip.kind !== 'audio' && <ThreeDFields clip={clip} onPatch={onPatch} />}
 
       <KeyframeFields clip={clip} time={time} onPatch={onPatch} />
       <GradeFields clip={clip} onPatch={onPatch} />
-      <MaskFields clip={clip} onPatch={onPatch} />
+      <MaskFields clip={clip} onPatch={onPatch} aspect={doc.aspect} />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Transition in">
@@ -434,7 +493,7 @@ function KeyframeFields({
   const keys = clip.keyframes ?? []
   const local = Math.round((time - clip.startSec) * 100) / 100
   const withinClip = local >= 0 && local <= clip.durationSec + 0.001
-  const positioned = clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image'
+  const positioned = clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image'
 
   const currentScale =
     clip.kind === 'overlay' || clip.kind === 'sticker' ? 1 : clip.kind === 'text' ? 1 : clip.kind === 'glass' ? 1 : 1
@@ -490,7 +549,7 @@ function KeyframeFields({
                     keyframes: keys.map((k, i) => (i === index ? { ...k, ease: e.target.value as StudioKeyframe['ease'] } : k)),
                   })
                 }
-                className="rounded-md border border-line bg-panel-alt px-1.5 py-1 text-xs text-text"
+                className="cu-input px-1.5 py-1 text-xs text-text"
               >
                 <option value="linear">Linear</option>
                 <option value="ease-in">Ease in</option>
@@ -502,6 +561,7 @@ function KeyframeFields({
                 <option value="back-in">Back in — wind up, then leave</option>
                 <option value="elastic-out">Elastic — spring</option>
                 <option value="hold">Hold — step to next key</option>
+                <option value="bezier">Custom curve…</option>
               </select>
               <button
                 type="button"
@@ -512,10 +572,18 @@ function KeyframeFields({
               </button>
             </div>
           </div>
+          {key.ease === 'bezier' && index < keys.length - 1 && (
+            <CurveEditor
+              value={key.bezier ?? [0.45, 0, 0.55, 1]}
+              onChange={(bezier) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, bezier } : k)) })}
+            />
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Slider label="Opacity" value={key.opacity ?? 1} min={0} max={1} step={0.05} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, opacity: v } : k)) })} />
             <Slider label="Size" value={key.scale ?? 1} min={0.1} max={3} step={0.05} suffix="×" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, scale: v } : k)) })} />
             <Slider label="Rotation" value={key.rotation ?? 0} min={-180} max={180} step={1} suffix="°" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, rotation: v } : k)) })} />
+            <Slider label="Tilt X" value={key.tiltX ?? 0} min={-80} max={80} step={1} suffix="°" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, tiltX: v } : k)) })} />
+            <Slider label="Turn Y" value={key.turnY ?? 0} min={-80} max={80} step={1} suffix="°" onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, turnY: v } : k)) })} />
             {positioned && (
               <Slider label="X" value={key.x ?? 0.5} min={0} max={1} step={0.01} onChange={(v) => onPatch({ keyframes: keys.map((k, i) => (i === index ? { ...k, x: v } : k)) })} />
             )}
@@ -669,9 +737,32 @@ const DEFAULT_MASK: StudioMask = {
   softness: 0.25,
 }
 
-function MaskFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: Partial<StudioClip>) => void }) {
+function MaskFields({ clip, onPatch, aspect }: { clip: StudioClip; onPatch: (p: Partial<StudioClip>) => void; aspect: StudioDoc['aspect'] }) {
   const mask = clip.mask ?? null
-  const set = (patch: Partial<StudioMask>) => onPatch({ mask: { ...(mask ?? DEFAULT_MASK), ...patch } })
+  // Moving the box by hand after tracking would fight the path: editing the
+  // geometry drops the track (the status line says so) so the user re-tracks.
+  const set = (patch: Partial<StudioMask>) => onPatch({ mask: { ...(mask ?? DEFAULT_MASK), ...patch, ...(('x' in patch || 'y' in patch || 'w' in patch || 'h' in patch) && mask?.track ? { track: null } : {}) } })
+  const [tracking, setTracking] = useState<number | null>(null)
+  const [trackMsg, setTrackMsg] = useState<string | null>(null)
+  const canTrack = clip.kind === 'video' && mask && (mask.shape === 'rect' || mask.shape === 'ellipse')
+  const runTrack = async () => {
+    if (!mask || clip.kind !== 'video') return
+    setTracking(0)
+    setTrackMsg(null)
+    try {
+      const [fw, fh] = sizeForAspect(aspect)
+      const { frames, srcW, srcH } = await sampleLumaFrames(clip, 12, 192, (p) => setTracking(p))
+      const map = sourceFrameMap(clip, srcW, srcH, fw, fh)
+      const start = map.toSource({ x: mask.x, y: mask.y, w: mask.w, h: mask.h })
+      const points = trackBox(frames, start)
+      onPatch({ mask: applyTrack(mask, points, map, clip.trimInSec, clip.speed) })
+      setTrackMsg(trackSummary(points))
+    } catch (err) {
+      setTrackMsg(err instanceof Error ? err.message : 'Tracking failed.')
+    } finally {
+      setTracking(null)
+    }
+  }
 
   return (
     <Disclosure label="Mask" summary={mask ? mask.shape : 'Off'} active={Boolean(mask)}>
@@ -689,6 +780,26 @@ function MaskFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: Partial<
         </select>
       </Field>
 
+      {mask && (mask.shape === 'rect' || mask.shape === 'ellipse') && (
+        <div className="space-y-1.5 rounded-lg border border-line bg-panel-alt p-2">
+          <p className="text-[11px] font-medium text-text">Object tracking</p>
+          {clip.kind !== 'video' ? (
+            <p className="text-[11px] text-muted">Tracking follows a subject through moving footage — it needs a video clip.</p>
+          ) : (
+            <>
+              <p className="text-[11px] text-muted">Put the box around the subject at the clip's first frame, then track. The mask follows it through the clip.</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Button size="sm" variant="outline" disabled={!canTrack || tracking !== null} onClick={runTrack}>
+                  {tracking !== null ? `Tracking… ${tracking}%` : mask.track?.length ? 'Track again' : 'Track subject'}
+                </Button>
+                {mask.track?.length ? <Button size="sm" variant="ghost" onClick={() => { onPatch({ mask: { ...mask, track: null } }); setTrackMsg('Tracking removed — the mask is static again.') }}>Clear tracking</Button> : null}
+              </div>
+              {mask.track?.length ? <p className="text-[11px] text-accent">Following a {mask.track.length}-point path. Moving the box by hand clears it.</p> : null}
+              {trackMsg && <p className="text-[11px] text-muted">{trackMsg}</p>}
+            </>
+          )}
+        </div>
+      )}
       {mask && (mask.shape === 'rect' || mask.shape === 'ellipse') && (
         <div className="grid grid-cols-2 gap-2">
           <Slider label="X" value={mask.x} min={-0.5} max={1} step={0.01} onChange={(v) => set({ x: v })} />
@@ -784,6 +895,7 @@ function StickerFields({ clip, onPatch }: { clip: StudioStickerClip; onPatch: (p
 }
 
 function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const userFonts = useUserFonts()
   const textRef = useRef<HTMLTextAreaElement>(null)
   // A freshly added text clip is ready to type into straight away.
   useEffect(() => {
@@ -806,23 +918,28 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
         />
       </Field>
 
-      <Field label="Font" hint="Six fonts ship with the app; any Google font from Resources → Fonts downloads once and is embedded in exports.">
+      <Field label="Font" hint={fontInfo(clip.fontFamily ?? 'Inter Variable') ? `${fontInfo(clip.fontFamily ?? 'Inter Variable')!.bestFor}. Tip: ${fontInfo(clip.fontFamily ?? 'Inter Variable')!.customize}` : 'Downloaded from Resources → Fonts; embedded in exports.'}>
         <select
           value={clip.fontFamily ?? 'Inter Variable'}
           onChange={(e) => onPatch({ fontFamily: e.target.value } as Partial<StudioClip>)}
           className={inputCx}
         >
-          <option value="Inter Variable">Inter — versatile sans</option>
-          <option value="Manrope Variable">Manrope — modern editorial</option>
-          <option value="DM Sans Variable">DM Sans — clean social</option>
-          <option value="Space Grotesk Variable">Space Grotesk — geometric tech</option>
-          <option value="Playfair Display Variable">Playfair Display — cinematic serif</option>
-          <option value="JetBrains Mono Variable">JetBrains Mono — technical</option>
-          {clip.fontFamily && !BUNDLED_FONT_VALUES.has(clip.fontFamily) && (
+          {(['caption', 'headline', 'display', 'emphasis', 'body', 'mono'] as const).map((role) => (
+            <optgroup key={role} label={{ caption: 'Captions', headline: 'Headlines', display: 'Impact / display', emphasis: 'Serif & emphasis', body: 'Body & lower thirds', mono: 'Numbers & code' }[role]}>
+              {VIDEO_FONTS.filter((f) => f.role === role).map((f) => <option key={f.family} value={f.family}>{f.label} — {f.bestFor.split(',')[0]}</option>)}
+            </optgroup>
+          ))}
+          {userFonts.length > 0 && (
+            <optgroup label="Your fonts">
+              {userFonts.map((f) => <option key={f} value={f}>{f}</option>)}
+            </optgroup>
+          )}
+          {clip.fontFamily && !BUNDLED_FONT_VALUES.has(clip.fontFamily) && !userFonts.includes(clip.fontFamily) && (
             <option value={clip.fontFamily}>{clip.fontFamily} — from Resources</option>
           )}
         </select>
       </Field>
+      <FontStudio clip={clip} onPatch={onPatch} />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Animation">
@@ -900,6 +1017,22 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
         />
       </Field>
 
+      <Field label="Text legibility" hint="Auto adds a soft backing only when the picture behind the text is too dark, too light or too busy to read.">
+        <select
+          value={clip.legibility ?? 'auto'}
+          onChange={(e) => onPatch({ legibility: e.target.value as StudioTextClip['legibility'] } as Partial<StudioClip>)}
+          className={inputCx}
+          aria-label="Text legibility"
+        >
+          <option value="auto">Auto</option>
+          <option value="on">Always back the text</option>
+          <option value="off">Off</option>
+        </select>
+      </Field>
+      {(clip.legibility ?? 'auto') !== 'off' && (
+        <Slider label="Backing strength" value={clip.scrimStrength ?? 0.55} min={0} max={1} step={0.05} onChange={(v) => onPatch({ scrimStrength: v } as Partial<StudioClip>)} />
+      )}
+
       <Field label="Align">
         <div className="grid grid-cols-3 gap-1.5">
           {(['left', 'center', 'right'] as const).map((align) => (
@@ -957,7 +1090,7 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
           <input
             ref={relinkRef}
             type="file"
-            accept="video/*,image/*"
+            accept="video/*,image/*,.heic,.heif"
             className="hidden"
             onChange={(e) => void relink(e.target.files?.[0])}
           />
@@ -1186,11 +1319,24 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
           </div>
           <div className="grid grid-cols-2 gap-2">
             <Field label="Record length">
-              <select value={meta.recordSec} onChange={(e) => rerecord({ recordSec: Number(e.target.value) })} className={inputCx} disabled={busy} aria-label="Record length">
-                {[2, 3, 4, 6, 8, 10].map((sec) => (
-                  <option key={sec} value={sec}>{sec}s</option>
-                ))}
-              </select>
+              <input
+                key={`${clip.id}:${meta.recordSec}`}
+                type="number"
+                min={0.5}
+                max={MAX_RECORD_SEC}
+                step={0.5}
+                defaultValue={meta.recordSec}
+                onBlur={(e) => {
+                  const next = clampRecordSec(e.target.value, meta.recordSec)
+                  if (next !== meta.recordSec) rerecord({ recordSec: next })
+                  else e.target.value = String(meta.recordSec)
+                }}
+                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                className={inputCx}
+                disabled={busy}
+                aria-label="Record length in seconds"
+                title={`Type any length from 0.5 to ${MAX_RECORD_SEC} seconds, then press Enter to record again`}
+              />
             </Field>
             <Field label="Performance">
               <select value={meta.interact ? 'act' : 'watch'} onChange={(e) => rerecord({ interact: e.target.value === 'act' })} className={inputCx} disabled={busy} aria-label="Performance">
@@ -1251,7 +1397,7 @@ function MotionPresetFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: 
               type="button"
               title={preset.hint}
               onClick={() => apply({ ...preset.spec })}
-              className="rounded-lg border border-line bg-panel-alt/60 px-2 py-1.5 text-left text-xs leading-tight text-text transition-colors hover:border-accent/60 hover:bg-accent/10"
+              className="cu-chip px-2 py-1.5 text-left text-xs leading-tight text-text"
             >
               <span className="block font-medium">{preset.label}</span>
               <span className="block truncate text-[10px] text-muted">{preset.hint}</span>

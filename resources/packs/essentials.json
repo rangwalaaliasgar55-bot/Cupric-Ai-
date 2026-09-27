@@ -1,0 +1,410 @@
+{
+  "id": "essentials",
+  "name": "Essentials — libraries, fonts, icons, media",
+  "description": "Hand-picked free resources: animation libraries (Framer Motion, GSAP), fonts (Inter, Geist, Satoshi, Fontsource), icons and logos (Simple Icons, Logo.dev, Lucide, Phosphor, Tabler), illustrations, Lottie, stock media and palettes. Each entry links to the original with its license.",
+  "version": "0.10.0",
+  "source": "curated",
+  "license": "Per item (see each entry)",
+  "items": [
+    {
+      "id": "framer-motion",
+      "kind": "source",
+      "name": "Framer Motion (Motion)",
+      "description": "Best-in-class React animation library: springs, layout animation, gestures, scroll-linked motion. Already powers Cupric's own UI.",
+      "data": {
+        "url": "https://www.framer.com/motion/",
+        "license": "MIT",
+        "provider": "Framer Motion (Motion)",
+        "attribution": "Framer Motion (Motion) — https://www.framer.com/motion/",
+        "use": "animation",
+        "intake": "reference",
+        "promptCue": "Animate with springs and layout transitions; stagger children 40–80ms; prefer transform/opacity.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "essentials",
+        "animation",
+        "motion",
+        "library",
+        "spring",
+        "react",
+        "framer"
+      ]
+    },
+    {
+      "id": "gsap",
+      "kind": "source",
+      "name": "GSAP + React",
+      "description": "Professional timeline animation engine with ScrollTrigger, SplitText and useGSAP for React — the alternative to Framer Motion for choreographed sequences.",
+      "data": {
+        "url": "https://gsap.com/",
+        "license": "GSAP Standard ‘no charge’ license (free, incl. plugins)",
+        "provider": "GSAP + React",
+        "attribution": "GSAP + React — https://gsap.com/",
+        "use": "animation",
+        "intake": "reference",
+        "promptCue": "Choreograph scenes as one timeline with labelled beats; use ScrollTrigger-style progress mapped to time.",
+        "sourceKind": "source"
+      },
+      "tags": [
+        "essentials",
+        "animation",
+        "gsap",
+        "timeline",
+        "scrolltrigger",
+        "splittext",
+        "library"
+      ]
+    },
+    {
+      "id": "font-inter",
+      "kind": "source",
+      "name": "Inter",
+      "description": "Neutral, highly legible UI sans with variable weight. Bundled in Cupric (Inter Variable).",
+      "data": {
+        "url": "https://fonts.google.com/specimen/Inter",
+        "license": "SIL OFL 1.1",
+        "provider": "Inter",
+        "attribution": "Inter — https://fonts.google.com/specimen/Inter",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Use Inter for UI captions and body copy; 500–600 weight for labels.",
+        "sourceKind": "font"
+      },
+      "tags": [
+        "essentials",
+        "font",
+        "typeface",
+        "sans",
+        "ui",
+        "bundled",
+        "inter"
+      ]
+    },
+    {
+      "id": "font-geist",
+      "kind": "source",
+      "name": "Geist",
+      "description": "Vercel's modern geometric sans — Cupric's UI face (Geist Variable, bundled).",
+      "data": {
+        "url": "https://vercel.com/font",
+        "license": "SIL OFL 1.1",
+        "provider": "Geist",
+        "attribution": "Geist — https://vercel.com/font",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Use Geist for SaaS headlines with tight tracking (−2%).",
+        "sourceKind": "font"
+      },
+      "tags": [
+        "essentials",
+        "font",
+        "typeface",
+        "sans",
+        "display",
+        "bundled",
+        "geist",
+        "vercel"
+      ]
+    },
+    {
+      "id": "font-satoshi",
+      "kind": "source",
+      "name": "Satoshi",
+      "description": "Crisp modernist grotesk from Indian Type Foundry, free on Fontshare. Link-only: install locally, then pick it by name in Studio.",
+      "data": {
+        "url": "https://www.fontshare.com/fonts/satoshi",
+        "license": "ITF Free Font License (free personal + commercial use)",
+        "provider": "Satoshi",
+        "attribution": "Satoshi — https://www.fontshare.com/fonts/satoshi",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Use Satoshi for bold, friendly startup headlines.",
+        "sourceKind": "font"
+      },
+      "tags": [
+        "essentials",
+        "font",
+        "typeface",
+        "sans",
+        "display",
+        "satoshi",
+        "fontshare"
+      ]
+    },
+    {
+      "id": "simple-icons",
+      "kind": "source",
+      "name": "Simple Icons",
+      "description": "3,000+ free SVG brand logos (GitHub, Stripe, Figma…). Cupric can drop any of them into Studio from the Brand Kit panel.",
+      "data": {
+        "url": "https://simpleicons.org/",
+        "license": "CC0-1.0 (logos remain their owners’ trademarks)",
+        "provider": "Simple Icons",
+        "attribution": "Simple Icons — https://simpleicons.org/",
+        "use": "icons",
+        "intake": "reference",
+        "promptCue": "Show partner/brand logos as a slow marquee in one flat colour; never alter the marks.",
+        "sourceKind": "icon"
+      },
+      "tags": [
+        "essentials",
+        "icons",
+        "logo",
+        "logos",
+        "brand",
+        "brands",
+        "svg",
+        "company",
+        "marquee"
+      ]
+    },
+    {
+      "id": "logo-dev",
+      "kind": "source",
+      "name": "Logo.dev",
+      "description": "Logo API: fetch any company's logo by domain (free tier needs a key and attribution). Link-only.",
+      "data": {
+        "url": "https://logo.dev/",
+        "license": "Logo.dev terms — free tier with attribution",
+        "provider": "Logo.dev",
+        "attribution": "Logo.dev — https://logo.dev/",
+        "use": "icons",
+        "intake": "reference",
+        "promptCue": "Fetch customer logos by domain for ‘trusted by’ rows.",
+        "sourceKind": "icon"
+      },
+      "tags": [
+        "essentials",
+        "icons",
+        "logo",
+        "logos",
+        "brand",
+        "company",
+        "api",
+        "domain"
+      ]
+    },
+    {
+      "id": "lucide",
+      "kind": "source",
+      "name": "Lucide Icons",
+      "description": "Clean, consistent open-source icon set — already bundled in Cupric and used across the app.",
+      "data": {
+        "url": "https://lucide.dev/",
+        "license": "ISC",
+        "provider": "Lucide Icons",
+        "attribution": "Lucide Icons — https://lucide.dev/",
+        "use": "icons",
+        "intake": "reference",
+        "promptCue": "Use 1.5–2px stroke icons at 20–24px next to feature labels.",
+        "sourceKind": "icon"
+      },
+      "tags": [
+        "essentials",
+        "icons",
+        "icon",
+        "svg",
+        "lucide",
+        "bundled",
+        "ui"
+      ]
+    },
+    {
+      "id": "fontsource",
+      "kind": "source",
+      "name": "Fontsource",
+      "description": "Self-hosted npm packages for 1,500+ open fonts — how Cupric bundles fonts so preview and export never need the network.",
+      "data": {
+        "url": "https://fontsource.org/",
+        "license": "MIT (fonts under their own open licenses)",
+        "provider": "Fontsource",
+        "attribution": "Fontsource — https://fontsource.org/",
+        "use": "font",
+        "intake": "reference",
+        "promptCue": "Prefer variable fonts from Fontsource for offline-safe rendering.",
+        "sourceKind": "font"
+      },
+      "tags": [
+        "essentials",
+        "font",
+        "fonts",
+        "typeface",
+        "npm",
+        "self-hosted",
+        "variable"
+      ]
+    },
+    {
+      "id": "phosphor-icons",
+      "kind": "source",
+      "name": "Phosphor Icons",
+      "description": "Flexible icon family in six weights (thin → fill, duotone).",
+      "data": {
+        "url": "https://phosphoricons.com/",
+        "license": "MIT",
+        "provider": "Phosphor Icons",
+        "attribution": "Phosphor Icons — https://phosphoricons.com/",
+        "use": "icons",
+        "intake": "reference",
+        "promptCue": "Use duotone icons for friendly feature grids.",
+        "sourceKind": "icon"
+      },
+      "tags": [
+        "essentials",
+        "icons",
+        "icon",
+        "svg",
+        "duotone",
+        "weights"
+      ]
+    },
+    {
+      "id": "tabler-icons",
+      "kind": "source",
+      "name": "Tabler Icons",
+      "description": "5,000+ free MIT stroke icons.",
+      "data": {
+        "url": "https://tabler.io/icons",
+        "license": "MIT",
+        "provider": "Tabler Icons",
+        "attribution": "Tabler Icons — https://tabler.io/icons",
+        "use": "icons",
+        "intake": "reference",
+        "promptCue": "Use for dense dashboards and data scenes.",
+        "sourceKind": "icon"
+      },
+      "tags": [
+        "essentials",
+        "icons",
+        "icon",
+        "svg",
+        "stroke"
+      ]
+    },
+    {
+      "id": "undraw",
+      "kind": "source",
+      "name": "unDraw",
+      "description": "Free, colour-customisable open illustrations for explainer scenes.",
+      "data": {
+        "url": "https://undraw.co/",
+        "license": "unDraw License (free, no attribution required)",
+        "provider": "unDraw",
+        "attribution": "unDraw — https://undraw.co/",
+        "use": "images",
+        "intake": "reference",
+        "promptCue": "Tint illustrations to the brand accent; one per scene.",
+        "sourceKind": "image"
+      },
+      "tags": [
+        "essentials",
+        "illustration",
+        "images",
+        "svg",
+        "explainer",
+        "free"
+      ]
+    },
+    {
+      "id": "lottiefiles",
+      "kind": "source",
+      "name": "LottieFiles (free animations)",
+      "description": "Huge library of free Lottie animations — Cupric imports .json Lottie files into Studio.",
+      "data": {
+        "url": "https://lottiefiles.com/free-animations",
+        "license": "Lottie Simple License (free animations)",
+        "provider": "LottieFiles (free animations)",
+        "attribution": "LottieFiles (free animations) — https://lottiefiles.com/free-animations",
+        "use": "animation",
+        "intake": "reference",
+        "promptCue": "Use a small Lottie accent (check, confetti, arrow) at beat changes.",
+        "sourceKind": "animation"
+      },
+      "tags": [
+        "essentials",
+        "animation",
+        "lottie",
+        "icons",
+        "motion",
+        "free"
+      ]
+    },
+    {
+      "id": "pexels-videos",
+      "kind": "source",
+      "name": "Pexels Videos",
+      "description": "Free stock video and photos for b-roll.",
+      "data": {
+        "url": "https://www.pexels.com/videos/",
+        "license": "Pexels License (free, no attribution required)",
+        "provider": "Pexels Videos",
+        "attribution": "Pexels Videos — https://www.pexels.com/videos/",
+        "use": "media",
+        "intake": "reference",
+        "promptCue": "Use 3–5s b-roll behind stats and quotes; darken 30% for legibility.",
+        "sourceKind": "media"
+      },
+      "tags": [
+        "essentials",
+        "video",
+        "stock",
+        "b-roll",
+        "footage",
+        "photos",
+        "images",
+        "free"
+      ]
+    },
+    {
+      "id": "mixkit",
+      "kind": "source",
+      "name": "Mixkit",
+      "description": "Free stock video clips, music tracks and sound effects.",
+      "data": {
+        "url": "https://mixkit.co/",
+        "license": "Mixkit License (free)",
+        "provider": "Mixkit",
+        "attribution": "Mixkit — https://mixkit.co/",
+        "use": "media",
+        "intake": "reference",
+        "promptCue": "Pick music by BPM to match cuts; add a whoosh on transitions.",
+        "sourceKind": "media"
+      },
+      "tags": [
+        "essentials",
+        "video",
+        "music",
+        "sfx",
+        "sound",
+        "audio",
+        "stock",
+        "free"
+      ]
+    },
+    {
+      "id": "coolors",
+      "kind": "source",
+      "name": "Coolors",
+      "description": "Fast colour-palette generator — build a palette, then paste it into the Brand Kit.",
+      "data": {
+        "url": "https://coolors.co/",
+        "license": "Free tool",
+        "provider": "Coolors",
+        "attribution": "Coolors — https://coolors.co/",
+        "use": "design",
+        "intake": "reference",
+        "promptCue": "Use 1 accent + 2 neutrals + 1 support colour.",
+        "sourceKind": "design"
+      },
+      "tags": [
+        "essentials",
+        "color",
+        "colour",
+        "palette",
+        "brand",
+        "design"
+      ]
+    }
+  ]
+}

@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { recoveryInfo } from '../lib/projectHistory'
 import { AskPanel } from './AskPanel'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
@@ -35,6 +37,19 @@ const SCREENS = {
 
 export function AppLayout() {
   const view = useProjectStore((s) => s.view)
+  const pushToast = useProjectStore((s) => s.pushToast)
+
+  // Crash recovery (2.26): say so when the last session ended badly or the
+  // project file had to be restored from an autosave.
+  useEffect(() => {
+    void recoveryInfo().then((info) => {
+      if (info.recoveredFrom) {
+        pushToast('info', 'Your project file was damaged, so Cupric restored the most recent autosave. Earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'state-recovered' })
+      } else if (info.previousSessionCrashed) {
+        pushToast('info', 'Cupric did not close cleanly last time. Your work was autosaved — if anything is missing, restore an earlier version from Ask → Settings → Version history.', { sticky: true, id: 'unclean-exit' })
+      }
+    })
+  }, [pushToast])
 
   return (
     <div className="relative flex h-full overflow-hidden text-text">
