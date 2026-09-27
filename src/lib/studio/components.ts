@@ -112,13 +112,13 @@ export function withComponent(doc: StudioDoc, slug: string, opts: Parameters<typ
 
 /**
  * Clip scale that shows a recorded component at a legible, crisp size: the
- * frame is treated as a 540-CSS-pixel-wide screen (so UI reads at ~2× in
- * 1080p), capped to 80% of the frame. `pixelRatio` is the capture scale.
+ * frame's short side is treated as a 380-CSS-pixel screen (a widget is the
+ * hero of its clip, so it reads at ~2.8× in 1080p), capped to 80% of the frame. `pixelRatio` is the capture scale.
  */
 export function fitComponentScale(imgW: number, imgH: number, pixelRatio: number, aspect: StudioAspect): number {
   if (!(imgW > 0 && imgH > 0)) return 0.8
   const [W, H] = sizeForAspect(aspect)
-  const k = Math.min(W, H) / 540
+  const k = Math.min(W, H) / 380
   const cssW = imgW / Math.max(0.5, pixelRatio)
   const cssH = imgH / Math.max(0.5, pixelRatio)
   const wantW = Math.min(W * 0.8, cssW * k)
