@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url)
 const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
 const index = JSON.parse(await readFile(new URL('resources/packs/index.json', root), 'utf8'))
 assert.equal(index.version, pkg.version, 'bundled pack index must match the application version')
-assert.equal(index.packs.length, 15, 'all 15 resource packs must be indexed')
+assert.equal(index.packs.length, 16, 'all 16 resource packs must be indexed')
 let total = 0
 for (const entry of index.packs) {
   const pack = JSON.parse(await readFile(new URL(`resources/packs/${entry.id}.json`, root), 'utf8'))
@@ -14,7 +14,7 @@ for (const entry of index.packs) {
   assert.equal(pack.items.length, entry.itemCount, `${entry.id} item count must match the index`)
   total += pack.items.length
 }
-assert.equal(total, 3081, 'the complete resource catalogue must be bundled')
+assert.equal(total, 3519, 'the complete resource catalogue must be bundled')
 const reactBits = JSON.parse(await readFile(new URL('resources/packs/react-bits.json', root), 'utf8'))
 const skiper = JSON.parse(await readFile(new URL('resources/packs/skiper-ui.json', root), 'utf8'))
 const remotion = JSON.parse(await readFile(new URL('resources/packs/remotion.json', root), 'utf8'))
@@ -33,6 +33,11 @@ assert.ok(skiper.items.every((item) => item.data?.editable && item.data?.agentUs
 assert.equal(remotion.items.filter((item) => item.id.startsWith('package-')).length, 137, 'all current Remotion packages must be indexed')
 assert.ok(remotion.items.filter((item) => item.id.startsWith('package-')).every((item) => item.kind === 'saas-template' && item.data?.editable && item.tags?.includes('license-review')), 'Remotion packages must be usable native storyboards and retain the license-review gate')
 assert.ok(remotion.items.filter((item) => item.id.startsWith('template-')).every((item) => item.kind === 'saas-template' && item.data?.editable), 'Remotion templates must be usable in Studio instead of copy-only cards')
+const uiLibs = JSON.parse(await readFile(new URL('resources/packs/ui-libraries.json', root), 'utf8'))
+for (const provider of ['mantine', 'pixel-perfect', 'sora-ui']) assert.ok(uiLibs.items.some((item) => item.data?.provider === provider), `${provider} must be registered`)
+assert.ok(uiLibs.items.every((item) => item.data?.attribution && item.data?.license && item.data?.motionRole), 'UI library entries carry attribution, license and a motion role')
+assert.ok(uiLibs.items.filter((item) => item.data?.provider !== 'mantine').every((item) => /link|not copied/i.test(item.data.license)), 'unlicensed libraries are link-only')
+assert.ok(uiLibs.items.some((item) => item.id === 'sora-ui-infinite-scrolling-images' && item.data.nativeMotion === 'scroll-driven'), 'Soralabs infinite scroll keeps its scroll-driven motion')
 const panel = JSON.parse(await readFile(new URL('resources/packs/panelui.json', root), 'utf8'))
 assert.ok(panel.items.every((item) => item.kind === 'saas-template' && item.data?.editable && item.data?.agentUsable), 'PanelUI entries must create editable native storyboards')
 

@@ -2665,6 +2665,34 @@
         "component",
         "inputs"
       ]
+    },
+    {
+      "id": "bento-grid",
+      "kind": "component",
+      "name": "Bento grid",
+      "description": "Feature tiles of mixed sizes build in one after another, then their accent glows drift so the grid keeps breathing.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
+    },
+    {
+      "id": "mesh-gradient",
+      "kind": "component",
+      "name": "Mesh gradient",
+      "description": "Soft colour blobs drift on slow co-prime orbits behind a headline — an opener/hero backdrop that never visibly loops.",
+      "data": {
+        "path": null,
+        "category": "cards"
+      },
+      "tags": [
+        "component",
+        "cards"
+      ]
     }
   ]
 }

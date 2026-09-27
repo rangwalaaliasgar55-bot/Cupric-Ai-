@@ -8,6 +8,7 @@ const { spawn } = require('child_process')
 const { GoogleGenerativeAI } = require('@google/generative-ai')
 const AdmZip = require('adm-zip')
 const { approveManualArenaGate, isManualArenaGateBlocked } = require('./automation-gate.cjs')
+const resourceContext = require('./resource-context.cjs')
 const projectHistory = require('./project-history.cjs')
 const diagnostics = require('./diagnostics.cjs')
 const encoders = require('./encoders.cjs')
@@ -801,65 +802,9 @@ function packsDir() {
   return candidates.find((dir) => dir && fs.existsSync(dir)) || ''
 }
 
-/**
- * Pick the registered components, templates and sources that actually relate to
- * this brief, so the model composes with the Lab/Resources catalogue instead of
- * inventing everything from a blank page.
- *
- * Matching is deliberately dumb (token overlap on name/description/tags): the
- * catalogue is small, and a wrong-but-plausible suggestion costs the model
- * nothing, while a missed one costs us the whole point of having a registry.
- */
+/** Resource selection by beat across every bundled pack — see electron/resource-context.cjs. */
 function automationResourceContext(brief, rundown) {
-  const dir = packsDir()
-  if (!dir) return { components: [], templates: [], sources: [], prompt: '' }
-
-  const haystack = `${brief || ''} ${rundown?.style || ''} ${(rundown?.scenes || []).map((s) => `${s.type} ${s.copy} ${s.motion}`).join(' ')}`
-  const words = Array.from(new Set(String(haystack).toLowerCase().match(/[a-z][a-z0-9-]{2,}/g) || []))
-  const STOP = new Set(['the', 'and', 'for', 'with', 'this', 'that', 'from', 'into', 'your', 'our', 'video', 'scene', 'motion', 'seconds'])
-  const terms = words.filter((w) => !STOP.has(w))
-
-  const load = (id) => {
-    try {
-      const pack = JSON.parse(fs.readFileSync(path.join(dir, `${id}.json`), 'utf8'))
-      return Array.isArray(pack?.items) ? pack.items : []
-    } catch {
-      return []
-    }
-  }
-
-  const scoreItem = (item) => {
-    const text = `${item.name} ${item.description} ${(item.tags || []).join(' ')}`.toLowerCase()
-    return terms.reduce((n, term) => (text.includes(term) ? n + 1 : n), 0)
-  }
-
-  const top = (items, limit) =>
-    items
-      .map((item) => ({ item, score: scoreItem(item) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit)
-      .filter((entry, index) => entry.score > 0 || index < Math.min(3, limit))
-      .map((entry) => entry.item)
-
-  const components = top(load('components'), 12)
-  const templates = top(load('templates'), 4)
-  const sources = top(load('sources'), 6)
-
-  const lines = []
-  if (components.length) {
-    lines.push('REGISTERED UI COMPONENTS you may re-create in HTML/CSS (from the Cupric UI Lab registry — match their behaviour, not their React code):')
-    lines.push(...components.map((c) => `- ${c.name}: ${c.description}`))
-  }
-  if (templates.length) {
-    lines.push('', 'EXISTING CUPRIC SCENE TEMPLATES whose structure is already proven to render (mirror their timing shape):')
-    lines.push(...templates.map((t) => `- ${t.name} (${t.data?.durationSec ?? '?'}s): ${t.description}`))
-  }
-  if (sources.length) {
-    lines.push('', 'HOUSE STYLE CUES from the Cupric sources catalogue:')
-    lines.push(...sources.map((s) => `- ${s.name}: ${s.data?.promptCue || s.description}`))
-  }
-
-  return { components, templates, sources, prompt: lines.join('\n') }
+  return resourceContext.automationResourceContext(brief, rundown, packsDir())
 }
 
 /**
@@ -1011,7 +956,7 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
   const resources = automationResourceContext(job?.brief, rundown)
   const basePrompt = rundown.arenaPrompt || arenaPromptOf(rundown)
   const prompt = resources.prompt
-    ? `${basePrompt}\n\nCOMPOSE WITH CUPRIC'S OWN RESOURCE LIBRARY:\n${resources.prompt}\n\nUse at least two of the registered components or templates above as structural elements of the piece, re-implemented in inline HTML/CSS/SVG.`
+    ? `${basePrompt}\n\nCOMPOSE WITH CUPRIC'S OWN RESOURCE LIBRARY:\n${resources.prompt}\n\nFollow the scene-by-scene direction: give each scene the motion its beat calls for and layer its background/main/accent resources, re-implemented in inline HTML/CSS/SVG.`
     : basePrompt
 
   const candidates = []
@@ -1092,6 +1037,8 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
       components: resources.components.map((c) => c.id),
       templates: resources.templates.map((t) => t.id),
       sources: resources.sources.map((s) => s.id),
+      scenePlan: resources.scenes.map((p) => ({ beat: p.beat, layers: Object.fromEntries(Object.entries(p.layers).map(([k, v]) => [k, v.id])) })),
+      searched: resources.searched.total,
     },
     prompt,
     attempts,

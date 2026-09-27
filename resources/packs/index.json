@@ -105,8 +105,15 @@
       "id": "components",
       "name": "Lab components",
       "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
-      "itemCount": 190,
+      "itemCount": 192,
       "bytes": 63695
+    },
+    {
+      "id": "ui-libraries",
+      "name": "UI libraries (Mantine · Pixel Perfect · Sora UI)",
+      "description": "Indexed component libraries used as pattern references by the agent, the generation prompt and Cupric's own chrome. Mantine is MIT; Pixel Perfect and Sora UI declare no license, so they are linked and attributed, never copied.",
+      "itemCount": 436,
+      "bytes": 326481
     }
   ]
 }

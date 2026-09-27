@@ -1001,6 +1001,24 @@ export const lab: LabEntry[] = [
     previewScale: 0.65,
   },
   {
+    slug: "bento-grid",
+    name: "Bento grid",
+    category: "cards",
+    description:
+      "Feature tiles of mixed sizes build in one after another, then their accent glows drift so the grid keeps breathing.",
+    keywords: "bento features grid tiles saas landing build-in reveal",
+    previewScale: 0.55,
+  },
+  {
+    slug: "mesh-gradient",
+    name: "Mesh gradient",
+    category: "cards",
+    description:
+      "Soft colour blobs drift on slow co-prime orbits behind a headline — an opener/hero backdrop that never visibly loops.",
+    keywords: "mesh gradient background hero opener aurora blobs drift ambient",
+    previewScale: 0.55,
+  },
+  {
     slug: "stat-counter",
     name: "Stat counter",
     category: "data",
