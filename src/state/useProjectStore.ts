@@ -20,6 +20,9 @@ import type {
 import { getIpc } from '../lib/bridge'
 import { webAutosave } from '../lib/projectHistory'
 import { migratePersisted, PERSIST_VERSION } from './migrate'
+import { validatePersistedState } from './projectSchema'
+import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
+import { rlog } from '../lib/log'
 import { planWithRemotionCapabilities } from '../lib/remotionResources'
 import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
@@ -55,16 +58,38 @@ function downloadBrowserRender(result: { outputPath?: string; outputName?: strin
   a.remove()
 }
 
+/** What happened on the last load — for the boot log and the repair notice. */
+const loadReport: { startedAt: number; warnings: string[]; unreadable: boolean; readError: string | null } = {
+  startedAt: 0,
+  warnings: [],
+  unreadable: false,
+  readError: null,
+}
+
 const desktopAwareStorage: StateStorage = {
   getItem: async (name) => {
+    loadReport.startedAt = performance.now()
     const ipc = getIpc()
-    if (!ipc) return window.localStorage.getItem(name)
-    const value = await ipc.invoke('state:load', { key: name })
+    let value: unknown
+    try {
+      value = ipc ? await ipc.invoke('state:load', { key: name }) : window.localStorage.getItem(name)
+    } catch (err) {
+      // A failed read must not blank the app: start empty, say so, keep the file.
+      loadReport.readError = err instanceof Error ? err.message : String(err)
+      rlog.error('project', 'project:load read failed', { error: loadReport.readError })
+      return null
+    }
     if (typeof value === 'string') {
       try {
         const parsed = JSON.parse(value)
         if (parsed && !parsed.state && Array.isArray(parsed.projects)) return JSON.stringify({ state: parsed, version: 0 })
-      } catch {}
+      } catch {
+        // Not JSON at all. zustand would throw inside hydration and leave the
+        // state half-initialised; start clean and warn instead.
+        loadReport.unreadable = true
+        rlog.error('project', 'project:load saved state is not valid JSON', { bytes: value.length })
+        return null
+      }
       return value
     }
     return value ? JSON.stringify(value) : null
@@ -423,7 +448,13 @@ export const useProjectStore = create<AppState>()(
             brandKit: { colors: ['#0B0B10', '#C8F542', '#F4F1EA'], font: 'Inter Variable', logoDataUrl: null },
           }
           recordHistory('Create project')
+          const t0 = performance.now()
           set((s) => ({ projects: [...s.projects, project], activeProjectId: id, view: 'brief' }))
+          rlog.info('project', 'project:create', {
+            projectId: id,
+            ms: Math.round((performance.now() - t0) * 10) / 10,
+            studio: { aspect: project.studio?.aspect, fps: project.studio?.fps, backgroundId: project.studio?.backgroundId, clips: 0, trackCount: project.studio?.trackCount },
+          })
           return id
         },
         duplicateProject: (id) => {
@@ -705,6 +736,40 @@ export const useProjectStore = create<AppState>()(
       version: PERSIST_VERSION,
       storage: createJSONStorage(() => desktopAwareStorage),
       migrate: (persisted, fromVersion) => migratePersisted(persisted, fromVersion) as unknown as AppState,
+      // Runs on EVERY load (migrate only runs on a version change): validate
+      // the saved shape so a bad projects.json degrades to defaults + a notice
+      // instead of crashing a screen. See state/projectSchema.ts.
+      merge: (persisted, current) => {
+        if (persisted === undefined || persisted === null) return current
+        const { state, warnings } = validatePersistedState(persisted, { backgroundIds: STUDIO_BACKGROUNDS.map((b) => b.id) })
+        loadReport.warnings = warnings
+        return { ...current, ...state }
+      },
+      onRehydrateStorage: () => (state, error) => {
+        const ms = Math.round(performance.now() - loadReport.startedAt)
+        const store = useProjectStore.getState()
+        if (error) {
+          rlog.error('project', 'project:load failed', { error: error instanceof Error ? error.message : String(error), ms })
+          store.pushToast('error', 'Your saved projects could not be loaded, so Cupric started empty. Earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'load-failed' })
+          return
+        }
+        rlog.info('project', 'project:load', {
+          ms,
+          projects: state?.projects.length ?? 0,
+          activeProjectId: state?.activeProjectId ?? null,
+          view: state?.view ?? null,
+          warnings: loadReport.warnings,
+          unreadable: loadReport.unreadable,
+        })
+        if (loadReport.unreadable || loadReport.readError) {
+          store.pushToast('error', 'Your saved projects file could not be read, so Cupric started empty. The damaged file was kept; earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'load-unreadable' })
+        }
+        if (loadReport.warnings.length) {
+          rlog.warn('project', 'project:load repaired saved data', { warnings: loadReport.warnings })
+          const [first, ...rest] = loadReport.warnings
+          store.pushToast('info', `Some saved data was repaired: ${first}${rest.length ? ` (+${rest.length} more — see the log)` : ''}`, { sticky: true, id: 'load-repaired' })
+        }
+      },
       partialize: (s) => ({
         projects: s.projects,
         activeProjectId: s.activeProjectId,

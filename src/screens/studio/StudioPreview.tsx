@@ -20,6 +20,8 @@ import { drawStudioFrame, keyframeValuesAt, measureTextBlock } from '../../lib/s
 import { docFontFamilies, ensureDocFonts, FONTS_CHANGED_EVENT } from '../../lib/studio/fonts'
 import { patchTransformKeyframe } from '../../lib/studio/keyframeEdit'
 import { registrySources } from '../../lib/studio/sources'
+import { backgroundById } from '../../lib/studio/backgrounds'
+import { rlog } from '../../lib/log'
 
 type Props = {
   doc: StudioDoc
@@ -69,11 +71,38 @@ export function StudioPreview({
 
   const [width, height] = previewSizeForAspect(doc.aspect)
 
+  // GPU safety (0.10.1): if a canvas cannot be created (GPU/driver trouble,
+  // exhausted contexts) or the renderer throws, switch to a DOM preview with a
+  // banner instead of leaving a blank or crashed Studio.
+  const [canvasProblem, setCanvasProblem] = useState<string | null>(null)
+  const canvasProblemRef = useRef<string | null>(null)
+  function failCanvas(reason: string, err?: unknown) {
+    if (canvasProblemRef.current) return
+    canvasProblemRef.current = reason
+    rlog.error('studio', 'canvas preview unavailable, using DOM preview', { reason, error: err instanceof Error ? err.message : err })
+    setCanvasProblem(reason)
+  }
+  function retryCanvas() {
+    canvasProblemRef.current = null
+    setCanvasProblem(null)
+  }
+
   // Keep video elements aligned with the timeline, then paint one frame.
   function syncAndDraw(t: number, isPlaying: boolean) {
+    if (canvasProblemRef.current) return
     const canvas = canvasRef.current
-    const ctx = canvas?.getContext('2d')
-    if (!canvas || !ctx) return
+    if (!canvas) return
+    let ctx: CanvasRenderingContext2D | null = null
+    try {
+      ctx = canvas.getContext('2d')
+    } catch (err) {
+      failCanvas('The 2D canvas could not be created.', err)
+      return
+    }
+    if (!ctx) {
+      failCanvas('The 2D canvas could not be created (graphics driver or GPU process unavailable).')
+      return
+    }
 
     for (const clip of doc.clips) {
       if (clip.kind !== 'video') continue
@@ -121,7 +150,11 @@ export function StudioPreview({
       }
     }
 
-    drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, registrySources)
+    try {
+      drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, registrySources)
+    } catch (err) {
+      failCanvas(`The canvas renderer failed: ${err instanceof Error ? err.message : String(err)}`, err)
+    }
   }
 
   // Paused: redraw whenever the document or the playhead changes.
@@ -198,13 +231,17 @@ export function StudioPreview({
       className="relative mx-auto flex h-full max-h-full items-center justify-center"
       style={{ aspectRatio: `${width} / ${height}` }}
     >
-      <canvas
-        ref={canvasRef}
-        width={width}
-        height={height}
-        aria-label="Studio preview"
-        className="h-full w-full rounded-xl border border-line bg-black object-contain shadow-[0_12px_32px_rgb(0_0_0/0.36)]"
-      />
+      {canvasProblem ? (
+        <DomPreview doc={doc} time={time} problem={canvasProblem} onRetry={retryCanvas} />
+      ) : (
+        <canvas
+          ref={canvasRef}
+          width={width}
+          height={height}
+          aria-label="Studio preview"
+          className="h-full w-full rounded-xl border border-line bg-black object-contain shadow-[0_12px_32px_rgb(0_0_0/0.36)]"
+        />
+      )}
       {showSafeAreas && !playing && (
         <div className="pointer-events-none absolute inset-0" aria-label="Title and action safe area guides">
           <div className="absolute inset-[5%] rounded border border-dashed border-white/35">
@@ -518,5 +555,74 @@ function TransformHandles({
       />
     </div>
     </>
+  )
+}
+
+/* ————————————————————————————————————————————————————————————————
+ * DOM preview (GPU safety fallback, 0.10.1)
+ *
+ * Only used when the canvas cannot be created or the renderer throws. It
+ * paints the background with the same CSS the Library uses and places the
+ * visible text clips, so the edit stays legible and editable. It is not the
+ * export renderer — the banner says so.
+ * ———————————————————————————————————————————————————————————————— */
+
+/** `"background: x; color: y"` → style object; bare values become `background`. */
+function styleFromCss(css: string): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (!css.includes(':') || /^[a-z-]+-gradient\(/i.test(css.trim())) {
+    out.background = css.replace(/;\s*$/, '')
+    return out
+  }
+  for (const decl of css.split(';')) {
+    const i = decl.indexOf(':')
+    if (i <= 0) continue
+    const prop = decl.slice(0, i).trim().replace(/-([a-z])/g, (_, c: string) => c.toUpperCase())
+    const value = decl.slice(i + 1).trim()
+    if (prop && value) out[prop] = value
+  }
+  return out
+}
+
+function DomPreview({ doc, time, problem, onRetry }: { doc: StudioDoc; time: number; problem: string; onRetry: () => void }) {
+  const bg = backgroundById(doc.backgroundId)
+  const texts = doc.clips.filter((c): c is StudioTextClip => c.kind === 'text' && !c.hidden && time >= c.startSec && time < clipEnd(c))
+  return (
+    <div
+      data-cupric-dom-preview
+      aria-label="Studio preview (simplified)"
+      className="relative h-full w-full overflow-hidden rounded-xl border border-line shadow-[0_12px_32px_rgb(0_0_0/0.36)]"
+      style={{ backgroundColor: '#0B0B10', containerType: 'size', ...styleFromCss(bg.css) }}
+    >
+      {texts.map((clip) => (
+        <div
+          key={clip.id}
+          className="absolute -translate-x-1/2 -translate-y-1/2 whitespace-pre-wrap"
+          style={{
+            left: `${(clip.x ?? 0.5) * 100}%`,
+            top: `${(clip.y ?? 0.5) * 100}%`,
+            color: clip.color || '#FFFFFF',
+            fontWeight: clip.weight || 800,
+            textAlign: clip.align || 'center',
+            fontFamily: `'${clip.fontFamily || 'Inter Variable'}', Inter, system-ui, sans-serif`,
+            // Same rule as the canvas renderer: fontSizePct % of frame height.
+            fontSize: `${clip.fontSizePct || 6}cqh`,
+            maxWidth: '90%',
+          }}
+        >
+          {clip.text}
+        </div>
+      ))}
+      <div
+        data-cupric-notice
+        title={`${problem} Editing still works; export needs the canvas — restart, update graphics drivers, or launch without --disable-gpu.`}
+        className="absolute inset-x-2 top-2 flex items-center gap-2 rounded-md border border-amber-400/40 bg-panel/90 px-2 py-1 text-[11px] text-text backdrop-blur"
+      >
+        <span className="min-w-0 flex-1 truncate">Simplified preview — canvas unavailable</span>
+        <button type="button" onClick={onRetry} className="shrink-0 rounded border border-line px-1.5 py-0.5 text-[10px] hover:bg-panel-alt">
+          Retry
+        </button>
+      </div>
+    </div>
   )
 }

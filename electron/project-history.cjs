@@ -152,7 +152,16 @@ function load(dir) {
   }
   if (text !== null && parses(text)) return { text, recoveredFrom: null }
   const fallback = listVersions(dir).find((v) => v.valid)
-  if (!fallback) return { text: null, recoveredFrom: null, corrupt: text !== null }
+  if (!fallback) {
+    // Nothing to recover from: start empty, but move the unreadable file aside
+    // first so the next autosave cannot overwrite something hand-repairable.
+    if (text !== null) {
+      try {
+        fs.renameSync(stateFile(dir), path.join(dir, `projects.corrupt-${stamp(new Date())}.json`))
+      } catch {}
+    }
+    return { text: null, recoveredFrom: null, corrupt: text !== null }
+  }
   const recovered = fs.readFileSync(path.join(historyDir(dir), fallback.id), 'utf8')
   if (text !== null) {
     // Keep the unreadable file for inspection rather than destroying it.

@@ -17,6 +17,11 @@ const tts = require('./tts.cjs')
 const { migrateSettings } = require('./settings-migration.cjs')
 const voiceEngines = require('./voice-engines.cjs')
 
+let elog = null
+try {
+  elog = require('electron-log/main')
+} catch {}
+
 let autoUpdater
 try {
   ;({ autoUpdater } = require('electron-updater'))
@@ -83,6 +88,17 @@ let installingUpdate = false
 // App hardening: single instance, logs, crash capture
 // ---------------------------------------------------------------------------
 
+// Isolated profile for automated boot checks / portable testing
+// (scripts/check-boot.mjs). Must run before anything reads userData — the
+// single-instance lock below is keyed on it, so a test never collides with a
+// running copy of the app.
+if (process.env.CUPRIC_USER_DATA_DIR) {
+  try {
+    fs.mkdirSync(process.env.CUPRIC_USER_DATA_DIR, { recursive: true })
+    app.setPath('userData', process.env.CUPRIC_USER_DATA_DIR)
+  } catch {}
+}
+
 const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
   app.quit()
@@ -110,11 +126,50 @@ function logFile() {
   return path.join(dir, `${new Date().toISOString().slice(0, 10)}.log`)
 }
 
+/**
+ * File logging (0.10.1): electron-log writes main + renderer lines to
+ * userData/logs/cupric.log (rotated at 5 MB). The dated JSON-lines files that
+ * logLine has always written stay, because the diagnostic report reads them.
+ */
+const VERBOSE_LOGGING = process.argv.includes('--enable-logging') || process.env.CUPRIC_VERBOSE_LOG === '1'
+if (elog) {
+  try {
+    elog.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'logs', 'cupric.log')
+    elog.transports.file.maxSize = 5 * 1024 * 1024
+    elog.transports.file.level = VERBOSE_LOGGING ? 'debug' : 'info'
+    elog.transports.console.level = VERBOSE_LOGGING ? 'debug' : 'warn'
+  } catch {}
+}
+
 function logLine(kind, message, extra) {
   try {
     const line = JSON.stringify({ at: new Date().toISOString(), kind, message, extra }) + os.EOL
     fs.appendFileSync(logFile(), line, 'utf8')
   } catch {}
+  try {
+    elog?.info(`[${kind}]`, message, extra === undefined ? '' : extra)
+  } catch {}
+}
+
+const RENDERER_LOG_LEVELS = new Set(['error', 'warn', 'info', 'debug'])
+/** Renderer lines (src/lib/log.ts). Validated: it is untrusted input. */
+function writeRendererLog(payload) {
+  const level = RENDERER_LOG_LEVELS.has(payload?.level) ? payload.level : 'info'
+  const scope = String(payload?.scope || 'app').replace(/[^\w:.-]/g, '').slice(0, 40) || 'app'
+  const message = String(payload?.message ?? '').slice(0, 2000)
+  let data = payload?.data
+  try {
+    const text = JSON.stringify(data)
+    if (text && text.length > 4000) data = `${text.slice(0, 4000)}…`
+  } catch {
+    data = String(data)
+  }
+  try {
+    const logger = elog ? elog.scope(`renderer:${scope}`) : null
+    if (logger) logger[level](message, data === undefined ? '' : data)
+    else logLine(`renderer:${scope}:${level}`, message, data)
+  } catch {}
+  return true
 }
 
 process.on('uncaughtException', (err) => {
@@ -517,7 +572,11 @@ ipcMain.handle('state:load', () => {
   if (result.recoveredFrom) {
     stateRecovery = { ...stateRecovery, recoveredFrom: result.recoveredFrom }
     logLine('state-recovered', 'projects.json was unreadable; restored the newest valid autosave', { from: result.recoveredFrom })
+  } else if (result.corrupt) {
+    stateRecovery = { ...stateRecovery, unreadable: true }
+    logLine('state-unreadable', 'projects.json was unreadable and no valid autosave exists; kept it as projects.corrupt-*.json and started empty')
   }
+  logLine('project:load', 'state:load served', { bytes: result.text ? result.text.length : 0, recoveredFrom: result.recoveredFrom || null, corrupt: Boolean(result.corrupt) })
   return result.text
 })
 ipcMain.handle('state:recoveryInfo', () => stateRecovery)
@@ -575,6 +634,8 @@ ipcMain.handle('media:proxyDelete', async (_event, payload) => {
   await fsp.rm(outPath, { force: true })
   return { deleted: true }
 })
+
+ipcMain.handle('log:write', (_event, payload) => writeRendererLog(payload))
 
 ipcMain.handle('diag:report', (_event, payload) => {
   const settings = publicSettings()
@@ -3317,13 +3378,86 @@ function createWindow() {
   })
   win.webContents.on('render-process-gone', (_event, details) => showRendererCrashedScreen(win, details))
   win.webContents.on('unresponsive', () => logLine('renderer-unresponsive', 'Renderer became unresponsive'))
+  // Renderer console → log file. Uncaught errors ("Uncaught TypeError: …")
+  // arrive here even when the renderer's own logging never initialised.
+  win.webContents.on('console-message', (_event, level, message, line, sourceId) => {
+    if (level < 2 && !VERBOSE_LOGGING) return
+    const text = `${message}${sourceId ? ` (${String(sourceId).split(/[\\/]/).pop()}:${line})` : ''}`
+    try {
+      const logger = elog?.scope('renderer-console')
+      if (logger) logger[level >= 3 ? 'error' : level === 2 ? 'warn' : 'info'](text)
+      else if (level >= 2) logLine('renderer-console', text)
+    } catch {}
+  })
+  win.webContents.on('preload-error', (_event, preloadPath, error) => logLine('preload-error', error?.message || String(error), { preloadPath, stack: error?.stack }))
+  win.webContents.on('did-fail-load', (_event, code, description, url) => logLine('did-fail-load', description, { code, url }))
+  win.webContents.on('did-finish-load', () => logLine('renderer-loaded', 'Window finished loading', { ms: Math.round(performance.now()) }))
+  win.webContents.on('before-input-event', (event, input) => {
+    if (input.type !== 'keyDown') return
+    const key = String(input.key || '').toLowerCase()
+    const wantsDevTools = key === 'f12' || ((input.control || input.meta) && input.shift && key === 'i')
+    if (!wantsDevTools) return
+    event.preventDefault()
+    if (devToolsAllowed()) win.webContents.toggleDevTools()
+    else logLine('devtools-blocked', 'DevTools are disabled in stable builds. Relaunch with --cupric-devtools (or CUPRIC_DEVTOOLS=1) to enable them.')
+  })
   if (DEV_URL) win.loadURL(DEV_URL)
   else win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   return win
 }
 
+/**
+ * DevTools shortcut (Ctrl+Shift+I / F12). The app menu is removed, so the
+ * default accelerators are gone; this restores them for dev, beta/rc/alpha
+ * builds (version has a prerelease tag), or an explicit opt-in flag.
+ */
+function devToolsAllowed() {
+  return (
+    !app.isPackaged ||
+    /-(alpha|beta|rc|canary|dev)/i.test(app.getVersion()) ||
+    process.env.CUPRIC_DEVTOOLS === '1' ||
+    process.argv.includes('--cupric-devtools')
+  )
+}
+
 app.setAppUserModelId(APP_ID)
 wireUpdater()
+
+// GPU safety (0.10.1): a GPU process that keeps dying must not leave a white
+// window. Two GPU crashes in one session → next launch starts with hardware
+// acceleration off (the same path as --disable-gpu). The renderer separately
+// falls back to a DOM preview when a canvas cannot be created.
+const GPU_SAFETY_FILE = () => userDataPath('gpu-safety.json')
+let gpuCrashes = 0
+try {
+  const gpuState = JSON.parse(fs.readFileSync(GPU_SAFETY_FILE(), 'utf8'))
+  if (gpuState?.disableNextLaunch) {
+    app.disableHardwareAcceleration()
+    fs.writeFileSync(GPU_SAFETY_FILE(), JSON.stringify({ disableNextLaunch: false, disabledAt: new Date().toISOString(), reason: gpuState.reason || 'gpu-crash' }))
+    logLine('gpu-safety', 'Hardware acceleration disabled for this launch after repeated GPU crashes last session')
+  }
+} catch {}
+app.on('child-process-gone', (_event, details) => {
+  logLine('child-process-gone', `${details?.type} ${details?.reason}`, details)
+  if (details?.type === 'GPU' && details?.reason !== 'clean-exit') {
+    gpuCrashes += 1
+    if (gpuCrashes >= 2) {
+      try {
+        fs.writeFileSync(GPU_SAFETY_FILE(), JSON.stringify({ disableNextLaunch: true, reason: details?.reason }))
+      } catch {}
+    }
+  }
+})
+
+logLine('app-start', `Cupric AI ${app.getVersion()} starting`, {
+  packaged: app.isPackaged,
+  platform: process.platform,
+  electron: process.versions.electron,
+  disableGpu: process.argv.includes('--disable-gpu'),
+  verbose: VERBOSE_LOGGING,
+  userData: app.getPath('userData'),
+})
+
 app.whenReady().then(() => {
   // settings.json migration (2.29): once per launch, backed up first.
   try {

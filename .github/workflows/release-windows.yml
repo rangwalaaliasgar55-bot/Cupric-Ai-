@@ -42,6 +42,16 @@ jobs:
       - name: Build application and Windows packages
         run: npm run dist:win -- --publish never
 
+      # 0.10.0 shipped a Studio that went white on mount. Boot the PACKAGED
+      # app (real preload, real contextBridge) with --disable-gpu, visit every
+      # view with empty/corrupt saved projects, force a crash per route, and
+      # fail the release on any uncaught error or blank screen.
+      - name: Boot check packaged app (every view, zero Uncaught)
+        shell: pwsh
+        env:
+          CUPRIC_BOOT_EXE: ${{ github.workspace }}\release\win-unpacked\Cupric AI.exe
+        run: npm run check:boot -- --no-build
+
       - name: Verify installer artifacts
         shell: pwsh
         run: |

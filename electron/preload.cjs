@@ -10,6 +10,7 @@ const invokeChannels = new Set([
   'state:clear',
   'state:recoveryInfo', 'state:listVersions', 'state:snapshotNow', 'state:restoreVersion',
   'diag:report',
+  'log:write',
   'voice:status', 'voice:tts', 'voice:transcribe', 'voice:transcribeMedia',
   'media:proxy', 'media:proxyDelete',
   'gemini:ask',
@@ -43,7 +44,24 @@ function assertChannel(channel, allowed) {
   if (!allowed.has(channel)) throw new Error(`IPC channel is not exposed: ${channel}`)
 }
 
-const bridge = {
+/**
+ * The ONE bridge object. It is deep-frozen here and exposed exactly once per
+ * name below; contextBridge then defines `window.cupric` / `window.northframe`
+ * as non-writable, non-configurable properties. Nothing — preload or renderer —
+ * may mutate, extend, reassign or delete it (0.10.0 blanked the Studio by
+ * doing `window.cupric = {...window.cupric, studio}`). Renderer-owned globals
+ * use their own names, e.g. `window.__cupricStudio`. Enforced by
+ * `npm run check:bridge`.
+ */
+function deepFreeze(value) {
+  if (value && (typeof value === 'object' || typeof value === 'function') && !Object.isFrozen(value)) {
+    Object.freeze(value)
+    for (const key of Object.getOwnPropertyNames(value)) deepFreeze(value[key])
+  }
+  return value
+}
+
+const bridge = deepFreeze({
   isDesktop: true,
   platform: process.platform,
   versions: {
@@ -73,7 +91,6 @@ const bridge = {
   paths: {
     arenaPreviewUrl: (localPath) => ipcRenderer.invoke('arena:previewPath', localPath),
   },
-}
+})
 
-contextBridge.exposeInMainWorld('northframe', bridge)
-contextBridge.exposeInMainWorld('cupric', bridge)
+for (const name of ['cupric', 'northframe']) contextBridge.exposeInMainWorld(name, bridge)

@@ -48,6 +48,7 @@ import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
 import { StudioInspector } from './studio/StudioInspector'
 import { StudioPreview } from './studio/StudioPreview'
+import { StudioNotices } from './studio/StudioNotices'
 import { StudioTimeline } from './studio/StudioTimeline'
 import { PackBrowser } from './library/PackBrowser'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../types/project'
@@ -81,6 +82,7 @@ import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
 import { getIpc } from '../lib/bridge'
+import { rlog } from '../lib/log'
 import { patchTransformKeyframe } from '../lib/studio/keyframeEdit'
 import { parseGeneratedHtml, piecesToStudioClips } from '../lib/studio/importHtml'
 import { readGeneratedPackage } from '../lib/studio/generatedPackage'
@@ -454,7 +456,9 @@ export function Studio() {
   useEffect(() => emitStudio('selection:change', { clipId: selectedId }), [selectedId])
   useEffect(() => emitStudio('time:change', { time }), [time])
 
-  // Scripting API (window.cupric.studio) — reads live state through refs.
+  // Scripting API (window.__cupricStudio) — reads live state through refs.
+  // NEVER graft it onto window.cupric: that is the read-only contextBridge
+  // object, and writing to it is what blanked the Studio in 0.10.0.
   const apiState = useRef({ doc, selectedId, time })
   apiState.current = { doc, selectedId, time }
   useEffect(() => {
@@ -467,12 +471,28 @@ export function Studio() {
       getTime: () => apiState.current.time,
       seek: (t) => seek(t),
     })
-    const w = window as unknown as { cupric?: Record<string, unknown> }
-    w.cupric = { ...(w.cupric ?? {}), studio: api }
+    window.__cupricStudio = api
     return () => {
-      if (w.cupric?.studio === api) delete w.cupric.studio
+      if (window.__cupricStudio === api) delete window.__cupricStudio
     }
   }, [pid, patchStudio, seek])
+
+  // Boot log (0.10.1): how long the Studio took from first render to mounted.
+  const mountStartRef = useRef(performance.now())
+  useEffect(() => {
+    const doc0 = apiState.current.doc
+    rlog.info('studio', 'studio:mount', {
+      projectId: pid,
+      ms: Math.round(performance.now() - mountStartRef.current),
+      sinceBootMs: Math.round(performance.now()),
+      clips: doc0.clips.length,
+      trackCount: doc0.trackCount,
+      aspect: doc0.aspect,
+      backgroundId: doc0.backgroundId,
+    })
+    // Once per mount / project switch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pid])
 
   // The listener is created once and torn down on unmount; commands are
   // dispatched through a ref so the handler always sees fresh state.
@@ -1584,30 +1604,36 @@ export function Studio() {
             }}
             onDrop={onStageDrop}
           >
-            {doc.clips.length === 0 && !previewDoc ? (
-              <div className="max-w-md rounded-xl border border-dashed border-line bg-panel/40 px-8 py-12 text-center">
-                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
-                  <Clapperboard size={19} />
+            {/* Always mount the preview: an empty project still paints its
+                background, with the drop hint laid over it (0.10.1). */}
+            <div className="relative flex h-full w-full min-w-0 items-center justify-center">
+              <StudioNotices doc={previewDoc?.doc ?? doc} />
+              {doc.clips.length === 0 && !previewDoc && (
+                <div data-studio-empty-hint className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6">
+                  <div className="pointer-events-auto max-w-sm rounded-xl border border-dashed border-line bg-panel/80 px-6 py-7 text-center shadow-[0_12px_32px_rgb(0_0_0/0.36)] backdrop-blur">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
+                      <Clapperboard size={18} />
+                    </div>
+                    <h2 className="mt-3 text-base font-semibold">Drop footage, photos or a resource card here</h2>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                      Or import media, then stack text and backgrounds on the tracks below. Nothing leaves the machine — the
+                      preview and the export are the same renderer.
+                    </p>
+                    <div className="mt-4">
+                      <Button variant="primary" onClick={() => fileRef.current?.click()}>
+                        <Plus size={14} /> Import media
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <h2 className="mt-3 text-base font-semibold">Make a video right here</h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">
-                  Import footage or photos, stack text and backgrounds on the tracks below, then export. Nothing leaves
-                  the machine — the preview and the export are the same renderer.
-                </p>
-                <div className="mt-4">
-                  <Button variant="primary" onClick={() => fileRef.current?.click()}>
-                    <Plus size={14} /> Import media
-                  </Button>
-                </div>
-              </div>
-            ) : (
+              )}
               <div
                 className="contents"
                 onContextMenu={(e) => {
                   // Canvas right-click acts on the selected clip (same menu as the timeline).
                   e.preventDefault()
                   if (selected) setClipMenuAt({ clipId: selected.id, x: e.clientX, y: e.clientY })
-                  else pushToast('info', 'Select a clip on the canvas or timeline, then right-click for its actions.')
+                  else pushToast('info', doc.clips.length ? 'Select a clip on the canvas or timeline, then right-click for its actions.' : 'The timeline is empty — drop or import media first.')
                 }}
               >
               <StudioPreview
@@ -1631,7 +1657,7 @@ export function Studio() {
                 }}
               />
               </div>
-            )}
+            </div>
           </div>
 
           {/* Transport */}
