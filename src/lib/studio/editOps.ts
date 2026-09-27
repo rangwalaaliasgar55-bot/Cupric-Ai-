@@ -1,6 +1,8 @@
 import type { StudioClip, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition } from '../../types/project'
 import { clamp } from '../utils'
 import { MAX_TRACKS, defaultTextClip, docDuration, normaliseClip, reorderTracks, resolveOverlaps } from './doc'
+import { componentFromInstruction, findComponent, withComponent } from './components'
+import { studioPlayhead } from './studioLink'
 import {
   ALL_RECIPE_IDS,
   choreograph,
@@ -49,6 +51,8 @@ export type StudioEditOp =
   | { type: 'setKeyframe'; clipId: string; at: number; values: Partial<Pick<StudioKeyframe, 'x' | 'y' | 'scale' | 'rotation' | 'opacity'>>; ease?: StudioKeyframe['ease'] }
   | { type: 'reorderTrack'; from: number; to: number }
   | { type: 'applyStylePreset'; preset: 'editorial' | 'bold-social' | 'minimal' }
+  /** Place a UI component (src/lab/components); the Studio records its real animation. */
+  | { type: 'addComponent'; slug: string; startSec: number; durationSec: number; x?: number; y?: number; interact?: boolean; motion?: MotionSpec }
 
 export type StudioEditPlan = { summary: string; ops: StudioEditOp[]; source: 'live' | 'local'; warning?: string }
 
@@ -211,6 +215,26 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       if (!finite(op.from) || !finite(op.to)) throw new Error(`Operation ${index + 1} has invalid tracks`)
       return { type, from: op.from, to: op.to }
     }
+    if (type === 'addComponent') {
+      const slug = String(op.slug ?? op.component ?? '').trim()
+      if (!findComponent(slug)) throw new Error(`Unknown component “${slug}”`)
+      if (!finite(op.startSec) || (op.startSec as number) < 0) throw new Error(`Operation ${index + 1} has invalid timing`)
+      const durationSec = finite(op.durationSec) ? clamp(op.durationSec, 1, 30) : 4
+      const unit = (v: unknown) => (finite(v) ? clamp(v, 0.05, 0.95) : undefined)
+      const x = unit(op.x)
+      const y = unit(op.y)
+      const motion = op.motion === undefined ? null : readMotionSpec(op.motion)
+      return {
+        type,
+        slug,
+        startSec: op.startSec as number,
+        durationSec,
+        ...(x !== undefined ? { x } : {}),
+        ...(y !== undefined ? { y } : {}),
+        ...(typeof op.interact === 'boolean' ? { interact: op.interact } : {}),
+        ...(motion ? { motion } : {}),
+      }
+    }
     if (type === 'applyStylePreset' && ['editorial', 'bold-social', 'minimal'].includes(String(op.preset))) {
       return { type, preset: String(op.preset) as 'editorial' | 'bold-social' | 'minimal' }
     }
@@ -248,6 +272,7 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'clearKeyframes') return `Remove keyframes from ${name}`
   if (op.type === 'setKeyframe') return `Keyframe ${name} at ${op.at.toFixed(2)}s: ${Object.keys(op.values).join(', ')}`
   if (op.type === 'reorderTrack') return `Swap T${op.from + 1} and T${op.to + 1}`
+  if (op.type === 'addComponent') return `Add the “${findComponent(op.slug)?.name ?? op.slug}” component at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s (its real animation is recorded)${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
   return `Apply ${op.preset} style across the timeline`
 }
 
@@ -296,6 +321,20 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       return { ...clip, keyframes: [...keys, { at, ease: op.ease ?? 'ease-in-out', ...op.values }].sort((a, b) => a.at - b.at) }
     }) }
     else if (op.type === 'reorderTrack') next = reorderTracks(next, op.from, op.to)
+    else if (op.type === 'addComponent') {
+      const added = withComponent(next, op.slug, {
+        startSec: op.startSec,
+        durationSec: op.durationSec,
+        recordSec: Math.min(op.durationSec, 6),
+        ...(op.x !== undefined ? { x: op.x } : {}),
+        ...(op.y !== undefined ? { y: op.y } : {}),
+        ...(op.interact !== undefined ? { interact: op.interact } : {}),
+      })
+      // A component never just pops on: default to a clean rise in / fade out.
+      const motion: MotionSpec = op.motion ?? { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }
+      const clip = { ...added.clip, ...motionPatch(added.clip, motion) } as StudioClip
+      next = { ...added.doc, clips: added.doc.clips.map((c) => (c.id === clip.id ? clip : c)) }
+    }
     else if (op.type === 'applyStylePreset') next = applyStyle(next, op.preset)
   }
   // Whatever the plan did, never leave two clips fighting for one track slot.
@@ -546,8 +585,28 @@ function keyframeOpsFor(clip: StudioClip, spec: MotionSpec, count: number): Stud
   })
 }
 
+/** "Add the odometer after the title" → an addComponent op at a sensible time and place. */
+export function componentPlan(instruction: string, doc: StudioDoc, opts: LocalOpts = {}): StudioEditPlan | null {
+  const entry = componentFromInstruction(instruction)
+  if (!entry) return null
+  const text = instruction.toLowerCase()
+  const seconds = Number(text.match(/\b(?:for|lasting)\s+(\d+(?:\.\d+)?)\s*(?:s|sec|secs|seconds)\b/)?.[1])
+  const at = Number(text.match(/\bat\s+(\d+(?:\.\d+)?)\s*(?:s|sec|secs|seconds)\b/)?.[1])
+  const startSec = Number.isFinite(at) ? at : /\b(?:end|after everything|at the end)\b/.test(text) ? docDuration(doc) : Math.max(0, opts.time ?? 0)
+  const y = /\b(?:bottom|lower)\b/.test(text) ? 0.74 : /\b(?:top|upper)\b/.test(text) ? 0.26 : undefined
+  const style = styleFromInstruction(instruction)
+  const motion: MotionSpec = { entrance: style === 'bold-social' ? 'scale-pop' : 'rise-in', exit: 'fade-out', intensity: style === 'bold-social' ? 1.2 : 0.9 }
+  return {
+    summary: `Add the “${entry.name}” component — Cupric records its real animation`,
+    source: 'local',
+    ops: [{ type: 'addComponent', slug: entry.slug, startSec, durationSec: Number.isFinite(seconds) ? clamp(seconds, 1, 30) : 4, ...(y !== undefined ? { y } : {}), motion }],
+  }
+}
+
 export function localStudioEditPlan(instruction: string, doc: StudioDoc, selectedId: string | null, opts: LocalOpts = {}): StudioEditPlan {
   const text = instruction.trim().toLowerCase()
+  const component = componentPlan(instruction, doc, opts)
+  if (component) return component
   if (ADD_TEXT_RE.test(text)) return addTextPlan(instruction, doc, opts)
   if (!doc.clips.length) throw new Error('The timeline is empty. Import footage or say “add a title saying …” to start.')
 
@@ -676,6 +735,11 @@ export function localStudioEditPlan(instruction: string, doc: StudioDoc, selecte
  * trivial. Narrow requests are left alone.
  */
 export function enrichThinPlan(plan: StudioEditPlan, instruction: string, doc: StudioDoc, selectedId: string | null): StudioEditPlan {
+  // Asked for a component by name, but the model forgot to place it.
+  if (plan.source !== 'local' && !plan.ops.some((op) => op.type === 'addComponent')) {
+    const component = componentPlan(instruction, doc, { time: studioPlayhead() ?? undefined })
+    if (component) plan = { ...plan, ops: [...plan.ops, ...component.ops], summary: `${plan.summary} + ${component.summary}` }
+  }
   const broad = POLISH_RE.test(instruction.toLowerCase()) && (!selectedId || /\b(?:all|every|everything|whole|timeline|video|edit)\b/i.test(instruction))
   if (!broad || plan.source === 'local') return plan
   const visible = doc.clips.filter((c) => c.kind !== 'audio')

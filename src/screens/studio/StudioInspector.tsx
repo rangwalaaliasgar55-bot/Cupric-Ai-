@@ -9,7 +9,7 @@ import {
   motionPatch,
   type MotionSpec,
 } from '../../lib/studio/motionDirector'
-import { Copy, Link2, Plus, Scissors, Trash2 } from 'lucide-react'
+import { Copy, Link2, Plus, RefreshCw, Scissors, Trash2, Type } from 'lucide-react'
 import type {
   StudioAudioClip,
   StudioBackgroundClip,
@@ -32,9 +32,12 @@ import { GLASS_PRESETS } from '../../lib/glass'
 import { STICKERS } from '../../lib/studio/lottie'
 import { hasMedia, registerFile } from '../../lib/studio/media'
 
+import { findComponent } from '../../lib/studio/components'
+import { applyResource } from '../../lib/studio/resourceApply'
+import { cx } from '../../lib/utils'
+
 /** Values of the built-in Font options; anything else came from Resources → Fonts. */
 const BUNDLED_FONT_VALUES = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
-import { cx } from '../../lib/utils'
 
 type Props = {
   doc: StudioDoc
@@ -330,7 +333,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
         <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
       )}
       {clip.kind === 'background' && <BackgroundFields clip={clip as StudioBackgroundClip} onPatch={onPatch} />}
-      {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
+      {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} doc={doc} onPatchDoc={onPatchDoc} />}
       {clip.kind === 'glass' && <GlassFields clip={clip as StudioGlassClip} onPatch={onPatch} />}
       {clip.kind === 'audio' && <AudioFields clip={clip as StudioAudioClip} onPatch={onPatch} />}
       {clip.kind === 'sticker' && <StickerFields clip={clip as StudioStickerClip} onPatch={onPatch} />}
@@ -1145,16 +1148,75 @@ function GlassFields({ clip, onPatch }: { clip: StudioGlassClip; onPatch: (p: Pa
   )
 }
 
-function OverlayFields({ clip, onPatch }: { clip: StudioOverlayClip; onPatch: (p: Partial<StudioClip>) => void }) {
+function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlayClip; onPatch: (p: Partial<StudioClip>) => void; doc: StudioDoc; onPatchDoc: (patch: Partial<StudioDoc>) => void }) {
+  const meta = clip.component
+  const entry = findComponent(meta?.slug)
+  const busy = meta?.status === 'pending' || meta?.status === 'recording'
+  const rerecord = (patch: Partial<NonNullable<StudioOverlayClip['component']>>) => {
+    if (!meta) return
+    onPatch({ component: { ...meta, ...patch, status: 'pending', error: undefined } } as Partial<StudioClip>)
+  }
+  /** Swap the recording for native layers you can type into (text, glass). */
+  const rebuild = () => {
+    if (!entry) return
+    const without = { ...doc, clips: doc.clips.filter((c) => c.id !== clip.id) }
+    const result = applyResource(without, { kind: 'block', id: entry.slug, name: entry.name, description: entry.description, data: { category: entry.category } }, { atSec: clip.startSec })
+    if (result.ok && result.type === 'doc') onPatchDoc({ clips: result.doc.clips, trackCount: result.doc.trackCount })
+  }
   return (
     <div className="space-y-4 border-t border-line pt-4">
-      <p className="truncate text-xs text-muted">From {clip.source}</p>
-      {clip.frames?.length ? (
-        <div className="rounded-lg border border-line bg-panel-alt p-2.5">
-          <p className="text-xs font-medium text-text">Animated React capture · {clip.frames.length} frames</p>
-          <p className="mt-0.5 text-[11px] text-muted">Scrub-safe motion; position, size, effects, keyframes and playback rate remain editable.</p>
-          <Slider label="Motion speed" value={(clip.frameFps ?? 8) / 8} min={0.5} max={2} step={0.25} suffix="×" onChange={(v) => onPatch({ frameFps: 8 * v } as Partial<StudioClip>)} />
+      {meta && entry ? (
+        <div className="space-y-3 rounded-lg border border-line bg-panel-alt p-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-text">UI component · {entry.name}</p>
+              <p className="mt-0.5 text-[11px] text-muted">
+                {busy
+                  ? 'Recording its real animation…'
+                  : meta.status === 'failed'
+                    ? `Not recorded: ${meta.error ?? 'unknown error'}`
+                    : clip.frames?.length
+                      ? `${clip.frames.length} frames of real motion · loops while the clip runs`
+                      : 'A still — this component has no motion on its own. Turn on “Act it out” and record again.'}
+              </p>
+            </div>
+            <span className={cx('shrink-0 rounded-full border px-1.5 text-[10px]', meta.status === 'failed' ? 'border-danger/50 text-danger' : busy ? 'border-info/50 text-info' : 'border-accent/50 text-accent-text')}>
+              {busy ? 'recording' : meta.status}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="Record length">
+              <select value={meta.recordSec} onChange={(e) => rerecord({ recordSec: Number(e.target.value) })} className={inputCx} disabled={busy} aria-label="Record length">
+                {[2, 3, 4, 6, 8, 10].map((sec) => (
+                  <option key={sec} value={sec}>{sec}s</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Performance">
+              <select value={meta.interact ? 'act' : 'watch'} onChange={(e) => rerecord({ interact: e.target.value === 'act' })} className={inputCx} disabled={busy} aria-label="Performance">
+                <option value="act">Act it out</option>
+                <option value="watch">Just watch</option>
+              </select>
+            </Field>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-muted">
+            <input type="checkbox" checked={clip.loop !== false} onChange={(e) => onPatch({ loop: e.target.checked } as Partial<StudioClip>)} />
+            Loop the animation when the clip is longer
+          </label>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={() => rerecord({})} disabled={busy}>
+              <RefreshCw size={12} /> Record again
+            </Button>
+            <Button size="sm" variant="ghost" onClick={rebuild} disabled={busy} title="Replace the recording with native text and glass layers you can type into">
+              <Type size={12} /> Rebuild as editable layers
+            </Button>
+          </div>
         </div>
+      ) : (
+        <p className="truncate text-xs text-muted">From {clip.source}</p>
+      )}
+      {clip.frames?.length ? (
+        <Slider label="Motion speed" value={clip.playbackRate ?? 1} min={0.25} max={3} step={0.25} suffix="×" onChange={(v) => onPatch({ playbackRate: v } as Partial<StudioClip>)} />
       ) : null}
       <Slider label="Scale" value={clip.scale} min={0.1} max={2} step={0.05} suffix="×" onChange={(v) => onPatch({ scale: v } as Partial<StudioClip>)} />
       <div className="grid grid-cols-2 gap-3">

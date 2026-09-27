@@ -140,6 +140,7 @@ function checkDoc(item, label, before, doc) {
 const packDir = path.join(root, 'resources/packs')
 const files = (await readdir(packDir)).filter((f) => f.endsWith('.json') && f !== 'index.json')
 const tally = {}
+let componentsQueued = 0
 let total = 0
 for (const file of files) {
   const pack = JSON.parse(await readFile(path.join(packDir, file), 'utf8'))
@@ -172,6 +173,11 @@ for (const file of files) {
         if (!(result.focusSec >= 0)) fail(item, label, `focusSec ${result.focusSec}`)
         if (!result.message) fail(item, label, 'no message')
         if (JSON.stringify(result.doc) === before && item.kind !== 'font' && item.kind !== 'transition') fail(item, label, 'Apply changed nothing')
+        if (item.kind === 'component' && result.needsStudio) {
+          const placed = result.doc.clips.find((c) => c.id === result.focusId)
+          if (!placed || placed.kind !== 'overlay' || placed.component?.slug !== item.id || placed.component.status !== 'pending') fail(item, label, 'component must arrive as a pending clip for the Studio recorder')
+          else componentsQueued += 1
+        }
       } else if (result.type === 'html-template') {
         assert.match(result.file, /^resources\/effects\/.+\.html$/)
       } else if (result.type === 'voice-command') {
@@ -180,6 +186,8 @@ for (const file of files) {
     }
   }
 }
+
+assert.ok(componentsQueued > 500, `real components must queue for live recording (got ${componentsQueued})`)
 
 // Templates specifically: an all-media storyboard applies with placeholders on
 // an empty project, and fills from project footage on a busy one.

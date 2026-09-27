@@ -16,6 +16,8 @@ export type CaptureOptions = {
   type?: 'image/png' | 'image/webp' | 'image/jpeg'
   quality?: number
   background?: string | null
+  /** Rasterisation scale for the DOM renderers (the compositor uses the screen's). */
+  pixelRatio?: number
 }
 
 async function viaCompositor(element: HTMLElement, options: CaptureOptions): Promise<string | null> {
@@ -47,7 +49,7 @@ async function viaHtmlToImage(element: HTMLElement, options: CaptureOptions): Pr
       fontCss = { root: element, css: await getFontEmbedCSS(element).catch(() => '') }
     }
     const canvas = await toCanvas(element, {
-      pixelRatio: 1,
+      pixelRatio: options.pixelRatio ?? 1,
       cacheBust: false,
       fontEmbedCSS: fontCss.css,
       backgroundColor: options.background ?? undefined,
@@ -105,7 +107,7 @@ async function viaHtml2Canvas(element: HTMLElement, options: CaptureOptions): Pr
   const { default: html2canvas } = await import('html2canvas')
   const restore = flattenModernColours(element)
   try {
-    const canvas = await html2canvas(element, { backgroundColor: options.background ?? null, scale: 1, logging: false, useCORS: true })
+    const canvas = await html2canvas(element, { backgroundColor: options.background ?? null, scale: options.pixelRatio ?? 1, logging: false, useCORS: true })
     return canvas.toDataURL(options.type ?? 'image/webp', options.quality ?? 0.82)
   } finally {
     restore()

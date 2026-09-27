@@ -20,6 +20,7 @@ import { STUDIO_BACKGROUNDS } from './backgrounds'
 import { defaultGlassClip, defaultTextClip, nextFreeStart } from './doc'
 import { TEXT_ANIMATIONS, TRANSITIONS } from './transitions'
 import { planTemplateFill, templateSlots, type TemplateFillData } from './templateFill'
+import { findComponent, withComponent } from './components'
 
 /** Custom MIME so a drag from the Library can never be confused with a file. */
 export const RESOURCE_MIME = 'application/x-cupric-resource'
@@ -223,15 +224,13 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
       return { ok: true, clip, message: `Added “${payload.name}” as a fully editable native text effect.` }
     }
 
-    case 'component':
-      // Lab demos are live React, not pixels. Route straight to the real
-      // deterministic capture flow rather than dropping an empty placeholder.
-      return {
-        ok: true,
-        action: 'open-lab',
-        labSlug: payload.id,
-        message: `Opening “${payload.name}” in the Lab. Choose the frame, then use “Send to Studio” to capture it as an overlay.`,
-      }
+    case 'component': {
+      // The real component, recorded with its real animation by the Studio's
+      // recorder (ComponentRecorderHost) — never a dead placeholder.
+      if (!findComponent(payload.id)) return { ok: false, reason: `“${payload.name}” is not a built-in component.` }
+      const added = withComponent(doc, payload.id, { startSec: atSec, recordSec: 4, durationSec: 4 })
+      return { ok: true, docPatch: { clips: added.doc.clips, trackCount: added.doc.trackCount }, message: `“${payload.name}” added — recording its real animation.` }
+    }
 
     case 'template':
       return {

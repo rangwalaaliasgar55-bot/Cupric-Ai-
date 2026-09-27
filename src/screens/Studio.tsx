@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } fro
 import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
   Boxes,
+  Component,
   Clapperboard,
   Download,
   Image as ImageIcon,
@@ -51,6 +52,10 @@ import { TRANSITIONS } from '../lib/studio/transitions'
 import { isVoiceSupported, parseVoiceCommand, speak, VOICE_PHRASES, VoiceListener, type VoiceCommand } from '../lib/voice'
 import { FOCUS_NOW_EVENT, VOICE_RUN_EVENT, publishPlayhead, setStudioMounted, takePendingVoicePhrase, type FocusNowDetail } from '../lib/studio/studioLink'
 import { useResourceApply } from './library/useResourceApply'
+import { componentCatalogFor, isPendingComponent, withComponent } from '../lib/studio/components'
+import { motionPatch } from '../lib/studio/motionDirector'
+import { ComponentRecorderHost } from './studio/ComponentRecorderHost'
+import { ComponentsPanel } from './studio/ComponentsPanel'
 import { hasMedia, registerFile } from '../lib/studio/media'
 import { readDragPayload } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
@@ -109,6 +114,7 @@ export function Studio() {
   const [showSafeAreas, setShowSafeAreas] = useState(true)
   const [keyframeRecord, setKeyframeRecord] = useState(false)
   const [showResources, setShowResources] = useState(false)
+  const [showComponents, setShowComponents] = useState(false)
   const [agentInstruction, setAgentInstruction] = useState('')
   const [agentRevision, setAgentRevision] = useState('')
   const [agentPlanning, setAgentPlanning] = useState(false)
@@ -423,9 +429,13 @@ export function Studio() {
             skiperUi: relevantNames(skiperCatalog.items),
             remotionPackages: relevantNames(remotionCatalog.packages ?? []),
           },
+          // The UI components the agent may place with addComponent (best
+          // matches for this request; slugs are validated on return).
+          components: componentCatalogFor(instruction),
           clips: doc.clips.map((clip) => ({
             id: clip.id,
             kind: clip.kind,
+            ...(clip.kind === 'overlay' && clip.component ? { component: clip.component.slug } : {}),
             name: clip.name,
             track: clip.track,
             startSec: clip.startSec,
@@ -814,9 +824,23 @@ export function Studio() {
   commandRef.current = runVoiceCommand
   toggleVoiceRef.current = toggleVoice
 
+  /** A UI component at the playhead; the recorder captures its real animation. */
+  function addComponentAt(slug: string, opts: { recordSec: number; interact: boolean }) {
+    const added = withComponent(doc, slug, { startSec: time, recordSec: opts.recordSec, durationSec: Math.max(opts.recordSec, 3), interact: opts.interact })
+    const withMotion = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
+    patchStudio(projectId, { trackCount: added.doc.trackCount, clips: added.doc.clips.map((c) => (c.id === withMotion.id ? withMotion : c)) })
+    setSelectedId(withMotion.id)
+    setPlaying(false)
+    setTime(visibleMomentOf(withMotion))
+  }
+
   async function runExport(asMp4 = false) {
     if (duration <= 0) {
       pushToast('error', 'Add a clip before exporting.')
+      return
+    }
+    if (doc.clips.some(isPendingComponent)) {
+      pushToast('info', 'A component is still recording its animation — export as soon as it lands on the timeline.')
       return
     }
     setPlaying(false)
@@ -919,10 +943,25 @@ export function Studio() {
         <Button
           size="sm"
           variant={showResources ? 'primary' : 'outline'}
-          onClick={() => setShowResources((shown) => !shown)}
+          onClick={() => {
+            setShowResources((shown) => !shown)
+            setShowComponents(false)
+          }}
           disabled={exporting}
         >
           <Boxes size={13} /> Resources
+        </Button>
+        <Button
+          size="sm"
+          variant={showComponents ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowComponents((shown) => !shown)
+            setShowResources(false)
+          }}
+          disabled={exporting}
+          title="Every UI component, recorded with its real animation"
+        >
+          <Component size={13} /> Components
         </Button>
 
         <Button
@@ -1154,8 +1193,15 @@ export function Studio() {
         </div>
       )}
 
+      <ComponentRecorderHost projectId={projectId} doc={doc} />
+
       {/* Shared resources + stage + inspector */}
       <div className="flex min-h-0 flex-1">
+        {showComponents && (
+          <aside className="w-[360px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio components">
+            <ComponentsPanel onAdd={addComponentAt} />
+          </aside>
+        )}
         {showResources && (
           <aside className="w-[420px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio resources">
             <div className="mb-3">

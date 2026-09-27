@@ -1862,6 +1862,10 @@ OPERATIONS:
 - {"type":"deleteClip","clipId":string}
 - {"type":"reorderTrack","from":number,"to":number}
 - {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
+- {"type":"addComponent","slug":string,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"interact"?:boolean,"motion"?:{...as applyMotion}}
+  Places a real animated UI component (buttons, toggles, counters, cards, loaders, charts…). Cupric plays the actual component,
+  acts it out (hover, clicks) and records its genuine animation into an editable overlay clip. slug MUST be one of
+  STUDIO CONTEXT.components[].slug. Use one when the user asks for a UI element, a product/app demo moment, or a named component.
 
 Track 0 is the bottom layer; higher tracks draw on top. Overlapping clips on one track are automatically lifted to a free track, so you may place text anywhere. Keyframe times are local to the clip. The context may include attributed motionReferences from React Bits, Skiper UI and Remotion: use their names as creative vocabulary, but translate every idea into only the native operations above. Never claim to install or execute an upstream component.
 

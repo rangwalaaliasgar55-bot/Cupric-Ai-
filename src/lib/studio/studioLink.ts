@@ -21,6 +21,11 @@ export function setStudioMounted(value: boolean): void {
   mounted = value
 }
 
+/** Where the playhead was left, even after leaving the Studio. */
+export function lastStudioPlayhead(): number {
+  return playhead
+}
+
 /** Playhead seconds while the Studio is on screen, else null. */
 export function studioPlayhead(): number | null {
   return mounted ? playhead : null

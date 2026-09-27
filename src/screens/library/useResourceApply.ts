@@ -17,7 +17,7 @@ import { ensureFont } from '../../lib/studio/fonts'
 import { captureHtmlTemplate } from '../../lib/studio/htmlTemplateCapture'
 import { applyResource, type ApplyItem } from '../../lib/studio/resourceApply'
 import { briefLines, type BriefSource } from '../../lib/studio/storyboard'
-import { requestLabAutocapture, requestStudioFocus, runVoicePhrase, studioPlayhead } from '../../lib/studio/studioLink'
+import { requestStudioFocus, runVoicePhrase, studioPlayhead } from '../../lib/studio/studioLink'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 
 export type ApplyProgress = { id: string; pct: number } | null
@@ -68,15 +68,15 @@ export function useResourceApply() {
               if (!ok) pushToast('info', `${family} could not be downloaded right now, so it shows in the fallback font. It loads automatically once you are online.`, { id: `font-${family}` })
             })
           }
+          // Components record in the Studio, so go there to watch it happen.
+          if (result.needsStudio && !inStudio) {
+            setView('studio')
+            pushToast('success', result.message)
+            return true
+          }
           pushToast('success', result.message, openStudio ? { action: openStudio } : undefined)
           return true
         }
-
-        case 'lab-capture':
-          requestLabAutocapture({ slug: result.labSlug, atSec: result.atSec, returnTo: inStudio ? 'studio' : 'library' })
-          setView('lab')
-          pushToast('info', result.message)
-          return true
 
         case 'html-template': {
           setProgress({ id: item.id, pct: 0 })

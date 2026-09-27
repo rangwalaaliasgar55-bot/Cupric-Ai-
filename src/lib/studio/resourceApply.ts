@@ -40,6 +40,7 @@ import {
   transitionFor,
   type Archetype,
 } from './resourceLook'
+import { findComponent, withComponent } from './components'
 import { buildStoryboard, directText, frameRatio, panelSize, placeLayers, plateBehind, templateSlots, type TemplateFillData } from './storyboard'
 import { TRANSITIONS } from './transitions'
 
@@ -66,8 +67,7 @@ export type ApplyContext = {
 }
 
 export type ApplyResult =
-  | { ok: true; type: 'doc'; doc: StudioDoc; focusId: string | null; focusSec: number; message: string; font?: { family: string; weights: number[] } }
-  | { ok: true; type: 'lab-capture'; labSlug: string; atSec: number; message: string }
+  | { ok: true; type: 'doc'; doc: StudioDoc; focusId: string | null; focusSec: number; message: string; font?: { family: string; weights: number[] }; needsStudio?: boolean }
   | { ok: true; type: 'html-template'; file: string; name: string; durationSec: number; size: [number, number]; atSec: number; message: string }
   | { ok: true; type: 'voice-command'; phrase: string; message: string }
   | { ok: true; type: 'link'; url: string | null; cue: string; message: string }
@@ -352,7 +352,7 @@ export function applyResource(doc: StudioDoc, item: ApplyItem, ctx: ApplyContext
       }
       if (!result.ok) return result
       doc = base
-      if ('action' in result) return { ok: true, type: 'lab-capture', labSlug: result.labSlug, atSec, message: result.message }
+      if ('action' in result) return applyResource(doc, { ...item, kind: 'component' }, ctx)
       if ('docPatch' in result) {
         const next = { ...doc, ...result.docPatch }
         const changed = (result.docPatch.clips ?? []).find((c) => !doc.clips.some((o) => o === c))
@@ -386,8 +386,19 @@ export function applyResource(doc: StudioDoc, item: ApplyItem, ctx: ApplyContext
 
     case 'component': {
       const external = Boolean(item.source || item.data?.source || item.data?.provider)
-      if (!external && (ctx.hasLabDemo?.(item.id) ?? true)) {
-        return { ok: true, type: 'lab-capture', labSlug: item.id, atSec, message: `Rendering “${item.name}” from the Lab into an animated clip…` }
+      if (!external && findComponent(item.id) && (ctx.hasLabDemo?.(item.id) ?? true)) {
+        // The real component, recorded with its real animation by the Studio.
+        const added = withComponent(doc, item.id, { startSec: atSec, recordSec: 4, durationSec: 4 })
+        const clip = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
+        return {
+          ok: true,
+          type: 'doc',
+          doc: { ...added.doc, clips: added.doc.clips.map((c) => (c.id === clip.id ? clip : c)) },
+          focusId: clip.id,
+          focusSec: visibleMoment(clip),
+          needsStudio: true,
+          message: `“${item.name}” added — the Studio is recording its real animation into the clip.`,
+        }
       }
       return applySceneLike(doc, item, ctx, 'rebuilt natively')
     }

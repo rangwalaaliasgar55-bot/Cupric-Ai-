@@ -4,17 +4,20 @@ import { trimFrames } from '../lib/trimFrames'
 import { captureElement } from '../lib/capture'
 import { ProgressProvider } from '../lib/ProgressProvider'
 import { Button } from '../components/Button'
-import { availableSlugs, getDemo } from '../lab/demos'
+import { availableSlugs } from '../lab/demos'
+import { DemoFrame } from '../lab/DemoFrame'
 import { PreviewPlayContext } from '../lab/preview-play'
 import { categories, lab, type LabEntry } from '../lab/registry'
 import { groups } from '../lab/order'
-import type { StudioOverlayClip } from '../types/project'
-import { nextFreeStart, studioOf } from '../lib/studio/doc'
+import type { StudioClip } from '../types/project'
+import { docDuration, studioOf } from '../lib/studio/doc'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
 import { focusStudioClip } from '../lib/studio/focus'
-import { studioPlayhead, takeLabAutocapture } from '../lib/studio/studioLink'
+import { lastStudioPlayhead } from '../lib/studio/studioLink'
+import { withComponent } from '../lib/studio/components'
+import { motionPatch } from '../lib/studio/motionDirector'
 
 /**
  * UI Lab — the vendored lab.xevrion.dev catalogue running locally.
@@ -27,43 +30,6 @@ import { studioPlayhead, takeLabAutocapture } from '../lib/studio/studioLink'
 
 const ALL = 'all' as const
 
-function DemoFrame({
-  slug,
-  play,
-  className,
-  atSeconds,
-}: {
-  slug: string
-  play: boolean | null
-  className?: string
-  /**
-   * When set, the demo is driven from this instant instead of its own clock.
-   * Components that read the shared clock then render the same pixels every
-   * time — which is what makes a capture reproducible.
-   */
-  atSeconds?: number
-}) {
-  const Demo = getDemo(slug)
-  if (!Demo) {
-    return <div className="grid h-full place-items-center text-xs text-muted">No demo file</div>
-  }
-  const body = (
-    <PreviewPlayContext.Provider value={play}>
-      <Suspense
-        fallback={
-          <div className="grid h-full place-items-center">
-            <Loader2 size={16} className="animate-spin text-muted" />
-          </div>
-        }
-      >
-        <div className={cx('lab-canvas grid h-full w-full place-items-center overflow-hidden', className)}>
-          <Demo />
-        </div>
-      </Suspense>
-    </PreviewPlayContext.Provider>
-  )
-  return atSeconds === undefined ? body : <ProgressProvider seconds={atSeconds}>{body}</ProgressProvider>
-}
 
 /** Mount a card's live demo only once it scrolls near the viewport. */
 function useNearViewport<T extends Element>(): [React.RefObject<T | null>, boolean] {
@@ -136,14 +102,7 @@ function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
 export function Lab() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>(ALL)
-  // Resources → Apply on a component: open it and capture it automatically.
-  const [autoCapture] = useState(() => takeLabAutocapture())
-  const autoStarted = useRef(false)
   const [open, setOpen] = useState<LabEntry | null>(() => {
-    if (autoCapture) {
-      const entry = lab.find((item) => item.slug === autoCapture.slug)
-      if (entry) return entry
-    }
     const slug = sessionStorage.getItem('cupric:lab-open')
     if (slug) sessionStorage.removeItem('cupric:lab-open')
     return slug ? lab.find((entry) => entry.slug === slug) ?? null : null
@@ -159,7 +118,7 @@ export function Lab() {
   const stageRef = useRef<HTMLDivElement>(null)
 
   const project = useActiveProject()
-  const addStudioClip = useProjectStore((s) => s.addStudioClip)
+  const patchStudio = useProjectStore((s) => s.patchStudio)
   const setView = useProjectStore((s) => s.setView)
   const pushToast = useProjectStore((s) => s.pushToast)
 
@@ -183,97 +142,26 @@ export function Lab() {
    * then scrub and export its real motion instead of flattening the component
    * into the single screenshot that used to make Lab resources look broken.
    */
-  useEffect(() => {
-    if (!autoCapture || autoStarted.current || !open || open.slug !== autoCapture.slug || !project) return
-    let cancelled = false
-    void (async () => {
-      // Wait for the lazily loaded demo to mount (Suspense), then one settle beat.
-      const deadline = performance.now() + 8000
-      while (!cancelled && performance.now() < deadline && !stageRef.current?.querySelector('.lab-canvas')) {
-        await new Promise((resolve) => setTimeout(resolve, 100))
-      }
-      await new Promise((resolve) => setTimeout(resolve, 400))
-      if (cancelled || autoStarted.current) return
-      autoStarted.current = true
-      await sendToStudio({ atSec: autoCapture.atSec, returnTo: autoCapture.returnTo })
-    })()
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, project])
-
-  async function sendToStudio(opts: { atSec?: number; returnTo?: 'studio' | 'library' } = {}) {
-    if (!open || !project || !stageRef.current) return
+  /**
+   * Put the component on the Studio timeline. The Studio's recorder plays it,
+   * acts it out and records its real animation into the clip (see
+   * ComponentRecorderHost), the same path as Studio → Components.
+   */
+  async function sendToStudio() {
+    if (!open || !project) return
     setCapturing(true)
-    setCaptureProgress(0)
     try {
-      const stage = stageRef.current
-      // The compositor can only capture what is on screen.
-      stage.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
-      const frameFps = 8
-      const durationSec = 3
-      const frameCount = frameFps * durationSec
-      let method = ''
-      const shotAt = async (frame: number) => {
-        setFreezeAt(frame / frameFps)
-        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-        const shot = await captureElement(stage, { type: 'image/webp', quality: 0.8 })
-        method = shot.method
-        return shot.dataUrl
-      }
-      // Probe three moments first: a component that does not move becomes one
-      // still immediately instead of 30 identical frames.
-      const probe = [0, Math.floor(frameCount / 2), frameCount - 1]
-      const probed = new Map<number, string>()
-      for (const [i, frame] of probe.entries()) {
-        probed.set(frame, await shotAt(frame))
-        setCaptureProgress(Math.round(((i + 1) / probe.length) * 15))
-      }
-      const animated = new Set(probed.values()).size > 1
-      const frames: string[] = []
-      if (animated) {
-        for (let frame = 0; frame < frameCount; frame += 1) {
-          frames.push(probed.get(frame) ?? (await shotAt(frame)))
-          setCaptureProgress(15 + Math.round(((frame + 1) / frameCount) * 85))
-        }
-      } else {
-        frames.push(probed.get(0)!)
-      }
-      // Crop to the component itself so it lands in the video as a card, not
-      // a small widget floating in a big empty stage rectangle.
-      const trimmed = await trimFrames(frames)
-      frames.splice(0, frames.length, ...trimmed.frames)
       const doc = studioOf(project)
-      const track = Math.max(1, Math.min(doc.trackCount - 1, 1))
-      const clip: StudioOverlayClip = {
-        id: uid(), kind: 'overlay', track,
-        // At the playhead the resource was applied at (the store lifts it to a
-        // free track); otherwise the first gap on the overlay track.
-        startSec: opts.atSec !== undefined ? Math.round(opts.atSec * 100) / 100 : (studioPlayhead() ?? nextFreeStart(doc, track, 0, durationSec)), durationSec,
-        name: open.name, transitionIn: 'fade', transitionOut: 'fade', opacity: 1,
-        dataUrl: frames[0], ...(animated ? { frames, frameFps } : {}),
-        source: `UI Lab ${animated ? 'animated ' : ''}React capture · ${open.name}`,
-        x: 0.5, y: 0.5, scale: 0.78, // inside title-safe on every aspect
-      }
-      addStudioClip(project.id, clip)
+      const added = withComponent(doc, open.slug, { startSec: Math.min(lastStudioPlayhead(), docDuration(doc)), recordSec: 4, durationSec: 4 })
+      const clip = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
+      patchStudio(project.id, { trackCount: added.doc.trackCount, clips: added.doc.clips.map((c) => (c.id === clip.id ? clip : c)) })
       focusStudioClip(clip.id)
-      const backToLibrary = opts.returnTo === 'library'
-      pushToast(
-        'success',
-        animated
-          ? `${open.name} added to Studio as a ${durationSec}s animated clip (${frames.length} frames${method === 'compositor' ? ', pixel-exact' : ''}).`
-          : `${open.name} added to Studio. It is static until you interact with it, so it was added as a still.`,
-        backToLibrary ? { action: { label: 'Open Studio', run: () => setView('studio') } } : undefined,
-      )
-      setView(backToLibrary ? 'library' : 'studio')
+      pushToast('success', `${open.name} is on your timeline — the Studio is recording its real animation now.`)
+      setView('studio')
     } catch (err) {
-      pushToast('error', humanError(err, `Could not capture ${open.name}`))
+      pushToast('error', humanError(err, `Could not add ${open.name}`))
     } finally {
       setCapturing(false)
-      setCaptureProgress(0)
-      setFreezeAt(undefined)
     }
   }
 
@@ -311,7 +199,7 @@ export function Lab() {
             </Button>
             <Button size="sm" variant="primary" onClick={() => void sendToStudio()} disabled={!project || capturing}>
               {capturing ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
-              {capturing ? `Rendering ${captureProgress}%` : 'Add animated to Studio'}
+              {capturing ? 'Adding…' : 'Add animated to Studio'}
             </Button>
           </div>
         </div>
