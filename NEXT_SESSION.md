@@ -253,3 +253,10 @@ Hardware follow-up: verify beat analysis on long MP3s and reframe on real 4K foo
 - `src/lab/propConfigs.ts`: the ONE prop registry (framecn + ob). Every non-shader component gets a universal `fontFamily` prop; `FramecnStage` applies it with scoped CSS that keeps monospace text mono.
 - Agent: `setComponentProps` op (edit words/colours/font inside a placed component, re-records); `addComponent.track`; category-aware default motion (self-animating components only fade); `addText` without motion eases on/off; `INTENT_PICKS` + `COMPONENT_USE` lead the catalogue by intent; prompt has COMPONENT PLAYBOOK, TYPOGRAPHY & COLOUR, SMOOTHNESS sections.
 - Check: `npm run check:agent-kit`.
+
+## v0.10.0 — motion-board set
+- `src/lab/obsidian/board.tsx`: mb-chart-morph, mb-masked-type, mb-elastic-type, mb-shutter-reveal, mb-search-results.
+  These are Cupric originals written after a user-pasted motion board. That board had no licence, so no code, fonts or images were copied.
+  All share `cycleAt(t)` (forward 2.2 s → hold 4.4 s → return 1.4 s, pure).
+- The agent prompt (main.cjs) now teaches that timing grammar. Intent picks include the mb-* slugs, and check-agent-kit covers them.
+- Not yet built from the board: button→player, card→workspace, tabs, dashboard zoom, dock, glass lens, spring stack, text reflow, perspective, flowing paths, particle logo.

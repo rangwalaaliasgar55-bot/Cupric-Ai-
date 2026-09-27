@@ -151,3 +151,4 @@ export function MarqueeBand({ text = 'Now live, Built for teams, Ship faster', s
     </div>
   )
 }
+export { ChartMorph, MaskedType, ElasticType, ShutterReveal, SearchResults, cycleAt } from './board'

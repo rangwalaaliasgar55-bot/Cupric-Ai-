@@ -15,7 +15,7 @@ const throws = (fn, re, msg) => { assert.throws(fn, re, msg); n++ }
 /* licence + provenance */
 const lic = read('src/lab/obsidian/LICENSE')
 ok(lic.includes('MIT License') && lic.includes('Copyright (c) 2026 ObsidianUI'), 'ObsidianUI MIT notice kept')
-const obSrc = read('src/lab/obsidian/index.tsx').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+const obSrc = (read('src/lab/obsidian/index.tsx') + read('src/lab/obsidian/board.tsx')).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
 ok(!/requestAnimationFrame|Math\.random|Date\.now|performance\.now|addEventListener|gsap/.test(obSrc), 'ob components: no wall clock, randomness or events')
 ok(obSrc.includes('useTimingInfo'), 'ob components read the stage clock')
 
@@ -54,6 +54,13 @@ for (const e of m.OBSIDIAN_ENTRIES) {
   ok(frames.size > 1, `${e.slug} actually moves over time`)
 }
 ok(m.renderToString(m.createElement(m.StageClock.Provider, { value: 500 }, m.createElement(m.ob.FlipText, { text: 'Hi', fontFamily: 'Satoshi' }))).includes('Satoshi'), 'ob components take fontFamily directly')
+
+/* motion-board set */
+ok(m.OBSIDIAN_ENTRIES.filter((e) => e.slug.startsWith('mb-')).length >= 5, 'motion-board components registered')
+const cy = (t) => m.ob.cycleAt(t)
+ok(cy(0).p === 0 && cy(2.3).phase === 'hold' && cy(3).p === 1 && cy(7.5).phase === 'ret' && Math.abs(cy(8).p) < 1e-9, 'forward → hold → return cycle is pure and loops at 8 s')
+ok(m.ob.cycleAt(20, 2.2, 4.4, 1.4, false).p === 1, 'no-loop holds the end state')
+ok(m.comps.componentCatalogFor('show our growth chart', 18).map((c) => c.slug).includes('mb-chart-morph') && m.comps.componentCatalogFor('app demo walkthrough', 18).map((c) => c.slug).includes('mb-search-results'), 'intents surface motion-board pieces')
 
 /* universal font prop */
 const withFont = Object.entries(m.PROP_CONFIGS).filter(([, c]) => c.controls.fontFamily)
