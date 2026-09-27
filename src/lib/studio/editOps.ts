@@ -1,24 +1,88 @@
 import type { StudioClip, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition } from '../../types/project'
 import { clamp } from '../utils'
-import { defaultTextClip, normaliseClip, reorderTracks } from './doc'
+import { MAX_TRACKS, defaultTextClip, docDuration, normaliseClip, reorderTracks, resolveOverlaps } from './doc'
+import {
+  ALL_RECIPE_IDS,
+  choreograph,
+  CAMERA_RECIPES,
+  EMPHASIS_RECIPES,
+  ENTRANCE_RECIPES,
+  EXIT_RECIPES,
+  MOTION_PRESETS,
+  describeMotionSpec,
+  directClip,
+  directTransition,
+  motionPatch,
+  motionSpecFromText,
+  pickHighlightWord,
+  readingTimeSec,
+  styleFromInstruction,
+  type DirectionStyle,
+  type MotionSpec,
+} from './motionDirector'
 
 export type StudioEditOp =
   | { type: 'patchClip'; clipId: string; patch: Record<string, string | number> }
   | { type: 'moveClip'; clipId: string; track?: number; startSec?: number }
   | { type: 'deleteClip'; clipId: string }
-  | { type: 'addText'; text: string; track: number; startSec: number; durationSec: number; color?: string; fontFamily?: string; anim?: StudioTextAnim }
+  | {
+      type: 'addText'
+      text: string
+      track: number
+      startSec: number
+      durationSec: number
+      color?: string
+      fontFamily?: string
+      anim?: StudioTextAnim
+      x?: number
+      y?: number
+      fontSizePct?: number
+      weight?: 400 | 600 | 800
+      align?: 'left' | 'center' | 'right'
+      highlightWord?: string
+      motion?: MotionSpec
+    }
+  | { type: 'applyMotion'; clipId: string; motion: MotionSpec }
+  | { type: 'clearKeyframes'; clipId: string }
   | { type: 'setKeyframe'; clipId: string; at: number; values: Partial<Pick<StudioKeyframe, 'x' | 'y' | 'scale' | 'rotation' | 'opacity'>>; ease?: StudioKeyframe['ease'] }
   | { type: 'reorderTrack'; from: number; to: number }
   | { type: 'applyStylePreset'; preset: 'editorial' | 'bold-social' | 'minimal' }
 
 export type StudioEditPlan = { summary: string; ops: StudioEditOp[]; source: 'live' | 'local'; warning?: string }
 
-const PATCH_KEYS = new Set(['x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume'])
+const PATCH_KEYS = new Set(['x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume', 'durationSec', 'startSec', 'name'])
 const TEXT_KEYS = new Set(['fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim'])
 const FONTS = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
 const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', 'word-reveal', 'shimmer', 'slide-left', 'glass-rise', 'liquid-wave'])
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
-const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out'])
+const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out', 'back-out', 'back-in', 'expo-out', 'expo-in-out', 'elastic-out', 'hold'])
+const KEYFRAME_SCALABLE = ['overlay', 'sticker', 'video', 'image', 'text', 'glass']
+
+/** Accept a motion spec from a model, dropping anything it made up. */
+function readMotionSpec(value: unknown): MotionSpec | null {
+  if (typeof value === 'string') {
+    const preset = MOTION_PRESETS.find((item) => item.id === value)
+    return preset ? preset.spec : motionSpecFromText(value)
+  }
+  if (!value || typeof value !== 'object') return null
+  const raw = value as Record<string, unknown>
+  if (typeof raw.preset === 'string') {
+    const preset = MOTION_PRESETS.find((item) => item.id === raw.preset)
+    if (preset) return { ...preset.spec, ...(finite(raw.intensity) ? { intensity: clamp(raw.intensity, 0.3, 2) } : {}) }
+  }
+  const pickId = (key: string, list: Array<{ id: string }>) => {
+    const id = typeof raw[key] === 'string' ? String(raw[key]) : ''
+    return list.some((item) => item.id === id) ? id : undefined
+  }
+  const spec: MotionSpec = {
+    entrance: pickId('entrance', ENTRANCE_RECIPES) as MotionSpec['entrance'],
+    emphasis: pickId('emphasis', EMPHASIS_RECIPES) as MotionSpec['emphasis'],
+    exit: pickId('exit', EXIT_RECIPES) as MotionSpec['exit'],
+    camera: pickId('camera', CAMERA_RECIPES) as MotionSpec['camera'],
+    ...(finite(raw.intensity) ? { intensity: clamp(raw.intensity, 0.3, 2) } : {}),
+  }
+  return spec.entrance || spec.emphasis || spec.exit || spec.camera ? spec : null
+}
 
 function finite(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value)
@@ -27,9 +91,11 @@ function finite(value: unknown): value is number {
 export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEditPlan {
   if (!value || typeof value !== 'object') throw new Error('Edit plan must be an object')
   const raw = value as { summary?: unknown; ops?: unknown; source?: unknown; warning?: unknown }
-  if (!Array.isArray(raw.ops) || raw.ops.length === 0 || raw.ops.length > 40) throw new Error('Edit plan must contain 1–40 operations')
+  if (!Array.isArray(raw.ops) || raw.ops.length === 0) throw new Error('Edit plan must contain at least one operation')
   const ids = new Set(doc.clips.map((clip) => clip.id))
-  const ops: StudioEditOp[] = raw.ops.map((entry, index) => {
+  // Ops may reference clips created earlier in the same plan? They cannot —
+  // addText has no id — so every clipId must exist now.
+  const validateOne = (entry: unknown, index: number): StudioEditOp => {
     if (!entry || typeof entry !== 'object') throw new Error(`Operation ${index + 1} is not an object`)
     const op = entry as Record<string, unknown>
     const type = String(op.type || '')
@@ -62,7 +128,8 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
         if (key === 'align' && !['left', 'center', 'right'].includes(String(item))) throw new Error(`Unknown text alignment “${item}”`)
         if (key === 'anim' && !ANIMS.has(item as StudioTextAnim)) throw new Error(`Unknown animation “${item}”`)
         if ((key === 'transitionIn' || key === 'transitionOut') && !TRANSITIONS.has(item as StudioTransition)) throw new Error(`Unknown transition “${item}”`)
-        const ranges: Record<string, [number, number]> = { x: [0, 1], y: [0, 1], scale: [0.05, 10], rotation: [-3600, 3600], opacity: [0, 1], fontSizePct: [1, 40], volume: [0, 2] }
+        if (key === 'name' && (typeof item !== 'string' || item.length > 60)) throw new Error('Name must contain at most 60 characters')
+        const ranges: Record<string, [number, number]> = { x: [0, 1], y: [0, 1], scale: [0.05, 10], rotation: [-3600, 3600], opacity: [0, 1], fontSizePct: [1, 40], volume: [0, 2], durationSec: [0.2, 3600], startSec: [0, 36000] }
         if (key in ranges && (typeof item !== 'number' || item < ranges[key][0] || item > ranges[key][1])) throw new Error(`Property “${key}” is outside its safe range`)
         patch[key] = item
       }
@@ -82,7 +149,43 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       if (op.fontFamily !== undefined && !FONTS.has(String(op.fontFamily))) throw new Error(`Unknown bundled font “${op.fontFamily}”`)
       const anim = op.anim === undefined ? undefined : String(op.anim) as StudioTextAnim
       if (anim && !ANIMS.has(anim)) throw new Error(`Unknown animation “${anim}”`)
-      return { type, text: op.text, track: op.track as number, startSec: op.startSec as number, durationSec: op.durationSec as number, ...(typeof op.color === 'string' ? { color: op.color } : {}), ...(typeof op.fontFamily === 'string' ? { fontFamily: op.fontFamily } : {}), ...(anim ? { anim } : {}) }
+      const motion = op.motion === undefined ? null : readMotionSpec(op.motion)
+      const unit = (v: unknown) => (finite(v) ? clamp(v, 0, 1) : undefined)
+      const x = unit(op.x)
+      const y = unit(op.y)
+      const fontSizePct = finite(op.fontSizePct) ? clamp(op.fontSizePct, 1, 40) : undefined
+      const weight = [400, 600, 800].includes(Number(op.weight)) ? (Number(op.weight) as 400 | 600 | 800) : undefined
+      const align = ['left', 'center', 'right'].includes(String(op.align)) ? (String(op.align) as 'left' | 'center' | 'right') : undefined
+      const words = op.text.match(/[A-Za-z0-9][A-Za-z0-9'-]*/g) ?? []
+      const highlightWord = typeof op.highlightWord === 'string' ? words.find((w) => w.toLowerCase() === String(op.highlightWord).toLowerCase()) : undefined
+      return {
+        type,
+        text: op.text,
+        track: clamp(Math.round(op.track as number), 0, MAX_TRACKS - 1),
+        startSec: op.startSec as number,
+        durationSec: op.durationSec as number,
+        ...(typeof op.color === 'string' ? { color: op.color } : {}),
+        ...(typeof op.fontFamily === 'string' ? { fontFamily: op.fontFamily } : {}),
+        ...(anim ? { anim } : {}),
+        ...(x !== undefined ? { x } : {}),
+        ...(y !== undefined ? { y } : {}),
+        ...(fontSizePct !== undefined ? { fontSizePct } : {}),
+        ...(weight ? { weight } : {}),
+        ...(align ? { align } : {}),
+        ...(highlightWord ? { highlightWord } : {}),
+        ...(motion ? { motion } : {}),
+      }
+    }
+    if (type === 'applyMotion') {
+      const clipId = requireClip()
+      const target = doc.clips.find((item) => item.id === clipId)!
+      if (target.kind === 'audio') throw new Error('Audio clips have no visual motion')
+      const motion = readMotionSpec(op.motion ?? op)
+      if (!motion) throw new Error(`Operation ${index + 1} needs a motion preset or entrance / emphasis / exit / camera recipe (${[...ALL_RECIPE_IDS].slice(0, 8).join(', ')}…)`)
+      return { type, clipId, motion }
+    }
+    if (type === 'clearKeyframes') {
+      return { type, clipId: requireClip() }
     }
     if (type === 'setKeyframe') {
       const clipId = requireClip()
@@ -92,7 +195,7 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
         if (!['x', 'y', 'scale', 'rotation', 'opacity'].includes(key) || !finite(item)) throw new Error(`Invalid keyframe property “${key}”`)
         const targetClip = doc.clips.find((item) => item.id === clipId)!
         if ((key === 'x' || key === 'y') && !('x' in targetClip) && targetClip.kind !== 'video' && targetClip.kind !== 'image') throw new Error(`Keyframe property “${key}” does not apply to this clip`)
-        if (key === 'scale' && !['overlay', 'sticker', 'video', 'image'].includes(targetClip.kind)) throw new Error('Scale keyframes only apply to visual clips')
+        if (key === 'scale' && !KEYFRAME_SCALABLE.includes(targetClip.kind)) throw new Error('Scale keyframes only apply to visual clips')
         const ranges: Record<string, [number, number]> = { x: [0, 1], y: [0, 1], scale: [0.05, 10], rotation: [-3600, 3600], opacity: [0, 1] }
         if (item < ranges[key][0] || item > ranges[key][1]) throw new Error(`Keyframe property “${key}” is outside its safe range`)
         values[key] = item
@@ -110,12 +213,26 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       return { type, preset: String(op.preset) as 'editorial' | 'bold-social' | 'minimal' }
     }
     throw new Error(`Operation ${index + 1} uses unsupported type “${type}”`)
+  }
+  // Keep every valid op and report the rest, instead of letting one invented
+  // property throw away an otherwise good plan.
+  const dropped: string[] = []
+  const ops: StudioEditOp[] = raw.ops.slice(0, 120).flatMap((entry, index) => {
+    try {
+      return [validateOne(entry, index)]
+    } catch (err) {
+      dropped.push(err instanceof Error ? err.message : String(err))
+      return []
+    }
   })
+  if (!ops.length) throw new Error(dropped[0] ?? 'Edit plan had no usable operations')
+  const skipped = dropped.length ? `Skipped ${dropped.length} unsafe step${dropped.length === 1 ? '' : 's'} (${[...new Set(dropped)].slice(0, 2).join('; ')}).` : ''
+  const warning = [typeof raw.warning === 'string' ? raw.warning : '', skipped].filter(Boolean).join(' ')
   return {
     summary: typeof raw.summary === 'string' && raw.summary.trim() ? raw.summary : `${ops.length} proposed edit${ops.length === 1 ? '' : 's'}`,
     ops,
     source: raw.source === 'local' ? 'local' : 'live',
-    ...(typeof raw.warning === 'string' ? { warning: raw.warning } : {}),
+    ...(warning ? { warning } : {}),
   }
 }
 
@@ -124,7 +241,9 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'patchClip') return `Change ${name}: ${Object.entries(op.patch).map(([key, value]) => `${key} → ${value}`).join(', ')}`
   if (op.type === 'moveClip') return `Move ${name}${op.track !== undefined ? ` to T${op.track + 1}` : ''}${op.startSec !== undefined ? ` at ${op.startSec.toFixed(2)}s` : ''}`
   if (op.type === 'deleteClip') return `Delete ${name}`
-  if (op.type === 'addText') return `Add text “${op.text}” on T${op.track + 1} at ${op.startSec.toFixed(2)}s`
+  if (op.type === 'addText') return `Add text “${op.text}” at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
+  if (op.type === 'applyMotion') return `Animate ${name}: ${describeMotionSpec(op.motion)}`
+  if (op.type === 'clearKeyframes') return `Remove keyframes from ${name}`
   if (op.type === 'setKeyframe') return `Keyframe ${name} at ${op.at.toFixed(2)}s: ${Object.keys(op.values).join(', ')}`
   if (op.type === 'reorderTrack') return `Swap T${op.from + 1} and T${op.to + 1}`
   return `Apply ${op.preset} style across the timeline`
@@ -132,19 +251,43 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
 
 export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): StudioDoc {
   let next = { ...doc, clips: [...doc.clips] }
+  const growTracks = (track: number) => Math.min(MAX_TRACKS, Math.max(next.trackCount, Math.round(track) + 1))
   for (const op of ops) {
     if (op.type === 'deleteClip') next = { ...next, clips: next.clips.filter((clip) => clip.id !== op.clipId) }
-    else if (op.type === 'moveClip') next = { ...next, clips: next.clips.map((clip) => clip.id === op.clipId ? normaliseClip({ ...clip, ...(op.track !== undefined ? { track: op.track } : {}), ...(op.startSec !== undefined ? { startSec: op.startSec } : {}) } as StudioClip, next.trackCount) : clip) }
-    else if (op.type === 'patchClip') next = { ...next, clips: next.clips.map((clip) => clip.id === op.clipId ? normaliseClip({ ...clip, ...op.patch } as StudioClip, next.trackCount) : clip) }
+    else if (op.type === 'moveClip') {
+      if (op.track !== undefined) next = { ...next, trackCount: growTracks(op.track) }
+      next = { ...next, clips: next.clips.map((clip) => clip.id === op.clipId ? normaliseClip({ ...clip, ...(op.track !== undefined ? { track: op.track } : {}), ...(op.startSec !== undefined ? { startSec: op.startSec } : {}) } as StudioClip, next.trackCount) : clip) }
+    }
+    else if (op.type === 'patchClip') next = { ...next, clips: next.clips.map((clip) => {
+      if (clip.id !== op.clipId) return clip
+      const patched = normaliseClip({ ...clip, ...op.patch } as StudioClip, next.trackCount)
+      // Re-time keyframes with the clip so a longer title keeps its exit at the end.
+      if (typeof op.patch.durationSec === 'number' && clip.keyframes?.length && clip.durationSec > 0) {
+        const ratio = patched.durationSec / clip.durationSec
+        patched.keyframes = clip.keyframes.map((k) => ({ ...k, at: Math.round(k.at * ratio * 1000) / 1000 }))
+      }
+      return patched
+    }) }
     else if (op.type === 'addText') {
+      next = { ...next, trackCount: growTracks(op.track) }
       const clip = defaultTextClip(Math.max(0, op.startSec), clamp(Math.round(op.track), 0, next.trackCount - 1))
       clip.text = op.text
+      clip.name = op.text.slice(0, 24)
       clip.durationSec = Math.max(0.2, op.durationSec)
       if (op.color) clip.color = op.color
       if (op.fontFamily) clip.fontFamily = op.fontFamily
       if (op.anim) clip.anim = op.anim
-      next = { ...next, clips: [...next.clips, clip] }
-    } else if (op.type === 'setKeyframe') next = { ...next, clips: next.clips.map((clip) => {
+      if (op.x !== undefined) clip.x = op.x
+      if (op.y !== undefined) clip.y = op.y
+      if (op.fontSizePct !== undefined) clip.fontSizePct = op.fontSizePct
+      if (op.weight) clip.weight = op.weight
+      if (op.align) clip.align = op.align
+      if (op.highlightWord) clip.highlightWord = op.highlightWord
+      const finalClip = op.motion ? ({ ...clip, ...motionPatch(clip, op.motion) } as StudioClip) : clip
+      next = { ...next, clips: [...next.clips, finalClip] }
+    } else if (op.type === 'applyMotion') next = { ...next, clips: next.clips.map((clip) => clip.id === op.clipId ? ({ ...clip, ...motionPatch(clip, op.motion) } as StudioClip) : clip) }
+    else if (op.type === 'clearKeyframes') next = { ...next, clips: next.clips.map((clip) => clip.id === op.clipId ? { ...clip, keyframes: [] } : clip) }
+    else if (op.type === 'setKeyframe') next = { ...next, clips: next.clips.map((clip) => {
       if (clip.id !== op.clipId) return clip
       const at = clamp(op.at, 0, clip.durationSec)
       const keys = (clip.keyframes ?? []).filter((key) => Math.abs(key.at - at) > 0.02)
@@ -153,7 +296,8 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
     else if (op.type === 'reorderTrack') next = reorderTracks(next, op.from, op.to)
     else if (op.type === 'applyStylePreset') next = applyStyle(next, op.preset)
   }
-  return next
+  // Whatever the plan did, never leave two clips fighting for one track slot.
+  return resolveOverlaps(next)
 }
 
 function applyStyle(doc: StudioDoc, preset: Extract<StudioEditOp, { type: 'applyStylePreset' }>['preset']): StudioDoc {
@@ -165,59 +309,291 @@ function applyStyle(doc: StudioDoc, preset: Extract<StudioEditOp, { type: 'apply
   return { ...doc, clips: doc.clips.map((clip) => clip.kind === 'text' ? { ...clip, ...styles } : clip) }
 }
 
-/** Useful without a model and intentionally conservative: selected clip only. */
-export function localStudioEditPlan(instruction: string, doc: StudioDoc, selectedId: string | null): StudioEditPlan {
-  const text = instruction.trim().toLowerCase()
-  if (/analy[sz]e the timeline|automatic edit|auto edit|auto polish|automatic effects|auto effects|effects pass/.test(text)) {
-    if (!doc.clips.length) throw new Error('Import or add at least one clip before running Auto edit')
-    const ops: StudioEditOp[] = [{ type: 'applyStylePreset', preset: /social|short|reel|bold/.test(text) ? 'bold-social' : 'editorial' }]
-    const transitionCycle: StudioTransition[] = ['fade', 'push-up', 'blur', 'glass-wipe', 'lens-sweep']
-    const animationCycle: StudioTextAnim[] = ['word-reveal', 'fade-up', 'pop', 'glass-rise', 'shimmer']
-    const editable = doc.clips.filter((item) => item.kind !== 'audio').slice(0, 12)
-    editable.forEach((item, index) => {
-      const transitionIn = index === 0 ? 'fade' : transitionCycle[index % transitionCycle.length]
-      if (item.kind === 'text') {
-        const words = item.text.match(/[A-Za-z0-9][A-Za-z0-9'-]*/g) ?? []
-        const highlightWord = [...words].filter((word) => word.length > 3).sort((a, b) => b.length - a.length)[0] ?? ''
-        const technical = /\b(ai|api|data|software|system|future|digital|tech|code)\b/i.test(item.text)
-        const editorial = words.length > 9 || /\b(story|discover|journey|beautiful|introducing)\b/i.test(item.text)
-        ops.push({
-          type: 'patchClip',
-          clipId: item.id,
-          patch: {
-            transitionIn,
-            anim: animationCycle[index % animationCycle.length],
-            fontFamily: technical ? 'Space Grotesk Variable' : editorial ? 'Playfair Display Variable' : 'DM Sans Variable',
-            weight: index === 0 ? 800 : 600,
-            ...(highlightWord ? { highlightWord } : {}),
-          },
-        })
-      } else {
-        ops.push({ type: 'patchClip', clipId: item.id, patch: { transitionIn } })
+/* ——— Local planner ————————————————————————————————————————————————————————
+ * Runs with no network at all, so "the live agent is unavailable" never means
+ * "nothing happens". It understands the common intents — polish everything,
+ * add text, animate this, clear motion, untangle tracks — and falls back to a
+ * directed motion pass instead of giving up.
+ */
+
+const POLISH_RE = /analy[sz]e the timeline|automatic edit|auto[ -]?edit|auto[ -]?polish|automatic effects|auto[ -]?effects|effects pass|polish|professional|make it (?:look )?(?:better|good|great|pro|premium|cinematic)|improve|enhance|cinematic|level up|clean (?:it )?up/
+const ADD_TEXT_RE = /\b(?:add|write|put|insert|create|type|place|show)\b[^.]*?\b(text|title|headline|heading|caption|subtitle|cta|call to action|label|lower third|tagline|quote)\b/
+
+type LocalOpts = { time?: number }
+
+function fontFor(text: string, style: DirectionStyle, isHero: boolean): string {
+  if (/\b(ai|api|data|software|system|future|digital|tech|code|app|cloud|device)\b/i.test(text)) return 'Space Grotesk Variable'
+  if (style === 'cinematic' || /\b(story|discover|journey|beautiful|introducing|legacy|crafted)\b/i.test(text)) return isHero ? 'Playfair Display Variable' : 'Manrope Variable'
+  if (style === 'bold-social') return 'Inter Variable'
+  if (style === 'minimal') return 'Manrope Variable'
+  return isHero ? 'Manrope Variable' : 'DM Sans Variable'
+}
+
+/** A whole-timeline pass: typography, hierarchy, reading time, motion, transitions. */
+function polishPlan(doc: StudioDoc, instruction: string): StudioEditPlan {
+  const style = styleFromInstruction(instruction)
+  const ops: StudioEditOp[] = []
+  const visual = [...doc.clips].filter((c) => c.kind !== 'audio').sort((a, b) => a.startSec - b.startSec || a.track - b.track)
+  const texts = visual.filter((c): c is Extract<StudioClip, { kind: 'text' }> => c.kind === 'text')
+  const media = visual.filter((c) => c.kind === 'video' || c.kind === 'image').sort((a, b) => a.startSec - b.startSec)
+  const hero = [...texts].sort((a, b) => b.fontSizePct - a.fontSizePct || a.startSec - b.startSec)[0]
+  const lastEnd = Math.max(0, ...visual.map((c) => c.startSec + c.durationSec))
+  const counts = { text: 0, media: 0, transitions: 0, highlights: 0, retimed: 0, other: 0 }
+  let textIndex = 0
+  let mediaIndex = 0
+
+  // Set the house look first; the per-clip typography, highlights and
+  // choreography below then refine it clip by clip.
+  if (texts.length) {
+    const preset = style === 'bold-social' ? 'bold-social' : style === 'minimal' ? 'minimal' : 'editorial'
+    ops.push({ type: 'applyStylePreset', preset })
+  }
+
+  visual.forEach((clip, index) => {
+    const isLast = Math.abs(clip.startSec + clip.durationSec - lastEnd) < 0.05
+    if (clip.kind === 'text') {
+      const isHero = clip.id === hero?.id
+      const patch: Record<string, string | number> = {
+        fontFamily: fontFor(clip.text, style, isHero),
+        weight: isHero ? 800 : 600,
       }
-    })
-    const moving = editable.filter((item) => ['video', 'image', 'overlay', 'sticker'].includes(item.kind)).slice(0, 3)
-    for (const item of moving) {
-      const x = 'x' in item && typeof item.x === 'number' ? item.x : 0.5
-      const y = 'y' in item && typeof item.y === 'number' ? item.y : 0.5
-      const scale = 'scale' in item && typeof item.scale === 'number' ? item.scale : 1
-      ops.push(
-        { type: 'setKeyframe', clipId: item.id, at: 0, values: { x, y: clamp(y + 0.025, 0, 1), scale: scale * 0.96, opacity: 0.75 }, ease: 'ease-out' },
-        { type: 'setKeyframe', clipId: item.id, at: Math.min(0.75, item.durationSec * 0.35), values: { x, y, scale, opacity: 1 }, ease: 'ease-in-out' },
-      )
+      if (!clip.highlightWord) {
+        const word = pickHighlightWord(clip.text)
+        if (word) {
+          patch.highlightWord = word
+          counts.highlights += 1
+        }
+      }
+      // Hierarchy: the hero reads first, supporting lines step down.
+      const heroSize = hero ? (hero.fontSizePct < 8 ? (style === 'bold-social' ? 11 : 9.5) : hero.fontSizePct) : 9
+      if (isHero && clip.fontSizePct !== heroSize) patch.fontSizePct = heroSize
+      if (!isHero && clip.fontSizePct > heroSize * 0.75) patch.fontSizePct = Math.max(4.5, Math.round(heroSize * 0.6 * 10) / 10)
+      const words = (clip.text.match(/\S+/g) ?? []).length
+      // Text motion in two layers, like a motion designer builds it: the
+      // keyframes move the block (applyMotion below), and a per-word anim
+      // that never moves the block adds rhythm inside it. Block-moving anims
+      // would fight the keyframes, so they are never chosen here.
+      patch.anim = words <= 1 || (style === 'bold-social' && !isHero) ? 'shimmer' : 'word-reveal'
+      const needed = readingTimeSec(clip.text) + 0.5
+      if (clip.durationSec < needed) {
+        patch.durationSec = Math.round(needed * 10) / 10
+        counts.retimed += 1
+      }
+      ops.push({ type: 'patchClip', clipId: clip.id, patch })
+      const retimed = { ...clip, durationSec: typeof patch.durationSec === 'number' ? patch.durationSec : clip.durationSec }
+      ops.push({ type: 'applyMotion', clipId: clip.id, motion: directClip(retimed, { index, textIndex, mediaIndex, isHero, isLast }, style) })
+      textIndex += 1
+      counts.text += 1
+      return
     }
-    return {
-      summary: `Auto-polish ${editable.length} timeline layer${editable.length === 1 ? '' : 's'} with typography, highlights, transitions and purposeful motion`,
-      source: 'local',
-      ops,
-      warning: 'The live model was unavailable, so Cupric prepared this deterministic effect pass locally. Review the listed changes before accepting them.',
+    if (clip.kind === 'video' || clip.kind === 'image') {
+      const mi = media.indexOf(clip)
+      const previous = media[mi - 1]
+      const isCut = !previous || Math.abs(previous.startSec + previous.durationSec - clip.startSec) < 0.35
+      if (isCut) {
+        ops.push({ type: 'patchClip', clipId: clip.id, patch: { transitionIn: directTransition(mediaIndex, style), ...(isLast ? { transitionOut: 'fade' } : {}) } })
+        counts.transitions += 1
+      }
+      ops.push({ type: 'applyMotion', clipId: clip.id, motion: directClip(clip, { index, textIndex, mediaIndex, isHero: false, isLast }, style) })
+      mediaIndex += 1
+      counts.media += 1
+      return
+    }
+    ops.push({ type: 'applyMotion', clipId: clip.id, motion: directClip(clip, { index, textIndex, mediaIndex, isHero: false, isLast }, style) })
+    counts.other += 1
+  })
+
+  const parts = [
+    counts.text ? `${counts.text} text layer${counts.text === 1 ? '' : 's'} with hierarchy, fonts and choreographed keyframes` : '',
+    counts.highlights ? `${counts.highlights} highlight word${counts.highlights === 1 ? '' : 's'}` : '',
+    counts.retimed ? `${counts.retimed} line${counts.retimed === 1 ? '' : 's'} lengthened to reading time` : '',
+    counts.media ? `camera moves on ${counts.media} shot${counts.media === 1 ? '' : 's'}` : '',
+    counts.transitions ? `${counts.transitions} varied transition${counts.transitions === 1 ? '' : 's'}` : '',
+    counts.other ? `motion on ${counts.other} sticker / overlay / glass layer${counts.other === 1 ? '' : 's'}` : '',
+  ].filter(Boolean)
+  return {
+    summary: `${style.replace('-', ' ')} polish: ${parts.join(', ') || 'motion pass'}`,
+    source: 'local',
+    ops,
+  }
+}
+
+function extractCopy(instruction: string): string | null {
+  const quoted = instruction.match(/["“”'‘’]([^"“”]{1,300})["“”'‘’]/)
+  if (quoted && quoted[1].trim().length > 0 && !/^s /.test(quoted[1])) return quoted[1].trim()
+  const said = instruction.match(/(?:saying|that says|says|reading|that reads|with the (?:text|words?)|:)\s+(.{1,300})$/i)
+  if (said) return said[1].trim().replace(/[.!]$/, '')
+  const after = instruction.match(/\b(?:text|title|headline|heading|caption|subtitle|cta|label|tagline|quote)\b\s+(?!at\b|on\b|in\b|to\b|for\b|near\b)(.{2,300})$/i)
+  if (after) return after[1].trim().replace(/\s+(?:at|on|in) (?:the )?(?:start|end|beginning|top|bottom|middle|center)\b.*$/i, '')
+  return null
+}
+
+function addTextPlan(instruction: string, doc: StudioDoc, opts: LocalOpts): StudioEditPlan {
+  const t = instruction.toLowerCase()
+  const role = t.match(ADD_TEXT_RE)?.[1] ?? 'text'
+  const isCta = /cta|call to action|subscribe|follow|buy|sign up|download|link in bio/.test(t)
+  const isLower = /lower third/.test(role)
+  const isCaption = /caption|subtitle/.test(role)
+  const copy = extractCopy(instruction) ?? (isCta ? 'Follow for more' : isLower ? 'Name Surname · Role' : isCaption ? 'Your caption here' : 'Your headline')
+  const style = styleFromInstruction(instruction)
+  const durationSec = Math.round(Math.max(isCta ? 2.5 : 2.2, readingTimeSec(copy) + 0.6) * 10) / 10
+  const total = docDuration(doc)
+  const atMatch = t.match(/\bat\s+(\d+(?:\.\d+)?)\s*s(?:ec(?:onds?)?)?\b/)
+  let startSec = opts.time ?? 0
+  if (atMatch) startSec = Number(atMatch[1])
+  else if (/\b(?:at|in) the end|ending|outro|final/.test(t) || isCta) startSec = Math.max(0, total - durationSec)
+  else if (/\b(?:at|in) the (?:start|beginning)|intro|opening/.test(t)) startSec = 0
+  const y = /\btop\b/.test(t) ? 0.18 : /\bbottom\b/.test(t) || isLower ? 0.84 : isCaption ? 0.78 : isCta ? 0.8 : 0.45
+  const fontSizePct = isLower ? 4.5 : isCaption ? 5.2 : isCta ? 6.5 : style === 'bold-social' ? 11 : 9
+  const motion = motionSpecFromText(instruction) ?? (isLower ? { entrance: 'slide-in-left', exit: 'slide-out-left', intensity: 0.8 } as MotionSpec : isCta ? { entrance: 'scale-pop', emphasis: 'pulse', exit: 'fade-out', intensity: 1.1 } as MotionSpec : isCaption ? { entrance: 'rise-in', exit: 'fade-out', intensity: 0.6 } as MotionSpec : directClip({ ...defaultTextClip(0, 0), durationSec }, { index: 0, textIndex: 0, mediaIndex: 0, isHero: true, isLast: false }, style))
+  const highlightWord = pickHighlightWord(copy)
+  const color = /\blime|green\b/.test(t) ? '#C8F542' : /\bblue\b/.test(t) ? '#4FB6E8' : /\bred\b/.test(t) ? '#E24B4A' : /\bblack\b/.test(t) ? '#111111' : undefined
+  const op: StudioEditOp = {
+    type: 'addText',
+    text: copy,
+    track: Math.max(1, doc.trackCount - 1),
+    startSec: Math.round(startSec * 100) / 100,
+    durationSec,
+    x: 0.5,
+    y,
+    fontSizePct,
+    weight: isCaption || isLower ? 600 : 800,
+    align: 'center',
+    fontFamily: fontFor(copy, style, !isCaption && !isLower),
+    anim: (copy.match(/\S+/g) ?? []).length > 6 ? 'word-reveal' : 'none',
+    ...(highlightWord && !isLower ? { highlightWord } : {}),
+    ...(color ? { color } : {}),
+    motion,
+  }
+  return { summary: `Add ${isCta ? 'a call to action' : isLower ? 'a lower third' : isCaption ? 'a caption' : 'a title'} “${copy}” with ${describeMotionSpec(motion).toLowerCase()}`, source: 'local', ops: [op] }
+}
+
+const COUNT_WORDS: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 }
+
+/** "add two keyframes", "3 keyframes", "a pair of keys" → 2 / 3 / 2. */
+export function requestedKeyframeCount(text: string): number | null {
+  const m = text.toLowerCase().match(/\b(\d{1,2}|one|two|three|four|five|six|seven|eight|a pair of|a couple of)\s+(?:more\s+)?(?:key\s?frames?|keys)\b/)
+  if (!m) return null
+  const n = /pair|couple/.test(m[1]) ? 2 : COUNT_WORDS[m[1]] ?? Number(m[1])
+  return Number.isFinite(n) ? Math.max(1, Math.min(12, n)) : null
+}
+
+/**
+ * Turn a directed motion spec into exactly `count` real, editable keyframes.
+ * The choreography's first and last poses are always kept, so two keys is
+ * "from → to"; extra keys come from the choreography's own beats, and if the
+ * user asks for more than it has, midpoints of the longest gaps are added.
+ */
+function keyframeOpsFor(clip: StudioClip, spec: MotionSpec, count: number): StudioEditOp[] {
+  const keys = choreograph(clip, spec)
+  if (!keys.length) return []
+  let picked: StudioKeyframe[]
+  const visible = (k: StudioKeyframe) => (k.opacity ?? 1) >= 0.99
+  if (count <= keys.length) {
+    // Priority, so every count reads as designed motion and never leaves the
+    // clip invisible: 1 → the resting pose; 2 → entrance start → rest;
+    // 3 → + the hold before the exit; 4 → + the exit end; then the beats.
+    const firstVisible = keys.findIndex(visible)
+    let lastVisible = -1
+    for (let i = keys.length - 1; i >= 0; i--) if (visible(keys[i])) { lastVisible = i; break }
+    const order = count === 1
+      ? [Math.max(0, firstVisible)]
+      : [0, firstVisible, lastVisible, keys.length - 1, ...keys.map((_, i) => i)]
+    const chosen: number[] = []
+    for (const i of order) if (i >= 0 && !chosen.includes(i) && chosen.length < count) chosen.push(i)
+    picked = chosen.sort((a, b) => a - b).map((i) => keys[i])
+  } else {
+    picked = [...keys]
+    while (picked.length < count) {
+      let gap = 0
+      for (let i = 1; i < picked.length - 1; i++) {
+        if (picked[i + 1].at - picked[i].at > picked[gap + 1].at - picked[gap].at) gap = i
+      }
+      const a = picked[gap], b = picked[gap + 1] ?? a
+      const mid: StudioKeyframe = { at: (a.at + b.at) / 2, ease: a.ease }
+      for (const prop of ['x', 'y', 'scale', 'rotation', 'opacity'] as const) {
+        const va = a[prop], vb = b[prop]
+        if (typeof va === 'number' && typeof vb === 'number') mid[prop] = (va + vb) / 2
+      }
+      picked.splice(gap + 1, 0, mid)
     }
   }
+  const positional = 'x' in clip || clip.kind === 'video' || clip.kind === 'image'
+  return picked.map((key) => {
+    const values: Partial<Pick<StudioKeyframe, 'x' | 'y' | 'scale' | 'rotation' | 'opacity'>> = {}
+    for (const prop of ['x', 'y', 'scale', 'rotation', 'opacity'] as const) {
+      const v = key[prop]
+      if (typeof v !== 'number' || !Number.isFinite(v)) continue
+      if ((prop === 'x' || prop === 'y') && !positional) continue
+      if (prop === 'scale' && !KEYFRAME_SCALABLE.includes(clip.kind)) continue
+      values[prop] = prop === 'opacity' || prop === 'x' || prop === 'y' ? clamp(v, 0, 1) : prop === 'scale' ? clamp(v, 0.05, 10) : v
+    }
+    if (!Object.keys(values).length) values.opacity = 1
+    return { type: 'setKeyframe', clipId: clip.id, at: clamp(key.at, 0, clip.durationSec), values, ease: key.ease } as StudioEditOp
+  })
+}
+
+export function localStudioEditPlan(instruction: string, doc: StudioDoc, selectedId: string | null, opts: LocalOpts = {}): StudioEditPlan {
+  const text = instruction.trim().toLowerCase()
+  if (ADD_TEXT_RE.test(text)) return addTextPlan(instruction, doc, opts)
+  if (!doc.clips.length) throw new Error('The timeline is empty. Import footage or say “add a title saying …” to start.')
+
+  if (/\b(?:fix|resolve|untangle|organi[sz]e|clean up) (?:the )?(?:overlap|overlaps|overlapping|tracks|layers|timeline)/.test(text)) {
+    const resolved = resolveOverlaps(doc)
+    const moved = resolved.clips.filter((c, i) => c.track !== doc.clips[i].track || c.startSec !== doc.clips[i].startSec)
+    if (!moved.length) throw new Error('No overlapping clips — every layer already has its own slot.')
+    return { summary: `Lift ${moved.length} overlapping clip${moved.length === 1 ? '' : 's'} onto free tracks`, source: 'local', ops: moved.map((c) => ({ type: 'moveClip', clipId: c.id, track: c.track, startSec: c.startSec }) as StudioEditOp) }
+  }
+
+  const targets = /\b(?:all|every|everything|each)\b/.test(text) ? doc.clips.filter((c) => c.kind !== 'audio') : doc.clips.filter((c) => c.id === selectedId)
+  if (/\b(?:remove|clear|delete|reset|strip)\b.*\b(?:keyframes?|motion|animation)s?\b/.test(text)) {
+    const clear = targets.length ? targets : doc.clips.filter((c) => c.keyframes?.length)
+    if (clear.length) return { summary: `Remove keyframes from ${clear.length} clip${clear.length === 1 ? '' : 's'}`, source: 'local', ops: clear.map((c) => ({ type: 'clearKeyframes', clipId: c.id }) as StudioEditOp) }
+  }
+
+  if (POLISH_RE.test(text) && !selectedId) return polishPlan(doc, instruction)
+  if (POLISH_RE.test(text) && /\b(?:all|every|everything|whole|timeline|video|edit)\b/.test(text)) return polishPlan(doc, instruction)
+
+  const motionTargets = targets.length ? targets : []
+  // An explicit keyframe count means the user wants keys they can grab and
+  // edit, not an opaque recipe — so emit exactly that many setKeyframe ops.
+  const keyCount = requestedKeyframeCount(text)
+  if (keyCount) {
+    const keyTargets = (motionTargets.length ? motionTargets : doc.clips.filter((c) => c.kind !== 'audio').slice(0, 1)).filter((c) => c.kind !== 'audio')
+    if (keyTargets.length) {
+      const ops = keyTargets.flatMap((c, index) => keyframeOpsFor(c, motionSpecFromText(instruction, c) ?? directClip(c, { index, textIndex: index, mediaIndex: index, isHero: index === 0, isLast: false }, styleFromInstruction(instruction)), keyCount))
+      if (ops.length) {
+        return {
+          summary: `Add ${keyCount} editable keyframe${keyCount === 1 ? '' : 's'} to ${keyTargets.length === 1 ? `“${keyTargets[0].name}”` : `${keyTargets.length} clips`}`,
+          source: 'local',
+          ops,
+        }
+      }
+    }
+  }
+  const requested = motionSpecFromText(instruction, motionTargets[0])
+  if (requested && motionTargets.length) {
+    return {
+      summary: `Animate ${motionTargets.length === 1 ? `“${motionTargets[0].name}”` : `${motionTargets.length} clips`}: ${describeMotionSpec(requested)}`,
+      source: 'local',
+      ops: motionTargets.filter((c) => c.kind !== 'audio').map((c) => ({ type: 'applyMotion', clipId: c.id, motion: requested }) as StudioEditOp),
+    }
+  }
+  if (requested && !motionTargets.length) {
+    const all = doc.clips.filter((c) => c.kind !== 'audio')
+    return { summary: `Animate all ${all.length} layers: ${describeMotionSpec(requested)}`, source: 'local', ops: all.map((c) => ({ type: 'applyMotion', clipId: c.id, motion: requested }) as StudioEditOp) }
+  }
+  if (!selectedId) return polishPlan(doc, instruction)
+
   const clip = doc.clips.find((item) => item.id === selectedId)
   if (!clip) throw new Error('Select a clip first so Cupric knows what to edit')
   const patch: Record<string, string | number> = {}
   const visualX: number | null = clip.kind === 'video' || clip.kind === 'image' ? (clip.x ?? 0.5) : 'x' in clip && typeof clip.x === 'number' ? clip.x : null
   const visualY: number | null = clip.kind === 'video' || clip.kind === 'image' ? (clip.y ?? 0.5) : 'y' in clip && typeof clip.y === 'number' ? clip.y : null
+  if (clip.kind === 'text') {
+    const rewrite = instruction.match(/(?:change|replace|set|make)\s+(?:the\s+)?(?:text|copy|words?)\s+(?:to|into|as)\s+["“']?(.+?)["”']?$/i)?.[1]
+    if (rewrite) patch.text = rewrite.slice(0, 500)
+  }
   if (/move (it )?up|higher/.test(text) && visualY !== null) patch.y = clamp(visualY - 0.1, 0, 1)
   if (/move (it )?down|lower/.test(text) && visualY !== null) patch.y = clamp(visualY + 0.1, 0, 1)
   if (/move (it )?left/.test(text) && visualX !== null) patch.x = clamp(visualX - 0.1, 0, 1)
@@ -261,20 +637,51 @@ export function localStudioEditPlan(instruction: string, doc: StudioDoc, selecte
     const color = colors.find(([pattern]) => pattern.test(text))
     if (color) patch.color = color[1]
   }
-  const track = text.match(/(?:track|t)\s*([1-8])/i)?.[1]
+  const track = text.match(/\b(?:track|t)\s*(\d{1,2})\b/i)?.[1]
   if (track) return { summary: `Move “${clip.name}” to track ${track}`, source: 'local', ops: [{ type: 'moveClip', clipId: clip.id, track: Number(track) - 1 }] }
   const rotate = text.match(/rotate(?: it)?\s*(-?\d+)/)?.[1]
   if (rotate) patch.rotation = Number(rotate)
-  if (/add (?:two )?keyframes|animate (?:it|movement)|subtle motion/.test(text) && visualX !== null && visualY !== null) {
-    const canScale = ['overlay', 'sticker', 'video', 'image'].includes(clip.kind)
-    const scale = canScale && 'scale' in clip && typeof clip.scale === 'number' ? clip.scale : 1
-    const ops: StudioEditOp[] = Object.keys(patch).length ? [{ type: 'patchClip', clipId: clip.id, patch }] : []
-    ops.push(
-      { type: 'setKeyframe', clipId: clip.id, at: 0, values: { x: visualX, y: clamp(visualY + 0.03, 0, 1), ...(canScale ? { scale: scale * 0.96 } : {}), opacity: 0.7 }, ease: 'ease-out' },
-      { type: 'setKeyframe', clipId: clip.id, at: Math.min(0.7, clip.durationSec * 0.35), values: { x: visualX, y: visualY, ...(canScale ? { scale } : {}), opacity: 1 }, ease: 'ease-in-out' },
-    )
-    return { summary: `Animate “${clip.name}” with editable entrance and settle keyframes`, source: 'local', ops }
-  }
   if (Object.keys(patch).length) return { summary: `Edit “${clip.name}”`, source: 'local', ops: [{ type: 'patchClip', clipId: clip.id, patch }] }
-  throw new Error('That instruction needs a live AI model. Try “move it up”, “make it bigger”, “fade in”, “rotate 15”, or “move to track 3”.')
+  // Nothing specific recognised: give the selected clip directed, role-aware
+  // motion rather than refusing. The plan preview lets the user say no.
+  const style = styleFromInstruction(instruction)
+  const lastEnd = Math.max(0, ...doc.clips.map((c) => c.startSec + c.durationSec))
+  const spec = directClip(clip, { index: 0, textIndex: 0, mediaIndex: 0, isHero: clip.kind === 'text', isLast: Math.abs(clip.startSec + clip.durationSec - lastEnd) < 0.05 }, style)
+  return {
+    summary: `Give “${clip.name}” directed motion: ${describeMotionSpec(spec)}`,
+    source: 'local',
+    ops: [{ type: 'applyMotion', clipId: clip.id, motion: spec }],
+    warning: 'Cupric did not recognise a specific change, so it proposed professional motion for the selected clip. Try “bounce in and float”, “make it bigger”, or “add a caption saying …”.',
+  }
+}
+
+
+/**
+ * A live model asked to "auto polish" sometimes returns one fade on one clip.
+ * When a broad request leaves visible clips untouched, add the motion
+ * director's treatment for exactly those clips, so the result is never
+ * trivial. Narrow requests are left alone.
+ */
+export function enrichThinPlan(plan: StudioEditPlan, instruction: string, doc: StudioDoc, selectedId: string | null): StudioEditPlan {
+  const broad = POLISH_RE.test(instruction.toLowerCase()) && (!selectedId || /\b(?:all|every|everything|whole|timeline|video|edit)\b/i.test(instruction))
+  if (!broad || plan.source === 'local') return plan
+  const visible = doc.clips.filter((c) => c.kind !== 'audio')
+  const touched = new Set(plan.ops.flatMap((op) => ('clipId' in op ? [op.clipId] : [])))
+  const animated = new Set(plan.ops.flatMap((op) => (op.type === 'applyMotion' || op.type === 'setKeyframe' ? [op.clipId] : [])))
+  const missing = visible.filter((c) => !touched.has(c.id) || !animated.has(c.id))
+  if (!missing.length) return plan
+  let local: StudioEditPlan
+  try {
+    local = polishPlan(doc, instruction)
+  } catch {
+    return plan
+  }
+  const missingIds = new Set(missing.map((c) => c.id))
+  const extra = local.ops.filter((op) => 'clipId' in op && missingIds.has(op.clipId) && !(op.type === 'patchClip' && touched.has(op.clipId)))
+  if (!extra.length) return plan
+  return {
+    ...plan,
+    ops: [...plan.ops, ...extra],
+    summary: `${plan.summary} + directed motion for ${missing.length} more layer${missing.length === 1 ? '' : 's'}`,
+  }
 }

@@ -34,7 +34,7 @@ export function MotionEngine() {
             onClick={() => setTab('showcase')}
             className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
               tab === 'showcase'
-                ? 'bg-accent text-accent-text shadow-sm'
+                ? 'bg-accent text-accent-ink shadow-sm'
                 : 'text-muted hover:bg-panel hover:text-text'
             }`}
           >
@@ -46,7 +46,7 @@ export function MotionEngine() {
             onClick={() => setTab('templates')}
             className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
               tab === 'templates'
-                ? 'bg-accent text-accent-text shadow-sm'
+                ? 'bg-accent text-accent-ink shadow-sm'
                 : 'text-muted hover:bg-panel hover:text-text'
             }`}
           >
@@ -58,7 +58,7 @@ export function MotionEngine() {
             onClick={() => setTab('gallery')}
             className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
               tab === 'gallery'
-                ? 'bg-accent text-accent-text shadow-sm'
+                ? 'bg-accent text-accent-ink shadow-sm'
                 : 'text-muted hover:bg-panel hover:text-text'
             }`}
           >
@@ -69,10 +69,14 @@ export function MotionEngine() {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className={tab === 'showcase' ? 'min-h-0 flex-1 overflow-hidden' : 'min-h-0 flex-1 overflow-y-auto'}>
         {tab === 'showcase' && (
-          <div className="h-full p-4">
-            <InteractiveShowcase />
+          // The showcase is a complete editor; it must fill exactly this
+          // panel — never the window — so nothing is clipped off-screen.
+          <div className="h-full min-h-0 p-3">
+            <div className="h-full min-h-0 overflow-hidden rounded-2xl border border-line">
+              <InteractiveShowcase />
+            </div>
           </div>
         )}
 

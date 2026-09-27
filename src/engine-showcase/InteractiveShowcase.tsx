@@ -179,10 +179,10 @@ export default function MotionEngineStudio() {
   });
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-slate-950 text-slate-100 overflow-hidden font-sans">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-slate-950 font-sans text-slate-100">
       {/* Top Header */}
-      <header className="h-14 border-b border-slate-800 bg-slate-900/80 px-5 flex items-center justify-between z-20 flex-shrink-0">
-        <div className="flex items-center space-x-3">
+      <header className="z-20 flex h-14 flex-shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/80 px-4">
+        <div className="flex min-w-0 shrink-0 items-center space-x-3">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
             <Sparkles className="w-4 h-4 text-white" />
           </div>
@@ -197,7 +197,7 @@ export default function MotionEngineStudio() {
         </div>
 
         {/* Center Navigation Tabs */}
-        <div className="flex items-center bg-slate-950 border border-slate-800 rounded-xl p-1 text-xs">
+        <div className="flex min-w-0 items-center overflow-x-auto rounded-xl border border-slate-800 bg-slate-950 p-1 text-xs [scrollbar-width:none]">
           <button
             onClick={() => setActiveTab('editor')}
             className={`px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 ${
@@ -261,12 +261,19 @@ export default function MotionEngineStudio() {
           autoPlay={true}
           loop={true}
         >
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <div className="flex-1 flex overflow-hidden">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex min-h-0 flex-1 overflow-hidden">
               {/* Center Canvas Preview Area */}
-              <div className="flex-1 bg-slate-950 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-                {/* Visual Canvas Monitor Frame */}
-                <div className="relative w-full max-w-5xl aspect-video bg-black rounded-2xl overflow-hidden border border-slate-800 shadow-2xl flex items-center justify-center">
+              <div
+                className="relative flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center overflow-hidden bg-slate-950 p-4"
+                style={{ containerType: 'size' }}
+              >
+                {/* Visual Canvas Monitor Frame — sized from BOTH the width and
+                    the height of the free area so the 16:9 stage always fits. */}
+                <div
+                  className="relative flex items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-black shadow-2xl"
+                  style={{ width: 'min(100cqw, calc(100cqh * 16 / 9))', aspectRatio: '16 / 9' }}
+                >
                   <EffectStack bloom={12} vignette={true} filmGrain={true} className="w-full h-full">
                     {/* Continuous Procedural Background */}
                     <AbsoluteFill>
@@ -422,7 +429,7 @@ export default function MotionEngineStudio() {
               </div>
 
               {/* Right Side Inspector Panel */}
-              <div className="w-80 flex-shrink-0">
+              <div className="w-72 flex-shrink-0 overflow-y-auto xl:w-80">
                 <Inspector
                   selectedItem={selectedInspectorItem}
                   onUpdateProp={handleUpdateInspectorProp}
@@ -432,6 +439,7 @@ export default function MotionEngineStudio() {
 
             {/* Bottom Multi-Track Professional Timeline */}
             <Timeline
+              className="max-h-[42%] shrink-0 overflow-y-auto"
               selectedItemId={selectedTrackId}
               onSelectItem={(id) => setSelectedTrackId(id)}
             />

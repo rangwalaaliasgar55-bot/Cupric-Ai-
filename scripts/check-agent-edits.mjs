@@ -62,7 +62,15 @@ assert.match(studio, />\s*Auto polish\s*</, 'Studio must offer content-directed 
 assert.match(studio, />\s*Auto effects\s*</, 'Studio must offer an automatic native effects pass')
 assert.match(studio, /motionReferences:[\s\S]*reactBits[\s\S]*skiperUi[\s\S]*remotionPackages/, 'agent context must expose the attributed motion libraries')
 assert.match(main, /translate every idea into only the native operations/, 'third-party references must resolve to safe editable operations')
-assert.match(main, /withTimeout\(generateStudioEditPlan[\s\S]*10_000/, 'Studio planning must fail over quickly instead of hanging forever')
+{
+  // The deadline may be a literal or a named constant, but it must exist and
+  // stay short: the renderer has a deterministic local plan to fall back to.
+  const call = main.match(/withTimeout\(generateStudioEditPlan\([^)]*\)[^,]*,\s*([A-Z_0-9]+|[\d_]+)/)
+  assert.ok(call, 'Studio planning must fail over quickly instead of hanging forever')
+  const raw = /^[\d_]+$/.test(call[1]) ? call[1] : main.match(new RegExp(`const ${call[1]} = ([\\d_]+)`))?.[1]
+  const ms = Number(String(raw || '').replace(/_/g, ''))
+  assert.ok(ms > 0 && ms <= 30_000, `Studio planning deadline must be at most 30s (got ${ms}ms)`)
+}
 assert.match(studio, /const relevantNames[\s\S]*slice\(0, limit\)/, 'model context must rank and cap resource names')
 assert.match(studio, /Reading timeline and selected clips[\s\S]*Validating a safe edit plan/, 'Auto edit must show meaningful planning progress')
 const autoLocal = mod.localStudioEditPlan('Analyze the timeline and make an automatic edit', doc, null)

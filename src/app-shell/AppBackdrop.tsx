@@ -10,26 +10,38 @@
  */
 
 import { useReducedMotion } from '../lib/use-reduced-motion'
+import { useProjectStore } from '../state/useProjectStore'
 
 export function AppBackdrop() {
   const reduced = useReducedMotion()
+  // The backdrop used to hard-code the dark base, so light mode rendered every
+  // translucent toolbar and empty page area as a dark smear with dark text on
+  // top. Each theme now gets its own base, washes and grain.
+  const light = useProjectStore((s) => s.theme) === 'light'
 
   return (
     <div aria-hidden className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
       <div
         className="absolute inset-0"
         style={{
-          backgroundColor: '#0B0B10',
-          backgroundImage: [
-            'radial-gradient(at 12% 8%, rgba(200,245,66,0.10) 0px, transparent 45%)',
-            'radial-gradient(at 88% 12%, rgba(79,182,232,0.10) 0px, transparent 42%)',
-            'radial-gradient(at 70% 92%, rgba(120,88,232,0.10) 0px, transparent 45%)',
-          ].join(','),
+          backgroundColor: 'var(--color-bg)',
+          backgroundImage: (light
+            ? [
+                'radial-gradient(at 12% 8%, rgba(160,205,40,0.16) 0px, transparent 45%)',
+                'radial-gradient(at 88% 12%, rgba(79,182,232,0.12) 0px, transparent 42%)',
+                'radial-gradient(at 70% 92%, rgba(120,88,232,0.08) 0px, transparent 45%)',
+              ]
+            : [
+                'radial-gradient(at 12% 8%, rgba(200,245,66,0.10) 0px, transparent 45%)',
+                'radial-gradient(at 88% 12%, rgba(79,182,232,0.10) 0px, transparent 42%)',
+                'radial-gradient(at 70% 92%, rgba(120,88,232,0.10) 0px, transparent 45%)',
+              ]
+          ).join(','),
         }}
       />
       {!reduced && (
         <div
-          className="absolute -inset-1/4 opacity-60 mix-blend-screen [animation:cupric-drift_46s_ease-in-out_infinite]"
+          className={`absolute -inset-1/4 opacity-60 ${light ? 'mix-blend-multiply' : 'mix-blend-screen'} [animation:cupric-drift_46s_ease-in-out_infinite]`}
           style={{
             backgroundImage:
               'radial-gradient(closest-side, rgba(200,245,66,0.07), transparent 70%), radial-gradient(closest-side, rgba(79,182,232,0.07), transparent 70%)',
@@ -40,10 +52,11 @@ export function AppBackdrop() {
         />
       )}
       <div
-        className="absolute inset-0 opacity-[0.035]"
+        className={light ? 'absolute inset-0 opacity-[0.025]' : 'absolute inset-0 opacity-[0.035]'}
         style={{
-          backgroundImage:
-            'repeating-linear-gradient(0deg, rgba(255,255,255,0.6) 0px, rgba(255,255,255,0.6) 1px, transparent 1px, transparent 3px)',
+          backgroundImage: light
+            ? 'repeating-linear-gradient(0deg, rgba(11,11,16,0.5) 0px, rgba(11,11,16,0.5) 1px, transparent 1px, transparent 3px)'
+            : 'repeating-linear-gradient(0deg, rgba(255,255,255,0.6) 0px, rgba(255,255,255,0.6) 1px, transparent 1px, transparent 3px)',
         }}
       />
     </div>

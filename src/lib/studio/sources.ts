@@ -20,7 +20,10 @@ export const registrySources: FrameSources = {
     // so waiting to decode each image until its exact frame would create blank
     // flashes in the recorded video.
     frames.forEach((frame, index) => { overlayImage(`${clip.id}:${index}`, frame) })
-    const frameIndex = Math.min(frames.length - 1, Math.max(0, Math.floor(localSec * (clip.frameFps ?? 8))))
+    // Loop the strip when the clip is longer than the capture, so a UI
+    // component keeps moving instead of freezing on its last frame.
+    const raw = Math.max(0, Math.floor(localSec * (clip.frameFps ?? 8)))
+    const frameIndex = raw % frames.length
     return overlayImage(`${clip.id}:${frameIndex}`, frames[frameIndex])
   },
   sticker: (clip, localSec) => stickerFrame(clip, localSec),

@@ -19,6 +19,7 @@ import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { copyText, cx, deriveAspect, gradientFor, relTime } from '../lib/utils'
 import { getIpc, getBridge } from '../lib/bridge'
 import { humanError } from '../lib/humanError'
+import { focusStudioClip } from '../lib/studio/focus'
 
 const STATUS_TONE = {
   'prompt-ready': 'neutral',
@@ -89,15 +90,12 @@ export function ArenaDesk() {
       if (!ipc) throw new Error('This file lives on disk — open the desktop app to take it apart here.')
       if (!asset.localPath) throw new Error(`“${asset.name}” has not been imported yet, so there is no file to read.`)
       const html: string = await ipc.invoke('arena:readHtml', asset.localPath)
-      const piece = parseGeneratedHtml(html)
-      if (!piece || !piece.scenes.length) {
-        throw new Error(
-          `Cupric could not find a scene list in “${asset.name}”. Render it as video instead, or send the captured frame.`,
-        )
-      }
+      // With a name this never returns null — at worst a renameable title card.
+      const piece = parseGeneratedHtml(html, { name: asset.name })!
       const doc = studioOf(project)
       const clips = piecesToStudioClips(piece, doc, asset.name.replace(/\.html?$/i, '').slice(0, 20))
       for (const clip of clips) addStudioClip(project.id, clip)
+      focusStudioClip(clips[0]?.id)
       const confidence =
         piece.via === 'manifest'
           ? 'read straight from its source manifest'
@@ -294,7 +292,9 @@ export function ArenaDesk() {
                 onOpenEditable={() => void openEditable(a)}
                 onSendToStudio={() => {
                   try {
-                    addStudioClip(project.id, arenaToStudioClip(project, a))
+                    const sent = arenaToStudioClip(project, a)
+                    addStudioClip(project.id, sent)
+                    focusStudioClip(sent.id)
                     pushToast('success', `${a.name} added to the Studio timeline`)
                     setView('studio')
                   } catch (err) {

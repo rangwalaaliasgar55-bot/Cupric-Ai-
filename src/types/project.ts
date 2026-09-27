@@ -246,6 +246,18 @@ export type StudioMask = {
  * trimming a clip carries its animation with it. Only the properties present
  * are animated; anything omitted keeps the clip's static value.
  */
+export type StudioEase =
+  | 'linear'
+  | 'ease-in'
+  | 'ease-out'
+  | 'ease-in-out'
+  | 'back-out'
+  | 'back-in'
+  | 'expo-out'
+  | 'expo-in-out'
+  | 'elastic-out'
+  | 'hold'
+
 export type StudioKeyframe = {
   at: number
   x?: number
@@ -254,7 +266,13 @@ export type StudioKeyframe = {
   rotation?: number
   opacity?: number
   /** Easing from this keyframe to the next. */
-  ease: 'linear' | 'ease-in' | 'ease-out' | 'ease-in-out'
+  /**
+   * How the value travels to the NEXT keyframe. The expressive eases are what
+   * make motion read as designed rather than mechanical: `back-out` overshoots
+   * and settles, `expo-out` snaps then glides, `elastic-out` springs, and
+   * `hold` jumps at the next key (a step / freeze).
+   */
+  ease: StudioEase
 }
 
 type StudioClipCommon = {

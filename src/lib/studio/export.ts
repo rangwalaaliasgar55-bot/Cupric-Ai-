@@ -11,6 +11,7 @@
  * isn't" behaviour this app is trying to avoid.
  */
 
+import { registrySources } from './sources'
 import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { getIpc, isDesktop } from '../bridge'
 import { audioGainAt, clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
@@ -133,7 +134,8 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
 
   const sources: FrameSources = {
     media: (clip) => drawableElement(clip.mediaId),
-    overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
+    // Same resolver as the preview, so animated Lab captures export animated.
+    overlay: registrySources.overlay,
     sticker: (clip, localSec) => stickerFrame(clip, localSec),
   }
 
@@ -285,7 +287,8 @@ export function captureStill(doc: StudioDoc, t: number, maxWidth = 640): string 
   if (!ctx) return null
   drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, {
     media: (clip) => drawableElement(clip.mediaId),
-    overlay: (clip) => overlayImage(clip.id, clip.dataUrl),
+    // Same resolver as the preview, so animated Lab captures export animated.
+    overlay: registrySources.overlay,
     sticker: (clip, localSec) => stickerFrame(clip, localSec),
   })
   try {

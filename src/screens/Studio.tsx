@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
   Boxes,
   Clapperboard,
@@ -42,6 +43,7 @@ import {
   docDuration,
   MIN_CLIP_SEC,
   nextFreeStart,
+  resolveOverlaps,
   studioOf,
 } from '../lib/studio/doc'
 import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
@@ -65,6 +67,7 @@ import remotionCatalog from '../../resources/remotion/catalog.json'
 import {
   applyStudioEditPlan,
   describeStudioEditOp,
+  enrichThinPlan,
   localStudioEditPlan,
   validateStudioEditPlan,
   type StudioEditPlan,
@@ -83,6 +86,7 @@ export function Studio() {
   const splitStudioClip = useProjectStore((s) => s.splitStudioClip)
   const duplicateStudioClip = useProjectStore((s) => s.duplicateStudioClip)
   const reorderStudioTracks = useProjectStore((s) => s.reorderStudioTracks)
+  const settleStudioClip = useProjectStore((s) => s.settleStudioClip)
   const pushToast = useProjectStore((s) => s.pushToast)
   const setView = useProjectStore((s) => s.setView)
   const startAutomationJob = useProjectStore((s) => s.startAutomationJob)
@@ -107,6 +111,7 @@ export function Studio() {
   const [agentPlanning, setAgentPlanning] = useState(false)
   const [agentPhase, setAgentPhase] = useState('')
   const [agentPlan, setAgentPlan] = useState<StudioEditPlan | null>(null)
+  const [timelineH, setTimelineH] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
@@ -122,6 +127,19 @@ export function Studio() {
   const issues = useMemo(() => lintStudioDoc(doc, { hasMedia }), [doc])
   const pid = project?.id ?? null
   const selected = useMemo(() => doc.clips.find((c) => c.id === selectedId) ?? null, [doc.clips, selectedId])
+
+  // A clip handed over from Lab / Arena / Footage: select it and show it.
+  useEffect(() => {
+    const id = takeStudioFocus()
+    if (!id) return
+    const clip = doc.clips.find((item) => item.id === id)
+    if (!clip) return
+    setSelectedId(clip.id)
+    setPlaying(false)
+    setTime(visibleMomentOf(clip))
+    // Runs once on mount; the store update has landed before navigation.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const seek = useCallback(
     (t: number) => setTime(clamp(t, 0, Math.max(0, duration))),
@@ -321,6 +339,8 @@ export function Studio() {
           aspect: doc.aspect,
           fps: doc.fps,
           trackCount: doc.trackCount,
+          durationSec: Math.round(duration * 100) / 100,
+          playheadSec: Math.round(time * 100) / 100,
           selectedId,
           // Names only: the agent uses these attributed libraries as visual
           // vocabulary, then translates the idea into Cupric's safe native
@@ -347,24 +367,28 @@ export function Studio() {
         try {
           raw = await ipc.invoke('studio:planEdits', { instruction, context })
         } catch (err) {
-          const local = localStudioEditPlan(instruction, doc, selectedId)
-          raw = { ...local, warning: `Live agent unavailable: ${humanError(err, 'AI connection')}` }
+          // No network, no key, quota spent or a local server that is off: the
+          // built-in motion engine still plans a real edit.
+          const local = localStudioEditPlan(instruction, doc, selectedId, { time })
+          raw = { ...local, warning: `Planned offline with Cupric's motion engine. ${humanError(err, 'AI connection')}` }
         }
       } else {
-        raw = localStudioEditPlan(instruction, doc, selectedId)
+        raw = localStudioEditPlan(instruction, doc, selectedId, { time })
       }
+      let plan: StudioEditPlan
       try {
-        setAgentPlan(validateStudioEditPlan(raw, doc))
+        plan = validateStudioEditPlan(raw, doc)
       } catch (validationError) {
         // A provider can answer successfully but still omit IDs or invent an
         // unsupported property. Treat malformed output like a provider outage:
         // preserve the user's instruction and return a useful local preview.
-        const local = localStudioEditPlan(instruction, doc, selectedId)
-        setAgentPlan(validateStudioEditPlan({
+        const local = localStudioEditPlan(instruction, doc, selectedId, { time })
+        plan = validateStudioEditPlan({
           ...local,
-          warning: `The live response was unsafe or incomplete, so Cupric rebuilt it locally: ${humanError(validationError, 'invalid edit plan')}`,
-        }, doc))
+          warning: `The live response was unsafe or incomplete, so Cupric rebuilt it locally with its motion engine (${humanError(validationError, 'invalid edit plan')}).`,
+        }, doc)
       }
+      setAgentPlan(enrichThinPlan(plan, instruction, doc, selectedId))
     } catch (err) {
       pushToast('error', humanError(err, 'Could not plan that edit'))
     } finally {
@@ -393,6 +417,11 @@ export function Studio() {
     }
   }
 
+  /** The document as it is right now — not as it was when this render began. */
+  function liveDoc(): StudioDoc {
+    return studioOf(useProjectStore.getState().projects.find((item) => item.id === projectId))
+  }
+
   async function onFiles(files: FileList | null) {
     if (!files?.length) return
     setImporting(true)
@@ -401,46 +430,67 @@ export function Studio() {
       for (const file of Array.from(files)) {
         if (/\.(?:zip|html?)$/i.test(file.name)) {
           const generated = await readGeneratedPackage(file)
-          const piece = parseGeneratedHtml(generated.html)
-          if (!piece) throw new Error(`${file.name} has HTML, but no readable scene manifest, scene array, headings or paragraphs`)
-          const clips = piecesToStudioClips(piece, doc, generated.name.replace(/\.html?$/i, ''))
-          if (!clips.length) throw new Error(`${file.name} did not contain any editable scenes`)
-          for (const clip of clips) addStudioClip(projectId, clip)
+          // Never refuses: manifest → scene arrays in any script → timed markup
+          // → visible text → copy in scripts → <title> → a title card.
+          const piece = parseGeneratedHtml(generated.html, { scripts: generated.scripts, name: file.name })!
+          const current = liveDoc()
+          const label = file.name.replace(/\.(?:zip|html?)$/i, '').replace(/\s*\(\d+\)$/, '').slice(0, 28)
+          const sceneClips = piecesToStudioClips(piece, current, label)
+          const base = sceneClips.length ? Math.min(...sceneClips.map((c) => c.startSec)) : nextFreeStart(current, 0, 0, 1)
+          const span = Math.max(piece.durationSec, 3)
 
-          // ZIP media is not left trapped behind HTML. Each referenced asset is
-          // registered through the same media store as a normal file import and
-          // becomes an independently movable, resizable and replaceable clip.
-          let assetCursor = 0
-          let importedAssets = 0
-          const imageDuration = Math.max(1, piece.durationSec / Math.max(1, generated.assets.filter((asset) => asset.file.type.startsWith('image/')).length))
+          // ZIP media is not left trapped behind HTML. Each asset is registered
+          // through the same media store as a normal file import and becomes an
+          // independently movable, resizable and replaceable clip underneath
+          // the scene text.
+          const mediaClips: StudioClip[] = []
+          const images = generated.assets.filter((asset) => asset.file.type.startsWith('image/'))
+          const imageDuration = Math.max(1.5, span / Math.max(1, images.length))
+          let cursor = base
           for (const asset of generated.assets) {
-            const handle = await registerFile(asset.file)
-            if (handle.kind === 'audio') {
-              const audioTrack = Math.max(0, doc.trackCount - 1)
-              const audioClip = defaultAudioClip(0, audioTrack, {
-                id: handle.id,
-                fileName: handle.fileName,
-                localPath: handle.localPath,
-                durationSec: handle.durationSec,
-              })
-              addStudioClip(projectId, audioClip)
-              importedAssets += 1
-              continue
+            try {
+              const handle = await registerFile(asset.file)
+              if (handle.kind === 'audio') {
+                mediaClips.push(defaultAudioClip(base, Math.max(0, current.trackCount - 1), { id: handle.id, fileName: handle.fileName, localPath: handle.localPath, durationSec: handle.durationSec }))
+                continue
+              }
+              const assetDuration = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : imageDuration
+              mediaClips.push({
+                id: uid(), kind: handle.kind, track: 0, startSec: Math.round(cursor * 100) / 100, durationSec: assetDuration,
+                name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28), transitionIn: 'fade', transitionOut: 'none', opacity: 1,
+                mediaId: handle.id, fileName: handle.fileName, localPath: handle.localPath, trimInSec: 0,
+                sourceDurationSec: handle.kind === 'video' ? handle.durationSec : 0, speed: 1, volume: 1,
+                fit: 'cover', x: 0.5, y: 0.5, scale: 1, posterDataUrl: handle.posterDataUrl,
+              } as StudioMediaClip)
+              cursor += assetDuration
+            } catch {
+              generated.notes.push(`Skipped ${asset.sourcePath} (unsupported or damaged).`)
             }
-            const assetDuration = handle.kind === 'video' ? Math.max(0.2, handle.durationSec) : imageDuration
-            const mediaClip: StudioMediaClip = {
-              id: uid(), kind: handle.kind, track: 0, startSec: assetCursor, durationSec: assetDuration,
-              name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28), transitionIn: 'fade', transitionOut: 'none', opacity: 1,
-              mediaId: handle.id, fileName: handle.fileName, localPath: handle.localPath, trimInSec: 0,
-              sourceDurationSec: handle.kind === 'video' ? handle.durationSec : 0, speed: 1, volume: 1,
-              fit: 'cover', x: 0.5, y: 0.5, scale: 1, posterDataUrl: handle.posterDataUrl,
-            }
-            addStudioClip(projectId, mediaClip)
-            assetCursor += assetDuration
-            importedAssets += 1
           }
-          setSelectedId(clips[0].id)
-          pushToast('success', `Broke ${file.name} into ${clips.length} editable scene clips${importedAssets ? ` plus ${importedAssets} editable media assets` : ''} (${piece.via}).`)
+
+          // One undo step, built from the live document, overlaps resolved.
+          const aspect = current.clips.length === 0 && piece.size
+            ? (piece.size[0] > piece.size[1] * 1.2 ? '16:9' : piece.size[1] > piece.size[0] * 1.2 ? '9:16' : '1:1')
+            : current.aspect
+          const next = resolveOverlaps({ ...current, aspect, trackCount: Math.max(current.trackCount, 3), clips: [...current.clips, ...mediaClips, ...sceneClips] })
+          patchStudio(projectId, next)
+          if (sceneClips[0]) {
+            setSelectedId(sceneClips[0].id)
+            setTime(sceneClips[0].startSec + Math.min(0.8, sceneClips[0].durationSec / 2))
+          }
+          const how = {
+            manifest: 'from its Cupric manifest',
+            'scene-array': 'from its scene list',
+            'timed-markup': 'from its timed markup',
+            headings: 'from the text on screen',
+            'script-copy': 'from copy in its scripts',
+            title: 'as a title card — no scene copy was found, so rename it',
+          }[piece.via]
+          const titles = sceneClips.filter((c) => !c.name.endsWith(' sub')).length
+          pushToast(
+            'success',
+            `Imported ${file.name}: ${titles} editable scene${titles === 1 ? '' : 's'}${mediaClips.length ? ` + ${mediaClips.length} media clip${mediaClips.length === 1 ? '' : 's'}` : ''} ${how}.${generated.notes.length ? ` ${generated.notes[0]}` : ''}`,
+          )
           continue
         }
         const handle = await registerFile(file)
@@ -535,9 +585,15 @@ export function Studio() {
   }
 
   function addText() {
-    const clip = defaultTextClip(time, Math.min(1, doc.trackCount - 1))
+    // Above the media, at the playhead; the store lifts it to a free layer if
+    // something is already there.
+    const clip = defaultTextClip(Math.round(time * 100) / 100, Math.max(1, Math.min(doc.trackCount - 1, 1)))
     addStudioClip(projectId, clip)
     setSelectedId(clip.id)
+    setPlaying(false)
+    // Park the playhead where the entrance has finished, so the new words are
+    // actually visible on the canvas while you type them.
+    setTime(clip.startSec + Math.min(0.8, clip.durationSec / 2))
   }
 
   function addBackgroundClip() {
@@ -742,11 +798,16 @@ export function Studio() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Toolbar */}
-      <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-line px-6 py-3">
-        <h1 className="mr-2 text-base font-semibold">Studio</h1>
+      {/* One row at every width: the add-strip scrolls sideways instead of
+          wrapping, so the preview never loses a whole row of height. */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-line px-6 py-2.5">
+        <h1 className="mr-2 shrink-0 text-base font-semibold">Studio</h1>
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5 pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-28px),transparent)] [scrollbar-width:none] [&>button]:shrink-0"
+          onWheel={(e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY }}
+        >
 
-        <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={importing || exporting}>
-          {importing ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Import media / HTML / ZIP
+        <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()} disabled={importing || exporting} title="Import video, images, audio, an HTML page or a generated ZIP package">
+          {importing ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Import
         </Button>
         <input
           ref={fileRef}
@@ -784,12 +845,10 @@ export function Studio() {
           variant="outline"
           onClick={() => selectedId && splitStudioClip(projectId, selectedId, time)}
           disabled={!selectedId || exporting}
+          title={selectedId ? 'Split the selected clip at the playhead (S)' : 'Select a clip to split it'}
         >
           <Scissors size={13} /> Split
         </Button>
-        {!selectedId && (
-          <span className="text-xs text-muted">Select a clip to split it</span>
-        )}
         <Button
           size="sm"
           variant={showResources ? 'primary' : 'outline'}
@@ -809,7 +868,9 @@ export function Studio() {
           {listening ? <Mic size={13} /> : <MicOff size={13} />} {listening ? 'Listening' : voiceSupported ? 'Voice' : 'Voice setup'}
         </Button>
 
-        <div className="ml-auto flex items-center gap-1.5">
+        </div>
+
+        <div className="flex shrink-0 items-center gap-1.5">
           <IconButton label="Zoom out" onClick={() => setZoom((z) => Math.max(0, z - 1))} disabled={zoom === 0}>
             <ZoomOut size={15} />
           </IconButton>
@@ -1145,7 +1206,32 @@ export function Studio() {
             )}
           </div>
 
-          <div className="h-[46%] min-h-[190px] shrink-0">
+          {/* Drag to resize the timeline, like any NLE. */}
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Resize timeline"
+            title="Drag to resize the timeline · double-click to fit tracks"
+            onDoubleClick={() => setTimelineH(null)}
+            onPointerDown={(e) => {
+              e.preventDefault()
+              const column = (e.currentTarget.parentElement as HTMLElement).getBoundingClientRect()
+              const move = (ev: PointerEvent) => setTimelineH(clamp(column.bottom - ev.clientY, 120, column.height - 180))
+              const up = () => {
+                window.removeEventListener('pointermove', move)
+                window.removeEventListener('pointerup', up)
+              }
+              window.addEventListener('pointermove', move)
+              window.addEventListener('pointerup', up)
+            }}
+            className="group relative h-1.5 shrink-0 cursor-row-resize bg-line/40 transition-colors hover:bg-accent/50"
+          >
+            <span className="absolute left-1/2 top-1/2 h-0.5 w-10 -translate-x-1/2 -translate-y-1/2 rounded bg-muted/50 group-hover:bg-accent-ink/70" />
+          </div>
+          <div
+            className="min-h-[120px] shrink-0"
+            style={{ height: timelineH ?? `min(40%, ${Math.max(150, 44 + doc.trackCount * 62)}px)` }}
+          >
             <StudioTimeline
               doc={doc}
               time={time}
@@ -1159,6 +1245,7 @@ export function Studio() {
               }}
               onPatchClip={(id, patch) => updateStudioClip(projectId, id, patch)}
               onReorderTrack={(from, to) => reorderStudioTracks(projectId, from, to)}
+              onSettleClip={(id) => settleStudioClip(projectId, id)}
             />
           </div>
         </div>

@@ -481,6 +481,18 @@ const EASES: Record<StudioKeyframe['ease'], (p: number) => number> = {
   'ease-in': (p) => p * p * p,
   'ease-out': (p) => 1 - Math.pow(1 - p, 3),
   'ease-in-out': (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2),
+  // Overshoot a touch, then settle — the "designed" entrance.
+  'back-out': (p) => 1 + 2.70158 * Math.pow(p - 1, 3) + 1.70158 * Math.pow(p - 1, 2),
+  // Wind up slightly before leaving — a purposeful exit.
+  'back-in': (p) => 2.70158 * p * p * p - 1.70158 * p * p,
+  // Fast start, long glide: the premium UI / title curve.
+  'expo-out': (p) => (p >= 1 ? 1 : 1 - Math.pow(2, -10 * p)),
+  'expo-in-out': (p) =>
+    p <= 0 ? 0 : p >= 1 ? 1 : p < 0.5 ? Math.pow(2, 20 * p - 10) / 2 : (2 - Math.pow(2, -20 * p + 10)) / 2,
+  // A damped spring for stickers, icons and playful pops.
+  'elastic-out': (p) => (p <= 0 ? 0 : p >= 1 ? 1 : Math.pow(2, -10 * p) * Math.sin((p * 10 - 0.75) * ((2 * Math.PI) / 3)) + 1),
+  // Step: hold this value, then cut to the next key.
+  hold: (p) => (p >= 1 ? 1 : 0),
 }
 
 /** The animated properties, resolved at time `t`. */

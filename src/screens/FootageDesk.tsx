@@ -15,6 +15,7 @@ import { getIpc } from '../lib/bridge'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, hashStr, mulberry32, round1 } from '../lib/utils'
 import { humanError } from '../lib/humanError'
+import { focusStudioClip } from '../lib/studio/focus'
 
 const CAPTIONS = [
   {
@@ -307,6 +308,7 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
       // Keep the crop choice: the Studio aspect follows what was picked here.
       patchStudio(project.id, { aspect: crop })
       addStudioClip(project.id, clip)
+      focusStudioClip(clip.id)
       pushToast('success', `${asset.name} opened in the Studio`)
       setView('studio')
     } catch (err) {

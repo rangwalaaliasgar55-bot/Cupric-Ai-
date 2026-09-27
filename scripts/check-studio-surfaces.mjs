@@ -43,7 +43,12 @@ assert.match(generatedPackage, /mediaReferences[\s\S]*?entry\.async\('blob'\)/, 
 assert.match(studio, /generated\.assets[\s\S]*?registerFile\(asset\.file\)[\s\S]*?StudioMediaClip/, 'package media must become editable native Studio clips')
 const resourceDrop = await readFile(new URL('../src/lib/studio/resourceDrop.ts', import.meta.url), 'utf8')
 assert.match(projectTypes, /frames\?: string\[\][\s\S]*?frameFps\?: number/, 'Studio overlays must retain deterministic React animation frames')
-assert.match(lab, /frameCount = frameFps \* durationSec[\s\S]*?frames\.push\(canvas\.toDataURL\('image\/webp'/, 'Lab must render React motion rather than capture only a still')
+assert.match(lab, /frameCount = frameFps \* durationSec[\s\S]*?captureElement\(stage, \{ type: 'image\/webp'[\s\S]*?frames\.push\(/, 'Lab must render React motion rather than capture only a still')
+assert.match(lab, /trimFrames\(frames\)/, 'Lab captures must be cropped to the component, not the whole stage')
+assert.match(lab, /focusStudioClip\(clip\.id\)/, 'Studio must open on a visible moment of the clip Lab just added')
+const capture = await readFile(new URL('../src/lib/capture.ts', import.meta.url), 'utf8')
+assert.match(capture, /flattenModernColours/, 'the html2canvas fallback must survive oklch/color-mix colours')
+assert.match(capture, /margin: '0'/, 'html-to-image clones must not inherit the root margin (shifted captures)')
 assert.match(sources, /frames\.forEach[\s\S]*?Math\.floor\(localSec \* \(clip\.frameFps/, 'preview and export must choose component frames from clip progress')
 for (const effect of ['bg-soft-grid', 'bg-dot-field', 'bg-lime-haze', 'bg-noise-paper', 'tr-mask-wipe', 'tr-scale-overshoot', 'cap-hormozi', 'cap-minimal', 'mo-word-reveal', 'mo-counter-tick']) {
   assert.match(resourceDrop, new RegExp(effect), `${effect} must perform a native editable Studio action`)

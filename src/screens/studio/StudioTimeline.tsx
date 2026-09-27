@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, Type as TypeIcon, Video } from 'lucide-react'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
-import { MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
+import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
 import { moveKeyframeTime } from '../../lib/studio/keyframeEdit'
 import { getMedia } from '../../lib/studio/media'
 import { clamp, cx, fmtClock } from '../../lib/utils'
@@ -20,6 +20,7 @@ type Props = {
   onSeek: (t: number) => void
   onPatchClip: (id: string, patch: Partial<StudioClip>) => void
   onReorderTrack: (from: number, to: number) => void
+  onSettleClip?: (id: string) => void
 }
 
 type Drag =
@@ -84,7 +85,7 @@ function tickStep(pps: number): number {
   return 10
 }
 
-export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, onSeek, onPatchClip, onReorderTrack }: Props) {
+export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, onSeek, onPatchClip, onReorderTrack, onSettleClip }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const laneRef = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
@@ -134,8 +135,10 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       if (drag.mode === 'move') {
         const rawStart = t - drag.grabOffsetSec
         const start = snapTime(doc, rawStart, clip.id, [time], 8 / pps)
+        // Rows are drawn top layer first, so dragging DOWN means a LOWER track.
+        // Dragging above the top row opens a new layer.
         const rowDelta = Math.round((event.clientY - drag.pointerStartY) / (ROW_H + ROW_GAP))
-        const track = clamp(drag.startTrack + rowDelta, 0, doc.trackCount - 1)
+        const track = clamp(drag.startTrack - rowDelta, 0, Math.min(MAX_TRACKS - 1, doc.trackCount))
         onPatchClip(clip.id, { startSec: Math.max(0, start), track })
         return
       }
@@ -164,7 +167,11 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       onPatchClip(clip.id, { durationSec: Math.max(MIN_CLIP_SEC, snapped - clip.startSec) })
     }
 
-    const onUp = () => setDrag(null)
+    const onUp = () => {
+      // A drop that lands on another clip is lifted onto a free layer.
+      if (drag.mode === 'move' || drag.mode === 'trim-end' || drag.mode === 'trim-start') onSettleClip?.(drag.id)
+      setDrag(null)
+    }
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onUp)
@@ -173,7 +180,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
     }
-  }, [drag, doc, onPatchClip, onSeek, pps, spanSec, time, timeAt])
+  }, [drag, doc, onPatchClip, onSettleClip, onSeek, pps, spanSec, time, timeAt])
 
   // Keep the playhead in view while playing.
   useEffect(() => {
@@ -188,7 +195,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
   const tracks = Array.from({ length: doc.trackCount }, (_, i) => i).reverse()
 
   return (
-    <div className="flex min-h-0 flex-col border-t border-line bg-panel">
+    <div className="flex h-full min-h-0 flex-col border-t border-line bg-panel">
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
         <div className="relative flex" style={{ minWidth: width + HEADER_W }}>
           {/* Track labels */}

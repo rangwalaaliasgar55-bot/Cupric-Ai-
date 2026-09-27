@@ -1,4 +1,14 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import {
+  CAMERA_RECIPES,
+  EMPHASIS_RECIPES,
+  ENTRANCE_RECIPES,
+  EXIT_RECIPES,
+  MOTION_PRESETS,
+  describeMotionSpec,
+  motionPatch,
+  type MotionSpec,
+} from '../../lib/studio/motionDirector'
 import { Copy, Link2, Plus, Scissors, Trash2 } from 'lucide-react'
 import type {
   StudioAudioClip,
@@ -61,14 +71,16 @@ function Disclosure({
   summary,
   active,
   children,
+  defaultOpen,
 }: {
   label: string
   summary?: string
   active?: boolean
   children: React.ReactNode
+  defaultOpen?: boolean
 }) {
   return (
-    <details className="group rounded-lg border border-line bg-panel-alt/40 open:bg-panel-alt/70">
+    <details open={defaultOpen} className="group rounded-lg border border-line bg-panel-alt/40 open:bg-panel-alt/70">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2">
         <span className="flex items-center gap-2 text-xs font-medium text-text">
           {label}
@@ -269,7 +281,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
                 title={bg.name}
               >
                 <span
-                  className="flex h-full w-full items-end px-2 pb-1 text-xs text-text/90"
+                  className="flex h-full w-full items-end px-2 pb-1 text-xs font-medium text-[#F4F1EA] [text-shadow:0_1px_2px_rgb(0_0_0/0.8)]"
                   // Preview uses the same CSS the Library copies out.
                   ref={(node) => {
                     if (node) node.setAttribute('style', `${bg.css};display:flex;height:100%;width:100%`)
@@ -307,6 +319,20 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
           <Trash2 size={13} /> Delete
         </Button>
       </div>
+
+      {/* What the clip IS comes first — its words, media or look — then timing,
+          motion and finishing. The text box used to sit below the fold. */}
+      {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
+      {(clip.kind === 'video' || clip.kind === 'image') && (
+        <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
+      )}
+      {clip.kind === 'background' && <BackgroundFields clip={clip as StudioBackgroundClip} onPatch={onPatch} />}
+      {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
+      {clip.kind === 'glass' && <GlassFields clip={clip as StudioGlassClip} onPatch={onPatch} />}
+      {clip.kind === 'audio' && <AudioFields clip={clip as StudioAudioClip} onPatch={onPatch} />}
+      {clip.kind === 'sticker' && <StickerFields clip={clip as StudioStickerClip} onPatch={onPatch} />}
+
+      <MotionPresetFields clip={clip} onPatch={onPatch} />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Start (s)">
@@ -377,15 +403,6 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
       </div>
       <p className="-mt-1 text-xs leading-relaxed text-muted/70">{transitionInfo(clip.transitionIn).description}</p>
 
-      {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
-      {(clip.kind === 'video' || clip.kind === 'image') && (
-        <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
-      )}
-      {clip.kind === 'background' && <BackgroundFields clip={clip as StudioBackgroundClip} onPatch={onPatch} />}
-      {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
-      {clip.kind === 'glass' && <GlassFields clip={clip as StudioGlassClip} onPatch={onPatch} />}
-      {clip.kind === 'audio' && <AudioFields clip={clip as StudioAudioClip} onPatch={onPatch} />}
-      {clip.kind === 'sticker' && <StickerFields clip={clip as StudioStickerClip} onPatch={onPatch} />}
     </div>
   )
 }
@@ -473,6 +490,12 @@ function KeyframeFields({
                 <option value="ease-in">Ease in</option>
                 <option value="ease-out">Ease out</option>
                 <option value="ease-in-out">Ease in and out</option>
+                <option value="expo-out">Expo out — snap, then glide</option>
+                <option value="expo-in-out">Expo in and out</option>
+                <option value="back-out">Back out — overshoot and settle</option>
+                <option value="back-in">Back in — wind up, then leave</option>
+                <option value="elastic-out">Elastic — spring</option>
+                <option value="hold">Hold — step to next key</option>
               </select>
               <button
                 type="button"
@@ -755,12 +778,23 @@ function StickerFields({ clip, onPatch }: { clip: StudioStickerClip; onPatch: (p
 }
 
 function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const textRef = useRef<HTMLTextAreaElement>(null)
+  // A freshly added text clip is ready to type into straight away.
+  useEffect(() => {
+    if (clip.text === 'Your headline' && textRef.current) {
+      textRef.current.focus()
+      textRef.current.select()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clip.id])
   return (
-    <div className="space-y-4 border-t border-line pt-4">
-      <Field label="Text">
+    <div className="space-y-4">
+      <Field label="Text" hint="Type here and the canvas updates as you write.">
         <textarea
+          ref={textRef}
           value={clip.text}
           rows={3}
+          placeholder="Write your headline, caption or call to action"
           onChange={(e) => onPatch({ text: e.target.value, name: e.target.value.slice(0, 24) || 'Text' } as Partial<StudioClip>)}
           className={cx(inputCx, 'resize-y')}
         />
@@ -1122,5 +1156,76 @@ function OverlayFields({ clip, onPatch }: { clip: StudioOverlayClip; onPatch: (p
         <Slider label="Y" value={clip.y} min={0} max={1} step={0.01} onChange={(v) => onPatch({ y: v } as Partial<StudioClip>)} />
       </div>
     </div>
+  )
+}
+
+/**
+ * Motion presets — the same choreography engine the agent uses, one click
+ * away. Each choice rewrites the clip's keyframes with correct timing for
+ * its length; the keyframes stay fully editable afterwards.
+ */
+function MotionPresetFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: Partial<StudioClip>) => void }) {
+  const [spec, setSpec] = useState<MotionSpec>({ intensity: 1 })
+  if (clip.kind === 'audio') return null
+  const apply = (next: MotionSpec) => {
+    setSpec(next)
+    onPatch(motionPatch(clip, next))
+  }
+  const keyCount = clip.keyframes?.length ?? 0
+  const media = clip.kind === 'video' || clip.kind === 'image'
+  return (
+    <Disclosure label="Motion" summary={keyCount ? `${keyCount} keys` : 'None'} active={keyCount > 0} defaultOpen>
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-1.5">
+          {MOTION_PRESETS.filter((preset) => media || !preset.spec.camera).map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              title={preset.hint}
+              onClick={() => apply({ ...preset.spec })}
+              className="rounded-lg border border-line bg-panel-alt/60 px-2 py-1.5 text-left text-xs leading-tight text-text transition-colors hover:border-accent/60 hover:bg-accent/10"
+            >
+              <span className="block font-medium">{preset.label}</span>
+              <span className="block truncate text-[10px] text-muted">{preset.hint}</span>
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <Field label="Entrance">
+            <select value={spec.entrance ?? 'none'} onChange={(e) => apply({ ...spec, entrance: e.target.value as MotionSpec['entrance'] })} className={inputCx}>
+              <option value="none">None</option>
+              {ENTRANCE_RECIPES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Exit">
+            <select value={spec.exit ?? 'none'} onChange={(e) => apply({ ...spec, exit: e.target.value as MotionSpec['exit'] })} className={inputCx}>
+              <option value="none">None</option>
+              {EXIT_RECIPES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </Field>
+          <Field label="While on screen">
+            <select value={spec.emphasis ?? 'none'} onChange={(e) => apply({ ...spec, emphasis: e.target.value as MotionSpec['emphasis'] })} className={inputCx}>
+              <option value="none">Hold still</option>
+              {EMPHASIS_RECIPES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </Field>
+          <Field label="Camera">
+            <select value={spec.camera ?? 'none'} onChange={(e) => apply({ ...spec, camera: e.target.value as MotionSpec['camera'] })} className={inputCx}>
+              <option value="none">None</option>
+              {CAMERA_RECIPES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+            </select>
+          </Field>
+        </div>
+        <Slider label="Intensity" value={spec.intensity ?? 1} min={0.3} max={2} step={0.1} onChange={(v) => apply({ ...spec, intensity: v })} />
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs text-muted">{describeMotionSpec(spec)}</p>
+          {keyCount > 0 && (
+            <button type="button" onClick={() => { setSpec({ intensity: 1 }); onPatch({ keyframes: [] }) }} className="text-xs text-muted underline-offset-2 hover:text-text hover:underline">
+              Clear motion
+            </button>
+          )}
+        </div>
+      </div>
+    </Disclosure>
   )
 }

@@ -1,6 +1,7 @@
-import { Suspense, useDeferredValue, useMemo, useRef, useState } from 'react'
+import { Suspense, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, FlaskConical, Loader2, Search, Wand2 } from 'lucide-react'
-import html2canvas from 'html2canvas'
+import { trimFrames } from '../lib/trimFrames'
+import { captureElement } from '../lib/capture'
 import { ProgressProvider } from '../lib/ProgressProvider'
 import { Button } from '../components/Button'
 import { availableSlugs, getDemo } from '../lab/demos'
@@ -12,6 +13,7 @@ import { nextFreeStart, studioOf } from '../lib/studio/doc'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
+import { focusStudioClip } from '../lib/studio/focus'
 
 /**
  * UI Lab — the vendored lab.xevrion.dev catalogue running locally.
@@ -62,10 +64,35 @@ function DemoFrame({
   return atSeconds === undefined ? body : <ProgressProvider seconds={atSeconds}>{body}</ProgressProvider>
 }
 
+/** Mount a card's live demo only once it scrolls near the viewport. */
+function useNearViewport<T extends Element>(): [React.RefObject<T | null>, boolean] {
+  const ref = useRef<T | null>(null)
+  const [near, setNear] = useState(false)
+  useEffect(() => {
+    const node = ref.current
+    if (!node || near) return
+    if (typeof IntersectionObserver === 'undefined') {
+      setNear(true)
+      return
+    }
+    const observer = new IntersectionObserver((items) => {
+      if (items.some((item) => item.isIntersecting)) {
+        setNear(true)
+        observer.disconnect()
+      }
+    }, { rootMargin: '300px 0px' })
+    observer.observe(node)
+    return () => observer.disconnect()
+  }, [near])
+  return [ref, near]
+}
+
 function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
   const [hover, setHover] = useState(false)
+  const [ref, near] = useNearViewport<HTMLButtonElement>()
   return (
     <button
+      ref={ref}
       type="button"
       onClick={onOpen}
       onMouseEnter={() => setHover(true)}
@@ -79,7 +106,7 @@ function LabCard({ entry, onOpen }: { entry: LabEntry; onOpen: () => void }) {
           className="pointer-events-none absolute inset-0"
           style={{ transform: `scale(${entry.previewScale ?? 1})`, transformOrigin: 'center' }}
         >
-          <DemoFrame slug={entry.slug} play={hover} />
+          {near ? <DemoFrame slug={entry.slug} play={hover} /> : <div className="lab-canvas h-full w-full" />}
         </div>
       </div>
       <div className="space-y-1 px-3 py-2.5">
@@ -143,37 +170,64 @@ export function Lab() {
     setCapturing(true)
     setCaptureProgress(0)
     try {
+      const stage = stageRef.current
+      // The compositor can only capture what is on screen.
+      stage.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
       const frameFps = 8
       const durationSec = 3
       const frameCount = frameFps * durationSec
-      const frames: string[] = []
-      for (let frame = 0; frame < frameCount; frame += 1) {
+      let method = ''
+      const shotAt = async (frame: number) => {
         setFreezeAt(frame / frameFps)
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
-        const canvas = await html2canvas(stageRef.current, {
-          backgroundColor: null,
-          scale: 1,
-          logging: false,
-          useCORS: true,
-        })
-        frames.push(canvas.toDataURL('image/webp', 0.78))
-        setCaptureProgress(Math.round(((frame + 1) / frameCount) * 100))
+        const shot = await captureElement(stage, { type: 'image/webp', quality: 0.8 })
+        method = shot.method
+        return shot.dataUrl
       }
+      // Probe three moments first: a component that does not move becomes one
+      // still immediately instead of 30 identical frames.
+      const probe = [0, Math.floor(frameCount / 2), frameCount - 1]
+      const probed = new Map<number, string>()
+      for (const [i, frame] of probe.entries()) {
+        probed.set(frame, await shotAt(frame))
+        setCaptureProgress(Math.round(((i + 1) / probe.length) * 15))
+      }
+      const animated = new Set(probed.values()).size > 1
+      const frames: string[] = []
+      if (animated) {
+        for (let frame = 0; frame < frameCount; frame += 1) {
+          frames.push(probed.get(frame) ?? (await shotAt(frame)))
+          setCaptureProgress(15 + Math.round(((frame + 1) / frameCount) * 85))
+        }
+      } else {
+        frames.push(probed.get(0)!)
+      }
+      // Crop to the component itself so it lands in the video as a card, not
+      // a small widget floating in a big empty stage rectangle.
+      const trimmed = await trimFrames(frames)
+      frames.splice(0, frames.length, ...trimmed.frames)
       const doc = studioOf(project)
-      const track = Math.min(doc.trackCount - 1, 1)
+      const track = Math.max(1, Math.min(doc.trackCount - 1, 1))
       const clip: StudioOverlayClip = {
         id: uid(), kind: 'overlay', track,
         startSec: nextFreeStart(doc, track, 0, durationSec), durationSec,
         name: open.name, transitionIn: 'fade', transitionOut: 'fade', opacity: 1,
-        dataUrl: frames[0], frames, frameFps,
-        source: `UI Lab animated React capture · ${open.name}`,
-        x: 0.5, y: 0.5, scale: 0.8,
+        dataUrl: frames[0], ...(animated ? { frames, frameFps } : {}),
+        source: `UI Lab ${animated ? 'animated ' : ''}React capture · ${open.name}`,
+        x: 0.5, y: 0.5, scale: 0.78, // inside title-safe on every aspect
       }
       addStudioClip(project.id, clip)
-      pushToast('success', `${open.name} added as ${frames.length} scrub-safe animation frames.`)
+      focusStudioClip(clip.id)
+      pushToast(
+        'success',
+        animated
+          ? `${open.name} added to Studio as a ${durationSec}s animated clip (${frames.length} frames${method === 'compositor' ? ', pixel-exact' : ''}).`
+          : `${open.name} added to Studio. It is static until you interact with it, so it was added as a still.`,
+      )
       setView('studio')
     } catch (err) {
-      pushToast('error', humanError(err, 'Could not capture this React animation'))
+      pushToast('error', humanError(err, `Could not capture ${open.name}`))
     } finally {
       setCapturing(false)
       setCaptureProgress(0)

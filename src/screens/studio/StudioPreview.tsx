@@ -200,7 +200,7 @@ export function StudioPreview({
 type Box = { x: number; y: number; w: number; h: number }
 
 /** Normalised (0–1) box for the clips that have a position on the stage. */
-function boxOf(clip: StudioClip): Box | null {
+function boxOf(clip: StudioClip, frameAspect = 16 / 9): Box | null {
   if (clip.kind === 'text') {
     const text = clip as StudioTextClip
     // Text has no stored size, only a font size, so the box is an estimate of
@@ -215,7 +215,13 @@ function boxOf(clip: StudioClip): Box | null {
   }
   if (clip.kind === 'overlay') {
     const overlay = clip as StudioOverlayClip
-    return { x: overlay.x, y: overlay.y, w: 0.5 * overlay.scale, h: 0.32 * overlay.scale }
+    // Mirror the renderer: the image is fitted inside the frame by its own
+    // aspect ratio, then scaled. A fixed guess made the handles lie.
+    const image = registrySources.overlay(overlay, 0) as HTMLImageElement | null
+    const sw = image?.naturalWidth || 16
+    const sh = image?.naturalHeight || 10
+    const base = Math.min(frameAspect / sw, 1 / sh)
+    return { x: overlay.x, y: overlay.y, w: (sw * base * overlay.scale) / frameAspect, h: sh * base * overlay.scale }
   }
   if (clip.kind === 'glass') {
     const glass = clip as StudioGlassClip
@@ -249,7 +255,8 @@ function TransformHandles({
   >(null)
   const active = time >= clip.startSec && time < clip.startSec + clip.durationSec
   const values = keyframeValuesAt(clip, time)
-  const baseBox = boxOf(clip)
+  const frameRect = frame.current?.getBoundingClientRect()
+  const baseBox = boxOf(clip, frameRect && frameRect.height > 0 ? frameRect.width / frameRect.height : 16 / 9)
   const box = baseBox ? {
     ...baseBox,
     x: values?.x ?? baseBox.x,
