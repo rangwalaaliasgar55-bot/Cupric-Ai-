@@ -549,6 +549,24 @@ export type StudioClip =
   | StudioOverlayClip
   | StudioGlassClip
   | StudioStickerClip
+  | StudioSequenceClip
+
+/**
+ * Nested sequence: a saved scene (another complete edit) placed as ONE clip.
+ * It stays a single, movable, trimmable block on the timeline; preview and
+ * export flatten it in the shared output pass (resolveForOutput), so its
+ * video, audio, text and effects play exactly as in the original edit.
+ */
+export type StudioSequenceClip = StudioClipCommon & {
+  kind: 'sequence'
+  sceneId: string
+  /** Seconds into the nested edit where this clip starts playing. */
+  trimInSec: number
+  /** Placement of the nested frame (0.5/0.5/1 = full frame). */
+  x: number
+  y: number
+  scale: number
+}
 
 /**
  * Stage background that is not one of the shipped presets.

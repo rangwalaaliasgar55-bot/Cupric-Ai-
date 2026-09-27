@@ -4,7 +4,8 @@
  * as one undo step. Loading a scene replaces the edit but keeps the scene
  * list (and variables), so switching scenes never loses the others.
  */
-import type { StudioDoc } from '../../types/project'
+import { placeClip } from './doc'
+import type { StudioDoc, StudioSequenceClip } from '../../types/project'
 import { uid } from '../utils'
 
 export type StudioScene = NonNullable<StudioDoc['scenes']>[number]
@@ -64,4 +65,22 @@ export function setVariable(doc: StudioDoc, name: string, value: string): Studio
 
 export function removeVariable(doc: StudioDoc, name: string): StudioDoc {
   return { ...doc, variables: (doc.variables ?? []).filter((v) => v.name.toLowerCase() !== name.toLowerCase()) }
+}
+
+/**
+ * Nest a saved scene into the current edit as ONE sequence clip at `atSec`
+ * (placed on a free track). Refuses a scene that would contain itself.
+ */
+export function nestScene(doc: StudioDoc, sceneId: string, atSec: number): { doc: StudioDoc; clipId: string } {
+  const scene = doc.scenes?.find((s) => s.id === sceneId)
+  if (!scene) throw new Error('That scene no longer exists.')
+  const len = scene.doc.clips.reduce((m, c) => Math.max(m, c.startSec + c.durationSec), 0)
+  if (len <= 0) throw new Error(`“${scene.name}” is empty — add clips to it before nesting.`)
+  const clip: StudioSequenceClip = {
+    id: uid(), kind: 'sequence', sceneId, trimInSec: 0, x: 0.5, y: 0.5, scale: 1,
+    track: 0, startSec: Math.max(0, Math.round(atSec * 100) / 100), durationSec: Math.round(len * 100) / 100,
+    name: `▣ ${scene.name}`, transitionIn: 'none', transitionOut: 'none', opacity: 1,
+  }
+  const placed = placeClip(doc, clip)
+  return { doc: { ...doc, trackCount: placed.trackCount, clips: [...doc.clips, placed.clip] }, clipId: placed.clip.id }
 }

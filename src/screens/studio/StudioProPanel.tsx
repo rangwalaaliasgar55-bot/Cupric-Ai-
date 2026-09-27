@@ -15,7 +15,7 @@ import { buildBeforeAfter, buildCollage, buildFromAssets, buildTestimonialGrid, 
 import { captionsFromTranscript } from '../../lib/studio/textTools'
 import { captionsForClip, transcribeClip } from '../../lib/studio/autoCaptions'
 import { componentOps, directComponents } from '../../lib/studio/componentDirector'
-import { deleteScene, duplicateScene, loadScene, removeVariable, renameScene, saveScene, setVariable, updateScene } from '../../lib/studio/scenes'
+import { deleteScene, duplicateScene, loadScene, removeVariable, renameScene, saveScene, setVariable, updateScene, nestScene } from '../../lib/studio/scenes'
 import { variablesUsed } from '../../lib/studio/resolve'
 import { reframePatch, snapCutsToBeats, tightenClip, timelineBeats } from '../../lib/studio/autoEdit'
 import { analyseBeats, analyseSubject } from '../../lib/studio/autoEditAnalysis'
@@ -423,6 +423,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
             <div className="mt-1.5 flex flex-wrap gap-1">
               <Button size="sm" variant="outline" onClick={() => { onCommit(loadScene(doc, sc.id), `Load scene “${sc.name}”`); emitStudio('scene:load', { id: sc.id, name: sc.name }) }}>Load</Button>
               <Button size="sm" variant="outline" onClick={() => onCommit(updateScene(doc, sc.id), `Update scene “${sc.name}”`)}>Overwrite</Button>
+              <Button size="sm" variant="outline" title="Place this scene inside the current edit as one nested sequence clip at the playhead" onClick={() => { try { onCommit(nestScene(doc, sc.id, time).doc, `Nest “${sc.name}”`) } catch (err) { setMsg(err instanceof Error ? err.message : String(err)) } }}>Nest at playhead</Button>
               <Button size="sm" variant="outline" onClick={() => { try { onCommit(duplicateScene(doc, sc.id), 'Duplicate scene') } catch (err) { setMsg(err instanceof Error ? err.message : String(err)) } }}>Duplicate</Button>
               <Button size="sm" variant="outline" onClick={() => onCommit(deleteScene(doc, sc.id), `Delete scene “${sc.name}”`)}>Delete</Button>
             </div>

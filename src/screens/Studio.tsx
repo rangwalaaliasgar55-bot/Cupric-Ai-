@@ -6,7 +6,7 @@ import { makeProxy } from '../lib/studio/proxy'
 import { emitDiff, emitStudio } from '../lib/studio/studioEvents'
 import { createStudioApi } from '../lib/studio/studioApi'
 import { unfilledPlaceholders } from '../lib/studio/layouts'
-import { addMarker, jumpMarker, rippleDelete, rollEdit, slipClip, trimEndTo, trimStartTo, type EditResult } from '../lib/studio/timelineOps'
+import { addMarker, jumpMarker, rippleDelete, rollEdit, slideClip, slipClip, trimEndTo, trimStartTo, type EditResult } from '../lib/studio/timelineOps'
 import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
   Boxes,
@@ -364,7 +364,7 @@ export function Studio() {
       }
       // 2.1 / 2.7 pro timeline keys — each one labelled undo step, and a
       // toast explaining why when it cannot apply (no silent no-ops).
-      if (!mod && pid && (key === 'q' || key === 'w' || key === 'm' || key === '[' || key === ']' || key === ';' || key === "'" || ((e.key === 'Delete' || e.key === 'Backspace') && e.shiftKey) || (e.altKey && (e.key === ',' || e.key === '.')))) {
+      if (!mod && pid && (key === 'q' || key === 'w' || key === 'm' || key === '[' || key === ']' || key === ';' || key === "'" || ((e.key === 'Delete' || e.key === 'Backspace') && e.shiftKey) || (e.altKey && (e.key === ',' || e.key === '.' || e.code === 'BracketLeft' || e.code === 'BracketRight')))) {
         e.preventDefault()
         const commit = (r: EditResult, label: string) => {
           if (!r.changed) pushToast('info', r.reason ?? 'Nothing to change here.')
@@ -383,6 +383,7 @@ export function Studio() {
         if (doc.clips.find((c) => c.id === selectedId)?.locked) { pushToast('info', 'That clip is locked — unlock it to edit (Ctrl+L).'); return }
         if (key === 'q') commit(trimStartTo(doc, selectedId, time), 'Trim start to playhead')
         else if (key === 'w') commit(trimEndTo(doc, selectedId, time), 'Trim end to playhead')
+        else if ((e.code === 'BracketLeft' || e.code === 'BracketRight') && e.altKey) commit(slideClip(doc, selectedId, (e.code === 'BracketRight' ? 1 : -1) * frame * (e.shiftKey ? 10 : 1)), 'Slide clip')
         else if (key === '[' || key === ']') commit(slipClip(doc, selectedId, (key === ']' ? 1 : -1) * frame * (e.shiftKey ? 10 : 1)), 'Slip clip')
         else if (e.key === ',' || e.key === '.') commit(rollEdit(doc, selectedId, (e.key === '.' ? 1 : -1) * frame * (e.shiftKey ? 10 : 1)), 'Roll edit')
         else if (commit(rippleDelete(doc, selectedId), 'Ripple delete')) setSelectedId(null)
@@ -1709,6 +1710,7 @@ const SHORTCUTS: Array<[string, string]> = [
   ['Shift + Delete', 'Ripple delete — remove and close the gap'],
   ['Q · W', 'Trim the selected clip’s start / end to the playhead'],
   ['[ · ]', 'Slip the source under the clip a frame (Shift: 10)'],
+  ['Alt + [ · ]', 'Slide the clip between its neighbours (Shift: 10 frames)'],
   ['Alt + , / .', 'Roll the cut after the selected clip'],
   ['M', 'Drop a marker at the playhead'],
   ['; · \'', 'Jump to the previous / next marker'],

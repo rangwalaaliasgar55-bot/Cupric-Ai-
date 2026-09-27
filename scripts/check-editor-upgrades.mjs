@@ -33,6 +33,7 @@ await build({
       "export * as ops from './src/lib/studio/editOps'",
       "export * as sugg from './src/lib/studio/suggestions'",
       "export * as caps from './src/lib/studio/autoCaptions'",
+      "export * as tl from './src/lib/studio/timelineOps'",
     ].join('\n'),
     resolveDir: root, loader: 'ts',
   },
@@ -313,6 +314,45 @@ ok(read('src/lib/studio/renderer.ts').includes('ctx.scale(clip.flipX ? -1 : 1, c
   throws(() => m.ops.validateStudioEditPlan({ summary: 'p', ops: [{ type: 'phoneDesign', clipId: 't1', design: 'product-launch' }] }, d), /video, image or component/, 'phone op refuses text')
   throws(() => m.ops.validateStudioEditPlan({ summary: 'p', ops: [{ type: 'phoneDesign', clipId: 'v1', design: 'nope' }] }, d), /Unknown phone design/, 'unknown design refused')
   ok(read('electron/main.cjs').includes('"type":"phoneDesign"'), 'agent prompt documents phoneDesign')
+}
+
+/* slide trim */
+{
+  const d = base()
+  d.clips.push({ ...d.clips[1], id: 'v3', startSec: 8, durationSec: 4, trimInSec: 5 })
+  const r = m.tl.slideClip(d, 'v2', 1)
+  const g = (id) => r.doc.clips.find((c) => c.id === id)
+  ok(r.changed && g('v2').startSec === 5 && g('v2').durationSec === 4 && g('v2').trimInSec === 2, 'slide moves the clip, keeps its length and frames')
+  ok(g('v1').durationSec === 5 && g('v3').startSec === 9 && g('v3').durationSec === 3 && g('v3').trimInSec === 6, 'neighbours absorb the slide (edit length unchanged)')
+  ok(m.tl.slideClip(d, 'v2', -99).doc.clips.find((c) => c.id === 'v1').durationSec >= 0.1, 'slide clamps at neighbour minimum')
+  ok(/touching/.test(m.tl.slideClip({ ...d, clips: [d.clips[2]] }, 't1', 1).reason), 'slide explains when there are no neighbours')
+  ok(read('src/screens/Studio.tsx').includes("commit(slideClip(") && read('src/screens/Studio.tsx').includes('Slide the clip between its neighbours'), 'slide has a documented shortcut')
+}
+
+/* nested sequences */
+{
+  let d = base()
+  d.clips[0] = { ...d.clips[0], keyframes: [{ at: 0, opacity: 0, ease: 'linear' }, { at: 2, opacity: 1, ease: 'linear' }] }
+  d = m.scenes.saveScene(d, 'Intro', '2026-01-01T00:00:00Z').doc
+  const sid = d.scenes[0].id
+  const outer = { ...d, clips: [{ ...m.docm.defaultTextClip(0, 1), id: 'title', durationSec: 2, track: 5 }] }
+  const nested = m.scenes.nestScene(outer, sid, 10)
+  const seq = nested.doc.clips.find((c) => c.id === nested.clipId)
+  ok(seq.kind === 'sequence' && seq.startSec === 10 && seq.durationSec === 8, 'scene nested as one sequence clip of its length')
+  const trimmed = { ...nested.doc, clips: nested.doc.clips.map((c) => (c.id === seq.id ? { ...c, trimInSec: 1, durationSec: 4, x: 0.25, y: 0.25, scale: 0.5, opacity: 0.8 } : c)) }
+  const flat = m.resolve.resolveForOutput(trimmed).clips
+  ok(!flat.some((c) => c.kind === 'sequence'), 'output has no sequence clips (flattened)')
+  const fv1 = flat.find((c) => c.id.endsWith('~v1')), fv2 = flat.find((c) => c.id.endsWith('~v2'))
+  ok(fv1.startSec === 10 && Math.abs(fv1.durationSec - 3) < 1e-9 && fv1.trimInSec === 1, 'inner clip retimed + trimmed to the window (source in-point follows)')
+  ok(fv2.startSec === 13 && fv2.durationSec === 1 && fv2.trimInSec === 2, 'second inner clip clipped at the window end')
+  ok(Math.abs(fv1.keyframes[1].at - 1) < 1e-9, 'inner keyframes shift with the trim')
+  ok(fv1.x === 0.25 && fv1.scale === 0.5 && Math.abs(fv1.opacity - 0.8) < 1e-9, 'sequence placement + opacity apply to children')
+  ok(flat.filter((c) => c.id.includes('~')).every((c) => c.track > seq.track && c.track < seq.track + 1), 'children stack at the sequence layer')
+  ok(flat.find((c) => c.id.endsWith('~t1'))?.startSec === 10 && flat.find((c) => c.id.endsWith('~t1')).fontSizePct < d.clips[2].fontSizePct, 'text inside the window retimed and scaled with the sequence')
+  // self-nesting / cycles are harmless
+  const self = { ...trimmed, scenes: [{ ...trimmed.scenes[0], doc: { ...trimmed.scenes[0].doc, clips: [...trimmed.scenes[0].doc.clips, { ...seq, id: 'loop', startSec: 0 }] } }] }
+  ok(Array.isArray(m.resolve.resolveForOutput(self).clips), 'a scene containing itself does not recurse forever')
+  ok(read('src/screens/studio/StudioProPanel.tsx').includes('Nest at playhead'), 'Scenes panel can nest a scene')
 }
 
 console.log(`editor upgrades check passed — ${n} assertions`)
