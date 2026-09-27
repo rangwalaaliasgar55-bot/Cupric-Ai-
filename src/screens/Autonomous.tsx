@@ -49,6 +49,8 @@ export function Autonomous() {
   }
   const voiceSupported = useMemo(() => isVoiceSupported(), [])
   const [listening, setListening] = useState(false)
+  const [micLevel, setMicLevel] = useState(0)
+  const [transcribing, setTranscribing] = useState(false)
   const [heard, setHeard] = useState<string | null>(null)
   const [handsFree, setHandsFree] = useState(true)
   const [speakBack, setSpeakBack] = useState(true)
@@ -98,6 +100,8 @@ export function Autonomous() {
       if (settleRef.current) clearTimeout(settleRef.current)
       settleRef.current = null
       setListening(false)
+      setMicLevel(0)
+      setTranscribing(false)
       return
     }
     const listener = new VoiceListener(
@@ -128,11 +132,13 @@ export function Autonomous() {
           }, AUTO_START_SETTLE_MS)
         },
         onCommand: () => {},
+        onLevel: (level) => setMicLevel(Math.min(1, level * 4)),
+        onTranscribing: (active) => setTranscribing(active),
         onError: (message) => {
           pushToast('error', message)
           setListening(false)
         },
-        onEnd: () => setListening(false),
+        onEnd: () => { setListening(false); setMicLevel(0); setTranscribing(false) },
       },
       'en-US',
       'dictation',
@@ -191,7 +197,10 @@ export function Autonomous() {
                 </Button>
               </div>
           </div>
-          {heard && <p className="mt-2 text-xs text-muted">{heard}</p>}
+          <div className="mt-2 flex items-center gap-2 text-xs text-muted" aria-live="polite">
+            <span className="flex h-3 items-end gap-px" aria-label={`Microphone level ${Math.round(micLevel * 100)} percent`}>{Array.from({ length: 12 }, (_, i) => <span key={i} className={i / 12 < micLevel ? 'w-1 rounded-t bg-accent' : 'w-1 rounded-t bg-line'} style={{ height: `${4 + (i % 4) * 2}px` }} />)}</span>
+            {transcribing ? <span className="text-accent-text">Transcribing offline…</span> : heard || (listening ? 'Listening…' : 'Mic idle — type the brief instead if voice is unavailable.')}
+          </div>
           <textarea
             value={brief}
             onChange={e => setBrief(e.target.value)}

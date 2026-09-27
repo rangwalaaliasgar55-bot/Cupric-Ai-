@@ -43,6 +43,8 @@ async function fileToChatImage(file: File): Promise<ChatImage> {
 }
 
 type AiProvider = 'gemini' | 'opencode'
+type AiMode = 'auto' | 'gemini' | 'zen' | 'openrouter' | 'ollama' | 'lmstudio' | 'template'
+type StatusDot = 'ok' | 'error' | 'unknown' | 'testing'
 
 const CHIPS = ['Suggest a 12s bumper', 'How does the Arena flow work?', 'Tighten my captions']
 
@@ -78,6 +80,7 @@ export function AskPanel() {
   const setAskOpen = useProjectStore((s) => s.setAskOpen)
   const view = useProjectStore((s) => s.view)
   const active = useActiveProject()
+  const pushToast = useProjectStore((s) => s.pushToast)
 
   const [msgs, setMsgs] = useState<ChatMsg[]>([
     {
@@ -94,7 +97,13 @@ export function AskPanel() {
   const [busy, setBusy] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [apiKey, setApiKey] = useState('')
-  const [geminiModel, setGeminiModel] = useState('gemini-3.8-flash')
+  const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash')
+  const [geminiModels, setGeminiModels] = useState<{ id: string; label: string }[]>([])
+  const [aiMode, setAiMode] = useState<AiMode>('auto')
+  const [autoPick, setAutoPick] = useState<{ label?: string; reason?: string; kind?: string; model?: string } | null>(null)
+  const [setupRequired, setSetupRequired] = useState(false)
+  const [statusDots, setStatusDots] = useState<{ gemini: StatusDot; zen: StatusDot; local: StatusDot }>({ gemini: 'unknown', zen: 'unknown', local: 'unknown' })
+  const [fallbackOrder, setFallbackOrder] = useState<AiMode[]>(['gemini', 'zen', 'ollama', 'lmstudio', 'template'])
   const [openCodeKey, setOpenCodeKey] = useState('')
   const [openCodeBaseUrl, setOpenCodeBaseUrl] = useState('https://openrouter.ai/api/v1')
   const [openCodeModel, setOpenCodeModel] = useState('qwen/qwen3-235b-a22b:free')
@@ -127,11 +136,16 @@ export function AskPanel() {
       setMediaReady(false)
       return
     }
-    ipc.invoke('settings:get').then((settings: { hasKey?: boolean; hasGeminiKey?: boolean; hasOpenCodeKey?: boolean; aiProvider?: AiProvider; geminiModel?: string; openCodeBaseUrl?: string; openCodeModel?: string; autoLaunch?: boolean }) => {
+    ipc.invoke('settings:get').then((settings: { hasKey?: boolean; hasGeminiKey?: boolean; hasOpenCodeKey?: boolean; aiProvider?: AiProvider; aiMode?: AiMode; autoPick?: typeof autoPick; setupRequired?: boolean; statusDots?: typeof statusDots; fallbackOrder?: AiMode[]; geminiModel?: string; openCodeBaseUrl?: string; openCodeModel?: string; autoLaunch?: boolean }) => {
       setHasKey(Boolean(settings?.hasKey))
       setHasGeminiKey(Boolean(settings?.hasGeminiKey))
       setHasOpenCodeKey(Boolean(settings?.hasOpenCodeKey))
       if (settings?.aiProvider) setAiProvider(settings.aiProvider)
+      if (settings?.aiMode) setAiMode(settings.aiMode)
+      setAutoPick(settings?.autoPick || null)
+      setSetupRequired(Boolean(settings?.setupRequired))
+      if (settings?.statusDots) setStatusDots({ ...statusDots, ...settings.statusDots })
+      if (settings?.fallbackOrder?.length) setFallbackOrder(settings.fallbackOrder)
       if (settings?.geminiModel) setGeminiModel(settings.geminiModel)
       if (settings?.openCodeBaseUrl) setOpenCodeBaseUrl(settings.openCodeBaseUrl)
       if (settings?.openCodeModel) setOpenCodeModel(settings.openCodeModel)
@@ -146,16 +160,71 @@ export function AskPanel() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!hasGeminiKey || !getIpc()) return
+    void testConnection('gemini')
+  }, [hasGeminiKey])
+
   const shownFreeModels = freeModels.filter((preset) => {
     const q = modelSearch.trim().toLowerCase()
     if (!q) return true
     return `${preset.label} ${preset.model} ${preset.note}`.toLowerCase().includes(q)
   })
 
+  async function refreshDiscovery() {
+    const ipc = getIpc()
+    if (!ipc) return
+    try {
+      const result = await ipc.invoke('ai:autoDiscover')
+      if (result?.pick) {
+        setAutoPick(result.pick)
+        if (result.pick.kind !== 'template') pushToast('info', `Auto-using ${result.pick.label} — change in Settings`)
+      }
+      setSetupRequired(Boolean(result?.setupRequired))
+      setStatusDots((current) => ({ ...current, local: result?.local?.length ? 'ok' : current.local, zen: result?.pick?.kind === 'zen' ? 'ok' : current.zen }))
+      const settings = await ipc.invoke('settings:get')
+      setHasKey(Boolean(settings?.hasKey))
+      if (settings?.aiMode) setAiMode(settings.aiMode)
+      if (settings?.autoPick) setAutoPick(settings.autoPick)
+      if (settings?.openCodeBaseUrl) setOpenCodeBaseUrl(settings.openCodeBaseUrl)
+      if (settings?.openCodeModel) setOpenCodeModel(settings.openCodeModel)
+    } catch (err) {
+      setModelLoadStatus(humanError(err, 'Auto-discovery could not finish'))
+    }
+  }
+
   function useOpenCodePreset(preset: OpenCodePreset) {
     setAiProvider('opencode')
+    setAiMode(/localhost|127\.0\.0\.1/.test(preset.baseUrl) ? (preset.baseUrl.includes('1234') ? 'lmstudio' : 'ollama') : 'openrouter')
     setOpenCodeBaseUrl(preset.baseUrl)
     setOpenCodeModel(preset.model)
+  }
+
+  async function openSetup(kind: 'zen' | 'ollama' | 'template') {
+    const ipc = getIpc()
+    if (!ipc) return
+    if (kind === 'zen') {
+      setAiMode('zen')
+      setAiProvider('opencode')
+      setOpenCodeBaseUrl('https://opencode.ai/zen/v1')
+      setOpenCodeModel('big-pickle')
+      await ipc.invoke('ai:openZenAuth')
+    } else if (kind === 'ollama') await ipc.invoke('ai:installOllama')
+    else {
+      const result = await ipc.invoke('ai:useTemplate')
+      setAiMode('template')
+      setSetupRequired(false)
+      setHasKey(Boolean(result?.hasKey))
+      setAutoPick(result?.autoPick || { label: 'Offline template', reason: 'Deterministic offline planner' })
+    }
+  }
+
+  function moveFallback(index: number, direction: -1 | 1) {
+    const next = [...fallbackOrder]
+    const target = index + direction
+    if (target < 0 || target >= next.length) return
+    ;[next[index], next[target]] = [next[target], next[index]]
+    setFallbackOrder(next)
   }
 
   async function loadOpenCodeDesktopModels() {
@@ -214,6 +283,18 @@ export function AskPanel() {
     }
   }
 
+  async function refreshGeminiModels() {
+    const ipc = getIpc()
+    if (!ipc) return
+    try {
+      const models = await ipc.invoke('gemini:listModels', { apiKey: apiKey.trim() || undefined })
+      setGeminiModels(Array.isArray(models) ? models : [])
+      if (Array.isArray(models) && models.length && !models.some((model) => model.id === geminiModel)) setGeminiModel(models.some((model) => model.id === 'gemini-2.5-flash') ? 'gemini-2.5-flash' : models[0].id)
+    } catch (err) {
+      setProviderStatus((current) => ({ ...current, gemini: { state: 'error', message: humanError(err, 'Could not refresh Gemini models') } }))
+    }
+  }
+
   async function testConnection(provider: AiProvider) {
     setProviderStatus((current) => ({ ...current, [provider]: { state: 'testing', message: 'Testing…' } }))
     try {
@@ -237,11 +318,14 @@ export function AskPanel() {
           message: `${result.message || (result.ok ? 'Connected' : 'Connection failed')}${result.latencyMs ? ` · ${result.latencyMs}ms` : ''}`,
         },
       }))
+      if (provider === 'gemini') setStatusDots((current) => ({ ...current, gemini: result.ok ? 'ok' : 'error' }))
+      else setStatusDots((current) => ({ ...current, zen: aiMode === 'zen' && result.ok ? 'ok' : current.zen, local: (aiMode === 'ollama' || aiMode === 'lmstudio') && result.ok ? 'ok' : current.local }))
     } catch (err) {
       setProviderStatus((current) => ({
         ...current,
         [provider]: { state: 'error', message: humanError(err, 'Connection failed') },
       }))
+      if (provider === 'gemini') setStatusDots((current) => ({ ...current, gemini: 'error' }))
     }
   }
 
@@ -264,11 +348,13 @@ export function AskPanel() {
       )
       return
     }
-    const patch: Record<string, string> = {
+    const patch: Record<string, unknown> = {
       aiProvider,
+      aiMode,
       geminiModel,
       openCodeBaseUrl,
       openCodeModel,
+      fallbackOrder,
     }
     if (apiKey.trim()) patch.geminiApiKey = apiKey.trim()
     if (openCodeKey.trim()) patch.openCodeApiKey = openCodeKey.trim()
@@ -362,12 +448,12 @@ export function AskPanel() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 Ask Cupric AI
-                <span className={cx('h-2 w-2 rounded-full', providerStatus[aiProvider].state === 'ok' ? 'bg-accent' : providerStatus[aiProvider].state === 'error' ? 'bg-danger' : providerStatus[aiProvider].state === 'testing' ? 'bg-info' : 'bg-muted')} title={providerStatus[aiProvider].message} />
-                <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{hasKey ? 'LIVE' : 'SETUP'}</span>
+                <span className={cx('h-2 w-2 rounded-full', aiMode === 'auto' ? (autoPick?.kind === 'template' ? 'bg-muted' : 'bg-accent') : providerStatus[aiProvider].state === 'ok' ? 'bg-accent' : providerStatus[aiProvider].state === 'error' ? 'bg-danger' : providerStatus[aiProvider].state === 'testing' ? 'bg-info' : 'bg-muted')} title={aiMode === 'auto' ? autoPick?.reason || 'Auto-discovering available providers' : providerStatus[aiProvider].message} />
+                <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{aiMode === 'template' ? 'OFFLINE' : hasKey ? 'LIVE' : 'SETUP'}</span>
               </div>
-              <div className="text-xs text-muted">{hasKey ? (aiProvider === 'opencode' ? `OpenCode · ${openCodeModel}` : `Gemini · ${geminiModel}`) : 'Connect Gemini or OpenCode model'}</div>
+              <div className="text-xs text-muted">{aiMode === 'auto' ? `Auto · ${autoPick?.label || 'discovering…'}` : aiMode === 'template' ? 'Offline deterministic template' : aiProvider === 'opencode' ? `${aiMode === 'zen' ? 'Zen Free' : 'OpenCode'} · ${openCodeModel}` : `Gemini · ${geminiModel}`}</div>
             </div>
-            <button type="button" aria-label="AI settings" onClick={() => setShowSettings((v) => !v)} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-panel-alt hover:text-text"><Settings size={15}/></button>
+            <button type="button" aria-label="AI settings" onClick={() => { const next = !showSettings; setShowSettings(next); if (next) void refreshDiscovery() }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-panel-alt hover:text-text"><Settings size={15}/></button>
             <button
               type="button"
               aria-label="Close panel"
@@ -388,35 +474,58 @@ export function AskPanel() {
                 }}
               >
                 <label className="block text-xs text-muted">
-                  Live AI provider
+                  AI provider
                   <select
-                    value={aiProvider}
-                    onChange={(e) => setAiProvider(e.target.value as AiProvider)}
+                    value={aiMode}
+                    onChange={(e) => {
+                      const next = e.target.value as AiMode
+                      setAiMode(next)
+                      setAiProvider(next === 'gemini' ? 'gemini' : 'opencode')
+                    }}
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs text-text"
                   >
+                    <option value="auto">Auto (recommended)</option>
                     <option value="gemini">Gemini</option>
-                    <option value="opencode">OpenCode / OpenAI compatible</option>
+                    <option value="zen">Zen Free</option>
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="ollama">Ollama</option>
+                    <option value="lmstudio">LM Studio</option>
+                    <option value="template">Offline template</option>
                   </select>
                 </label>
-                <label className="block text-xs text-muted">
+                {aiMode === 'auto' && (
+                  <div className="rounded-lg border border-accent/25 bg-accent/5 p-2 text-xs">
+                    <div className="flex items-center justify-between gap-2"><span className="font-semibold text-text">Auto-using: {autoPick?.label || 'discovering…'}</span><button type="button" onClick={() => void refreshDiscovery()} className="text-accent-text underline">Change / refresh</button></div>
+                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric checks OpenCode Desktop, Zen, then local models.'}</div>
+                  </div>
+                )}
+                {setupRequired && aiMode === 'auto' && (
+                  <div className="rounded-lg border border-[#f59e0b]/30 bg-[#f59e0b]/10 p-2 text-xs text-text">
+                    <div className="font-semibold">No live model found yet</div>
+                    <div className="mt-1 text-muted">Your timeline still builds offline. Choose a zero-key setup:</div>
+                    <div className="mt-2 grid grid-cols-3 gap-1.5">
+                      <button type="button" onClick={() => void openSetup('zen')} className="rounded border border-line bg-panel px-2 py-1.5 text-[10px]">Paste Zen key<br /><span className="text-muted">opencode.ai/auth</span></button>
+                      <button type="button" onClick={() => void openSetup('ollama')} className="rounded border border-line bg-panel px-2 py-1.5 text-[10px]">Install Ollama</button>
+                      <button type="button" onClick={() => void openSetup('template')} className="rounded border border-line bg-panel px-2 py-1.5 text-[10px]">Use offline template</button>
+                    </div>
+                  </div>
+                )}
+                {aiMode === 'gemini' && <label className="block text-xs text-muted">
                   Gemini API key <span className={hasGeminiKey ? 'text-accent-text' : 'text-muted'}>{hasGeminiKey ? 'saved' : 'not saved'}</span>
                   <input
                     type="password"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Paste Gemini key — blank keeps saved key"
+                    onPaste={() => window.setTimeout(() => void testConnection('gemini'), 0)}
+                    placeholder="Paste Gemini key — validates immediately"
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
-                </label>
-                <label className="block text-xs text-muted">
-                  Gemini model
-                  <input
-                    value={geminiModel}
-                    onChange={(e) => setGeminiModel(e.target.value)}
-                    placeholder="gemini-3.8-flash"
-                    className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
-                  />
-                </label>
+                </label>}
+                {aiMode === 'gemini' && <label className="block text-xs text-muted">
+                  <span className="flex items-center justify-between">Gemini model <button type="button" onClick={() => void refreshGeminiModels()} className="text-accent-text underline">Refresh</button></span>
+                  <input list="cupric-gemini-models" value={geminiModel} onChange={(e) => setGeminiModel(e.target.value)} placeholder="gemini-2.5-flash" className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs" />
+                  <datalist id="cupric-gemini-models">{geminiModels.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}</datalist>
+                </label>}
                 <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg/40 px-2 py-1.5 text-xs">
                   <span className="flex min-w-0 items-center gap-2 text-muted" title={providerStatus.gemini.message}>
                     <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.gemini.state === 'ok' ? 'bg-accent' : providerStatus.gemini.state === 'error' ? 'bg-danger' : providerStatus.gemini.state === 'testing' ? 'bg-info' : 'bg-muted')} />
@@ -467,7 +576,7 @@ export function AskPanel() {
                     {modelLoadStatus || `${freeModels.length} presets included. Load OpenCode reads your desktop OpenCode providers without exposing keys to the UI; OpenRouter “:free” models still need a free key.`}
                   </p>
                 </div>
-                <label className="block text-xs text-muted">
+                {aiMode !== 'auto' && aiMode !== 'template' && <label className="block text-xs text-muted">
                   OpenCode base URL
                   <input
                     value={openCodeBaseUrl}
@@ -475,8 +584,8 @@ export function AskPanel() {
                     placeholder="https://openrouter.ai/api/v1 or http://localhost:11434/v1"
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
-                </label>
-                <label className="block text-xs text-muted">
+                </label>}
+                {aiMode !== 'auto' && aiMode !== 'template' && <label className="block text-xs text-muted">
                   OpenCode model
                   <input
                     value={openCodeModel}
@@ -484,8 +593,8 @@ export function AskPanel() {
                     placeholder="qwen/qwen3-235b-a22b:free"
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
-                </label>
-                <label className="block text-xs text-muted">
+                </label>}
+                {aiMode === 'zen' || aiMode === 'openrouter' ? <label className="block text-xs text-muted">
                   OpenCode API key <span className={hasOpenCodeKey ? 'text-accent-text' : 'text-muted'}>{hasOpenCodeKey ? 'saved / imported / local model' : 'not saved'}</span>
                   <input
                     type="password"
@@ -494,13 +603,23 @@ export function AskPanel() {
                     placeholder="OpenRouter/OpenAI key — blank keeps saved/OpenCode/local"
                     className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs"
                   />
-                </label>
+                </label> : null}
                 <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg/40 px-2 py-1.5 text-xs">
                   <span className="flex min-w-0 items-center gap-2 text-muted" title={providerStatus.opencode.message}>
                     <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.opencode.state === 'ok' ? 'bg-accent' : providerStatus.opencode.state === 'error' ? 'bg-danger' : providerStatus.opencode.state === 'testing' ? 'bg-info' : 'bg-muted')} />
                     <span className="truncate">OpenCode · {providerStatus.opencode.message}</span>
                   </span>
                   <button type="button" onClick={() => void testConnection('opencode')} disabled={providerStatus.opencode.state === 'testing'} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
+                </div>
+                <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
+                  <div className="mb-1 font-semibold text-muted">Provider status</div>
+                  <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                    {([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1 rounded bg-panel px-1.5 py-1"><span className={cx('h-2 w-2 rounded-full', statusDots[key] === 'ok' ? 'bg-accent' : statusDots[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label} · {statusDots[key]}</span>)}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
+                  <div className="font-semibold text-muted">Fallback order</div>
+                  <div className="mt-1 space-y-1">{fallbackOrder.map((item, index) => <div key={`${item}-${index}`} className="flex items-center justify-between rounded bg-panel px-2 py-1"><span>{index + 1}. {item}</span><span className="flex gap-1"><button type="button" aria-label={`Move ${item} up`} onClick={() => moveFallback(index, -1)} disabled={index === 0}>↑</button><button type="button" aria-label={`Move ${item} down`} onClick={() => moveFallback(index, 1)} disabled={index === fallbackOrder.length - 1}>↓</button></span></div>)}</div>
                 </div>
                 <button type="submit" className="w-full rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink">
                   Save live AI settings

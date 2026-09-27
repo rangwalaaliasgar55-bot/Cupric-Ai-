@@ -7,6 +7,7 @@
  * part of `npm run build`.
  */
 import { build } from 'esbuild'
+import { existsSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -170,6 +171,13 @@ if (!/API key/i.test(humanError(new Error('401 Unauthorized')))) {
   // A spoken brief must wait for confirmation before an autonomous job starts.
   const { readFileSync } = await import('node:fs')
   const studio = readFileSync('src/screens/Studio.tsx', 'utf8')
+  const localVoice = readFileSync('src/lib/localVoice.ts', 'utf8')
+  const main = readFileSync('electron/main.cjs', 'utf8')
+  check('mic permission is requested locally', localVoice.includes('navigator.mediaDevices.getUserMedia'), true)
+  check('desktop voice falls back to typing instead of remote speech', !localVoice.includes('http://') && !localVoice.includes('https://') && /Type your brief instead/.test(readFileSync('src/lib/voice.ts', 'utf8')), true)
+  check('offline Whisper model path exists', existsSync('vendor/whisper'), true)
+  check('offline Whisper model search path is wired', main.includes("userDataPath('whisper')") && main.includes("path.join(__dirname, '..', 'vendor', 'whisper')"), true)
+  check('desktop voice does not use a remote speech URL', !localVoice.includes('http://') && !localVoice.includes('https://'), true)
   const caseBody = studio.slice(studio.indexOf("case 'make-video'"), studio.indexOf("case 'undo'"))
   check('make-video does not start a job directly', caseBody.includes('startAutomationJob('), false)
   check('make-video asks for confirmation', caseBody.includes('setPendingBrief(command.brief)'), true)

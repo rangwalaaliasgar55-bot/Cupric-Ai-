@@ -49,8 +49,10 @@ Outputs into `release/`:
 - `Cupric-AI-0.9.0-x64-Portable.exe` — portable executable.
 
 The packaged app loads the built `dist/` over `file://` and self-hosts fonts, so
-it can run offline after installation. Gemini requires either a saved key or a
-`GEMINI_API_KEY` environment variable.
+it can run offline after installation. On first AI use and when Settings opens,
+Cupric auto-discovers OpenCode Desktop, Zen (only with an existing key), Ollama,
+LM Studio, or the deterministic offline template; no key is required for local
+or template mode.
 
 ---
 
@@ -58,7 +60,7 @@ it can run offline after installation. Gemini requires either a saved key or a
 
 | Area | Desktop behavior |
 |---|---|
-| **Gemini / OpenCode** | API keys are stored in Electron `settings.json` or read from environment variables; the renderer only receives key presence. Brief and Ask AI use Gemini `gemini-3.8-flash` by default or OpenCode/OpenAI-compatible models, with local deterministic fallback when live AI is unavailable. |
+| **Gemini / OpenCode / Auto AI** | Settings and first use auto-discover OpenCode Desktop config/auth, keyed Zen Free, Ollama, LM Studio, and the offline template in that order. Gemini uses `gemini-2.5-flash` by default, validates pasted keys with a minimal call, refreshes live models, retries 429/503, and falls back without blocking the timeline. Secrets remain in Electron `settings.json` or environment variables; the renderer only receives key presence. |
 | **Arena handoff + import** | Cupric AI can open `arena.ai/code` in the user's browser and copy a full Arena build brief for paste/build. The brief includes hard constraints, source/asset plan, exact scene sequence, render spec, and `window.__cupricSourceManifest` requirements. ZIP/HTML winners are imported into project app data, extracted safely, checked for `window.__seek(t)`, loaded in a hidden BrowserWindow, and captured as a PNG thumbnail. |
 | **Arena preview** | Imported Arena HTML previews in a sandboxed iframe through an IPC-approved `file://` path under the project data folder. The browser preview imports `.html`/`.zip` with JSZip and validates `window.__seek(t)`. |
 | **Remotion preview** | Locked rundowns are rendered through `@remotion/player` so you can preview the generated composition before exporting or importing Arena results. |
@@ -120,8 +122,9 @@ Free / no-cost options exposed in the UI:
   endpoints. Ollama defaults to `http://localhost:11434/v1` with examples like
   `qwen2.5-coder:7b` or `llama3.2:3b`.
 - **Gemini** through a saved key or `GEMINI_API_KEY`; the default model is
-  `gemini-3.8-flash` and can be overridden with `GEMINI_MODEL` or the settings
-  field.
+  `gemini-2.5-flash` and can be overridden with `GEMINI_MODEL` or the settings
+  field. Pasted keys are tested immediately and the model list drops deprecated
+  or unavailable models.
 
 Keys are stored only in Electron `settings.json` or read from environment
 variables (`OPENCODE_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`,

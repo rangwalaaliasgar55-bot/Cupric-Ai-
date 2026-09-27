@@ -70,14 +70,30 @@ const APP_ID = 'app.cupric-ai.studio'
 const MAX_RENDER_DURATION_SEC = 180
 const DEFAULT_SILENCE_NOISE_DB = -35
 const DEFAULT_SILENCE_MIN_DURATION = 0.8
-const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
-const GEMINI_FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-2.0-flash']
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
+const GEMINI_FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-2.0-flash']
+const ZEN_FREE_MODELS = ['big-pickle', 'space-bunny-free', 'mimo-v2.6-flash-free']
+const ZEN_BASE_URL = 'https://opencode.ai/zen/v1'
+const AI_DISCOVERY_TIMEOUT_MS = 1500
+const AI_DISCOVERY_CACHE_MS = 30_000
+const AI_MODES = new Set(['auto', 'gemini', 'zen', 'openrouter', 'ollama', 'lmstudio', 'template'])
+const LOCAL_DISCOVERY_ENDPOINTS = [
+  { kind: 'ollama', label: 'Ollama', baseUrl: 'http://localhost:11434/v1' },
+  { kind: 'lmstudio', label: 'LM Studio', baseUrl: 'http://localhost:1234/v1' },
+  { kind: 'local-1337', label: 'Local model', baseUrl: 'http://127.0.0.1:1337/v1' },
+]
 
 const renderJobs = new Map()
 const automationRunStates = new Map()
 let mainWindow = null
 let updateDownloaded = false
 let installingUpdate = false
+let aiDiscoveryPromise = null
+let aiDiscoveryCache = { at: 0, result: null }
+let aiStatusCache = { at: 0, dots: { gemini: 'unknown', zen: 'unknown', local: 'unknown' } }
+const rundownCache = new Map()
+const rundownQueue = []
+let rundownQueueRunning = false
 
 // ---------------------------------------------------------------------------
 // App hardening: single instance, logs, crash capture
@@ -255,6 +271,19 @@ function opencodeConfigFiles() {
       path.join(dir, 'auth.json'),
     )
   }
+  // OpenCode Desktop stores profiles beneath ai.opencode.desktop rather than
+  // the CLI directory. Keep the scan shallow and bounded: this runs on every
+  // settings read, so it must never walk an entire home directory.
+  const addDesktopProfiles = (root) => {
+    if (!root) return
+    addDir(root)
+    try {
+      for (const name of fs.readdirSync(root).slice(0, 40)) {
+        const child = path.join(root, name)
+        try { if (fs.statSync(child).isDirectory()) addDir(child) } catch {}
+      }
+    } catch {}
+  }
   files.push(process.env.OPENCODE_CONFIG, process.env.OPENCODE_AUTH_FILE)
   if (home) {
     addDir(path.join(home, '.config', 'opencode'))
@@ -263,6 +292,8 @@ function opencodeConfigFiles() {
   }
   addDir(path.join(process.env.APPDATA || '', 'opencode'))
   addDir(path.join(process.env.LOCALAPPDATA || '', 'opencode'))
+  addDesktopProfiles(path.join(process.env.APPDATA || '', 'ai.opencode.desktop'))
+  addDesktopProfiles(path.join(process.env.LOCALAPPDATA || '', 'ai.opencode.desktop'))
   addDir(path.join(process.env.XDG_CONFIG_HOME || '', 'opencode'))
   addDir(path.join(process.env.XDG_DATA_HOME || '', 'opencode'))
   // Project-local OpenCode config is useful when Cupric AI is launched from a workspace.
@@ -391,22 +422,175 @@ function resolveOpenCodeApiKey(baseUrl, model) {
   return ''
 }
 
+function openCodeAuthSecrets() {
+  const secrets = []
+  const visit = (value, hint = '') => {
+    if (!value || typeof value !== 'object') return
+    for (const [key, child] of Object.entries(value)) {
+      const nextHint = `${hint} ${key}`.toLowerCase()
+      if (typeof child === 'string' && /(?:api.?key|access.?token|token|secret|credential)/i.test(key) && /(zen|opencode)/i.test(nextHint) || typeof child === 'string' && /(zen|opencode)/i.test(nextHint) && child.trim().length > 10) {
+        const secret = secretFromConfig(child)
+        if (secret) secrets.push(secret)
+      } else if (child && typeof child === 'object') visit(child, nextHint)
+    }
+  }
+  for (const file of opencodeConfigFiles()) {
+    if (!/auth\.json$/i.test(file)) continue
+    visit(readJsonLoose(file), path.basename(path.dirname(file)))
+  }
+  return [...new Set(secrets)]
+}
+
+function configuredOpenCodeKey(baseUrl, model) {
+  return String(
+    process.env.OPENCODE_API_KEY ||
+    process.env.ANTHROPIC_API_KEY ||
+    process.env.OPENAI_API_KEY ||
+    process.env.OPENROUTER_API_KEY ||
+    resolveOpenCodeApiKey(baseUrl, model) ||
+    openCodeAuthSecrets()[0] ||
+    '',
+  ).trim()
+}
+
+function configuredAiMode(settings = readSettings()) {
+  const value = String(settings.aiMode || '').toLowerCase()
+  if (AI_MODES.has(value)) return value
+  if (settings.aiProvider === 'gemini') return 'gemini'
+  if (settings.aiProvider === 'opencode') return 'openrouter'
+  return 'auto'
+}
+
+function publicDiscovery(result) {
+  if (!result) return result
+  const pick = result.pick ? { ...result.pick } : result.pick
+  if (pick) delete pick.apiKey
+  return { ...result, pick, configured: Array.isArray(result.configured) ? result.configured.map((item) => { const safe = { ...item }; delete safe.apiKey; return safe }) : result.configured }
+}
+
+/**
+ * Discover the first usable source without asking the user to paste a key.
+ * This is intentionally the one discovery implementation used by settings,
+ * first AI use, and fallback routing; model pick-up is never duplicated in a
+ * renderer or in a provider-specific adapter.
+ */
+async function autoDiscover(options = {}) {
+  const force = Boolean(options.force)
+  if (!force && aiDiscoveryCache.result && Date.now() - aiDiscoveryCache.at < AI_DISCOVERY_CACHE_MS) return aiDiscoveryCache.result
+  if (aiDiscoveryPromise) return aiDiscoveryPromise
+  aiDiscoveryPromise = (async () => {
+    const settings = readSettings()
+    const configuredMode = configuredAiMode(settings)
+    if (configuredMode !== 'auto' && !force) {
+      const manual = {
+        kind: configuredMode,
+        provider: configuredMode === 'gemini' ? 'gemini' : configuredMode === 'template' ? 'template' : 'opencode',
+        baseUrl: String(settings.openCodeBaseUrl || '').trim(),
+        model: String(settings.openCodeModel || '').trim(),
+        label: configuredMode === 'gemini' ? `Gemini · ${geminiModel()}` : configuredMode === 'template' ? 'Offline template' : `${configuredMode} · ${settings.openCodeModel || 'default model'}`,
+        reason: 'Manual provider selected in Settings.',
+        source: 'manual',
+      }
+      return { pick: manual, local: [], configured: [], setupRequired: configuredMode === 'template', checkedAt: new Date().toISOString() }
+    }
+
+    const configured = discoverOpenCodeConfiguredModels()
+    const configuredKey = configuredOpenCodeKey('', '')
+    const configuredPick = configured.find((preset) => {
+      const key = resolveOpenCodeApiKey(preset.baseUrl, preset.model) || configuredKey
+      return Boolean(key) || isLocalModelBase(preset.baseUrl)
+    })
+    if (configuredPick) {
+      return { pick: { ...configuredPick, kind: 'opencode', provider: 'opencode', reason: 'OpenCode Desktop has a configured provider/model.', source: 'opencode-desktop' }, local: [], configured, setupRequired: false, checkedAt: new Date().toISOString() }
+    }
+
+    // OpenCode Desktop also forwards standard OpenAI-compatible environment
+    // variables. Use those when no provider block was saved; never invent a
+    // remote endpoint without the corresponding key.
+    const openAiKey = String(process.env.OPENAI_API_KEY || '').trim()
+    if (openAiKey) {
+      const baseUrl = normalizedBaseUrl(process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1')
+      const model = String(process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+      return { pick: { kind: 'opencode', provider: 'opencode', baseUrl, model, apiKey: openAiKey, label: `OpenAI · ${model}`, reason: 'OpenCode-compatible OPENAI_API_KEY is available.', source: 'environment' }, local: [], configured, setupRequired: false, checkedAt: new Date().toISOString() }
+    }
+
+    // Zen is deliberately not a zero-key provider. Only OPENCODE_API_KEY or a
+    // Zen credential in OpenCode's auth.json may activate this route.
+    const zenKey = String(process.env.OPENCODE_API_KEY || openCodeAuthSecrets()[0] || '').trim()
+    if (zenKey) {
+      let zenModels = []
+      try { zenModels = await listOpenCodeModels({ baseUrl: ZEN_BASE_URL, apiKey: zenKey }) } catch {}
+      const available = new Set(zenModels.map((model) => model.model))
+      const candidates = ZEN_FREE_MODELS.filter((candidate) => !available.size || available.has(candidate))
+      let model = candidates[0] || zenModels[0]?.model || ZEN_FREE_MODELS[0]
+      for (const candidate of candidates) {
+        if (await probeOpenCodeModel(ZEN_BASE_URL, zenKey, candidate)) { model = candidate; break }
+      }
+      const zen = { kind: 'zen', provider: 'opencode', baseUrl: ZEN_BASE_URL, model, apiKey: zenKey, label: `Zen Free · ${model}`, reason: 'OpenCode credentials include a Zen key.', source: 'opencode-auth' }
+      return { pick: zen, local: [], configured, setupRequired: false, checkedAt: new Date().toISOString() }
+    }
+
+    // These probes are deliberately parallel and short. A stopped localhost
+    // service must never make the first Generate click feel hung.
+    const local = (await Promise.allSettled(LOCAL_DISCOVERY_ENDPOINTS.map(async (endpoint) => {
+      const response = await fetch(`${endpoint.baseUrl}/models`, { signal: AbortSignal.timeout(AI_DISCOVERY_TIMEOUT_MS) })
+      if (!response.ok) throw new Error(`${response.status}`)
+      const data = await response.json()
+      const models = (Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : [])
+        .map((item) => String(item?.id || item?.name || item?.model || '').trim())
+        .filter((model) => model && !/embed|rerank|whisper|tts/i.test(model))
+      if (!models.length) throw new Error('no chat model')
+      return { ...endpoint, models }
+    }))).flatMap((settled) => settled.status === 'fulfilled' ? [settled.value] : [])
+    const firstLocal = local[0]
+    if (firstLocal) {
+      const picked = { kind: firstLocal.kind, provider: 'opencode', baseUrl: firstLocal.baseUrl, model: firstLocal.models[0], label: `${firstLocal.label} · ${firstLocal.models[0]}`, reason: `${firstLocal.label} is running locally; no key is required.`, source: 'local', models: firstLocal.models }
+      return { pick: picked, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
+    }
+
+    const offline = { kind: 'template', provider: 'template', baseUrl: '', model: '', label: 'Offline template', reason: 'No configured key or local model was found. The deterministic planner keeps the timeline usable.', source: 'builtin' }
+    return { pick: offline, local, configured, setupRequired: true, checkedAt: new Date().toISOString() }
+  })().then((result) => {
+    const current = readSettings()
+    if (configuredAiMode(current) === 'auto') {
+      const safePick = { ...result.pick }
+      delete safePick.apiKey
+      current.autoPick = safePick
+      current.autoDiscoveredAt = result.checkedAt
+      if (!Array.isArray(current.fallbackOrder) || !current.fallbackOrder.length) current.fallbackOrder = ['gemini', 'zen', 'ollama', 'lmstudio', 'template']
+      if (result.pick.kind === 'opencode' || result.pick.kind === 'zen' || result.pick.kind === 'ollama' || result.pick.kind === 'lmstudio') {
+        current.openCodeBaseUrl = result.pick.baseUrl
+        current.openCodeModel = result.pick.model
+        if (result.pick.apiKey && !process.env.OPENCODE_API_KEY) current.openCodeApiKey = result.pick.apiKey
+      }
+      writeSettings(current)
+    }
+    aiDiscoveryCache = { at: Date.now(), result }
+    aiStatusCache = {
+      at: Date.now(),
+      dots: {
+        gemini: geminiApiKey() ? 'unknown' : 'unknown',
+        zen: result.pick?.kind === 'zen' ? 'ok' : 'unknown',
+        local: result.local?.length ? 'ok' : 'unknown',
+      },
+    }
+    try { mainWindow?.webContents.send('ai:discovery', { ...publicDiscovery(result), statusDots: aiStatusCache.dots }) } catch {}
+    return result
+  }).finally(() => { aiDiscoveryPromise = null })
+  return aiDiscoveryPromise
+}
+
 function aiSettings() {
   const settings = readSettings()
-  const openCodeBaseUrl = String(settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1').trim()
-  const openCodeModel = String(settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || 'qwen/qwen3-235b-a22b:free').trim()
-  const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || '').trim()
-  const explicit = settings.aiProvider === 'gemini' || settings.aiProvider === 'opencode' ? settings.aiProvider : null
-  // A fresh install used to silently select remote OpenRouter with no key. Pick
-  // a provider that can actually authenticate; with neither configured the UI
-  // clearly reports "no live model" and the deterministic planner takes over.
-  const openCodeReady = Boolean(
-    openCodeApiKey ||
-    resolveOpenCodeApiKey(openCodeBaseUrl, openCodeModel) ||
-    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(openCodeBaseUrl)
-  )
-  const provider = explicit || (geminiApiKey() ? 'gemini' : openCodeReady ? 'opencode' : 'gemini')
-  return { provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
+  const mode = configuredAiMode(settings)
+  const pick = mode === 'auto' && settings.autoPick ? settings.autoPick : null
+  const baseFromPick = pick?.baseUrl || settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || ''
+  const modelFromPick = pick?.model || settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || ''
+  const openCodeBaseUrl = String(baseFromPick || (mode === 'openrouter' ? 'https://openrouter.ai/api/v1' : mode === 'zen' ? ZEN_BASE_URL : '')).trim()
+  const openCodeModel = String(modelFromPick || (mode === 'zen' ? ZEN_FREE_MODELS[0] : mode === 'openrouter' ? 'qwen/qwen3-235b-a22b:free' : '')).trim()
+  const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || resolveOpenCodeApiKey(openCodeBaseUrl, openCodeModel) || (mode === 'zen' ? openCodeAuthSecrets()[0] : '') || '').trim()
+  const provider = mode === 'gemini' ? 'gemini' : mode === 'template' || pick?.kind === 'template' || (mode === 'auto' && !pick) ? 'template' : mode === 'auto' && pick?.kind === 'gemini' ? 'gemini' : 'opencode'
+  return { mode, pick, provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
 }
 
 function hasOpenCodeAccess() {
@@ -414,7 +598,7 @@ function hasOpenCodeAccess() {
   return Boolean(
     cfg.openCodeApiKey ||
     resolveOpenCodeApiKey(cfg.openCodeBaseUrl, cfg.openCodeModel) ||
-    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(cfg.openCodeBaseUrl),
+    isLocalModelBase(cfg.openCodeBaseUrl),
   )
 }
 
@@ -422,15 +606,23 @@ function publicSettings() {
   const settings = readSettings()
   const ai = aiSettings()
   const login = app.getLoginItemSettings ? app.getLoginItemSettings() : { openAtLogin: false }
+  const pick = settings.autoPick || ai.pick || null
+  const needsKey = ai.mode === 'gemini' || ai.mode === 'zen' || ai.mode === 'openrouter'
   return {
-    hasKey: ai.provider === 'opencode' ? hasOpenCodeAccess() : Boolean(geminiApiKey()),
+    hasKey: ai.provider === 'template' ? true : ai.provider === 'opencode' ? hasOpenCodeAccess() : Boolean(geminiApiKey()),
     hasGeminiKey: Boolean(geminiApiKey()),
     hasOpenCodeKey: hasOpenCodeAccess(),
     aiProvider: ai.provider,
+    aiMode: ai.mode,
+    autoPick: pick,
+    setupRequired: Boolean(ai.mode === 'auto' && settings.autoPick?.kind === 'template'),
+    fallbackOrder: Array.isArray(settings.fallbackOrder) ? settings.fallbackOrder : ['gemini', 'zen', 'ollama', 'lmstudio', 'template'],
     geminiModel: geminiModel(),
     openCodeBaseUrl: ai.openCodeBaseUrl,
     openCodeModel: ai.openCodeModel,
-    openCodeImportedKey: Boolean(resolveOpenCodeApiKey(ai.openCodeBaseUrl, ai.openCodeModel)),
+    openCodeImportedKey: Boolean(resolveOpenCodeApiKey(ai.openCodeBaseUrl, ai.openCodeModel) || openCodeAuthSecrets()[0]),
+    statusDots: aiStatusCache.dots,
+    needsKey,
     autoLaunch: Boolean(settings.autoLaunch ?? login.openAtLogin),
     silenceNoiseDb: Number.isFinite(Number(settings.silenceNoiseDb)) ? Number(settings.silenceNoiseDb) : DEFAULT_SILENCE_NOISE_DB,
     silenceMinDuration: Number.isFinite(Number(settings.silenceMinDuration))
@@ -448,8 +640,22 @@ function applySettingsPatch(patch) {
     if (key) settings.geminiApiKey = key
     else delete settings.geminiApiKey
   }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiMode')) {
+    const next = String(patch.aiMode || '').toLowerCase()
+    if (AI_MODES.has(next)) settings.aiMode = next
+    // Manual mode changes invalidate a stale automatic pick, never a saved key.
+    if (next !== 'auto') delete settings.autoPick
+    if (next === 'zen') settings.openCodeBaseUrl = ZEN_BASE_URL
+    if (next === 'ollama') settings.openCodeBaseUrl = 'http://localhost:11434/v1'
+    if (next === 'lmstudio') settings.openCodeBaseUrl = 'http://localhost:1234/v1'
+    if (next === 'openrouter' && !/^https:\/\/openrouter\.ai/i.test(String(settings.openCodeBaseUrl || ''))) settings.openCodeBaseUrl = 'https://openrouter.ai/api/v1'
+  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'fallbackOrder') && Array.isArray(patch.fallbackOrder)) {
+    settings.fallbackOrder = patch.fallbackOrder.map(String).filter((value, index, list) => AI_MODES.has(value) && list.indexOf(value) === index)
+  }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiProvider')) {
     settings.aiProvider = patch.aiProvider === 'opencode' ? 'opencode' : 'gemini'
+    if (!settings.aiMode) settings.aiMode = patch.aiProvider === 'opencode' ? 'openrouter' : 'gemini'
   }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'geminiModel')) {
     const v = String(patch.geminiModel || '').trim()
@@ -494,9 +700,25 @@ function stateFile() {
   return userDataPath('projects.json')
 }
 
-ipcMain.handle('settings:get', () => publicSettings())
+ipcMain.handle('settings:get', async () => {
+  // Settings is a discovery trigger by design: opening the panel should tell a
+  // fresh install what it can use before the user clicks Generate.
+  await autoDiscover()
+  return publicSettings()
+})
 ipcMain.handle('settings:hasKey', () => publicSettings().hasKey)
-ipcMain.handle('settings:set', (_event, patch) => applySettingsPatch(patch || {}))
+ipcMain.handle('settings:set', async (_event, patch) => {
+  const result = applySettingsPatch(patch || {})
+  if (configuredAiMode(readSettings()) === 'auto') await autoDiscover({ force: true })
+  return publicSettings()
+})
+ipcMain.handle('ai:autoDiscover', async () => publicDiscovery(await autoDiscover({ force: true })))
+ipcMain.handle('ai:openZenAuth', () => shell.openExternal('https://opencode.ai/auth'))
+ipcMain.handle('ai:installOllama', () => shell.openExternal('https://ollama.com/download'))
+ipcMain.handle('ai:useTemplate', () => {
+  applySettingsPatch({ aiMode: 'template' })
+  return publicSettings()
+})
 ipcMain.handle('settings:autoLaunch', (_event, enabled) => applySettingsPatch({ autoLaunch: Boolean(enabled) }))
 // Autosave / crash recovery / version history (2.26): atomic writes, a
 // rolling set of snapshots, recovery from the newest valid one when the main
@@ -865,6 +1087,7 @@ async function generateCandidateHtml(prompt) {
     user: prompt,
     temperature: 0.85,
     deadlineMs: 150_000,
+    task: 'lock',
   })
   return extractHtmlFromModel(reply.text)
 }
@@ -1208,20 +1431,28 @@ async function runAutomationPipeline(jobId) {
     job = ensureAutomationActive(job.id, state)
     let rundown = job.rundown || null
     if (!rundown) {
-      startAutomationStep(job.id, 1, 'Drafting creative rundown')
-      try {
-        const capabilityContext = job.remotionPlan
-          ? `\n\nREMOTION CAPABILITY PLAN (follow this deterministic plan): template=${job.remotionPlan.template}; font=${job.remotionPlan.font}; skills=${(job.remotionPlan.skills || []).join(', ')}; no remote assets; preview and export must match.`
-          : ''
-        rundown = await generateRundown(`${job.brief}${capabilityContext}`, [], { aspect: job.aspect, fps: job.fps, mode: job.mode })
-      } catch (err) {
-        warnings.push(`Live AI unavailable; used local deterministic rundown. ${err?.message || err}`)
-        rundown = fallbackRundownForJob(job)
-      }
+      startAutomationStep(job.id, 1, 'Drafting instant offline rundown')
+      // Build the deterministic first pass immediately. A live polish can
+      // replace it later, but neither the job nor the timeline waits on AI.
+      rundown = fallbackRundownForJob(job)
       writeJson(path.join(root, 'rundown.json'), rundown)
       job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json'), warnings }) || job
       sendAutomation('automation:progress', job)
-      job = finishAutomationStep(job.id, 1, 'Rundown generated') || job
+      job = finishAutomationStep(job.id, 1, 'Instant rundown ready; live polish queued') || job
+      const capabilityContext = job.remotionPlan
+        ? `\n\nREMOTION CAPABILITY PLAN (follow this deterministic plan): template=${job.remotionPlan.template}; font=${job.remotionPlan.font}; skills=${(job.remotionPlan.skills || []).join(', ')}; no remote assets; preview and export must match.`
+        : ''
+      void generateRundown(`${job.brief}${capabilityContext}`, [], { aspect: job.aspect, fps: job.fps, mode: job.mode })
+        .then((polished) => {
+          rundown = polished
+          const latest = automationJobs().find((item) => item.id === job.id)
+          if (latest?.status === 'running') {
+            writeJson(path.join(root, 'rundown.json'), polished)
+            patchAutomation(job.id, { rundown: polished, rundownPath: path.join(root, 'rundown.json') })
+            sendAutomation('automation:progress', automationJobs().find((item) => item.id === job.id))
+          }
+        })
+        .catch((err) => logLine('interactive-rundown-fallback', err?.message || String(err), { jobId: job.id }))
     }
 
     stepIndex = 2
@@ -1562,28 +1793,72 @@ async function listOpenCodeModels(payload = {}) {
     .slice(0, 200)
 }
 
+async function probeOpenCodeModel(baseUrl, apiKey, model) {
+  try {
+    const response = await fetch(`${normalizedBaseUrl(baseUrl)}/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(AI_DISCOVERY_TIMEOUT_MS),
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Reply with one word: OK' }], max_tokens: 1, temperature: 0, stream: false }),
+    })
+    return response.ok
+  } catch { return false }
+}
+
 ipcMain.handle('opencode:listModels', (_event, payload) => listOpenCodeModels(payload || {}))
 ipcMain.handle('opencode:discoverModels', () => discoverOpenCodeConfiguredModels())
+
+function classifyGeminiError(err) {
+  const message = String(err?.message || err || '')
+  if (/401|403|api key|unauthorized|permission denied|invalid argument/i.test(message)) return { category: 'wrong-key', message: 'Gemini rejected this key. Check that it is a Google AI Studio key with Generative Language API access.' }
+  if (/429|quota|resource_exhausted|rate.?limit/i.test(message)) return { category: 'quota', message: 'The key is valid, but this Gemini model is out of quota for now.' }
+  if (/503|overload|high demand|unavailable/i.test(message)) return { category: 'high-demand', message: 'Gemini is temporarily at high demand. Cupric will retry, then use the next provider.' }
+  if (/404|not found|deprecated|no longer available/i.test(message)) return { category: 'model-missing', message: 'That Gemini model is no longer available. Cupric will use gemini-2.5-flash.' }
+  return { category: 'network', message: message.slice(0, 360) || 'Gemini could not be reached.' }
+}
+
+async function listGeminiModels(key = geminiApiKey()) {
+  const token = String(key || '').trim()
+  if (!token) throw new Error('Gemini model refresh needs a key. Choose Auto or paste a Gemini key in Settings.')
+  const response = await fetchOrExplain(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(5000) })
+  if (!response.ok) throw new Error(`Gemini model list failed (${response.status}): ${(await response.text()).slice(0, 300)}`)
+  const data = await response.json()
+  return (Array.isArray(data?.models) ? data.models : [])
+    .filter((model) => Array.isArray(model?.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
+    .filter((model) => !/deprecated|embedding|aqa|robotics/i.test(String(model?.name || model?.displayName || '')))
+    .map((model) => ({
+      id: String(model.name || '').replace(/^models\//, ''),
+      label: String(model.displayName || model.name || '').replace(/^models\//, ''),
+      inputTokenLimit: model.inputTokenLimit,
+      outputTokenLimit: model.outputTokenLimit,
+    }))
+    .filter((model) => model.id)
+}
+
+ipcMain.handle('gemini:listModels', (_event, payload = {}) => listGeminiModels(payload.apiKey || geminiApiKey()))
 ipcMain.handle('ai:testConnection', async (_event, payload = {}) => {
   const provider = payload.provider === 'opencode' ? 'opencode' : 'gemini'
   const started = Date.now()
   try {
     if (provider === 'opencode') {
-      const models = await listOpenCodeModels({
-        baseUrl: payload.baseUrl,
-        apiKey: payload.apiKey,
-        model: payload.model,
-      })
-      return { ok: true, provider, latencyMs: Date.now() - started, message: `Connected · ${models.length} free/local model${models.length === 1 ? '' : 's'} visible` }
+      const models = await listOpenCodeModels({ baseUrl: payload.baseUrl, apiKey: payload.apiKey, model: payload.model })
+      return { ok: true, provider, latencyMs: Date.now() - started, category: 'ok', message: `Connected · ${models.length} free/local model${models.length === 1 ? '' : 's'} visible` }
     }
     const key = String(payload.apiKey || geminiApiKey() || '').trim()
-    if (!key) throw new Error('Gemini API key is not configured')
-    const modelName = String(payload.model || geminiModel()).trim()
+    if (!key) throw new Error('Gemini needs a key in manual mode. Choose Auto or paste a Gemini key in Settings.')
+    const modelName = String(payload.model || geminiModel()).trim() || DEFAULT_GEMINI_MODEL
     const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: modelName, generationConfig: { maxOutputTokens: 1 } })
     await model.generateContent('Reply OK')
-    return { ok: true, provider, latencyMs: Date.now() - started, message: `Connected to ${modelName}` }
+    return { ok: true, provider, latencyMs: Date.now() - started, category: 'ok', message: `Connected to ${modelName}` }
   } catch (err) {
-    return { ok: false, provider, latencyMs: Date.now() - started, message: err?.message || String(err) }
+    const classified = provider === 'gemini' ? classifyGeminiError(err) : { category: 'network', message: err?.message || String(err) }
+    if (provider === 'gemini' && classified.category === 'model-missing') {
+      const settings = readSettings()
+      settings.geminiModel = DEFAULT_GEMINI_MODEL
+      writeSettings(settings)
+      classified.message = `${classified.message} Saved default: ${DEFAULT_GEMINI_MODEL}.`
+    }
+    return { ok: false, provider, latencyMs: Date.now() - started, ...classified }
   }
 })
 
@@ -1614,7 +1889,7 @@ async function callOpenCode(messages, options = {}) {
   const inheritedKey = resolveOpenCodeApiKey(cfg.openCodeBaseUrl, cfg.openCodeModel)
   const apiKey = cfg.openCodeApiKey || inheritedKey
   if (!apiKey && !isLocalModelBase(cfg.openCodeBaseUrl)) {
-    throw new Error('OpenCode/OpenAI-compatible API key is not configured. Save a key in Cupric AI or import a configured OpenCode Desktop provider.')
+    throw new Error('This remote provider needs a key. Choose Auto for a local model, or save a key in Settings.')
   }
   const baseUrl = normalizedBaseUrl(cfg.openCodeBaseUrl)
   const url = `${baseUrl}/chat/completions`
@@ -1720,6 +1995,11 @@ async function runGeminiGenerateContent(key, prompt, generationConfig) {
       }
       if (/404|not found|no longer available|not available|not supported|invalid model/i.test(message)) {
         aiCooldowns.set(`gemini:${modelName}`, { until: Date.now() + 6 * 60 * 60 * 1000, reason: 'missing' })
+        if (modelName === geminiModel()) {
+          const settings = readSettings()
+          settings.geminiModel = DEFAULT_GEMINI_MODEL
+          writeSettings(settings)
+        }
         continue
       }
       if (/\b5\d\d\b|overload|unavailable|high demand|timed out|timeout/i.test(message)) continue
@@ -1762,20 +2042,74 @@ async function discoverRunningLocalModel() {
  * The ordered list of things that can answer right now: the chosen provider,
  * then the other one, then any local model server that happens to be running.
  */
-async function aiRoutes() {
-  const cfg = aiSettings()
+async function aiRoutes(task = 'draft') {
+  let cfg = aiSettings()
+  const taskModel = String(readSettings()[`${task}Model`] || '').trim()
+  let discovered = null
+  if (cfg.mode === 'auto') {
+    discovered = await autoDiscover().catch(() => null)
+    cfg = aiSettings()
+  }
   const routes = []
-  const gemini = Boolean(geminiApiKey())
-  const opencode = hasOpenCodeAccess()
-  const order = cfg.provider === 'opencode' ? ['opencode', 'gemini'] : ['gemini', 'opencode']
-  for (const provider of order) {
-    if (provider === 'gemini' && gemini) routes.push({ provider: 'gemini', label: 'Gemini' })
-    if (provider === 'opencode' && opencode && !coolingDown(`opencode:${cfg.openCodeBaseUrl}|${cfg.openCodeModel}`)) {
-      routes.push({ provider: 'opencode', label: `OpenCode · ${cfg.openCodeModel}` })
+  const seen = new Set()
+  const add = (route) => {
+    const key = `${route.provider}|${route.override?.openCodeBaseUrl || cfg.openCodeBaseUrl}|${route.override?.openCodeModel || cfg.openCodeModel}`
+    if (seen.has(key)) return
+    seen.add(key)
+    routes.push(route)
+  }
+  const addLocal = (entry) => {
+    if (!entry?.baseUrl || !entry?.models?.[0]) return
+    add({ provider: 'opencode', label: `${entry.label} · ${entry.models[0]}`, override: { openCodeBaseUrl: entry.baseUrl, openCodeModel: entry.models[0], openCodeApiKey: '' } })
+  }
+
+  const addGemini = () => { if (geminiApiKey()) add({ provider: 'gemini', label: `Gemini · ${geminiModel()}` }) }
+  const addConfigured = () => {
+    const selectedModel = taskModel || cfg.openCodeModel
+    if (cfg.openCodeBaseUrl && selectedModel && hasOpenCodeAccess() && !coolingDown(`opencode:${cfg.openCodeBaseUrl}|${selectedModel}`)) {
+      add({ provider: 'opencode', label: `${cfg.mode === 'zen' ? 'Zen Free' : 'OpenCode'} · ${selectedModel}`, override: taskModel ? { openCodeModel: selectedModel } : undefined })
     }
   }
+
+  const addZen = (source) => {
+    const zen = source?.pick?.kind === 'zen' ? source.pick : null
+    if (zen) add({ provider: 'opencode', label: `Zen Free · ${zen.model}`, override: { openCodeBaseUrl: zen.baseUrl, openCodeModel: zen.model, openCodeApiKey: zen.apiKey } })
+  }
+  const addLocalKind = (source, wanted) => {
+    for (const entry of source?.local || []) {
+      if (wanted === 'ollama' && entry.kind !== 'ollama') continue
+      if (wanted === 'lmstudio' && !['lmstudio', 'local-1337'].includes(entry.kind)) continue
+      addLocal(entry)
+    }
+  }
+  const fallbackOrder = Array.isArray(readSettings().fallbackOrder) ? readSettings().fallbackOrder : ['gemini', 'zen', 'ollama', 'lmstudio', 'template']
+  const addDiscoveredFallbacks = (source) => {
+    for (const kind of fallbackOrder) {
+      if (kind === 'gemini') addGemini()
+      else if (kind === 'zen') addZen(source)
+      else if (kind === 'ollama' || kind === 'lmstudio') addLocalKind(source, kind)
+    }
+  }
+
+  // Auto first adds the discovered OpenCode/Desktop pick, then honours the
+  // user's reorderable fallback list. Explicit Gemini keeps Gemini first but
+  // still gets exactly the same auto chain after a 429/503.
+  if (cfg.mode === 'auto') {
+    addConfigured()
+    addDiscoveredFallbacks(discovered)
+  } else if (cfg.mode === 'gemini') {
+    addGemini()
+    const fallback = await autoDiscover({ force: true }).catch(() => null)
+    addDiscoveredFallbacks(fallback)
+  } else if (cfg.mode !== 'template') {
+    addConfigured()
+    const fallback = await autoDiscover({ force: true }).catch(() => null)
+    addDiscoveredFallbacks(fallback)
+  }
+  // Keep one last local probe for fallback cases where a configured desktop
+  // provider was selected before the local scan ran.
   const local = await discoverRunningLocalModel().catch(() => null)
-  if (local) routes.push({ provider: 'opencode', label: `Local · ${local.model}`, override: { openCodeBaseUrl: local.baseUrl, openCodeModel: local.model, openCodeApiKey: '' } })
+  if (local) add({ provider: 'opencode', label: `Local · ${local.model}`, override: { openCodeBaseUrl: local.baseUrl, openCodeModel: local.model, openCodeApiKey: '' } })
   return routes
 }
 
@@ -1790,8 +2124,12 @@ async function aiRoutes() {
 /** 1.8 — backoff schedule for transient AI errors, per route. */
 const AI_BACKOFF_MS = [1000, 4000]
 
-async function completeWithFallback({ system, user, json = false, temperature = 0.4, images = [], history = [], deadlineMs = 45_000, validate }) {
-  const routes = await aiRoutes()
+async function completeWithFallback({ system, user, json = false, temperature = 0.4, images = [], history = [], deadlineMs = 45_000, validate, task = 'draft' }) {
+  // Router contract: draft is cheap/free, lock prefers a stronger model, and
+  // agent-ops always requests strict JSON mode. Providers can override these
+  // model slots in settings without changing the fallback chain.
+  if (task === 'agent-ops') json = true
+  const routes = await aiRoutes(task)
   if (!routes.length) {
     const error = new Error('No live AI provider is configured and no local model server (Ollama, LM Studio, OpenCode) is running')
     error.code = 'NO_PROVIDER'
@@ -1835,8 +2173,7 @@ async function completeWithFallback({ system, user, json = false, temperature = 
             return await ask(extra)
           } catch (err) {
             const wait = AI_BACKOFF_MS[attempt]
-            const quota = /quota|resource_exhausted|exceeded your current/i.test(err?.message || String(err))
-            if (wait === undefined || quota || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
+            if (wait === undefined || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
             logLine('ai-backoff', `${route.label}: retry in ${wait}ms`, { error: (err?.message || String(err)).slice(0, 200) })
             await delay(wait)
           }
@@ -1875,7 +2212,7 @@ async function completeWithFallback({ system, user, json = false, temperature = 
 
 async function generateGeminiRundown(prompt, history, context) {
   const key = geminiApiKey()
-  if (!key) throw new Error('Gemini API key is not configured')
+  if (!key) throw new Error('Gemini needs a key in manual mode. Choose Auto or paste a Gemini key in Settings.')
   const result = await runGeminiGenerateContent(key, geminiRundownPrompt(prompt, history, context), { responseMimeType: 'application/json' })
   return normalizeRundown(parseJsonFromModel(result.response.text()), prompt)
 }
@@ -1893,22 +2230,51 @@ function withTimeout(promise, ms, label) {
 }
 
 function retryableAiError(err) {
-  return /408|409|425|429|500|502|503|504|timeout|timed out|temporar|overload|high demand|network|fetch failed/i.test(err?.message || String(err))
+  // Backoff is deliberately narrow: only provider throttling/high demand gets
+  // the 1s → 4s retry budget. Auth, malformed requests and 404s fall through
+  // immediately to the next route.
+  return /\b429\b|\b503\b|resource_exhausted|overload|high demand|temporar(?:y|ily) unavailable/i.test(err?.message || String(err))
+}
+
+function rundownCacheKey(prompt, context = {}) {
+  const input = `${String(prompt || '').trim().toLowerCase()}|${JSON.stringify({ aspect: context.aspect, fps: context.fps, mode: context.mode })}`
+  let hash = 2166136261
+  for (let i = 0; i < input.length; i += 1) hash = Math.imul(hash ^ input.charCodeAt(i), 16777619)
+  return `rundown-${(hash >>> 0).toString(16)}`
+}
+
+function rundownCacheFile() { return userDataPath('ai-cache', 'rundowns.json') }
+function readRundownCache() { return readJson(rundownCacheFile(), {}) }
+function cacheRundown(key, rundown) {
+  const cache = readRundownCache()
+  cache[key] = { savedAt: new Date().toISOString(), rundown }
+  writeJson(rundownCacheFile(), cache)
+  rundownCache.set(key, rundown)
 }
 
 async function generateRundown(prompt, history, context) {
+  const key = rundownCacheKey(prompt, context)
+  const memory = rundownCache.get(key) || readRundownCache()[key]?.rundown
+  if (memory) {
+    rundownCache.set(key, memory)
+    logLine('ai-rundown-cache-hit', key)
+    return memory
+  }
   const reply = await completeWithFallback({
     system: 'You are Cupric AI creative director. Return STRICT JSON only, no markdown.',
     user: geminiRundownPrompt(prompt, history, context),
     json: true,
     temperature: 0.6,
     deadlineMs: 60_000,
+    task: 'draft',
     validate: (value) => {
       if (!value || typeof value !== 'object' || !Array.isArray(value.scenes)) throw new Error('rundown JSON needs a scenes array')
     },
   })
   logLine('ai-rundown-route', reply.route)
-  return normalizeRundown(reply.parsed, prompt)
+  const rundown = normalizeRundown(reply.parsed, prompt)
+  cacheRundown(key, rundown)
+  return rundown
 }
 
 async function generateStudioEditPlan(instruction, studioContext) {
@@ -2020,6 +2386,7 @@ ${instruction}`
     json: true,
     temperature: 0.25,
     deadlineMs: STUDIO_PLAN_DEADLINE_MS - 2000,
+    task: 'agent-ops',
     validate: (value) => {
       if (!value || typeof value !== 'object' || !Array.isArray(value.ops) || value.ops.length === 0) throw new Error('edit plan JSON needs a non-empty ops array')
     },
@@ -2045,30 +2412,78 @@ async function liveAiChat(text, ctx, extra = {}) {
   return reply.text
 }
 
-ipcMain.handle('gemini:ask', async (_event, payload) => {
-  const prompt = payload?.prompt || ''
-  const context = payload?.rundownContext || {}
-  const providerLabel = aiSettings().provider === 'opencode' ? 'OpenCode' : 'Gemini'
+async function handleGeminiAsk(payload) {
   try {
-    const rundownPatch = await generateRundown(prompt, payload?.history || [], context)
-    return {
-      source: 'live',
-      text: `Live ${providerLabel} drafted a ${rundownPatch.durationSec}s rundown with ${rundownPatch.scenes.length} scene${rundownPatch.scenes.length === 1 ? '' : 's'}. The Arena prompt is ready at the bottom when you lock it.`,
-      rundownPatch,
+    const prompt = String(payload?.prompt || '').trim()
+  const context = payload?.rundownContext || {}
+  const providerLabel = aiSettings().provider === 'opencode' ? 'OpenCode' : aiSettings().provider === 'gemini' ? 'Gemini' : 'local'
+  const cacheKey = rundownCacheKey(prompt, context)
+  const cached = rundownCache.get(cacheKey) || readRundownCache()[cacheKey]?.rundown
+  if (cached) {
+    return { source: 'live', cached: true, text: `Loaded your cached ${cached.durationSec}s rundown instantly.`, rundownPatch: cached }
+  }
+
+  // The timeline is never held hostage by a remote model. Return the
+  // deterministic shape now, then polish it in a small persisted queue. The
+  // renderer receives ai:rundownPolished when the live answer arrives.
+  const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
+  const instant = fallbackRundownForJob({ brief: prompt, aspect, fps: context.fps === 60 ? 60 : 30 })
+  const requestId = String(payload?.requestId || uid('rundown'))
+  const shouldPolish = aiSettings().provider !== 'template' || Boolean(geminiApiKey()) || hasOpenCodeAccess()
+  if (shouldPolish) {
+    rundownQueue.push({ requestId, prompt, history: payload?.history || [], context, cacheKey, projectId: payload?.projectId || null })
+    void pumpRundownQueue()
+  }
+  return {
+    source: 'local',
+    fallbackReason: shouldPolish ? undefined : 'No live AI provider was found; offline template is active.',
+    queued: shouldPolish,
+    requestId,
+    text: shouldPolish
+      ? `Instant template ready. ${providerLabel} is polishing it in the background — the timeline is usable now.`
+      : 'Instant offline template ready. Add a provider later to polish it; the timeline is fully editable now.',
+    rundownPatch: instant,
     }
   } catch (err) {
     const fallbackReason = err?.message || String(err)
+    const context = payload?.rundownContext || {}
     const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
-    const rundownPatch = fallbackRundownForJob({ brief: prompt, aspect, fps: context.fps === 60 ? 60 : 30 })
-    logLine('interactive-rundown-fallback', fallbackReason, { provider: providerLabel })
-    return {
-      source: 'local',
-      fallbackReason,
-      text: `The live ${providerLabel} connection was unavailable, so Cupric used the deterministic local planner. You can keep editing this rundown normally.`,
-      rundownPatch,
-    }
+    const rundownPatch = fallbackRundownForJob({ brief: String(payload?.prompt || ''), aspect, fps: context.fps === 60 ? 60 : 30 })
+    logLine('interactive-rundown-fallback', fallbackReason, { provider: aiSettings().provider })
+    return { source: 'local', fallbackReason: 'Live AI was unavailable; the offline template is ready.', text: 'Live AI was unavailable, so Cupric built an editable offline template instead.', rundownPatch }
   }
-})
+}
+ipcMain.handle('gemini:ask', (_event, payload) => handleGeminiAsk(payload))
+
+async function pumpRundownQueue() {
+  if (rundownQueueRunning) return
+  rundownQueueRunning = true
+  try {
+    while (rundownQueue.length) {
+      const task = rundownQueue.shift()
+      if (!task) continue
+      try {
+        const rundown = await generateRundown(task.prompt, task.history, task.context)
+        mainWindow?.webContents.send('ai:rundownPolished', { requestId: task.requestId, projectId: task.projectId, rundown })
+      } catch (err) {
+        const message = err?.message || String(err)
+        if ((retryableAiError(err) || /offline|fetch failed|timed out|connection refused/i.test(message)) && (task.attempts || 0) < 2) {
+          task.attempts = (task.attempts || 0) + 1
+          rundownQueue.push(task)
+          logLine('rundown-polish-retrying', message, { requestId: task.requestId, attempt: task.attempts })
+          mainWindow?.webContents.send('ai:rundownPolished', { requestId: task.requestId, projectId: task.projectId, status: 'retrying', message: `AI polish queued — retrying (${task.attempts}/2).` })
+          await delay(task.attempts === 1 ? 1000 : 4000)
+          continue
+        }
+        logLine('interactive-rundown-fallback', message, { requestId: task.requestId, projectId: task.projectId })
+        logLine('rundown-polish-failed', message, { requestId: task.requestId, projectId: task.projectId })
+        mainWindow?.webContents.send('ai:rundownPolished', { requestId: task.requestId, projectId: task.projectId, error: 'Live polish was unavailable; the instant template remains ready.' })
+      }
+    }
+  } finally {
+    rundownQueueRunning = false
+  }
+}
 ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.text || '', payload?.ctx || {}, { images: payload?.images, history: payload?.history }))
 ipcMain.handle('studio:planEdits', async (_event, payload) => {
   const instruction = String(payload?.instruction || '').trim().slice(0, 2000)
