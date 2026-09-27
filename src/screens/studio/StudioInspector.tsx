@@ -39,6 +39,8 @@ import { applyResource } from '../../lib/studio/resourceApply'
 import { cx } from '../../lib/utils'
 import { CHANNEL_PRESETS, matchingPreset, presetLabel, presetWarnings } from '../../lib/studio/formats'
 import { docDuration, sizeForAspect } from '../../lib/studio/doc'
+import { applyTrack, sourceFrameMap, trackBox, trackSummary } from '../../lib/studio/maskTrack'
+import { sampleLumaFrames } from '../../lib/studio/autoEditAnalysis'
 
 /** Values of the built-in Font options; anything else came from Resources → Fonts. */
 const BUNDLED_FONT_VALUES = new Set(['Inter Variable', 'Manrope Variable', 'DM Sans Variable', 'Space Grotesk Variable', 'Playfair Display Variable', 'JetBrains Mono Variable'])
@@ -425,7 +427,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
 
       <KeyframeFields clip={clip} time={time} onPatch={onPatch} />
       <GradeFields clip={clip} onPatch={onPatch} />
-      <MaskFields clip={clip} onPatch={onPatch} />
+      <MaskFields clip={clip} onPatch={onPatch} aspect={doc.aspect} />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Transition in">
@@ -725,9 +727,32 @@ const DEFAULT_MASK: StudioMask = {
   softness: 0.25,
 }
 
-function MaskFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: Partial<StudioClip>) => void }) {
+function MaskFields({ clip, onPatch, aspect }: { clip: StudioClip; onPatch: (p: Partial<StudioClip>) => void; aspect: StudioDoc['aspect'] }) {
   const mask = clip.mask ?? null
-  const set = (patch: Partial<StudioMask>) => onPatch({ mask: { ...(mask ?? DEFAULT_MASK), ...patch } })
+  // Moving the box by hand after tracking would fight the path: editing the
+  // geometry drops the track (the status line says so) so the user re-tracks.
+  const set = (patch: Partial<StudioMask>) => onPatch({ mask: { ...(mask ?? DEFAULT_MASK), ...patch, ...(('x' in patch || 'y' in patch || 'w' in patch || 'h' in patch) && mask?.track ? { track: null } : {}) } })
+  const [tracking, setTracking] = useState<number | null>(null)
+  const [trackMsg, setTrackMsg] = useState<string | null>(null)
+  const canTrack = clip.kind === 'video' && mask && (mask.shape === 'rect' || mask.shape === 'ellipse')
+  const runTrack = async () => {
+    if (!mask || clip.kind !== 'video') return
+    setTracking(0)
+    setTrackMsg(null)
+    try {
+      const [fw, fh] = sizeForAspect(aspect)
+      const { frames, srcW, srcH } = await sampleLumaFrames(clip, 12, 192, (p) => setTracking(p))
+      const map = sourceFrameMap(clip, srcW, srcH, fw, fh)
+      const start = map.toSource({ x: mask.x, y: mask.y, w: mask.w, h: mask.h })
+      const points = trackBox(frames, start)
+      onPatch({ mask: applyTrack(mask, points, map, clip.trimInSec, clip.speed) })
+      setTrackMsg(trackSummary(points))
+    } catch (err) {
+      setTrackMsg(err instanceof Error ? err.message : 'Tracking failed.')
+    } finally {
+      setTracking(null)
+    }
+  }
 
   return (
     <Disclosure label="Mask" summary={mask ? mask.shape : 'Off'} active={Boolean(mask)}>
@@ -745,6 +770,26 @@ function MaskFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: Partial<
         </select>
       </Field>
 
+      {mask && (mask.shape === 'rect' || mask.shape === 'ellipse') && (
+        <div className="space-y-1.5 rounded-lg border border-line bg-panel-alt p-2">
+          <p className="text-[11px] font-medium text-text">Object tracking</p>
+          {clip.kind !== 'video' ? (
+            <p className="text-[11px] text-muted">Tracking follows a subject through moving footage — it needs a video clip.</p>
+          ) : (
+            <>
+              <p className="text-[11px] text-muted">Put the box around the subject at the clip's first frame, then track. The mask follows it through the clip.</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Button size="sm" variant="outline" disabled={!canTrack || tracking !== null} onClick={runTrack}>
+                  {tracking !== null ? `Tracking… ${tracking}%` : mask.track?.length ? 'Track again' : 'Track subject'}
+                </Button>
+                {mask.track?.length ? <Button size="sm" variant="ghost" onClick={() => { onPatch({ mask: { ...mask, track: null } }); setTrackMsg('Tracking removed — the mask is static again.') }}>Clear tracking</Button> : null}
+              </div>
+              {mask.track?.length ? <p className="text-[11px] text-accent">Following a {mask.track.length}-point path. Moving the box by hand clears it.</p> : null}
+              {trackMsg && <p className="text-[11px] text-muted">{trackMsg}</p>}
+            </>
+          )}
+        </div>
+      )}
       {mask && (mask.shape === 'rect' || mask.shape === 'ellipse') && (
         <div className="grid grid-cols-2 gap-2">
           <Slider label="X" value={mask.x} min={-0.5} max={1} step={0.01} onChange={(v) => set({ x: v })} />

@@ -690,7 +690,7 @@ const EASES: Record<StudioKeyframe['ease'], (p: number) => number> = {
 }
 
 /** The animated properties, resolved at time `t`. */
-export type KeyframeValues = { x?: number; y?: number; scale?: number; rotation?: number; opacity?: number }
+export type KeyframeValues = { x?: number; y?: number; scale?: number; rotation?: number; opacity?: number; blur?: number; glow?: number; hue?: number }
 
 /**
  * Interpolate a clip's keyframes at document time `t`.
@@ -722,13 +722,16 @@ export function keyframeValuesAt(clip: StudioClip, t: number): KeyframeValues | 
       scale: mix(a.scale, b.scale, p),
       rotation: mix(a.rotation, b.rotation, p),
       opacity: mix(a.opacity, b.opacity, p),
+      blur: mix(a.blur, b.blur, p),
+      glow: mix(a.glow, b.glow, p),
+      hue: mix(a.hue, b.hue, p),
     }
   }
   return pick(last)
 }
 
 function pick(key: StudioKeyframe): KeyframeValues {
-  return { x: key.x, y: key.y, scale: key.scale, rotation: key.rotation, opacity: key.opacity }
+  return { x: key.x, y: key.y, scale: key.scale, rotation: key.rotation, opacity: key.opacity, blur: key.blur, glow: key.glow, hue: key.hue }
 }
 
 /** Interpolate two optional numbers: a missing end holds the start, and vice versa. */
@@ -818,6 +821,36 @@ export function gradeFilter(nodes: StudioGradeNode[] | null | undefined): string
     }
   }
   return parts.join(' ')
+}
+
+/** Keyframed focus / bloom / colour drift as CSS filter primitives (scaled to frame height). */
+export function keyframeFilter(clip: StudioClip, t: number, height: number): string {
+  const v = keyframeValuesAt(clip, t)
+  if (!v) return ''
+  const parts: string[] = []
+  if (v.blur !== undefined && v.blur > 0.01) parts.push(`blur(${((v.blur * height) / 1080).toFixed(2)}px)`)
+  if (v.glow !== undefined && v.glow > 0.001) parts.push(`brightness(${(1 + v.glow * 0.6).toFixed(3)}) saturate(${(1 + v.glow * 0.25).toFixed(3)})`, `drop-shadow(0 0 ${((v.glow * 24 * height) / 1080).toFixed(1)}px rgba(255,255,255,${(v.glow * 0.55).toFixed(2)}))`)
+  if (v.hue !== undefined && Math.abs(v.hue) > 0.05) parts.push(`hue-rotate(${v.hue.toFixed(1)}deg)`)
+  return parts.join(' ')
+}
+
+/**
+ * A mask that follows its tracked path. `track` points are clip-local seconds
+ * holding the box centre (and optionally size); between points it glides
+ * linearly, outside the path it holds — pure in `local`.
+ */
+export function trackedMask(mask: StudioMask | null | undefined, local: number): StudioMask | null {
+  if (!mask) return null
+  const tr = mask.track
+  if (!tr || !tr.length || mask.shape === 'chroma' || mask.shape === 'luma' || mask.shape === 'matte') return mask
+  let a = tr[0], b = tr[0]
+  if (local >= tr[tr.length - 1].at) a = b = tr[tr.length - 1]
+  else if (local > tr[0].at) for (let i = 0; i < tr.length - 1; i += 1) if (local >= tr[i].at && local <= tr[i + 1].at) { a = tr[i]; b = tr[i + 1]; break }
+  const p = b.at > a.at ? (local - a.at) / (b.at - a.at) : 0
+  const lerp = (u: number, v: number) => u + (v - u) * p
+  const w = a.w !== undefined && b.w !== undefined ? lerp(a.w, b.w) : mask.w
+  const h = a.h !== undefined && b.h !== undefined ? lerp(a.h, b.h) : mask.h
+  return { ...mask, x: lerp(a.x, b.x) - w / 2, y: lerp(a.y, b.y) - h / 2, w, h }
 }
 
 /** Compose a new filter onto whatever the context already has. */
@@ -1136,8 +1169,8 @@ export function drawStudioFrame(
       ctx.translate(-cx, -cy)
     }
 
-    const grade = gradeFilter(clip.grade)
-    const mask = clip.mask
+    const grade = [gradeFilter(clip.grade), keyframeFilter(raw, t, height)].filter(Boolean).join(' ')
+    const mask = trackedMask(clip.mask, t - clip.startSec)
     const pixelGrade = needsPixelGrade(clip)
     const scratch = mask || pixelGrade ? scratchFor(width, height) : null
     ctx.globalCompositeOperation = compositeFor(clip.blendMode)

@@ -79,3 +79,35 @@ export async function analyseSubject(clip: StudioMediaClip, onProgress?: (pct: n
   video.load()
   return { samples, srcW: handle.width, srcH: handle.height }
 }
+
+/** Greyscale frames of a video clip's used range, for the mask tracker. */
+export async function sampleLumaFrames(clip: StudioMediaClip, fps = 12, width = 192, onProgress?: (pct: number) => void): Promise<{ frames: import('./maskTrack').LumaFrame[]; srcW: number; srcH: number }> {
+  const handle = getMedia(clip.mediaId)
+  if (!handle || handle.kind !== 'video') throw new Error('Tracking needs the video file — relink it first.')
+  const video = await loadVideo(handle.url)
+  const W = width
+  const H = Math.max(8, Math.round((W * video.videoHeight) / Math.max(1, video.videoWidth)))
+  const canvas = document.createElement('canvas')
+  canvas.width = W
+  canvas.height = H
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  if (!ctx) throw new Error('Canvas is unavailable.')
+  const speed = clip.speed > 0 ? clip.speed : 1
+  const from = clip.trimInSec
+  const to = Math.min(video.duration || from + clip.durationSec * speed, from + clip.durationSec * speed)
+  const steps = Math.max(2, Math.min(900, Math.ceil((to - from) * fps)))
+  const frames: import('./maskTrack').LumaFrame[] = []
+  for (let i = 0; i <= steps; i += 1) {
+    const t = from + ((to - from) * i) / steps
+    await seekTo(video, Math.min(t, Math.max(0, (video.duration || t) - 0.05)))
+    ctx.drawImage(video, 0, 0, W, H)
+    const px = ctx.getImageData(0, 0, W, H).data
+    const data = new Uint8Array(W * H)
+    for (let k = 0; k < data.length; k += 1) data[k] = (px[k * 4] * 54 + px[k * 4 + 1] * 183 + px[k * 4 + 2] * 19) >> 8
+    frames.push({ t, w: W, h: H, data })
+    onProgress?.(Math.round((i / steps) * 100))
+  }
+  video.removeAttribute('src')
+  video.load()
+  return { frames, srcW: handle.width || video.videoWidth, srcH: handle.height || video.videoHeight }
+}

@@ -280,7 +280,14 @@ export type StudioMask = {
   softness: number
   /** Greyscale or alpha image used as the matte, for `shape: 'matte'`. */
   matteDataUrl?: string | null
+  /**
+   * Object tracking: the box centre (and size, if it scaled) at clip-local
+   * times, produced by "Track subject". When present the rect/ellipse follows it.
+   */
+  track?: StudioMaskTrackPoint[] | null
 }
+
+export type StudioMaskTrackPoint = { at: number; x: number; y: number; w?: number; h?: number; confidence?: number }
 
 /**
  * One keyframe on a clip's own timeline.
@@ -310,6 +317,12 @@ export type StudioKeyframe = {
   scale?: number
   rotation?: number
   opacity?: number
+  /** Focus: gaussian blur in px at 1080p (0 = sharp). */
+  blur?: number
+  /** Bloom / glow intensity 0–1 (brightness lift + soft halo). */
+  glow?: number
+  /** Colour drift: hue rotation in degrees. */
+  hue?: number
   /** Easing from this keyframe to the next. */
   /**
    * How the value travels to the NEXT keyframe. The expressive eases are what
@@ -564,6 +577,8 @@ export type StudioDoc = {
   shelf?: StudioOverlayClip[]
   /** 2.7 — timeline markers (M). Snap targets; never rendered. */
   markers?: StudioMarker[]
+  /** Colour tokens imported with a source project (or set by the user). */
+  palette?: Array<{ name: string; color: string }>
   /** 2.4 — auto-duck music under voice clips. */
   ducking?: { enabled: boolean; amountDb: number; fadeSec: number } | null
   /** 2.4 — loudness target for export normalisation (LUFS, e.g. -14). null = off. */

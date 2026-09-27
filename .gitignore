@@ -18,3 +18,5 @@ vendor/whisper/*
 .auto-captions-check.mjs
 .component-director-check.mjs
 .editor-upgrades-check.mjs
+.source-project-check.mjs
+.mask-track-check.mjs

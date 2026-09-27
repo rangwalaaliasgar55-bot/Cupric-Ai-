@@ -54,6 +54,7 @@ import {
   nextFreeStart,
   resolveOverlaps,
   studioOf,
+  MAX_TRACKS,
 } from '../lib/studio/doc'
 import { STUDIO_BACKGROUNDS } from '../lib/studio/backgrounds'
 import { TRANSITIONS } from '../lib/studio/transitions'
@@ -76,6 +77,7 @@ import { getIpc } from '../lib/bridge'
 import { patchTransformKeyframe } from '../lib/studio/keyframeEdit'
 import { parseGeneratedHtml, piecesToStudioClips } from '../lib/studio/importHtml'
 import { readGeneratedPackage } from '../lib/studio/generatedPackage'
+import { detectSourceProject, scanSources, sourceProjectToClips, unrecognizedMessage } from '../lib/studio/sourceProject'
 import reactBitsCatalog from '../../resources/react-bits/catalog.json'
 import skiperCatalog from '../../resources/skiper/catalog.json'
 import remotionCatalog from '../../resources/remotion/catalog.json'
@@ -604,9 +606,58 @@ export function Studio() {
       for (const file of Array.from(files)) {
         if (/\.(?:zip|html?)$/i.test(file.name)) {
           const generated = await readGeneratedPackage(file)
+          const isZip = /\.zip$/i.test(file.name)
+          const arenaShape = /id=["']scene["']|window\.__seek/.test(generated.html)
+          // Second first-class shape: a multi-file React/Vite film project.
+          const sourceProject = isZip && !arenaShape ? detectSourceProject(generated.sources, generated.html) : null
+          if (sourceProject) {
+            const current = liveDoc()
+            const base = Math.round(current.clips.reduce((m, c) => Math.max(m, c.startSec + c.durationSec), 0) * 100) / 100
+            const imp = sourceProjectToClips(sourceProject, current, base, () => uid())
+            const trackCount = Math.min(MAX_TRACKS, Math.max(current.trackCount, imp.tracksUsed + 1))
+            const media: StudioClip[] = []
+            for (const asset of generated.assets) {
+              try {
+                const handle = await registerFile(asset.file)
+                if (handle.kind === 'audio') {
+                  media.push(defaultAudioClip(base, trackCount - 1, { id: handle.id, fileName: handle.fileName, localPath: handle.localPath, durationSec: handle.durationSec }))
+                } else if (handle.kind === 'video') {
+                  media.push({
+                    id: uid(), kind: 'video', track: 0, startSec: base, durationSec: Math.max(0.2, Math.min(handle.durationSec, sourceProject.durationSec)),
+                    name: handle.fileName.replace(/\.[^.]+$/, '').slice(0, 28), transitionIn: 'fade', transitionOut: 'none', opacity: 1,
+                    mediaId: handle.id, fileName: handle.fileName, localPath: handle.localPath, trimInSec: 0, sourceDurationSec: handle.durationSec,
+                    speed: 1, volume: 1, fit: 'cover', x: 0.5, y: 0.5, scale: 1, posterDataUrl: handle.posterDataUrl,
+                  } as StudioMediaClip)
+                } else {
+                  imp.notes.push(`${handle.fileName} was added to the media bin.`)
+                }
+              } catch {
+                imp.notes.push(`Skipped ${asset.sourcePath} (unsupported or damaged).`)
+              }
+            }
+            const next = resolveOverlaps({
+              ...current, trackCount,
+              palette: imp.palette.length ? imp.palette : current.palette,
+              markers: [...(current.markers ?? []), ...imp.markers],
+              clips: [...current.clips, ...media, ...imp.clips],
+            })
+            patchStudio(projectId, next)
+            const first = imp.clips.find((c) => c.kind === 'overlay') ?? imp.clips[0]
+            if (first) { setSelectedId(first.id); setTime(first.startSec + Math.min(0.8, first.durationSec / 2)) }
+            const audioCount = media.filter((c) => c.kind === 'audio').length
+            pushToast('success', `Imported ${file.name} — ${imp.summary}${audioCount ? `, ${audioCount} audio track${audioCount === 1 ? '' : 's'}` : ''}.${imp.notes.length ? ` ${imp.notes.join(' ')}` : ''}`)
+            continue
+          }
           // Never refuses: manifest → scene arrays in any script → timed markup
           // → visible text → copy in scripts → <title> → a title card.
           const piece = parseGeneratedHtml(generated.html, { scripts: generated.scripts, name: file.name })!
+          // A zip that matched neither shape used to "succeed" as a text-only
+          // title card. Say so instead, so the user knows nothing real came in.
+          const scan = scanSources(generated.sources, generated.html)
+          if (isZip && !arenaShape && (piece.via === 'title' || (piece.via === 'script-copy' && scan.codeFiles >= 2 && (scan.shellHtml || !generated.html)))) {
+            pushToast('error', unrecognizedMessage(file.name, generated.sources, generated.html))
+            continue
+          }
           const current = liveDoc()
           const label = file.name.replace(/\.(?:zip|html?)$/i, '').replace(/\s*\(\d+\)$/, '').slice(0, 28)
           const sceneClips = piecesToStudioClips(piece, current, label)
