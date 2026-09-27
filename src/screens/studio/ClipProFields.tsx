@@ -35,12 +35,12 @@ type Props = {
   onPatchDoc: (patch: Partial<StudioDoc>) => void
 }
 
-const inputCx = 'w-full rounded-lg border border-line bg-panel-alt px-2.5 py-1.5 text-base text-text'
+const inputCx = 'w-full cu-input px-2.5 py-1.5 text-base text-text'
 const chip = 'rounded-md border border-line px-2 py-1 text-xs text-text hover:border-accent/60 hover:bg-accent/10'
 
 function Box({ label, active, children }: { label: string; active?: boolean; children: React.ReactNode }) {
   return (
-    <details className="group rounded-lg border border-line bg-panel-alt/40 open:bg-panel-alt/70">
+    <details className="group cu-section">
       <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-medium text-text">
         {label}
         {active && <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-label="in use" />}
@@ -154,7 +154,7 @@ export function ClipProFields({ doc, clip, onPatch, onPatchDoc }: Props) {
               {variants.note && <p className="text-xs text-muted">{variants.note}</p>}
               {!variants.list.length && <p className="text-xs text-muted">No different rewrites to offer for this text.</p>}
               {variants.list.map((v) => (
-                <button key={v} type="button" className="block w-full rounded-md border border-line px-2 py-1.5 text-left text-sm hover:border-accent/60" onClick={() => onPatch({ text: v } as Partial<StudioClip>)}>
+                <button key={v} type="button" className="block w-full cu-chip px-2 py-1.5 text-left text-sm" onClick={() => onPatch({ text: v } as Partial<StudioClip>)}>
                   {v}
                 </button>
               ))}

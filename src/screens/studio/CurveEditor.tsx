@@ -74,7 +74,7 @@ export function CurveEditor({ value, onChange }: { value: Bezier; onChange: (b: 
       </svg>
       <div className="flex flex-wrap gap-1">
         {CURVE_PRESETS.map((p) => (
-          <button key={p.id} type="button" className="rounded border border-line px-1.5 py-0.5 text-xs hover:border-accent/60" onClick={() => onChange(p.bezier)}>
+          <button key={p.id} type="button" className="cu-chip px-1.5 py-0.5 text-xs" onClick={() => onChange(p.bezier)}>
             {p.label}
           </button>
         ))}

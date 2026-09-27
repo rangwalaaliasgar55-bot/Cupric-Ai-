@@ -22,3 +22,4 @@ vendor/whisper/*
 .mask-track-check.mjs
 .physics-check.mjs
 .check-resource-finder.mjs
+.check-creative-tools.mjs

@@ -10,7 +10,7 @@ const invokeChannels = new Set([
   'state:clear',
   'state:recoveryInfo', 'state:listVersions', 'state:snapshotNow', 'state:restoreVersion',
   'diag:report',
-  'voice:status', 'voice:transcribe', 'voice:transcribeMedia',
+  'voice:status', 'voice:tts', 'voice:transcribe', 'voice:transcribeMedia',
   'media:proxy', 'media:proxyDelete',
   'gemini:ask',
   'gemini:chat',

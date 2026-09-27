@@ -54,7 +54,7 @@ export function ResourceFinder({ onOpen }: { onOpen: (packId: string, itemName: 
       />
       <div className="flex flex-wrap gap-1.5">
         {FINDER_EXAMPLES.map((ex) => (
-          <button key={ex} type="button" onClick={() => run(ex)} className="rounded-full border border-line px-2.5 py-0.5 text-xs text-muted transition-colors hover:border-accent/50 hover:text-text">
+          <button key={ex} type="button" onClick={() => run(ex)} className="cu-chip !rounded-full px-2.5 py-0.5 text-xs text-muted">
             {ex}
           </button>
         ))}
@@ -84,9 +84,9 @@ export function ResourceFinder({ onOpen }: { onOpen: (packId: string, itemName: 
                     </div>
                   </div>
                   <div className="mt-2 flex gap-1.5">
-                    <button type="button" onClick={() => onOpen(r.packId, r.item.name)} className="rounded-md border border-line px-2 py-0.5 text-xs hover:border-accent/60">Open in pack</button>
+                    <button type="button" onClick={() => onOpen(r.packId, r.item.name)} className="cu-chip px-2 py-0.5 text-xs">Open in pack</button>
                     {url && (
-                      <button type="button" onClick={() => window.open(url, '_blank', 'noopener')} className="inline-flex items-center gap-1 rounded-md border border-line px-2 py-0.5 text-xs hover:border-accent/60">
+                      <button type="button" onClick={() => window.open(url, '_blank', 'noopener')} className="inline-flex items-center gap-1 cu-chip px-2 py-0.5 text-xs">
                         <ExternalLink size={11} /> Source
                       </button>
                     )}

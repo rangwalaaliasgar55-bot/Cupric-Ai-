@@ -13,6 +13,7 @@ const projectHistory = require('./project-history.cjs')
 const diagnostics = require('./diagnostics.cjs')
 const encoders = require('./encoders.cjs')
 const proxies = require('./proxies.cjs')
+const tts = require('./tts.cjs')
 const { migrateSettings } = require('./settings-migration.cjs')
 const voiceEngines = require('./voice-engines.cjs')
 
@@ -2531,6 +2532,8 @@ async function probeWindowsSpeech() {
   }
   return windowsSpeechAvailable
 }
+
+ipcMain.handle('voice:tts', async (_event, payload) => tts.synthesize(payload))
 
 ipcMain.handle('voice:status', async () => {
   const whisper = whisperSetup()

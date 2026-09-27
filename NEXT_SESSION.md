@@ -207,3 +207,31 @@ Hardware follow-up: verify beat analysis on long MP3s and reframe on real 4K foo
   - It has not been visually checked, because there is no headless browser in the sandbox.
 - **Optional ideas not started:** speed ramping UI, one-click repurpose, TTS voiceover, Brand Kit panel, batch variants.
   - Auto-captions already exist.
+
+## Session: finder, essentials, creative tools, Studio panel reskin
+
+- **Resource Finder** (`src/lib/resourceFinder.ts`, `check:finder`):
+  - Lives at the top of the pack browser.
+  - Takes a plain-language description and maps it to intents, with stemming and one-typo fuzzy matching.
+  - Searches all 17 packs, returns results in a fixed order with at most 6 per pack, and explains every match.
+- **Essentials pack:**
+  - Framer Motion, GSAP, Inter, Geist, Satoshi, Simple Icons, Logo.dev, Lucide.
+  - Also Fontsource, Phosphor, Tabler, unDraw, LottieFiles, Pexels, Mixkit, Coolors.
+  - Every entry carries its url and license. The curated file is carried through by build-packs.
+- **Bugs fixed:**
+  - Duplicate PanelUI ids (panelui-index ×3, panelui-icons ×2).
+  - 21 ambiguous background names; chrome variants are now labelled "(app chrome)".
+  - `check:resources` now enforces unique ids.
+- **Creative tools** (`src/lib/studio/creativeTools.ts`, `StudioCreativePanel.tsx`, `check:creative`):
+  - Speed ramps: 5 presets with continuous source footage; later clips on the track ripple.
+  - Repurpose reframe: text size is held against the short side, and text is kept in the safe area. "All sizes" now uses it.
+  - Brand Kit: colours, font and logo on the project. Text colour is picked for contrast, the logo is stamped once, and the background changes only when asked.
+  - Simple Icons: logo lookup via the CDN (online only).
+  - Batch variants: saved as scenes, with an "Export every scene" batch.
+  - Offline TTS voiceover (`electron/tts.cjs`, IPC `voice:tts`): Windows SAPI, macOS `say`, eSpeak NG. Text goes in via env/stdin only.
+- **Studio panel reskin:** new `.cu-section`, `.cu-input` and `.cu-chip` classes applied across Inspector, ClipProFields, ProPanel, Timeline and drawers; the side drawers have gradient surfaces.
+
+**Open:**
+- **TTS:** not run on real OS voices here (no Windows/macOS in the sandbox). The command shapes are tested.
+- **Visuals:** no visual review of the reskin (no headless browser).
+- **Scene batch:** the "Export every scene" batch renders one scene after another in the renderer.

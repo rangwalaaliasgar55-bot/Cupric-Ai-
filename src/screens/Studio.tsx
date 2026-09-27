@@ -6,6 +6,7 @@ import { makeProxy } from '../lib/studio/proxy'
 import { emitDiff, emitStudio } from '../lib/studio/studioEvents'
 import { createStudioApi } from '../lib/studio/studioApi'
 import { unfilledPlaceholders } from '../lib/studio/layouts'
+import { reframeForAspect } from '../lib/studio/creativeTools'
 import { addMarker, jumpMarker, rippleDelete, rollEdit, slideClip, slipClip, trimEndTo, trimStartTo, type EditResult } from '../lib/studio/timelineOps'
 import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
@@ -1059,7 +1060,18 @@ export function Studio() {
     }
   }
 
-  async function runExport(asMp4 = false, aspect?: StudioDoc['aspect']): Promise<'done' | 'failed' | 'cancelled'> {
+  /** Batch export: every saved scene (e.g. variants) rendered one after another. */
+  async function runSceneBatch(asMp4: boolean) {
+    const scenes = doc.scenes ?? []
+    if (!scenes.length) return pushToast('info', 'No saved scenes yet — build variants or save a scene first.')
+    for (let i = 0; i < scenes.length; i += 1) {
+      pushToast('info', `Rendering scene ${i + 1} of ${scenes.length}: ${scenes[i].name}`)
+      const outcome = await runExport(asMp4, undefined, { doc: { ...scenes[i].doc, scenes } as StudioDoc, tag: slugify(scenes[i].name) })
+      if (outcome === 'cancelled') break
+    }
+  }
+
+  async function runExport(asMp4 = false, aspect?: StudioDoc['aspect'], override?: { doc: StudioDoc; tag: string }): Promise<'done' | 'failed' | 'cancelled'> {
     if (duration <= 0) {
       pushToast('error', 'Add a clip before exporting.')
       return 'failed'
@@ -1069,8 +1081,8 @@ export function Studio() {
       pushToast('error', `${unfilled.length} testimonial placeholder${unfilled.length > 1 ? 's are' : ' is'} still empty. Fill in real quotes or delete the cards before exporting.`)
       return 'failed'
     }
-    const target = aspect ? { ...doc, aspect } : doc
-    const suffix = aspect ? `-${aspect.replace(':', 'x')}` : ''
+    const target = override ? override.doc : aspect ? reframeForAspect(doc, aspect) : doc
+    const suffix = (override ? `-${override.tag}` : '') + (aspect ? `-${aspect.replace(':', 'x')}` : '')
     if (doc.clips.some(isPendingComponent)) {
       pushToast('info', 'A component is still recording its animation — export as soon as it lands on the timeline.')
       return 'failed'
@@ -1268,6 +1280,15 @@ export function Studio() {
             title="Queue the edit at 9:16, 1:1 and 16:9 — rendered one after another"
           >
             <Download size={13} /> All sizes
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void runSceneBatch(mp4Supported)}
+            disabled={exporting || !(doc.scenes ?? []).length}
+            title={(doc.scenes ?? []).length ? `Render all ${(doc.scenes ?? []).length} saved scenes / variants, one after another` : 'Save scenes or build variants first'}
+          >
+            <Download size={13} /> Export every scene
           </Button>
           {exportQueue.length > 0 && (
             <span className="font-mono text-xs text-muted" role="status" aria-label="Export queue">
@@ -1470,7 +1491,7 @@ export function Studio() {
       {/* Shared resources + stage + inspector */}
       <div className="flex min-h-0 flex-1">
         {showComponents && (
-          <aside className="w-[360px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio components">
+          <aside className="w-[360px] shrink-0 overflow-y-auto border-r border-line bg-gradient-to-b from-panel/80 to-bg px-4 py-4 shadow-[inset_-1px_0_0_rgb(255_255_255/0.03)]" aria-label="Studio components">
             <ComponentsPanel
               onAdd={addComponentAt}
               onRecordToShelf={recordComponentToShelf}
@@ -1481,12 +1502,13 @@ export function Studio() {
           </aside>
         )}
         {showPro && (
-          <aside className="w-[380px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio pro tools">
+          <aside className="w-[380px] shrink-0 overflow-y-auto border-r border-line bg-gradient-to-b from-panel/80 to-bg px-4 py-4 shadow-[inset_-1px_0_0_rgb(255_255_255/0.03)]" aria-label="Studio pro tools">
             <StudioProPanel
               doc={doc}
               time={time}
               selectedId={selectedId}
               onSeek={seek}
+              onImportFiles={(files) => void onFiles(files, { sec: time, track: Math.max(0, ...doc.clips.filter((c) => c.kind === 'audio').map((c) => c.track), doc.trackCount) })}
               onPreview={(next, label) => setPreviewDoc(next ? { doc: next, label } : null)}
               onCommit={(next, label) => {
                 const { ...patch } = next
@@ -1496,7 +1518,7 @@ export function Studio() {
           </aside>
         )}
         {showResources && (
-          <aside className="w-[420px] shrink-0 overflow-y-auto border-r border-line bg-bg px-4 py-4" aria-label="Studio resources">
+          <aside className="w-[420px] shrink-0 overflow-y-auto border-r border-line bg-gradient-to-b from-panel/80 to-bg px-4 py-4 shadow-[inset_-1px_0_0_rgb(255_255_255/0.03)]" aria-label="Studio resources">
             <div className="mb-3">
               <h2 className="text-sm font-semibold">All Library resources</h2>
               <p className="mt-1 text-xs text-muted">The same 15 bundled packs available in Library. Drag compatible items directly onto the stage.</p>
@@ -1698,7 +1720,7 @@ export function Studio() {
           </div>
         </div>
 
-        <aside className={cx('w-80 shrink-0 overflow-y-auto border-l border-line bg-panel px-5 py-4')}>
+        <aside className={cx('w-80 shrink-0 overflow-y-auto border-l border-line bg-gradient-to-b from-panel-alt/60 to-panel px-5 py-4 shadow-[inset_1px_0_0_rgb(255_255_255/0.04)]')}>
           <StudioInspector
             doc={doc}
             time={time}
@@ -1772,7 +1794,7 @@ function ShortcutSheet({ onClose }: { onClose: () => void }) {
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
           {SHORTCUTS.map(([keys, what]) => (
             <div key={keys} className="contents">
-              <dt><kbd className="rounded-md border border-line bg-bg px-1.5 py-0.5 font-mono text-[11px] text-text">{keys}</kbd></dt>
+              <dt><kbd className="cu-input px-1.5 py-0.5 font-mono text-[11px] text-text">{keys}</kbd></dt>
               <dd className="text-muted">{what}</dd>
             </div>
           ))}

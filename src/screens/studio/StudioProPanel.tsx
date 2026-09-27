@@ -28,6 +28,7 @@ import { computeScopes, type Scopes } from '../../lib/studio/color'
 import { removeMarker } from '../../lib/studio/timelineOps'
 import { placeClip } from '../../lib/studio/doc'
 import { registerFile } from '../../lib/studio/media'
+import { StudioCreativePanel } from './StudioCreativePanel'
 import { checkResourceLink, githubRepoOf, withRepoLicense, type LinkVerdict } from '../../lib/resourceLinks'
 
 type Props = {
@@ -38,13 +39,14 @@ type Props = {
   onCommit: (doc: StudioDoc, label: string) => void
   onSeek: (t: number) => void
   selectedId?: string | null
+  onImportFiles?: (files: FileList) => void
 }
 
-const inputCx = 'w-full rounded-lg border border-line bg-panel-alt px-2.5 py-1.5 text-sm text-text'
+const inputCx = 'w-full cu-input px-2.5 py-1.5 text-sm text-text'
 
 function Section({ title, children, open }: { title: string; children: React.ReactNode; open?: boolean }) {
   return (
-    <details open={open} className="rounded-lg border border-line bg-panel/40 open:bg-panel/70">
+    <details open={open} className="group cu-section">
       <summary className="cursor-pointer list-none px-3 py-2 text-xs font-semibold text-text">{title}</summary>
       <div className="space-y-2.5 border-t border-line px-3 py-3">{children}</div>
     </details>
@@ -66,7 +68,7 @@ async function refsFrom(files: FileList | null): Promise<{ refs: MediaRef[]; err
   return { refs, errors }
 }
 
-export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selectedId }: Props) {
+export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selectedId, onImportFiles }: Props) {
   const [transcribing, setTranscribing] = useState(false)
   const [sceneName, setSceneName] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
@@ -158,6 +160,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
 
   return (
     <div className="space-y-3">
+      <StudioCreativePanel doc={doc} time={time} selectedId={selectedId} onPreview={onPreview} onCommit={onCommit} onImportFiles={onImportFiles} />
       <div>
         <h2 className="text-sm font-semibold">Pro tools</h2>
         <p className="mt-1 text-xs text-muted">Everything previews on the stage first. Accept = one undo step.</p>
@@ -178,7 +181,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
       <Section title={`Suggestions (${suggestions.length})`} open>
         {!suggestions.length && <p className="text-xs text-muted">Nothing to suggest — the edit looks clean.</p>}
         {suggestions.map((s) => (
-          <div key={s.id} className="rounded-md border border-line p-2">
+          <div key={s.id} className="cu-section p-2.5">
             <p className={s.severity === 'warn' ? 'text-xs font-medium text-danger' : 'text-xs font-medium text-text'}>{s.title}</p>
             <p className="mt-0.5 text-xs text-muted">{s.detail}</p>
             <Button size="sm" variant="outline" className="mt-1.5" onClick={() => propose(s.apply(doc), s.title)}>Preview</Button>
@@ -225,7 +228,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted">Testimonial grid</span>
           {[1, 2, 3, 4].map((n) => (
-            <button key={n} type="button" className="rounded-md border border-line px-2 py-0.5 text-xs hover:border-accent/60" onClick={() => propose(buildTestimonialGrid(doc, n, time).doc, `Testimonial grid (${n})`, ['Cards are empty placeholders. Paste real quotes you have permission to use — the app never writes them.'])}>
+            <button key={n} type="button" className="cu-chip px-2 py-0.5 text-xs" onClick={() => propose(buildTestimonialGrid(doc, n, time).doc, `Testimonial grid (${n})`, ['Cards are empty placeholders. Paste real quotes you have permission to use — the app never writes them.'])}>
               {n}
             </button>
           ))}
@@ -256,7 +259,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
             <div className="space-y-2.5">
               <div className="grid grid-cols-2 gap-1.5">
                 {PHONE_DESIGNS.map((d) => (
-                  <button key={d.id} type="button" title={d.detail} onClick={() => put(structuredClone(d.style), `Phone design: ${d.label}`)} className="rounded-lg border border-line bg-panel-alt px-2 py-1.5 text-left text-xs text-text hover:border-accent">
+                  <button key={d.id} type="button" title={d.detail} onClick={() => put(structuredClone(d.style), `Phone design: ${d.label}`)} className="cu-chip px-2 py-1.5 text-left text-xs text-text">
                     <span className="font-medium">{d.label}</span>
                     <span className="mt-0.5 block text-[11px] leading-snug text-muted">{d.detail}</span>
                   </button>
@@ -356,7 +359,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
           }
           return (
             <div className="space-y-2">
-              <div className="rounded-md border border-line p-2">
+              <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Beat sync</p>
                 <p className="text-xs text-muted">{music?.beats ? `${music.name}: ${music.beats.bpm} BPM, ${music.beats.times.length} beats (${beats.length} on the timeline).` : music ? `Analyse “${music.name}” to find its beats.` : 'Add a music clip first.'}</p>
                 <div className="mt-1.5 flex gap-1.5">
@@ -376,7 +379,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
                   }}>Beats → markers</Button>
                 </div>
               </div>
-              <div className="rounded-md border border-line p-2">
+              <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Tighten speech</p>
                 <p className="text-xs text-muted">{sel && (sel.kind === 'video' || sel.kind === 'audio') ? (sel.words?.length ? `Removes “um/uh” and pauses over 0.6 s from “${sel.name}”, using its ${sel.words.length} word timings.` : 'Run Auto-captions on this clip first — tightening needs its word timings.') : 'Select a transcribed video or audio clip.'}</p>
                 <Button size="sm" variant="outline" className="mt-1.5" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length} onClick={() => {
@@ -386,7 +389,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
                   propose(r.doc, `Tighten speech (−${r.removedSec.toFixed(1)} s)`, [`${r.cuts} cuts; captions and overlays after the clip move with the words.`])
                 }}>Tighten</Button>
               </div>
-              <div className="rounded-md border border-line p-2">
+              <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Smart reframe</p>
                 <p className="text-xs text-muted">{sel?.kind === 'video' ? `Follows the subject (faces, then motion) so landscape footage works in ${doc.aspect}. A heuristic tracker — check the preview.` : 'Select a landscape video clip in a portrait or square edit.'}</p>
                 <Button size="sm" variant="outline" className="mt-1.5" disabled={sel?.kind !== 'video' || !!busy} onClick={() => sel?.kind === 'video' && run('reframe', async () => {
@@ -417,7 +420,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
           }}>Save</Button>
         </div>
         {(doc.scenes ?? []).map((sc) => (
-          <div key={sc.id} className="rounded-md border border-line p-2">
+          <div key={sc.id} className="cu-section p-2.5">
             <input aria-label="Scene name" className="w-full bg-transparent text-xs font-medium text-text outline-none" defaultValue={sc.name} onBlur={(e) => e.target.value !== sc.name && onCommit(renameScene(doc, sc.id, e.target.value), 'Rename scene')} />
             <p className="text-[11px] text-muted">{sc.doc.clips.length} clips · {sc.doc.aspect} · saved {new Date(sc.savedAt).toLocaleString()}</p>
             <div className="mt-1.5 flex flex-wrap gap-1">
@@ -459,7 +462,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
         <p className="text-xs text-muted">Reads your text lines and adds a real UI component only where one can prove the claim — a price, a number, a call to action, a notification… Motion follows the edit's style; timing lands just after the words.</p>
         {!smartMoments.length && <p className="text-xs text-muted">No line here makes a claim a component could show. Add copy like “Only ₹499/month”, “10,000 users”, or “Sign up free”.</p>}
         {smartMoments.map((m) => (
-          <div key={m.lineId} className="rounded-md border border-line p-2">
+          <div key={m.lineId} className="cu-section p-2.5">
             <p className="text-xs font-medium text-text">{m.startSec.toFixed(1)}s · {m.name}</p>
             <p className="mt-0.5 text-xs text-muted">{m.reason}</p>
             <p className="mt-0.5 text-[11px] text-muted">{describeStudioEditOp(componentOps([m])[0], doc)}</p>
@@ -511,7 +514,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
         {(doc.markers ?? []).map((m) => (
           <div key={m.id} className="flex items-center justify-between gap-2 text-xs">
             <button type="button" className="font-mono text-info hover:underline" onClick={() => onSeek(m.at)}>{m.at.toFixed(2)}s</button>
-            <input className="min-w-0 flex-1 rounded border border-line bg-panel-alt px-1.5 py-0.5" value={m.label} aria-label="Marker label" onChange={(e) => onCommit({ ...doc, markers: (doc.markers ?? []).map((x) => (x.id === m.id ? { ...x, label: e.target.value } : x)) }, 'Rename marker')} />
+            <input className="min-w-0 flex-1 cu-chip px-1.5 py-0.5" value={m.label} aria-label="Marker label" onChange={(e) => onCommit({ ...doc, markers: (doc.markers ?? []).map((x) => (x.id === m.id ? { ...x, label: e.target.value } : x)) }, 'Rename marker')} />
             <button type="button" className="text-muted hover:text-danger" onClick={() => onCommit(removeMarker(doc, m.id).doc, 'Remove marker')}>Remove</button>
           </div>
         ))}

@@ -68,7 +68,7 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 const inputCx =
-  'w-full rounded-lg border border-line bg-panel-alt px-2.5 py-1.5 text-base text-text placeholder:text-muted/60'
+  'w-full cu-input px-2.5 py-1.5 text-base text-text placeholder:text-muted/60'
 
 
 /**
@@ -92,7 +92,7 @@ function Disclosure({
   defaultOpen?: boolean
 }) {
   return (
-    <details open={defaultOpen} className="group rounded-lg border border-line bg-panel-alt/40 open:bg-panel-alt/70">
+    <details open={defaultOpen} className="group cu-section">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2">
         <span className="flex items-center gap-2 text-xs font-medium text-text">
           {label}
@@ -175,7 +175,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
 
         <Field label="Channel preset">
           <select
-            className="w-full rounded-lg border border-line bg-panel-alt px-2.5 py-1.5 text-sm text-text"
+            className="w-full cu-input px-2.5 py-1.5 text-sm text-text"
             value={matchingPreset(doc)?.id ?? ''}
             onChange={(e) => {
               const p = CHANNEL_PRESETS.find((x) => x.id === e.target.value)
@@ -541,7 +541,7 @@ function KeyframeFields({
                     keyframes: keys.map((k, i) => (i === index ? { ...k, ease: e.target.value as StudioKeyframe['ease'] } : k)),
                   })
                 }
-                className="rounded-md border border-line bg-panel-alt px-1.5 py-1 text-xs text-text"
+                className="cu-input px-1.5 py-1 text-xs text-text"
               >
                 <option value="linear">Linear</option>
                 <option value="ease-in">Ease in</option>
@@ -1381,7 +1381,7 @@ function MotionPresetFields({ clip, onPatch }: { clip: StudioClip; onPatch: (p: 
               type="button"
               title={preset.hint}
               onClick={() => apply({ ...preset.spec })}
-              className="rounded-lg border border-line bg-panel-alt/60 px-2 py-1.5 text-left text-xs leading-tight text-text transition-colors hover:border-accent/60 hover:bg-accent/10"
+              className="cu-chip px-2 py-1.5 text-left text-xs leading-tight text-text"
             >
               <span className="block font-medium">{preset.label}</span>
               <span className="block truncate text-[10px] text-muted">{preset.hint}</span>

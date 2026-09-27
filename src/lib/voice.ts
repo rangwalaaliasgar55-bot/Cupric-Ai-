@@ -450,3 +450,20 @@ export function shouldAutoStartBrief(phrase: string, minWords = AUTO_START_MIN_W
   if (parsed && parsed.type !== 'make-video') return false
   return true
 }
+
+/**
+ * Offline AI voiceover (desktop): the OS voice engine speaks `text` into a WAV
+ * that the Studio imports like any other audio file. Throws with a readable
+ * reason (browser build, engine missing, empty script).
+ */
+export async function synthesizeVoiceover(text: string, opts: { rate?: number; voice?: string } = {}): Promise<{ file: File; engine: string }> {
+  const ipc = getIpc()
+  if (!ipc) throw new Error('Voiceover uses your computer’s built-in voice, so it needs the desktop app.')
+  const res = (await ipc.invoke('voice:tts', { text, rate: opts.rate ?? 0, voice: opts.voice ?? '' })) as { ok: boolean; error?: string; base64?: string; mime?: string; engine?: string }
+  if (!res?.ok || !res.base64) throw new Error(res?.error ?? 'The voice engine did not answer.')
+  const bin = atob(res.base64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  const name = `voiceover-${text.slice(0, 24).replace(/[^\w]+/g, '-').replace(/^-|-$/g, '').toLowerCase() || 'script'}.wav`
+  return { file: new File([bytes], name, { type: res.mime ?? 'audio/wav' }), engine: res.engine ?? 'system voice' }
+}
