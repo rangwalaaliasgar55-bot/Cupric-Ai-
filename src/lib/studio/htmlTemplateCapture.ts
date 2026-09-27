@@ -102,8 +102,8 @@ const AGENT = `(() => {
 })();`
 
 /** The scene document with the CSP and agent injected first in <head>. */
-export function sandboxedSceneDoc(html: string): string {
-  const inject = `<meta http-equiv="Content-Security-Policy" content="${SCENE_CSP}"><script>${AGENT}</script>`
+export function sandboxedSceneDoc(html: string, csp: string = SCENE_CSP): string {
+  const inject = `<meta http-equiv="Content-Security-Policy" content="${csp}"><script>${AGENT}</script>`
   if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, (m) => `${m}${inject}`)
   if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, (m) => `${m}<head>${inject}</head>`)
   return `<!doctype html><html><head>${inject}</head><body>${html}</body></html>`
@@ -111,16 +111,26 @@ export function sandboxedSceneDoc(html: string): string {
 
 type AgentReply = { __cupricScene: true; id: number; type: 'probe' | 'frame' | 'error'; hasSeek?: boolean; markup?: string; message?: string }
 
-export async function captureHtmlTemplate(opts: HtmlCaptureOptions): Promise<HtmlCaptureResult> {
-  const [sceneW, sceneH] = opts.size
-  const fps = Math.max(4, Math.min(12, opts.fps ?? 10))
-  const frameCount = Math.max(1, Math.round(opts.durationSec * fps))
-  // Frames are stored in the project: cap the long side to keep it light.
-  const scale = Math.min(1, 1280 / Math.max(sceneW, sceneH))
-  const outW = Math.round(sceneW * scale)
-  const outH = Math.round(sceneH * scale)
+/**
+ * Arena exports may fetch their own bundled JSON (inlined as data: URLs by
+ * inlineBlobAssets), so their CSP additionally allows `connect-src data:` —
+ * still no network.
+ */
+export const ARENA_SCENE_CSP = SCENE_CSP.replace("connect-src 'none'", 'connect-src data:')
 
-  const html = await fetchText(opts.file)
+/** A live sandboxed scene: seek + rasterise frames, then close. */
+export type SandboxedScene = {
+  /** Seek to t seconds and draw that frame into ctx at outW×outH. */
+  drawFrame: (t: number, ctx: CanvasRenderingContext2D, outW: number, outH: number) => Promise<void>
+  close: () => void
+}
+
+/**
+ * Load scene HTML in the opaque-origin sandbox (see header) and wait until it
+ * reports a seekable timeline. The single isolation path for every HTML
+ * capture in the app: resource templates, Arena thumbnails, Arena renders.
+ */
+export async function openSandboxedScene(html: string, sceneW: number, sceneH: number, opts: { csp?: string } = {}): Promise<SandboxedScene> {
   const frame = document.createElement('iframe')
   frame.setAttribute('aria-hidden', 'true')
   // Opaque origin: scripts run, but nothing else the app has is reachable.
@@ -152,19 +162,52 @@ export async function captureHtmlTemplate(opts: HtmlCaptureOptions): Promise<Htm
       waiting.set(id, { resolve, reject, timer })
       frame.contentWindow?.postMessage({ __cupricHost: true, id, ...msg }, '*')
     })
+  const close = () => {
+    window.removeEventListener('message', onMessage)
+    for (const entry of waiting.values()) clearTimeout(entry.timer)
+    waiting.clear()
+    frame.remove()
+  }
 
   const loaded = new Promise<void>((resolve, reject) => {
     frame.onload = () => resolve()
     setTimeout(() => reject(new Error('The scene took too long to load.')), 8000)
   })
   window.addEventListener('message', onMessage)
-  frame.srcdoc = sandboxedSceneDoc(html)
+  frame.srcdoc = sandboxedSceneDoc(html, opts.csp)
   document.body.appendChild(frame)
   try {
     await loaded
     const probe = await ask({ type: 'probe' })
     if (!probe.hasSeek) throw new Error('This scene has no seekable timeline (window.__seek).')
+  } catch (err) {
+    close()
+    throw err
+  }
+  return {
+    close,
+    drawFrame: async (t, ctx, outW, outH) => {
+      const reply = await ask({ type: 'frame', t })
+      if (reply.type === 'error' || !reply.markup) throw new Error(`The scene failed while being captured: ${reply.message ?? 'no frame'}`)
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sceneW}" height="${sceneH}"><foreignObject x="0" y="0" width="100%" height="100%">${reply.markup}</foreignObject></svg>`
+      const img = await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`)
+      ctx.drawImage(img, 0, 0, outW, outH)
+    },
+  }
+}
 
+export async function captureHtmlTemplate(opts: HtmlCaptureOptions): Promise<HtmlCaptureResult> {
+  const [sceneW, sceneH] = opts.size
+  const fps = Math.max(4, Math.min(12, opts.fps ?? 10))
+  const frameCount = Math.max(1, Math.round(opts.durationSec * fps))
+  // Frames are stored in the project: cap the long side to keep it light.
+  const scale = Math.min(1, 1280 / Math.max(sceneW, sceneH))
+  const outW = Math.round(sceneW * scale)
+  const outH = Math.round(sceneH * scale)
+
+  const html = await fetchText(opts.file)
+  const scene = await openSandboxedScene(html, sceneW, sceneH)
+  try {
     const canvas = document.createElement('canvas')
     canvas.width = outW
     canvas.height = outH
@@ -173,20 +216,73 @@ export async function captureHtmlTemplate(opts: HtmlCaptureOptions): Promise<Htm
     const frames: string[] = []
     for (let i = 0; i < frameCount; i += 1) {
       if (opts.signal?.aborted) throw new DOMException('Cancelled', 'AbortError')
-      const reply = await ask({ type: 'frame', t: i / fps })
-      if (reply.type === 'error' || !reply.markup) throw new Error(`The scene failed while being captured: ${reply.message ?? 'no frame'}`)
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sceneW}" height="${sceneH}"><foreignObject x="0" y="0" width="100%" height="100%">${reply.markup}</foreignObject></svg>`
-      const img = await loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`)
       ctx.clearRect(0, 0, outW, outH)
-      ctx.drawImage(img, 0, 0, outW, outH)
+      await scene.drawFrame(i / fps, ctx, outW, outH)
       frames.push(canvas.toDataURL('image/webp', 0.82))
       opts.onProgress?.(Math.round(((i + 1) / frameCount) * 100))
     }
     return { frames, frameFps: fps, width: outW, height: outH }
   } finally {
-    window.removeEventListener('message', onMessage)
-    for (const entry of waiting.values()) clearTimeout(entry.timer)
-    waiting.clear()
-    frame.remove()
+    scene.close()
   }
+}
+
+/* ——— same-origin blob assets → self-contained scene HTML ——————————————— */
+
+const BLOB_RE = /blob:[^\s"'()<>]+/g
+
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  const buf = new Uint8Array(await blob.arrayBuffer())
+  let bin = ''
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000))
+  return `data:${blob.type || 'application/octet-stream'};base64,${btoa(bin)}`
+}
+
+/**
+ * The sandboxed frame has an opaque origin, so it cannot load the app's
+ * blob: URLs, and SVG rasterisation cannot load any URL. Fetch them here
+ * (the parent owns them) and inline: stylesheets become <style>, scripts
+ * become inline <script>, everything else a data: URL. `fetchBlob` is
+ * injectable for tests.
+ */
+export async function inlineBlobAssets(html: string, fetchBlob: (url: string) => Promise<Blob> = async (u) => (await fetch(u)).blob()): Promise<string> {
+  const cache = new Map<string, Blob>()
+  const get = async (u: string) => {
+    if (!cache.has(u)) cache.set(u, await fetchBlob(u))
+    return cache.get(u) as Blob
+  }
+  const replaceAsync = async (text: string, re: RegExp, fn: (...m: string[]) => Promise<string>) => {
+    const parts: Array<string | Promise<string>> = []
+    let last = 0
+    for (const m of text.matchAll(re)) {
+      parts.push(text.slice(last, m.index), fn(...(m as unknown as string[])))
+      last = (m.index ?? 0) + m[0].length
+    }
+    parts.push(text.slice(last))
+    return (await Promise.all(parts)).join('')
+  }
+  const inlineData = (text: string) => replaceAsync(text, BLOB_RE, async (u) => {
+    try {
+      return await blobToDataUrl(await get(u))
+    } catch {
+      return u
+    }
+  })
+  const safeClose = (t: string, tag: string) => t.replace(new RegExp(`</${tag}`, 'gi'), `<\\/${tag}`)
+  let out = await replaceAsync(html, /<link\b[^>]*\bhref=(["'])(blob:[^"']+)\1[^>]*>/gi, async (tag, _q, u) => {
+    if (!/rel=(["'])?stylesheet/i.test(tag)) return tag
+    try {
+      return `<style>${safeClose(await inlineData(await (await get(u)).text()), 'style')}</style>`
+    } catch {
+      return tag
+    }
+  })
+  out = await replaceAsync(out, /<script\b([^>]*)\bsrc=(["'])(blob:[^"']+)\2([^>]*)>\s*<\/script>/gi, async (tag, pre, _q, u, post) => {
+    try {
+      return `<script${pre}${post}>${safeClose(await inlineData(await (await get(u)).text()), 'script')}</script>`
+    } catch {
+      return tag
+    }
+  })
+  return inlineData(out)
 }

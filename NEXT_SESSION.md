@@ -132,3 +132,27 @@ New subsystems, all covered by `npm run check:pro` (193 assertions, chained into
 
 Still open: video proxies; real Whisper word timestamps for captions (the API accepts `words`, but voice:transcribe returns text only);
 Windows hardware pass for 1.10/2.24; web-only Arena capture paths still use same-origin iframes.
+
+## Session: proxies, timed captions, Arena sandbox, component director
+- **2.7 Video proxies**:
+  - `electron/proxies.cjs` defines the rules: 540p, GOP 12, cached by path, size and mtime.
+  - `media:proxy` / `media:proxyDelete` IPC.
+  - `src/lib/studio/proxy.ts` auto-makes proxies on import (Auto/Always/Off).
+  - The preview draws `previewVideo`; export always reads the original.
+  - Controls live in the Inspector "Preview proxy" box.
+  - `check:proxies` runs a real FFmpeg transcode.
+- **Auto-captions with timing**:
+  - `voice:transcribeMedia` extracts audio with FFmpeg, then runs Whisper `-ml 1 -sow -oj`, which gives per-word timing.
+  - The fallback, Windows Speech, gives per-phrase timing, and the UI says so.
+  - `src/lib/studio/autoCaptions.ts` maps source time to timeline time through trim and speed.
+  - `check:captions`. Whisper itself has not been run here (no model can be downloaded in the sandbox).
+- **Arena web capture sandboxed**:
+  - `openSandboxedScene()` in `htmlTemplateCapture.ts` is now the only way to create an iframe.
+  - The thumbnail (`browserMedia.ts`) and browser render (`render.ts`) both use it.
+  - `inlineBlobAssets()` inlines the zip assets.
+  - `check:sandbox` fails if any other file creates an iframe.
+- **Component director**:
+  - `src/lib/studio/componentDirector.ts` decides when, which, how and where from the text cues. It emits `addComponent` ops.
+  - It's surfaced as a suggestion and in the Pro tools "Smart components" section.
+  - `check:director`.
+- The real-machine checklist is in `HARDWARE_TEST_PLAN.md`.

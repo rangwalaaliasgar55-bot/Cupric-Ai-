@@ -23,7 +23,7 @@ import { glassPreset } from '../glass'
 import { backgroundById } from './backgrounds'
 import { clipProgress, clipsAt } from './doc'
 import { paintGlass, paintGlassLens } from './glass'
-import { getMedia, overlayImage } from './media'
+import { getMedia, overlayImage, proxyMode } from './media'
 import { applyPixelGrade, chromaKey } from './color'
 import { bezierEase } from './curves'
 import { compareDivider, deviceGeometry } from './layouts'
@@ -1165,6 +1165,8 @@ export function drawableElement(mediaId: string, quality: 'full' | 'preview' = '
   // Photo proxies (2.25): preview and scrubbing draw the downscaled copy;
   // export asks for 'full' and always gets the original.
   if (quality === 'preview' && handle.preview) return handle.preview
+  // Video proxies (2.7): the preview draws the proxy once it has a frame.
+  if (quality === 'preview' && handle.previewVideo && handle.previewVideo.readyState >= 2 && proxyMode() !== 'off') return handle.previewVideo
   const el = handle.element
   if (el instanceof HTMLAudioElement) return null
   if (el instanceof HTMLVideoElement && el.readyState < 2) return null

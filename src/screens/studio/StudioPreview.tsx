@@ -12,7 +12,8 @@ import type {
 import { clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
 import { safeAreas } from '../../lib/studio/textTools'
 import { mixGainAt } from '../../lib/studio/audioMix'
-import { getMedia } from '../../lib/studio/media'
+import { getMedia, previewVideoOf } from '../../lib/studio/media'
+import { PROXY_EVENT } from '../../lib/studio/proxy'
 import { drawStudioFrame, keyframeValuesAt, measureTextBlock } from '../../lib/studio/renderer'
 import { docFontFamilies, ensureDocFonts, FONTS_CHANGED_EVENT } from '../../lib/studio/fonts'
 import { patchTransformKeyframe } from '../../lib/studio/keyframeEdit'
@@ -73,8 +74,12 @@ export function StudioPreview({
     for (const clip of doc.clips) {
       if (clip.kind !== 'video') continue
       const media = clip as StudioMediaClip
-      const el = getMedia(media.mediaId)?.element
-      if (!(el instanceof HTMLVideoElement)) continue
+      const handle = getMedia(media.mediaId)
+      const el = previewVideoOf(handle)
+      if (!el) continue
+      // Only one element per clip may play: if the proxy drives, the original rests.
+      const other = handle?.element instanceof HTMLVideoElement && handle.element !== el ? handle.element : handle?.previewVideo && handle.previewVideo !== el ? handle.previewVideo : null
+      if (other && !other.paused) other.pause()
       const active = t >= media.startSec && t < clipEnd(media)
       el.muted = muted || media.volume <= 0
       el.volume = Math.min(1, Math.max(0, media.volume))
@@ -139,9 +144,11 @@ export function StudioPreview({
       if (!playingRef.current) syncAndDraw(timeRef.current, false)
     }
     window.addEventListener(FONTS_CHANGED_EVENT, repaint)
+    window.addEventListener(PROXY_EVENT, repaint)
     document.fonts?.addEventListener?.('loadingdone', repaint)
     return () => {
       window.removeEventListener(FONTS_CHANGED_EVENT, repaint)
+      window.removeEventListener(PROXY_EVENT, repaint)
       document.fonts?.removeEventListener?.('loadingdone', repaint)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -171,8 +178,8 @@ export function StudioPreview({
       cancelAnimationFrame(raf)
       for (const clip of doc.clips) {
         if (clip.kind !== 'video' && clip.kind !== 'audio') continue
-        const el = getMedia((clip as StudioMediaClip | StudioAudioClip).mediaId)?.element
-        if (el instanceof HTMLMediaElement && !el.paused) el.pause()
+        const h = getMedia((clip as StudioMediaClip | StudioAudioClip).mediaId)
+        for (const el of [h?.element, h?.previewVideo]) if (el instanceof HTMLMediaElement && !el.paused) el.pause()
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

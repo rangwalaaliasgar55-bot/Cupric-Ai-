@@ -101,6 +101,8 @@ export async function exportStudio(doc: StudioDoc, options: ExportOptions = {}):
   if (!ctx) throw new Error('Could not create a 2D canvas context for export.')
 
   const videoClips = doc.clips.filter((c): c is StudioMediaClip => c.kind === 'video')
+  // Export reads the ORIGINAL files (2.7): silence any preview proxy first.
+  for (const clip of videoClips) getMedia(clip.mediaId)?.previewVideo?.pause()
   const audioClips = doc.clips.filter((c): c is StudioAudioClip => c.kind === 'audio')
 
   // — audio mix —

@@ -1344,6 +1344,7 @@ export function Studio() {
             <StudioProPanel
               doc={doc}
               time={time}
+              selectedId={selectedId}
               onSeek={seek}
               onPreview={(next, label) => setPreviewDoc(next ? { doc: next, label } : null)}
               onCommit={(next, label) => {

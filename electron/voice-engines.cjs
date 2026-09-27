@@ -118,4 +118,87 @@ function windowsSpeechArgs(wavPath) {
 /** Probe: does this Windows have a System.Speech recognizer installed? */
 const WINDOWS_SPEECH_PROBE = 'Add-Type -AssemblyName System.Speech; $n = [System.Speech.Recognition.SpeechRecognitionEngine]::InstalledRecognizers().Count; Write-Output $n'
 
-module.exports = { findWhisper, whisperArgs, cleanTranscript, windowsSpeechArgs, WINDOWS_SPEECH_SCRIPT, WINDOWS_SPEECH_PROBE, MODEL_PREFERENCE, exeNames }
+/* ——— timed transcription for auto-captions ——————————————————————————— */
+
+/**
+ * whisper.cpp arguments for word timing: one segment per word (-ml 1 -sow),
+ * JSON out (-oj) with millisecond offsets.
+ */
+function whisperWordArgs({ model, wavPath, outBase, lang = 'en', threads = 4 }) {
+  const language = String(lang || 'en').slice(0, 2).toLowerCase()
+  return ['-m', model, '-f', wavPath, '-l', /^[a-z]{2}$/.test(language) ? language : 'en', '-t', String(Math.max(1, Math.min(8, threads))), '-np', '-ml', '1', '-sow', '-oj', '-of', outBase]
+}
+
+/** whisper.cpp -oj output → [{word,start,end}] in seconds, non-speech dropped. */
+function parseWhisperWords(jsonText) {
+  let data
+  try {
+    data = JSON.parse(jsonText)
+  } catch {
+    throw new Error('Whisper produced unreadable JSON.')
+  }
+  const segs = Array.isArray(data?.transcription) ? data.transcription : []
+  const words = []
+  for (const seg of segs) {
+    const text = cleanTranscript(seg?.text || '')
+    if (!text) continue
+    const from = Number(seg?.offsets?.from)
+    const to = Number(seg?.offsets?.to)
+    if (!Number.isFinite(from) || !Number.isFinite(to)) continue
+    // A "word" segment can still hold two tokens (e.g. "U.S. A"): split evenly.
+    const parts = text.split(/\s+/).filter(Boolean)
+    const span = Math.max(1, to - from) / parts.length
+    parts.forEach((w, i) => words.push({ word: w, start: (from + span * i) / 1000, end: (from + span * (i + 1)) / 1000 }))
+  }
+  return words
+}
+
+/**
+ * Windows Speech with timing: each recognised phrase reports its audio
+ * position and duration. Words get spread across their phrase — honest
+ * phrase-level timing, flagged as such to the UI.
+ */
+const WINDOWS_TIMED_SCRIPT = [
+  '$ErrorActionPreference = "Stop"',
+  'Add-Type -AssemblyName System.Speech',
+  '$engine = New-Object System.Speech.Recognition.SpeechRecognitionEngine',
+  '$engine.LoadGrammar((New-Object System.Speech.Recognition.DictationGrammar))',
+  '$engine.SetInputToWaveFile($args[0])',
+  '[Console]::OutputEncoding = [System.Text.Encoding]::UTF8',
+  'while ($true) { $r = $engine.Recognize(); if ($r -eq $null) { break }; Write-Output ("{0}`t{1}`t{2}" -f $r.Audio.AudioPosition.TotalMilliseconds, $r.Audio.Duration.TotalMilliseconds, $r.Text) }',
+  '$engine.Dispose()',
+].join('; ')
+
+function windowsTimedArgs(wavPath) {
+  return ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', `& { ${WINDOWS_TIMED_SCRIPT} }`, wavPath]
+}
+
+/** "posMs<TAB>durMs<TAB>text" lines → [{word,start,end}], spread per phrase. */
+function parseWindowsPhrases(stdout) {
+  const words = []
+  for (const line of String(stdout || '').split(/\r?\n/)) {
+    const [pos, dur, ...rest] = line.split('\t')
+    const text = cleanTranscript(rest.join(' '))
+    const from = Number(pos)
+    const len = Number(dur)
+    if (!text || !Number.isFinite(from) || !Number.isFinite(len)) continue
+    const parts = text.split(/\s+/)
+    const weights = parts.map((w) => Math.max(1, w.length))
+    const total = weights.reduce((a, b) => a + b, 0)
+    let cursor = from
+    parts.forEach((w, i) => {
+      const d = (len * weights[i]) / total
+      words.push({ word: w, start: cursor / 1000, end: (cursor + d) / 1000 })
+      cursor += d
+    })
+  }
+  return words
+}
+
+/** FFmpeg: any audio/video file → 16 kHz mono PCM WAV for the recognisers. */
+function extractWavArgs(sourcePath, wavPath, maxSec = 1800) {
+  return ['-y', '-hide_banner', '-v', 'error', '-i', sourcePath, '-vn', '-ac', '1', '-ar', '16000', '-t', String(maxSec), '-c:a', 'pcm_s16le', wavPath]
+}
+
+module.exports = {
+  whisperWordArgs, parseWhisperWords, WINDOWS_TIMED_SCRIPT, windowsTimedArgs, parseWindowsPhrases, extractWavArgs, findWhisper, whisperArgs, cleanTranscript, windowsSpeechArgs, WINDOWS_SPEECH_SCRIPT, WINDOWS_SPEECH_PROBE, MODEL_PREFERENCE, exeNames }

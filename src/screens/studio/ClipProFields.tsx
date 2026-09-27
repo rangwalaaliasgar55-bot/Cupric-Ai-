@@ -7,7 +7,7 @@
  * Every control calls onPatch/onPatchDoc exactly once → one undo step.
  * Anything that cannot apply says why instead of doing nothing.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type {
   StudioAudioClip,
   StudioBlendMode,
@@ -25,7 +25,8 @@ import { LOGO_REVEALS, PRODUCT_PRESETS, logoRevealKeyframes, withProductPreset, 
 import { TEXT_PRESETS, applyTextPreset } from '../../lib/studio/textTools'
 import { requestTextVariants } from '../../lib/studio/aiText'
 import { DEFAULT_DUCKING } from '../../lib/studio/audioMix'
-import { getMedia, registerFile } from '../../lib/studio/media'
+import { getMedia, proxyMode, registerFile, setProxyMode, type ProxyMode } from '../../lib/studio/media'
+import { PROXY_EVENT, makeProxy, proxyStatus, removeProxy } from '../../lib/studio/proxy'
 
 type Props = {
   doc: StudioDoc
@@ -161,6 +162,8 @@ export function ClipProFields({ doc, clip, onPatch, onPatchDoc }: Props) {
           )}
         </Box>
       )}
+
+      {clip.kind === 'video' && <ProxyBox mediaId={(clip as StudioMediaClip).mediaId} />}
 
       {isMedia && (
         <Box label="Motion presets" active={!!(clip as StudioMediaClip).motionPreset}>
@@ -310,5 +313,45 @@ export function ClipProFields({ doc, clip, onPatch, onPatchDoc }: Props) {
 
       {note && <p className="rounded-md border border-line bg-panel-alt/60 px-2 py-1.5 text-xs text-muted" role="status">{note}</p>}
     </div>
+  )
+}
+
+/** 2.7 — preview proxy status and controls for one video clip. */
+function ProxyBox({ mediaId }: { mediaId: string }) {
+  const [, force] = useState(0)
+  const [mode, setMode] = useState<ProxyMode>(proxyMode())
+  useEffect(() => {
+    const on = (e: Event) => {
+      if ((e as CustomEvent).detail?.mediaId === mediaId) force((n) => n + 1)
+    }
+    window.addEventListener(PROXY_EVENT, on)
+    return () => window.removeEventListener(PROXY_EVENT, on)
+  }, [mediaId])
+  const s = proxyStatus(mediaId)
+  const h = getMedia(mediaId)
+  const label =
+    s.state === 'ready' ? `Proxy ready${s.cached ? ' (cached)' : ''} — preview plays 540p, export uses the original` :
+    s.state === 'making' ? `Making proxy… ${Math.round(s.pct * 100)}%` :
+    s.state === 'failed' ? `Proxy failed: ${s.error}` :
+    s.state === 'unavailable' ? s.error ?? 'Proxies are unavailable here.' :
+    h ? `No proxy — preview plays the original (${h.width}×${h.height})` : 'Relink the file first.'
+  return (
+    <Box label="Preview proxy" active={s.state === 'ready'}>
+      <p className="text-xs text-muted" role="status">{label}</p>
+      {s.state === 'making' && (
+        <div className="h-1.5 overflow-hidden rounded bg-panel-alt"><div className="h-full bg-accent transition-[width]" style={{ width: `${Math.round(s.pct * 100)}%` }} /></div>
+      )}
+      <div className="flex gap-1.5">
+        {s.state !== 'ready' && s.state !== 'making' && <Button size="sm" variant="outline" disabled={!h} onClick={() => void makeProxy(mediaId)}>Make proxy</Button>}
+        {s.state === 'ready' && <Button size="sm" variant="outline" onClick={() => void removeProxy(mediaId)}>Remove proxy</Button>}
+      </div>
+      <Row label="For new imports">
+        <select className={inputCx} value={mode} onChange={(e) => { const m = e.target.value as ProxyMode; setProxyMode(m); setMode(m); force((n) => n + 1) }}>
+          <option value="auto">Auto — above 1080p or large 1080p files</option>
+          <option value="always">Always make proxies</option>
+          <option value="off">Off — always preview the original</option>
+        </select>
+      </Row>
+    </Box>
   )
 }

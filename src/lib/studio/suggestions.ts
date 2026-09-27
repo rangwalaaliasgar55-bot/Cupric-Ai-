@@ -11,6 +11,8 @@ import { clipEnd, docDuration } from './doc'
 import { closeGaps } from './timelineOps'
 import { DEFAULT_DUCKING } from './audioMix'
 import { unfilledPlaceholders } from './layouts'
+import { componentOps, directComponents } from './componentDirector'
+import { applyStudioEditPlan } from './editOps'
 
 export type Suggestion = {
   id: string
@@ -98,6 +100,18 @@ export function suggestEdits(doc: StudioDoc): Suggestion[] {
   const holes = unfilledPlaceholders(doc)
   if (holes.length) {
     out.push({ id: 'placeholders', title: `${holes.length} placeholder${holes.length > 1 ? 's' : ''} still need real content`, detail: 'Testimonials are never written for you. Fill them in or remove them — Accept removes them.', severity: 'warn', apply: (d) => ({ ...d, clips: d.clips.filter((c) => !holes.some((h) => h.id === c.id)) }) })
+  }
+
+  // Smart components: lines whose claim a real UI component can SHOW.
+  const moments = directComponents(doc)
+  if (moments.length) {
+    out.push({
+      id: 'smart-components',
+      title: `Show ${moments.length} claim${moments.length > 1 ? 's' : ''} with a UI component`,
+      detail: moments.map((m) => `${m.startSec.toFixed(1)}s ${m.name} — ${m.cue}`).join(' · '),
+      severity: 'info',
+      apply: (d) => applyStudioEditPlan(d, componentOps(directComponents(d))),
+    })
   }
 
   return out

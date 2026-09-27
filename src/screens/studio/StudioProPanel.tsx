@@ -8,11 +8,14 @@
  * that is PREVIEWED on the stage, then committed as ONE undo step on Accept.
  */
 import { useMemo, useState } from 'react'
-import type { StudioDoc } from '../../types/project'
+import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { Button } from '../../components/Button'
 import { suggestEdits } from '../../lib/studio/suggestions'
 import { buildBeforeAfter, buildCollage, buildFromAssets, buildTestimonialGrid, type IntakeKind, type MediaRef } from '../../lib/studio/layouts'
 import { captionsFromTranscript } from '../../lib/studio/textTools'
+import { captionsForClip, transcribeClip } from '../../lib/studio/autoCaptions'
+import { componentOps, directComponents } from '../../lib/studio/componentDirector'
+import { applyStudioEditPlan, describeStudioEditOp } from '../../lib/studio/editOps'
 import { computeScopes, type Scopes } from '../../lib/studio/color'
 import { removeMarker } from '../../lib/studio/timelineOps'
 import { placeClip } from '../../lib/studio/doc'
@@ -26,6 +29,7 @@ type Props = {
   onPreview: (doc: StudioDoc | null, label: string) => void
   onCommit: (doc: StudioDoc, label: string) => void
   onSeek: (t: number) => void
+  selectedId?: string | null
 }
 
 const inputCx = 'w-full rounded-lg border border-line bg-panel-alt px-2.5 py-1.5 text-sm text-text'
@@ -54,10 +58,12 @@ async function refsFrom(files: FileList | null): Promise<{ refs: MediaRef[]; err
   return { refs, errors }
 }
 
-export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek }: Props) {
+export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selectedId }: Props) {
+  const [transcribing, setTranscribing] = useState(false)
   const [pending, setPending] = useState<{ doc: StudioDoc; label: string; notes?: string[] } | null>(null)
   const [msg, setMsg] = useState<string | null>(null)
   const suggestions = useMemo(() => suggestEdits(doc), [doc])
+  const smartMoments = useMemo(() => directComponents(doc), [doc])
   const [intake, setIntake] = useState<{ kind: IntakeKind; name: string; tagline: string; cta: string; logo: MediaRef | null; photos: MediaRef[]; clips: MediaRef[] }>({ kind: 'product', name: '', tagline: '', cta: '', logo: null, photos: [], clips: [] })
   const [transcript, setTranscript] = useState('')
   const [scopes, setScopes] = useState<Scopes | null>(null)
@@ -223,6 +229,47 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek }: Props
             setCompare([])
           }} />
         </label>
+      </Section>
+
+      <Section title={`Smart components (${smartMoments.length})`}>
+        <p className="text-xs text-muted">Reads your text lines and adds a real UI component only where one can prove the claim — a price, a number, a call to action, a notification… Motion follows the edit's style; timing lands just after the words.</p>
+        {!smartMoments.length && <p className="text-xs text-muted">No line here makes a claim a component could show. Add copy like “Only ₹499/month”, “10,000 users”, or “Sign up free”.</p>}
+        {smartMoments.map((m) => (
+          <div key={m.lineId} className="rounded-md border border-line p-2">
+            <p className="text-xs font-medium text-text">{m.startSec.toFixed(1)}s · {m.name}</p>
+            <p className="mt-0.5 text-xs text-muted">{m.reason}</p>
+            <p className="mt-0.5 text-[11px] text-muted">{describeStudioEditOp(componentOps([m])[0], doc)}</p>
+          </div>
+        ))}
+        {smartMoments.length > 0 && (
+          <Button size="sm" variant="outline" onClick={() => propose(applyStudioEditPlan(doc, componentOps(smartMoments)), `${smartMoments.length} smart components`, ['Each component records its real animation after you accept.'])}>Preview all</Button>
+        )}
+      </Section>
+
+      <Section title="Auto-captions from a clip's audio">
+        {(() => {
+          const src = doc.clips.find((c) => c.id === selectedId && (c.kind === 'video' || c.kind === 'audio')) as StudioMediaClip | StudioAudioClip | undefined
+          return (
+            <>
+              <p className="text-xs text-muted">{src ? `Transcribes the selected ${src.kind} clip offline and times each caption to the words.` : 'Select a video or audio clip on the timeline first.'}</p>
+              <Button size="sm" variant="outline" disabled={!src || transcribing} onClick={async () => {
+                if (!src) return
+                setTranscribing(true)
+                setMsg(null)
+                try {
+                  const r = await transcribeClip(src)
+                  const { doc: next, captions } = captionsForClip(doc, src, r.words)
+                  if (!captions.length) return setMsg('No speech was recognised in the used part of this clip.')
+                  propose(next, `${captions.length} auto-captions`, [r.timing === 'word' ? `Whisper · word-level timing (${r.words.length} words)` : `Windows Speech · phrase-level timing — words are spread across each phrase, so check fast speech`])
+                } catch (err) {
+                  setMsg(err instanceof Error ? err.message : String(err))
+                } finally {
+                  setTranscribing(false)
+                }
+              }}>{transcribing ? 'Transcribing…' : 'Transcribe & caption'}</Button>
+            </>
+          )
+        })()}
       </Section>
 
       <Section title="Captions from a transcript">

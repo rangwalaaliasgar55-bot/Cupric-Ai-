@@ -11,6 +11,7 @@ const { approveManualArenaGate, isManualArenaGateBlocked } = require('./automati
 const projectHistory = require('./project-history.cjs')
 const diagnostics = require('./diagnostics.cjs')
 const encoders = require('./encoders.cjs')
+const proxies = require('./proxies.cjs')
 const { migrateSettings } = require('./settings-migration.cjs')
 const voiceEngines = require('./voice-engines.cjs')
 
@@ -529,6 +530,50 @@ function recentLogLines(maxFiles = 2) {
     return []
   }
 }
+/* ——— 2.7 video proxies ——————————————————————————————————————————————— */
+const proxyJobs = new Map()
+
+ipcMain.handle('media:proxy', async (event, payload) => {
+  const sourcePath = payload?.path
+  const stat = proxies.validateSource(sourcePath)
+  ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
+  if (!ffmpegPath) throw new Error('FFmpeg is unavailable, so proxies cannot be made. Set CUPRIC_FFMPEG_PATH or reinstall.')
+  const dir = userDataPath('proxies')
+  ensureDir(dir)
+  const outPath = path.join(dir, `${proxies.proxyKey(sourcePath, stat)}.mp4`)
+  if (fs.existsSync(outPath) && fs.statSync(outPath).size > 1024) return { path: outPath, url: pathToFileURL(outPath).toString(), cached: true }
+  // One job per output: two clips of the same file share one transcode.
+  if (!proxyJobs.has(outPath)) {
+    const tmp = `${outPath}.part.mp4`
+    const durationSec = Number(payload?.durationSec) || 0
+    const job = runProcess(null, ffmpegPath, proxies.proxyArgs(sourcePath, tmp), {
+      onStdout: (chunk) => {
+        const pct = proxies.progressFrom(chunk, durationSec)
+        if (pct !== null && !event.sender.isDestroyed()) event.sender.send('media:proxyProgress', { path: sourcePath, pct })
+      },
+    })
+      .then(async () => {
+        await fsp.rename(tmp, outPath)
+        return outPath
+      })
+      .catch(async (err) => {
+        await fsp.rm(tmp, { force: true })
+        throw new Error(`Proxy failed: ${String(err?.message || err).slice(-400)}`)
+      })
+      .finally(() => proxyJobs.delete(outPath))
+    proxyJobs.set(outPath, job)
+  }
+  const done = await proxyJobs.get(outPath)
+  return { path: done, url: pathToFileURL(done).toString(), cached: false }
+})
+
+ipcMain.handle('media:proxyDelete', async (_event, payload) => {
+  const stat = proxies.validateSource(payload?.path)
+  const outPath = path.join(userDataPath('proxies'), `${proxies.proxyKey(payload.path, stat)}.mp4`)
+  await fsp.rm(outPath, { force: true })
+  return { deleted: true }
+})
+
 ipcMain.handle('diag:report', (_event, payload) => {
   const settings = publicSettings()
   return diagnostics.buildReport({
@@ -2586,6 +2631,42 @@ ipcMain.handle('voice:transcribe', async (_event, payload) => {
   } finally {
     fsp.rm(wavPath, { force: true }).catch(() => {})
     fsp.rm(`${base}.txt`, { force: true }).catch(() => {})
+  }
+})
+
+/**
+ * Auto-captions: transcribe a whole clip on disk WITH word timings.
+ * Whisper gives per-word times; Windows Speech gives per-phrase times (the
+ * reply says which, so the UI never overstates accuracy).
+ */
+ipcMain.handle('voice:transcribeMedia', async (_event, payload) => {
+  const sourcePath = payload?.path
+  if (typeof sourcePath !== 'string' || !path.isAbsolute(sourcePath) || !fs.existsSync(sourcePath)) throw new Error('That clip has no file on disk to transcribe — import it from disk in the desktop app.')
+  if (!/\.(mp4|mov|m4v|mkv|webm|avi|mp3|wav|m4a|aac|flac|ogg|opus)$/i.test(sourcePath)) throw new Error('Only audio and video files can be transcribed.')
+  ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
+  if (!ffmpegPath) throw new Error('FFmpeg is unavailable, so the clip’s audio cannot be read.')
+  const whisper = whisperSetup()
+  const windows = !whisper && (await probeWindowsSpeech())
+  if (!whisper && !windows) {
+    const error = new Error('No offline speech engine is installed. Run `npm run whisper:fetch` (or install Windows Speech) to enable auto-captions.')
+    error.code = 'no-engine'
+    throw error
+  }
+  const dir = userDataPath('voice-tmp')
+  ensureDir(dir)
+  const base = path.join(dir, `media-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+  const wavPath = `${base}.wav`
+  try {
+    await runProcess(null, ffmpegPath, voiceEngines.extractWavArgs(sourcePath, wavPath))
+    if (whisper) {
+      await runProcess(null, whisper.bin, voiceEngines.whisperWordArgs({ model: whisper.model, wavPath, outBase: base, lang: payload?.lang, threads: Math.max(1, os.cpus().length - 1) }), { cwd: path.dirname(whisper.bin) })
+      const words = voiceEngines.parseWhisperWords(await fsp.readFile(`${base}.json`, 'utf8'))
+      return { engine: 'whisper', timing: 'word', words }
+    }
+    const { stdout } = await runProcess(null, 'powershell.exe', voiceEngines.windowsTimedArgs(wavPath))
+    return { engine: 'windows', timing: 'phrase', words: voiceEngines.parseWindowsPhrases(stdout) }
+  } finally {
+    for (const ext of ['.wav', '.json', '.txt']) fsp.rm(`${base}${ext}`, { force: true }).catch(() => {})
   }
 })
 

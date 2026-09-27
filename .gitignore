@@ -14,3 +14,6 @@ vendor/whisper/*
 .*-check.mjs
 .undo-audit-check.mjs
 .pro-features-check.mjs
+.proxies-check.mjs
+.auto-captions-check.mjs
+.component-director-check.mjs

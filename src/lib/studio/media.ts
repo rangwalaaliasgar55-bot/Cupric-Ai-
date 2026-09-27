@@ -33,6 +33,57 @@ export type MediaHandle = {
   orientation?: number
   /** Photos only: set when the file was converted on import (e.g. HEIC → JPEG). */
   convertedFrom?: string
+  /** Video only (2.7): the proxy element the preview plays instead of `element`. */
+  previewVideo?: HTMLVideoElement
+  /** Video only: size of the source file in bytes, when known (proxy decision). */
+  bytes?: number
+}
+
+/* ——— 2.7 proxy preference ——— */
+export type ProxyMode = 'auto' | 'always' | 'off'
+const PROXY_KEY = 'cupric.proxyMode'
+export function proxyMode(): ProxyMode {
+  try {
+    const v = globalThis.localStorage?.getItem(PROXY_KEY)
+    return v === 'always' || v === 'off' ? v : 'auto'
+  } catch {
+    return 'auto'
+  }
+}
+export function setProxyMode(mode: ProxyMode) {
+  try {
+    globalThis.localStorage?.setItem(PROXY_KEY, mode)
+  } catch {
+    /* private mode: stays auto */
+  }
+}
+
+/**
+ * The <video> the PREVIEW should drive for a handle: the proxy when one is
+ * loaded and proxies are not switched off, otherwise the original. Export
+ * never calls this — it always drives `element`.
+ */
+export function previewVideoOf(handle: MediaHandle | null | undefined): HTMLVideoElement | null {
+  if (!handle) return null
+  if (handle.previewVideo && proxyMode() !== 'off') return handle.previewVideo
+  return handle.element instanceof HTMLVideoElement ? handle.element : null
+}
+
+export { loadVideo }
+
+/** Hooks run after any video is registered (the proxy manager subscribes). */
+const videoHooks: Array<(h: MediaHandle) => void> = []
+export function onVideoRegistered(fn: (h: MediaHandle) => void) {
+  videoHooks.push(fn)
+}
+function videoRegistered(h: MediaHandle) {
+  for (const fn of videoHooks) {
+    try {
+      fn(h)
+    } catch {
+      /* a hook never breaks import */
+    }
+  }
 }
 
 const registry = new Map<string, MediaHandle>()
@@ -50,6 +101,7 @@ export function releaseMedia(mediaId: string) {
   const handle = registry.get(mediaId)
   if (!handle) return
   if (handle.element instanceof HTMLMediaElement) handle.element.pause()
+  handle.previewVideo?.pause()
   URL.revokeObjectURL(handle.url)
   registry.delete(mediaId)
 }
@@ -163,6 +215,7 @@ export async function registerFile(file: File, existingId?: string): Promise<Med
         kind: 'video',
         fileName: file.name,
         localPath,
+        bytes: file.size,
         url,
         durationSec,
         width: element.videoWidth,
@@ -171,6 +224,7 @@ export async function registerFile(file: File, existingId?: string): Promise<Med
         posterDataUrl: posterFrom(element, element.videoWidth, element.videoHeight),
       }
       registry.set(id, handle)
+      videoRegistered(handle)
       return handle
     }
 
@@ -230,6 +284,7 @@ export async function registerUrl(
       posterDataUrl: posterFrom(element, element.videoWidth, element.videoHeight),
     }
     registry.set(id, handle)
+    videoRegistered(handle)
     return handle
   }
   if (kind === 'audio') {

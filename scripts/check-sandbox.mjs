@@ -43,7 +43,7 @@ for (const m of (await read('src/screens/ArenaDesk.tsx')).matchAll(/<iframe[^>]*
 const tmp = path.join(root, '.sandbox-check.mjs')
 await build({
   bundle: true, outfile: tmp, format: 'esm', platform: 'node', logLevel: 'warning',
-  stdin: { contents: "export { sandboxedSceneDoc, SCENE_CSP } from './src/lib/studio/htmlTemplateCapture'", resolveDir: root, loader: 'ts' },
+  stdin: { contents: "export { sandboxedSceneDoc, SCENE_CSP, ARENA_SCENE_CSP, inlineBlobAssets } from './src/lib/studio/htmlTemplateCapture'", resolveDir: root, loader: 'ts' },
 })
 const mod = await import(`${pathToFileURL(tmp).href}?t=${Date.now()}`)
 await rm(tmp, { force: true })
@@ -61,6 +61,32 @@ for (const f of scenes) {
   const sceneScriptAt = doc.indexOf('<script', doc.indexOf('</script>', agentAt))
   assert.ok(cspAt > 0 && cspAt < agentAt, `${f}: CSP must be the first thing in <head>`)
   assert.ok(sceneScriptAt === -1 || agentAt < sceneScriptAt, `${f}: CSP + agent must precede scene scripts`)
+}
+// 5. Web-only Arena paths (thumbnail + browser render) use the same sandbox.
+{
+  const { execSync } = await import('node:child_process')
+  const offenders = execSync(`grep -rln "createElement('iframe')" src || true`, { cwd: root, encoding: 'utf8' }).trim().split('\n').filter(Boolean)
+  assert.deepEqual(offenders, ['src/lib/studio/htmlTemplateCapture.ts'], `only the sandbox helper may create iframes, found: ${offenders.join(', ')}`)
+  for (const f of ['src/lib/browserMedia.ts', 'src/lib/render.ts']) {
+    const t = await read(f)
+    assert.ok(t.includes('openSandboxedScene(') && t.includes('ARENA_SCENE_CSP'), `${f} must capture through openSandboxedScene`)
+    assert.ok(!/contentDocument|contentWindow|html2canvas/.test(t), `${f} must not reach into a frame's document`)
+  }
+  assert.ok(mod.ARENA_SCENE_CSP.includes('connect-src data:') && !/https?:|\*|unsafe-eval/.test(mod.ARENA_SCENE_CSP), 'Arena CSP: data: fetch only, no network')
+  const blobs = {
+    'blob:app/css': new Blob(['.a{background:url(blob:app/png)}</style><script>x</script>'], { type: 'text/css' }),
+    'blob:app/js': new Blob(['window.__seek=()=>1;"</script>"'], { type: 'text/javascript' }),
+    'blob:app/png': new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' }),
+    'blob:app/json': new Blob(['{"a":1}'], { type: 'application/json' }),
+  }
+  const out = await mod.inlineBlobAssets(
+    `<head><link rel="stylesheet" href="blob:app/css"><script src="blob:app/js"></script></head><img src="blob:app/png"><script>fetch("blob:app/json")</script><img src="blob:app/gone">`,
+    async (u) => { if (!blobs[u]) throw new Error('gone'); return blobs[u] },
+  )
+  assert.ok(out.includes('<style>.a{background:url(data:image/png;base64,iVBORw==)}<\\/style><script>x</script></style>'), 'stylesheet inlined, nested blob → data:, cannot close the tag early')
+  assert.ok(/<script\s*>window\.__seek=\(\)=>1;"<\\\/script>"<\/script>/.test(out), 'script inlined safely')
+  assert.ok(out.includes('fetch("data:application/json;base64,') && out.includes('src="data:image/png;base64,iVBORw=="'), 'fetch + img refs inlined')
+  assert.ok(out.includes('blob:app/gone'), 'unreadable blobs are left alone, not dropped silently')
 }
 assert.match(mod.sandboxedSceneDoc('<div>x</div>'), /^<!doctype html><html><head><meta http-equiv="Content-Security-Policy"/)
 console.log(`sandbox check passed — ${windows.length} sandboxed windows, scene capture isolated (opaque origin, no network), ${scenes.length} bundled scenes wrapped`)
