@@ -2,7 +2,7 @@
   "id": "react-bits",
   "name": "React Bits storyboards",
   "description": "All 209 current React Bits ideas as attributed references plus original, editable Cupric-native storyboards. No upstream component source is redistributed.",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "source": "https://github.com/DavidHDev/react-bits",
   "license": "MIT + Commons Clause v1.0",
   "items": [

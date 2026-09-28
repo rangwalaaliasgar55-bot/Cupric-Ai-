@@ -2,7 +2,7 @@
   "id": "glass",
   "name": "Liquid Glass",
   "description": "Refracting glass materials for the app chrome and for the Studio canvas. One parameter set drives the DOM (backdrop-filter + SVG displacement) and the exported video (canvas).",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "source": "Cupric implementation, technique after agpallav.com/liquid-glass, glass-lens-react and liquefy-ui",
   "license": "MIT (this implementation)",
   "items": [
