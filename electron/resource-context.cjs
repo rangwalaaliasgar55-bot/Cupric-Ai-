@@ -90,7 +90,13 @@ function automationResourceContext(brief, rundown, dir) {
   const terms = Array.from(new Set(String(haystack).toLowerCase().match(/[a-z][a-z0-9-]{2,}/g) || [])).filter((w) => !STOP.has(w))
   const keyword = (it) => { const t = textOf(it); return terms.reduce((n, term) => (t.includes(term) ? n + 1 : n), 0) }
   // Local, recordable Lab components (and native storyboards) beat link-only references.
-  const native = (it) => (it.pack === 'components' ? 3 : it.pack === 'backgrounds' ? 2 : it.kind === 'saas-template' ? 0.8 : 0)
+  const native = (it) => (
+    it.pack === 'iphone-duo' ? 5 :
+      it.pack === 'components' ? 3 :
+        it.pack === 'backgrounds' ? 2 :
+          it.pack === 'dashi-motion' ? 1.5 :
+            it.kind === 'saas-template' ? 0.8 : 0
+  )
 
   const scenes = (rundown?.scenes || []).slice(0, 12)
   const used = new Set()
@@ -135,6 +141,11 @@ function automationResourceContext(brief, rundown, dir) {
   if (components.length) {
     lines.push('', 'OTHER MATCHING COMPONENTS you may re-create in HTML/CSS (match their behaviour, not their code; link-only libraries are never copied):')
     lines.push(...components.map((c) => `- ${c.name} [${c.pack}]: ${String(c.description || '').slice(0, 140)}`))
+  }
+  const nativeActions = items.filter((it) => it.data?.nativeAction)
+  if (nativeActions.length) {
+    lines.push('', 'NATIVE CUPRIC ACTIONS — when the final result is an editable Studio project, prefer these allowlisted actions over an opaque approximation; when the current job is standalone HTML, reproduce only the behaviour with deterministic inline geometry:')
+    lines.push(...nativeActions.map((action) => `- ${action.name}: ${action.data.nativeAction}(${action.data.design || action.id}) — ${String(action.description || '').slice(0, 180)}`))
   }
   if (templates.length) {
     lines.push('', 'EXISTING CUPRIC SCENE TEMPLATES whose structure is already proven to render (mirror their timing shape):')

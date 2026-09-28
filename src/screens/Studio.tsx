@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   Sticker,
   Shapes,
+  SlidersHorizontal,
   MousePointerClick,
   Square,
   Type as TypeIcon,
@@ -48,6 +49,7 @@ import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
 import { StudioInspector } from './studio/StudioInspector'
 import { StudioPreview } from './studio/StudioPreview'
+import { StudioNotices } from './studio/StudioNotices'
 import { StudioTimeline } from './studio/StudioTimeline'
 import { PackBrowser } from './library/PackBrowser'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../types/project'
@@ -74,13 +76,14 @@ import { ComponentRecorderHost } from './studio/ComponentRecorderHost'
 import { ComponentsPanel } from './studio/ComponentsPanel'
 import { hasMedia, registerFile } from '../lib/studio/media'
 import { readDragPayload } from '../lib/studio/resourceDrop'
-import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
+import { canExportMp4, convertToMp4, exportStudio, exportStudioInBackground } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
 import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
 import { getIpc } from '../lib/bridge'
+import { rlog } from '../lib/log'
 import { patchTransformKeyframe } from '../lib/studio/keyframeEdit'
 import { parseGeneratedHtml, piecesToStudioClips } from '../lib/studio/importHtml'
 import { readGeneratedPackage } from '../lib/studio/generatedPackage'
@@ -454,7 +457,9 @@ export function Studio() {
   useEffect(() => emitStudio('selection:change', { clipId: selectedId }), [selectedId])
   useEffect(() => emitStudio('time:change', { time }), [time])
 
-  // Scripting API (window.cupric.studio) — reads live state through refs.
+  // Scripting API (window.__cupricStudio) — reads live state through refs.
+  // NEVER graft it onto window.cupric: that is the read-only contextBridge
+  // object, and writing to it is what blanked the Studio in 0.10.0.
   const apiState = useRef({ doc, selectedId, time })
   apiState.current = { doc, selectedId, time }
   useEffect(() => {
@@ -467,12 +472,28 @@ export function Studio() {
       getTime: () => apiState.current.time,
       seek: (t) => seek(t),
     })
-    const w = window as unknown as { cupric?: Record<string, unknown> }
-    w.cupric = { ...(w.cupric ?? {}), studio: api }
+    window.__cupricStudio = api
     return () => {
-      if (w.cupric?.studio === api) delete w.cupric.studio
+      if (window.__cupricStudio === api) delete window.__cupricStudio
     }
   }, [pid, patchStudio, seek])
+
+  // Boot log (0.10.1): how long the Studio took from first render to mounted.
+  const mountStartRef = useRef(performance.now())
+  useEffect(() => {
+    const doc0 = apiState.current.doc
+    rlog.info('studio', 'studio:mount', {
+      projectId: pid,
+      ms: Math.round(performance.now() - mountStartRef.current),
+      sinceBootMs: Math.round(performance.now()),
+      clips: doc0.clips.length,
+      trackCount: doc0.trackCount,
+      aspect: doc0.aspect,
+      backgroundId: doc0.backgroundId,
+    })
+    // Once per mount / project switch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pid])
 
   // The listener is created once and torn down on unmount; commands are
   // dispatched through a ref so the handler always sees fresh state.
@@ -889,6 +910,18 @@ export function Studio() {
     setSelectedId(clip.id)
   }
 
+  function addAdjustmentLayer() {
+    const clip: StudioClip = {
+      id: uid(), kind: 'adjustment', track: Math.max(1, Math.min(MAX_TRACKS - 1, doc.trackCount - 1)),
+      startSec: Math.round(time * 100) / 100, durationSec: 4, name: 'Adjustment layer',
+      transitionIn: 'none', transitionOut: 'none', opacity: 1,
+      grade: [{ id: 'balance', enabled: true, exposure: 0, temperature: 0 }, { id: 'contrast', enabled: true, contrast: 12, fade: 0 }, { id: 'look', enabled: true, saturation: 8, hue: 0 }],
+    }
+    addStudioClip(projectId, clip)
+    setSelectedId(clip.id)
+    pushToast('success', 'Adjustment layer added above the timeline. Select it to tune the grade.')
+  }
+
   function addSticker() {
     const track = Math.min(1, doc.trackCount - 1)
     // At the playhead, like text: the store stacks it on the first free
@@ -1086,8 +1119,9 @@ export function Studio() {
       const outcome = await runExport(asMp4, aspects[i])
       setExportQueue((q) => q.map((job, j) => (j === i ? { ...job, status: outcome } : job)))
       if (outcome === 'cancelled') {
-        setExportQueue((q) => q.map((job, j) => (j > i ? { ...job, status: 'cancelled' } : job)))
-        break
+        // Stop only the active recording/conversion; the remaining aspect jobs
+        // stay queued and continue so one cancelled size does not poison the farm.
+        continue
       }
     }
   }
@@ -1099,7 +1133,7 @@ export function Studio() {
     for (let i = 0; i < scenes.length; i += 1) {
       pushToast('info', `Rendering scene ${i + 1} of ${scenes.length}: ${scenes[i].name}`)
       const outcome = await runExport(asMp4, undefined, { doc: { ...scenes[i].doc, scenes } as StudioDoc, tag: slugify(scenes[i].name) })
-      if (outcome === 'cancelled') break
+      if (outcome === 'cancelled') continue
     }
   }
 
@@ -1124,8 +1158,29 @@ export function Studio() {
     const signal = { cancelled: false }
     cancelRef.current = signal
     try {
+      const fileName = `${slugify(project?.name ?? 'cupric-studio')}-studio${suffix}`
+      // In Electron, the main-process farm owns the offscreen compositor and
+      // the durable output. The browser path below remains the portable
+      // fallback, but the interactive Studio never records its own canvas on
+      // desktop anymore.
+      if (getIpc()) {
+        const farm = await exportStudioInBackground(target, {
+          fileName,
+          fps: target.fps,
+          loudnessTarget: target.loudnessTarget ?? null,
+          format: asMp4 ? 'mp4' : 'webm',
+          onProgress: setExportPct,
+          signal,
+        })
+        const previewUrl = await getIpc()!.invoke('render:preview', farm.outputPath) as string
+        setLastExport({ url: previewUrl, fileName: `${fileName}.${asMp4 ? 'mp4' : 'webm'}` })
+        if (!asMp4) await getIpc()!.invoke('render:copyToDownloads', farm.outputPath)
+        pushToast('success', `Saved ${farm.outputPath.split(/[\\/]/).pop()} (${Math.round(farm.bytes / 1024)} KB)`)
+        cueDone()
+        return 'done'
+      }
       const result = await exportStudio(target, {
-        fileName: `${slugify(project?.name ?? 'cupric-studio')}-studio${suffix}`,
+        fileName,
         scale: 1,
         onProgress: setExportPct,
         signal,
@@ -1135,7 +1190,7 @@ export function Studio() {
         return 'cancelled'
       } else if (asMp4) {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
-        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null)
+        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal)
         setLastExport({ url: result.url, fileName: result.fileName })
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)`)
         cueDone()
@@ -1152,6 +1207,10 @@ export function Studio() {
       }
       return 'done'
     } catch (err) {
+      if (signal.cancelled) {
+        pushToast('info', 'Export cancelled')
+        return 'cancelled'
+      }
       pushToast('error', humanError(err, 'Export'))
       cueProblem()
       return 'failed'
@@ -1203,6 +1262,9 @@ export function Studio() {
         </Button>
         <Button size="sm" variant="outline" onClick={addBackgroundClip} disabled={exporting}>
           <ImageIcon size={13} /> Background
+        </Button>
+        <Button size="sm" variant="outline" onClick={addAdjustmentLayer} disabled={exporting} title="Non-destructive colour grade for clips below this layer">
+          <SlidersHorizontal size={13} /> Adjustment
         </Button>
         <Button size="sm" variant="outline" onClick={() => addGlassClip('panel')} disabled={exporting}>
           <Sparkles size={13} /> Glass
@@ -1584,30 +1646,36 @@ export function Studio() {
             }}
             onDrop={onStageDrop}
           >
-            {doc.clips.length === 0 && !previewDoc ? (
-              <div className="max-w-md rounded-xl border border-dashed border-line bg-panel/40 px-8 py-12 text-center">
-                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
-                  <Clapperboard size={19} />
+            {/* Always mount the preview: an empty project still paints its
+                background, with the drop hint laid over it (0.10.1). */}
+            <div className="relative flex h-full w-full min-w-0 items-center justify-center">
+              <StudioNotices doc={previewDoc?.doc ?? doc} />
+              {doc.clips.length === 0 && !previewDoc && (
+                <div data-studio-empty-hint className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-6">
+                  <div className="pointer-events-auto max-w-sm rounded-xl border border-dashed border-line bg-panel/80 px-6 py-7 text-center shadow-[0_12px_32px_rgb(0_0_0/0.36)] backdrop-blur">
+                    <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-panel-alt text-muted">
+                      <Clapperboard size={18} />
+                    </div>
+                    <h2 className="mt-3 text-base font-semibold">Drop footage, photos or a resource card here</h2>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted">
+                      Or import media, then stack text and backgrounds on the tracks below. Nothing leaves the machine — the
+                      preview and the export are the same renderer.
+                    </p>
+                    <div className="mt-4">
+                      <Button variant="primary" onClick={() => fileRef.current?.click()}>
+                        <Plus size={14} /> Import media
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <h2 className="mt-3 text-base font-semibold">Make a video right here</h2>
-                <p className="mt-1.5 text-sm leading-relaxed text-muted">
-                  Import footage or photos, stack text and backgrounds on the tracks below, then export. Nothing leaves
-                  the machine — the preview and the export are the same renderer.
-                </p>
-                <div className="mt-4">
-                  <Button variant="primary" onClick={() => fileRef.current?.click()}>
-                    <Plus size={14} /> Import media
-                  </Button>
-                </div>
-              </div>
-            ) : (
+              )}
               <div
                 className="contents"
                 onContextMenu={(e) => {
                   // Canvas right-click acts on the selected clip (same menu as the timeline).
                   e.preventDefault()
                   if (selected) setClipMenuAt({ clipId: selected.id, x: e.clientX, y: e.clientY })
-                  else pushToast('info', 'Select a clip on the canvas or timeline, then right-click for its actions.')
+                  else pushToast('info', doc.clips.length ? 'Select a clip on the canvas or timeline, then right-click for its actions.' : 'The timeline is empty — drop or import media first.')
                 }}
               >
               <StudioPreview
@@ -1631,7 +1699,7 @@ export function Studio() {
                 }}
               />
               </div>
-            )}
+            </div>
           </div>
 
           {/* Transport */}

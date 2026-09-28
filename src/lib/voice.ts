@@ -181,11 +181,17 @@ function recognitionCtor(): (new () => SpeechRecognitionLike) | null {
 }
 
 export function isVoiceSupported(): boolean {
-  return offlineVoiceEngine() !== null || recognitionCtor() !== null
+  // Packaged Electron must never fall through to Chromium Web Speech: that
+  // implementation sends microphone audio to an online service. The browser
+  // build may still use it when no desktop IPC exists.
+  if (getIpc()) return engineStatus === null || offlineVoiceEngine() !== null
+  return recognitionCtor() !== null
 }
 
 export type VoiceEvents = {
   onTranscript: (text: string, isFinal: boolean) => void
+  onLevel?: (level: number) => void
+  onTranscribing?: (active: boolean) => void
   onCommand: (command: VoiceCommand, transcript: string) => void
   onUnrecognised?: (transcript: string) => void
   onError?: (message: string) => void
@@ -296,14 +302,18 @@ export class VoiceListener {
     const local = new LocalVoiceListener(
       {
         onFinal: (text) => {
+          this.events.onTranscribing?.(false)
           this.events.onTranscript(text, true)
           if (this.mode === 'dictation') return
           const command = parseVoiceCommand(text)
           if (command) this.events.onCommand(command, text)
           else this.events.onUnrecognised?.(text)
         },
+        onListening: (level) => this.events.onLevel?.(level),
+        onTranscribing: (active) => this.events.onTranscribing?.(active),
         onError: (code) => {
           this.running = false
+          this.events.onTranscribing?.(false)
           this.report(code)
         },
         onEnd: () => {
@@ -330,6 +340,11 @@ export class VoiceListener {
   start() {
     if (this.running) return false
     if (offlineVoiceEngine()) return this.startLocal()
+    if (getIpc()) {
+      this.events.onError?.('Offline voice is not installed yet. Type your brief instead, or run npm run whisper:fetch to install the bundled model.')
+      this.events.onEnd?.()
+      return false
+    }
     const Ctor = recognitionCtor()
     if (!Ctor) return false
     const rec = new Ctor()

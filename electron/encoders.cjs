@@ -13,6 +13,8 @@
  */
 
 const SOFTWARE = 'libx264'
+const AV1_SOFTWARE = 'libaom-av1'
+const AV1_ENCODERS = Object.freeze({ h264_nvenc: 'av1_nvenc', h264_qsv: 'av1_qsv', h264_amf: 'av1_amf' })
 
 /** Candidates in preference order, per platform. */
 function candidatesFor(platform) {
@@ -25,8 +27,15 @@ function candidatesFor(platform) {
  * Encoder arguments for a quality tier. Every encoder emits yuv420p High
  * profile so segments from different encoders stay compatible.
  */
-function videoArgs(name, quality) {
+function videoArgs(name, quality, codec = 'h264') {
   const final = quality === 'final'
+  if (codec === 'av1') {
+    const selected = AV1_ENCODERS[name] || AV1_SOFTWARE
+    if (selected === 'av1_nvenc') return ['-c:v', selected, '-preset', final ? 'p6' : 'p3', '-cq', final ? '24' : '34', '-b:v', '0', '-pix_fmt', 'yuv420p']
+    if (selected === 'av1_qsv') return ['-c:v', selected, '-global_quality', final ? '28' : '36', '-pix_fmt', 'nv12']
+    if (selected === 'av1_amf') return ['-c:v', selected, '-quality', final ? 'quality' : 'speed', '-qp_i', final ? '24' : '34', '-qp_p', final ? '26' : '36', '-pix_fmt', 'yuv420p']
+    return ['-c:v', AV1_SOFTWARE, '-cpu-used', final ? '4' : '7', '-crf', final ? '28' : '36', '-pix_fmt', 'yuv420p']
+  }
   const common = ['-pix_fmt', 'yuv420p']
   switch (name) {
     case 'h264_nvenc':
@@ -101,4 +110,4 @@ function loudnormArgs(target) {
 }
 
 module.exports = {
-  loudnormArgs, SOFTWARE, candidatesFor, videoArgs, isHardware, listedEncoders, probeArgs, detect }
+  loudnormArgs, SOFTWARE, AV1_SOFTWARE, AV1_ENCODERS, candidatesFor, videoArgs, isHardware, listedEncoders, probeArgs, detect }

@@ -1,0 +1,51 @@
+:root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue","PingFang SC",sans-serif;color:#242622;background:#f6f6f3;font-synthesis:none}
+*{box-sizing:border-box}
+body{margin:0;overflow:hidden}
+button,input{-webkit-tap-highlight-color:transparent}
+button{font:inherit;cursor:pointer}
+button:disabled{cursor:wait;opacity:.35}
+main{height:100dvh;position:relative}
+#viewport{position:absolute;inset:0 0 154px;touch-action:none}
+canvas{display:block;outline:none}
+.github-link{position:absolute;top:calc(16px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));z-index:1;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;color:#262c24;transition:background .2s,color .2s}
+.github-link svg{width:24px;height:24px;fill:currentColor}
+.github-link:hover{background:#ecefe6;color:#4e5e44}
+.control-dock{position:absolute;bottom:28px;left:50%;transform:translateX(-50%);width:min(700px,calc(100% - 56px));display:flex;align-items:center;padding:20px 24px;gap:24px;background:rgba(255,255,255,.86);border:1px solid rgba(216,220,210,.8);border-radius:25px;box-shadow:0 16px 50px -26px #7c83773d;backdrop-filter:blur(16px)}
+.controls{flex:1;min-width:0;display:flex;gap:26px;align-items:center;padding-left:24px;border-left:1px solid #e5e8df}
+.play{width:48px;height:48px;border-radius:50%;flex-shrink:0;border:0;background:#262c24;color:#f7faf4;display:grid;place-items:center;transition:background .2s}
+.play:hover{background:#4e5e44}
+.play svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.play #play-icon{fill:currentColor;stroke:none}
+.play svg[hidden]{display:none}
+input[type=range]{appearance:none;-webkit-appearance:none;flex:1;min-width:0;width:100%;height:36px;display:block;margin:0;background:transparent;cursor:ew-resize;touch-action:none}
+input[type=range]::-webkit-slider-runnable-track{height:9px;background:linear-gradient(to right,#6a795c var(--progress,100%),#e6e9e0 var(--progress,100%));border-radius:9px}
+input[type=range]::-moz-range-track{height:9px;background:linear-gradient(to right,#6a795c var(--progress,100%),#e6e9e0 var(--progress,100%));border-radius:9px}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:24px;height:24px;margin-top:-7.5px;background:#fff;border:3px solid #67775b;border-radius:50%;box-shadow:0 1px 4px #0002}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;background:#fff;border:3px solid #67775b;border-radius:50%}
+button:focus-visible,.github-link:focus-visible{outline:2px solid #8fa077;outline-offset:4px}
+.screen-panel{width:188px;flex-shrink:0}
+.panel-heading{margin-bottom:12px}
+.panel-heading h2{font-size:13px;font-weight:500;margin:0}
+.ui-themes{display:flex;gap:4px;padding:3px;background:#ecefe6;border-radius:9px}
+.ui-themes button{flex:1;border:0;border-radius:6px;padding:7px 4px;font-size:10px;color:#818974;background:transparent}
+.ui-themes button[aria-selected=true]{background:#fff;color:#45533b;box-shadow:0 1px 3px #53624712}
+@media(max-width:700px){
+  .control-dock{width:calc(100% - 32px);bottom:calc(16px + env(safe-area-inset-bottom));padding:16px;gap:16px;flex-direction:column;align-items:stretch}
+  .screen-panel{width:auto}
+  .panel-heading{margin-bottom:8px}
+  .ui-themes button{min-height:40px;font-size:12px}
+  #viewport{inset:env(safe-area-inset-top) 0 calc(220px + env(safe-area-inset-bottom))}
+  .controls{flex:none;gap:16px;padding:16px 0 0;border-left:0;border-top:1px solid #e5e8df}
+  .play{width:44px;height:44px}
+}
+@media(max-height:650px) and (min-width:701px){
+  #viewport{inset:0 0 125px}
+  .control-dock{bottom:20px}
+}
+@media(max-height:500px) and (min-width:540px){
+  .control-dock{bottom:calc(12px + env(safe-area-inset-bottom));padding:14px 18px;gap:18px;flex-direction:row;align-items:center}
+  .screen-panel{width:180px}
+  .controls{flex:1;gap:16px;padding:0 0 0 18px;border-top:0;border-left:1px solid #e5e8df}
+  .ui-themes button{min-height:36px}
+  #viewport{inset:env(safe-area-inset-top) 0 calc(140px + env(safe-area-inset-bottom))}
+}

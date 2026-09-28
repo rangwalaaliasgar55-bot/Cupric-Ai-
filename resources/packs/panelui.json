@@ -2,7 +2,7 @@
   "id": "panelui",
   "name": "PanelUI catalogue",
   "description": "All 135 PanelUI components and 21 chart visualisations as editable Cupric-native Studio storyboards. React Native source stays upstream; Cupric uses its own deterministic renderer.",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "source": "https://github.com/panel-ui/PanelUI (panelui-native 0.102.1, react-native)",
   "license": "MIT — Copyright (c) 2026 Khalid Abdi",
   "items": [

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, type ReactElement } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { recoveryInfo } from '../lib/projectHistory'
 import { AskPanel } from './AskPanel'
@@ -19,6 +19,8 @@ import { Autonomous } from '../screens/Autonomous'
 import { MotionEngine } from '../screens/MotionEngine'
 import { useProjectStore } from '../state/useProjectStore'
 import { AppBackdrop } from './AppBackdrop'
+import { GlobalErrorCards, RouteErrorBoundary } from './ErrorBoundary'
+import type { View } from '../types/project'
 
 const SCREENS = {
   home: <HomeProject />,
@@ -33,17 +35,23 @@ const SCREENS = {
   lab: <Lab />,
   render: <Render />,
   library: <Library />,
-} as const
+} as const satisfies Record<View, ReactElement>
 
 export function AppLayout() {
   const view = useProjectStore((s) => s.view)
+  // A view this build does not know (hand-edited or newer projects.json) must
+  // never render an empty <main>. The store validates on load; this is the
+  // belt to that pair of braces.
+  const screen: View = view in SCREENS ? view : 'home'
   const pushToast = useProjectStore((s) => s.pushToast)
 
   // Crash recovery (2.26): say so when the last session ended badly or the
   // project file had to be restored from an autosave.
   useEffect(() => {
     void recoveryInfo().then((info) => {
-      if (info.recoveredFrom) {
+      if (info.unreadable) {
+        pushToast('error', 'Your projects file could not be read and no autosave was usable, so Cupric started empty. The damaged file was kept next to it as projects.corrupt-….json.', { sticky: true, id: 'state-unreadable' })
+      } else if (info.recoveredFrom) {
         pushToast('info', 'Your project file was damaged, so Cupric restored the most recent autosave. Earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'state-recovered' })
       } else if (info.previousSessionCrashed) {
         pushToast('info', 'Cupric did not close cleanly last time. Your work was autosaved — if anything is missing, restore an earlier version from Ask → Settings → Version history.', { sticky: true, id: 'unclean-exit' })
@@ -59,10 +67,11 @@ export function AppLayout() {
       <Sidebar />
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <TopBar />
-        <main className="min-h-0 flex-1 overflow-hidden">
+        {/* data-view: which screen is mounted (check:boot waits on it). */}
+        <main className="min-h-0 flex-1 overflow-hidden" data-view={screen}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
-              key={view}
+              key={screen}
               className="h-full"
               // Opacity only: screens are exactly viewport-height, so any
               // translate — even a 6px entrance that a busy screen (Apex)
@@ -72,13 +81,20 @@ export function AppLayout() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.16, ease: 'easeOut' }}
             >
-              {SCREENS[view]}
+              {/* One boundary per route, keyed by view: a screen that throws
+                  shows a fallback card; the shell and other screens live on. */}
+              <RouteErrorBoundary key={screen} route={screen}>
+                {SCREENS[screen]}
+              </RouteErrorBoundary>
             </motion.div>
           </AnimatePresence>
         </main>
       </div>
-      <AskPanel />
+      <RouteErrorBoundary route="ask-panel">
+        <AskPanel />
+      </RouteErrorBoundary>
       <Toasts />
+      <GlobalErrorCards />
     </div>
   )
 }

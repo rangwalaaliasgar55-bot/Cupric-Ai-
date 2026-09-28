@@ -3,6 +3,7 @@ import { Boxes, Check, Copy, FileText, Palette, Search, Sparkles, Layers } from 
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
+import { StockBrowser } from '../components/StockBrowser'
 import { EmptyState } from '../components/EmptyState'
 import { Segmented } from '../components/Segmented'
 import type { LibraryItem } from '../types/project'
@@ -276,6 +277,7 @@ export function Library() {
             ))}
           </div>
         )}
+        <StockBrowser />
       </div>
     </div>
   )

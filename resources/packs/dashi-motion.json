@@ -1,0 +1,280 @@
+{
+  "id": "dashi-motion",
+  "name": "dashi-motion native production skills",
+  "description": "10 attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; Cupric applies the principles through its own deterministic renderer.",
+  "version": "0.11.0",
+  "source": "https://github.com/chuspeeism/dashi-motion",
+  "license": "No upstream license declared — reference-only attribution; see resources/dashi-motion/UPSTREAM-NOTICE.md",
+  "items": [
+    {
+      "id": "dashi-motion-software-route",
+      "kind": "skill",
+      "name": "Route by delivery software",
+      "description": "Identify whether the task is an AE project, Rive state machine, Cavalry node scene, or Cupric native scene before choosing techniques. Do not silently replace an editable native deliverable with a flattened video.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "Identify whether the task is an AE project, Rive state machine, Cavalry node scene, or Cupric native scene before choosing techniques. Do not silently replace an editable native deliverable with a flattened video.",
+        "tags": [
+          "routing",
+          "editable",
+          "workflow"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "routing",
+        "editable",
+        "workflow"
+      ]
+    },
+    {
+      "id": "dashi-motion-reference-breakdown",
+      "kind": "skill",
+      "name": "Break references into observable beats",
+      "description": "Measure duration, frame rate, aspect ratio, shot boundaries, direction, spacing, counts, proportions, holds, speed peaks, transitions and end states before styling. Compare matching timestamps, not arbitrary frame numbers.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "Measure duration, frame rate, aspect ratio, shot boundaries, direction, spacing, counts, proportions, holds, speed peaks, transitions and end states before styling. Compare matching timestamps, not arbitrary frame numbers.",
+        "tags": [
+          "reference",
+          "timing",
+          "analysis"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "reference",
+        "timing",
+        "analysis"
+      ]
+    },
+    {
+      "id": "dashi-motion-native-objects",
+      "kind": "skill",
+      "name": "Use native editable objects",
+      "description": "Keep text, paths, shapes, controls, keyframes, state machines and repeated relationships editable. A large script or flattened screenshot is not equivalent to user-facing editability.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "Keep text, paths, shapes, controls, keyframes, state machines and repeated relationships editable. A large script or flattened screenshot is not equivalent to user-facing editability.",
+        "tags": [
+          "native",
+          "layers",
+          "controls"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "native",
+        "layers",
+        "controls"
+      ]
+    },
+    {
+      "id": "dashi-motion-shared-controls",
+      "kind": "skill",
+      "name": "Share repeated motion controls",
+      "description": "Use one master progress, duplicator, array, state value or timeline controller for repeated motion; keep genuinely independent actions independent. Do not expand every copy into opaque keyframes.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "Use one master progress, duplicator, array, state value or timeline controller for repeated motion; keep genuinely independent actions independent. Do not expand every copy into opaque keyframes.",
+        "tags": [
+          "procedural",
+          "keyframes",
+          "efficiency"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "procedural",
+        "keyframes",
+        "efficiency"
+      ]
+    },
+    {
+      "id": "dashi-motion-motion-before-texture",
+      "kind": "skill",
+      "name": "Fix motion before polish",
+      "description": "When a result feels wrong, check direction, pivot, layer distance, count, spacing, expansion, settle and speed curve before adding grain, shadow or extra effects.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "When a result feels wrong, check direction, pivot, layer distance, count, spacing, expansion, settle and speed curve before adding grain, shadow or extra effects.",
+        "tags": [
+          "review",
+          "motion",
+          "iteration"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "review",
+        "motion",
+        "iteration"
+      ]
+    },
+    {
+      "id": "dashi-motion-property-discovery",
+      "kind": "skill",
+      "name": "Discover properties before writing",
+      "description": "Enumerate effect properties, match names, ports, renderers, inputs and current values before changing them. Do not trust numeric indexes, old coordinates, or a similarly named property.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "Enumerate effect properties, match names, ports, renderers, inputs and current values before changing them. Do not trust numeric indexes, old coordinates, or a similarly named property.",
+        "tags": [
+          "inspection",
+          "safety",
+          "automation"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "inspection",
+        "safety",
+        "automation"
+      ]
+    },
+    {
+      "id": "dashi-motion-separate-open-render",
+      "kind": "skill",
+      "name": "Separate open/save from render",
+      "description": "Open the confirmed project, verify the correct file and visible frame, save it, then render in a separate step. Do not treat a generated script or queued job as proof of a rendered result.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "Open the confirmed project, verify the correct file and visible frame, save it, then render in a separate step. Do not treat a generated script or queued job as proof of a rendered result.",
+        "tags": [
+          "render",
+          "evidence",
+          "delivery"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "render",
+        "evidence",
+        "delivery"
+      ]
+    },
+    {
+      "id": "dashi-motion-compare-decoded",
+      "kind": "skill",
+      "name": "Review decoded output",
+      "description": "Decode the actual output, check dimensions, frame count, timestamps, audio and key action frames, then compare the motion at matching times. A thumbnail or metadata-only check is insufficient.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "Decode the actual output, check dimensions, frame count, timestamps, audio and key action frames, then compare the motion at matching times. A thumbnail or metadata-only check is insufficient.",
+        "tags": [
+          "qa",
+          "export",
+          "comparison"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "qa",
+        "export",
+        "comparison"
+      ]
+    },
+    {
+      "id": "dashi-motion-evidence-boundary",
+      "kind": "skill",
+      "name": "State evidence honestly",
+      "description": "Distinguish file written, app opened, project saved, native-rendered, decoded and compared. Record unconfirmed causes as unconfirmed instead of claiming a professional result from a script exit code.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "Distinguish file written, app opened, project saved, native-rendered, decoded and compared. Record unconfirmed causes as unconfirmed instead of claiming a professional result from a script exit code.",
+        "tags": [
+          "honesty",
+          "qa",
+          "reporting"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "honesty",
+        "qa",
+        "reporting"
+      ]
+    },
+    {
+      "id": "dashi-motion-continue-baseline",
+      "kind": "skill",
+      "name": "Continue from the accepted baseline",
+      "description": "When adding a new segment, find the newest accepted project, preserve accepted work, confirm its end frame and current controls, and change only the requested range before extending the scene.",
+      "data": {
+        "provider": "dashi-motion",
+        "source": "https://github.com/chuspeeism/dashi-motion",
+        "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+        "instruction": "When adding a new segment, find the newest accepted project, preserve accepted work, confirm its end frame and current controls, and change only the requested range before extending the scene.",
+        "tags": [
+          "iteration",
+          "versioning",
+          "editing"
+        ],
+        "nativeRendererOnly": true,
+        "referencePath": "resources/dashi-motion/SKILL.md"
+      },
+      "tags": [
+        "dashi-motion",
+        "playbook",
+        "agent",
+        "iteration",
+        "versioning",
+        "editing"
+      ]
+    }
+  ]
+}

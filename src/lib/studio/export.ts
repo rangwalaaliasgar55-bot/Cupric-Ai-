@@ -265,24 +265,129 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
 }
 
 /**
+ * Desktop farm export. The main process creates a hidden Studio renderer,
+ * sends it this editable document, and queues the resulting recording beside
+ * every other render job. The visible Studio never owns MediaRecorder or a
+ * conversion process, so scrubbing stays responsive and exports survive the
+ * renderer being navigated. Browser builds continue to use exportStudio below.
+ */
+export async function exportStudioInBackground(
+  doc: StudioDoc,
+  options: { fileName?: string; fps: number; loudnessTarget?: number | null; format: 'webm' | 'mp4'; onProgress?: (pct: number) => void; signal?: { cancelled: boolean } },
+): Promise<{ outputPath: string; bytes: number; format: 'webm' | 'mp4' }> {
+  const ipc = getIpc()
+  if (!isDesktop() || !ipc) throw new Error('Background Studio export needs the desktop app.')
+  const assets = new Map<string, { id: string; kind: 'video' | 'image' | 'audio'; fileName: string; localPath: string | null }>()
+  for (const clip of doc.clips) {
+    if (clip.kind === 'video' || clip.kind === 'image' || clip.kind === 'audio') {
+      assets.set(clip.mediaId, { id: clip.mediaId, kind: clip.kind, fileName: clip.fileName, localPath: clip.localPath })
+    }
+  }
+  const scale = 1
+  const [fullW, fullH] = sizeForAspect(doc.aspect, doc.resolution)
+  const width = Math.round((fullW * scale) / 2) * 2
+  const height = Math.round((fullH * scale) / 2) * 2
+  const result: { outputPath: string; bytes: number } = await new Promise((resolve, reject) => {
+    let jobId = ''
+    let settled = false
+    const cleanups: Array<() => void> = []
+    let cancelPoll: number | null = null
+    const finish = (fn: () => void) => {
+      if (settled) return
+      settled = true
+      if (cancelPoll !== null) window.clearInterval(cancelPoll)
+      cleanups.forEach((cleanup) => cleanup())
+      fn()
+    }
+    if (options.signal) {
+      cancelPoll = window.setInterval(() => {
+        if (options.signal?.cancelled && jobId) void ipc.invoke('render:cancel', { jobId })
+      }, 120)
+      cleanups.push(() => { if (cancelPoll !== null) window.clearInterval(cancelPoll) })
+    }
+    cleanups.push(ipc.on('render:progress', (event: { jobId?: string; pct?: number }) => {
+      if (!jobId || event?.jobId !== jobId) return
+      options.onProgress?.(Math.max(0, Math.min(100, Number(event.pct) || 0)))
+    }))
+    cleanups.push(ipc.on('render:done', (event: { jobId?: string; outputPath?: string; bytes?: number }) => {
+      if (!jobId || event?.jobId !== jobId || !event.outputPath) return
+      finish(() => resolve({ outputPath: event.outputPath!, bytes: Number(event.bytes) || 0 }))
+    }))
+    cleanups.push(ipc.on('render:error', (event: { jobId?: string; error?: string }) => {
+      if (!jobId || event?.jobId !== jobId) return
+      finish(() => reject(new Error(event.error || 'Background Studio export failed')))
+    }))
+    void ipc.invoke('studio:exportMp4', {
+      background: true,
+      format: options.format,
+      doc,
+      assets: [...assets.values()],
+      fileName: options.fileName,
+      fps: options.fps,
+      loudnessTarget: options.loudnessTarget ?? null,
+      width,
+      height,
+      reveal: options.format === 'mp4',
+    }).then((accepted: { jobId?: string }) => {
+      if (accepted?.jobId) jobId = accepted.jobId
+      else finish(() => reject(new Error('Background Studio export was not queued.')))
+    }).catch((error: unknown) => finish(() => reject(error)))
+  })
+  return { ...result, format: options.format }
+}
+
+/**
  * Desktop only: hand the recorded blob to FFmpeg in the main process and get a
- * real H.264 MP4 back. In the browser there is no FFmpeg, so callers keep the
- * WebM — we never rename a WebM to .mp4.
+ * real H.264 MP4 back. Kept for API callers that already have a recording;
+ * the regular Studio route uses exportStudioInBackground instead.
  */
 export async function convertToMp4(
   blob: Blob,
   fileName: string,
   fps: number,
   loudnessTarget: number | null = null,
+  signal?: { cancelled: boolean },
 ): Promise<{ outputPath: string; bytes: number }> {
   const ipc = getIpc()
   if (!isDesktop() || !ipc) throw new Error('MP4 conversion needs the desktop app (FFmpeg runs in the main process).')
   const buffer = await blob.arrayBuffer()
-  const result: { outputPath: string; bytes: number } = await ipc.invoke('studio:exportMp4', {
-    bytes: new Uint8Array(buffer),
-    fileName,
-    fps,
-    loudnessTarget,
+  const result: { outputPath: string; bytes: number } = await new Promise((resolve, reject) => {
+    let jobId = ''
+    let settled = false
+    const cleanups: Array<() => void> = []
+    let cancelPoll: number | null = null
+    const finish = (fn: () => void) => {
+      if (settled) return
+      settled = true
+      if (cancelPoll !== null) window.clearInterval(cancelPoll)
+      cleanups.forEach((cleanup) => cleanup())
+      fn()
+    }
+    if (signal) {
+      cancelPoll = window.setInterval(() => {
+        if (signal.cancelled && jobId) void ipc.invoke('render:cancel', { jobId })
+      }, 120)
+      cleanups.push(() => { if (cancelPoll !== null) window.clearInterval(cancelPoll) })
+    }
+    cleanups.push(ipc.on('render:done', (event: { jobId?: string; outputPath?: string; bytes?: number }) => {
+      if (!jobId || event?.jobId !== jobId || !event.outputPath) return
+      finish(() => resolve({ outputPath: event.outputPath!, bytes: Number(event.bytes) || 0 }))
+    }))
+    cleanups.push(ipc.on('render:error', (event: { jobId?: string; error?: string }) => {
+      if (!jobId || event?.jobId !== jobId) return
+      finish(() => reject(new Error(event.error || 'MP4 export failed')))
+    }))
+    void ipc.invoke('studio:exportMp4', {
+      bytes: new Uint8Array(buffer),
+      fileName,
+      fps,
+      loudnessTarget,
+    }).then((accepted: { jobId?: string; outputPath?: string; bytes?: number; status?: string }) => {
+      if (accepted?.outputPath) {
+        finish(() => resolve({ outputPath: accepted.outputPath!, bytes: Number(accepted.bytes) || 0 }))
+      } else if (accepted?.jobId) jobId = accepted.jobId
+      else finish(() => reject(new Error('MP4 export was not queued.')))
+    }).catch((error: unknown) => finish(() => reject(error)))
   })
   return result
 }

@@ -146,6 +146,7 @@ export class UtteranceSegmenter {
 export type LocalVoiceEvents = {
   onFinal: (text: string) => void
   onListening?: (level: number) => void
+  onTranscribing?: (active: boolean) => void
   onError: (code: 'not-allowed' | 'audio-capture' | 'no-engine' | 'engine-failed', detail?: string) => void
   onEnd?: () => void
 }
@@ -201,6 +202,7 @@ export class LocalVoiceListener {
     const wav = encodeWav(samples)
     this.queue = this.queue.then(async () => {
       try {
+        this.events.onTranscribing?.(true)
         const { text } = await this.transcribe(wav, this.lang)
         if (text) this.events.onFinal(text)
       } catch (err) {
@@ -209,6 +211,8 @@ export class LocalVoiceListener {
         this.failedOnce = true
         this.events.onError(/no offline speech engine/i.test(message) ? 'no-engine' : 'engine-failed', message)
         this.stop()
+      } finally {
+        this.events.onTranscribing?.(false)
       }
     })
   }

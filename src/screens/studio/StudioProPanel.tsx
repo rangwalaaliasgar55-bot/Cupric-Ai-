@@ -267,6 +267,32 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
               </div>
               {on && phone && (
                 <>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <label className="text-[11px] text-muted">Form factor
+                      <select className={inputCx} value={phone.formFactor ?? 'single'} onChange={(e) => put({ ...phone, formFactor: e.target.value as StudioPhoneStyle['formFactor'] }, 'Phone form factor')}>
+                        <option value="single">Single phone</option><option value="duo">Duo foldable</option>
+                      </select>
+                    </label>
+                    {phone.formFactor === 'duo' && (
+                      <label className="text-[11px] text-muted">Fold motion
+                        <select className={inputCx} value={phone.duoFold ?? 'open'} onChange={(e) => put({ ...phone, duoFold: e.target.value as StudioPhoneStyle['duoFold'] }, 'Duo fold motion')}>
+                          <option value="open">Open hero</option><option value="fold-out">Open from closed</option><option value="fold-in">Close to hinge</option><option value="peek">Peek / breathe</option>
+                        </select>
+                      </label>
+                    )}
+                  </div>
+                  {phone.formFactor === 'duo' && (
+                    <div className="space-y-1.5 rounded-md border border-line bg-bg/40 p-2">
+                      <label className="block text-[11px] text-muted">Screen projection
+                        <select className={inputCx} value={phone.duoScreen ?? 'wide'} onChange={(e) => put({ ...phone, duoScreen: e.target.value as StudioPhoneStyle['duoScreen'] }, 'Duo screen projection')}>
+                          <option value="wide">Wide media across both panels</option><option value="mirror">Mirror media on both panels</option><option value="outer-right">Outer panel only while folded</option>
+                        </select>
+                      </label>
+                      <label className="block text-[11px] text-muted">3D depth <input className="mt-1 w-full accent-accent" type="range" min="0" max="1" step="0.01" value={phone.duoDepth ?? 0.62} onChange={(e) => put({ ...phone, duoDepth: Number(e.target.value) }, 'Duo depth')} /></label>
+                      <label className="flex items-center justify-between text-[11px] text-muted">Hinge colour <input type="color" value={phone.duoHingeColor ?? phone.frameColor} onChange={(e) => put({ ...phone, duoHingeColor: e.target.value }, 'Duo hinge colour')} /></label>
+                      <p className="text-[10px] leading-snug text-muted">Pure Canvas projection: preview and export share the same fold clock. No Apple model or remote asset is bundled.</p>
+                    </div>
+                  )}
                   <div>
                     <p className="mb-1 text-[11px] font-medium text-muted">Frame colour</p>
                     <div className="flex flex-wrap gap-1.5">
@@ -295,7 +321,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
                   </div>
                   <label className="block text-[11px] text-muted">Screen
                     <select className={inputCx} value={phone.app?.kind ?? 'none'} onChange={(e) => put({ ...phone, app: e.target.value === 'none' ? null : defaultApp(e.target.value as StudioPhoneApp['kind']) }, 'Phone screen')}>
-                      <option value="none">Just the media</option><option value="product">Product page (animated)</option><option value="lockscreen">Lock screen + notifications</option><option value="social">Social post (like animation)</option>
+                      <option value="none">Just the media</option><option value="product">Product page (animated)</option><option value="browser">Browser / SaaS launch (animated)</option><option value="lockscreen">Lock screen + notifications</option><option value="social">Social post (like animation)</option>
                     </select>
                   </label>
                   {phone.app?.kind === 'product' && (
@@ -312,6 +338,17 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
                         <span>only shown if you enter your real rating</span>
                       </div>
                       <label className="flex items-center gap-2 text-xs text-muted">Accent <input type="color" value={phone.app.accent} onChange={(e) => setApp({ accent: e.target.value })} /></label>
+                    </div>
+                  )}
+                  {phone.app?.kind === 'browser' && (
+                    <div className="space-y-1.5">
+                      <input className={inputCx} aria-label="Browser URL" placeholder="yourproduct.com" value={phone.app.url} onChange={(e) => setApp({ url: e.target.value })} />
+                      <input className={inputCx} aria-label="Browser title" placeholder="SaaS launch headline" value={phone.app.title} onChange={(e) => setApp({ title: e.target.value })} />
+                      <textarea className={`${inputCx} h-14`} aria-label="Browser subtitle" placeholder="What should the visitor understand?" value={phone.app.subtitle} onChange={(e) => setApp({ subtitle: e.target.value })} />
+                      <div className="flex items-center gap-2 text-xs text-muted">
+                        <input className={inputCx} aria-label="Browser CTA" placeholder="Try it free" value={phone.app.cta} onChange={(e) => setApp({ cta: e.target.value })} />
+                        <label className="flex items-center gap-1">Accent <input type="color" value={phone.app.accent} onChange={(e) => setApp({ accent: e.target.value })} /></label>
+                      </div>
                     </div>
                   )}
                   {phone.app?.kind === 'lockscreen' && (

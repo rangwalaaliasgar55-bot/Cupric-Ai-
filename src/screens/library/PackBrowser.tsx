@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type DragEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Check,
@@ -101,6 +101,8 @@ export function PackBrowser() {
   const [source, setSource] = useState<Source>('none')
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const [searchIds, setSearchIds] = useState<Set<string> | null>(null)
+  const searchWorker = useRef<Worker | null>(null)
   const [visibleCount, setVisibleCount] = useState(90)
   const [downloading, setDownloading] = useState<{ pct: number; label: string } | null>(null)
   const [offline, setOffline] = useState<{ downloaded: string[]; total: number }>({ downloaded: [], total: 0 })
@@ -122,6 +124,22 @@ export function PackBrowser() {
   const refreshOffline = useCallback(() => {
     void offlineStatus().then(setOffline)
   }, [])
+
+  useEffect(() => {
+    const worker = new Worker(new URL('./packSearch.worker.ts', import.meta.url), { type: 'module' })
+    searchWorker.current = worker
+    worker.onmessage = (event: MessageEvent<{ ids?: string[] }>) => setSearchIds(new Set(event.data?.ids || []))
+    return () => {
+      worker.terminate()
+      searchWorker.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const all = pack?.items ?? []
+    setSearchIds(null)
+    searchWorker.current?.postMessage({ items: all.map(({ id, name, description, tags }) => ({ id, name, description, tags })), query })
+  }, [pack, query])
 
   useEffect(() => {
     let alive = true
@@ -153,15 +171,10 @@ export function PackBrowser() {
 
   const items = useMemo(() => {
     const all = pack?.items ?? []
-    const q = query.trim().toLowerCase()
-    if (!q) return all
-    return all.filter(
-      (i) =>
-        i.name.toLowerCase().includes(q) ||
-        i.description.toLowerCase().includes(q) ||
-        (i.tags ?? []).some((tag) => tag.includes(q)),
-    )
-  }, [pack, query])
+    if (!query.trim()) return all
+    if (!searchIds) return []
+    return all.filter((item) => searchIds.has(item.id))
+  }, [pack, query, searchIds])
   const visibleItems = useMemo(() => items.slice(0, visibleCount), [items, visibleCount])
 
   useEffect(() => setVisibleCount(90), [active, query])
@@ -249,7 +262,7 @@ export function PackBrowser() {
             Resource packs
             {index && (
               <span className="font-mono text-xs font-normal text-muted">
-                v{index.version} · {index.packs.reduce((sum, entry) => sum + entry.itemCount, 0).toLocaleString()} items
+                v{index.version}.{index.packs.reduce((sum, entry) => sum + entry.itemCount, 0)}
               </span>
             )}
             {!online && (

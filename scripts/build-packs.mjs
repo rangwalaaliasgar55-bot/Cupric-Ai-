@@ -574,6 +574,192 @@ try {
   console.warn('resources/ui-lab/registry.json not readable — skipping the components pack')
 }
 
+// uselayouts (MIT): preserve every upstream copy-ready React component as a
+// source resource. Cupric does not execute this third-party code in its
+// renderer; Apply rebuilds an editable native storyboard while the copied
+// source, dependencies and attribution remain available for developers.
+try {
+  const sourceRoot = path.join(root, 'resources', 'uselayouts')
+  const registry = JSON.parse(await readFile(path.join(sourceRoot, 'registry.json'), 'utf8'))
+  const browse = JSON.parse(await readFile(path.join(sourceRoot, 'browse-media.json'), 'utf8'))
+  const entries = Array.isArray(registry.items) ? registry.items : []
+  packs.push({
+    id: 'uselayouts',
+    name: 'uselayouts — premium micro-interactions',
+    description: `${entries.length} MIT-licensed React micro-interactions copied from uselayouts. Apply creates a native editable storyboard; source files and dependency notes stay bundled for reference.`,
+    version: VERSION,
+    source: 'https://github.com/iurvish/uselayouts',
+    license: 'MIT (Urvish Mali) — see resources/uselayouts/LICENSE',
+    items: entries.map((entry) => {
+      const media = browse[entry.name] ?? {}
+      return {
+        id: `uselayouts-${String(entry.name)}`,
+        kind: 'component',
+        name: String(entry.title || entry.name),
+        description: String(entry.description || 'Premium animated React micro-interaction.'),
+        data: {
+          provider: 'uselayouts',
+          source: 'https://github.com/iurvish/uselayouts',
+          upstream: `https://uselayouts.com/r/${encodeURIComponent(String(entry.name))}`,
+          license: 'MIT',
+          editable: true,
+          agentUsable: true,
+          sourceFiles: entry.files ?? [],
+          dependencies: entry.dependencies ?? [],
+          copiedPath: `resources/uselayouts/${(entry.files?.[0]?.path || '').replace(/^registry\//, '')}`,
+          ...(media.posterUrl ? { posterUrl: media.posterUrl } : {}),
+          ...(media.videoUrl ? { videoUrl: media.videoUrl } : {}),
+        },
+        tags: ['component', 'uselayouts', 'micro-interaction', ...(Array.isArray(entry.categories) ? entry.categories : [])],
+      }
+    }),
+  })
+} catch {
+  console.warn('resources/uselayouts/registry.json not readable — skipping the uselayouts pack')
+}
+
+// dashi-motion: the upstream repository has no declared license. Preserve its
+// main reference material with attribution, but expose only Cupric-authored,
+// reference-only skills to the autonomous agent; external AE/Rive/Cavalry
+// helpers are not executed by the desktop app.
+try {
+  const dashiRoot = path.join(root, 'resources', 'dashi-motion')
+  const dashi = JSON.parse(await readFile(path.join(dashiRoot, 'playbook.json'), 'utf8'))
+  packs.push({
+    id: 'dashi-motion',
+    name: 'dashi-motion native production skills',
+    description: `${dashi.rules.length} attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; Cupric applies the principles through its own deterministic renderer.`,
+    version: VERSION,
+    source: dashi.source,
+    license: 'No upstream license declared — reference-only attribution; see resources/dashi-motion/UPSTREAM-NOTICE.md',
+    items: dashi.rules.map((rule) => ({
+      id: `dashi-motion-${rule.id}`,
+      kind: 'skill',
+      name: rule.name,
+      description: rule.rule,
+      data: { provider: 'dashi-motion', source: dashi.source, commit: dashi.commit, instruction: rule.rule, tags: rule.tags, nativeRendererOnly: true, referencePath: 'resources/dashi-motion/SKILL.md' },
+      tags: ['dashi-motion', 'playbook', 'agent', ...(rule.tags || [])],
+    })),
+  })
+} catch (error) {
+  console.warn(`resources/dashi-motion not readable — skipping dashi skills: ${error.message}`)
+}
+
+// iphone-duo (MIT): preserve the upstream source and notices without Apple
+// assets, then register an editable native Duo action for the Studio resource
+// browser. The action maps to the deterministic Canvas fold renderer, not the
+// upstream Three.js webpage.
+try {
+  const duoRoot = path.join(root, 'resources', 'iphone-duo')
+  const duo = JSON.parse(await readFile(path.join(duoRoot, 'playbook.json'), 'utf8'))
+  const skillItems = duo.rules.map((rule) => ({
+    id: `iphone-duo-${rule.id}`,
+    kind: 'skill',
+    name: rule.name,
+    description: rule.rule,
+    data: { provider: 'iphone-duo', source: duo.source, commit: duo.commit, instruction: rule.rule, tags: rule.tags, nativeRendererOnly: true, referencePath: 'resources/iphone-duo/reference/main.js' },
+    tags: ['iphone-duo', 'playbook', 'agent', ...(rule.tags || [])],
+  }))
+  skillItems.push({
+    id: 'iphone-duo-studio-fold',
+    kind: 'component',
+    name: 'Duo foldable promotion stage',
+    description: 'Apply an editable two-panel foldable device to a selected image, video or recorded UI component. Browser flows, SaaS launches, product pages, social posts and custom media stay replaceable.',
+    data: {
+      provider: 'iphone-duo',
+      source: duo.source,
+      commit: duo.commit,
+      license: duo.license,
+      nativeAction: 'phoneDesign',
+      design: 'iphone-duo',
+      editable: true,
+      agentUsable: true,
+      sourceCopied: false,
+      referencePath: 'resources/iphone-duo/reference/main.js',
+      assetPolicy: 'Apple model and imagery are not bundled.',
+    },
+    tags: ['iphone-duo', 'foldable', '3d', 'phone', 'browser', 'saas', 'promotion', 'editable', 'agent'],
+  })
+  packs.push({
+    id: 'iphone-duo',
+    name: 'iPhone Duo-inspired foldable promotion skills',
+    description: `Attribution-preserving reference source plus ${skillItems.length - 1} promotion rules and one editable Cupric Studio foldable-device action. Apple reference assets are excluded.`,
+    version: VERSION,
+    source: duo.source,
+    license: duo.license,
+    items: skillItems,
+  })
+} catch (error) {
+  console.warn(`resources/iphone-duo not readable — skipping Duo skills: ${error.message}`)
+}
+
+// awesome-opus-5-5-videos (MIT): copy the original catalogue as attributed,
+// searchable resources. The repository links to third-party X/GitHub media but
+// does not redistribute those binaries, so this pack stores links, summaries,
+// exact published prompts (when present), and honest prompt-availability flags.
+// The separate playbook contains Cupric-authored production heuristics distilled
+// from recurring case patterns; it is guidance, not model training.
+try {
+  const opusRoot = path.join(root, 'resources', 'opus55')
+  const opus = JSON.parse(await readFile(path.join(opusRoot, 'data', 'cases.json'), 'utf8'))
+  const playbook = JSON.parse(await readFile(path.join(opusRoot, 'playbook.json'), 'utf8'))
+  const caseItems = opus.map((entry, index) => {
+    let caseFile = null
+    try {
+      caseFile = `resources/opus55/cases/${new URL(entry.sourceUrl).pathname.split('/').filter(Boolean).pop()}.md`
+    } catch {}
+    const prompt = String(entry.prompt || '')
+    const promptAvailable = prompt.length > 0 && !/(未公开|not published|not provided|未提供)/i.test(prompt)
+    return {
+      id: `opus55-case-${String(index + 1).padStart(3, '0')}`,
+      kind: 'source',
+      name: String(entry.title),
+      description: String(entry.summary || 'Opus 5.5 video case from the attributed catalogue.'),
+      data: {
+        provider: 'awesome-opus-5-5-videos',
+        sourceUrl: entry.sourceUrl,
+        sourceAuthor: entry.sourceAuthor,
+        sourcePublishedAt: entry.sourcePublishedAt,
+        category: entry.category,
+        prompt,
+        promptAvailable,
+        githubVideos: Array.isArray(entry.githubVideos) ? entry.githubVideos : [],
+        githubVideoComplete: Boolean(entry.githubVideoComplete),
+        catalogCase: caseFile,
+        mediaPolicy: 'Links only; videos, images, prompts, trademarks and other third-party material retain their owners rights.',
+        editableTranslation: 'Use the case as a reference for a native deterministic Cupric scene; do not claim to reproduce the original output.',
+      },
+      tags: ['opus55', 'case', String(entry.category || 'uncategorized'), String(entry.sourceAuthor || 'unknown')],
+    }
+  })
+  const playbookItems = playbook.rules.map((rule) => ({
+    id: `opus55-playbook-${rule.id}`,
+    kind: 'skill',
+    name: String(rule.name),
+    description: String(rule.rule),
+    data: {
+      provider: 'awesome-opus-5-5-videos',
+      instruction: rule.rule,
+      source: playbook.source,
+      license: playbook.license,
+      tags: rule.tags,
+      nativeRendererOnly: true,
+    },
+    tags: ['opus55', 'playbook', 'agent', ...(Array.isArray(rule.tags) ? rule.tags : [])],
+  }))
+  packs.push({
+    id: 'opus55',
+    name: 'Opus 5.5 video cases & production playbook',
+    description: `${caseItems.length} attributed case studies plus ${playbookItems.length} Cupric-native production rules. Linked media remains external; the autonomous agent uses the playbook as craft guidance for deterministic editable scenes.`,
+    version: VERSION,
+    source: 'https://github.com/chuspeeism/awesome-opus-5-5-videos',
+    license: 'MIT for the original catalogue and repository code; third-party media and quoted material retain their own rights.',
+    items: [...caseItems, ...playbookItems],
+  })
+} catch (error) {
+  console.warn(`resources/opus55 not readable — skipping Opus catalogue: ${error.message}`)
+}
+
 await mkdir(outDir, { recursive: true })
 
 const index = {

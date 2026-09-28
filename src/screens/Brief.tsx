@@ -9,6 +9,7 @@ import type { BriefMessage, SceneRundown } from '../types/project'
 import { askGemini } from '../lib/gemini'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, deriveAspect, nowIso } from '../lib/utils'
+import { getIpc } from '../lib/bridge'
 
 const SUGGESTIONS = ['12s SaaS launch bumper', '3s logo reveal', 'kinetic-type quote card']
 
@@ -34,6 +35,7 @@ export function Brief() {
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
   const [flash, setFlash] = useState<string | null>(null)
+  const [aiStatus, setAiStatus] = useState<{ mode?: string; pick?: { label?: string; reason?: string }; statusDots?: { gemini?: string; zen?: string; local?: string }; setupRequired?: boolean }>({})
   const scrollRef = useRef<HTMLDivElement>(null)
 
   const messages = project?.brief.messages ?? []
@@ -46,6 +48,30 @@ export function Brief() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
   }, [messages.length, busy])
 
+  useEffect(() => {
+    const ipc = getIpc()
+    if (!ipc) return
+    let active = true
+    void ipc.invoke('settings:get').then((settings) => { if (active) setAiStatus(settings || {}) }).catch(() => undefined)
+    const off = typeof ipc.on === 'function' ? ipc.on('ai:discovery', (result) => { if (active) setAiStatus((current) => ({ ...current, pick: result?.pick, setupRequired: result?.setupRequired, statusDots: result?.statusDots || current.statusDots })) }) : undefined
+    return () => { active = false; off?.() }
+  }, [])
+
+  useEffect(() => {
+    const ipc = getIpc()
+    if (!ipc || !project) return
+    const off = typeof ipc.on === 'function' ? ipc.on('ai:rundownPolished', (payload) => {
+      if (payload?.projectId && payload.projectId !== project.id) return
+      if (payload?.status === 'retrying') pushToast('info', payload.message || 'AI polish queued; retrying in the background.')
+      if (payload?.error) pushToast('info', payload.error)
+      if (payload?.rundown) {
+        patchRundown(project.id, payload.rundown)
+        pushToast('success', 'AI polish landed — your rundown was updated without blocking the timeline.')
+      }
+    }) : undefined
+    return () => off?.()
+  }, [project?.id])
+
   if (!project) return <NoProject />
 
   async function send(textArg?: string) {
@@ -56,7 +82,7 @@ export function Brief() {
     addBriefMessage(project.id, { role: 'user', text, at: nowIso() })
     setBusy(true)
     const askCount = messages.filter((m) => m.role === 'user').length
-    const res = await askGemini(text, askCount)
+    const res = await askGemini(text, askCount, project.id)
     addBriefMessage(project.id, { role: 'gemini', text: res.text, at: nowIso() })
     if (res.source === 'local' && res.fallbackReason) {
       pushToast('info', `Offline planner used — the live model was unavailable: ${res.fallbackReason}`)
@@ -96,7 +122,7 @@ export function Brief() {
       // askGeminiLocal() — the offline planner — directly, so the desktop
       // `gemini:ask` IPC was never reached even with a key configured. Chat
       // (send) used askGemini(), which is why only this button felt canned.
-      const res = await askGemini(text, messages.filter((m) => m.role === 'user').length)
+      const res = await askGemini(text, messages.filter((m) => m.role === 'user').length, project.id)
       rundown = res.rundownPatch as SceneRundown
       addBriefMessage(project.id, { role: 'user', text, at: nowIso() })
       addBriefMessage(project.id, { role: 'gemini', text: res.text, at: nowIso() })
@@ -131,10 +157,17 @@ export function Brief() {
       {/* Chat — left ~60% */}
       <section className="flex min-w-0 flex-1 flex-col">
         <div className="px-6 pt-5">
-          <h1 className="text-lg font-bold">Brief</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-lg font-bold">Brief</h1>
+            <div className="flex items-center gap-2 text-[10px] text-muted" aria-label="AI provider status">
+              {([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1"><span className={cx('h-2 w-2 rounded-full', aiStatus.statusDots?.[key] === 'ok' ? 'bg-accent' : aiStatus.statusDots?.[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label}</span>)}
+              {aiStatus.mode === 'auto' && <span className="rounded-full border border-line px-1.5 py-0.5">Auto · {aiStatus.pick?.label || 'discovering…'}</span>}
+            </div>
+          </div>
           <p className="text-sm text-muted">
-            Describe the video you want. Cupric AI drafts a rundown and can create a real video file from it.
+            Describe the video you want. Cupric AI drafts an instant offline rundown, then polishes it in the background when a model is available.
           </p>
+          {aiStatus.setupRequired && <p className="mt-2 text-xs text-muted">No live provider found — offline template is ready. Open AI settings for Zen, Ollama, or the template setup card.</p>}
         </div>
 
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">

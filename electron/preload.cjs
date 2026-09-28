@@ -5,11 +5,17 @@ const invokeChannels = new Set([
   'settings:set',
   'settings:hasKey',
   'settings:autoLaunch',
+  'ai:autoDiscover',
+  'ai:openZenAuth',
+  'ai:installOllama',
+  'ai:useTemplate',
+  'gemini:listModels',
   'state:save',
   'state:load',
   'state:clear',
   'state:recoveryInfo', 'state:listVersions', 'state:snapshotNow', 'state:restoreVersion',
   'diag:report',
+  'log:write',
   'voice:status', 'voice:tts', 'voice:transcribe', 'voice:transcribeMedia',
   'media:proxy', 'media:proxyDelete',
   'gemini:ask',
@@ -30,20 +36,42 @@ const invokeChannels = new Set([
   'studio:planEdits',
   'render:start',
   'render:cancel',
-  'render:reveal',
+  'render:pause',
+  'render:resume',
+  'render:reveal', 'render:preview',
   'render:copyToDownloads',
+  'studio:submitRecording', 'studio:recordingError', 'studio:progress',
+  'stock:search', 'stock:download', 'stock:keyStatus', 'stock:testConnection', 'stock:proxyHealth',
+  'review:list', 'review:add', 'review:resolve',
   'updater:check',
   'updater:install',
   'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput', 'automation:openArena',
 ])
 
-const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress'])
+const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'studio:backgroundExport', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress', 'ai:discovery', 'ai:rundownPolished'])
 
 function assertChannel(channel, allowed) {
   if (!allowed.has(channel)) throw new Error(`IPC channel is not exposed: ${channel}`)
 }
 
-const bridge = {
+/**
+ * The ONE bridge object. It is deep-frozen here and exposed exactly once per
+ * name below; contextBridge then defines `window.cupric` / `window.northframe`
+ * as non-writable, non-configurable properties. Nothing — preload or renderer —
+ * may mutate, extend, reassign or delete it (0.10.0 blanked the Studio by
+ * doing `window.cupric = {...window.cupric, studio}`). Renderer-owned globals
+ * use their own names, e.g. `window.__cupricStudio`. Enforced by
+ * `npm run check:bridge`.
+ */
+function deepFreeze(value) {
+  if (value && (typeof value === 'object' || typeof value === 'function') && !Object.isFrozen(value)) {
+    Object.freeze(value)
+    for (const key of Object.getOwnPropertyNames(value)) deepFreeze(value[key])
+  }
+  return value
+}
+
+const bridge = deepFreeze({
   isDesktop: true,
   platform: process.platform,
   versions: {
@@ -73,7 +101,6 @@ const bridge = {
   paths: {
     arenaPreviewUrl: (localPath) => ipcRenderer.invoke('arena:previewPath', localPath),
   },
-}
+})
 
-contextBridge.exposeInMainWorld('northframe', bridge)
-contextBridge.exposeInMainWorld('cupric', bridge)
+for (const name of ['cupric', 'northframe']) contextBridge.exposeInMainWorld(name, bridge)

@@ -20,7 +20,7 @@ export type ProjectVersion = {
   schemaVersion: number | null
 }
 
-export type RecoveryInfo = { previousSessionCrashed: boolean; recoveredFrom: string | null }
+export type RecoveryInfo = { previousSessionCrashed: boolean; recoveredFrom: string | null; /** projects.json was unreadable and no autosave was valid (0.10.1). */ unreadable?: boolean }
 
 export const STORE_KEY = 'northframe-v1'
 const WEB_RING_KEY = `${STORE_KEY}:history`

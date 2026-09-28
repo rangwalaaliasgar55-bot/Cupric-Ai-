@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "",
+  "buildCommand": "uv run --no-project --python 3.12 --with-requirements requirements-assets.txt python scripts/prepare-assets.py",
+  "outputDirectory": "."
+}

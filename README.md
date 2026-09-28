@@ -49,8 +49,10 @@ Outputs into `release/`:
 - `Cupric-AI-0.9.0-x64-Portable.exe` — portable executable.
 
 The packaged app loads the built `dist/` over `file://` and self-hosts fonts, so
-it can run offline after installation. Gemini requires either a saved key or a
-`GEMINI_API_KEY` environment variable.
+it can run offline after installation. On first AI use and when Settings opens,
+Cupric auto-discovers OpenCode Desktop, Zen (only with an existing key), Ollama,
+LM Studio, or the deterministic offline template; no key is required for local
+or template mode.
 
 ---
 
@@ -58,7 +60,7 @@ it can run offline after installation. Gemini requires either a saved key or a
 
 | Area | Desktop behavior |
 |---|---|
-| **Gemini / OpenCode** | API keys are stored in Electron `settings.json` or read from environment variables; the renderer only receives key presence. Brief and Ask AI use Gemini `gemini-3.8-flash` by default or OpenCode/OpenAI-compatible models, with local deterministic fallback when live AI is unavailable. |
+| **Gemini / OpenCode / Auto AI** | Settings and first use auto-discover OpenCode Desktop config/auth, keyed Zen Free, Ollama, LM Studio, and the offline template in that order. Gemini uses `gemini-2.5-flash` by default, validates pasted keys with a minimal call, refreshes live models, retries 429/503, and falls back without blocking the timeline. Secrets remain in Electron `settings.json` or environment variables; the renderer only receives key presence. |
 | **Arena handoff + import** | Cupric AI can open `arena.ai/code` in the user's browser and copy a full Arena build brief for paste/build. The brief includes hard constraints, source/asset plan, exact scene sequence, render spec, and `window.__cupricSourceManifest` requirements. ZIP/HTML winners are imported into project app data, extracted safely, checked for `window.__seek(t)`, loaded in a hidden BrowserWindow, and captured as a PNG thumbnail. |
 | **Arena preview** | Imported Arena HTML previews in a sandboxed iframe through an IPC-approved `file://` path under the project data folder. The browser preview imports `.html`/`.zip` with JSZip and validates `window.__seek(t)`. |
 | **Remotion preview** | Locked rundowns are rendered through `@remotion/player` so you can preview the generated composition before exporting or importing Arena results. |
@@ -67,14 +69,14 @@ it can run offline after installation. Gemini requires either a saved key or a
 | **Timeline render** | Desktop timeline clips render to MP4 under app data. Arena clips are captured frame-by-frame through `window.__seek(t)`; footage clips are trimmed, cropped/scaled, optional silence cuts are applied, and segments are concatenated in timeline order. Browser mode records a downloadable WebM draft via `canvas.captureStream()`/`MediaRecorder`. |
 | **Progress/cancel** | Render progress streams over IPC. Cancel kills active FFmpeg processes and closes hidden capture windows. |
 | **Persistence** | Zustand state mirrors to `%APPDATA%/cupric-ai/projects.json` in Electron; browser localStorage remains the web-preview fallback. |
-| **Desktop hardening** | Single-instance lock, crash logs under `logs/`, renderer-crash reload screen, optional launch-on-login, GitHub updater check, and optional code signing docs. |
+| **Desktop hardening** | Single-instance lock, electron-log files (main + renderer) under `userData/logs/`, per-screen error boundaries with a Copy error / Go to Library fallback card (never a white screen), load-time validation of `projects.json`, renderer-crash reload screen, optional launch-on-login, GitHub updater check, and optional code signing docs. |
 
 ## Screens
 
 | Screen | What it does |
 |---|---|
 | **Home** | Project grid with open / duplicate / delete and first Arena thumbnail as the project preview when available. |
-| **Review Room** | Twilio-compatible live review area with real camera/mic preview, invite link copying, mute/camera toggles, and optional Twilio Video token connection. |
+| **Review Room** | Twilio-compatible live review area with real camera/mic preview, invite link copying, mute/camera toggles, optional Twilio Video token connection, and desktop-persisted review notes. Notes are intentionally local to the desktop profile until an authenticated collaboration service is deployed. |
 | **Brief** | Chat with Gemini; the scene rundown fills in field by field; lock the rundown to unlock the Arena Desk. |
 | **Arena Desk** | Copy prompt → paste into Arena → vote manually → import the winning ZIP/HTML → preview/import thumbnail/render. |
 | **Footage Desk** | Drop or browse raw video, scan for silences, view real waveform peaks, exclude proposed cuts, pick caption style/crop, apply edit. |
@@ -120,8 +122,9 @@ Free / no-cost options exposed in the UI:
   endpoints. Ollama defaults to `http://localhost:11434/v1` with examples like
   `qwen2.5-coder:7b` or `llama3.2:3b`.
 - **Gemini** through a saved key or `GEMINI_API_KEY`; the default model is
-  `gemini-3.8-flash` and can be overridden with `GEMINI_MODEL` or the settings
-  field.
+  `gemini-2.5-flash` and can be overridden with `GEMINI_MODEL` or the settings
+  field. Pasted keys are tested immediately and the model list drops deprecated
+  or unavailable models.
 
 Keys are stored only in Electron `settings.json` or read from environment
 variables (`OPENCODE_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`,
@@ -180,6 +183,10 @@ updates** action in the Ask Gemini settings area.
 | `npm run typecheck` | TypeScript only. |
 | `npm run packs:build` | Regenerate `resources/packs/*.json` from the in-app registries. |
 | `npm run check:renderer` | Headless smoke test: every background, transition, animation and glass preset is rendered against a stub canvas and the voice grammar is asserted. |
+| `npm run check:bridge` | The desktop bridge stays read-only: ESLint ban on writes to `window.cupric`/`window.northframe` (self-tested), source grep, preload executed against a mocked contextBridge, a type-level fixture, and a scan of the built bundle. |
+| `npm run check:boot` | Builds, then boots the app (Electron, the packaged exe via `CUPRIC_BOOT_EXE`, or headless Chrome via `CUPRIC_BOOT_CHROME` with a read-only bridge) and visits every view with empty, corrupt and bad-shape `projects.json` — fails on any uncaught error, blank screen, or missing fallback card. |
+| `npm run check:schema` | `projects.json` load-time validation repairs bad saved data to defaults with warnings, never drops content. |
+| `npm run verify` | The release gate: `typecheck` → `check:renderer` → `check:bridge` → `check:boot`. |
 | `npm run desktop` | Vite + Electron together for desktop development. |
 | `npm run dist:win` | Build + package Windows NSIS and portable artifacts. |
 
@@ -197,7 +204,8 @@ src/
   lib/glass.ts       One glass material: presets + displacement map, shared by DOM and canvas
   lib/packs.ts       Resource packs fetched from this repo, cached in IndexedDB for offline
   lib/voice.ts       Voice-command grammar (pure parser) + Web Speech listener
-resources/packs/     Generated pack JSON served to the Library (glass, transitions, animations, backgrounds, effects, voice, components)
+resources/packs/     Generated pack JSON served to the Library (glass, transitions, animations, backgrounds, effects, voice, components, uselayouts)
+resources/uselayouts/ Copied MIT source registry for 64 uselayouts micro-interactions; the app applies native editable storyboards instead of executing third-party code
 scripts/             build-packs.mjs · check-renderer.mjs
   components/        Shared design-system components
   state/             Zustand store with desktop-aware persistence
@@ -225,10 +233,29 @@ component states, accessibility rules, and finish-pass standards.
 5. Pick a transition per clip — ten of them, including `glass-wipe`,
    `liquid-dissolve` and `lens-sweep`, all drawn by the same canvas code that
    the export uses.
-6. **Export WebM** records the composition in real time. On desktop,
-   **Export MP4** sends that recording to FFmpeg in the main process
-   (`studio:exportMp4`) and writes a real H.264 file — the browser build only
-   offers WebM rather than renaming one.
+6. **Export WebM** uses the browser compositor in web builds. In the desktop
+   app, WebM and MP4 exports are queued through the main-process background
+   farm (`studio:exportMp4`); an offscreen Studio renderer uses the same frame
+   compositor while the interactive window stays responsive, and the main
+   process owns the durable output plus FFmpeg conversion. The browser build
+   only offers WebM rather than renaming one.
+
+### Stock providers and the paid proxy
+
+Stock keys are read only by Electron's main process. Set `PIXABAY_API_KEY` or
+`PEXELS_API_KEY` for a personal-key fallback, or configure the non-secret
+`CUPRIC_STOCK_PROXY_URL` deployment URL in Settings. The paid proxy is tried
+first and personal-key fallback is used only when the proxy is unavailable; the
+key is never sent to the proxy, renderer, bundle, or logs.
+
+The owner proxy must expose `GET /health` with a successful status and provider
+routes compatible with `/<provider>` (`/pixabay`, `/pixabay/videos`,
+`/pexels`, and `/pexels/videos`). It owns the provider credentials and should
+forward safe query parameters plus rate-limit headers. Cupric displays observed
+provider quota headers when available, caches searches for 24 hours, backs off
+429 responses, and downloads selected media into project storage before use.
+Openverse results include creator, license, and source URL; Picsum is visibly
+placeholder-only and is not searchable stock.
 
 ### Voice commands
 
@@ -248,7 +275,13 @@ from your machine. **Download all** copies them into IndexedDB so the Library
 keeps working offline; a same-origin `/resources/packs/...` copy is the last
 fallback. Each item has one honest action — glass, backgrounds, transitions and
 animations add themselves to the Studio, effects and voice phrases copy, lab
-components open in the Lab.
+components open in the Lab. The bundled `uselayouts` pack contains all 64 MIT registry entries with copied source files, dependency notes, upstream links and attribution; Apply rebuilds each into a native editable storyboard because Cupric does not execute arbitrary third-party React code.
+
+The `opus55` pack contains the 300-case catalogue from [`awesome-opus-5-5-videos`](https://github.com/chuspeeism/awesome-opus-5-5-videos), with source authors, dates, exact published prompts when available, and external video links. It also contains 12 searchable production rules used by the autonomous planner. The upstream MIT notice is preserved under `resources/opus55/LICENSE`; linked media and quoted third-party material are not vendored. This catalogue informs Cupric's prompt/playbook layer — it does not retrain or fine-tune Claude/Opus.
+
+The `dashi-motion` pack preserves attributed, reference-only documentation for AE, Rive, and Cavalry workflows and distills its routing, native-editability, reference-breakdown, inspection, rendering, and evidence rules into Cupric guidance. The upstream repository declares no license, so Cupric does not treat it as permissively licensed or execute its external-app scripts automatically.
+
+The `iphone-duo` pack preserves the MIT reference source and notices without bundling Apple models, screenshots, wallpapers, or textures. Studio includes an original **Duo fold** Phone Studio design: select a media/UI clip, apply it from Library or Phone Studio, then edit fold choreography, hinge color, screen projection, depth, copy, browser/SaaS media, and effects. It is a deterministic Canvas 2.5D translation so preview and export share the same frame function; it is not an Apple product or endorsement.
 
 ### Hand-offs into the Studio
 

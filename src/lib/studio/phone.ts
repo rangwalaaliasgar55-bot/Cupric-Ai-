@@ -47,6 +47,7 @@ export const DEFAULT_PHONE: StudioPhoneStyle = { frameColor: '#1C1C24', island: 
 export function defaultApp(kind: StudioPhoneApp['kind']): StudioPhoneApp {
   if (kind === 'product') return { kind, title: 'Product name', subtitle: 'One line about why it matters', price: '₹0', cta: 'Buy now', badge: 'New', rating: null, accent: '#C8F542' }
   if (kind === 'lockscreen') return { kind, time: '9:41', date: 'Monday, 1 June', notifications: [{ app: 'Your app', title: 'Notification title', body: 'Write the message your customer sees.' }] }
+  if (kind === 'browser') return { kind, url: 'yourproduct.com', title: 'Your SaaS launch', subtitle: 'Show the workflow your audience should remember.', cta: 'Try it free', accent: '#4FB6E8' }
   return { kind: 'social', handle: '@yourbrand', caption: 'Write your caption here', likes: '', accent: '#E24B4A' }
 }
 
@@ -60,6 +61,7 @@ export const PHONE_DESIGNS: PhoneDesign[] = [
   { id: 'notification', label: 'Lock-screen notification', detail: 'Your photo as wallpaper; notifications slide down one by one.', style: { ...DEFAULT_PHONE, frameColor: '#F4F1EA', motion: 'rise', app: defaultApp('lockscreen') } },
   { id: 'social-post', label: 'Social post', detail: 'The clip as a feed post; the heart pops when it is liked.', style: { ...DEFAULT_PHONE, frameColor: '#E24B4A', motion: 'spin-reveal', app: defaultApp('social') } },
   { id: 'minimal', label: 'Clean mockup', detail: 'Just the phone and your media, gently swinging in.', style: { ...DEFAULT_PHONE, frameColor: '#1C1C24', motion: 'swing', glare: false } },
+  { id: 'iphone-duo', label: 'Duo fold', detail: 'Two editable screens open, fold around a hinge, and promote a product, browser or SaaS launch.', style: { ...DEFAULT_PHONE, formFactor: 'duo', duoFold: 'fold-out', duoScreen: 'wide', duoDepth: 0.72, duoHingeColor: '#9A9AA5', frameColor: '#F4F1EA', motion: 'float', app: null } },
 ]
 
 /* ——— geometry & motion ——— */
@@ -249,6 +251,173 @@ export function drawPhone(ctx: CanvasRenderingContext2D, style: StudioPhoneStyle
   ctx.restore()
 }
 
+
+/**
+ * iPhone Duo-inspired two-panel product treatment.
+ *
+ * The upstream reference uses a Three.js/USD model and Apple-only assets. The
+ * Studio version deliberately uses the same useful interaction idea — fixed
+ * rear-camera panel, cover panel rotating around a hinge, front-projected
+ * screen content, progressive edge darkening — as a pure Canvas projection.
+ * That keeps preview/export identical, editable, and free of Apple assets.
+ */
+export function duoFoldAt(motion: NonNullable<StudioPhoneStyle['duoFold']>, sec: number, dur: number): number {
+  const t = Math.max(0, sec)
+  const d = Math.max(0.1, dur)
+  const ease = (v: number) => easeInOut(clamp01(v))
+  if (motion === 'fold-in') return 180 * (1 - ease(t / Math.min(1.4, d * 0.34)))
+  if (motion === 'fold-out') return 180 * ease(t / Math.min(1.6, d * 0.42))
+  if (motion === 'peek') return 92 + Math.sin(Math.min(t, d) * 1.15) * 30
+  return 180
+}
+
+type DuoPanel = { body: Box & { r: number }; bezel: Box & { r: number }; screen: Box & { r: number } }
+
+function duoPanel(x: number, y: number, w: number, h: number): DuoPanel {
+  const border = w * 0.038
+  const bezel = w * 0.028
+  return {
+    body: { x, y, w, h, r: w * 0.14 },
+    bezel: { x: x + border, y: y + border, w: w - border * 2, h: h - border * 2, r: w * 0.12 },
+    screen: { x: x + border + bezel, y: y + border + bezel, w: w - (border + bezel) * 2, h: h - (border + bezel) * 2, r: w * 0.09 },
+  }
+}
+
+function drawDuoPanel(
+  ctx: CanvasRenderingContext2D,
+  style: StudioPhoneStyle,
+  panel: DuoPanel,
+  sec: number,
+  dur: number,
+  drawMedia: DrawMedia,
+  panelIndex: 0 | 1,
+  screenMode: NonNullable<StudioPhoneStyle['duoScreen']>,
+  fold: number,
+  wideSpan = panel.screen.w,
+) {
+  const { body, bezel, screen } = panel
+  const u = body.w
+  ctx.save()
+  ctx.shadowColor = 'rgba(0,0,0,0.46)'
+  ctx.shadowBlur = u * 0.12
+  ctx.shadowOffsetY = u * 0.05
+  rr(ctx, body.x, body.y, body.w, body.h, body.r)
+  ctx.fillStyle = style.frameColor
+  ctx.fill()
+  ctx.restore()
+
+  const rim = ctx.createLinearGradient(body.x, body.y, body.x + body.w, body.y + body.h)
+  rim.addColorStop(0, 'rgba(255,255,255,0.34)')
+  rim.addColorStop(0.5, 'rgba(255,255,255,0)')
+  rim.addColorStop(1, 'rgba(0,0,0,0.3)')
+  ctx.lineWidth = Math.max(1, u * 0.007)
+  ctx.strokeStyle = rim
+  rr(ctx, body.x, body.y, body.w, body.h, body.r)
+  ctx.stroke()
+
+  ctx.fillStyle = '#0B0B10'
+  rr(ctx, bezel.x, bezel.y, bezel.w, bezel.h, bezel.r)
+  ctx.fill()
+  ctx.save()
+  rr(ctx, screen.x, screen.y, screen.w, screen.h, screen.r)
+  ctx.clip()
+  ctx.fillStyle = '#0B0B10'
+  ctx.fillRect(screen.x, screen.y, screen.w, screen.h)
+  const showMedia = screenMode === 'outer-right' ? panelIndex === 1 : true
+  if (showMedia) {
+    const scroll = style.scroll ? scrollAt(sec, dur) : null
+    if (style.app) drawApp(ctx, style.app, screen, sec, dur, drawMedia)
+    else if (screenMode === 'wide') {
+      // Treat the two screens as one content plane, then let each clipped
+      // panel reveal its half. Mirror mode intentionally paints a full copy on
+      // each panel; this distinction is useful for product art versus UI.
+      const sourceX = screen.x - (panelIndex === 0 ? 0 : wideSpan)
+      drawMedia(sourceX, screen.y, wideSpan * 2, screen.h, scroll)
+    } else drawMedia(screen.x, screen.y, screen.w, screen.h, scroll)
+  } else {
+    ctx.fillStyle = 'rgba(11,11,16,0.92)'
+    ctx.fillRect(screen.x, screen.y, screen.w, screen.h)
+  }
+  drawStatusBar(ctx, screen, '#F4F1EA')
+  // The same edge-aware effect as the reference: folding reduces visible
+  // coverage and darkens the receding panel, never the fixed panel.
+  if (panelIndex === 0 && fold < 180) {
+    const effect = 1 - Math.sin((fold * Math.PI) / 360)
+    const shadeLayer = ctx.createLinearGradient(screen.x, screen.y, screen.x + screen.w, screen.y)
+    shadeLayer.addColorStop(0, `rgba(0,0,0,${Math.min(0.86, effect * 0.86)})`)
+    shadeLayer.addColorStop(1, 'rgba(0,0,0,0)')
+    ctx.fillStyle = shadeLayer
+    ctx.fillRect(screen.x, screen.y, screen.w, screen.h)
+  }
+  if (style.glare) {
+    const gl = ctx.createLinearGradient(screen.x, screen.y, screen.x + screen.w, screen.y + screen.h * 0.6)
+    gl.addColorStop(0, 'rgba(255,255,255,0.18)')
+    gl.addColorStop(0.38, 'rgba(255,255,255,0.035)')
+    gl.addColorStop(0.39, 'rgba(255,255,255,0)')
+    ctx.fillStyle = gl
+    ctx.fillRect(screen.x, screen.y, screen.w, screen.h)
+  }
+  ctx.restore()
+
+  // Dynamic-island camera, kept as an editable frame option rather than an
+  // Apple asset. Use a slightly different island on the cover for depth.
+  if (style.island !== 'none') {
+    ctx.fillStyle = '#000'
+    if (style.island === 'island') {
+      rr(ctx, screen.x + screen.w * 0.34, screen.y + screen.w * 0.035, screen.w * 0.32, screen.w * 0.095, screen.w * 0.0475)
+    } else {
+      rr(ctx, screen.x + screen.w * 0.28, screen.y - screen.w * 0.04, screen.w * 0.44, screen.w * 0.11, screen.w * 0.05)
+    }
+    ctx.fill()
+  }
+
+  if (style.buttons && panelIndex === 1) {
+    ctx.fillStyle = shade(style.frameColor, 0.8)
+    const bw = u * 0.018
+    rr(ctx, body.x + body.w - bw * 0.3, body.y + body.h * 0.28, bw, body.h * 0.13, bw / 2)
+    ctx.fill()
+  }
+}
+
+/** Draw a deterministic, editable two-screen foldable phone. */
+export function drawDuoPhone(ctx: CanvasRenderingContext2D, style: StudioPhoneStyle, box: Box, sec: number, dur: number, drawMedia: DrawMedia) {
+  const fold = duoFoldAt(style.duoFold ?? 'open', sec, dur)
+  const depth = Math.max(0, Math.min(1, style.duoDepth ?? 0.62))
+  const panelH = Math.min(box.h * 0.88, box.w * 0.82)
+  const panelW = Math.min(box.w * 0.29, (panelH * 9) / 19.5)
+  const hingeX = box.x + box.w * 0.52
+  const y = box.y + (box.h - panelH) / 2
+  const visible = Math.max(0.035, Math.sin((fold * Math.PI) / 360))
+  const coverW = panelW * visible
+  const leftShear = (1 - visible) * depth * panelW * 0.18
+  const leftX = hingeX - coverW - leftShear
+  const right = duoPanel(hingeX, y, panelW, panelH)
+  const left = duoPanel(leftX, y, Math.max(2, coverW), panelH)
+
+  // Ambient ground shadow makes the fold read as depth without an unseeded
+  // lighting clock or a non-deterministic WebGL capture.
+  ctx.save()
+  ctx.fillStyle = `rgba(0,0,0,${0.16 + (1 - visible) * 0.1})`
+  ctx.filter = `blur(${Math.max(2, panelW * 0.08)}px)`
+  ctx.beginPath()
+  ctx.ellipse(hingeX - panelW * 0.15, y + panelH * 1.01, panelW * (0.88 + visible * 0.6), panelW * 0.13, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+
+  // Rear-camera half stays fixed; the cover half is projected toward the
+  // hinge, mirroring the useful motion from the Three.js reference.
+  drawDuoPanel(ctx, style, left, sec, dur, drawMedia, 0, style.duoScreen ?? 'wide', fold, right.screen.w)
+  drawDuoPanel(ctx, style, right, sec, dur, drawMedia, 1, style.duoScreen ?? 'wide', fold, right.screen.w)
+  ctx.save()
+  const hinge = style.duoHingeColor ?? style.frameColor
+  ctx.fillStyle = hinge
+  ctx.shadowColor = 'rgba(0,0,0,0.35)'
+  ctx.shadowBlur = panelW * 0.06
+  rr(ctx, hingeX - panelW * 0.018, y + panelH * 0.035, panelW * 0.036, panelH * 0.93, panelW * 0.018)
+  ctx.fill()
+  ctx.restore()
+}
+
 function drawStatusBar(ctx: CanvasRenderingContext2D, s: Box, color: string) {
   const fs = s.w * 0.045
   ctx.save()
@@ -403,6 +572,47 @@ function drawApp(ctx: CanvasRenderingContext2D, app: StudioPhoneApp, s: Box, sec
       y += h + u * 0.03
     })
     ctx.globalAlpha = 1
+    return
+  }
+  if (app.kind === 'browser') {
+    ctx.fillStyle = '#F4F1EA'
+    ctx.fillRect(s.x, s.y, s.w, s.h)
+    const barH = u * 0.16
+    ctx.fillStyle = '#1C1C24'
+    ctx.fillRect(s.x, s.y, s.w, barH)
+    ctx.fillStyle = '#9A9AA5'
+    for (let i = 0; i < 3; i += 1) { ctx.beginPath(); ctx.arc(s.x + pad * 0.7 + i * u * 0.045, s.y + barH * 0.5, u * 0.014, 0, Math.PI * 2); ctx.fill() }
+    ctx.fillStyle = '#F4F1EA'
+    rr(ctx, s.x + u * 0.22, s.y + barH * 0.25, s.w - u * 0.3, barH * 0.5, barH * 0.25); ctx.fill()
+    ctx.fillStyle = '#9A9AA5'
+    ctx.font = `500 ${u * 0.034}px ${FONT}`
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'
+    ctx.fillText(fitText(ctx, app.url, s.w - u * 0.42), s.x + u * 0.26, s.y + barH * 0.5)
+    const [a, d] = enter(sec, 0.35)
+    ctx.globalAlpha = a
+    ctx.fillStyle = '#15151B'
+    ctx.textBaseline = 'top'
+    ctx.font = `800 ${u * 0.09}px ${FONT}`
+    for (const line of wrap(ctx, app.title, s.w - pad * 2, 2)) { ctx.fillText(line, s.x + pad, s.y + barH + u * 0.1 + d * u * 0.08); }
+    ctx.fillStyle = '#6D6C67'
+    ctx.font = `500 ${u * 0.044}px ${FONT}`
+    const subtitleY = s.y + barH + u * 0.3 + d * u * 0.08
+    for (const line of wrap(ctx, app.subtitle, s.w - pad * 2, 3)) { ctx.fillText(line, s.x + pad, subtitleY); }
+    ctx.globalAlpha = 1
+    // A staged SaaS result card and CTA make browser promotion useful even
+    // before the user supplies a screen capture; all copy remains editable.
+    const cardY = s.y + s.h * 0.52
+    ctx.fillStyle = '#F4F1EA'
+    ctx.shadowColor = 'rgba(0,0,0,0.12)'; ctx.shadowBlur = u * 0.05
+    rr(ctx, s.x + pad, cardY, s.w - pad * 2, s.h * 0.2, u * 0.05); ctx.fill(); ctx.shadowBlur = 0
+    ctx.fillStyle = app.accent
+    const bars = [0.45, 0.68, 0.54, 0.82]
+    bars.forEach((value, i) => { const e = easeOutCubic((sec - 0.8 - i * 0.1) / 0.45); ctx.globalAlpha = clamp01(e); rr(ctx, s.x + pad * 1.5 + i * (s.w - pad * 3) / 4, cardY + u * 0.13 - u * 0.08 * value * e, u * 0.045, u * 0.08 * value * e, u * 0.02); ctx.fill() })
+    ctx.globalAlpha = 1
+    const bh = u * 0.12
+    const by = s.y + s.h - bh - u * 0.1
+    const pop = easeOutBack((sec - 1.15) / 0.4)
+    if (pop > 0) { ctx.save(); ctx.globalAlpha = clamp01(pop); ctx.fillStyle = app.accent; rr(ctx, s.x + pad, by, s.w - pad * 2, bh, bh / 2); ctx.fillStyle = '#0B0B10'; ctx.font = `800 ${u * 0.045}px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(app.cta, s.x + s.w / 2, by + bh * 0.56); ctx.restore() }
     return
   }
   // social

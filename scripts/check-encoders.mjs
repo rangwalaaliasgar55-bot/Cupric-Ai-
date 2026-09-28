@@ -89,6 +89,21 @@ const main = readFileSync(new URL('../electron/main.cjs', import.meta.url), 'utf
 assert.ok(!/'-c:v',\s*'libx264',\s*'-preset',\s*presetForQuality/.test(main), 'render segments still hard-code libx264')
 assert.ok((main.match(/runEncode\(/g) || []).length >= 4, 'encode sites go through runEncode')
 
+// Background export farm contract: jobs queue in the main process, expose
+// pause/resume, persist under renders/<jobId>, and keep the required fallback
+// order before software encoding. These assertions intentionally avoid starting
+// Electron or FFmpeg in CI.
+assert.deepEqual(enc.candidatesFor('win32').slice(0, 2), ['h264_nvenc', 'h264_qsv'], 'NVENC precedes QSV')
+assert.ok(main.includes('const renderQueue = []'), 'main-process render queue exists')
+assert.ok(main.includes("status: 'queued'"), 'queued status exists')
+assert.ok(main.includes("sendRenderQueueStatus(state, 'working'"), 'working status exists')
+assert.ok(main.includes("sendRenderQueueStatus(state, 'paused'"), 'paused status exists')
+assert.ok(main.includes("ipcMain.handle('render:pause'"), 'pause IPC exists')
+assert.ok(main.includes("ipcMain.handle('render:resume'"), 'resume IPC exists')
+assert.ok(main.includes("userDataPath('renders', id)"), 'render outputs persist by job id')
+assert.deepEqual(enc.videoArgs('h264_nvenc', 'final', 'av1').slice(0, 2), ['-c:v', 'av1_nvenc'], 'AV1 hardware flag is ready')
+assert.deepEqual(enc.videoArgs('libx264', 'final', 'av1').slice(0, 2), ['-c:v', 'libaom-av1'], 'AV1 software flag is ready')
+
 // Real FFmpeg, when present.
 const ffmpeg = process.env.CUPRIC_FFMPEG_PATH || (() => { try { return require('ffmpeg-static') } catch { return null } })()
 if (ffmpeg && existsSync(ffmpeg)) {

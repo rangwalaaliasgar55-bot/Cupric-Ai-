@@ -1,6 +1,6 @@
 /**
  * Studio event bus — subscribe to editor changes for dynamic interaction
- * (plugins, automation, the scripting API on window.cupric.studio).
+ * (plugins, automation, the scripting API on window.__cupricStudio).
  *
  * Events are derived by diffing successive docs, so every path that edits
  * the project (UI, agent, undo, voice) emits them without extra wiring.

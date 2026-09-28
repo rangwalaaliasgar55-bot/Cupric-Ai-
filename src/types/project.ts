@@ -54,6 +54,16 @@ export type AutomationJob = {
     render: { aspect: '16:9' | '9:16' | '1:1'; fps: 30 | 60; deterministic: true; noRemoteAssets: true }
   }
   footageMeta?: unknown
+  /** Mechanical post-render QA; this is never a fabricated visual-quality claim. */
+  renderEvaluation?: {
+    valid: boolean
+    retryable?: boolean
+    score: number
+    checks: { id: string; ok: boolean; detail: string; fatal?: boolean }[]
+    durationSec?: number
+    size?: [number, number] | null
+    hasAudio?: boolean
+  } | null
   arenaOpenedAt?: string | null
 }
 
@@ -119,7 +129,7 @@ export type RenderJob = {
   aspect: '16:9' | '9:16' | '1:1'
   fps: 30 | 60
   quality: 'draft' | 'final'
-  status: 'queued' | 'rendering' | 'done' | 'error'
+  status: 'queued' | 'working' | 'paused' | 'rendering' | 'done' | 'error'
   progressPct: number
   outputName: string | null
   outputPath?: string | null
@@ -238,6 +248,10 @@ export type StudioPhoneApp =
   | { kind: 'product'; title: string; subtitle: string; price: string; cta: string; badge: string; rating: number | null; accent: string }
   | { kind: 'lockscreen'; time: string; date: string; notifications: Array<{ app: string; title: string; body: string }> }
   | { kind: 'social'; handle: string; caption: string; likes: string; accent: string }
+  | { kind: 'browser'; url: string; title: string; subtitle: string; cta: string; accent: string }
+export type StudioPhoneFormFactor = 'single' | 'duo'
+export type StudioDuoFoldMotion = 'open' | 'fold-in' | 'fold-out' | 'peek'
+export type StudioDuoScreenMode = 'wide' | 'mirror' | 'outer-right'
 export type StudioPhoneStyle = {
   frameColor: string
   island: 'island' | 'notch' | 'none'
@@ -248,6 +262,16 @@ export type StudioPhoneStyle = {
   scroll: boolean
   /** Animated app UI drawn on the screen over the clip's media. */
   app: StudioPhoneApp | null
+  /** Optional foldable form factor; absent means the original single phone. */
+  formFactor?: StudioPhoneFormFactor
+  /** Deterministic fold choreography for the two-panel iPhone Duo-style mockup. */
+  duoFold?: StudioDuoFoldMotion
+  /** How source media/copy is projected onto the two panels. */
+  duoScreen?: StudioDuoScreenMode
+  /** 0–1 perspective/depth exaggeration, kept editable and bounded by the UI. */
+  duoDepth?: number
+  /** Accent used for the hinge and fold highlight; defaults to frameColor. */
+  duoHingeColor?: string
 }
 
 /** 2.7 — a named point on the timeline. */
@@ -449,6 +473,12 @@ export type StudioBackgroundClip = StudioClipCommon & {
   backgroundId: string
 }
 
+/** A full-frame, non-destructive grade applied to clips below this timeline layer. */
+export type StudioAdjustmentClip = StudioClipCommon & {
+  kind: 'adjustment'
+  grade: StudioGradeNode[]
+}
+
 /**
  * A UI component (src/lab/components) living on the timeline. The Studio
  * records its real React animation into `frames`; these settings say how, so
@@ -564,6 +594,7 @@ export type StudioClip =
   | StudioAudioClip
   | StudioTextClip
   | StudioBackgroundClip
+  | StudioAdjustmentClip
   | StudioOverlayClip
   | StudioGlassClip
   | StudioStickerClip

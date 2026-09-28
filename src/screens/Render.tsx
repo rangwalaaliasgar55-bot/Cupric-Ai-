@@ -9,6 +9,7 @@ import { ProgressBar } from '../components/ProgressBar'
 import { Segmented } from '../components/Segmented'
 import type { RenderJob } from '../types/project'
 import { getIpc } from '../lib/bridge'
+import { pauseRender, resumeRender } from '../lib/render'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, relTime } from '../lib/utils'
 
@@ -29,6 +30,7 @@ export function Render() {
   const startRender = useProjectStore((s) => s.startRender)
   const retryRender = useProjectStore((s) => s.retryRender)
   const cancelRender = useProjectStore((s) => s.cancelRender)
+  const updateRenderJob = useProjectStore((s) => s.updateRenderJob)
   const pushToast = useProjectStore((s) => s.pushToast)
 
   const [aspect, setAspect] = useState<RenderJob['aspect']>('9:16')
@@ -185,6 +187,14 @@ export function Render() {
                 job={job}
                 onRetry={() => retryRender(project.id, job.id)}
                 onCancel={() => cancelRender(project.id, job.id)}
+                onPause={async () => {
+                  const paused = await pauseRender(job.id)
+                  if (paused) updateRenderJob(project.id, job.id, { status: 'paused' })
+                }}
+                onResume={async () => {
+                  const resumed = await resumeRender(job.id)
+                  if (resumed) updateRenderJob(project.id, job.id, { status: 'rendering' })
+                }}
                 onDownload={async () => {
                   if (job.outputPath?.startsWith('blob:') || job.outputPath?.startsWith('data:')) {
                     const a = document.createElement('a')
@@ -220,17 +230,21 @@ function JobRow({
   job,
   onRetry,
   onCancel,
+  onPause,
+  onResume,
   onDownload,
   onReveal,
 }: {
   job: RenderJob
   onRetry: () => void
   onCancel: () => void
+  onPause: () => void
+  onResume: () => void
   onDownload: () => void
   onReveal: () => void
 }) {
   const tone: 'accent' | 'info' | 'danger' | 'neutral' =
-    job.status === 'done' ? 'accent' : job.status === 'error' ? 'danger' : job.status === 'rendering' ? 'info' : 'neutral'
+    job.status === 'done' ? 'accent' : job.status === 'error' ? 'danger' : job.status === 'rendering' || job.status === 'working' ? 'info' : 'neutral'
   return (
     <Card className="space-y-3 p-4">
       <div className="flex items-start justify-between gap-3">
@@ -243,12 +257,17 @@ function JobRow({
         <Badge tone={tone}>{job.status}</Badge>
       </div>
 
-      {(job.status === 'rendering' || job.status === 'queued') && (
+      {(job.status === 'rendering' || job.status === 'working' || job.status === 'queued' || job.status === 'paused') && (
         <div className="flex items-center gap-3">
           <ProgressBar pct={job.progressPct} />
           <span className="w-10 shrink-0 text-right font-mono text-xs tabular-nums text-muted">
             {Math.round(job.progressPct)}%
           </span>
+          {job.status === 'paused' ? (
+            <Button size="sm" variant="outline" onClick={onResume}>Resume</Button>
+          ) : (
+            <Button size="sm" variant="ghost" onClick={onPause}>Pause</Button>
+          )}
           <Button size="sm" variant="ghost" onClick={onCancel}>
             <X size={13} />
             Cancel

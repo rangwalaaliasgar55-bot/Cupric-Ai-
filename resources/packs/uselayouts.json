@@ -1,0 +1,2186 @@
+{
+  "id": "uselayouts",
+  "name": "uselayouts — premium micro-interactions",
+  "description": "64 MIT-licensed React micro-interactions copied from uselayouts. Apply creates a native editable storyboard; source files and dependency notes stay bundled for reference.",
+  "version": "0.11.0",
+  "source": "https://github.com/iurvish/uselayouts",
+  "license": "MIT (Urvish Mali) — see resources/uselayouts/LICENSE",
+  "items": [
+    {
+      "id": "uselayouts-3d-book",
+      "kind": "component",
+      "name": "3D Book",
+      "description": "An interactive 3D book component with page flip animations.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/3d-book",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/3d-book.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/3d-book.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/3d-book/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/3d-book/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-accessible-action",
+      "kind": "component",
+      "name": "Accessible Action",
+      "description": "Interactive draggable card stack with 3D tilt, swipe-to-back gestures, click interactions, random rotation, and smooth spring animations.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/accessible-action",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/accessible-action.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/accessible-action.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/accessible-action/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/accessible-action/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-accordionos",
+      "kind": "component",
+      "name": "AccordionOS",
+      "description": "Interactive accordion showcase with animated content, image transitions, hover effects, keyboard navigation, autoplay, and responsive design.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/accordionos",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/accordionos.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/accordionos.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/accordionos/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/accordionos/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-analog-stick",
+      "kind": "component",
+      "name": "Analog Stick",
+      "description": "A metallic stick that tilts into the press. Hover a quadrant and the cap leans, the shadow shifts, and the matching arrow goes amber.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/analog-stick",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/analog-stick.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/analog-stick.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/analog-stick/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/analog-stick/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-animated-collection",
+      "kind": "component",
+      "name": "Animated Collection",
+      "description": "A collection of items with smooth layout transitions and animations.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/animated-collection",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/animated-collection.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/animated-collection.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/animated-collection/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/animated-collection/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-bento-card",
+      "kind": "component",
+      "name": "Bento Card",
+      "description": "An interactive bento card with animated tabs and workspace preview.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/bento-card",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/bento-card.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/bento-card.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/bento-card/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/bento-card/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-bottom-menu",
+      "kind": "component",
+      "name": "Bottom Menu",
+      "description": "A floating bottom navigation menu with smooth interactions.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/bottom-menu",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/bottom-menu.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "react-use-measure",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/bottom-menu.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/bottom-menu/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/bottom-menu/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-bucket",
+      "kind": "component",
+      "name": "Bucket",
+      "description": "An interactive card component that simulates a bucket where chips are tossed and replaced with smooth physics-inspired animations.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/bucket",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/bucket.tsx",
+            "type": "registry:component"
+          },
+          {
+            "path": "hooks/use-mobile.ts",
+            "type": "registry:hook"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/bucket.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/bucket/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/bucket/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-card-folder",
+      "kind": "component",
+      "name": "Card Folder",
+      "description": "This component creates an animated folder-style card with a background image, floating 3D object, hover effects, and customizable colors and text. You can easily change the images, colors, content, and animation settings from the card props.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/card-folder",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/card-folder.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/card-folder.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/card-folder/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/card-folder/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-client-card",
+      "kind": "component",
+      "name": "Client Card",
+      "description": "A client CRM card with payment and deadline rings, plus a morphing avatar stack.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/client-card",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/client-card.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "lucide-react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/client-card.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/client-card/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/client-card/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-confidential-folder",
+      "kind": "component",
+      "name": "Confidential Folder",
+      "description": "A charcoal sleeve that pulls a letter out, flips it, and lands it in front of you.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/confidential-folder",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/confidential-folder.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/confidential-folder.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/confidential-folder/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/confidential-folder/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-corner-video",
+      "kind": "component",
+      "name": "Corner Video",
+      "description": "A compact corner video player with smooth open/close morphing, autoplay, mute, enlarge, hover controls, and video scrubbing.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/corner-video",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/corner-video.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/corner-video.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/corner-video/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/corner-video/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-coverflow-drag",
+      "kind": "component",
+      "name": "Coverflow Drag",
+      "description": "A drag coverflow of portraits that scale, dim, and snap as you swipe.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/coverflow-drag",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/coverflow-drag.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/coverflow-drag.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/coverflow-drag/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/coverflow-drag/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-create-menu",
+      "kind": "component",
+      "name": "Create Menu",
+      "description": "A Start Creating pill that springs open into a list of create actions.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/create-menu",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/create-menu.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/react",
+          "@hugeicons/core-free-icons"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/create-menu.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/create-menu/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/create-menu/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-curve-drawer",
+      "kind": "component",
+      "name": "Curve Drawer",
+      "description": "Side drawers whose inner edge starts as a bulge and morphs into a straight line as the panel settles.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/curve-drawer",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/curve-drawer.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "vaul",
+          "lucide-react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/curve-drawer.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/curve-drawer/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/curve-drawer/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-day-picker",
+      "kind": "component",
+      "name": "Day Picker",
+      "description": "A custom day picker component with smooth animations.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/day-picker",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/day-picker.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/day-picker.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/day-picker/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/day-picker/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-delete-button",
+      "kind": "component",
+      "name": "Delete Button",
+      "description": "A confirmation button with smooth icon transitions.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/delete-button",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/delete-button.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "dialkit",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/delete-button.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/delete-button/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/delete-button/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-discover-button",
+      "kind": "component",
+      "name": "Discover Button",
+      "description": "An interactive button with expanding discovery state.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/discover-button",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/discover-button.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/discover-button.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/discover-button/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/discover-button/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-discrete-tabs",
+      "kind": "component",
+      "name": "Discrete Tabs",
+      "description": "A tab component with discrete sliding animations.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/discrete-tabs",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/discrete-tabs.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/discrete-tabs.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/discrete-tabs/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/discrete-tabs/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-drawer-buttons",
+      "kind": "component",
+      "name": "Drawer Buttons",
+      "description": "Two buttons that open side drawers with a 3D fold. Payment comes from the right, cart from the left, and the fields stagger in.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/drawer-buttons",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/drawer-buttons.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "vaul",
+          "lucide-react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/drawer-buttons.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/drawer-buttons/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/drawer-buttons/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-dynamic-grid-gallery",
+      "kind": "component",
+      "name": "Dynamic Grid Gallery",
+      "description": "A 3×2 photo grid that grows the hovered row and column so one still takes the stage.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/dynamic-grid-gallery",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/dynamic-grid-gallery.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [],
+        "copiedPath": "resources/uselayouts/default/example/dynamic-grid-gallery.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/dynamic-grid-gallery/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/dynamic-grid-gallery/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-dynamic-toolbar",
+      "kind": "component",
+      "name": "Dynamic Toolbar",
+      "description": "A toolbar that adapts its size and layout based on content.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/dynamic-toolbar",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/dynamic-toolbar.tsx",
+            "type": "registry:component"
+          },
+          {
+            "path": "hooks/use-measure.tsx",
+            "type": "registry:hook"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/dynamic-toolbar.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/dynamic-toolbar/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/dynamic-toolbar/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-editorial-deck",
+      "kind": "component",
+      "name": "Editorial Deck",
+      "description": "A stacked editorial story deck. Drag the front card and it springs back into the pile.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/editorial-deck",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/editorial-deck.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/editorial-deck.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/editorial-deck/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/editorial-deck/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-empty-testimonial",
+      "kind": "component",
+      "name": "Empty Testimonial",
+      "description": "An interactive empty state for testimonials with a playful folder animation.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/empty-testimonial",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/empty-testimonial.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/empty-testimonial.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/empty-testimonial/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/empty-testimonial/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-expandable-gallery",
+      "kind": "component",
+      "name": "Expandable Gallery",
+      "description": "A photo gallery with smooth item expansion.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/expandable-gallery",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/expandable-gallery.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/expandable-gallery.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/expandable-gallery/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/expandable-gallery/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-feature-carousel",
+      "kind": "component",
+      "name": "Feature Carousel",
+      "description": "A smooth carousel for showcasing product features.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/feature-carousel",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/feature-carousel.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/feature-carousel.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/feature-carousel/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/feature-carousel/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-filter-interaction",
+      "kind": "component",
+      "name": "Filter Interaction",
+      "description": "Interactive list items with hover and focus effects.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/filter-interaction",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/filter-interaction.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/filter-interaction.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/filter-interaction/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/filter-interaction/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-fluid-expanding-grid",
+      "kind": "component",
+      "name": "Fluid Expanding Grid",
+      "description": "A responsive gallery grid that fluidly shifts and expands items using motion layout.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/fluid-expanding-grid",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/fluid-expanding-grid.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/fluid-expanding-grid.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/fluid-expanding-grid/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/fluid-expanding-grid/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-focus-testimonials",
+      "kind": "component",
+      "name": "Focus Testimonials",
+      "description": "Interactive testimonial section with hover-based focus effects, animated author tooltips, and expandable testimonials.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/focus-testimonials",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/focus-testimonials.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/focus-testimonials.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/focus-testimonials/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/focus-testimonials/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-folder-interaction",
+      "kind": "component",
+      "name": "Folder Interaction",
+      "description": "A folder management system with drag-and-drop-like feel.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/folder-interaction",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/folder-interaction.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/folder-interaction.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/folder-interaction/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/folder-interaction/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-get-in-touch",
+      "kind": "component",
+      "name": "Get In Touch",
+      "description": "A glossy contact pill. Hover and the label lifts away so a portrait and YOU merge, then Let’s Talk! writes in.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/get-in-touch",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/get-in-touch.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/get-in-touch.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/get-in-touch/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/get-in-touch/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-holographic-referral-card",
+      "kind": "component",
+      "name": "Holographic Referral Card",
+      "description": "A dark invite card that tilts in 3D with the pointer. A holographic glow follows. Touch stays still. Tab for a quiet glow.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/holographic-referral-card",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/holographic-referral-card.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/holographic-referral-card.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/holographic-referral-card/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/holographic-referral-card/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-gooey-navbar",
+      "kind": "component",
+      "name": "Gooey Navbar",
+      "description": "A pill nav that melts into its neighbor when you hover — liquid bridges, active dot.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/gooey-navbar",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/gooey-navbar.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [],
+        "copiedPath": "resources/uselayouts/default/example/gooey-navbar.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/gooey-navbar/poster-a23f8deef0.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/gooey-navbar/video-32facfe716.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-infinite-grid",
+      "kind": "component",
+      "name": "Infinite Canvas",
+      "description": "A free-panning product canvas that tiles forever — drag, scroll, and skim an endless grid of images and captions.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/infinite-grid",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/infinite-grid.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/infinite-grid.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/infinite-grid/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/infinite-grid/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-inline-edit",
+      "kind": "component",
+      "name": "Inline Edit",
+      "description": "An input that switches between read and edit modes.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/inline-edit",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/inline-edit.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/inline-edit.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/inline-edit/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/inline-edit/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-liquid-index",
+      "kind": "component",
+      "name": "Liquid Index",
+      "description": "A feature list whose hover badge is a WebGL liquid gradient that tracks the row.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/liquid-index",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/liquid-index.tsx",
+            "type": "registry:component"
+          },
+          {
+            "path": "registry/default/example/liquid-index-canvas.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/liquid-index.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/liquid-index/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/liquid-index/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-magnified-bento",
+      "kind": "component",
+      "name": "Magnified Bento",
+      "description": "A bento card component with a draggable magnifying lens effect over scrolling chips.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/magnified-bento",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/magnified-bento.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/magnified-bento.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/magnified-bento/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/magnified-bento/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-morphing-input",
+      "kind": "component",
+      "name": "Morphing Input",
+      "description": "An input field that morphs between different states.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/morphing-input",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/morphing-input.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/morphing-input.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/morphing-input/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/morphing-input/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-multi-step-form",
+      "kind": "component",
+      "name": "Multi Step Form",
+      "description": "A dynamic, animated multi-step form with validation.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/multi-step-form",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/multi-step-form.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "date-fns",
+          "react-hook-form",
+          "@hookform/resolvers",
+          "zod",
+          "sonner",
+          "lucide-react",
+          "react-use-measure",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/multi-step-form.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/multi-step-form/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/multi-step-form/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-overlapping-slider",
+      "kind": "component",
+      "name": "Overlapping Slider",
+      "description": "A full-width landing row of portrait cards. They sit flat until you move — then the card on the left scales back.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/overlapping-slider",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/overlapping-slider.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "lucide-react"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/overlapping-slider.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/overlapping-slider/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/overlapping-slider/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-perspective-text-scroll",
+      "kind": "component",
+      "name": "Perspective Text Scroll",
+      "description": "A polished example interaction built with React and Motion.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/perspective-text-scroll",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/perspective-text-scroll.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "clsx",
+          "motion",
+          "react",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/perspective-text-scroll.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/perspective-text-scroll/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/perspective-text-scroll/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-photo-albums",
+      "kind": "component",
+      "name": "Photo Albums",
+      "description": "Tilted album stacks that expand into a shared-element photo grid.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/photo-albums",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/photo-albums.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "lucide-react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/photo-albums.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/photo-albums/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/photo-albums/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-paper-shred-button",
+      "kind": "component",
+      "name": "Paper Shred Button",
+      "description": "Hover Delete and a page appears above it. Click and the page clips away while paper strips draw in below. After a few seconds it resets so you can shred again.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/paper-shred-button",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/paper-shred-button.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/paper-shred-button.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/paper-shred-button/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/paper-shred-button/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-polaroid-drag",
+      "kind": "component",
+      "name": "Polaroid Drag",
+      "description": "Draggable Polaroid photo gallery with realistic tilt, stacking, smooth animations, and customizable captions, sizes, and decorations.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/polaroid-drag",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/polaroid-drag.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/polaroid-drag.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/polaroid-drag/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/polaroid-drag/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-polaroid-stack",
+      "kind": "component",
+      "name": "Polaroid Stack",
+      "description": "Seven Polaroids sit in a pile. Hover and they fan into an arc from one corner.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/polaroid-stack",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/polaroid-stack.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/polaroid-stack.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/polaroid-stack/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/polaroid-stack/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-pop-tilt-cards",
+      "kind": "component",
+      "name": "Pop Tilt Cards",
+      "description": "Interactive tilt card deck with smooth hover animations, 3D popping effects, images, links, and customizable card styling.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/pop-tilt-cards",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/pop-tilt-cards.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "clsx",
+          "motion",
+          "react",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/pop-tilt-cards.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/pop-tilt-cards/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/pop-tilt-cards/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-pricing-card",
+      "kind": "component",
+      "name": "Pricing Card",
+      "description": "A focused pricing card layout with clear hierarchy.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/pricing-card",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/pricing-card.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "lucide-react",
+          "@number-flow/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/pricing-card.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/pricing-card/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/pricing-card/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-prompt-box",
+      "kind": "component",
+      "name": "Prompt Box",
+      "description": "A collapsed chat composer that expands into a textarea with a model menu and send control.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/prompt-box",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/prompt-box.tsx",
+            "type": "registry:component"
+          },
+          {
+            "path": "registry/default/example/prompt-box-icons.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@base-ui/react",
+          "lucide-react"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/prompt-box.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/prompt-box/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/prompt-box/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-rolling-card-stack",
+      "kind": "component",
+      "name": "Rolling Card Stack",
+      "description": "It’s a responsive, animated rolling card stack component built with React, TypeScript, Tailwind CSS, and Framer Motion. It supports desktop/mobile layouts, swipe and keyboard navigation, autoplay, pagination, and customizable card content",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/rolling-card-stack",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/rolling-card-stack.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/rolling-card-stack.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/rolling-card-stack/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/rolling-card-stack/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-save-button",
+      "kind": "component",
+      "name": "Save Button",
+      "description": "A button with animated states for idle, loading, and success.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/save-button",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/save-button.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/save-button.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/save-button/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/save-button/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-scan-document",
+      "kind": "component",
+      "name": "Scan Document",
+      "description": "Click Scan and a page unfolds, flips, and a glowing bar reads it. Done holds, then it resets.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/scan-document",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/scan-document.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/scan-document.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/scan-document/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/scan-document/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-scroll-split-cards",
+      "kind": "component",
+      "name": "Scroll Split Cards",
+      "description": "One photograph that splits into three panels as you scroll, then flips to copy.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/scroll-split-cards",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/scroll-split-cards.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/scroll-split-cards.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/scroll-split-cards/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/scroll-split-cards/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-scroll-stack-deck",
+      "kind": "component",
+      "name": "Scroll Stack Deck",
+      "description": "Scroll-linked project cards that pin in the viewport and stack, scale, and settle as you move down the page.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/scroll-stack-deck",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/scroll-stack-deck.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "lenis",
+          "motion",
+          "react"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/scroll-stack-deck.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/scroll-stack-deck/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/scroll-stack-deck/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-set-timer",
+      "kind": "component",
+      "name": "Set Timer",
+      "description": "A dark timer pill that morphs into a minute wheel picker, then into a running timer with pause, cancel, and a rounded-rectangle progress border.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/set-timer",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/set-timer.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@ncdai/react-wheel-picker",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/set-timer.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/set-timer/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/set-timer/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-shake-testimonial-card",
+      "kind": "component",
+      "name": "Shake Testimonial Card",
+      "description": "An eye-catching testimonial card with playful animations.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/shake-testimonial-card",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/shake-testimonial-card.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/shake-testimonial-card.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/shake-testimonial-card/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/shake-testimonial-card/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-slide-subscribe",
+      "kind": "component",
+      "name": "Slide Subscribe",
+      "description": "Pick a billing period, then slide to start a trial.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/slide-subscribe",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/slide-subscribe.tsx",
+            "type": "registry:component"
+          },
+          {
+            "path": "registry/default/example/slide-subscribe-unlock.tsx",
+            "type": "registry:component"
+          },
+          {
+            "path": "registry/default/example/slide-subscribe-shimmer.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/react",
+          "@hugeicons/core-free-icons",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/slide-subscribe.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/slide-subscribe/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/slide-subscribe/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-smooth-dropdown",
+      "kind": "component",
+      "name": "Smooth Dropdown",
+      "description": "A dropdown menu with premium layout transitions.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/smooth-dropdown",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/smooth-dropdown.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/smooth-dropdown.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/smooth-dropdown/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/smooth-dropdown/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-stack-scroll-reveal",
+      "kind": "component",
+      "name": "Stack Scroll Reveal",
+      "description": "Scroll-linked case-study cards that pin in the viewport and peel, scale, and fade as you move down the page.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/stack-scroll-reveal",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/stack-scroll-reveal.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "clsx",
+          "lenis",
+          "motion",
+          "react",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/stack-scroll-reveal.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/stack-scroll-reveal/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/stack-scroll-reveal/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-stacked-list",
+      "kind": "component",
+      "name": "Stacked List",
+      "description": "An expandable list widget with a stacked layout and smooth morphing transitions.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/stacked-list",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/stacked-list.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/stacked-list.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/stacked-list/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/stacked-list/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-stacked-outline-text",
+      "kind": "component",
+      "name": "Stacked Outline Text",
+      "description": "Heavy outlined type you can drag. Speed leaves a stacked white-on-black trail that springs back when you stop.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/stacked-outline-text",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/stacked-outline-text.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/stacked-outline-text.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/stacked-outline-text/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/stacked-outline-text/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-theme-toggle",
+      "kind": "component",
+      "name": "Theme Toggle",
+      "description": "A physical switch with a dotted grip. Click and the knob slides across a recessed track.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/theme-toggle",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/theme-toggle.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [],
+        "copiedPath": "resources/uselayouts/default/example/theme-toggle.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/theme-toggle/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/theme-toggle/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-tactile-button",
+      "kind": "component",
+      "name": "Tactile Button",
+      "description": "A liquid-glass rocker that tilts into its well when you press it.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/tactile-button",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/tactile-button.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/tactile-button.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/tactile-button/poster-445352537e.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/tactile-button/video-afb6c148d5.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-vertical-tabs",
+      "kind": "component",
+      "name": "Vertical Tabs",
+      "description": "A vertical tab interaction with smooth content switching.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/vertical-tabs",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/vertical-tabs.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "@hugeicons/core-free-icons",
+          "@hugeicons/react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/vertical-tabs.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/vertical-tabs/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/vertical-tabs/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    },
+    {
+      "id": "uselayouts-wheel-carousel",
+      "kind": "component",
+      "name": "Wheel Carousel",
+      "description": "This component creates a smooth wheel-style carousel with photos and selectable items. It supports drag, scroll, keyboard controls, snapping, momentum, themes, image crossfades, and customizable layout and colors.",
+      "data": {
+        "provider": "uselayouts",
+        "source": "https://github.com/iurvish/uselayouts",
+        "upstream": "https://uselayouts.com/r/wheel-carousel",
+        "license": "MIT",
+        "editable": true,
+        "agentUsable": true,
+        "sourceFiles": [
+          {
+            "path": "registry/default/example/wheel-carousel.tsx",
+            "type": "registry:component"
+          }
+        ],
+        "dependencies": [
+          "motion",
+          "lucide-react",
+          "clsx",
+          "tailwind-merge"
+        ],
+        "copiedPath": "resources/uselayouts/default/example/wheel-carousel.tsx",
+        "posterUrl": "https://cdn.uselayouts.com/components/wheel-carousel/poster.avif",
+        "videoUrl": "https://cdn.uselayouts.com/components/wheel-carousel/video.mp4"
+      },
+      "tags": [
+        "component",
+        "uselayouts",
+        "micro-interaction"
+      ]
+    }
+  ]
+}

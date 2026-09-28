@@ -1,0 +1,4 @@
+interface:
+  display_name: "dashi-motion"
+  short_description: "按软件加载原生动效制作经验，包含参考拆解、可编辑结构和实际预览验证"
+  default_prompt: "使用 $dashi-motion，在我指定的 AE、Rive 或 Cavalry 中制作或优化可编辑动画，只加载该软件需要的经验。"
