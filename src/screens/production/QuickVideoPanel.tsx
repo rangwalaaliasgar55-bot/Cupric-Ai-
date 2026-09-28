@@ -35,6 +35,16 @@ function loadSettings(): QuickVideoSettings {
 
 type StockItem = { id: string; kind: 'image' | 'video'; title: string; previewUrl: string; downloadUrl: string; pageUrl: string; attribution: string }
 
+/** JOB 2 — what `stock:fetchForTerm` reports back from the main process. */
+type StockAttempt = { provider: string; outcome: 'downloaded' | 'empty' | 'skipped' | 'search-failed' | 'download-failed'; detail: string }
+type StockVerdict = {
+  ok: boolean
+  term: string
+  reason?: string
+  tried?: StockAttempt[]
+  saved?: { localPath: string; fileName: string; kind: 'image' | 'video'; attribution: string; pageUrl: string; source: string; sourceLicense: string | null } | null
+}
+
 export function QuickVideoPanel() {
   const project = useActiveProject()
   const patchStudio = useProjectStore((s) => s.patchStudio)
@@ -93,12 +103,19 @@ export function QuickVideoPanel() {
     const credits: NonNullable<ReturnType<typeof studioOf>['credits']> = []
     const kind = s.provider === 'openverse' || s.provider === 'picsum' ? 'image' : s.mediaKind
     const orientation = s.aspect === '9:16' || s.aspect === '4:5' ? 'vertical' : s.aspect === '16:9' ? 'horizontal' : 'all'
+    // JOB 2: one call per term, and the main process walks the whole source
+    // chain — chosen provider, other keyed providers, keyless Openverse, then
+    // Picsum. It answers with a verdict and an attempt log, so a failure can
+    // say which sources were asked instead of a dead end.
+    const attempts: StockAttempt[] = []
     for (const term of list) {
       try {
-        const res = await ipc.invoke('stock:search', { provider: s.provider, kind, options: { query: term, orientation, perPage: 3 } }) as { results?: StockItem[] }
-        const item = res.results?.[0]
-        if (!item) { note(`No ${s.provider} result for “${term}”.`); continue }
-        const saved = await ipc.invoke('stock:download', { projectId: project!.id, item }) as { localPath: string; fileName: string; kind: 'image' | 'video'; attribution: string; pageUrl: string; source: string; sourceLicense: string | null }
+        const verdict = await ipc.invoke('stock:fetchForTerm', {
+          projectId: project!.id, term, kind, orientation, provider: s.provider, perPage: 5,
+        }) as StockVerdict
+        attempts.push(...(verdict.tried ?? []))
+        if (!verdict.ok || !verdict.saved) { note(`“${term}”: ${verdict.reason ?? 'nothing downloadable.'}`); continue }
+        const saved = verdict.saved
         const url = await ipc.invoke('arena:previewPath', saved.localPath) as string
         const h = await registerUrl(url, saved.fileName, saved.kind, saved.localPath)
         media.push({ mediaId: h.id, fileName: h.fileName, localPath: h.localPath, kind: saved.kind, durationSec: h.durationSec || 0, term, posterDataUrl: h.posterDataUrl })
@@ -106,7 +123,22 @@ export function QuickVideoPanel() {
         note(`“${term}” → ${saved.attribution}`)
       } catch (err) { note(`“${term}” failed: ${err instanceof Error ? err.message : String(err)}`) }
     }
-    if (!media.length) { mark('footage', 'error'); throw new Error('No footage could be downloaded. Check Settings → Stock, try Openverse, or use project media.') }
+    if (!media.length) {
+      mark('footage', 'error')
+      // Honest: name what was actually asked and what was skipped, and point
+      // at the one thing that is always available — media already imported.
+      const asked = [...new Set(attempts.filter((a) => a.outcome !== 'skipped').map((a) => a.provider))]
+      const skipped = attempts.filter((a) => a.outcome === 'skipped')
+      const skippedOnce = [...new Map(skipped.map((a) => [a.provider, a])).values()]
+      const first = asked.length
+        ? `Tried ${asked.join(', ')} for ${list.length} search term${list.length === 1 ? '' : 's'} and nothing came back that could be downloaded.`
+        : 'No stock source could be asked.'
+      const second = skippedOnce.length ? ` Not tried: ${skippedOnce.map((a) => `${a.provider} (${a.detail})`).join(', ')}.` : ''
+      const third = projectMedia.length
+        ? ` You have ${projectMedia.length} clip${projectMedia.length === 1 ? '' : 's'} in this project — tick “Use project media” to build from those instead.`
+        : ' Import a clip into Studio and tick “Use project media”, or add a provider key in Settings → Stock.'
+      throw new Error(`${first}${second}${third}`)
+    }
     mark('footage', 'done')
     return { media, credits }
   }

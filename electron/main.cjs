@@ -882,6 +882,26 @@ ipcMain.handle('stock:download', async (_event, payload) => {
   const result = await stockService().download(projectRoot(projectId), item, stockSettings())
   return result
 })
+/**
+ * JOB 2 — one term, the whole source chain, in the main process.
+ *
+ * The renderer used to pick one provider, take the first hit and give up,
+ * which is how a saved Pixabay key plus a keyless Openverse still produced
+ * "No footage could be downloaded". Search, retry and fallback all belong on
+ * this side of the bridge; the renderer gets a verdict and an attempt log it
+ * can show the user verbatim.
+ */
+ipcMain.handle('stock:fetchForTerm', async (_event, payload) => {
+  const projectId = String(payload?.projectId || '')
+  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(projectId)) throw new Error('A valid project is required before downloading stock.')
+  return stockService().fetchForTerm(projectRoot(projectId), {
+    term: payload?.term,
+    kind: payload?.kind,
+    orientation: payload?.orientation,
+    provider: payload?.provider,
+    perPage: payload?.perPage,
+  }, stockSettings())
+})
 
 // Review Room notes are persisted in the main process on desktop, so a reload
 // or renderer crash does not erase feedback. The room id is deliberately

@@ -43,7 +43,9 @@ ok(JSON.stringify(q.buildQuickVariants(base, s, script, media, { voice, music })
 const src = read('src/lib/production/quickVideo.ts')
 ok(!/Math\.random|Date\.now|performance\.now/.test(src), 'no randomness or clock in the pipeline')
 const panel = read('src/screens/production/QuickVideoPanel.tsx')
-ok(panel.includes("'stock:search'") && panel.includes('synthesizeVoiceover') && panel.includes('buildQuickVariants') && panel.includes('patchStudio'), 'panel wired to stock IPC, offline voice, Studio doc')
+// JOB 2: the panel no longer drives the provider chain itself — it asks the
+// main process for one term and gets back a verdict plus an attempt log.
+ok(panel.includes("'stock:fetchForTerm'") && panel.includes('synthesizeVoiceover') && panel.includes('buildQuickVariants') && panel.includes('patchStudio'), 'panel wired to stock IPC, offline voice, Studio doc')
 ok(!/publish|upload_post|approve\(/i.test(panel.replace(/published automatically/g, '')), 'no auto-publish or approval')
 ok(read('src/screens/production/ProductionPlanner.tsx').includes('<QuickVideoPanel />'), 'panel mounted in the production planner')
 const fx = read('src/components/fx/index.tsx')

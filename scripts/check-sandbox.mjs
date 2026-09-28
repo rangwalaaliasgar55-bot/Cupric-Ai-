@@ -148,6 +148,24 @@ console.log(`sandbox check passed — ${windows.length} sandboxed windows, scene
     'a not-yet-written render target canonicalises via its deepest existing ancestor',
   )
 
+  // 3b. JOB 1 — the other spellings Explorer, the picker and Node hand us for
+  //     the same file: a trailing separator, forward slashes on Windows, a
+  //     doubled separator, a `.` segment, and a UNC path for a redirected
+  //     roaming profile. Every one of these used to read as "outside".
+  assert.ok(inside(`${winRoot}\\renders\\studio-export-7\\`), 'a trailing separator is the same folder')
+  assert.ok(inside(`${winRoot}\\renders\\studio-export-7\\\\out.mp4`), 'a doubled separator is the same file')
+  assert.ok(inside(`${winRoot}/renders/studio-export-7/out.mp4`), 'forward slashes on Windows are the same file')
+  assert.ok(inside(`${winRoot}\\renders\\.\\studio-export-7\\out.mp4`), 'a dot segment is the same file')
+  assert.ok(inside(`${winRoot}\\projects\\default\\stock\\pexels-1234.mp4`), 'a downloaded stock clip is inside project data')
+  {
+    const uncRoot = '\\\\\\\\fileserver\\\\profiles\\\\aliasgar\\\\Cupric AI'
+    const uncRoots = sandbox.PROJECT_DATA_DIRS.map((d) => `${uncRoot}\\\\${d}`)
+    assert.ok(
+      sandbox.resolveInsideRoots(`${uncRoot}\\\\renders\\\\job-1\\\\out.mp4`, uncRoots, { platform: 'win32' }).ok,
+      'a roaming profile on a UNC share is inside project data',
+    )
+  }
+
   // 4. Containment is still real: no prefix tricks, no traversal, no siblings.
   assert.ok(!inside('C:\\Users\\Aliasgar Rangwala\\Desktop\\secret.mp4'), 'a desktop file is outside')
   assert.ok(!inside(`${winRoot}\\settings.json`), 'settings.json (keys) is never previewable')
@@ -175,6 +193,15 @@ console.log(`sandbox check passed — ${windows.length} sandboxed windows, scene
   assert.match(exportHost, /if \(!asset\.localPath \|\| asset\.unusable\) continue/, 'the renderer skips unusable assets instead of failing the job')
   assert.match(exportHost, /asset\.url \|\|/, 'the renderer prefers the pre-resolved URL')
   assert.match(exportHost, /export-asset-skipped/, 'a skipped asset is logged with its reason')
+  // 6b. JOB 1 — one refused clip must cost one clip, never the batch, and the
+  //      queue must keep pumping after a job errors.
+  const pump = main.slice(main.indexOf('async function pumpRenderQueue'), main.indexOf("ipcMain.handle('render:start'"))
+  assert.match(pump, /while \(renderQueue\.length\)/, 'the queue drains every job, not just the first')
+  assert.match(pump, /catch \(err\)/, 'a failing job is caught')
+  assert.match(pump, /renderJobs\.delete\(state\.id\)/, 'a failed job is cleared so the next one runs')
+  assert.doesNotMatch(pump, /throw /, 'a job error never escapes the pump and stalls the queue')
+  assert.match(main, /render-queue-error/, 'a job error is still logged with its jobId')
+
   const preview = await read('src/lib/previewPath.ts')
   assert.match(preview, /path:reveal/, 'the renderer can reveal a refused path')
   assert.match(await read('src/components/VideoPreview.tsx'), /Reveal folder/, 'a refused preview offers Reveal folder inline')

@@ -14,7 +14,41 @@ const DAY = 24 * 60 * 60 * 1000
 const PIXABAY_LIMIT = { count: 100, windowMs: 60 * 1000 }
 const PEXELS_LIMIT = { count: 200, windowMs: 60 * 60 * 1000 }
 const OPENVERSE_LIMIT = { count: 5, windowMs: 60 * 60 * 1000, dayCount: 100, dayMs: DAY }
-const ALLOWED_HOSTS = new Set(['pixabay.com', 'images.pexels.com', 'videos.pexels.com', 'api.openverse.org', 'images.openverse.org', 'picsum.photos'])
+/**
+ * JOB 2 — hosts a download may be *started* against.
+ *
+ * The 0.13.0 list had six entries and rejected almost every real file:
+ * Pixabay serves its videos and most images from `cdn.pixabay.com`, Pexels
+ * videos come off `player.vimeo.com` / `vod-progressive.akamaized.net`, and
+ * Openverse is a federated index — its results live on Flickr, Wikimedia,
+ * museum CDNs and hundreds of other hosts that cannot be enumerated here.
+ * That is why the production log shows `Stock download host is not
+ * allowlisted` for both "saas" and "video".
+ *
+ * So there are two ways in, and neither trusts the renderer:
+ *   1. this static list, for the provider CDNs we know by name; and
+ *   2. provenance — a host is downloadable if the provider's own search API
+ *      returned it to us in this session (`rememberHosts` below). The renderer
+ *      never widens the set; only a provider response does.
+ */
+const ALLOWED_HOSTS = new Set([
+  // Pixabay
+  'pixabay.com', 'cdn.pixabay.com', 'i.vimeocdn.com',
+  // Pexels
+  'pexels.com', 'www.pexels.com', 'images.pexels.com', 'videos.pexels.com',
+  'player.vimeo.com', 'vod-progressive.akamaized.net', 'vod-progressive-secure.akamaized.net',
+  // Openverse's own API/thumbnail hosts
+  'api.openverse.org', 'api.openverse.engineering', 'images.openverse.org',
+  // Placeholder service
+  'picsum.photos', 'fastly.picsum.photos',
+])
+
+/** Hosts a provider response has actually handed us. Bounded, session-only. */
+const MAX_REMEMBERED_HOSTS = 500
+
+function hostOf(url) {
+  try { return new URL(String(url)).hostname.toLowerCase() } catch { return '' }
+}
 
 const clampPage = (value, max) => Math.max(1, Math.min(max, Math.round(Number(value) || 1)))
 const clampPerPage = (value, max) => Math.max(3, Math.min(max, Math.round(Number(value) || 20)))
@@ -166,6 +200,18 @@ function createStockService({ cacheDir, fetchImpl = globalThis.fetch, now = () =
   const limiter = createLimiter(now)
   const cacheRoot = cacheDir || path.join(process.cwd(), '.stock-cache')
   const observedQuota = new Map()
+  /** Hosts a provider search actually returned in this session (JOB 2). */
+  const seenHosts = new Set()
+  const rememberHosts = (results) => {
+    for (const item of results || []) {
+      for (const url of [item?.downloadUrl, item?.previewUrl]) {
+        const host = hostOf(url)
+        if (!host) continue
+        if (seenHosts.size >= MAX_REMEMBERED_HOSTS) seenHosts.clear()
+        seenHosts.add(host)
+      }
+    }
+  }
   const readCache = async (key) => {
     try {
       const record = JSON.parse(await fsp.readFile(path.join(cacheRoot, `${key}.json`), 'utf8'))
@@ -227,13 +273,23 @@ function createStockService({ cacheDir, fetchImpl = globalThis.fetch, now = () =
     }
     const raw = provider === 'pixabay' ? data.hits || [] : provider === 'pexels' ? (data.photos || data.videos || []) : (data.results || [])
     const results = raw.map((hit) => provider === 'pixabay' ? normalizePixabay(kind, hit) : provider === 'pexels' ? normalizePexels(kind, hit) : normalizeOpenverse(hit)).filter((item) => item.downloadUrl && item.previewUrl)
+    // JOB 2: the provider just told us where its files live. Remember those
+    // hosts so the download can start — this is the only thing that widens
+    // the allowlist, and the renderer cannot reach it.
+    rememberHosts(results)
     return { provider, kind, total: Number(data.totalHits || data.total_results || data.total_results || data.total || results.length), results, placeholderOnly: false, quota: observedQuota.get(provider) || null }
   }
   const download = async (projectDir, item, settings = {}) => {
     if (!item || item.placeholderOnly && !item.downloadUrl) throw new Error('This stock item has no downloadable file.')
     const remote = new URL(text(item.downloadUrl))
     const proxyHost = cleanProxy(settings.stockProxyUrl) ? new URL(cleanProxy(settings.stockProxyUrl)).hostname.toLowerCase() : ''
-    if (!ALLOWED_HOSTS.has(remote.hostname.toLowerCase()) && remote.hostname.toLowerCase() !== proxyHost) throw new Error('Stock download host is not allowlisted.')
+    const host = remote.hostname.toLowerCase()
+    if (remote.protocol !== 'https:' && remote.protocol !== 'http:') throw new Error(`Cupric only downloads over http(s); “${remote.protocol}” is not a download.`)
+    // JOB 2: known provider CDN, the host the provider's own search returned,
+    // or the owner proxy. Anything else is a sentence, not a bare refusal.
+    if (!ALLOWED_HOSTS.has(host) && !seenHosts.has(host) && host !== proxyHost) {
+      throw new Error(`${host} did not come from a Cupric stock search, so the file was not downloaded — search again, or set a stock proxy in Settings → Stock.`)
+    }
     if (typeof fetchImpl !== 'function') throw new Error('Stock download needs a network connection.')
     const response = await fetchImpl(remote.href)
     if (!response.ok) throw new Error(`Stock download failed (HTTP ${response.status}).`)
@@ -247,7 +303,89 @@ function createStockService({ cacheDir, fetchImpl = globalThis.fetch, now = () =
     await fsp.writeFile(target, bytes)
     return { localPath: target, fileName, kind: item.kind, bytes: bytes.length, attribution: item.attribution, pageUrl: item.pageUrl, source: item.provider, sourceLicense: item.license || null }
   }
-  return { search, download, providerKey, limiter, normalizeOptions, readCache, writeCache, observedQuota }
+  /**
+   * JOB 2 — one term, every source, in order, until something lands.
+   *
+   * The dead-end toast in the production screenshots ("No footage could be
+   * downloaded…") appeared while Openverse and Picsum had never been asked:
+   * the caller tried exactly one provider and gave up. So the chain lives
+   * here, in the main process, and reports what it tried so the renderer can
+   * say something true instead of guessing.
+   *
+   * Order: the provider the user chose, then their keyed providers, then the
+   * keyless ones, then the placeholder service. A source that cannot work
+   * (no key, wrong media kind) is recorded as skipped with its reason and
+   * never counts as a failure.
+   */
+  const chainFor = (preferred, kind, settings, env2 = env) => {
+    const keyed = (provider) => Boolean(providerKey(provider, settings, env2)) || Boolean(cleanProxy(settings.stockProxyUrl))
+    const all = [
+      { provider: 'pixabay', kinds: ['image', 'video'], usable: keyed('pixabay'), why: 'no Pixabay key or proxy' },
+      { provider: 'pexels', kinds: ['image', 'video'], usable: keyed('pexels'), why: 'no Pexels key or proxy' },
+      { provider: 'openverse', kinds: ['image'], usable: true, why: '' },
+      { provider: 'picsum', kinds: ['image'], usable: true, why: '' },
+    ]
+    // Rank: the chosen provider first, then anything that can answer in the
+    // requested media kind, then the still-image fallbacks. A source is only
+    // *skipped* when it genuinely cannot work (no key); a kind mismatch is a
+    // demotion, not a refusal — a still beats an empty beat.
+    const rank = (entry) => (entry.provider === preferred ? 0 : entry.kinds.includes(kind) ? 1 : 2)
+    return [...all]
+      .sort((a, b) => rank(a) - rank(b))
+      .map((entry) => ({
+        ...entry,
+        askKind: entry.kinds.includes(kind) ? kind : 'image',
+        skip: entry.usable ? '' : entry.why,
+      }))
+  }
+
+  /**
+   * Search + download one term through the chain.
+   * Never throws for an exhausted chain — it returns `ok: false` with the
+   * full attempt log, because "nothing found" is an answer, not a crash.
+   */
+  const fetchForTerm = async (projectDir, options = {}, settings = {}) => {
+    const term = text(options.term || options.query)
+    const kind = options.kind === 'video' ? 'video' : 'image'
+    const orientation = ['all', 'horizontal', 'vertical'].includes(options.orientation) ? options.orientation : 'all'
+    const perPage = clampPerPage(options.perPage, 10)
+    if (!term) return { ok: false, term, tried: [], saved: null, reason: 'No search term was given.' }
+    const tried = []
+    for (const step of chainFor(text(options.provider, 'openverse'), kind, settings)) {
+      if (step.skip) { tried.push({ provider: step.provider, outcome: 'skipped', detail: step.skip }); continue }
+      // Openverse and Picsum only answer for images: a video term falls back
+      // to a still rather than failing the whole beat.
+      const askKind = step.askKind
+      let results = []
+      try {
+        const found = await search(step.provider, askKind, { query: term, orientation, perPage }, settings)
+        results = found.results || []
+        if (!results.length) { tried.push({ provider: step.provider, outcome: 'empty', detail: `no results for “${term}”` }); continue }
+      } catch (error) {
+        tried.push({ provider: step.provider, outcome: 'search-failed', detail: error?.message || String(error) })
+        continue
+      }
+      // More than one candidate, because the first hit is sometimes the one
+      // host that refuses us.
+      let lastError = ''
+      for (const item of results.slice(0, 3)) {
+        try {
+          const saved = await download(projectDir, item, settings)
+          tried.push({ provider: step.provider, outcome: 'downloaded', detail: saved.fileName })
+          return { ok: true, term, kind: saved.kind, saved, tried, provider: step.provider }
+        } catch (error) { lastError = error?.message || String(error) }
+      }
+      tried.push({ provider: step.provider, outcome: 'download-failed', detail: lastError })
+    }
+    const asked = tried.filter((t) => t.outcome !== 'skipped').map((t) => t.provider)
+    const skipped = tried.filter((t) => t.outcome === 'skipped')
+    const reason = asked.length
+      ? `Nothing downloadable for “${term}” from ${[...new Set(asked)].join(', ')}.${skipped.length ? ` Not tried: ${skipped.map((t) => `${t.provider} (${t.detail})`).join(', ')}.` : ''}`
+      : `No stock source was available for “${term}” — ${skipped.map((t) => `${t.provider}: ${t.detail}`).join('; ')}.`
+    return { ok: false, term, saved: null, tried, reason }
+  }
+
+  return { search, download, fetchForTerm, chainFor, providerKey, limiter, normalizeOptions, readCache, writeCache, observedQuota, seenHosts }
 }
 
 module.exports = {

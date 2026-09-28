@@ -47,7 +47,7 @@ const invokeChannels = new Set([
   'render:reveal', 'render:preview',
   'render:copyToDownloads',
   'studio:submitRecording', 'studio:recordingError', 'studio:progress',
-  'stock:search', 'stock:download', 'stock:keyStatus', 'stock:testConnection', 'stock:proxyHealth',
+  'stock:search', 'stock:download', 'stock:fetchForTerm', 'stock:keyStatus', 'stock:testConnection', 'stock:proxyHealth',
   'review:list', 'review:add', 'review:resolve',
   'updater:check',
   'updater:install',
