@@ -8,7 +8,7 @@
  *   Replacing the timeline needs a second, explicit consent.
  * - Manual approval is the only gate. Nothing is auto-approved.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, AlertTriangle, XCircle, ExternalLink } from 'lucide-react'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
@@ -30,6 +30,8 @@ import {
   type OpusIndex, type ResourceCandidate,
 } from '../../lib/production/engine'
 import { PRODUCTION_STAGES, type Confidence, type ProductionIntake, type ProductionSession, type ProductionStage } from '../../lib/production/types'
+import { IntakeInterviewer } from '../../components/IntakeInterviewer'
+import type { IntakeKey } from '../../lib/production/intakeFromSpeech'
 
 const STAGE_LABEL: Record<ProductionStage, string> = { intake: 'Intake', brief: 'Brief', research: 'Research', plan: 'Plan', preview: 'Preview', build: 'Build', review: 'Review', export: 'Export' }
 const CONF_TONE: Record<Confidence, 'accent' | 'info' | 'danger'> = { high: 'accent', medium: 'info', low: 'danger' }
@@ -70,6 +72,15 @@ export function ProductionPlanner() {
   const { data: catalogue, error } = useCatalogue()
   const session = useMemo(() => normaliseSession(project?.production), [project?.production])
   const [view, setViewStage] = useState<ProductionStage>(session.stage)
+  // JOB 4 — fields filled by voice flash so the user sees the form move.
+  const [voiceFlash, setVoiceFlash] = useState<IntakeKey[]>([])
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const flashFields = (keys: IntakeKey[]) => {
+    setVoiceFlash(keys)
+    if (flashTimer.current) clearTimeout(flashTimer.current)
+    flashTimer.current = setTimeout(() => setVoiceFlash([]), 1400)
+  }
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current) }, [])
   useEffect(() => setViewStage(session.stage), [session.stage])
 
   if (!project) return <Card className="p-5 text-sm text-muted">Open or create a project to start a guided production.</Card>
@@ -194,6 +205,7 @@ export function ProductionPlanner() {
         {view === 'intake' && (
           <>
             <p className="text-xs text-muted">{open.filter((q) => q.required).length ? `${open.filter((q) => q.required).length} key question(s) left before the brief.` : 'All key questions answered.'} Optional answers improve the plan; blanks become visible assumptions.</p>
+            <IntakeInterviewer intake={session.intake} onPatch={setIntake} onFlash={flashFields} />
             <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Start from a format">
               <span className="text-xs text-muted">Start from a format:</span>
               {FORMAT_STARTERS.map((f) => (
@@ -205,8 +217,8 @@ export function ProductionPlanner() {
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {INTAKE_QUESTIONS.map((q) => (
-                <label key={q.key} className="block space-y-1">
-                  <span className="text-xs font-medium text-text">{q.question}{q.required && <span className="text-accent-text"> *</span>}</span>
+                <label key={q.key} className={`block space-y-1 rounded-lg transition-shadow duration-300 ${voiceFlash.includes(q.key) ? 'shadow-[0_0_0_2px_var(--color-accent)]' : ''}`}>
+                  <span className="text-xs font-medium text-text">{q.question}{q.required && <span className="text-accent-text"> *</span>}{voiceFlash.includes(q.key) && <span className="ml-1.5 text-[10px] text-accent-text">filled from what you said</span>}</span>
                   {q.key === 'aspect' ? (
                     <select className={inputCx} value={session.intake.aspect ?? ''} onChange={(e) => setIntake({ aspect: (e.target.value || null) as ProductionIntake['aspect'] })}>
                       <option value="">Decide from platform</option><option value="9:16">9:16</option><option value="16:9">16:9</option><option value="1:1">1:1</option><option value="4:5">4:5</option>

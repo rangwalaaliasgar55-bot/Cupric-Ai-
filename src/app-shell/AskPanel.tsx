@@ -51,6 +51,12 @@ async function fileToChatImage(file: File): Promise<ChatImage> {
 type AiProvider = 'gemini' | 'opencode'
 type AiMode = 'auto' | 'gemini' | 'zen' | 'openrouter' | 'ollama' | 'lmstudio' | 'template'
 type StatusDot = 'ok' | 'error' | 'unknown' | 'testing'
+/** JOB 3 — what actually answered, reported by the main process. Host only. */
+type ActiveRoute = { label: string; provider: string; kind: string; host: string; model: string; local: boolean; at: number }
+type HealthPayload = {
+  routes?: { key: string; label: string; unhealthy: boolean; until: number; reason: string }[]
+  active?: ActiveRoute
+}
 
 const CHIPS = ['Suggest a 12s bumper', 'How does the Arena flow work?', 'Tighten my captions']
 
@@ -114,6 +120,9 @@ export function AskPanel() {
   const [statusDots, setStatusDots] = useState<{ gemini: StatusDot; zen: StatusDot; local: StatusDot }>({ gemini: 'unknown', zen: 'unknown', local: 'unknown' })
   // F-1 — per-endpoint health (presence only; the main process never sends keys).
   const [routeHealth, setRouteHealth] = useState<{ key: string; label: string; unhealthy: boolean; until: number; reason: string }[]>([])
+  // JOB 3 — the route that actually served the last completion. A status line
+  // that can be wrong is worse than none, so this is the only thing rendered.
+  const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null)
   // F-3 — the model list is served from a 24 h disk cache when the network is
   // gone; `modelsStale` drives the inline "cached" dot.
   const [online, setOnline] = useState(isOnline())
@@ -197,13 +206,17 @@ export function AskPanel() {
   }), [])
 
   // F-1 — endpoint health: read once, then follow the main process's pushes.
+  // JOB 3 — the same payload carries the route that actually answered last.
   useEffect(() => {
     const ipc = getIpc()
     if (!ipc) return
-    type HealthPayload = { routes?: { key: string; label: string; unhealthy: boolean; until: number; reason: string }[] }
-    void ipc.invoke('ai:health').then((payload: HealthPayload) => setRouteHealth(payload?.routes ?? [])).catch(() => undefined)
+    const apply = (payload: HealthPayload) => {
+      setRouteHealth(payload?.routes ?? [])
+      if (payload?.active) setActiveRoute(payload.active)
+    }
+    void ipc.invoke('ai:health').then(apply).catch(() => undefined)
     if (typeof ipc.on !== 'function') return
-    return ipc.on('ai:health', (payload: HealthPayload) => setRouteHealth(payload?.routes ?? []))
+    return ipc.on('ai:health', apply)
   }, [])
 
   const shownFreeModels = freeModels.filter((preset) => {
@@ -502,9 +515,19 @@ export function AskPanel() {
               <div className="flex items-center gap-2 text-sm font-semibold">
                 Ask Cupric AI
                 <span className={cx('h-2 w-2 rounded-full', aiMode === 'auto' ? (autoPick?.kind === 'template' ? 'bg-muted' : 'bg-accent') : providerStatus[aiProvider].state === 'ok' ? 'bg-accent' : providerStatus[aiProvider].state === 'error' ? 'bg-danger' : providerStatus[aiProvider].state === 'testing' ? 'bg-info' : 'bg-muted')} title={aiMode === 'auto' ? autoPick?.reason || 'Auto-discovering available providers' : providerStatus[aiProvider].message} />
-                <span className="rounded-full border border-line px-1.5 py-0.5 text-xs text-muted">{aiMode === 'template' || autoPick?.kind === 'template' ? 'OFFLINE' : hasKey ? 'LIVE' : 'FREE'}</span>
+                <span className="rounded-full border border-line px-1.5 py-0.5 text-xs text-muted">{(activeRoute ? activeRoute.kind === 'template' : aiMode === 'template' || autoPick?.kind === 'template') ? 'OFFLINE' : activeRoute?.local ? 'LOCAL' : hasKey ? 'LIVE' : 'FREE'}</span>
               </div>
-              <div className="text-xs text-muted">{aiMode === 'auto' ? `Auto · ${autoPick?.label || 'discovering…'}` : aiMode === 'template' ? 'Offline deterministic template' : aiProvider === 'opencode' ? `${aiMode === 'zen' ? 'Zen Free' : 'OpenCode'} · ${openCodeModel}` : `Gemini · ${geminiModel}`}</div>
+              {/* JOB 3: once anything has answered, this is a fact — the host
+                  and model that served it — not the configured preference. */}
+              <div className="text-xs text-muted" title={activeRoute ? `Last answered by ${activeRoute.host || 'the offline planner'}` : undefined}>
+                {activeRoute
+                  ? activeRoute.kind === 'template'
+                    ? 'Offline outline — no model reachable'
+                    : `${aiMode === 'auto' ? 'Auto' : 'Set'} · ${activeRoute.local ? `local ${activeRoute.host}` : activeRoute.host || activeRoute.label} · ${activeRoute.model || 'model unnamed'}`
+                  : aiMode === 'auto'
+                    ? `Auto · ${autoPick?.label || 'discovering…'} · not used yet`
+                    : aiMode === 'template' ? 'Offline deterministic template' : aiProvider === 'opencode' ? `${aiMode === 'zen' ? 'Zen Free' : 'OpenCode'} · ${openCodeModel}` : `Gemini · ${geminiModel}`}
+              </div>
             </div>
             <button type="button" aria-label="AI settings" onClick={() => { const next = !showSettings; setShowSettings(next); if (next) void refreshDiscovery() }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-panel-alt hover:text-text"><Settings size={15}/></button>
             <button

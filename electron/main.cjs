@@ -839,7 +839,7 @@ ipcMain.handle('ai:ackNewModels', () => {
  * F-1 — endpoint health for the Settings dots. Presence only: a route key
  * (baseUrl|model), its label, and whether it is quarantined. Never a key.
  */
-ipcMain.handle('ai:health', () => ({ routes: healthRows(), at: Date.now() }))
+ipcMain.handle('ai:health', () => ({ routes: healthRows(), active: activeRoute, at: Date.now() }))
 ipcMain.handle('ai:autoDiscover', async () => publicDiscovery(await autoDiscover({ force: true })))
 ipcMain.handle('ai:openZenAuth', () => shell.openExternal('https://opencode.ai/auth'))
 ipcMain.handle('ai:installOllama', () => shell.openExternal('https://ollama.com/download'))
@@ -2464,8 +2464,38 @@ function healthRows() {
   }))
 }
 
+/**
+ * JOB 3 — the route that ACTUALLY answered last.
+ *
+ * The Ask panel used to print the *discovered* pick ("Auto · local-first"),
+ * which is a configuration label, not a fact: the 0.13.0 screenshots show it
+ * claiming one thing while every completion was being served by TokenHarbor.
+ * A status line that can be wrong is worse than no status line, so this
+ * records the real route on the way out of a successful completion and the
+ * panel renders nothing else.
+ *
+ * Host only — never a key, never a full URL with a query string.
+ */
+let activeRoute = null
+function hostOfBase(baseUrl) {
+  try { return new URL(String(baseUrl)).host } catch { return '' }
+}
+function noteActiveRoute(route, model) {
+  const host = hostOfBase(route?.baseUrl || route?.brain?.baseUrl || '')
+  activeRoute = {
+    label: String(route?.label || '').slice(0, 80),
+    provider: String(route?.provider || ''),
+    kind: String(route?.kind || route?.provider || ''),
+    host: host || (route?.provider === 'template' ? '' : 'built-in'),
+    model: String(model || route?.model || route?.brain?.model || '').slice(0, 80),
+    local: isLocalModelBase(route?.baseUrl || route?.brain?.baseUrl || ''),
+    at: Date.now(),
+  }
+  sendHealth()
+}
+
 function sendHealth() {
-  try { mainWindow?.webContents.send('ai:health', { routes: healthRows(), at: Date.now() }) } catch {}
+  try { mainWindow?.webContents.send('ai:health', { routes: healthRows(), active: activeRoute, at: Date.now() }) } catch {}
 }
 
 /** Route → the URL a health probe can hit without spending a completion. */
@@ -2753,10 +2783,13 @@ async function completeWithFallback({ system, user, json = false, temperature = 
           if (validate) validate(parsed)
         }
         if (hopped) sendAiNotice(freeBrain.switchedNotice(route.label), 'inline')
+        routeHealth.ok(routeKey(route), { label: route.label })
+        noteActiveRoute(route, reply.model)
         return { ...reply, parsed, route: route.label, switched: hopped }
       }
       if (hopped) sendAiNotice(freeBrain.switchedNotice(route.label), 'inline')
       routeHealth.ok(routeKey(route), { label: route.label })
+      noteActiveRoute(route, reply.model)
       return { ...reply, route: route.label, switched: hopped }
     } catch (err) {
       failures.push(`${route.label}: ${err?.message || String(err)}`)
@@ -2785,6 +2818,9 @@ async function completeWithFallback({ system, user, json = false, temperature = 
   // Report the most useful failure first: quota beats "connection refused".
   const ordered = [...failures].sort((a, b) => Number(isQuotaError(b)) - Number(isQuotaError(a)))
   sendAiNotice(freeBrain.OFFLINE_NOTICE, 'inline')
+  // JOB 3: nothing answered — say so in the status line rather than leaving
+  // the last good route on screen as if it were still working.
+  noteActiveRoute({ label: 'offline outline', provider: 'template', kind: 'template' }, '')
   const error = new Error(ordered.length ? ordered.join(' | ').slice(0, 1800) : 'The AI request ran out of time before any provider answered')
   // F-1: the diagnostic text stays on `message` for the log; anything a user
   // can read uses `friendly`, which never contains a raw URL or "timed out".

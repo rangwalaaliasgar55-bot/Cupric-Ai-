@@ -105,7 +105,7 @@
   "findings": [
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 813,
+      "line": 836,
       "target": "Existing placement",
       "existingComponent": "<ThinkingOrb state=\"composing\" size={20} theme={theme === 'light' ? 'light' : 'dark'} paused={reducedMotion} aria-label=",
       "suggestedLibrary": "Thinking orbs",
@@ -170,7 +170,7 @@
     },
     {
       "file": "src/screens/Brief.tsx",
-      "line": 323,
+      "line": 369,
       "target": "Waiting state",
       "existingComponent": "<span className=\"nf-typing flex gap-1\">",
       "suggestedLibrary": "Thinking orbs",
@@ -274,7 +274,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 605,
+      "line": 628,
       "target": "Search input (loads after submit)",
       "existingComponent": "placeholder=\"Search free models…\"",
       "suggestedLibrary": "Border beam",
@@ -287,7 +287,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 894,
+      "line": 917,
       "target": "Chat input",
       "existingComponent": "placeholder=\"Ask anything, or paste an image…\"",
       "suggestedLibrary": "Border beam",
@@ -429,6 +429,19 @@
       "status": "suggested"
     },
     {
+      "file": "src/components/IntakeInterviewer.tsx",
+      "line": 34,
+      "target": "Mic button",
+      "existingComponent": "const [transcribing, setTranscribing] = useState(false)",
+      "suggestedLibrary": "Voice",
+      "package": "voice-glow",
+      "variant": "VoiceBeam around the recording UI (stream while listening, processing while transcribing)",
+      "why": "The skill maps anything voice or recording related to Voice.",
+      "risks": "Medium: a per-frame canvas/SVG filter. Keep it to one instance per area.",
+      "license": "MIT",
+      "status": "suggested"
+    },
+    {
       "file": "src/screens/Autonomous.tsx",
       "line": 71,
       "target": "Mic button",
@@ -495,7 +508,7 @@
     },
     {
       "file": "src/screens/Brief.tsx",
-      "line": 290,
+      "line": 336,
       "target": "Bot avatar",
       "existingComponent": "const gem = msg.role === 'gemini'",
       "suggestedLibrary": "Bot avatars",
@@ -690,9 +703,9 @@
     }
   ],
   "counts": {
-    "findings": 45,
+    "findings": 46,
     "applied": 1,
-    "files": 27
+    "files": 28
   },
   "footer": "Run `libraries apply` on any line to install it."
 }

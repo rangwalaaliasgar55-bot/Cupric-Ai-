@@ -232,3 +232,38 @@ assert.match(main, /ipcMain\.handle\('ai:freeModels'[\s\S]{0,400}badge: m\.badge
 assert.doesNotMatch(main.slice(main.indexOf("ipcMain.handle('ai:freeModels'"), main.indexOf("ipcMain.handle('ai:ackNewModels'")), /apiKey|headers/, 'no key material to renderer')
 assert.match(preload, /'ai:notice'/); assert.match(preload, /'ai:freeModels'/)
 console.log('Zero-setup brain check passed — keyless first action, 429 backoff+hop, offline notice, local preference, aggregator NEW/retire/TTL/isolation')
+
+/* ——— JOB 3: the status line is a fact, and an offline draft says so ————
+ * Screenshot: the Ask panel reads "Auto · TokenHarbor · deepseek-v4.1-flash"
+ * while the user had a local model running. A status line that can be wrong
+ * is worse than none — so it now reports the route that actually answered.
+ */
+{
+  const ask = await readFile(new URL('../src/app-shell/AskPanel.tsx', import.meta.url), 'utf8')
+  const brief = await readFile(new URL('../src/screens/Brief.tsx', import.meta.url), 'utf8')
+
+  // 1. Main records the route that served the completion, and only the host.
+  assert.match(main, /function noteActiveRoute\(/, 'main records the route that actually answered')
+  assert.match(main, /noteActiveRoute\(route, reply\.model\)/, 'a successful completion updates the active route')
+  const note = main.slice(main.indexOf('function noteActiveRoute('), main.indexOf('function sendHealth()'))
+  assert.doesNotMatch(note, /apiKey|authorization|Bearer/i, 'the active route never carries key material')
+  assert.match(note, /hostOfBase/, 'only the host is reported, never a full URL with a query')
+  assert.match(main, /noteActiveRoute\(\{ label: 'offline outline'/, 'an exhausted chain reports the offline outline, not the last good route')
+  assert.match(main, /ipcMain\.handle\('ai:health', \(\) => \(\{ routes: healthRows\(\), active: activeRoute/, 'the panel can read the active route')
+
+  // 2. The panel renders that fact in preference to the configured label.
+  assert.match(ask, /const \[activeRoute, setActiveRoute\]/, 'the panel holds the real route')
+  assert.match(ask, /activeRoute\s*\?\s*\n?\s*activeRoute\.kind === 'template'/, 'the status line branches on the real route first')
+  assert.match(ask, /not used yet/, 'before anything has answered the panel says so instead of claiming a route')
+  assert.match(ask, /activeRoute\?\.local \? 'LOCAL'/, 'a local model is labelled LOCAL, not LIVE')
+
+  // 3. Brief: instant offline draft, labelled, and polish merges without
+  //    overwriting anything the user changed.
+  assert.match(brief, /Offline draft — AI polish pending/, 'an offline outline is labelled as one')
+  assert.match(brief, /editedFields\.current\.has\(key\)/, 'polish skips fields the user edited')
+  assert.match(brief, /Ctrl\+Z undoes the whole merge/, 'the merge notice says it is one undo step')
+  const listener = brief.slice(brief.indexOf("ipc.on('ai:rundownPolished'"), brief.indexOf('if (!project) return <NoProject />'))
+  assert.equal((listener.match(/patchRundown\(/g) || []).length, 1, 'the merge is exactly one store write, so it is one undo step')
+  assert.doesNotMatch(listener, /payload\.rundown\)\s*$/m, 'the whole rundown is never written over the draft')
+  console.log('JOB 3 check passed — status line reports the route that answered (host only, LOCAL vs LIVE), offline drafts are labelled, polish merges as one undo step and keeps user edits')
+}

@@ -37,6 +37,16 @@ export function Brief() {
   const [flash, setFlash] = useState<string | null>(null)
   const [aiStatus, setAiStatus] = useState<{ mode?: string; pick?: { label?: string; reason?: string }; statusDots?: { gemini?: string; zen?: string; local?: string }; setupRequired?: boolean }>({})
   const scrollRef = useRef<HTMLDivElement>(null)
+  /**
+   * JOB 3 — the draft is written instantly by the offline planner and says so.
+   *
+   * `polishPending` drives the visible label; `editedFields` remembers what
+   * the user changed after that draft landed, so background polish can merge
+   * without ever overwriting a person's own words.
+   */
+  const [polishPending, setPolishPending] = useState(false)
+  const editedFields = useRef<Set<keyof SceneRundown>>(new Set())
+  const markEdited = (key: keyof SceneRundown) => { editedFields.current.add(key) }
 
   const messages = project?.brief.messages ?? []
   const shown = (project?.brief.lockedRundown ?? project?.brief.draftRundown ?? {}) as Partial<SceneRundown>
@@ -63,10 +73,32 @@ export function Brief() {
     const off = typeof ipc.on === 'function' ? ipc.on('ai:rundownPolished', (payload) => {
       if (payload?.projectId && payload.projectId !== project.id) return
       if (payload?.status === 'retrying') pushToast('info', payload.message || 'AI polish queued; retrying in the background.')
-      if (payload?.error) pushToast('info', payload.error)
+      if (payload?.error) { setPolishPending(false); pushToast('info', payload.error) }
       if (payload?.rundown) {
-        patchRundown(project.id, payload.rundown)
-        pushToast('success', 'AI polish landed — your rundown was updated without blocking the timeline.')
+        // JOB 3 — merge, never overwrite. Anything the user edited after the
+        // offline draft wins; the rest is applied as ONE undo step so a single
+        // Ctrl+Z puts the draft back exactly as it was.
+        const incoming = payload.rundown as Partial<SceneRundown>
+        const kept: string[] = []
+        const merged: Partial<SceneRundown> = {}
+        for (const key of KEY_ORDER) {
+          if (incoming[key] === undefined) continue
+          if (editedFields.current.has(key)) { kept.push(String(key)); continue }
+          ;(merged as Record<string, unknown>)[key] = incoming[key]
+        }
+        setPolishPending(false)
+        const changed = Object.keys(merged).length
+        if (!changed) {
+          pushToast('info', kept.length ? `AI polish arrived but every field it touched is one you edited (${kept.join(', ')}), so nothing was changed.` : 'AI polish arrived with nothing new to add.')
+          return
+        }
+        patchRundown(project.id, merged)
+        pushToast(
+          'success',
+          kept.length
+            ? `AI polish updated ${changed} field${changed === 1 ? '' : 's'} and kept your edits to ${kept.join(', ')}. Ctrl+Z undoes the whole merge.`
+            : `AI polish updated ${changed} field${changed === 1 ? '' : 's'} in one step — Ctrl+Z undoes the whole merge.`,
+        )
       }
     }) : undefined
     return () => off?.()
@@ -97,9 +129,15 @@ export function Brief() {
         JSON.stringify((prev as Record<string, unknown>)[k]) !==
           JSON.stringify((res.rundownPatch as Record<string, unknown>)[k]),
     )
+    // JOB 3 — an instant offline outline is not a finished rundown, and it
+    // says so until a model has actually improved it.
+    if (res.source === 'local') setPolishPending(true)
     keys.forEach((k, i) => {
       window.setTimeout(() => {
         patchRundown(project.id, { [k]: res.rundownPatch[k] } as Partial<SceneRundown>)
+        // This field now reflects what the user asked for in conversation;
+        // background polish must not quietly replace it.
+        markEdited(k)
         setFlash(k)
         window.setTimeout(() => setFlash((cur) => (cur === k ? null : cur)), 700)
       }, 280 * (i + 1))
@@ -246,7 +284,15 @@ export function Brief() {
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <div>
             <div className="text-sm font-semibold">Rundown</div>
-            <div className="text-xs text-muted">Fills in as Cupric AI drafts</div>
+            {/* JOB 3: never let an offline outline pass for a finished one. */}
+            <div className="text-xs text-muted">
+              {polishPending ? (
+                <span className="flex items-center gap-1.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-info" aria-hidden />
+                  Offline draft — AI polish pending. Your edits are kept when it lands.
+                </span>
+              ) : 'Fills in as Cupric AI drafts'}
+            </div>
           </div>
           {locked ? (
             <Badge tone="accent">
