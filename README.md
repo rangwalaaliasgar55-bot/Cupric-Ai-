@@ -45,8 +45,10 @@ npm run dist:win
 
 Outputs into `release/`:
 
-- `Cupric-AI-Setup-0.9.0.exe` — NSIS installer.
-- `Cupric-AI-0.9.0-x64-Portable.exe` — portable executable.
+- `Cupric-AI-Setup-0.13.0.exe` — NSIS installer.
+- `Cupric-AI-0.13.0-x64-Portable.exe` — portable executable.
+
+Get them from the [latest release](https://github.com/rangwalaaliasgar55-bot/Cupric-Ai-/releases/latest) — the in-app updater uses `latest.yml` to find them.
 
 The packaged app loads the built `dist/` over `file://` and self-hosts fonts, so
 it can run offline after installation. On first AI use and when Settings opens,
