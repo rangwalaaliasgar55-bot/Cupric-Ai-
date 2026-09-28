@@ -7,6 +7,7 @@ import { EmptyState } from '../components/EmptyState'
 import { IconButton } from '../components/IconButton'
 import type { Project } from '../types/project'
 import { useProjectStore } from '../state/useProjectStore'
+import { GettingStarted } from './GettingStarted'
 import { cx, gradientFor, initials, relTime } from '../lib/utils'
 
 export function HomeProject() {
@@ -44,6 +45,8 @@ export function HomeProject() {
             New project
           </Button>
         </div>
+
+        {projects.length > 0 && <GettingStarted project={[...projects].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null} />}
 
         {projects.length === 0 ? (
           <div className="mt-8">

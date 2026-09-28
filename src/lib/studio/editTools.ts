@@ -103,3 +103,45 @@ export function checkPreset(doc: StudioDoc, preset: PlatformPreset): PresetIssue
   if (!doc.clips.some((c) => c.kind === 'text')) issues.push({ level: 'warn', text: 'No on-screen text. Many viewers watch muted, so add captions.' })
   return issues
 }
+
+/* ——— multi-select operations (batch 4) ——— */
+const unlocked = (doc: StudioDoc, ids: Set<string>) => doc.clips.filter((c) => ids.has(c.id) && !c.locked)
+
+/** Group exactly the chosen clips (locked ones are skipped). */
+export function groupClips(doc: StudioDoc, ids: Set<string>, groupId: string): { doc: StudioDoc; count: number } {
+  const pick = new Set(unlocked(doc, ids).map((c) => c.id))
+  if (pick.size < 2) return { doc, count: pick.size }
+  return { doc: { ...doc, clips: doc.clips.map((c) => (pick.has(c.id) ? { ...c, groupId } : c)) }, count: pick.size }
+}
+
+export function deleteClips(doc: StudioDoc, ids: Set<string>): { doc: StudioDoc; count: number } {
+  const pick = new Set(unlocked(doc, ids).map((c) => c.id))
+  return { doc: { ...doc, clips: doc.clips.filter((c) => !pick.has(c.id)) }, count: pick.size }
+}
+
+/** Move every chosen clip by `dt` seconds, clamped so the earliest stays ≥ 0. */
+export function nudgeClips(doc: StudioDoc, ids: Set<string>, dt: number): { doc: StudioDoc; count: number } {
+  const pick = unlocked(doc, ids)
+  if (!pick.length) return { doc, count: 0 }
+  const d = Math.max(dt, -Math.min(...pick.map((c) => c.startSec)))
+  const set = new Set(pick.map((c) => c.id))
+  return { doc: { ...doc, clips: doc.clips.map((c) => (set.has(c.id) ? { ...c, startSec: r3(c.startSec + d) } : c)) }, count: pick.length }
+}
+
+/** Line up every chosen clip's start with the earliest (or with `at`). */
+export function alignStarts(doc: StudioDoc, ids: Set<string>, at?: number): { doc: StudioDoc; count: number } {
+  const pick = unlocked(doc, ids)
+  if (pick.length < 2 && at === undefined) return { doc, count: 0 }
+  const t = r3(Math.max(0, at ?? Math.min(...pick.map((c) => c.startSec))))
+  const set = new Set(pick.map((c) => c.id))
+  return { doc: { ...doc, clips: doc.clips.map((c) => (set.has(c.id) ? { ...c, startSec: t } : c)) }, count: pick.length }
+}
+
+/** Shift/Ctrl-click toggle, keeping the primary selection in the set. */
+export function toggleInSelection(sel: Set<string>, primary: string | null, id: string): Set<string> {
+  const next = new Set(sel)
+  if (primary) next.add(primary)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  return next
+}

@@ -7,22 +7,43 @@
 import { useMemo, useState } from 'react'
 import type { StudioDoc, StudioMediaClip, StudioAudioClip } from '../../types/project'
 import { closeGaps, rollEdit, slideClip, slipClip, type EditResult } from '../../lib/studio/timelineOps'
-import { groupOverlapping, ungroup, wordCuts } from '../../lib/studio/editTools'
+import { alignStarts, deleteClips, groupClips, groupOverlapping, nudgeClips, ungroup, wordCuts } from '../../lib/studio/editTools'
 import { tightenClip } from '../../lib/studio/autoEdit'
 import { uid } from '../../lib/utils'
 
 type Props = {
   doc: StudioDoc
   selectedId: string | null
+  multiIds?: Set<string>
+  onClearMulti?: () => void
   onCommit: (doc: StudioDoc, label: string) => void
   onNote: (kind: 'info' | 'success', msg: string) => void
 }
 
-export function EditToolsBar({ doc, selectedId, onCommit, onNote }: Props) {
+export function EditToolsBar({ doc, selectedId, multiIds, onClearMulti, onCommit, onNote }: Props) {
   const clip = doc.clips.find((c) => c.id === selectedId) ?? null
   const [transcript, setTranscript] = useState(false)
   const [struck, setStruck] = useState<Set<number>>(new Set())
   const frame = 1 / (doc.fps || 30)
+  const many = new Set([...(multiIds ?? []), ...(selectedId && multiIds?.size ? [selectedId] : [])])
+  if (many.size >= 2) {
+    const b = 'cu-chip px-2 py-1 text-xs'
+    const f = 1 / (doc.fps || 30)
+    const apply = (r: { doc: StudioDoc; count: number }, label: string, note: string) => { if (!r.count) onNote('info', 'Those clips are locked.'); else { onCommit(r.doc, label); onNote('success', note.replace('{n}', String(r.count))) } }
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-info/5 px-6 py-1.5 text-xs text-muted" role="toolbar" aria-label="Actions for selected clips">
+        <span className="mr-1 font-medium text-text">{many.size} clips selected</span>
+        <button type="button" className={b} onClick={() => apply(groupClips(doc, many, uid()), 'Group clips', 'Grouped {n} clips.')}>Group</button>
+        <button type="button" className={b} onClick={() => apply(alignStarts(doc, many), 'Align starts', 'Aligned {n} clips to the earliest start.')}>Align starts</button>
+        <span className="ml-2">Nudge</span>
+        <button type="button" className={b} aria-label="Nudge back" onClick={(e) => apply(nudgeClips(doc, many, -f * (e.shiftKey ? 10 : 1)), 'Nudge clips', 'Moved {n} clips.')}>◀</button>
+        <button type="button" className={b} aria-label="Nudge forward" onClick={(e) => apply(nudgeClips(doc, many, f * (e.shiftKey ? 10 : 1)), 'Nudge clips', 'Moved {n} clips.')}>▶</button>
+        <button type="button" className={`${b} ml-2 text-danger`} onClick={() => { apply(deleteClips(doc, many), 'Delete clips', 'Deleted {n} clips.'); onClearMulti?.() }}>Delete</button>
+        <button type="button" className={b} onClick={() => onClearMulti?.()}>Clear selection</button>
+        <span className="ml-auto text-muted/70">Shift/Ctrl-click clips to add or remove them</span>
+      </div>
+    )
+  }
   if (!clip) return null
   const run = (r: EditResult, label: string) => { if (!r.changed) onNote('info', r.reason ?? 'Nothing to change here.'); else onCommit(r.doc, label) }
   const step = (e: React.MouseEvent) => frame * (e.shiftKey ? 10 : 1)

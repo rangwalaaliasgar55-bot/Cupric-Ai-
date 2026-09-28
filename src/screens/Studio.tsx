@@ -55,7 +55,7 @@ import { IconButton } from '../components/IconButton'
 import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
 import { EditToolsBar } from './studio/EditToolsBar'
-import { moveWithGroup } from '../lib/studio/editTools'
+import { moveWithGroup, toggleInSelection } from '../lib/studio/editTools'
 import { StudioInspector } from './studio/StudioInspector'
 import { StudioPreview } from './studio/StudioPreview'
 import { StudioNotices } from './studio/StudioNotices'
@@ -132,6 +132,7 @@ export function Studio() {
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [multiIds, setMultiIds] = useState<Set<string>>(() => new Set())
   const [shapeOpen, setShapeOpen] = useState(false)
   const [loaderOpen, setLoaderOpen] = useState(false)
   useEffect(() => { void userFontsReady() }, [])
@@ -1438,7 +1439,7 @@ export function Studio() {
           )}
         </div>
       </div>
-      <EditToolsBar doc={doc} selectedId={selectedId} onCommit={(next, label) => patchStudio(projectId, { clips: next.clips, trackCount: next.trackCount, markers: next.markers }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
+      <EditToolsBar doc={doc} selectedId={selectedId} multiIds={multiIds} onClearMulti={() => setMultiIds(new Set())} onCommit={(next, label) => patchStudio(projectId, { clips: next.clips, trackCount: next.trackCount, markers: next.markers }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
 
       <form
         className="flex shrink-0 items-center gap-2 border-b border-line bg-panel-alt/50 px-6 py-2"
@@ -1840,7 +1841,9 @@ export function Studio() {
               pps={pps}
               duration={duration}
               selectedId={selectedId}
-              onSelect={setSelectedId}
+              onSelect={(id) => { setSelectedId(id); setMultiIds(new Set()) }}
+              multiIds={multiIds}
+              onToggleMulti={(id) => setMultiIds((cur) => toggleInSelection(cur, selectedId, id))}
               onSeek={(t) => {
                 setPlaying(false)
                 seek(t)

@@ -18,6 +18,9 @@ type Props = {
   duration: number
   selectedId: string | null
   onSelect: (id: string | null) => void
+  /** Extra clips selected with Shift/Ctrl-click (multi-select). */
+  multiIds?: Set<string>
+  onToggleMulti?: (id: string) => void
   onSeek: (t: number) => void
   onPatchClip: (id: string, patch: Partial<StudioClip>) => void
   onReorderTrack: (from: number, to: number) => void
@@ -100,7 +103,7 @@ function tickStep(pps: number): number {
   return 10
 }
 
-export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, onSeek, onPatchClip, onReorderTrack, onSettleClip, onDropAt, onClipContextMenu }: Props) {
+export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, multiIds, onToggleMulti, onSeek, onPatchClip, onReorderTrack, onSettleClip, onDropAt, onClipContextMenu }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const laneRef = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
@@ -335,6 +338,8 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                             if (e.button === 2) return
                             e.stopPropagation()
                             e.preventDefault()
+                            // Shift/Ctrl/⌘-click adds or removes the clip from the selection, with no drag.
+                            if (onToggleMulti && (e.shiftKey || e.ctrlKey || e.metaKey)) { onToggleMulti(clip.id); return }
                             onSelect(clip.id)
                             // Locked clips select but never drag.
                             if (clip.locked) return
@@ -350,6 +355,8 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                             'group absolute top-[3px] flex items-center gap-2 overflow-hidden rounded-lg border px-2 text-xs',
                             clip.locked ? 'cursor-default select-none' : 'cursor-grab active:cursor-grabbing select-none',
                             clipTint(clip, selected),
+                            multiIds?.has(clip.id) && 'ring-2 ring-info ring-offset-1 ring-offset-bg',
+                            clip.groupId && 'border-dashed',
                             clip.hidden && 'opacity-40 [background-image:repeating-linear-gradient(135deg,transparent_0_6px,rgb(0_0_0/0.25)_6px_12px)]',
                           )}
                           style={{
