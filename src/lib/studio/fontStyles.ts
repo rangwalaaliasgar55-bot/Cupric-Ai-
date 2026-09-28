@@ -115,7 +115,7 @@ const RECIPES: Record<Mood, Array<{ name: string; head: string[]; emph: string[]
   friendly: [
     { name: 'Social pop', head: ['Chillax', 'Bricolage Grotesque Variable'], emph: ['Instrument Serif'], anim: 'pop', why: 'Characterful sans with a bounce.' },
     { name: 'Clean caption', head: ['Satoshi', 'Geist Variable'], emph: ['Fraunces Variable'], anim: 'word-reveal', why: 'Neutral captions that suit any footage.' },
-    { name: 'Round & warm', head: ['Supreme', 'Poppins'], emph: ['Instrument Serif'], anim: 'kinetic', why: 'Rounded and upbeat.' },
+    { name: 'Round & warm', head: ['Supreme', 'Poppins'], emph: ['Instrument Serif'], anim: 'kinetic', why: 'Rounded, friendly letterforms with an upbeat bounce — good for lifestyle and community clips.' },
   ],
 }
 
@@ -127,8 +127,30 @@ const RECIPES: Record<Mood, Array<{ name: string; head: string[]; emph: string[]
 export function suggestTextLooks(text: string, opts: { brandColors?: string[]; available: (family: string) => boolean; includeMissing?: boolean }): TextLook[] {
   const mood = moodOf(text)
   const { base, between } = paletteFrom(opts.brandColors)
-  const recipes = [...RECIPES[mood], ...RECIPES[mood === 'friendly' ? 'hype' : 'friendly'].slice(0, 1)]
+  /**
+   * JOB 5 — the six visible cards must be six different looks.
+   *
+   * The mood's own three recipes come first, then the nearest other moods fill
+   * up to six distinct pairings. Colourway variants are emitted *after* all of
+   * them (see the ordering below), so the first screenful is never the same
+   * three recipes shown twice.
+   */
+  const NEIGHBOURS: Record<Mood, Mood[]> = {
+    tech: ['education', 'hype', 'luxury'], luxury: ['story', 'tech', 'friendly'], hype: ['fitness', 'friendly', 'tech'],
+    friendly: ['hype', 'education', 'story'], fitness: ['hype', 'tech', 'friendly'], education: ['tech', 'friendly', 'story'],
+    story: ['luxury', 'education', 'friendly'],
+  }
+  const recipes: typeof RECIPES[Mood] = []
+  const takenNames = new Set<string>()
+  for (const m of [mood, ...NEIGHBOURS[mood]]) {
+    for (const r of RECIPES[m]) {
+      if (recipes.length >= 6 || takenNames.has(r.name)) continue
+      takenNames.add(r.name)
+      recipes.push(r)
+    }
+  }
   const looks: TextLook[] = []
+  const alternates: TextLook[] = []
   recipes.forEach((r, i) => {
     const pick = (list: string[], fallbacks: string[]) => list.find((f) => opts.available(f)) ?? fallbacks.find((f) => opts.available(f)) ?? fallbacks[fallbacks.length - 1]
     const head = pick(r.head, ['Geist Variable', 'Inter Variable'])
@@ -138,20 +160,22 @@ export function suggestTextLooks(text: string, opts: { brandColors?: string[]; a
       [mix('#FFFFFF', base[i % base.length], 0.12), base[(i + 1) % base.length], between[(i + 2) % between.length] ?? base[0], base[(i + 2) % base.length]],
     ]
     colorways.forEach(([color, emphasisColor, boxColor, accentColor], k) => {
-      looks.push({
+      const look: TextLook = {
         id: `${mood}-${i}-${k}`,
         name: `${r.name}${k ? ' · alt colour' : ''}`,
         why: r.why,
         patch: { fontFamily: head, weight: /Serif|Zodiak|Sentient|Author|Fraunces|Playfair|Boska/.test(head) ? 600 : 800, color, emphasisFont: emph, emphasisColor, boxColor, accentColor, anim: r.anim, ...(r.glow ? { textGlow: r.glow } : {}) },
-      })
+      }
+      // Primary colourways lead; alternates queue up behind all six recipes.
+      ;(k === 0 ? looks : alternates).push(look)
     })
     const wanted = r.head[0]
     const fs = fontshareFont(wanted)
     if (opts.includeMissing && fs && !opts.available(wanted)) {
-      looks.push({ id: `${mood}-${i}-fs`, name: `${r.name} with ${wanted}`, why: `${r.why} Best with ${wanted} — free on Fontshare.`, patch: { ...looks[looks.length - 2].patch, fontFamily: wanted }, needs: { family: wanted, url: fontshareUrl(fs.slug) } })
+      alternates.push({ id: `${mood}-${i}-fs`, name: `${r.name} with ${wanted}`, why: `${r.why} Best with ${wanted} — free on Fontshare.`, patch: { ...alternates[alternates.length - 1].patch, fontFamily: wanted }, needs: { family: wanted, url: fontshareUrl(fs.slug) } })
     }
   })
-  return looks.slice(0, 9)
+  return [...looks, ...alternates].slice(0, 12)
 }
 
 /** Everything the agent may choose from: bundled + user fonts (with roles). */

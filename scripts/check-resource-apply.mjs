@@ -28,6 +28,8 @@ await build({
     contents: `
       export { applyResource, applyLabel } from './src/lib/studio/resourceApply'
       export { emptyStudioDoc, defaultTextClip, defaultGlassClip, docDuration, MAX_TRACKS } from './src/lib/studio/doc'
+      export { suggestTextLooks } from './src/lib/studio/fontStyles'
+      export { drawStudioFrame } from './src/lib/studio/renderer'
       export { TEXT_ANIMATIONS, TRANSITIONS } from './src/lib/studio/transitions'
       export { STUDIO_BACKGROUNDS } from './src/lib/studio/backgrounds'
       export { GLASS_PRESETS } from './src/lib/glass'
@@ -214,6 +216,100 @@ const fontItem = { kind: 'font', id: 'font-x', name: 'Sora', data: { family: 'So
 const withText = busyDoc()
 const fontApplied = mod.applyResource(withText, fontItem, { atSec: 1, selectedId: 'busy-1' })
 assert.equal(fontApplied.doc.clips.find((c) => c.id === 'busy-1').fontFamily, 'Sora')
+
+/* ——— JOB 5: every suggested look has a name, and Apply changes the frame ———
+ *
+ * The screenshot showed six look cards that all read "Dynamic" with captions
+ * cut to "Socia…" / "Clea…" / "Need…", and an Apply that seemed to do nothing.
+ * This block proves the opposite on both counts: each of the six looks has a
+ * real name and a real reason, and applying it changes what the renderer
+ * actually paints — measured by hashing the real draw calls, not by reading
+ * the source.
+ */
+{
+  const { createHash } = await import('node:crypto')
+
+  /**
+   * A 2D context that records instead of painting.
+   *
+   * Every property set and every method call is appended to a log, so the hash
+   * of that log is a faithful signature of the frame: if two looks paint the
+   * same pixels they produce the same log, and if a look changes nothing the
+   * hash does not move. No canvas library needed.
+   */
+  const hashOf = (doc, t) => {
+    const log = []
+    const width = 1280, height = 720
+    const target = {
+      canvas: { width, height },
+      measureText: (text) => ({ width: String(text).length * 8, actualBoundingBoxAscent: 8, actualBoundingBoxDescent: 3 }),
+      createLinearGradient: () => ({ addColorStop: (o, c) => log.push(`grad.stop ${o} ${c}`) }),
+      createRadialGradient: () => ({ addColorStop: (o, c) => log.push(`rgrad.stop ${o} ${c}`) }),
+      createPattern: () => null,
+      getImageData: () => ({ data: new Uint8ClampedArray(4), width: 1, height: 1 }),
+      putImageData: () => {},
+      setLineDash: (d) => log.push(`setLineDash ${d}`),
+      getLineDash: () => [],
+      isPointInPath: () => false,
+      drawImage: (...a) => log.push(`drawImage ${a.slice(1).join(',')}`),
+    }
+    const ctx = new Proxy(target, {
+      get(obj, prop) {
+        if (prop in obj) return obj[prop]
+        if (typeof prop !== 'string') return undefined
+        return (...args) => { log.push(`${prop}(${args.map((a) => (typeof a === 'number' ? a.toFixed(3) : String(a))).join(',')})`) }
+      },
+      set(obj, prop, value) { log.push(`${String(prop)}=${typeof value === 'number' ? value.toFixed(3) : String(value)}`); obj[prop] = value; return true },
+    })
+    try { mod.drawStudioFrame(ctx, doc, t, width, height, { images: new Map(), videos: new Map(), lottie: new Map() }) } catch (err) {
+      throw new Error(`drawStudioFrame threw while hashing a look: ${err.message}`)
+    }
+    return { hash: createHash('sha1').update(log.join('\n')).digest('hex'), calls: log.length }
+  }
+
+  const base = emptyDoc()
+  const clip = { ...mod.defaultTextClip(0, 0), id: 'look-clip', text: 'Dynamic motion for social', durationSec: 4 }
+  base.clips = [clip]
+  const before = hashOf(base, 1.0)
+  assert.ok(before.calls > 20, `the recording context saw a real frame (${before.calls} draw calls)`)
+
+  const looks = mod.suggestTextLooks('Dynamic motion for social', { available: () => true, includeMissing: true }).slice(0, 6)
+  assert.equal(looks.length, 6, 'the panel offers six looks')
+
+  const seenNames = new Set()
+  const seenStems = new Set()
+  const seenHashes = new Map([[before.hash, 'unchanged clip']])
+  for (const look of looks) {
+    // 1. A card that cannot be named cannot be chosen.
+    assert.ok(look.name && look.name.trim().length >= 3, `look ${look.id} has a real name`)
+    assert.ok(!/^(dynamic|look|style|untitled|preset)$/i.test(look.name.trim()), `look name "${look.name}" is specific, not a generic label`)
+    assert.ok(look.why && look.why.trim().length >= 20, `look "${look.name}" explains itself in a full sentence`)
+    assert.ok(!seenNames.has(look.name), `look name "${look.name}" is not a duplicate of another card`)
+    seenNames.add(look.name)
+    // Six cards must be six *recipes*, not three recipes shown twice.
+    const stem = look.name.split(' · ')[0]
+    assert.ok(!seenStems.has(stem), `"${look.name}" is a different pairing, not a recolour of ${stem}`)
+    seenStems.add(stem)
+    assert.ok(look.patch.fontFamily && look.patch.emphasisFont, `look "${look.name}" names both of its fonts`)
+
+    // 2. Applying it must change what the renderer paints.
+    const after = hashOf({ ...base, clips: [{ ...clip, ...look.patch }] }, 1.0)
+    assert.notEqual(after.hash, before.hash, `applying "${look.name}" changes the rendered frame`)
+    const clash = seenHashes.get(after.hash)
+    assert.ok(!clash, `"${look.name}" renders differently from ${clash}`)
+    seenHashes.set(after.hash, `"${look.name}"`)
+  }
+  assert.equal(seenHashes.size, 7, 'six looks produce six distinct frames, all different from the untouched clip')
+
+  // 3. The UI shows the name in full and names it again on apply.
+  const fontStudio = await readFile(path.join(root, 'src/screens/studio/FontStudio.tsx'), 'utf8')
+  const chip = fontStudio.slice(fontStudio.indexOf('function LookChip'), fontStudio.indexOf('export function FontStudio'))
+  assert.match(chip, /\{look\.name\}/, 'the card renders the look name')
+  assert.doesNotMatch(chip, /truncate[^\n]*\{look\.name\}/, 'the name is not truncated')
+  assert.ok(!/className="[^"]*truncate[^"]*"[^>]*>\{look\.name\}/.test(chip), 'the name span carries no truncate class')
+  assert.match(fontStudio, /pushToast\('success', `Applied “\$\{look\.name\}”/, 'applying a look raises a toast that names it')
+  console.log(`JOB 5 check passed — 6 named looks (${[...seenNames].join(', ')}), each with a reason, each producing a distinct rendered frame`)
+}
 
 if (failures.length) {
   console.error(`resource apply check FAILED (${failures.length}):\n  ${failures.join('\n  ')}`)

@@ -5,7 +5,7 @@ import { FONTSHARE_FONTS, fontshareUrl, suggestTextLooks, type TextLook } from '
 import { VIDEO_FONT_FAMILIES } from '../../lib/studio/videoFonts'
 import { importFontFiles } from '../../lib/studio/fontZip'
 import { USER_FONTS_EVENT, removeUserFontFamily, userFontFamilies, userFontsReady } from '../../lib/studio/userFonts'
-import { useActiveProject } from '../../state/useProjectStore'
+import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { cx } from '../../lib/utils'
 
 /** Re-renders when the user adds/removes fonts. */
@@ -20,21 +20,33 @@ export function useUserFonts(): string[] {
   return list
 }
 
+/**
+ * JOB 5 — a look card has to say which look it is.
+ *
+ * The old card put the clip's own words in 15px type and the look's name in a
+ * truncated 10px caption, so six different looks all read as the same word
+ * with "Socia…", "Clea…", "Need…" underneath. Now the name is the headline, it
+ * wraps instead of truncating, the reason is on the card, and the type sample
+ * is clearly a sample.
+ */
 function LookChip({ look, sample, onApply }: { look: TextLook; sample: string; onApply: () => void }) {
   const p = look.patch
   const words = sample.split(/\s+/).filter(Boolean)
   const first = words.slice(0, 2).join(' ') || 'Your'
   const emph = words[2] ?? 'words'
   return (
-    <button type="button" onClick={onApply} title={look.why + (look.needs ? ` — get ${look.needs.family} free on Fontshare first.` : '')}
-      className={cx('group relative flex min-h-[64px] flex-col justify-between overflow-hidden rounded-lg border border-line bg-black/40 p-2 text-left transition hover:border-accent', look.needs && 'border-dashed')}>
-      <span className="block truncate leading-tight" style={{ fontFamily: `'${p.fontFamily}', system-ui`, fontWeight: p.weight, color: p.color, fontSize: 15, textShadow: p.textGlow ? `0 0 10px ${p.color}` : undefined }}>
+    <button type="button" onClick={onApply} title={`${look.name} — ${look.why}${look.needs ? ` Get ${look.needs.family} free on Fontshare first.` : ''}`}
+      data-look-name={look.name}
+      className={cx('group relative flex min-h-[92px] flex-col gap-1 overflow-hidden rounded-lg border border-line bg-black/40 p-2 text-left transition hover:border-accent', look.needs && 'border-dashed')}>
+      {/* The name, in full — it is the only thing that tells two looks apart. */}
+      <span className="text-[11px] font-semibold leading-tight text-text">{look.name}</span>
+      <span className="block leading-tight" style={{ fontFamily: `'${p.fontFamily}', system-ui`, fontWeight: p.weight, color: p.color, fontSize: 15, textShadow: p.textGlow ? `0 0 10px ${p.color}` : undefined }}>
         {first}{' '}
         <span style={{ fontFamily: `'${p.emphasisFont}', Georgia, serif`, fontStyle: 'italic', fontWeight: 400, color: p.emphasisColor }}>{emph}</span>
       </span>
-      <span className="mt-1 flex items-center gap-1">
+      <span className="mt-auto flex items-center gap-1">
         {[p.emphasisColor, p.boxColor, p.accentColor].map((c, i) => <span key={i} className="h-2.5 w-2.5 rounded-full border border-white/20" style={{ background: c }} />)}
-        <span className="ml-1 truncate text-[10px] text-muted">{look.needs ? `Needs ${look.needs.family}` : look.name}</span>
+        <span className="ml-1 text-[10px] leading-tight text-muted">{look.needs ? `Needs ${look.needs.family}` : `${p.fontFamily} + ${p.emphasisFont}`}</span>
       </span>
     </button>
   )
@@ -47,6 +59,7 @@ function LookChip({ look, sample, onApply }: { look: TextLook; sample: string; o
  */
 export function FontStudio({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Partial<StudioClip>) => void }) {
   const project = useActiveProject()
+  const pushToast = useProjectStore((s) => s.pushToast)
   const userFonts = useUserFonts()
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<string | null>(null)
@@ -64,7 +77,10 @@ export function FontStudio({ clip, onPatch }: { clip: StudioTextClip; onPatch: (
   const apply = (look: TextLook) => {
     if (look.needs) { setMsg(`${look.needs.family} is a free Fontshare font. Download it (link below), then drop the .zip on “Add fonts” — Cupric keeps it on this computer and this look applies.`); setShowShelf(true); return }
     onPatch(look.patch as Partial<StudioClip>)
+    // JOB 5 — Apply must be visible twice: on the canvas, and as a toast that
+    // names the look so the user knows which of the six landed.
     setMsg(`Applied “${look.name}”: ${look.patch.fontFamily} + ${look.patch.emphasisFont} italic. ${look.why}`)
+    pushToast('success', `Applied “${look.name}” — ${look.patch.fontFamily} with ${look.patch.emphasisFont} italic. Undo reverts it.`)
   }
 
   const add = async (files: FileList | null) => {
@@ -88,7 +104,7 @@ export function FontStudio({ clip, onPatch }: { clip: StudioTextClip; onPatch: (
         <span className="text-xs font-medium text-text">Suggested looks</span>
         <button type="button" className="cu-chip px-2 py-0.5 text-[11px]" onClick={() => setSeed((s) => s + 3)}>Shuffle</button>
       </div>
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         {looks.slice(0, 6).map((l) => <LookChip key={l.id} look={l} sample={sample} onApply={() => apply(l)} />)}
       </div>
       <p className="text-[11px] text-muted">Picked for the mood of your words. Colours come from your Brand Kit plus the tones between them.</p>
