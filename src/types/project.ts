@@ -456,6 +456,14 @@ export type StudioTextClip = StudioClipCommon & {
   anim: StudioTextAnim
   captionStyle: StudioCaptionStyle | null
   highlightWord: string | null
+  /**
+   * JOB 13 — highlight a PHRASE, not just one word. Comma-separated, e.g.
+   * `"six weeks, no gym"`. Matched literally against the clip's own words;
+   * a phrase that is not present simply does not highlight anything.
+   */
+  highlightRuns?: string | null
+  /** Colour the run, or draw a filled chip behind it. Default `color`. */
+  highlightStyle?: 'color' | 'chip'
   /** Rich markup colours: *emphasis* (serif italic), ==highlight box==, {accent}, ^big^. */
   emphasisColor?: string
   emphasisFont?: string

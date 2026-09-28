@@ -1020,13 +1020,25 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
         </Field>
       </div>
 
-      <Field label="Highlight word" hint="Painted lime, Hormozi-style. Leave empty for none.">
+      {/* JOB 13 — highlight a phrase, not just one word, and choose how. */}
+      <Field label="Highlight words" hint="A word or a phrase from this caption. Separate several with commas. Only words actually in the text can highlight.">
         <input
-          value={clip.highlightWord ?? ''}
-          onChange={(e) => onPatch({ highlightWord: e.target.value || null } as Partial<StudioClip>)}
-          placeholder="e.g. free"
+          value={clip.highlightRuns ?? clip.highlightWord ?? ''}
+          onChange={(e) => onPatch({ highlightRuns: e.target.value || null, highlightWord: null } as Partial<StudioClip>)}
+          placeholder="e.g. six weeks, no gym"
           className={inputCx}
         />
+      </Field>
+
+      <Field label="Highlight style" hint="Colour paints the words themselves. Chip draws a filled block behind the whole phrase.">
+        <select
+          value={clip.highlightStyle ?? 'color'}
+          onChange={(e) => onPatch({ highlightStyle: e.target.value as 'color' | 'chip' } as Partial<StudioClip>)}
+          className={inputCx}
+        >
+          <option value="color">Coloured words</option>
+          <option value="chip">Highlight chip</option>
+        </select>
       </Field>
 
       <Field label="Text legibility" hint="Auto adds a soft backing only when the picture behind the text is too dark, too light or too busy to read.">

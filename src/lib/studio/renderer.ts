@@ -34,6 +34,7 @@ import { bezierEase } from './curves'
 import { compareDivider, deviceGeometry } from './layouts'
 import { drawDuoPhone, drawPhone, type DrawMedia } from './phone'
 import { kineticWord } from './textTools'
+import { CHIP, chipReveal, markRuns, runSpec } from './highlightRuns'
 import { hasRichMarkup, parseRich, RICH_DEFAULTS, type RichStyle, type RichWord } from './richText'
 import type { StudioBlendMode, StudioDevice } from '../../types/project'
 
@@ -619,19 +620,55 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
       ctx.textAlign = 'left'
       const totalWords = raw.split(/\s+/).filter(Boolean).length || 1
       let seen = lines.slice(0, index).join(' ').split(/\s+/).filter(Boolean).length
+      /**
+       * JOB 13 — highlight whole RUNS, not single words, and optionally draw
+       * a chip behind each run as one box rather than a ragged box per word.
+       */
+      const marks = markRuns(words, runSpec(clip.highlightRuns, clip.highlightWord))
+      const runCount = marks.reduce((max, m) => Math.max(max, m.run + 1), 0)
+      const emphasis = clip.emphasisColor || '#C8F542'
+
+      if (clip.highlightStyle === 'chip' && runCount > 0) {
+        // Measure each run across its words so the chip is a single rectangle.
+        let scan = cursor
+        let runFrom = 0
+        for (let i = 0; i < words.length; i++) {
+          if (marks[i].runStart) runFrom = scan
+          if (marks[i].runEnd) {
+            const runTo = scan + ctx.measureText(words[i]).width
+            const grow = chipReveal(progress, marks[i].run, runCount)
+            if (grow > 0.001) {
+              const padX = CHIP.padX * fontPx
+              const padY = CHIP.padY * fontPx
+              const w = (runTo - runFrom + padX * 2) * grow
+              const h = fontPx + padY * 2
+              ctx.save()
+              ctx.globalAlpha *= 0.95
+              ctx.fillStyle = emphasis
+              ctx.beginPath()
+              ctx.roundRect(runFrom - padX, y - fontPx * 0.78, w, h, CHIP.radius * fontPx)
+              ctx.fill()
+              ctx.restore()
+            }
+          }
+          scan += widths[i]
+        }
+      }
+
       for (let i = 0; i < words.length; i++) {
         const st = kineticWord(seen, totalWords, progress)
         seen += 1
         if (st.alpha > 0) {
-          const isHighlight = clip.highlightWord && words[i].toLowerCase().replace(/[^a-z0-9]/g, '') === clip.highlightWord.toLowerCase()
+          const isHighlight = marks[i].run !== -1
           ctx.save()
           ctx.globalAlpha *= st.alpha
           const wx = cursor + ctx.measureText(words[i]).width / 2
           ctx.translate(wx, y + st.dy * fontPx)
           ctx.scale(st.scale, st.scale)
-          ctx.fillStyle = isHighlight ? (clip.emphasisColor || '#C8F542') : clip.color
+          // On a chip the words sit ON the colour, so they take the base ink.
+          ctx.fillStyle = isHighlight ? (clip.highlightStyle === 'chip' ? (clip.boxColor || '#0B0B10') : emphasis) : clip.color
           ctx.textAlign = 'center'
-          if (preset.stroke) ctx.strokeText(words[i], 0, 0)
+          if (preset.stroke && !(isHighlight && clip.highlightStyle === 'chip')) ctx.strokeText(words[i], 0, 0)
           ctx.fillText(words[i], 0, 0)
           ctx.restore()
         }
