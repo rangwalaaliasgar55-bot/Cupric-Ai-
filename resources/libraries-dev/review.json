@@ -222,7 +222,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1305,
+      "line": 1307,
       "target": "Waiting state",
       "existingComponent": "{importing ? <Loader2 size={13} className=\"animate-spin\" /> : <Plus size={13} />} Import",
       "suggestedLibrary": "Thinking orbs",
@@ -573,7 +573,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1543,
+      "line": 1546,
       "target": "Image placeholder",
       "existingComponent": "<span className={cx('h-2 w-2 shrink-0 rounded-full', listening ? 'animate-pulse bg-accent' : 'bg-muted')} />",
       "suggestedLibrary": "Image",
@@ -638,7 +638,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1342,
+      "line": 1344,
       "target": "Plus menu / segmented control",
       "existingComponent": "<Button size=\"sm\" variant=\"outline\" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} aria-expanded={shapeOpe",
       "suggestedLibrary": "Gooey",

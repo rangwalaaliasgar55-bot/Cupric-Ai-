@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Copy, Download, Gauge, Image as ImageIcon, Layers, Mic, Palette, Repeat2, Search, Share2 } from 'lucide-react'
 import type { StudioAspect, StudioClip, StudioDoc } from '../../types/project'
 import { Button } from '../../components/Button'
+import { PLATFORM_PRESETS, checkPreset, studioToSrt } from '../../lib/studio/editTools'
 import { applyBrandKit, buildVariants, reframeForAspect, socialMetadata, speedRamp, SPEED_RAMPS, type BrandKit, type SpeedRampId } from '../../lib/studio/creativeTools'
 import { simpleIconSlug, simpleIconUrl } from '../../lib/simpleIcons'
 import { synthesizeVoiceover, type VoiceoverLanguage } from '../../lib/voice'
@@ -45,6 +46,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
     useProjectStore.setState((s) => ({ projects: s.projects.map((p) => (p.id === project.id ? { ...p, brandKit: next, updatedAt: new Date().toISOString() } : p)) }))
   }
   const [ramp, setRamp] = useState<SpeedRampId>('hero-moment')
+  const [presetId, setPresetId] = useState('reels')
   const [logoQuery, setLogoQuery] = useState('')
   const [logoBusy, setLogoBusy] = useState(false)
   const [script, setScript] = useState('')
@@ -200,6 +202,24 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
           <Button size="sm" variant="primary" onClick={() => { const still = captureStill(doc, time); if (still) { setThumbnail(still); setMsg('Thumbnail captured from the same deterministic renderer used by preview/export.') } else setMsg('Could not capture a thumbnail at this playhead.') }}><ImageIcon size={12} /> Capture thumbnail</Button>
         </div>
         {thumbnail && <div className="flex items-center gap-2 rounded-lg border border-line bg-panel-alt/50 p-2"><img src={thumbnail} alt="Generated video thumbnail" className="h-16 w-28 rounded object-cover" /><a href={thumbnail} download="cupric-thumbnail.png" className="cu-chip flex items-center gap-1 px-2 py-1 text-xs"><Download size={12} /> Download PNG</a></div>}
+      </Block>
+
+      <Block icon={Share2} title="Platform export preset">
+        <select className={inputCx} value={presetId} onChange={(e) => setPresetId(e.target.value)} aria-label="Platform">
+          {PLATFORM_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label} · {p.aspect}</option>)}
+        </select>
+        {(() => { const preset = PLATFORM_PRESETS.find((p) => p.id === presetId)!; const issues = checkPreset(doc, preset); return (
+          <>
+            <p className="text-[11px] text-muted">{preset.note} Up to {preset.maxSec >= 3600 ? 'hours' : `${preset.maxSec}s`}, {preset.fps} fps.</p>
+            {issues.length === 0 ? <p className="text-[11px] text-accent-text">Ready for {preset.label}.</p> : (
+              <ul className="list-disc pl-4 text-[11px]">{issues.map((i) => <li key={i.text} className={i.level === 'error' ? 'text-danger' : 'text-muted'}>{i.text}</li>)}</ul>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              <Button size="sm" variant="primary" disabled={doc.aspect === preset.aspect && doc.fps === preset.fps} onClick={() => { commitResult({ doc: { ...(doc.aspect === preset.aspect ? doc : reframeForAspect(doc, preset.aspect)), fps: preset.fps }, changed: true }, `Apply ${preset.label} preset`); setMsg(`Set to ${preset.aspect} at ${preset.fps} fps. Text was reframed into the new safe area. Undo reverts it.`) }}>Apply preset</Button>
+              <Button size="sm" variant="outline" onClick={() => { const r = studioToSrt(doc); if (!r.cues) { setMsg('No text clips to turn into captions yet.'); return } const url = URL.createObjectURL(new Blob([r.srt], { type: 'application/x-subrip' })); const a = document.createElement('a'); a.href = url; a.download = `${(project?.name || 'captions').replace(/[^\w-]+/g, '-')}.srt`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); setMsg(`Saved ${r.cues} caption cue(s) as SRT${r.skipped ? `. Skipped ${r.skipped} placeholder line(s)` : ''}.`) }}><Download size={12} /> Captions (.srt)</Button>
+            </div>
+          </>
+        ) })()}
       </Block>
 
       <Block icon={Repeat2} title="Repurpose to another size">

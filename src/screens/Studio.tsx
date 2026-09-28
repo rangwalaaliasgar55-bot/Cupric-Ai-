@@ -54,6 +54,8 @@ import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
+import { EditToolsBar } from './studio/EditToolsBar'
+import { moveWithGroup } from '../lib/studio/editTools'
 import { StudioInspector } from './studio/StudioInspector'
 import { StudioPreview } from './studio/StudioPreview'
 import { StudioNotices } from './studio/StudioNotices'
@@ -1436,6 +1438,7 @@ export function Studio() {
           )}
         </div>
       </div>
+      <EditToolsBar doc={doc} selectedId={selectedId} onCommit={(next, label) => patchStudio(projectId, { clips: next.clips, trackCount: next.trackCount, markers: next.markers }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
 
       <form
         className="flex shrink-0 items-center gap-2 border-b border-line bg-panel-alt/50 px-6 py-2"
@@ -1842,7 +1845,7 @@ export function Studio() {
                 setPlaying(false)
                 seek(t)
               }}
-              onPatchClip={(id, patch) => updateStudioClip(projectId, id, patch)}
+              onPatchClip={(id, patch) => { const grouped = moveWithGroup(doc, id, patch); if (grouped) patchStudio(projectId, { clips: grouped.clips, trackCount: grouped.trackCount }, 'Move group'); else updateStudioClip(projectId, id, patch) }}
               onReorderTrack={(from, to) => reorderStudioTracks(projectId, from, to)}
               onSettleClip={(id) => settleStudioClip(projectId, id)}
               onDropAt={onTimelineDrop}

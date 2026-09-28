@@ -389,6 +389,8 @@ type StudioClipCommon = {
   mask?: StudioMask | null
   /** Property animation, sorted by `at`. Absent means the clip is static. */
   keyframes?: StudioKeyframe[] | null
+  /** Clips sharing a groupId move together. Absent means ungrouped. */
+  groupId?: string
   /** 2.6 — absent means normal. */
   blendMode?: StudioBlendMode
   /** 2.3 — absent means no LUT. */
