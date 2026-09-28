@@ -1441,7 +1441,7 @@ export function Studio() {
         </div>
       </div>
       <EditToolsBar doc={doc} selectedId={selectedId} multiIds={multiIds} onClearMulti={() => setMultiIds(new Set())} onCommit={(next, label) => patchStudio(projectId, { clips: next.clips, trackCount: next.trackCount, markers: next.markers }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
-      <TextListPanel doc={doc} selectedId={selectedId} onSelect={(id, at) => { setSelectedId(id); setMultiIds(new Set()); setTime(at) }} onCommit={(next, label) => patchStudio(projectId, { clips: next.clips }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
+      <TextListPanel doc={doc} selectedId={selectedId} onSelect={(id, at) => { setSelectedId(id); setMultiIds(new Set()); setTime(at) }} onCommit={(next, label) => patchStudio(projectId, { clips: resolveOverlaps(next).clips }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
 
       <form
         className="flex shrink-0 items-center gap-2 border-b border-line bg-panel-alt/50 px-6 py-2"
