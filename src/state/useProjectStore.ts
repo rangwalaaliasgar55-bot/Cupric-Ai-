@@ -220,6 +220,10 @@ type AppState = {
    * Not an undo step — see applyBackground.
    */
   landComponentRecording: (pid: string, clipId: string, patch: Partial<StudioOverlayClip>) => void
+  /** JOB 6 — a reviewed recording the user chose NOT to put on the timeline. */
+  shelveComponentRecording: (pid: string, clipId: string, patch: Partial<StudioOverlayClip>) => void
+  /** JOB 6 — a reviewed recording the user threw away. */
+  discardComponentRecording: (pid: string, clipId: string) => void
   removeStudioClip: (pid: string, clipId: string) => void
   splitStudioClip: (pid: string, clipId: string, atSec: number) => void
   duplicateStudioClip: (pid: string, clipId: string) => void
@@ -580,6 +584,49 @@ export const useProjectStore = create<AppState>()(
                 ...doc,
                 clips: doc.clips.map(patchOne),
                 ...(doc.shelf ? { shelf: doc.shelf.map(patchOne) } : {}),
+              },
+            }
+          }),
+
+        /**
+         * JOB 6 — "Save to shelf" from the review card.
+         *
+         * Takes the finished recording off the timeline and parks it in the
+         * shelf, so a component the user is not sure about never occupies a
+         * slot in the edit. Like landComponentRecording this is a background
+         * write: Undo still belongs to the user's own last edit.
+         */
+        shelveComponentRecording: (pid, clipId, patch) =>
+          applyBackground(pid, (p) => {
+            if (!p.studio) return p
+            const doc = p.studio
+            const fromTimeline = doc.clips.find((c) => c.id === clipId && c.kind === 'overlay') as StudioOverlayClip | undefined
+            const shelf = doc.shelf ?? []
+            const alreadyShelved = shelf.some((c) => c.id === clipId)
+            const merged = fromTimeline ? ({ ...fromTimeline, ...patch } as StudioOverlayClip) : null
+            return {
+              ...p,
+              studio: {
+                ...doc,
+                clips: doc.clips.filter((c) => c.id !== clipId),
+                shelf: alreadyShelved
+                  ? shelf.map((c) => (c.id === clipId ? ({ ...c, ...patch } as StudioOverlayClip) : c))
+                  : merged ? [...shelf, merged] : shelf,
+              },
+            }
+          }),
+
+        /** JOB 6 — discard: the clip leaves both the timeline and the shelf. */
+        discardComponentRecording: (pid, clipId) =>
+          applyBackground(pid, (p) => {
+            if (!p.studio) return p
+            const doc = p.studio
+            return {
+              ...p,
+              studio: {
+                ...doc,
+                clips: doc.clips.filter((c) => c.id !== clipId),
+                ...(doc.shelf ? { shelf: doc.shelf.filter((c) => c.id !== clipId) } : {}),
               },
             }
           }),

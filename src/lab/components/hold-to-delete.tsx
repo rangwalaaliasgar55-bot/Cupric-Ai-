@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { cn } from "@/lib/cn";
+import { useDemoProps } from "@/lab/demo-props";
 
 type State = "idle" | "holding" | "done";
 
@@ -23,13 +24,34 @@ const CSS = `
 }
 `;
 
+// JOB 6 — the words on the button are the user's, not ours. Both labels are
+// editable props; without them the component keeps its own defaults, so
+// nothing that already uses it changes.
+export const HOLD_TO_DELETE_DEFAULTS = {
+  label: "Hold to delete",
+  doneLabel: "Deleted",
+};
+
 export function HoldToDelete({
   onDelete,
   className,
+  label,
+  doneLabel,
 }: {
   onDelete?: () => void;
   className?: string;
+  label?: string;
+  doneLabel?: string;
 }) {
+  const demoProps = useDemoProps();
+  const fromProps = (key: "label" | "doneLabel") => {
+    const v = demoProps?.[key];
+    return typeof v === "string" && v.trim() ? v : HOLD_TO_DELETE_DEFAULTS[key];
+  };
+  const labels = {
+    label: label ?? fromProps("label"),
+    doneLabel: doneLabel ?? fromProps("doneLabel"),
+  };
   const [state, setState] = useState<State>("idle");
   const reset = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -66,7 +88,7 @@ export function HoldToDelete({
       <style href="hold-to-delete" precedence="default">
         {CSS}
       </style>
-      <Label state={state} />
+      <Label state={state} labels={labels} />
       {/* Fills over 2s while held but snaps back in 200ms on release: slow
           where the user is deciding, fast where the interface responds. */}
       <span
@@ -87,10 +109,10 @@ export function HoldToDelete({
           reset.current = setTimeout(() => setState("idle"), 2000);
         }}
       >
-        <Label state={state} />
+        <Label state={state} labels={labels} />
       </span>
       <span className="sr-only" aria-live="polite">
-        {state === "done" ? "Deleted" : ""}
+        {state === "done" ? labels.doneLabel : ""}
       </span>
     </button>
   );
@@ -98,21 +120,21 @@ export function HoldToDelete({
 
 // Both labels share one grid cell, so the button keeps the width of the
 // longer one and never jumps when they swap.
-function Label({ state }: { state: State }) {
+function Label({ state, labels }: { state: State; labels: { label: string; doneLabel: string } }) {
   const done = state === "done";
   // Only the swap into "Deleted" waits for the lid; the way back is instant.
   const delay = done ? SWAP_DELAY : 0;
   return (
     <span className="grid">
       <Variant visible={!done} delay={delay} icon={<Bin state={state} />}>
-        Hold to delete
+        {labels.label}
       </Variant>
       <Variant
         visible={done}
         delay={delay}
         icon={<path d="m3.5 8.5 3 3 6-7" />}
       >
-        Deleted
+        {labels.doneLabel}
       </Variant>
     </span>
   );

@@ -10,7 +10,7 @@
 import { ProgressBar } from '../../components/ProgressBar'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
-import { Loader2, X } from 'lucide-react'
+import { Archive, Check, Loader2, Trash2, X } from 'lucide-react'
 import type { StudioClip, StudioDoc } from '../../types/project'
 import { DemoFrame } from '../../lab/DemoFrame'
 import { availableSlugs } from '../../lab/demos'
@@ -23,6 +23,8 @@ import { useProjectStore } from '../../state/useProjectStore'
 
 export function ComponentRecorderHost({ projectId, doc }: { projectId: string; doc: StudioDoc }) {
   const landRecording = useProjectStore((s) => s.landComponentRecording)
+  const moveToShelf = useProjectStore((s) => s.shelveComponentRecording)
+  const discard = useProjectStore((s) => s.discardComponentRecording)
   const pushToast = useProjectStore((s) => s.pushToast)
   const [skipped, setSkipped] = useState<Set<string>>(new Set())
   // Timeline clips first, then shelf recordings (2.13 — record now, place
@@ -50,6 +52,18 @@ export function ComponentRecorderHost({ projectId, doc }: { projectId: string; d
       onDone={(patch) => {
         update(patch as Partial<StudioClip>)
         if (onShelf) pushToast('success', `“${current.name}” recorded — place it from Components whenever you like.`)
+        else pushToast('success', `“${current.name}” applied at ${current.startSec.toFixed(1)}s. Undo removes it.`)
+      }}
+      // JOB 6 — "Save to shelf" moves a timeline recording off the timeline, so
+      // nothing lands in the edit until the user actually wants it there.
+      onShelve={(patch) => {
+        moveToShelf(projectId, current.id, patch as never)
+        pushToast('success', `“${current.name}” saved to the shelf — it is not on your timeline. Place it from Components when you want it.`)
+      }}
+      onDiscard={() => {
+        setSkipped((prev) => new Set(prev).add(current.id))
+        discard(projectId, current.id)
+        pushToast('info', `Discarded the recording of “${current.name}”. Nothing was added to your timeline.`)
       }}
       onCancel={() => {
         setSkipped((prev) => new Set(prev).add(current.id))
@@ -64,12 +78,39 @@ export function ComponentRecorderHost({ projectId, doc }: { projectId: string; d
   )
 }
 
+/** What the user reviews before anything touches the timeline. */
+type RecordingReview = {
+  patch: Record<string, unknown>
+  first: string
+  mid: string
+  last: string
+  frameCount: number
+  animated: boolean
+  durationSec: number
+  width: number
+  height: number
+  bytes: number
+}
+
+const AUTO_APPLY_KEY = 'cupric.componentRecorder.autoApply'
+/** Auto-insert is off until the user asks for it, and remembered per machine. */
+function readAutoApply(): boolean {
+  try { return localStorage.getItem(AUTO_APPLY_KEY) === '1' } catch { return false }
+}
+function writeAutoApply(on: boolean) {
+  try { localStorage.setItem(AUTO_APPLY_KEY, on ? '1' : '0') } catch { /* private mode: the session default stands */ }
+}
+
+const prettyBytes = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`)
+
 function RecorderCard({
   clip,
   remaining,
   aspect,
   onShelf = false,
   onDone,
+  onShelve,
+  onDiscard,
   onCancel,
   onError,
 }: {
@@ -78,6 +119,8 @@ function RecorderCard({
   aspect: StudioDoc['aspect']
   onShelf?: boolean
   onDone: (patch: Record<string, unknown>) => void
+  onShelve: (patch: Record<string, unknown>) => void
+  onDiscard: () => void
   onCancel: () => void
   onError: (message: string) => void
 }) {
@@ -85,7 +128,16 @@ function RecorderCard({
   const entry = findComponent(meta.slug)
   const stageRef = useRef<HTMLDivElement>(null)
   const [pct, setPct] = useState(0)
-  const [phase, setPhase] = useState<'loading' | 'recording' | 'finishing'>('loading')
+  const [phase, setPhase] = useState<'loading' | 'recording' | 'finishing' | 'review'>('loading')
+  /**
+   * JOB 6 — nothing lands on the timeline unreviewed.
+   *
+   * The finished recording waits here with its first, middle and last frame on
+   * screen until the user chooses Apply, Save to shelf or Discard. Auto-insert
+   * still exists but is now opt-in and remembered per machine.
+   */
+  const [review, setReview] = useState<RecordingReview | null>(null)
+  const [autoApply, setAutoApply] = useState(readAutoApply)
   const abortRef = useRef<AbortController | null>(null)
   // The shared clock for clock-driven components: each shot renders exactly its own moment.
   const [clockSec, setClockSec] = useState(0)
@@ -125,7 +177,7 @@ function RecorderCard({
         if (!result.frames.length) throw new Error('No frames were captured.')
         // The compositor captures at screen density, the DOM renderers at `pixelRatio`.
         const density = result.method === 'compositor' ? window.devicePixelRatio || 1 : pixelRatio
-        onDone({
+        const patch = {
           dataUrl: result.frames[Math.min(result.frames.length - 1, Math.floor(result.frames.length * 0.6))],
           frames: result.animated ? result.frames : undefined,
           frameFps: result.animated ? result.frameFps : undefined,
@@ -133,7 +185,25 @@ function RecorderCard({
           scale: clip.scale !== 1 ? clip.scale : fitComponentScale(result.width, result.height, density, aspect),
           source: `${generated ? 'Agent-generated' : 'UI component'} · ${label} · ${result.animated ? `${result.frames.length} frames recorded live` : 'still (it has no motion on its own)'}`,
           component: { ...meta, status: 'ready', error: undefined },
-        })
+        }
+        const frames = result.frames
+        const shot = (fraction: number) => frames[Math.min(frames.length - 1, Math.max(0, Math.round((frames.length - 1) * fraction)))]
+        const built: RecordingReview = {
+          patch,
+          first: shot(0),
+          mid: shot(0.5),
+          last: shot(1),
+          frameCount: frames.length,
+          animated: Boolean(result.animated),
+          durationSec: meta.recordSec,
+          width: Math.round(result.width),
+          height: Math.round(result.height),
+          bytes: frames.reduce((sum, f) => sum + Math.round((f.length - (f.indexOf(',') + 1)) * 0.75), 0),
+        }
+        // Opt-in auto-insert keeps the old one-click flow for people who want it.
+        if (readAutoApply()) { onDone(patch); return }
+        setReview(built)
+        setPhase('review')
       } catch (error) {
         if (!alive || controller.signal.aborted) return
         onError(humanError(error, `Could not record “${label}”`))
@@ -147,6 +217,57 @@ function RecorderCard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  /* ——— JOB 6: review, then apply ———————————————————————————————
+   * The recording is finished and is sitting in memory. It goes nowhere until
+   * the user picks one of the three buttons below.
+   */
+  if (phase === 'review' && review) {
+    const shots: Array<[string, string]> = [['First frame', review.first], ['Middle', review.mid], ['Last frame', review.last]]
+    return (
+      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]" role="dialog" aria-label={`Review the recording of ${clip.name}`}>
+        <div className="flex max-h-full w-[min(680px,94vw)] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
+          <div className="flex items-center gap-3 border-b border-line px-4 py-2.5">
+            <Check size={14} className="text-accent-text" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold">Review “{clip.name}”</div>
+              <div className="text-xs text-muted">
+                {review.animated ? `${review.frameCount} frames` : 'Still — this component has no motion of its own'} · {review.durationSec}s · {review.width}×{review.height} · {prettyBytes(review.bytes)}
+                {remaining > 1 ? ` · ${remaining - 1} more queued` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 overflow-y-auto p-4">
+            {shots.map(([label, src]) => (
+              <figure key={label} className="min-w-0">
+                <div className="lab-canvas flex aspect-video items-center justify-center overflow-hidden rounded-lg border border-line bg-black/40">
+                  <img src={src} alt={`${label} of the recording`} className="max-h-full max-w-full object-contain" />
+                </div>
+                <figcaption className="mt-1 text-[11px] text-muted">{label}</figcaption>
+              </figure>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-2.5">
+            <label className="mr-auto flex items-center gap-1.5 text-[11px] text-muted" title="Skip this review next time and drop recordings straight onto the timeline">
+              <input type="checkbox" checked={autoApply} onChange={(e) => { setAutoApply(e.target.checked); writeAutoApply(e.target.checked) }} />
+              Apply future recordings automatically
+            </label>
+            <Button size="sm" variant="ghost" onClick={onDiscard} title="Throw this recording away — nothing is added">
+              <Trash2 size={13} /> Discard
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => onShelve(review.patch)} title="Keep it in Components without putting it on the timeline">
+              <Archive size={13} /> Save to shelf
+            </Button>
+            <Button size="sm" variant="primary" onClick={() => onDone(review.patch)} title={`Place it at ${clip.startSec.toFixed(1)}s on track ${clip.track + 1}`}>
+              <Check size={13} /> Apply at {clip.startSec.toFixed(1)}s
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]" role="dialog" aria-label={`Recording ${clip.name}`}>
       <div className="flex max-h-full w-[min(640px,94vw)] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
@@ -155,7 +276,7 @@ function RecorderCard({
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">Recording “{clip.name}”</div>
             <div className="text-xs text-muted">
-              {phase === 'loading' ? 'Loading the component…' : phase === 'finishing' ? onShelf ? 'Saving it to the shelf…' : 'Placing it on your timeline…' : `${meta.interact ? 'Acting it out' : 'Capturing'} · ${meta.recordSec}s of real animation · ${pct}%`}
+              {phase === 'loading' ? 'Loading the component…' : phase === 'finishing' ? 'Building the preview to review…' : `${meta.interact ? 'Acting it out' : 'Capturing'} · ${meta.recordSec}s of real animation · ${pct}%`}
               {remaining > 1 ? ` · ${remaining - 1} more queued` : ''}
             </div>
           </div>

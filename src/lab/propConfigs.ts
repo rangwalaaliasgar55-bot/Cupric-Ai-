@@ -11,6 +11,7 @@
 import type { ComponentConfig, ControlType } from './framecn/customizer-config'
 import { FRAMECN_CONFIGS } from './framecn/configs'
 import { OBSIDIAN_CONFIGS } from './obsidian/configs'
+import { CUPRIC_CONFIGS } from './cupricConfigs'
 import framecn from './framecn/entries.json'
 
 // Shaders draw on WebGL — no DOM text for a font to reach.
@@ -22,7 +23,7 @@ const withFont = (slug: string, c: ComponentConfig): ComponentConfig =>
   !NO_TEXT.has(slug) && !c.controls.fontFamily ? { ...c, controls: { ...c.controls, fontFamily: FONT_PROP } } : c
 
 export const PROP_CONFIGS: Record<string, ComponentConfig> = Object.fromEntries(
-  Object.entries({ ...FRAMECN_CONFIGS, ...OBSIDIAN_CONFIGS }).map(([slug, c]) => [slug, withFont(slug, c)]),
+  Object.entries({ ...FRAMECN_CONFIGS, ...OBSIDIAN_CONFIGS, ...CUPRIC_CONFIGS }).map(([slug, c]) => [slug, withFont(slug, c)]),
 )
 
 export { FONT_FAMILY_RE } from './fontProp'

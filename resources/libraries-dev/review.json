@@ -248,7 +248,7 @@
     },
     {
       "file": "src/screens/studio/ComponentRecorderHost.tsx",
-      "line": 154,
+      "line": 275,
       "target": "Waiting state",
       "existingComponent": "<Loader2 size={14} className=\"animate-spin text-accent-text\" />",
       "suggestedLibrary": "Thinking orbs",
