@@ -2,6 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { ThinkingStates } from '../components/loaders/ThinkingStates'
 import { MatrixLoader } from '../components/loaders/MatrixLoader'
 import { ProductionPlanner } from './production/ProductionPlanner'
+import { rundownToDoc } from '../lib/production/fromRundown'
+import { studioOf } from '../lib/studio/doc'
+import { uid } from '../lib/utils'
+import type { AutomationJob } from '../types/project'
 import { dedupeMessages, humanError } from '../lib/humanError'
 import { Mic, MicOff, Volume2 } from 'lucide-react'
 import { Card } from '../components/Card'
@@ -34,6 +38,17 @@ export function Autonomous() {
   const start = useProjectStore(s => s.startAutomationJob)
   const cancel = useProjectStore(s => s.cancelAutomationJob)
   const resume = useProjectStore(s => s.resumeAutomationJob)
+  function openEditable(job: AutomationJob) {
+    const st = useProjectStore.getState()
+    const pid = job.projectId && st.projects.some((p) => p.id === job.projectId) ? job.projectId : st.activeProjectId
+    const project = st.projects.find((p) => p.id === pid)
+    if (!project || !job.rundown) { st.pushToast('error', 'Open the project this run belongs to first.'); return }
+    const r = rundownToDoc(studioOf(project), job.rundown, () => uid())
+    st.setActiveProject(project.id)
+    st.patchStudio(project.id, { clips: r.doc.clips, trackCount: r.doc.trackCount }, 'Auto run → editable timeline')
+    st.setView('studio')
+    st.pushToast('success', `Added ${r.clipIds.length} editable scene clip(s) with keyframed motion${r.placeholders ? `, ${r.placeholders} need copy` : ''}. Undo reverts it.`)
+  }
   const approve = useProjectStore(s => s.approveAutomationStep)
   const reject = useProjectStore(s => s.rejectAutomationStep)
   const pushToast = useProjectStore(s => s.pushToast)
@@ -286,6 +301,7 @@ export function Autonomous() {
                 {job.status === 'running' && <Button variant="outline" onClick={() => cancel(job.id)}>Cancel</Button>}
                 {(job.status === 'cancelled' || job.status === 'error') && <Button onClick={() => resume(job.id)}>Resume</Button>}
                 {job.outputPath && <Button variant="outline" onClick={() => openOutput(job.outputPath)}>Reveal MP4</Button>}
+                {job.rundown?.scenes?.length ? <Button variant="outline" onClick={() => openEditable(job)} title="Rebuild this run's scenes as editable Studio clips with Cupric AI keyframe motion (one undo step)">Edit in Studio</Button> : null}
               </div>
             </div>
 

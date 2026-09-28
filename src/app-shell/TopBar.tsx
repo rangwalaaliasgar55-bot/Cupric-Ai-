@@ -1,3 +1,4 @@
+import { StatusCenter } from './StatusCenter'
 import { useEffect, useRef, useState } from 'react'
 import { Moon, Sparkles, Sun, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '../components/Button'
@@ -51,6 +52,7 @@ export function TopBar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        <StatusCenter />
         <IconButton
           label={soundCues ? 'Turn off the two export sounds' : 'Turn on the two export sounds'}
           onClick={() => setSoundCues(!soundCues)}

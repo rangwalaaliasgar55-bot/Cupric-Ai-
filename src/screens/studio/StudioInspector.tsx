@@ -28,6 +28,7 @@ import type {
 } from '../../types/project'
 import { Button } from '../../components/Button'
 import { ClipProFields } from './ClipProFields'
+import { KeyframeGraph } from './KeyframeGraph'
 import { CurveEditor } from './CurveEditor'
 import { FontStudio, useUserFonts } from './FontStudio'
 import { FramecnFields, CursorFields, RichTextFields, ShapeFields, ThreeDFields } from './InspectorExtras'
@@ -532,6 +533,7 @@ function KeyframeFields({
         )}
       </div>
       {!withinClip && <p className="text-xs text-muted/80">Move the playhead over this clip to record a keyframe.</p>}
+      <KeyframeGraph clip={clip} localTime={local} onPatch={onPatch} />
 
       {keys.length === 1 && (
         <p className="text-xs text-muted/80">

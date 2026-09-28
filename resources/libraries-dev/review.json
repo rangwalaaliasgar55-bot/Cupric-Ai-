@@ -417,7 +417,7 @@
     },
     {
       "file": "src/screens/Autonomous.tsx",
-      "line": 56,
+      "line": 71,
       "target": "Mic button",
       "existingComponent": "const [transcribing, setTranscribing] = useState(false)",
       "suggestedLibrary": "Voice",
@@ -495,7 +495,7 @@
     },
     {
       "file": "src/app-shell/TopBar.tsx",
-      "line": 49,
+      "line": 50,
       "target": "Image placeholder",
       "existingComponent": "<span className={cx('h-1.5 w-1.5 rounded-full', saving ? 'bg-accent motion-safe:animate-pulse' : 'bg-muted/50')} />",
       "suggestedLibrary": "Image",
