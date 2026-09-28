@@ -36,6 +36,7 @@ const invokeChannels = new Set([
   'capture:rect',
   'arena:openBuilder',
   'dialog:pickFootage', 'dialog:pickFolder',
+  'media:checkPaths', 'media:locate',
   'footage:analyze',
   'media:status',
   'studio:exportMp4',

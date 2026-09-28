@@ -3929,6 +3929,52 @@ ipcMain.handle('dialog:pickFolder', async () => {
   return result.canceled ? null : result.filePaths[0]
 })
 
+/**
+ * JOB 10 — relink that actually relinks.
+ *
+ * The browser cannot keep a file handle across a reload, so a reopened project
+ * showed "Relink file" for media that had never moved. On the desktop we have
+ * the real absolute path, so we can just check whether it is still there and
+ * hand it back — no dialog, no ceremony.
+ *
+ * Paths come from the project's own clips. Nothing is read here; the renderer
+ * gets existence plus size/mtime so it can tell "moved" from "replaced".
+ */
+ipcMain.handle('media:checkPaths', async (_event, payload) => {
+  const paths = Array.isArray(payload?.paths) ? payload.paths.slice(0, 500) : []
+  return paths.map((raw) => {
+    const p = typeof raw === 'string' ? raw : ''
+    if (!p) return { path: p, exists: false }
+    try {
+      const st = fs.statSync(p)
+      return { path: p, exists: st.isFile(), sizeBytes: st.size, modifiedMs: Math.round(st.mtimeMs) }
+    } catch {
+      return { path: p, exists: false }
+    }
+  })
+})
+
+/** JOB 10 — the native "Locate…" picker for one missing clip. */
+ipcMain.handle('media:locate', async (_event, payload) => {
+  const fileName = typeof payload?.fileName === 'string' ? payload.fileName : ''
+  const result = await dialog.showOpenDialog({
+    title: fileName ? `Locate “${fileName}”` : 'Locate the missing file',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Media', extensions: ['mp4', 'mov', 'm4v', 'webm', 'mkv', 'avi', 'png', 'jpg', 'jpeg', 'heic', 'heif', 'gif', 'webp', 'wav', 'mp3', 'm4a', 'aac', 'flac'] },
+      { name: 'All files', extensions: ['*'] },
+    ],
+  })
+  if (result.canceled || !result.filePaths[0]) return null
+  const picked = result.filePaths[0]
+  try {
+    const st = fs.statSync(picked)
+    return { path: picked, fileName: path.basename(picked), sizeBytes: st.size, modifiedMs: Math.round(st.mtimeMs) }
+  } catch {
+    return { path: picked, fileName: path.basename(picked) }
+  }
+})
+
 ipcMain.handle('dialog:pickFootage', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openFile'],

@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react'
+import { canAutoRelink, checkPaths, locateFile, relinkMessage, verdictFor, type RelinkTarget, type RelinkVerdict } from '../../lib/studio/relink'
 import { VIDEO_FONT_FAMILIES, VIDEO_FONTS, fontInfo } from '../../lib/studio/videoFonts'
 import {
   CAMERA_RECIPES,
@@ -396,7 +397,7 @@ export const StudioInspector = memo(function StudioInspector({ doc, time, clip, 
       {clip.kind === 'loader' && <LoaderFields clip={clip} onPatch={onPatch} />}
       {clip.kind === 'kit' && <KitFields clip={clip} doc={doc} onPatch={onPatch} />}
       {(clip.kind === 'video' || clip.kind === 'image') && (
-        <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
+        <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} onDelete={onDelete} />
       )}
       {clip.kind === 'background' && <BackgroundFields clip={clip as StudioBackgroundClip} onPatch={onPatch} />}
       {clip.kind === 'overlay' && <OverlayFields clip={clip as StudioOverlayClip} onPatch={onPatch} doc={doc} onPatchDoc={onPatchDoc} />}
@@ -1067,10 +1068,40 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
   )
 }
 
-function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Partial<StudioClip>) => void }) {
+function MediaFields({ clip, onPatch, onDelete }: { clip: StudioMediaClip; onPatch: (p: Partial<StudioClip>) => void; onDelete?: () => void }) {
   const relinkRef = useRef<HTMLInputElement>(null)
   // Object URLs die with the session, so a reloaded project needs the file back.
   const linked = hasMedia(clip.mediaId)
+  /**
+   * JOB 10 — on the desktop the project stores the real absolute path, so a
+   * clip whose file never moved should not be asking anyone to find it.
+   */
+  const [verdict, setVerdict] = useState<RelinkVerdict>(() => (canAutoRelink() ? { state: 'no-path' } : { state: 'web' }))
+  const [locating, setLocating] = useState(false)
+  const target: RelinkTarget = { clipId: clip.id, mediaId: clip.mediaId, fileName: clip.fileName, localPath: clip.localPath, posterDataUrl: clip.posterDataUrl }
+
+  useEffect(() => {
+    if (linked || !clip.mediaId || !canAutoRelink() || !clip.localPath) return
+    let alive = true
+    void checkPaths([clip.localPath]).then((statuses) => {
+      if (alive) setVerdict(verdictFor({ ...target, localPath: clip.localPath }, statuses))
+    })
+    return () => { alive = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clip.mediaId, clip.localPath, linked])
+
+  async function locate() {
+    setLocating(true)
+    try {
+      const picked = await locateFile(clip.fileName)
+      if (!picked) return
+      // The path is what the desktop remembers; the handle is restored on load.
+      onPatch({ localPath: picked.path, fileName: picked.fileName } as Partial<StudioClip>)
+      setVerdict({ state: 'found', path: picked.path, sizeBytes: picked.sizeBytes })
+    } finally {
+      setLocating(false)
+    }
+  }
 
   async function relink(file: File | undefined) {
     if (!file) return
@@ -1102,13 +1133,30 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
 
       {!linked && !!clip.mediaId && (
         <div className="space-y-2 rounded-lg border border-danger/40 bg-danger/5 p-2.5">
-          <p className="text-xs leading-relaxed text-muted">
-            This clip lost its file handle — browsers cannot keep one across reloads. Pick{' '}
-            <span className="font-mono">{clip.fileName}</span> again to restore the picture and sound.
-          </p>
-          <Button size="sm" variant="outline" onClick={() => relinkRef.current?.click()}>
-            <Link2 size={13} /> Relink file
-          </Button>
+          <div className="flex gap-2.5">
+            {/* The poster survives a reload, so you can see WHICH clip this is. */}
+            {clip.posterDataUrl && (
+              <img src={clip.posterDataUrl} alt="" aria-hidden className="h-12 w-20 shrink-0 rounded border border-line object-cover" />
+            )}
+            <p className="min-w-0 text-xs leading-relaxed text-muted">{relinkMessage(target, verdict)}</p>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {verdict.state === 'missing' || verdict.state === 'no-path' ? (
+              <Button size="sm" variant="outline" onClick={() => void locate()} disabled={locating}
+                title={locating ? 'The file picker is open — choose the file or cancel it' : `Point Cupric at “${clip.fileName}” wherever it lives now`}>
+                <Link2 size={13} /> {locating ? 'Locating…' : 'Locate…'}
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => relinkRef.current?.click()}>
+                <Link2 size={13} /> Relink file
+              </Button>
+            )}
+            {onDelete && (
+              <Button size="sm" variant="ghost" onClick={onDelete} title="Remove this clip from the timeline">
+                <Trash2 size={13} /> Remove clip
+              </Button>
+            )}
+          </div>
         </div>
       )}
       <input ref={relinkRef} type="file" accept="video/*,image/*,.heic,.heif" className="hidden" onChange={(e) => void relink(e.target.files?.[0])} />
