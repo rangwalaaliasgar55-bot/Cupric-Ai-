@@ -500,7 +500,7 @@ export type StudioComponentMeta = {
   props?: Record<string, string | number | boolean>
   error?: string
   /** JOB 4 — an animation the agent wrote; validated code travels with the clip (undo, re-record). */
-  generated?: { source: 'agent-generated'; name: string; kind: string; code: string; ease: string }
+  generated?: { source: 'agent-generated'; name: string; kind: string; code: string; ease: string; /** Record the agent's reduced-motion (opacity-only) path. */ calm?: boolean }
 }
 
 export type StudioOverlayClip = StudioClipCommon & {

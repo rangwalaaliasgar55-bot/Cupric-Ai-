@@ -48,6 +48,20 @@ rejectsWith(wrap("return h('div', { style: { backgroundImage: 'url(x)', opacity:
 rejectsWith(wrap("const k = 'constr' + 'uctor'; const F = h[k]; return F('return 1')() ? h('div', { style: { opacity: reducedMotion ? 1 : t } }) : null"), 'must-run', 'constructor escape neutralised')
 rejectsWith(wrap("const s = {}; s.n = (s.n || 0); globalCounter = 1; return h('div', { style: { opacity: reducedMotion ? 1 : t } })"), 'must-run', 'implicit global in strict mode')
 rejectsWith('x'.repeat(16 * 1024), 'size', '> 15 KB')
+// Runaway-code guards: nothing can hang the renderer.
+rejectsWith(wrap("let s = 0; for (let i = 0; i >= 0; i++) { s += i } return h('div', { style: { opacity: reducedMotion ? 1 : t } })"), 'bounded-loops', 'endless arithmetic for-loop (guard trips)')
+rejectsWith(wrap("let s = 0; for (let i = 0; i >= 0; i++) s += i; return h('div', { style: { opacity: reducedMotion ? 1 : t } })"), 'bounded-loops', 'brace-less for-loop')
+rejectsWith(wrap("const f = (n) => f(n + 1); f(0); return h('div', { style: { opacity: reducedMotion ? 1 : t } })"), 'bounded-loops', 'infinite recursion (stack guard)')
+rejectsWith(wrap("const a = Array.from({ length: 1e9 }); return h('div', { style: { opacity: reducedMotion ? 1 : t } })"), 'bounded-loops', 'huge Array.from')
+rejectsWith(wrap("const a = Array(99999999); return h('div', { style: { opacity: reducedMotion ? 1 : t } })"), 'bounded-loops', 'Array(n)')
+rejectsWith(wrap("const s = 'x'.repeat(props.n); return h('div', { style: { opacity: reducedMotion ? 1 : t } })"), 'bounded-loops', 'computed repeat count')
+rejectsWith(wrap("__tick = () => {}; return h('div', { style: { opacity: reducedMotion ? 1 : t } })"), 'no-dom', 'overriding the loop guard')
+{
+  const loopy = wrap("const bars = []; for (let i = 0; i < 12; i++) { bars.push(h('div', { key: i, style: { opacity: reducedMotion ? t : t * (i / 12) } })) } const pts = Array.from({ length: 40 }, (_, k) => k); return h('div', { style: { opacity: reducedMotion ? 1 : t } }, bars, pts.length, ' // for (not a loop)')")
+  const r = m.validateAgentCode(loopy, {})
+  ok(r.ok, 'bounded braced loops + small Array.from + loop text in strings are accepted' + (r.ok ? '' : ': ' + m.describeRejections(r.rejections)))
+  ok(m.instrumentLoops('for (let i = 0; i < Math.min(3, 4); i++) { x() }').code.includes('{ __tick();'), 'guard inserted after nested-paren headers')
+}
 {
   // Double-render identity: hidden state via a closure over props object mutation.
   const code = wrap("props.n = 1; return h('div', { style: { opacity: reducedMotion ? 1 : t } })")

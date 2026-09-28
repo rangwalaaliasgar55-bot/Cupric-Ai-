@@ -28,16 +28,16 @@ await p.addInitScript(() => {
     invoke: async (channel, payload) => {
       calls.push(channel)
       if (channel === 'state:save') { window.__saved = payload; return { ok: true } }
-      if (channel === 'agent:generateAnimation') return { name: 'Glitch RGB Title', kind: 'title', ease: 'ease-out', props: { text: 'CUPRIC' }, code: glitch, durationSec: payload.durationSec, route: 'LLM7 free · default (mock)' }
+      if (channel === 'agent:generateAnimation') return { name: 'Glitch RGB Title', kind: 'title', ease: 'ease-out', props: { text: 'CUPRIC' }, code: glitch, durationSec: payload.durationSec, route: 'Free built-in brain (mock)' }
       if (channel === 'agent:saveGenerated') return { ok: true, file: 'src/lab/generated/' + payload.slug + '.tsx' }
       if (channel === 'ai:freeModels') return { fetchedAt: 1, models: [
-        { id: 'default', source: 'llm7', kind: 'keyless', badge: 'FREE', isNew: false, retired: false },
+        { id: 'openai-fast', source: 'pollinations', kind: 'keyless', badge: 'FREE', isNew: false, retired: false },
         { id: 'meta/muse-spark-2.0:free', source: 'openrouter', kind: 'user', badge: 'FREE', isNew: true, retired: false },
         { id: 'qwen/qwen3-old:free', source: 'openrouter', kind: 'user', badge: 'FREE', isNew: false, retired: true },
         { id: 'openai/gpt-5', source: 'openrouter', kind: 'user', badge: 'paid', isNew: false, retired: false },
       ] }
-      if (channel === 'settings:get') return { aiMode: 'auto', autoPick: { kind: 'keyless', label: 'LLM7 free · built in', reason: 'Built-in free brain — no key or setup needed.' }, setupRequired: false, statusDots: {} }
-      if (channel === 'ai:autoDiscover') return { pick: { kind: 'keyless', label: 'LLM7 free · built in', reason: 'Built-in free brain — no key or setup needed.' }, setupRequired: false }
+      if (channel === 'settings:get') return { aiMode: 'auto', autoPick: { kind: 'keyless', label: 'Free built-in brain', reason: 'Built-in free brain — no key or setup needed.' }, setupRequired: false, statusDots: {} }
+      if (channel === 'ai:autoDiscover') return { pick: { kind: 'keyless', label: 'Free built-in brain', reason: 'Built-in free brain — no key or setup needed.' }, setupRequired: false }
       return null
     },
     on: (channel, cb) => { (listeners[channel] ||= []).push(cb); return () => { listeners[channel] = listeners[channel].filter((x) => x !== cb) } },
@@ -111,6 +111,13 @@ await step('badge + re-record at a new length', async () => {
   const g = (await clips()).find((x) => x.gen === 'agent-generated')
   if (!g || g.rec !== 3 || g.status !== 'ready') throw new Error(JSON.stringify(g))
   return `re-recorded ${g.rec}s · ${g.frames} frames`
+})
+await step('Calm version (reduced motion) re-records the opacity-only path', async () => {
+  await p.getByLabel('Calm version (reduced motion)').check(); await idle()
+  const g = (await clips()).find((x) => x.gen === 'agent-generated')
+  const calm = await p.evaluate(() => { let s = window.__saved?.value ?? window.__saved; if (typeof s === 'string') s = JSON.parse(s); const pr = s.state.projects.find((x) => x.id === s.state.activeProjectId) ?? s.state.projects[0]; return pr.studio.clips.find((c) => c.component?.generated)?.component.generated.calm })
+  if (!g || g.status !== 'ready' || calm !== true) throw new Error(JSON.stringify({ g, calm }))
+  return `calm=true · ${g.frames} frames`
 })
 await step('full undo removes the animation', async () => {
   await p.locator('main').click({ position: { x: 5, y: 5 } }).catch(() => {})

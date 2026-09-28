@@ -168,7 +168,7 @@ function RecorderCard({
           {generated ? (
             // Same recorder pipeline; the agent's code is a pure function of t = clock / length.
             <div className="lab-canvas grid place-items-center">
-              <GeneratedFrame code={generated.code} props={meta.props} t={Math.min(1, clockSec / Math.max(0.5, meta.recordSec))} />
+              <GeneratedFrame code={generated.code} props={meta.props} reducedMotion={Boolean(generated.calm)} t={Math.min(1, clockSec / Math.max(0.5, meta.recordSec))} />
             </div>
           ) : (
             <DemoFrame slug={meta.slug} play forceMotion props={meta.props} className="place-items-center" atSeconds={clockSec} />

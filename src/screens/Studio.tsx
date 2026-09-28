@@ -712,7 +712,11 @@ export function Studio() {
     try {
       // Validate again against the current timeline in case it changed while the plan was visible.
       const currentPlan = validateStudioEditPlan(agentPlan, doc)
-      const next = applyStudioEditPlan(doc, currentPlan.ops)
+      let next = applyStudioEditPlan(doc, currentPlan.ops)
+      // People who ask their OS for reduced motion get the calm (opacity-only) take by default; one click in the inspector switches it.
+      if (currentPlan.ops.some((op) => op.type === 'addAnimation') && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        next = { ...next, clips: next.clips.map((c) => (c.kind === 'overlay' && c.component?.generated && !doc.clips.some((d) => d.id === c.id) ? { ...c, component: { ...c.component, generated: { ...c.component.generated, calm: true } } } : c)) }
+      }
       patchStudio(projectId, next)
       // Accepted agent-written animations are also saved as files (best effort, silent).
       for (const op of currentPlan.ops) {

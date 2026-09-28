@@ -16,21 +16,23 @@
  */
 
 /**
- * Keyless endpoints, verified 2026-09-28 from their own docs/live catalogues:
- *  - LLM7.io — docs.llm7.io/quickstart: `api_key="unused"` for anonymous access;
- *    llm7.io: "Anonymous access is limited to 500,000 tokens/day with 60 r/h,
- *    10 r/m, and 1 r/s." Selectors `default` / `fast` / `pro`; anonymous reaches
- *    the turbo tier. OpenAI-compatible /v1/chat/completions and /v1/models.
- *    No terms page is published (llm7.io/terms → 404) — noted in the report.
- *  - Pollinations — text.pollinations.ai/models lists `openai-fast` with
- *    tier "anonymous"; POST https://text.pollinations.ai/openai is
- *    OpenAI-compatible; anonymous = one request per ~15 s. Their auth page says
- *    anonymous responses may carry contextual ads, so it is the *backup*, and
- *    replies are ad-stripped (stripSponsored) and JSON-validated by callers.
+ * Built-in keyless endpoint (re-verified 2026-09-28 from primary sources).
+ *
+ * - Pollinations legacy text API: text.pollinations.ai/models lists
+ *   `openai-fast` with tier "anonymous"; POST https://text.pollinations.ai/openai
+ *   is OpenAI-compatible; anonymous ≈ one request per 15 s. It is the legacy
+ *   path (new integrations are pointed at keyed gen.pollinations.ai) and
+ *   anonymous replies may carry an ad block, so: requests are spaced/queued
+ *   rather than failing, ad blocks are stripped, JSON is validated by callers,
+ *   and a 401/402/403/410 switches the endpoint off for a day automatically
+ *   (the brain then falls through to local → user keys → offline template).
+ *
+ * Deliberately NOT built in: LLM7.io. Its Terms (updated 9 Aug 2026, §3A)
+ * forbid embedding the service in another product without written approval
+ * and §2 excludes production use — shipping it would put every user in breach.
  */
 const KEYLESS_ENDPOINTS = [
-  { id: 'llm7', label: 'LLM7 free', baseUrl: 'https://api.llm7.io/v1', chatUrl: 'https://api.llm7.io/v1/chat/completions', modelsUrl: 'https://api.llm7.io/v1/models', apiKey: 'unused', draftModel: 'fast', strongModel: 'default', minIntervalMs: 1100 },
-  { id: 'pollinations', label: 'Pollinations free', baseUrl: 'https://text.pollinations.ai/openai', chatUrl: 'https://text.pollinations.ai/openai', modelsUrl: 'https://text.pollinations.ai/models', apiKey: '', draftModel: 'openai-fast', strongModel: 'openai-fast', minIntervalMs: 15_500 },
+  { id: 'pollinations', label: 'Free built-in brain', baseUrl: 'https://text.pollinations.ai/openai', chatUrl: 'https://text.pollinations.ai/openai', modelsUrl: 'https://text.pollinations.ai/models', apiKey: '', draftModel: 'openai-fast', strongModel: 'openai-fast', minIntervalMs: 15_500 },
 ]
 
 /** Local servers, probed in this exact order (OpenCode → Ollama → LM Studio → llama.cpp/other). */
@@ -105,13 +107,21 @@ function planRoutes({ task = 'draft', locals = [], userRoutes = [], keyless = KE
   })
 }
 
-/** Anonymous Pollinations replies may carry a sponsor block; never show it. */
+/**
+ * Anonymous Pollinations replies may carry an ad/sponsor block. Remove any
+ * trailing block introduced by a rule or a sponsor/ad/support heading, and any
+ * single line that is clearly promotional (redirect links, 🌸 Ad markers).
+ */
+const AD_LINE = /pollinations\.ai\/(?:redirect|referral|ads?)\b|🌸\s*\**\s*(?:ad|sponsor)|^\s*\**\s*(?:ad|sponsored?|advertisement|support pollinations(?:\.ai)?)\s*\**\s*[:：]/i
 function stripSponsored(text) {
-  return String(text || '')
-    .replace(/\n+-{3,}\s*\n+(?:\*\*)?(?:sponsor|ad|advertisement|powered by)[\s\S]*$/i, '')
-    .replace(/\n+(?:\*\*)?(?:sponsor(?:ed)?|advertisement)(?:\*\*)?\s*:[\s\S]*$/i, '')
-    .trim()
+  let out = String(text || '')
+  out = out.replace(/\n+\s*(?:-{3,}|\*{3,}|_{3,})\s*\n[\s\S]*?(?:sponsor|advert|\bad\b|support pollinations|pollinations\.ai\/redirect|🌸)[\s\S]*$/i, '')
+  out = out.split('\n').filter((line) => !AD_LINE.test(line)).join('\n')
+  return out.trim()
 }
+
+/** 401/402/403/410 from a keyless endpoint = keyless use is no longer offered there. */
+const keylessRevoked = (status) => status === 401 || status === 402 || status === 403 || status === 410
 
 const retryable = (status, message) => status === 429 || status === 503 || status === 502 || /rate.?limit|too many|overload|temporar/i.test(message || '')
 const isDeadModel = (status, message) => status === 404 || /model_not_found|model not found|no such model|does not exist|decommission|deprecated model/i.test(message || '')
@@ -128,6 +138,8 @@ function createCooldowns(now = () => Date.now()) {
     set: (key, ms, reason) => map.set(key, { until: now() + ms, reason }),
     spacing: (key, minMs) => { const t = last.get(key) || 0; return Math.max(0, t + (minMs || 0) - now()) },
     touch: (key) => last.set(key, now()),
+    /** Reserve the next send slot (queues concurrent callers instead of bursting). Returns ms to wait. */
+    reserve: (key, minMs) => { const at = Math.max(now(), (last.has(key) ? last.get(key) : -Infinity) + (minMs || 0)); last.set(key, at); return at - now() },
     dump: () => [...map.entries()].map(([key, v]) => ({ key, ...v })),
   }
 }
@@ -173,9 +185,9 @@ async function completeViaRoutes(routes, messages, opts = {}) {
     if (cooldowns.cooling(key)) continue
     for (let attempt = 0; ; attempt += 1) {
       if (deadline - now() < 1500) break
-      const wait = cooldowns.spacing(key, route.minIntervalMs)
-      if (wait) { if (wait > deadline - now() - 1500) break; await sleepImpl(wait) }
-      cooldowns.touch(key)
+      const wait = cooldowns.reserve(key, route.minIntervalMs)
+      if (wait > deadline - now() - 1500) break
+      if (wait) await sleepImpl(wait)
       try {
         const text = await chatOnce(route, messages, { ...opts, fetchImpl, timeoutMs: Math.max(2000, Math.min(opts.timeoutMs ?? 30_000, deadline - now())) })
         if (validate) validate(text)
@@ -183,6 +195,7 @@ async function completeViaRoutes(routes, messages, opts = {}) {
       } catch (err) {
         const status = err?.status ?? 0
         failures.push(`${route.label}: ${err?.message || err}`)
+        if (route.kind === 'keyless' && keylessRevoked(status)) { cooldowns.set(key, 24 * 3600_000, 'keyless-revoked'); break }
         if (isDeadModel(status, err?.message)) { onRetired({ baseUrl: route.baseUrl, model: route.model, label: route.label }); cooldowns.set(key, 24 * 3600_000, 'retired'); break }
         if (retryable(status, err?.message)) {
           if (route.kind === 'keyless' && !noticed) { noticed = true; onNotice(BUSY_NOTICE) }
@@ -293,6 +306,6 @@ function fallbackModel(catalogue, dead) {
 
 module.exports = {
   KEYLESS_ENDPOINTS, LOCAL_PROBE_ORDER, BUSY_NOTICE, OFFLINE_NOTICE, FIXED_SEED, BACKOFF_MS,
-  probeLocals, modelQuality, planRoutes, stripSponsored, createCooldowns, chatOnce, completeViaRoutes,
+  probeLocals, modelQuality, keylessRevoked, planRoutes, stripSponsored, createCooldowns, chatOnce, completeViaRoutes,
   MODEL_CACHE_TTL_MS, WEEK_MS, MODEL_CAP, costBadge, aggregateModels, mergeCatalogue, retireModel, isStale, fallbackModel,
 }

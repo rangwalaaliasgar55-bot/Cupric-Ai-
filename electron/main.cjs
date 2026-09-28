@@ -2481,7 +2481,6 @@ async function modelSources() {
   const sources = freeBrain.KEYLESS_ENDPOINTS.map((k) => ({
     id: k.id, kind: 'keyless', url: k.modelsUrl,
     parse: (data) => (Array.isArray(data) ? data : data?.data || [])
-      .filter((m) => k.id !== 'llm7' || !m.tier || m.tier === 'turbo' || m.tier === 'free')
       .filter((m) => k.id !== 'pollinations' || !m.tier || m.tier === 'anonymous'),
   }))
   for (const l of await brainLocals()) sources.push({ id: l.kind, kind: 'local', url: `${l.baseUrl}/models` })
@@ -2566,9 +2565,11 @@ async function completeWithFallback({ system, user, json = false, temperature = 
         if (route.provider === 'keyless') {
           // Built-in keyless free endpoint: spacing per endpoint, low temp, fixed seed.
           const key = `${route.brain.chatUrl}|${route.brain.model}`
-          const wait = brainCooldowns.spacing(key, route.brain.minIntervalMs)
-          if (wait) await delay(Math.min(wait, Math.max(0, deadline - Date.now() - 2500)))
-          brainCooldowns.touch(key)
+          // Queue behind other requests to the same free endpoint (≈1 per 15 s)
+          // instead of bursting into its rate limit.
+          const wait = brainCooldowns.reserve(key, route.brain.minIntervalMs)
+          if (wait > deadline - Date.now() - 2500) throw new Error('429 free brain queue is longer than this request can wait')
+          if (wait) await delay(wait)
           const text = await freeBrain.chatOnce(route.brain, [
             { role: 'system', content: system },
             ...history.map((h) => ({ role: h.role === 'ai' ? 'assistant' : 'user', content: h.text })),
@@ -2640,6 +2641,7 @@ async function completeWithFallback({ system, user, json = false, temperature = 
         const cfg = aiSettings()
         aiCooldowns.set(`opencode:${cfg.openCodeBaseUrl}|${cfg.openCodeModel}`, { until: Date.now() + quotaCooldownMs(err), reason: 'quota' })
       }
+      if (route.provider === 'keyless' && /\((401|402|403|410)\)/.test(err?.message || '')) brainCooldowns.set(routeKey(route), 24 * 3600_000, 'keyless-revoked')
       // Dead model (404 / model_not_found): grey it out, fall through silently.
       if (/\b404\b|model_not_found|model not found|does not exist/i.test(err?.message || '')) noteRetiredModel(route)
     }

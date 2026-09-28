@@ -1364,6 +1364,12 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
               </select>
             </Field>
           </div>
+          {generated && (
+            <label className="flex items-center gap-2 text-xs text-muted" title="Records the animation's reduced-motion path: only opacity changes, nothing moves or flashes">
+              <input type="checkbox" checked={Boolean(generated.calm)} disabled={busy} onChange={(e) => rerecord({ generated: { ...generated, calm: e.target.checked } })} aria-label="Calm version (reduced motion)" />
+              Calm version (reduced motion) — fades only, no movement or flashing
+            </label>
+          )}
           <label className="flex items-center gap-2 text-xs text-muted">
             <input type="checkbox" checked={clip.loop !== false} onChange={(e) => onPatch({ loop: e.target.checked } as Partial<StudioClip>)} />
             Loop the animation when the clip is longer

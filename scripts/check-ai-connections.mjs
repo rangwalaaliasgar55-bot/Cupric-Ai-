@@ -29,17 +29,17 @@ const json = (status, body) => ({ ok: status >= 200 && status < 300, status, jso
 const reply = (text) => json(200, { choices: [{ message: { content: text } }] })
 const noSleep = async () => {}
 
-// Keyless endpoints are real, keyless and OpenAI-compatible.
-assert.equal(brain.KEYLESS_ENDPOINTS.length, 2, 'exactly two built-in keyless endpoints')
+// Built-in keyless endpoint: exactly one, and never LLM7 (its Terms §3A forbid embedding).
+assert.equal(brain.KEYLESS_ENDPOINTS.length, 1, 'one built-in keyless endpoint')
+assert.ok(brain.KEYLESS_ENDPOINTS.every((e) => !/llm7/i.test(e.baseUrl)), 'LLM7 must not be built in')
+assert.doesNotMatch(main, /llm7\.io/, 'main process never calls LLM7')
 assert.deepEqual(brain.LOCAL_PROBE_ORDER.map((l) => new URL(l.baseUrl).port), ['4096', '11434', '1234', '8080'], 'local probe order')
 
 // Fresh install: no keys, no local servers, online → first AI action answers via keyless.
 {
-  const calls = []
   const fetchImpl = async (url, init) => {
-    calls.push(url)
     if (/localhost|127\.0\.0\.1/.test(url)) throw new Error('ECONNREFUSED')
-    if (url.includes('llm7')) { const b = JSON.parse(init.body); assert.equal(b.seed, brain.FIXED_SEED); assert.ok(b.temperature <= 0.3); return reply('Hook: open on the product.') }
+    if (url.includes('pollinations')) { const b = JSON.parse(init.body); assert.equal(b.seed, brain.FIXED_SEED); assert.ok(b.temperature <= 0.3); assert.ok(!init.headers.authorization, 'no key sent'); return reply('Hook: open on the product.\n\n---\n\n**Sponsor**\nTry X https://pollinations.ai/redirect/42') }
     throw new Error('unexpected ' + url)
   }
   const locals = await brain.probeLocals({ fetchImpl })
@@ -47,20 +47,36 @@ assert.deepEqual(brain.LOCAL_PROBE_ORDER.map((l) => new URL(l.baseUrl).port), ['
   const routes = brain.planRoutes({ task: 'draft', locals, userRoutes: [] })
   assert.equal(routes[0].kind, 'keyless')
   const out = await brain.completeViaRoutes(routes, [{ role: 'user', content: 'plan' }], { fetchImpl, sleepImpl: noSleep })
-  assert.ok(out.ok && out.kind === 'keyless' && out.text.startsWith('Hook'), 'zero-setup first AI action answers via keyless')
-  assert.equal(out.notice, '')
+  assert.ok(out.ok && out.kind === 'keyless', 'zero-setup first AI action answers via keyless')
+  assert.equal(out.text, 'Hook: open on the product.', 'ad block stripped')
 }
-// 429 on LLM7 → silent 1s→4s backoff, busy notice, hop to Pollinations.
+// Ad formats never reach the user.
+assert.equal(brain.stripSponsored('Plan\n🌸 **Ad** 🌸 buy things\nNext'), 'Plan\nNext')
+assert.equal(brain.stripSponsored('Plan\n\n***\nSupport Pollinations.AI: donate'), 'Plan')
+assert.equal(brain.stripSponsored('Keep --- this dash text'), 'Keep --- this dash text')
+// 429 → silent 1s→4s backoff with busy notice, then success on the same endpoint.
 {
   const waits = []; const notices = []
   let hits = 0
-  const fetchImpl = async (url) => { if (url.includes('llm7')) { hits += 1; return json(429, { error: 'rate limit' }) } return reply('ok from backup\n\n---\n**Sponsor** buy things') }
+  const fetchImpl = async () => { hits += 1; return hits < 3 ? json(429, { error: 'rate limit' }) : reply('ok after wait') }
   const out = await brain.completeViaRoutes(brain.planRoutes({ task: 'draft' }), [{ role: 'user', content: 'x' }], { fetchImpl, sleepImpl: async (ms) => { waits.push(ms) }, onNotice: (n) => notices.push(n) })
-  assert.equal(hits, 3, 'one try + two backoff retries on the same route')
   assert.ok(waits.indexOf(1000) >= 0 && waits.indexOf(4000) > waits.indexOf(1000), 'backoff 1s → 4s')
-  assert.ok(out.ok && out.text === 'ok from backup', 'hopped to the other keyless endpoint, sponsor block stripped')
-  assert.deepEqual(notices, [brain.BUSY_NOTICE])
-  assert.equal(out.notice, 'free brain busy, retrying')
+  assert.ok(out.ok && out.text === 'ok after wait')
+  assert.deepEqual(notices, [brain.BUSY_NOTICE]); assert.equal(out.notice, 'free brain busy, retrying')
+}
+// Concurrent callers queue (≈15 s apart) instead of bursting into the limit.
+{
+  let t = 0
+  const cd = brain.createCooldowns(() => t)
+  assert.deepEqual([cd.reserve('k', 15_500), cd.reserve('k', 15_500), cd.reserve('k', 15_500)], [0, 15_500, 31_000], 'slots are reserved in order')
+}
+// Keyless use withdrawn (403/410) → endpoint switches itself off, honest offline notice, no throw.
+{
+  const cooldowns = brain.createCooldowns()
+  const out = await brain.completeViaRoutes(brain.planRoutes({ task: 'draft' }), [{ role: 'user', content: 'x' }], { fetchImpl: async () => json(403, { error: 'key required' }), sleepImpl: noSleep, cooldowns })
+  assert.equal(out.ok, false); assert.equal(out.notice, 'offline brain')
+  assert.equal(cooldowns.dump()[0].reason, 'keyless-revoked')
+  assert.ok(brain.keylessRevoked(410) && !brain.keylessRevoked(429))
 }
 // Wifi off → no route answers → honest "offline brain", no throw.
 {
@@ -82,14 +98,14 @@ assert.deepEqual(brain.LOCAL_PROBE_ORDER.map((l) => new URL(l.baseUrl).port), ['
 // JOB 2 aggregator: parallel, isolated failures, dedupe, badges, NEW, retire, TTL.
 {
   const src = (id, kind, url) => ({ id, kind, url })
-  const sources = [src('llm7', 'keyless', 'k1'), src('openrouter', 'user', 'or'), src('broken', 'user', 'b'), src('ollama', 'local', 'o')]
-  const v1 = { k1: [{ id: 'default' }, { id: 'default' }], or: [{ id: 'qwen/qwen3:free' }, { id: 'openai/gpt-5' }], o: [{ id: 'llama3.2:3b' }] }
+  const sources = [src('pollinations', 'keyless', 'k1'), src('openrouter', 'user', 'or'), src('broken', 'user', 'b'), src('ollama', 'local', 'o')]
+  const v1 = { k1: [{ id: 'openai-fast' }, { id: 'openai-fast' }], or: [{ id: 'qwen/qwen3:free' }, { id: 'openai/gpt-5' }], o: [{ id: 'llama3.2:3b' }] }
   const fetchFor = (map) => async (url) => (url === 'b' ? json(500, {}) : json(200, { data: map[url] || [] }))
   const a1 = await brain.aggregateModels(sources, { fetchImpl: fetchFor(v1) })
   assert.deepEqual(a1.failedSources, ['broken'], 'an endpoint 500 is isolated')
   assert.equal(a1.models.length, 4, 'deduped')
   const badge = Object.fromEntries(a1.models.map((m) => [m.id, m.badge]))
-  assert.deepEqual(badge, { 'llama3.2:3b': '$0 local', default: 'FREE', 'qwen/qwen3:free': 'FREE', 'openai/gpt-5': 'paid' })
+  assert.deepEqual(badge, { 'llama3.2:3b': '$0 local', 'openai-fast': 'FREE', 'qwen/qwen3:free': 'FREE', 'openai/gpt-5': 'paid' })
   const first = brain.mergeCatalogue(null, a1, { now: 1000 })
   assert.equal(first.added.length, 0, 'first run is not a flood of NEW badges')
   const v2 = { ...v1, or: [{ id: 'openai/gpt-5' }, { id: 'meta/muse-spark-2.0' }, { id: 'mistral/new-model:free' }] }

@@ -5,7 +5,7 @@
  */
 import { getIpc } from '../bridge'
 import { AGENT_ANIMATION_FEWSHOTS } from './agentCodeExamples'
-import { AGENT_CODE_RULES, readAgentAnimation, type AgentAnimationSpec } from './agentCode'
+import { AGENT_CODE_RULES, describeRejections, readAgentAnimation, validateAgentCodeIsolated, type AgentAnimationSpec } from './agentCode'
 
 export const MAX_REPAIR_ROUNDS = 2
 
@@ -23,6 +23,9 @@ export async function writeAgentAnimation(instruction: string, durationSec: numb
     }
     const value = { ...(raw && typeof raw === 'object' ? raw : {}), durationSec } as Record<string, unknown>
     try {
+      // Off-thread first (hard 2 s timeout), so hostile or runaway code can never freeze the app.
+      const isolated = await validateAgentCodeIsolated(String(value.code || ''), (value.props && typeof value.props === 'object' ? value.props : {}) as Record<string, unknown>)
+      if (!isolated.ok) throw new Error(describeRejections(isolated.rejections))
       return { ok: true, spec: readAgentAnimation(value), rounds: round }
     } catch (e) {
       previous = { code: String(value.code || '').slice(0, 16_000), problems: (e as Error).message }
