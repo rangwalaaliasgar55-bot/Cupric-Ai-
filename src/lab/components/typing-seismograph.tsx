@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
+import { useFrameClock } from "@/lib/progress";
 
 const STRIP_H = 96;
 // The pen sits near the right edge so most of the strip is history.
@@ -94,6 +95,8 @@ export function TypingSeismograph({
   placeholder?: string;
   className?: string;
 }) {
+  // Captured: loops run on the driving clock in fixed steps, randomness is seeded.
+  const frameClock = useFrameClock(1898);
   const id = useId();
   const reduceMotion = useReducedMotion();
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -236,7 +239,7 @@ export function TypingSeismograph({
   const run = () => {
     const s = sim.current;
     if (s.frame) return;
-    s.last = performance.now();
+    s.last = frameClock.now();
     setActive(true);
     const tick = (now: number) => {
       const dt = Math.min((now - s.last) / 1000, 1 / 30);
@@ -267,20 +270,20 @@ export function TypingSeismograph({
         setActive(false);
         return;
       }
-      s.frame = requestAnimationFrame(tick);
+      s.frame = frameClock.raf(tick);
     };
-    s.frame = requestAnimationFrame(tick);
+    s.frame = frameClock.raf(tick);
   };
 
   const kick = (direction: 1 | -1, size = 1) => {
     const s = sim.current;
-    const now = performance.now();
+    const now = frameClock.now();
     const gap = s.lastKey ? now - s.lastKey : Infinity;
     if (gap > IDLE_MS) s.burstStart = now;
     s.lastKey = now;
     s.keys.push(now);
     const tempo = tempoFor(gap);
-    const jitter = 0.85 + Math.random() * 0.3;
+    const jitter = 0.85 + frameClock.random() * 0.3;
     if (reduceMotion) {
       // No rolling paper: each key steps the paper and leaves one tick.
       const amp = clip(direction * tempo * size * 18);
@@ -342,7 +345,7 @@ export function TypingSeismograph({
       ro.disconnect();
       mo.disconnect();
       media.removeEventListener("change", repaint);
-      cancelAnimationFrame(s.frame);
+      frameClock.caf(s.frame);
       s.frame = 0;
     };
   }, []);

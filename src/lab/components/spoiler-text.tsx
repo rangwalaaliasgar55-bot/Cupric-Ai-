@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
 import { usePreviewPlay } from "@/lab/preview-play";
+import { useFrameClock } from "@/lib/progress";
 
 // How long the dissolve takes to travel from the click to the far edge,
 // then how long each grain takes to fade once reached. 750ms in all is long
@@ -39,6 +40,8 @@ export function Spoiler({
   revealed?: boolean;
   className?: string;
 }) {
+  // Captured: loops run on the driving clock in fixed steps, randomness is seeded.
+  const frameClock = useFrameClock(1264);
   const reduceMotion = useReducedMotion();
   const [revealed, setRevealed] = useState(false);
   const [chipOpen, setChipOpen] = useState(false);
@@ -141,12 +144,12 @@ export function Spoiler({
         for (let i = 0; i < count; i++) {
           grains.push({
             // Inset from the fragment's edge so the drift never leaves it.
-            x: r.x + 1.5 + Math.random() * (r.w - 3),
-            y: r.y + 2 + Math.random() * (r.h - 4),
-            a: 0.35 + Math.random() * 0.65,
-            phase: Math.random() * Math.PI * 2,
-            speed: 0.6 + Math.random() * 1.8,
-            size: Math.random() < 0.8 ? 1 : 1.5,
+            x: r.x + 1.5 + frameClock.random() * (r.w - 3),
+            y: r.y + 2 + frameClock.random() * (r.h - 4),
+            a: 0.35 + frameClock.random() * 0.65,
+            phase: frameClock.random() * Math.PI * 2,
+            speed: 0.6 + frameClock.random() * 1.8,
+            size: frameClock.random() < 0.8 ? 1 : 1.5,
           });
         }
       }
@@ -157,7 +160,7 @@ export function Spoiler({
         left: Math.round(last.right - ox),
         top: Math.round(last.top - oy),
       });
-      draw(performance.now());
+      draw(frameClock.now());
     };
 
     const draw = (now: number) => {
@@ -216,7 +219,7 @@ export function Spoiler({
       // Sleeps when revealed, offscreen, in a hidden tab or with reduced motion.
       const idle = e.phase === "hidden" && e.frozen;
       if (e.phase !== "revealed" && !idle && onScreen && !document.hidden && !still) {
-        frame = requestAnimationFrame(loop);
+        frame = frameClock.raf(loop);
       } else {
         e.last = 0;
       }
@@ -230,7 +233,7 @@ export function Spoiler({
         else draw(0);
         return;
       }
-      if (!frame && !(e.phase === "hidden" && e.frozen)) frame = requestAnimationFrame(loop);
+      if (!frame && !(e.phase === "hidden" && e.frozen)) frame = frameClock.raf(loop);
     };
 
     const io = new IntersectionObserver(([entry]) => {
@@ -255,7 +258,7 @@ export function Spoiler({
 
     return () => {
       alive = false;
-      cancelAnimationFrame(frame);
+      frameClock.caf(frame);
       e.last = 0;
       io.disconnect();
       ro.disconnect();
@@ -291,7 +294,7 @@ export function Spoiler({
       ...e.grains.map((g) => Math.hypot(g.x - e.origin.x, g.y - e.origin.y)),
     );
     e.phase = "dissolving";
-    e.phaseStart = performance.now();
+    e.phaseStart = frameClock.now();
     e.kick();
     clearTimeout(settleTimer.current);
     settleTimer.current = setTimeout(
@@ -303,7 +306,7 @@ export function Spoiler({
   const cover = () => {
     const e = engine.current;
     e.phase = "covering";
-    e.phaseStart = performance.now();
+    e.phaseStart = frameClock.now();
     e.kick();
     clearTimeout(settleTimer.current);
   };

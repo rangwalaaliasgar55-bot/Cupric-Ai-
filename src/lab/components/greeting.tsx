@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
 import { usePreviewPlay } from "@/lab/preview-play";
+import { DRIVEN_EPOCH_MS, useDriverSeconds } from "@/lib/progress";
 
 // Minute-resolution local time. The server snapshot is null: it can't know
 // the reader's hour, so it renders a neutral "Hello" and no glyph.
@@ -81,17 +82,42 @@ function Moon({ phase }: { phase: number }) {
   );
 }
 
-export function Greeting({ name, className }: { name: string; className?: string }) {
-  const minute = useSyncExternalStore(subscribeMinute, minuteSnapshot, serverSnapshot);
+const cubic = (p1: number, p2: number, t: number) => {
+  // y(t) of a CSS cubic-bezier with x solved by bisection — enough for a glyph.
+  const bx = (u: number, a: number, b: number) => 3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
+  return (x1: number, y1: number) => {
+    let lo = 0, hi = 1;
+    for (let i = 0; i < 24; i++) { const mid = (lo + hi) / 2; if (bx(mid, x1, p1) < t) lo = mid; else hi = mid; }
+    return bx((lo + hi) / 2, y1, p2);
+  };
+};
+/** The sunrise arc as values at `sec` after it starts (captures only). */
+function riseAt(sec: number, reduceMotion: boolean) {
+  const clamp = (v: number) => Math.min(1, Math.max(0, v));
+  const o = clamp(sec / 0.3), p = clamp(sec / 0.7);
+  const op = 1 - (1 - o) ** 2;
+  if (reduceMotion) return { opacity: op, transition: { duration: 0 } };
+  const xk = cubic(0.6, 1, p)(0.4, 0), yk = cubic(0.32, 1, p)(0.23, 1);
+  return { opacity: op, x: -10 * (1 - xk), y: 10 * (1 - yk), rotate: -30 * (1 - yk), transition: { duration: 0 } };
+}
+
+export function Greeting({ name, className, riseSec = null }: { name: string; className?: string; riseSec?: number | null }) {
+  const liveMinute = useSyncExternalStore(subscribeMinute, minuteSnapshot, serverSnapshot);
   const reduceMotion = useReducedMotion();
+  // Captured: a fixed time of day plus the driving clock, read in UTC so the
+  // same frame looks the same on every machine and in every time zone.
+  const driven = useDriverSeconds();
+  const minute = driven !== null ? Math.floor((DRIVEN_EPOCH_MS + driven * 1000) / 60_000) : liveMinute;
 
   let word = "Hello";
   let glyph: React.ReactNode = null;
   let glyphKey = "none";
   if (minute !== null) {
     const now = new Date(minute * 60_000);
-    const hour = now.getHours() + now.getMinutes() / 60;
-    const period = periodOf(now.getHours());
+    const h = driven !== null ? now.getUTCHours() : now.getHours();
+    const m = driven !== null ? now.getUTCMinutes() : now.getMinutes();
+    const hour = h + m / 60;
+    const period = periodOf(h);
     word = `Good ${period}`;
     const sunUp = hour >= 6 && hour < 19;
     glyphKey = sunUp ? "sun" : "moon";
@@ -117,11 +143,13 @@ export function Greeting({ name, className }: { name: string; className?: string
               // the body lifts fast and levels off like a sunrise. 700ms is
               // long for UI but it plays once, on arrival, and never blocks.
               initial={
-                reduceMotion
+                riseSec !== null
+                  ? false
+                  : reduceMotion
                   ? { opacity: 0 }
                   : { opacity: 0, x: -10, y: 10, rotate: -30 }
               }
-              animate={{
+              animate={riseSec !== null ? riseAt(riseSec, reduceMotion) : {
                 opacity: 1,
                 x: 0,
                 y: 0,
@@ -180,11 +208,12 @@ export function Greeting({ name, className }: { name: string; className?: string
 export default function GreetingDemo() {
   const [run, setRun] = useState(0);
   const play = usePreviewPlay();
+  const driven = useDriverSeconds();
 
   // Index preview: presses Replay, so the sun or moon rises along its arc
   // again, and again after a calm pause while the card stays hovered.
   useEffect(() => {
-    if (!play) return;
+    if (!play || driven !== null) return;
     const replay = () => setRun((r) => r + 1);
     const first = setTimeout(replay, 150);
     // The rise takes 700ms; the rest is a pause to look at it.
@@ -193,11 +222,15 @@ export default function GreetingDemo() {
       clearTimeout(first);
       clearInterval(again);
     };
-  }, [play]);
+  }, [play, driven]);
+
+  // Captured: replays read off the clock (first at 0.15s, then every 3.2s).
+  const drivenRun = driven !== null && play ? (driven < 0.15 ? 0 : 1 + Math.floor((driven - 0.15) / 3.2)) : 0;
+  const riseSec = driven === null ? null : play ? (driven < 0.15 ? driven : (driven - 0.15) % 3.2) : driven;
 
   return (
     <div className="flex flex-col items-start gap-5">
-      <Greeting key={run} name="Ada" />
+      <Greeting key={driven !== null ? `d${drivenRun}` : run} name="Ada" riseSec={riseSec} />
       <button
         type="button"
         onClick={() => setRun((r) => r + 1)}

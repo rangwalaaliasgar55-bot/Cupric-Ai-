@@ -28,6 +28,12 @@ export type RecordOptions = {
   pixelRatio?: number
   onProgress?: (pct: number) => void
   signal?: AbortSignal
+  /**
+   * Drives the shared clock: called with each shot's time before it is
+   * painted, so clock-driven components render exactly that moment and the
+   * shot is stamped with it.
+   */
+  onClock?: (sec: number) => void
 }
 
 export type RecordResult = {
@@ -172,8 +178,9 @@ export async function recordComponent(stage: HTMLElement, opts: RecordOptions): 
       const elapsed = (performance.now() - started) / 1000
       if (elapsed > durationSec) break
       actor?.step(elapsed)
+      opts.onClock?.(elapsed)
       await nextPaint()
-      const t = (performance.now() - started) / 1000
+      const t = opts.onClock ? elapsed : (performance.now() - started) / 1000
       const shot = await captureElement(stage, capture, method || undefined)
       method = shot.method
       shots.push({ t: Math.min(durationSec, t), url: shot.dataUrl })

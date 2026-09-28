@@ -9,6 +9,7 @@
  */
 import { ProgressBar } from '../../components/ProgressBar'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import { Loader2, X } from 'lucide-react'
 import type { StudioClip, StudioDoc } from '../../types/project'
 import { DemoFrame } from '../../lab/DemoFrame'
@@ -85,6 +86,8 @@ function RecorderCard({
   const [pct, setPct] = useState(0)
   const [phase, setPhase] = useState<'loading' | 'recording' | 'finishing'>('loading')
   const abortRef = useRef<AbortController | null>(null)
+  // The shared clock for clock-driven components: each shot renders exactly its own moment.
+  const [clockSec, setClockSec] = useState(0)
 
   useEffect(() => {
     if (!entry || !availableSlugs.has(meta.slug)) {
@@ -110,6 +113,7 @@ function RecorderCard({
           interact: meta.interact,
           pixelRatio,
           signal: controller.signal,
+          onClock: (sec) => { if (alive) flushSync(() => setClockSec(sec)) },
           onProgress: (value) => alive && setPct(value),
         })
         if (!alive) return
@@ -157,7 +161,7 @@ function RecorderCard({
         </div>
         {/* Natural size, on screen: exactly what lands in the video. */}
         <div ref={stageRef} className="lab-canvas relative flex h-[min(400px,62vh)] w-full items-center justify-center overflow-hidden p-6">
-          <DemoFrame slug={meta.slug} play forceMotion props={meta.props} className="place-items-center" />
+          <DemoFrame slug={meta.slug} play forceMotion props={meta.props} className="place-items-center" atSeconds={clockSec} />
         </div>
         {/* Inset footer, so the bar never gets cut off by the card's rounded corner. */}
         <div className="flex items-center gap-3 border-t border-line px-4 py-2.5">

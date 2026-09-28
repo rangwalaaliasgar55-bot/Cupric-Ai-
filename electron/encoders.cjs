@@ -27,8 +27,34 @@ function candidatesFor(platform) {
  * Encoder arguments for a quality tier. Every encoder emits yuv420p High
  * profile so segments from different encoders stay compatible.
  */
+/**
+ * Encoders that only opened with the conservative argument set (older FFmpeg
+ * builds or drivers that reject the p1–p7 NVENC presets, QSV presets, etc.).
+ * Filled by `detect`; `videoArgs` then emits the legacy set for them.
+ */
+const legacyEncoders = new Set()
+
+/** Conservative arguments every FFmpeg build since ~4.0 accepts. */
+function legacyVideoArgs(name, quality) {
+  const final = quality === 'final'
+  switch (name) {
+    case 'h264_nvenc':
+      return ['-c:v', 'h264_nvenc', '-preset', final ? 'slow' : 'fast', '-rc', 'vbr', '-cq', final ? '19' : '27', '-b:v', '0', '-profile:v', 'high', '-pix_fmt', 'yuv420p']
+    case 'h264_qsv':
+      return ['-c:v', 'h264_qsv', '-global_quality', final ? '20' : '27', '-profile:v', 'high', '-pix_fmt', 'nv12']
+    case 'h264_amf':
+      return ['-c:v', 'h264_amf', '-quality', final ? 'quality' : 'speed', '-profile:v', 'high', '-pix_fmt', 'yuv420p']
+    default:
+      return null
+  }
+}
+
 function videoArgs(name, quality, codec = 'h264') {
   const final = quality === 'final'
+  if (codec !== 'av1' && legacyEncoders.has(name)) {
+    const legacy = legacyVideoArgs(name, quality)
+    if (legacy) return legacy
+  }
   if (codec === 'av1') {
     const selected = AV1_ENCODERS[name] || AV1_SOFTWARE
     if (selected === 'av1_nvenc') return ['-c:v', selected, '-preset', final ? 'p6' : 'p3', '-cq', final ? '24' : '34', '-b:v', '0', '-pix_fmt', 'yuv420p']
@@ -67,8 +93,18 @@ function listedEncoders(text) {
 }
 
 /** Arguments for a 3-frame throwaway encode that proves an encoder opens. */
-function probeArgs(name) {
-  return ['-hide_banner', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=black:s=320x240:r=30:d=0.2', '-frames:v', '3', ...videoArgs(name, 'draft'), '-f', 'null', '-']
+function probeArgs(name, legacy = false) {
+  // 640x360: some hardware encoders reject very small frames, which used to
+  // make a working GPU look absent.
+  const args = legacy ? legacyVideoArgs(name, 'draft') : videoArgs(name, 'draft')
+  return ['-hide_banner', '-v', 'error', '-f', 'lavfi', '-i', 'color=c=black:s=640x360:r=30:d=0.2', '-frames:v', '3', ...args, '-f', 'null', '-']
+}
+
+/** Last meaningful line of an FFmpeg error, for the diagnostics report. */
+function probeError(err) {
+  const text = String(err?.stderr || err?.message || err || '').trim()
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  return (lines.find((l) => /cannot load|no device|not found|unsupported|failed|error/i.test(l)) || lines[lines.length - 1] || 'unknown error').slice(0, 200)
 }
 
 /**
@@ -77,25 +113,39 @@ function probeArgs(name) {
  */
 async function detect(run, platform, mode = 'auto') {
   const tried = []
-  if (mode === 'off') return { name: SOFTWARE, hardware: false, tried, reason: 'Hardware encoding is turned off in settings.' }
+  const errors = {}
+  legacyEncoders.clear()
+  if (mode === 'off') return { name: SOFTWARE, hardware: false, tried, errors, reason: 'Hardware encoding is turned off in settings.' }
   let listed
   try {
     const { stdout, stderr } = await run(['-hide_banner', '-encoders'])
     listed = listedEncoders(`${stdout || ''}\n${stderr || ''}`)
   } catch (err) {
-    return { name: SOFTWARE, hardware: false, tried, reason: `Could not list encoders: ${err?.message || err}` }
+    return { name: SOFTWARE, hardware: false, tried, errors, reason: `Could not list encoders: ${err?.message || err}` }
   }
   for (const name of candidatesFor(platform)) {
     if (!listed.has(name)) continue
     tried.push(name)
     try {
       await run(probeArgs(name))
-      return { name, hardware: true, tried, reason: `${name} passed a test encode.` }
-    } catch {
-      /* listed but unusable on this machine (no GPU, old driver) — next */
+      return { name, hardware: true, tried, errors, reason: `${name} passed a test encode.` }
+    } catch (err) {
+      errors[name] = probeError(err)
+    }
+    // The modern argument set can fail on an older FFmpeg/driver even when the
+    // GPU is fine; retry once with the conservative set before giving up.
+    if (legacyVideoArgs(name, 'draft')) {
+      try {
+        await run(probeArgs(name, true))
+        legacyEncoders.add(name)
+        return { name, hardware: true, tried, errors, legacy: true, reason: `${name} passed a test encode with compatibility settings (${errors[name]}).` }
+      } catch (err) {
+        errors[name] = `${errors[name]} | compat: ${probeError(err)}`
+      }
     }
   }
-  return { name: SOFTWARE, hardware: false, tried, reason: tried.length ? `No hardware encoder worked (${tried.join(', ')}); using libx264.` : 'No hardware encoder in this FFmpeg build; using libx264.' }
+  const why = Object.entries(errors).map(([n, e]) => `${n}: ${e}`).join('; ')
+  return { name: SOFTWARE, hardware: false, tried, errors, reason: tried.length ? `No hardware encoder worked (${why}); using libx264. This usually means no supported GPU/driver is present (common in VMs and remote desktops).` : 'No hardware encoder in this FFmpeg build; using libx264.' }
 }
 
 /**
@@ -110,4 +160,4 @@ function loudnormArgs(target) {
 }
 
 module.exports = {
-  loudnormArgs, SOFTWARE, AV1_SOFTWARE, AV1_ENCODERS, candidatesFor, videoArgs, isHardware, listedEncoders, probeArgs, detect }
+  loudnormArgs, SOFTWARE, AV1_SOFTWARE, AV1_ENCODERS, candidatesFor, videoArgs, isHardware, listedEncoders, probeArgs, probeError, legacyVideoArgs, detect }

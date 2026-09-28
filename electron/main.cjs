@@ -3562,7 +3562,7 @@ async function currentVideoEncoder() {
       .detect((args) => runProcess(null, ffmpegPath, args), process.platform, hardwareEncodingMode())
       .then((result) => {
         encoderSession.result = result
-        logLine('video-encoder', result.reason, { name: result.name, tried: result.tried })
+        logLine('video-encoder', result.reason, { name: result.name, tried: result.tried, errors: result.errors, legacy: !!result.legacy })
         return result
       })
       .finally(() => { encoderSession.pending = null })

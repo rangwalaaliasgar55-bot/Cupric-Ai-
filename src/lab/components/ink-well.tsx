@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
+import { useFrameClock } from "@/lib/progress";
 
 // The bottle, in viewBox units (100 x 124): a squat, heavy-based inkwell
 // with sloped shoulders and a short neck. OUTER is the glass surface, INNER
@@ -88,6 +89,8 @@ export function InkWell({
   placeholder?: string;
   className?: string;
 }) {
+  // Captured: loops run on the driving clock in fixed steps, randomness is seeded.
+  const frameClock = useFrameClock(803);
   const id = useId();
   const reduceMotion = useReducedMotion();
   const remaining = limit - value.length;
@@ -133,7 +136,7 @@ export function InkWell({
 
   const run = () => {
     if (frame.current) return;
-    let last = performance.now();
+    let last = frameClock.now();
     const tick = (now: number) => {
       const s = sim.current;
       const dt = Math.min((now - last) / 1000, 1 / 30);
@@ -154,16 +157,16 @@ export function InkWell({
         frame.current = 0;
         return;
       }
-      frame.current = requestAnimationFrame(tick);
+      frame.current = frameClock.raf(tick);
     };
-    frame.current = requestAnimationFrame(tick);
+    frame.current = frameClock.raf(tick);
   };
 
   useEffect(() => {
     const s = sim.current;
     s.target = target;
     if (reduceMotion) {
-      cancelAnimationFrame(frame.current);
+      frameClock.caf(frame.current);
       frame.current = 0;
       Object.assign(s, { level: target, vel: 0, amp: 0 });
       draw();
@@ -176,7 +179,7 @@ export function InkWell({
 
   useEffect(
     () => () => {
-      cancelAnimationFrame(frame.current);
+      frameClock.caf(frame.current);
       // Cleared too, or a remount (Strict Mode does one) would think the
       // cancelled loop is still running and never start a new one.
       frame.current = 0;
@@ -186,7 +189,7 @@ export function InkWell({
 
   const slosh = () => {
     if (reduceMotion) return;
-    const now = performance.now();
+    const now = frameClock.now();
     const gap = now - lastInput.current;
     lastInput.current = now;
     // Quick typing sloshes harder; a lone key after a pause barely ripples.

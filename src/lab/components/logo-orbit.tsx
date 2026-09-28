@@ -21,6 +21,7 @@ import {
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { usePreviewPlay } from "@/lab/preview-play";
 import { cn } from "@/lib/cn";
+import { useFrameClock } from "@/lib/progress";
 
 export type OrbitLogo = { title: string; path: string; hex: string };
 
@@ -62,6 +63,8 @@ export function LogoOrbit({
   // What the logos circle: a heading, a stat, a line of copy.
   children: React.ReactNode;
 }) {
+  // Captured: loops run on the driving clock in fixed steps, randomness is seeded.
+  const frameClock = useFrameClock(1022);
   const reduceMotion = useReducedMotion();
   const stageRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -79,7 +82,7 @@ export function LogoOrbit({
     let speed = 1;
     let frame = 0;
     let visible = true;
-    let last = performance.now();
+    let last = frameClock.now();
 
     const place = () => {
       const w = stage.offsetWidth;
@@ -111,7 +114,7 @@ export function LogoOrbit({
         turns[r] += ((Math.PI * 2) / ring.lap) * dt * speed;
       });
       place();
-      frame = visible ? requestAnimationFrame(step) : 0;
+      frame = visible ? frameClock.raf(step) : 0;
     };
 
     place();
@@ -121,16 +124,16 @@ export function LogoOrbit({
     const io = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       if (visible && !frame) {
-        last = performance.now();
-        frame = requestAnimationFrame(step);
+        last = frameClock.now();
+        frame = frameClock.raf(step);
       }
     });
     io.observe(stage);
     const ro = new ResizeObserver(place);
     ro.observe(stage);
-    frame = requestAnimationFrame(step);
+    frame = frameClock.raf(step);
     return () => {
-      cancelAnimationFrame(frame);
+      frameClock.caf(frame);
       io.disconnect();
       ro.disconnect();
     };

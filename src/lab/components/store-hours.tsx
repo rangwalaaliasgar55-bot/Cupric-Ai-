@@ -2,6 +2,7 @@ import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
+import { DRIVEN_EPOCH_MS, useDriverSeconds } from "@/lib/progress";
 
 // "HH:MM" in the store's own time. A close earlier than the open runs past
 // midnight into the next day, like a bar open 17:00 to 02:00.
@@ -128,19 +129,25 @@ function subscribeClock(onChange: () => void) {
   };
 }
 export function useNow() {
-  return useSyncExternalStore(
+  // Captured: a fixed instant plus the driving clock, same quantum as live.
+  const driven = useDriverSeconds();
+  const live = useSyncExternalStore(
     subscribeClock,
     () => Math.floor(Date.now() / QUANTUM) * QUANTUM,
     () => null,
   );
+  return driven !== null ? Math.floor((DRIVEN_EPOCH_MS + driven * 1000) / QUANTUM) * QUANTUM : live;
 }
 const noop = () => () => {};
 function useVisitorZone() {
-  return useSyncExternalStore(
+  const driven = useDriverSeconds();
+  const zone = useSyncExternalStore(
     noop,
     () => Intl.DateTimeFormat().resolvedOptions().timeZone,
     () => null,
   );
+  // The reader's zone differs per machine; captures use a fixed one.
+  return driven !== null ? "Europe/London" : zone;
 }
 
 export function StoreHours({
