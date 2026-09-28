@@ -5,8 +5,10 @@
  */
 import { useState } from 'react'
 import type { StudioDoc } from '../../types/project'
-import { applyBrandKit, findReplaceText, listTextClips, matchStyleFrom, restyleText, roleOf, setClipText, shiftAllText, type TextRole } from '../../lib/studio/textList'
+import { applyPreset, parsePresets, presetFromClip, upsertPreset, applyBrandKit, findReplaceText, listTextClips, matchStyleFrom, restyleText, roleOf, setClipText, shiftAllText, type TextRole } from '../../lib/studio/textList'
 import { VIDEO_FONTS } from '../../lib/studio/videoFonts'
+
+const PRESET_KEY = 'cupric.textStylePresets'
 
 type Props = {
   doc: StudioDoc
@@ -26,6 +28,9 @@ export function TextListPanel({ doc, selectedId, onSelect, onCommit, onNote, bra
   const [font, setFont] = useState('')
   const [color, setColor] = useState('#F4F1EA')
   const [shift, setShift] = useState('0.5')
+  const [presets, setPresets] = useState(() => { try { return parsePresets(localStorage.getItem(PRESET_KEY)) } catch { return [] } })
+  const [presetName, setPresetName] = useState('')
+  const savePresets = (next: typeof presets) => { setPresets(next); try { localStorage.setItem(PRESET_KEY, JSON.stringify(next)) } catch { /* storage full or blocked */ } }
   const texts = listTextClips(doc)
   if (!texts.length) return null
   const selectedText = texts.find((t) => t.id === selectedId) ?? null
@@ -77,6 +82,17 @@ export function TextListPanel({ doc, selectedId, onSelect, onCommit, onNote, bra
             <input className="cu-input w-14 px-1.5 py-1" inputMode="decimal" aria-label="Seconds to shift" value={shift} onChange={(e) => setShift(e.target.value)} />
             <button type="button" className="cu-chip px-2 py-1" onClick={() => apply(shiftAllText(doc, -Math.abs(Number(shift) || 0)), 'Shift text earlier')}>◀ s</button>
             <button type="button" className="cu-chip px-2 py-1" onClick={() => apply(shiftAllText(doc, Math.abs(Number(shift) || 0)), 'Shift text later')}>s ▶</button>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Text style presets">
+            <span className="text-muted">Styles</span>
+            <input className="cu-input w-36 px-2 py-1" placeholder="Name this style" aria-label="Style name" value={presetName} onChange={(e) => setPresetName(e.target.value)} />
+            <button type="button" className="cu-chip px-2 py-1" disabled={!selectedText} title={selectedText ? 'Save the selected text look' : 'Select a text clip first'} onClick={() => { if (!selectedText) return; const p = presetFromClip(selectedText, presetName); savePresets(upsertPreset(presets, p)); setPresetName(''); onNote('success', `Saved style “${p.name}”. It's available in every project on this device.`) }}>Save selected</button>
+            {presets.map((p) => (
+              <span key={p.name} className="inline-flex items-center rounded-lg border border-line">
+                <button type="button" className="px-2 py-1" style={{ color: p.look.color, fontFamily: p.look.fontFamily }} title={`Apply to ${role === 'all' ? 'all text' : `${role}s`}`} onClick={() => apply(applyPreset(doc, p, role), `Apply style “${p.name}”`)}>{p.name}</button>
+                <button type="button" className="px-1 text-muted hover:text-danger" aria-label={`Delete style ${p.name}`} onClick={() => savePresets(presets.filter((x) => x.name !== p.name))}>×</button>
+              </span>
+            ))}
           </div>
           <ol className="max-h-56 space-y-1 overflow-y-auto pr-1">
             {texts.map((t) => (

@@ -118,3 +118,42 @@ export function applyBrandKit(doc: StudioDoc, kit: { colors: string[]; font: str
   })
   return { doc: count ? { ...doc, clips } : doc, count, used }
 }
+
+/* ——— batch 9: reusable text style presets (saved on this device) ——— */
+
+export type TextStylePreset = { name: string; look: Partial<Pick<StudioTextClip, 'fontFamily' | 'color' | 'weight' | 'anim' | 'textGlow' | 'emphasisColor' | 'accentColor' | 'legibility'>> }
+
+export function presetFromClip(c: StudioTextClip, name: string): TextStylePreset {
+  return { name: name.trim().slice(0, 40) || 'Untitled style', look: { fontFamily: c.fontFamily, color: c.color, weight: c.weight, anim: c.anim, textGlow: c.textGlow, emphasisColor: c.emphasisColor, accentColor: c.accentColor, legibility: c.legibility } }
+}
+
+/** Parse stored presets defensively: anything malformed is dropped, never thrown. */
+export function parsePresets(raw: string | null): TextStylePreset[] {
+  try {
+    const v = JSON.parse(raw ?? '[]') as unknown
+    if (!Array.isArray(v)) return []
+    return v.filter((p): p is TextStylePreset => !!p && typeof p === 'object' && typeof (p as TextStylePreset).name === 'string' && !!(p as TextStylePreset).look && typeof (p as TextStylePreset).look === 'object')
+      .map((p) => ({ name: p.name.slice(0, 40), look: {
+        ...(typeof p.look.fontFamily === 'string' ? { fontFamily: p.look.fontFamily } : {}),
+        ...(typeof p.look.color === 'string' && /^#[0-9a-f]{6}$/i.test(p.look.color) ? { color: p.look.color } : {}),
+        ...([400, 600, 800].includes(p.look.weight as number) ? { weight: p.look.weight } : {}),
+        ...(typeof p.look.anim === 'string' ? { anim: p.look.anim } : {}),
+        ...(typeof p.look.textGlow === 'number' ? { textGlow: Math.min(1, Math.max(0, p.look.textGlow)) } : {}),
+      } }))
+      .slice(0, 24)
+  } catch { return [] }
+}
+
+export function upsertPreset(list: TextStylePreset[], p: TextStylePreset): TextStylePreset[] {
+  return [p, ...list.filter((x) => x.name !== p.name)].slice(0, 24)
+}
+
+export function applyPreset(doc: StudioDoc, p: TextStylePreset, role: TextRole | 'all'): { doc: StudioDoc; count: number } {
+  let count = 0
+  const clips = doc.clips.map((c) => {
+    if (c.kind !== 'text' || c.locked || (role !== 'all' && roleOf(c) !== role)) return c
+    count += 1
+    return { ...c, ...Object.fromEntries(Object.entries(p.look).filter(([, v]) => v !== undefined)) }
+  })
+  return { doc: count ? { ...doc, clips } : doc, count }
+}
