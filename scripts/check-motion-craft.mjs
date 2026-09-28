@@ -201,3 +201,50 @@ const F = await load('src/lib/studio/filmStyles.ts', 'styles')
 }
 
 console.log('Motion craft check passed — springs overshoot, settle to exactly 1 and scrub identically in both directions; loop noise matches value and slope across the seam; the cursor pack travels on a spring, previews itself with the export code path and never teleports; the style router disqualifies on notFor and returns null rather than guessing')
+
+/* ——— 4. the craft pass: real fixes, never busywork ————————————— */
+{
+  const B = await load('src/lib/studio/beautify.ts', 'beautify')
+  const clip = (over) => ({ id: over.id || `c${Math.random()}`, kind: 'text', track: 0, startSec: 0, durationSec: 3, ...over })
+
+  // An empty or already-crafted doc must produce nothing.
+  assert.equal(B.craftPass({ aspect: '16:9', clips: [] }).ops.length, 0, 'an empty doc produces no ops')
+  const done = B.craftPass({ aspect: '16:9', clips: [clip({ id: 'a', keyframes: [{ at: 0 }, { at: 1 }] })] })
+  assert.equal(done.ops.length, 0, 'a clip that already has motion is left alone — a polish is not a reset')
+  assert.match(B.craftSummary(done), /Nothing to fix/, 'and says so honestly')
+
+  // A pile of simultaneous entrances gets staggered onto the grid.
+  const pile = ['a', 'b', 'c'].map((id) => clip({ id, startSec: 2 }))
+  const offsets = B.staggerOffsets(pile)
+  assert.equal(offsets.get('a'), undefined, 'the first clip of a pile keeps its time')
+  assert.ok(offsets.get('b') > 0 && offsets.get('c') > offsets.get('b'), 'the rest step back in order')
+  for (const [, off] of offsets) assert.equal(B.onGrid(off), off, 'every offset lands on the rhythm grid')
+
+  const pass = B.craftPass({ aspect: '16:9', clips: pile })
+  assert.ok(pass.ops.length >= 6, 'each clip gets a from- and a to-keyframe')
+  assert.equal(pass.findings.length, 3, 'and every op is justified by a finding')
+  assert.match(pass.name, /Motion craft — 3 fixes/, 'the diff is named, never nameless')
+  for (const f of pass.findings) {
+    assert.ok(f.issue.length > 15 && f.fix.length > 15, 'findings say what is wrong AND what will change')
+    assert.ok(pile.some((c) => c.id === f.clipId), 'against a clip that really exists')
+  }
+  for (const op of pass.ops) {
+    assert.equal(op.type, 'setKeyframe', 'the pass emits ordinary editable keyframes, nothing exotic')
+    assert.ok(op.ease.startsWith('spring-'), 'on real springs, not linear ramps')
+    assert.ok(Number.isFinite(op.at) && op.at >= 0, 'at a real time')
+  }
+  // Determinism: the same doc must produce byte-identical ops.
+  assert.deepEqual(B.craftPass({ aspect: '16:9', clips: pile }).ops, pass.ops, 'the pass is deterministic')
+
+  // A held still gets drift; a short one does not.
+  const stills = B.craftPass({ aspect: '16:9', clips: [clip({ id: 's', kind: 'image', durationSec: 5, keyframes: [{ at: 0 }, { at: 1 }] })] })
+  assert.ok(stills.findings.some((f) => /still photo held/.test(f.issue)), 'a long held still is flagged')
+  assert.match(B.craftSummary(stills), /drift/, 'and the summary says what it did')
+  assert.match(B.craftSummary(stills), /Nothing is deleted and no words change/, 'and promises what it did NOT do')
+
+  const ask = await read('src/lib/studio/autoPolishPlan.ts')
+  assert.match(ask, /id: 'craft'/, 'the craft pass is offered as a choice you pick')
+  assert.match(ask, /Runs locally, no AI/, 'and is honest that it needs no model')
+}
+
+console.log('Craft pass check passed — deterministic, justified by findings, emits ordinary editable keyframes on real springs, and leaves already-animated clips alone')
