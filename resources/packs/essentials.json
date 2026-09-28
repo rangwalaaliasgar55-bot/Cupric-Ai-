@@ -2,7 +2,7 @@
   "id": "essentials",
   "name": "Essentials — libraries, fonts, icons, media",
   "description": "Hand-picked free resources: animation libraries (Framer Motion, GSAP), fonts (Inter, Geist, Satoshi, Fontsource), icons and logos (Simple Icons, Logo.dev, Lucide, Phosphor, Tabler), illustrations, Lottie, stock media and palettes. Each entry links to the original with its license.",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "source": "curated",
   "license": "Per item (see each entry)",
   "items": [

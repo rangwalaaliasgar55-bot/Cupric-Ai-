@@ -2,7 +2,7 @@
   "id": "skiper-ui",
   "name": "Skiper UI blueprints",
   "description": "All 106 supplied Skiper UI ideas as attributed, editable Studio storyboards.",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "source": "https://skiper-ui.com",
   "license": "Free personal/commercial use with attribution to Skiper UI; individual entries may carry additional upstream attribution.",
   "items": [

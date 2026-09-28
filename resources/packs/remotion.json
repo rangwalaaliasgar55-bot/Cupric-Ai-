@@ -2,7 +2,7 @@
   "id": "remotion",
   "name": "Remotion toolkit",
   "description": "Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "source": "https://github.com/remotion-dev/remotion",
   "license": "Remotion License (package-specific; metadata links only; verify eligibility before use)",
   "items": [
