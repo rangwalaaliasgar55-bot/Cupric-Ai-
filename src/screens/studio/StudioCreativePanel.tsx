@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { Gauge, Layers, Mic, Palette, Repeat2, Search } from 'lucide-react'
+import { Copy, Download, Gauge, Image as ImageIcon, Layers, Mic, Palette, Repeat2, Search, Share2 } from 'lucide-react'
 import type { StudioAspect, StudioClip, StudioDoc } from '../../types/project'
 import { Button } from '../../components/Button'
-import { applyBrandKit, buildVariants, reframeForAspect, speedRamp, SPEED_RAMPS, type BrandKit, type SpeedRampId } from '../../lib/studio/creativeTools'
+import { applyBrandKit, buildVariants, reframeForAspect, socialMetadata, speedRamp, SPEED_RAMPS, type BrandKit, type SpeedRampId } from '../../lib/studio/creativeTools'
 import { simpleIconSlug, simpleIconUrl } from '../../lib/simpleIcons'
 import { synthesizeVoiceover } from '../../lib/voice'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
-import { uid } from '../../lib/utils'
+import { uid, copyText } from '../../lib/utils'
+import { captureStill } from '../../lib/studio/export'
 
 type Props = {
   doc: StudioDoc
@@ -51,6 +52,8 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
   const [ttsBusy, setTtsBusy] = useState(false)
   const [variantCount, setVariantCount] = useState(3)
   const [aspect, setAspect] = useState<StudioAspect>(doc.aspect === '9:16' ? '16:9' : '9:16')
+  const [thumbnail, setThumbnail] = useState<string | null>(null)
+  const social = socialMetadata(doc, project?.name || 'Untitled video')
 
   const commitResult = (r: { doc: StudioDoc; changed: boolean; reason?: string; notes?: string[] }, label: string) => {
     if (!r.changed) { setMsg(r.reason ?? 'Nothing to change.'); return }
@@ -179,6 +182,18 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
           </select>
           <Button size="sm" variant="primary" onClick={() => commitResult(buildVariants(doc, variantCount, kit), `Build ${variantCount} variants`)}>Build</Button>
         </div>
+      </Block>
+
+      <Block icon={Share2} title="Social share kit" open>
+        <p className="text-[11px] text-muted">Creates draft metadata from your existing text and a still thumbnail. Exports never add a watermark unless you explicitly add a logo/end card.</p>
+        <label className="block text-[11px] text-muted">Title<input className={`${inputCx} mt-1`} value={social.title} readOnly aria-label="Social title" /></label>
+        <label className="block text-[11px] text-muted">Caption<textarea className={`${inputCx} mt-1 min-h-14`} value={social.caption} readOnly aria-label="Social caption" /></label>
+        <div className="rounded-lg border border-line bg-panel-alt/50 px-2 py-1.5 text-[11px] text-muted">{social.hashtags.join(' ')}</div>
+        <div className="flex flex-wrap gap-1.5">
+          <Button size="sm" variant="outline" onClick={() => void copyText(`${social.caption}\n\n${social.hashtags.join(' ')}`).then((ok) => setMsg(ok ? 'Caption and hashtags copied.' : 'Clipboard is unavailable.'))}><Copy size={12} /> Copy caption + hashtags</Button>
+          <Button size="sm" variant="primary" onClick={() => { const still = captureStill(doc, time); if (still) { setThumbnail(still); setMsg('Thumbnail captured from the same deterministic renderer used by preview/export.') } else setMsg('Could not capture a thumbnail at this playhead.') }}><ImageIcon size={12} /> Capture thumbnail</Button>
+        </div>
+        {thumbnail && <div className="flex items-center gap-2 rounded-lg border border-line bg-panel-alt/50 p-2"><img src={thumbnail} alt="Generated video thumbnail" className="h-16 w-28 rounded object-cover" /><a href={thumbnail} download="cupric-thumbnail.png" className="cu-chip flex items-center gap-1 px-2 py-1 text-xs"><Download size={12} /> Download PNG</a></div>}
       </Block>
 
       <Block icon={Repeat2} title="Repurpose to another size">

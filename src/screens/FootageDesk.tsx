@@ -15,6 +15,7 @@ import { getIpc } from '../lib/bridge'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, hashStr, mulberry32, round1 } from '../lib/utils'
 import { humanError } from '../lib/humanError'
+import { StockBrowser } from '../components/StockBrowser'
 import { focusStudioClip } from '../lib/studio/focus'
 
 const CAPTIONS = [
@@ -261,6 +262,7 @@ export function FootageDesk() {
 
         {/* Detail panel — waveform is the centerpiece */}
         {selected && <FootageDetail key={selected.id} asset={selected} />}
+        <StockBrowser />
       </div>
     </div>
   )

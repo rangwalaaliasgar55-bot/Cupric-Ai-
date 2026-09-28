@@ -1,0 +1,17 @@
+{
+  "source": "https://github.com/chuspeeism/iphone-duo",
+  "commit": "2662ebbeb6aa844cd4f6888f7d6f8958662249fd",
+  "license": "MIT for original application code; Apple model, textures, wallpapers, screenshots and trademarks retain their owners' rights.",
+  "rules": [
+    {"id":"fixed-rear-camera-half","name":"Keep the rear-camera half fixed","rule":"For a foldable product reveal, keep the camera-side panel stable and rotate only the cover panel around a clear hinge. This gives the audience a readable anchor while the product opens.","tags":["fold","camera","composition"]},
+    {"id":"front-projected-screen","name":"Project screen content from the front view","rule":"Keep the browser, SaaS dashboard, product page or campaign artwork aligned to one front-view coordinate system while the device folds. Reproject the outer panel instead of stretching the UI with the mesh.","tags":["screen","projection","browser"]},
+    {"id":"fold-edge-treatment","name":"Use progressive edge treatment","rule":"As a panel recedes, progressively reduce visible coverage and add deterministic blur or darkening toward its folded edge. Keep the effect bounded so copy and product details remain legible.","tags":["blur","darkening","depth"]},
+    {"id":"screen-modes","name":"Plan screen modes","rule":"Offer intentional modes for wallpaper, launcher, custom media, browser flow, SaaS dashboard, product page and social proof. Use real user copy and media; never invent reviews or metrics.","tags":["modes","saas","copy"]},
+    {"id":"fold-choreography","name":"Give the fold a beat","rule":"Use a deliberate closed hold, open reveal, readable hold, and optional return or peek. Land the logo, feature, browser result or CTA on the stable open state rather than during the hinge blur.","tags":["timing","storyboard","cta"]},
+    {"id":"duo-promo-layout","name":"Use the duo as a promotion stage","rule":"For a SaaS launch: closed device hook → hinge opens → browser or app flow plays on the inner screens → outer panel carries the concise CTA → finish on a clean product lockup. Keep all stages editable.","tags":["promotion","saas","launch"]},
+    {"id":"custom-media","name":"Make media replaceable","rule":"Let users replace wallpaper, screenshot, browser capture, product image or UI copy without rebuilding geometry. Keep screen projection, crop, safe areas and fold timing independent from content.","tags":["media","editable","customizable"]},
+    {"id":"camera-and-controls","name":"Separate orbit from fold controls","rule":"A 3D product view may orbit or zoom, but its timeline fold control must remain deterministic and independently editable. Preview controls must not become wall-clock animation in export.","tags":["3d","camera","deterministic"]},
+    {"id":"asset-boundary","name":"Respect reference assets","rule":"Use the motion idea and implementation pattern without bundling Apple reference models or screenshots. Link to original sources and disclose trademarks and asset restrictions.","tags":["rights","attribution","assets"]},
+    {"id":"native-translation","name":"Translate into the host renderer","rule":"When the target is Cupric Studio, implement the fold as a native deterministic scene that shares the preview/export renderer. Do not execute the upstream webpage or require a remote Three.js asset at render time.","tags":["cupric","renderer","offline"]}
+  ]
+}

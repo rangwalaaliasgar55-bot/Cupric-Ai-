@@ -16,6 +16,8 @@ const proxies = require('./proxies.cjs')
 const tts = require('./tts.cjs')
 const { migrateSettings } = require('./settings-migration.cjs')
 const voiceEngines = require('./voice-engines.cjs')
+const { ADVANCED_VIDEO_PLAYBOOK_PROMPT } = require('./opus-playbook.cjs')
+const { createStockService } = require('./stock.cjs')
 
 let elog = null
 try {
@@ -75,14 +77,33 @@ const APP_ID = 'app.cupric-ai.studio'
 const MAX_RENDER_DURATION_SEC = 180
 const DEFAULT_SILENCE_NOISE_DB = -35
 const DEFAULT_SILENCE_MIN_DURATION = 0.8
-const DEFAULT_GEMINI_MODEL = 'gemini-3.8-flash'
-const GEMINI_FALLBACK_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.5-flash-lite', 'gemini-flash-lite-latest', 'gemini-2.0-flash']
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
+const GEMINI_FALLBACK_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-2.0-flash']
+const ZEN_FREE_MODELS = ['big-pickle', 'space-bunny-free', 'mimo-v2.6-flash-free']
+const ZEN_BASE_URL = 'https://opencode.ai/zen/v1'
+const AI_DISCOVERY_TIMEOUT_MS = 1500
+const AI_DISCOVERY_CACHE_MS = 30_000
+const AI_MODES = new Set(['auto', 'gemini', 'zen', 'openrouter', 'ollama', 'lmstudio', 'template'])
+const LOCAL_DISCOVERY_ENDPOINTS = [
+  { kind: 'ollama', label: 'Ollama', baseUrl: 'http://localhost:11434/v1' },
+  { kind: 'lmstudio', label: 'LM Studio', baseUrl: 'http://localhost:1234/v1' },
+  { kind: 'local-1337', label: 'Local model', baseUrl: 'http://127.0.0.1:1337/v1' },
+]
 
 const renderJobs = new Map()
+const renderQueue = []
+let renderQueueRunning = false
 const automationRunStates = new Map()
 let mainWindow = null
 let updateDownloaded = false
 let installingUpdate = false
+let aiDiscoveryPromise = null
+let aiDiscoveryCache = { at: 0, result: null }
+let aiStatusCache = { at: 0, dots: { gemini: 'unknown', zen: 'unknown', local: 'unknown' } }
+let stockServiceInstance = null
+const rundownCache = new Map()
+const rundownQueue = []
+let rundownQueueRunning = false
 
 // ---------------------------------------------------------------------------
 // App hardening: single instance, logs, crash capture
@@ -118,6 +139,33 @@ function ensureDir(dir) {
 
 function userDataPath(...parts) {
   return path.join(app.getPath('userData'), ...parts)
+}
+
+function stockService() {
+  if (!stockServiceInstance) stockServiceInstance = createStockService({ cacheDir: userDataPath('stock-cache') })
+  return stockServiceInstance
+}
+
+// The owner proxy is configured by deployment, never hard-coded or bundled.
+// A personal URL in Settings takes precedence; the environment fallback keeps
+// the paid path useful without putting a shared secret in the app.
+function stockSettings() {
+  const settings = readSettings()
+  if (!String(settings.stockProxyUrl || '').trim() && String(process.env.CUPRIC_STOCK_PROXY_URL || '').trim()) {
+    settings.stockProxyUrl = String(process.env.CUPRIC_STOCK_PROXY_URL).trim()
+  }
+  return settings
+}
+
+async function stockProxyHealth(url) {
+  const proxy = String(url || '').trim().replace(/\/+$/, '')
+  if (!/^https?:\/\//i.test(proxy)) return { configured: false, healthy: false, error: 'No proxy URL configured' }
+  try {
+    const response = await fetch(`${proxy}/health`, { method: 'GET', signal: AbortSignal.timeout(2500) })
+    return { configured: true, healthy: response.ok, status: response.status, url: proxy, error: response.ok ? null : `HTTP ${response.status}` }
+  } catch (error) {
+    return { configured: true, healthy: false, url: proxy, error: error?.message || 'Proxy health check failed' }
+  }
 }
 
 function logFile() {
@@ -310,6 +358,19 @@ function opencodeConfigFiles() {
       path.join(dir, 'auth.json'),
     )
   }
+  // OpenCode Desktop stores profiles beneath ai.opencode.desktop rather than
+  // the CLI directory. Keep the scan shallow and bounded: this runs on every
+  // settings read, so it must never walk an entire home directory.
+  const addDesktopProfiles = (root) => {
+    if (!root) return
+    addDir(root)
+    try {
+      for (const name of fs.readdirSync(root).slice(0, 40)) {
+        const child = path.join(root, name)
+        try { if (fs.statSync(child).isDirectory()) addDir(child) } catch {}
+      }
+    } catch {}
+  }
   files.push(process.env.OPENCODE_CONFIG, process.env.OPENCODE_AUTH_FILE)
   if (home) {
     addDir(path.join(home, '.config', 'opencode'))
@@ -318,6 +379,8 @@ function opencodeConfigFiles() {
   }
   addDir(path.join(process.env.APPDATA || '', 'opencode'))
   addDir(path.join(process.env.LOCALAPPDATA || '', 'opencode'))
+  addDesktopProfiles(path.join(process.env.APPDATA || '', 'ai.opencode.desktop'))
+  addDesktopProfiles(path.join(process.env.LOCALAPPDATA || '', 'ai.opencode.desktop'))
   addDir(path.join(process.env.XDG_CONFIG_HOME || '', 'opencode'))
   addDir(path.join(process.env.XDG_DATA_HOME || '', 'opencode'))
   // Project-local OpenCode config is useful when Cupric AI is launched from a workspace.
@@ -446,22 +509,175 @@ function resolveOpenCodeApiKey(baseUrl, model) {
   return ''
 }
 
+function openCodeAuthSecrets() {
+  const secrets = []
+  const visit = (value, hint = '') => {
+    if (!value || typeof value !== 'object') return
+    for (const [key, child] of Object.entries(value)) {
+      const nextHint = `${hint} ${key}`.toLowerCase()
+      if (typeof child === 'string' && /(?:api.?key|access.?token|token|secret|credential)/i.test(key) && /(zen|opencode)/i.test(nextHint) || typeof child === 'string' && /(zen|opencode)/i.test(nextHint) && child.trim().length > 10) {
+        const secret = secretFromConfig(child)
+        if (secret) secrets.push(secret)
+      } else if (child && typeof child === 'object') visit(child, nextHint)
+    }
+  }
+  for (const file of opencodeConfigFiles()) {
+    if (!/auth\.json$/i.test(file)) continue
+    visit(readJsonLoose(file), path.basename(path.dirname(file)))
+  }
+  return [...new Set(secrets)]
+}
+
+function configuredOpenCodeKey(baseUrl, model) {
+  return String(
+    process.env.OPENCODE_API_KEY ||
+    process.env.ANTHROPIC_API_KEY ||
+    process.env.OPENAI_API_KEY ||
+    process.env.OPENROUTER_API_KEY ||
+    resolveOpenCodeApiKey(baseUrl, model) ||
+    openCodeAuthSecrets()[0] ||
+    '',
+  ).trim()
+}
+
+function configuredAiMode(settings = readSettings()) {
+  const value = String(settings.aiMode || '').toLowerCase()
+  if (AI_MODES.has(value)) return value
+  if (settings.aiProvider === 'gemini') return 'gemini'
+  if (settings.aiProvider === 'opencode') return 'openrouter'
+  return 'auto'
+}
+
+function publicDiscovery(result) {
+  if (!result) return result
+  const pick = result.pick ? { ...result.pick } : result.pick
+  if (pick) delete pick.apiKey
+  return { ...result, pick, configured: Array.isArray(result.configured) ? result.configured.map((item) => { const safe = { ...item }; delete safe.apiKey; return safe }) : result.configured }
+}
+
+/**
+ * Discover the first usable source without asking the user to paste a key.
+ * This is intentionally the one discovery implementation used by settings,
+ * first AI use, and fallback routing; model pick-up is never duplicated in a
+ * renderer or in a provider-specific adapter.
+ */
+async function autoDiscover(options = {}) {
+  const force = Boolean(options.force)
+  if (!force && aiDiscoveryCache.result && Date.now() - aiDiscoveryCache.at < AI_DISCOVERY_CACHE_MS) return aiDiscoveryCache.result
+  if (aiDiscoveryPromise) return aiDiscoveryPromise
+  aiDiscoveryPromise = (async () => {
+    const settings = readSettings()
+    const configuredMode = configuredAiMode(settings)
+    if (configuredMode !== 'auto' && !force) {
+      const manual = {
+        kind: configuredMode,
+        provider: configuredMode === 'gemini' ? 'gemini' : configuredMode === 'template' ? 'template' : 'opencode',
+        baseUrl: String(settings.openCodeBaseUrl || '').trim(),
+        model: String(settings.openCodeModel || '').trim(),
+        label: configuredMode === 'gemini' ? `Gemini · ${geminiModel()}` : configuredMode === 'template' ? 'Offline template' : `${configuredMode} · ${settings.openCodeModel || 'default model'}`,
+        reason: 'Manual provider selected in Settings.',
+        source: 'manual',
+      }
+      return { pick: manual, local: [], configured: [], setupRequired: configuredMode === 'template', checkedAt: new Date().toISOString() }
+    }
+
+    const configured = discoverOpenCodeConfiguredModels()
+    const configuredKey = configuredOpenCodeKey('', '')
+    const configuredPick = configured.find((preset) => {
+      const key = resolveOpenCodeApiKey(preset.baseUrl, preset.model) || configuredKey
+      return Boolean(key) || isLocalModelBase(preset.baseUrl)
+    })
+    if (configuredPick) {
+      return { pick: { ...configuredPick, kind: 'opencode', provider: 'opencode', reason: 'OpenCode Desktop has a configured provider/model.', source: 'opencode-desktop' }, local: [], configured, setupRequired: false, checkedAt: new Date().toISOString() }
+    }
+
+    // OpenCode Desktop also forwards standard OpenAI-compatible environment
+    // variables. Use those when no provider block was saved; never invent a
+    // remote endpoint without the corresponding key.
+    const openAiKey = String(process.env.OPENAI_API_KEY || '').trim()
+    if (openAiKey) {
+      const baseUrl = normalizedBaseUrl(process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1')
+      const model = String(process.env.OPENAI_MODEL || 'gpt-4o-mini').trim()
+      return { pick: { kind: 'opencode', provider: 'opencode', baseUrl, model, apiKey: openAiKey, label: `OpenAI · ${model}`, reason: 'OpenCode-compatible OPENAI_API_KEY is available.', source: 'environment' }, local: [], configured, setupRequired: false, checkedAt: new Date().toISOString() }
+    }
+
+    // Zen is deliberately not a zero-key provider. Only OPENCODE_API_KEY or a
+    // Zen credential in OpenCode's auth.json may activate this route.
+    const zenKey = String(process.env.OPENCODE_API_KEY || openCodeAuthSecrets()[0] || '').trim()
+    if (zenKey) {
+      let zenModels = []
+      try { zenModels = await listOpenCodeModels({ baseUrl: ZEN_BASE_URL, apiKey: zenKey }) } catch {}
+      const available = new Set(zenModels.map((model) => model.model))
+      const candidates = ZEN_FREE_MODELS.filter((candidate) => !available.size || available.has(candidate))
+      let model = candidates[0] || zenModels[0]?.model || ZEN_FREE_MODELS[0]
+      for (const candidate of candidates) {
+        if (await probeOpenCodeModel(ZEN_BASE_URL, zenKey, candidate)) { model = candidate; break }
+      }
+      const zen = { kind: 'zen', provider: 'opencode', baseUrl: ZEN_BASE_URL, model, apiKey: zenKey, label: `Zen Free · ${model}`, reason: 'OpenCode credentials include a Zen key.', source: 'opencode-auth' }
+      return { pick: zen, local: [], configured, setupRequired: false, checkedAt: new Date().toISOString() }
+    }
+
+    // These probes are deliberately parallel and short. A stopped localhost
+    // service must never make the first Generate click feel hung.
+    const local = (await Promise.allSettled(LOCAL_DISCOVERY_ENDPOINTS.map(async (endpoint) => {
+      const response = await fetch(`${endpoint.baseUrl}/models`, { signal: AbortSignal.timeout(AI_DISCOVERY_TIMEOUT_MS) })
+      if (!response.ok) throw new Error(`${response.status}`)
+      const data = await response.json()
+      const models = (Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : [])
+        .map((item) => String(item?.id || item?.name || item?.model || '').trim())
+        .filter((model) => model && !/embed|rerank|whisper|tts/i.test(model))
+      if (!models.length) throw new Error('no chat model')
+      return { ...endpoint, models }
+    }))).flatMap((settled) => settled.status === 'fulfilled' ? [settled.value] : [])
+    const firstLocal = local[0]
+    if (firstLocal) {
+      const picked = { kind: firstLocal.kind, provider: 'opencode', baseUrl: firstLocal.baseUrl, model: firstLocal.models[0], label: `${firstLocal.label} · ${firstLocal.models[0]}`, reason: `${firstLocal.label} is running locally; no key is required.`, source: 'local', models: firstLocal.models }
+      return { pick: picked, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
+    }
+
+    const offline = { kind: 'template', provider: 'template', baseUrl: '', model: '', label: 'Offline template', reason: 'No configured key or local model was found. The deterministic planner keeps the timeline usable.', source: 'builtin' }
+    return { pick: offline, local, configured, setupRequired: true, checkedAt: new Date().toISOString() }
+  })().then((result) => {
+    const current = readSettings()
+    if (configuredAiMode(current) === 'auto') {
+      const safePick = { ...result.pick }
+      delete safePick.apiKey
+      current.autoPick = safePick
+      current.autoDiscoveredAt = result.checkedAt
+      if (!Array.isArray(current.fallbackOrder) || !current.fallbackOrder.length) current.fallbackOrder = ['gemini', 'zen', 'ollama', 'lmstudio', 'template']
+      if (result.pick.kind === 'opencode' || result.pick.kind === 'zen' || result.pick.kind === 'ollama' || result.pick.kind === 'lmstudio') {
+        current.openCodeBaseUrl = result.pick.baseUrl
+        current.openCodeModel = result.pick.model
+        if (result.pick.apiKey && !process.env.OPENCODE_API_KEY) current.openCodeApiKey = result.pick.apiKey
+      }
+      writeSettings(current)
+    }
+    aiDiscoveryCache = { at: Date.now(), result }
+    aiStatusCache = {
+      at: Date.now(),
+      dots: {
+        gemini: geminiApiKey() ? 'unknown' : 'unknown',
+        zen: result.pick?.kind === 'zen' ? 'ok' : 'unknown',
+        local: result.local?.length ? 'ok' : 'unknown',
+      },
+    }
+    try { mainWindow?.webContents.send('ai:discovery', { ...publicDiscovery(result), statusDots: aiStatusCache.dots }) } catch {}
+    return result
+  }).finally(() => { aiDiscoveryPromise = null })
+  return aiDiscoveryPromise
+}
+
 function aiSettings() {
   const settings = readSettings()
-  const openCodeBaseUrl = String(settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || 'https://openrouter.ai/api/v1').trim()
-  const openCodeModel = String(settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || 'qwen/qwen3-235b-a22b:free').trim()
-  const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || '').trim()
-  const explicit = settings.aiProvider === 'gemini' || settings.aiProvider === 'opencode' ? settings.aiProvider : null
-  // A fresh install used to silently select remote OpenRouter with no key. Pick
-  // a provider that can actually authenticate; with neither configured the UI
-  // clearly reports "no live model" and the deterministic planner takes over.
-  const openCodeReady = Boolean(
-    openCodeApiKey ||
-    resolveOpenCodeApiKey(openCodeBaseUrl, openCodeModel) ||
-    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(openCodeBaseUrl)
-  )
-  const provider = explicit || (geminiApiKey() ? 'gemini' : openCodeReady ? 'opencode' : 'gemini')
-  return { provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
+  const mode = configuredAiMode(settings)
+  const pick = mode === 'auto' && settings.autoPick ? settings.autoPick : null
+  const baseFromPick = pick?.baseUrl || settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || ''
+  const modelFromPick = pick?.model || settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || ''
+  const openCodeBaseUrl = String(baseFromPick || (mode === 'openrouter' ? 'https://openrouter.ai/api/v1' : mode === 'zen' ? ZEN_BASE_URL : '')).trim()
+  const openCodeModel = String(modelFromPick || (mode === 'zen' ? ZEN_FREE_MODELS[0] : mode === 'openrouter' ? 'qwen/qwen3-235b-a22b:free' : '')).trim()
+  const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || resolveOpenCodeApiKey(openCodeBaseUrl, openCodeModel) || (mode === 'zen' ? openCodeAuthSecrets()[0] : '') || '').trim()
+  const provider = mode === 'gemini' ? 'gemini' : mode === 'template' || pick?.kind === 'template' || (mode === 'auto' && !pick) ? 'template' : mode === 'auto' && pick?.kind === 'gemini' ? 'gemini' : 'opencode'
+  return { mode, pick, provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
 }
 
 function hasOpenCodeAccess() {
@@ -469,7 +685,7 @@ function hasOpenCodeAccess() {
   return Boolean(
     cfg.openCodeApiKey ||
     resolveOpenCodeApiKey(cfg.openCodeBaseUrl, cfg.openCodeModel) ||
-    /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0|\[::1\])/i.test(cfg.openCodeBaseUrl),
+    isLocalModelBase(cfg.openCodeBaseUrl),
   )
 }
 
@@ -477,15 +693,23 @@ function publicSettings() {
   const settings = readSettings()
   const ai = aiSettings()
   const login = app.getLoginItemSettings ? app.getLoginItemSettings() : { openAtLogin: false }
+  const pick = settings.autoPick || ai.pick || null
+  const needsKey = ai.mode === 'gemini' || ai.mode === 'zen' || ai.mode === 'openrouter'
   return {
-    hasKey: ai.provider === 'opencode' ? hasOpenCodeAccess() : Boolean(geminiApiKey()),
+    hasKey: ai.provider === 'template' ? true : ai.provider === 'opencode' ? hasOpenCodeAccess() : Boolean(geminiApiKey()),
     hasGeminiKey: Boolean(geminiApiKey()),
     hasOpenCodeKey: hasOpenCodeAccess(),
     aiProvider: ai.provider,
+    aiMode: ai.mode,
+    autoPick: pick,
+    setupRequired: Boolean(ai.mode === 'auto' && settings.autoPick?.kind === 'template'),
+    fallbackOrder: Array.isArray(settings.fallbackOrder) ? settings.fallbackOrder : ['gemini', 'zen', 'ollama', 'lmstudio', 'template'],
     geminiModel: geminiModel(),
     openCodeBaseUrl: ai.openCodeBaseUrl,
     openCodeModel: ai.openCodeModel,
-    openCodeImportedKey: Boolean(resolveOpenCodeApiKey(ai.openCodeBaseUrl, ai.openCodeModel)),
+    openCodeImportedKey: Boolean(resolveOpenCodeApiKey(ai.openCodeBaseUrl, ai.openCodeModel) || openCodeAuthSecrets()[0]),
+    statusDots: aiStatusCache.dots,
+    needsKey,
     autoLaunch: Boolean(settings.autoLaunch ?? login.openAtLogin),
     silenceNoiseDb: Number.isFinite(Number(settings.silenceNoiseDb)) ? Number(settings.silenceNoiseDb) : DEFAULT_SILENCE_NOISE_DB,
     silenceMinDuration: Number.isFinite(Number(settings.silenceMinDuration))
@@ -493,6 +717,14 @@ function publicSettings() {
       : DEFAULT_SILENCE_MIN_DURATION,
     updateChannel: settings.updateChannel || 'latest',
     hardwareEncoding: settings.hardwareEncoding === 'off' ? 'off' : 'auto',
+    stock: {
+      proxyUrl: String(settings.stockProxyUrl || process.env.CUPRIC_STOCK_PROXY_URL || '').trim(),
+      pixabayConfigured: Boolean(settings.pixabayApiKey || process.env.PIXABAY_API_KEY),
+      pexelsConfigured: Boolean(settings.pexelsApiKey || process.env.PEXELS_API_KEY),
+      keylessAvailable: true,
+      quota: { pixabay: '100 requests/min', pexels: '200 requests/hour', openverse: 'anonymous limits apply', picsum: 'placeholder service' },
+      proxyConfigured: Boolean(String(settings.stockProxyUrl || process.env.CUPRIC_STOCK_PROXY_URL || '').trim()),
+    },
   }
 }
 
@@ -503,8 +735,22 @@ function applySettingsPatch(patch) {
     if (key) settings.geminiApiKey = key
     else delete settings.geminiApiKey
   }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiMode')) {
+    const next = String(patch.aiMode || '').toLowerCase()
+    if (AI_MODES.has(next)) settings.aiMode = next
+    // Manual mode changes invalidate a stale automatic pick, never a saved key.
+    if (next !== 'auto') delete settings.autoPick
+    if (next === 'zen') settings.openCodeBaseUrl = ZEN_BASE_URL
+    if (next === 'ollama') settings.openCodeBaseUrl = 'http://localhost:11434/v1'
+    if (next === 'lmstudio') settings.openCodeBaseUrl = 'http://localhost:1234/v1'
+    if (next === 'openrouter' && !/^https:\/\/openrouter\.ai/i.test(String(settings.openCodeBaseUrl || ''))) settings.openCodeBaseUrl = 'https://openrouter.ai/api/v1'
+  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'fallbackOrder') && Array.isArray(patch.fallbackOrder)) {
+    settings.fallbackOrder = patch.fallbackOrder.map(String).filter((value, index, list) => AI_MODES.has(value) && list.indexOf(value) === index)
+  }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiProvider')) {
     settings.aiProvider = patch.aiProvider === 'opencode' ? 'opencode' : 'gemini'
+    if (!settings.aiMode) settings.aiMode = patch.aiProvider === 'opencode' ? 'openrouter' : 'gemini'
   }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'geminiModel')) {
     const v = String(patch.geminiModel || '').trim()
@@ -537,6 +783,18 @@ function applySettingsPatch(patch) {
     encoderSession.result = null
     encoderSession.disabledReason = null
   }
+  for (const key of ['pixabayApiKey', 'pexelsApiKey']) {
+    if (Object.prototype.hasOwnProperty.call(patch || {}, key)) {
+      const value = String(patch[key] || '').trim()
+      if (value) settings[key] = value
+      else delete settings[key]
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'stockProxyUrl')) {
+    const value = String(patch.stockProxyUrl || '').trim()
+    if (!value) delete settings.stockProxyUrl
+    else if (/^https?:\/\//i.test(value)) settings.stockProxyUrl = value.replace(/\/+$/, '')
+  }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'silenceMinDuration')) {
     const v = Number(patch.silenceMinDuration)
     if (Number.isFinite(v)) settings.silenceMinDuration = Math.max(0.1, Math.min(10, v))
@@ -549,10 +807,90 @@ function stateFile() {
   return userDataPath('projects.json')
 }
 
-ipcMain.handle('settings:get', () => publicSettings())
+ipcMain.handle('settings:get', async () => {
+  // Settings is a discovery trigger by design: opening the panel should tell a
+  // fresh install what it can use before the user clicks Generate.
+  await autoDiscover()
+  return publicSettings()
+})
 ipcMain.handle('settings:hasKey', () => publicSettings().hasKey)
-ipcMain.handle('settings:set', (_event, patch) => applySettingsPatch(patch || {}))
+ipcMain.handle('settings:set', async (_event, patch) => {
+  const result = applySettingsPatch(patch || {})
+  if (configuredAiMode(readSettings()) === 'auto') await autoDiscover({ force: true })
+  return publicSettings()
+})
+ipcMain.handle('ai:autoDiscover', async () => publicDiscovery(await autoDiscover({ force: true })))
+ipcMain.handle('ai:openZenAuth', () => shell.openExternal('https://opencode.ai/auth'))
+ipcMain.handle('ai:installOllama', () => shell.openExternal('https://ollama.com/download'))
+ipcMain.handle('ai:useTemplate', () => {
+  applySettingsPatch({ aiMode: 'template' })
+  return publicSettings()
+})
 ipcMain.handle('settings:autoLaunch', (_event, enabled) => applySettingsPatch({ autoLaunch: Boolean(enabled) }))
+
+// Stock rail (Jobs 10–12): provider credentials are read only in main, search
+// responses are cached under userData, and downloaded media lands in the
+// project folder before the renderer can register it.
+ipcMain.handle('stock:keyStatus', () => {
+  const settings = stockSettings()
+  return {
+    pixabay: Boolean(settings.pixabayApiKey || process.env.PIXABAY_API_KEY),
+    pexels: Boolean(settings.pexelsApiKey || process.env.PEXELS_API_KEY),
+    proxy: Boolean(settings.stockProxyUrl),
+    proxyUrl: String(settings.stockProxyUrl || ''),
+    quota: { pixabay: '100 requests/min', pexels: '200 requests/hour', openverse: 'anonymous limits apply', picsum: 'placeholder service' },
+    keyless: true,
+  }
+})
+ipcMain.handle('stock:proxyHealth', async () => stockProxyHealth(stockSettings().stockProxyUrl))
+ipcMain.handle('stock:search', async (_event, payload) => {
+  const provider = ['pixabay', 'pexels', 'openverse', 'picsum'].includes(payload?.provider) ? payload.provider : 'openverse'
+  const kind = payload?.kind === 'video' ? 'video' : 'image'
+  return stockService().search(provider, kind, payload?.options || {}, stockSettings())
+})
+ipcMain.handle('stock:testConnection', async (_event, payload) => {
+  const provider = ['pixabay', 'pexels', 'openverse', 'picsum'].includes(payload?.provider) ? payload.provider : 'openverse'
+  const settings = stockSettings()
+  const result = await stockService().search(provider, provider === 'picsum' ? 'image' : 'image', { query: 'nature', perPage: 3 }, settings)
+  return { ok: true, provider, resultCount: result.results.length, route: settings.stockProxyUrl ? 'proxy with personal-key fallback' : 'direct/keyless', quota: publicSettings().stock.quota }
+})
+ipcMain.handle('stock:download', async (_event, payload) => {
+  const projectId = String(payload?.projectId || '')
+  if (!/^[a-zA-Z0-9_-]{1,100}$/.test(projectId)) throw new Error('A valid project is required before downloading stock.')
+  const item = payload?.item
+  const result = await stockService().download(projectRoot(projectId), item, stockSettings())
+  return result
+})
+
+// Review Room notes are persisted in the main process on desktop, so a reload
+// or renderer crash does not erase feedback. The room id is deliberately
+// unguessable only when the caller puts it in the invite URL; this is a local
+// review log, not an authentication boundary.
+function reviewRoomId(value) {
+  const id = String(value || 'default').trim().replace(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 100)
+  return id || 'default'
+}
+function reviewFile(room) { return userDataPath('review-rooms', `${reviewRoomId(room)}.json`) }
+function reviewComments(room) {
+  const list = readJson(reviewFile(room), [])
+  return Array.isArray(list) ? list.filter((item) => item && typeof item === 'object').slice(-500) : []
+}
+ipcMain.handle('review:list', (_event, payload) => reviewComments(payload?.room))
+ipcMain.handle('review:add', (_event, payload) => {
+  const room = reviewRoomId(payload?.room)
+  const text = String(payload?.text || '').trim().slice(0, 2000)
+  if (!text) throw new Error('Review note cannot be empty.')
+  const current = reviewComments(room)
+  const comment = { id: `review-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, at: Math.max(0, Number(payload?.at) || 0), text, author: String(payload?.author || 'Guest reviewer').trim().slice(0, 80) || 'Guest reviewer', resolved: false, createdAt: new Date().toISOString() }
+  writeJson(reviewFile(room), [...current, comment])
+  return comment
+})
+ipcMain.handle('review:resolve', (_event, payload) => {
+  const room = reviewRoomId(payload?.room)
+  const current = reviewComments(room).map((item) => item.id === payload?.id ? { ...item, resolved: Boolean(payload?.resolved) } : item)
+  writeJson(reviewFile(room), current)
+  return current
+})
 // Autosave / crash recovery / version history (2.26): atomic writes, a
 // rolling set of snapshots, recovery from the newest valid one when the main
 // file is unreadable. Logic lives in project-history.cjs so it is testable.
@@ -926,6 +1264,7 @@ async function generateCandidateHtml(prompt) {
     user: prompt,
     temperature: 0.85,
     deadlineMs: 150_000,
+    task: 'lock',
   })
   return extractHtmlFromModel(reply.text)
 }
@@ -1218,12 +1557,61 @@ async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, 
   }
   return outputPath
 }
+
+/**
+ * Post-render quality gate. This is intentionally mechanical and repeatable:
+ * it checks the file that will actually be delivered rather than claiming that
+ * a model's HTML score proves visual quality. A failed gate gets one bounded
+ * render retry; it never loops forever or fabricates a pass.
+ */
+async function evaluateAutomationRender(outputPath, job, rundown) {
+  const checks = []
+  const add = (id, ok, detail, fatal = false) => checks.push({ id, ok: Boolean(ok), detail, fatal })
+  const exists = Boolean(outputPath && fs.existsSync(outputPath))
+  const bytes = exists ? fs.statSync(outputPath).size : 0
+  add('file-exists', exists, exists ? 'MP4 exists at the delivered path' : 'MP4 is missing', true)
+  add('file-size', bytes > 4096, `${bytes} bytes`, true)
+  if (!exists || bytes <= 4096) return { valid: false, retryable: true, score: 0, checks }
+
+  try {
+    const probe = await probeMedia(outputPath)
+    const video = probe.streams.find((stream) => stream.codec_type === 'video')
+    const target = targetSizeForAspect(job.aspect, rundown.size)
+    const duration = Number(probe.durationSec) || 0
+    add('video-stream', Boolean(video), video ? `${video.codec_name || 'video'} stream present` : 'no video stream', true)
+    add('target-size', Boolean(video && Number(video.width) === target.width && Number(video.height) === target.height), video ? `${video.width}×${video.height}; expected ${target.width}×${target.height}` : 'unknown dimensions', true)
+    add('even-dimensions', Boolean(video && Number(video.width) % 2 === 0 && Number(video.height) % 2 === 0), video ? `${video.width}×${video.height} are encoder-safe` : 'unknown dimensions', true)
+    const expectedDuration = Math.max(0.5, Number(rundown.durationSec) || 1)
+    add('duration', duration >= expectedDuration * 0.85, `${duration.toFixed(2)}s; expected at least ${expectedDuration.toFixed(2)}s`, false)
+    add('audio-stream', Boolean(probe.hasAudio), probe.hasAudio ? 'audio stream present' : 'silent render (allowed, but review it)', false)
+    const fpsText = String(video?.avg_frame_rate || video?.r_frame_rate || '')
+    const [num, den] = fpsText.split('/').map(Number)
+    const actualFps = den ? num / den : Number(fpsText)
+    add('frame-rate', !actualFps || Math.abs(actualFps - Number(job.fps)) <= 0.5, fpsText ? `${actualFps.toFixed(2)} fps; expected ${job.fps}` : 'frame rate unavailable', false)
+    const fatalFailed = checks.filter((check) => check.fatal && !check.ok)
+    const passed = checks.filter((check) => check.ok).length
+    return {
+      valid: fatalFailed.length === 0,
+      retryable: fatalFailed.length > 0,
+      score: Math.round((passed / checks.length) * 100),
+      checks,
+      durationSec: duration,
+      size: video ? [video.width, video.height] : null,
+      hasAudio: Boolean(probe.hasAudio),
+    }
+  } catch (error) {
+    add('ffprobe', false, `Could not inspect the delivered MP4: ${error?.message || String(error)}`, true)
+    return { valid: false, retryable: false, score: 0, checks }
+  }
+}
+
 function generationGuideFor(job, rundown) {
   return {
     renderSpec: { aspect: job.aspect, fps: job.fps, quality: job.quality, durationSec: rundown.durationSec, size: rundown.size },
     sources: [
       { id: 'rundown-copy', type: 'text', description: 'Locked Cupric AI scene copy and timing' },
       { id: 'arena-html', type: 'generated-motion-html', description: 'Single-file HTML with inline CSS/JS and deterministic window.__seek(t)' },
+      { id: 'opus55-playbook', type: 'craft-guidance', description: 'Attributed case-study catalogue patterns translated into Cupric-native timing, editability, iteration and QA rules; not model training' },
       ...(job.footageMeta ? [{ id: 'footage', type: 'video', description: 'User-selected footage folder clip analyzed with FFprobe/FFmpeg silence detection' }] : []),
     ],
     sequence: (rundown.scenes || []).map((s, index) => ({ index: index + 1, from: s.from, to: s.to, type: s.type, copy: s.copy, motion: s.motion })),
@@ -1233,6 +1621,8 @@ function generationGuideFor(job, rundown) {
       'Validate every candidate against the renderer contract (#scene root, deterministic window.__seek(t), self-contained, scene copy present) and score the survivors.',
       'Optionally ingest footage, detect silences, and add captions/crop metadata.',
       'Render HTML frames and footage segments with FFmpeg, then concatenate into the final MP4.',
+      'Probe the delivered MP4 for file integrity, target dimensions, even encoder-safe dimensions, duration, frame rate and audio; retry one failed render at most once and report the result.',
+      'Preserve the editable rundown, candidate history, source manifest and review report beside the MP4.',
     ],
   }
 }
@@ -1243,8 +1633,12 @@ function writeAutomationReview(job, root, rundown, rawWarnings) {
   const generationGuide = generationGuideFor(job, rundown)
   const sequenceMd = generationGuide.sequence.map(s => `- ${s.index}. ${s.from}-${s.to}s **${s.type}** — "${s.copy}"; motion: ${s.motion}`).join('\n')
   const sourcesMd = generationGuide.sources.map(s => `- ${s.id} (${s.type}): ${s.description}`).join('\n')
-  writeJson(reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, outputPath: job.outputPath || null, footageUsed: Boolean(job.footageMeta), generationGuide, warnings })
-  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath || 'Not rendered yet'}\n\n## Sources\n${sourcesMd}\n\n## Generation sequence\n${sequenceMd}\n\n## How the video is generated\n${generationGuide.generationSteps.map(step => `- ${step}`).join('\n')}\n\nWarnings:\n${warnings.length ? warnings.map(w => `- ${w}`).join('\n') : '- None'}\n`, 'utf8')
+  writeJson(reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, outputPath: job.outputPath || null, footageUsed: Boolean(job.footageMeta), generationGuide, renderEvaluation: job.renderEvaluation || null, warnings })
+  const evaluation = job.renderEvaluation
+  const qaMd = evaluation
+    ? `## Delivered render QA\n\nScore: ${evaluation.score ?? 0}/100 · ${evaluation.valid ? 'PASS' : 'REVIEW REQUIRED'}\n\n${(evaluation.checks || []).map((check) => `- ${check.ok ? 'PASS' : 'FAIL'} ${check.id}: ${check.detail}`).join('\n') || '- No checks recorded.'}`
+    : '## Delivered render QA\n\n- Not available yet.'
+  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath || 'Not rendered yet'}\n\n## Sources\n${sourcesMd}\n\n## Generation sequence\n${sequenceMd}\n\n## How the video is generated\n${generationGuide.generationSteps.map(step => `- ${step}`).join('\n')}\n\n${qaMd}\n\nWarnings:\n${warnings.length ? warnings.map(w => `- ${w}`).join('\n') : '- None'}\n`, 'utf8')
   return reviewReportPath
 }
 async function runAutomationPipeline(jobId) {
@@ -1269,20 +1663,28 @@ async function runAutomationPipeline(jobId) {
     job = ensureAutomationActive(job.id, state)
     let rundown = job.rundown || null
     if (!rundown) {
-      startAutomationStep(job.id, 1, 'Drafting creative rundown')
-      try {
-        const capabilityContext = job.remotionPlan
-          ? `\n\nREMOTION CAPABILITY PLAN (follow this deterministic plan): template=${job.remotionPlan.template}; font=${job.remotionPlan.font}; skills=${(job.remotionPlan.skills || []).join(', ')}; no remote assets; preview and export must match.`
-          : ''
-        rundown = await generateRundown(`${job.brief}${capabilityContext}`, [], { aspect: job.aspect, fps: job.fps, mode: job.mode })
-      } catch (err) {
-        warnings.push(`Live AI unavailable; used local deterministic rundown. ${err?.message || err}`)
-        rundown = fallbackRundownForJob(job)
-      }
+      startAutomationStep(job.id, 1, 'Drafting instant offline rundown')
+      // Build the deterministic first pass immediately. A live polish can
+      // replace it later, but neither the job nor the timeline waits on AI.
+      rundown = fallbackRundownForJob(job)
       writeJson(path.join(root, 'rundown.json'), rundown)
       job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json'), warnings }) || job
       sendAutomation('automation:progress', job)
-      job = finishAutomationStep(job.id, 1, 'Rundown generated') || job
+      job = finishAutomationStep(job.id, 1, 'Instant rundown ready; live polish queued') || job
+      const capabilityContext = job.remotionPlan
+        ? `\n\nREMOTION CAPABILITY PLAN (follow this deterministic plan): template=${job.remotionPlan.template}; font=${job.remotionPlan.font}; skills=${(job.remotionPlan.skills || []).join(', ')}; no remote assets; preview and export must match.`
+        : ''
+      void generateRundown(`${job.brief}${capabilityContext}`, [], { aspect: job.aspect, fps: job.fps, mode: job.mode })
+        .then((polished) => {
+          rundown = polished
+          const latest = automationJobs().find((item) => item.id === job.id)
+          if (latest?.status === 'running') {
+            writeJson(path.join(root, 'rundown.json'), polished)
+            patchAutomation(job.id, { rundown: polished, rundownPath: path.join(root, 'rundown.json') })
+            sendAutomation('automation:progress', automationJobs().find((item) => item.id === job.id))
+          }
+        })
+        .catch((err) => logLine('interactive-rundown-fallback', err?.message || String(err), { jobId: job.id }))
     }
 
     stepIndex = 2
@@ -1364,10 +1766,22 @@ async function runAutomationPipeline(jobId) {
     stepIndex = 7
     job = ensureAutomationActive(job.id, state)
     if (automationStep(job, 7)?.status !== 'done') {
-      startAutomationStep(job.id, 7, 'Writing review report')
+      startAutomationStep(job.id, 7, 'Evaluating the delivered MP4 and checking whether one bounded retry is needed')
+      let renderEvaluation = job.renderEvaluation || null
+      if (!renderEvaluation) {
+        renderEvaluation = await evaluateAutomationRender(job.outputPath, job, rundown)
+        if (!renderEvaluation.valid && renderEvaluation.retryable) {
+          warnings.push('The delivered MP4 failed a mechanical render gate; Cupric performed one bounded re-render before reporting the result.')
+          const retryOutputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state)
+          job = patchAutomation(job.id, { outputPath: retryOutputPath }) || job
+          renderEvaluation = await evaluateAutomationRender(retryOutputPath, job, rundown)
+        }
+        if (!renderEvaluation.valid) warnings.push('Delivered MP4 needs review: the mechanical render gate did not pass all required checks. No quality pass was fabricated.')
+        job = patchAutomation(job.id, { renderEvaluation, warnings }) || job
+      }
       const reviewReportPath = writeAutomationReview(job, root, rundown, warnings)
       job = patchAutomation(job.id, { reviewReportPath, warnings }) || job
-      job = finishAutomationStep(job.id, 7, 'Review report ready') || job
+      job = finishAutomationStep(job.id, 7, renderEvaluation.valid ? 'Render QA passed; review report ready' : 'Review report ready with QA warnings') || job
     }
 
     const done = patchAutomation(job.id, { status: 'done', currentStepId: null, waitingMessage: null, warnings })
@@ -1517,6 +1931,9 @@ SOURCE / ASSET PLAN:
 STYLE:
 ${rundown.style}
 
+OPUS CASE-STUDY CRAFT POLICY — apply these production heuristics to the scene while obeying the HTML-only contract above. This is a local Cupric playbook, not model training and not evidence about the original case authors:
+${ADVANCED_VIDEO_PLAYBOOK_PROMPT}
+
 SEQUENCE / TIMELINE:
 ${sceneSequenceLines(rundown)}
 
@@ -1623,28 +2040,72 @@ async function listOpenCodeModels(payload = {}) {
     .slice(0, 200)
 }
 
+async function probeOpenCodeModel(baseUrl, apiKey, model) {
+  try {
+    const response = await fetch(`${normalizedBaseUrl(baseUrl)}/chat/completions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(AI_DISCOVERY_TIMEOUT_MS),
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Reply with one word: OK' }], max_tokens: 1, temperature: 0, stream: false }),
+    })
+    return response.ok
+  } catch { return false }
+}
+
 ipcMain.handle('opencode:listModels', (_event, payload) => listOpenCodeModels(payload || {}))
 ipcMain.handle('opencode:discoverModels', () => discoverOpenCodeConfiguredModels())
+
+function classifyGeminiError(err) {
+  const message = String(err?.message || err || '')
+  if (/401|403|api key|unauthorized|permission denied|invalid argument/i.test(message)) return { category: 'wrong-key', message: 'Gemini rejected this key. Check that it is a Google AI Studio key with Generative Language API access.' }
+  if (/429|quota|resource_exhausted|rate.?limit/i.test(message)) return { category: 'quota', message: 'The key is valid, but this Gemini model is out of quota for now.' }
+  if (/503|overload|high demand|unavailable/i.test(message)) return { category: 'high-demand', message: 'Gemini is temporarily at high demand. Cupric will retry, then use the next provider.' }
+  if (/404|not found|deprecated|no longer available/i.test(message)) return { category: 'model-missing', message: 'That Gemini model is no longer available. Cupric will use gemini-2.5-flash.' }
+  return { category: 'network', message: message.slice(0, 360) || 'Gemini could not be reached.' }
+}
+
+async function listGeminiModels(key = geminiApiKey()) {
+  const token = String(key || '').trim()
+  if (!token) throw new Error('Gemini model refresh needs a key. Choose Auto or paste a Gemini key in Settings.')
+  const response = await fetchOrExplain(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(token)}`, { signal: AbortSignal.timeout(5000) })
+  if (!response.ok) throw new Error(`Gemini model list failed (${response.status}): ${(await response.text()).slice(0, 300)}`)
+  const data = await response.json()
+  return (Array.isArray(data?.models) ? data.models : [])
+    .filter((model) => Array.isArray(model?.supportedGenerationMethods) && model.supportedGenerationMethods.includes('generateContent'))
+    .filter((model) => !/deprecated|embedding|aqa|robotics/i.test(String(model?.name || model?.displayName || '')))
+    .map((model) => ({
+      id: String(model.name || '').replace(/^models\//, ''),
+      label: String(model.displayName || model.name || '').replace(/^models\//, ''),
+      inputTokenLimit: model.inputTokenLimit,
+      outputTokenLimit: model.outputTokenLimit,
+    }))
+    .filter((model) => model.id)
+}
+
+ipcMain.handle('gemini:listModels', (_event, payload = {}) => listGeminiModels(payload.apiKey || geminiApiKey()))
 ipcMain.handle('ai:testConnection', async (_event, payload = {}) => {
   const provider = payload.provider === 'opencode' ? 'opencode' : 'gemini'
   const started = Date.now()
   try {
     if (provider === 'opencode') {
-      const models = await listOpenCodeModels({
-        baseUrl: payload.baseUrl,
-        apiKey: payload.apiKey,
-        model: payload.model,
-      })
-      return { ok: true, provider, latencyMs: Date.now() - started, message: `Connected · ${models.length} free/local model${models.length === 1 ? '' : 's'} visible` }
+      const models = await listOpenCodeModels({ baseUrl: payload.baseUrl, apiKey: payload.apiKey, model: payload.model })
+      return { ok: true, provider, latencyMs: Date.now() - started, category: 'ok', message: `Connected · ${models.length} free/local model${models.length === 1 ? '' : 's'} visible` }
     }
     const key = String(payload.apiKey || geminiApiKey() || '').trim()
-    if (!key) throw new Error('Gemini API key is not configured')
-    const modelName = String(payload.model || geminiModel()).trim()
+    if (!key) throw new Error('Gemini needs a key in manual mode. Choose Auto or paste a Gemini key in Settings.')
+    const modelName = String(payload.model || geminiModel()).trim() || DEFAULT_GEMINI_MODEL
     const model = new GoogleGenerativeAI(key).getGenerativeModel({ model: modelName, generationConfig: { maxOutputTokens: 1 } })
     await model.generateContent('Reply OK')
-    return { ok: true, provider, latencyMs: Date.now() - started, message: `Connected to ${modelName}` }
+    return { ok: true, provider, latencyMs: Date.now() - started, category: 'ok', message: `Connected to ${modelName}` }
   } catch (err) {
-    return { ok: false, provider, latencyMs: Date.now() - started, message: err?.message || String(err) }
+    const classified = provider === 'gemini' ? classifyGeminiError(err) : { category: 'network', message: err?.message || String(err) }
+    if (provider === 'gemini' && classified.category === 'model-missing') {
+      const settings = readSettings()
+      settings.geminiModel = DEFAULT_GEMINI_MODEL
+      writeSettings(settings)
+      classified.message = `${classified.message} Saved default: ${DEFAULT_GEMINI_MODEL}.`
+    }
+    return { ok: false, provider, latencyMs: Date.now() - started, ...classified }
   }
 })
 
@@ -1675,7 +2136,7 @@ async function callOpenCode(messages, options = {}) {
   const inheritedKey = resolveOpenCodeApiKey(cfg.openCodeBaseUrl, cfg.openCodeModel)
   const apiKey = cfg.openCodeApiKey || inheritedKey
   if (!apiKey && !isLocalModelBase(cfg.openCodeBaseUrl)) {
-    throw new Error('OpenCode/OpenAI-compatible API key is not configured. Save a key in Cupric AI or import a configured OpenCode Desktop provider.')
+    throw new Error('This remote provider needs a key. Choose Auto for a local model, or save a key in Settings.')
   }
   const baseUrl = normalizedBaseUrl(cfg.openCodeBaseUrl)
   const url = `${baseUrl}/chat/completions`
@@ -1781,6 +2242,11 @@ async function runGeminiGenerateContent(key, prompt, generationConfig) {
       }
       if (/404|not found|no longer available|not available|not supported|invalid model/i.test(message)) {
         aiCooldowns.set(`gemini:${modelName}`, { until: Date.now() + 6 * 60 * 60 * 1000, reason: 'missing' })
+        if (modelName === geminiModel()) {
+          const settings = readSettings()
+          settings.geminiModel = DEFAULT_GEMINI_MODEL
+          writeSettings(settings)
+        }
         continue
       }
       if (/\b5\d\d\b|overload|unavailable|high demand|timed out|timeout/i.test(message)) continue
@@ -1823,20 +2289,74 @@ async function discoverRunningLocalModel() {
  * The ordered list of things that can answer right now: the chosen provider,
  * then the other one, then any local model server that happens to be running.
  */
-async function aiRoutes() {
-  const cfg = aiSettings()
+async function aiRoutes(task = 'draft') {
+  let cfg = aiSettings()
+  const taskModel = String(readSettings()[`${task}Model`] || '').trim()
+  let discovered = null
+  if (cfg.mode === 'auto') {
+    discovered = await autoDiscover().catch(() => null)
+    cfg = aiSettings()
+  }
   const routes = []
-  const gemini = Boolean(geminiApiKey())
-  const opencode = hasOpenCodeAccess()
-  const order = cfg.provider === 'opencode' ? ['opencode', 'gemini'] : ['gemini', 'opencode']
-  for (const provider of order) {
-    if (provider === 'gemini' && gemini) routes.push({ provider: 'gemini', label: 'Gemini' })
-    if (provider === 'opencode' && opencode && !coolingDown(`opencode:${cfg.openCodeBaseUrl}|${cfg.openCodeModel}`)) {
-      routes.push({ provider: 'opencode', label: `OpenCode · ${cfg.openCodeModel}` })
+  const seen = new Set()
+  const add = (route) => {
+    const key = `${route.provider}|${route.override?.openCodeBaseUrl || cfg.openCodeBaseUrl}|${route.override?.openCodeModel || cfg.openCodeModel}`
+    if (seen.has(key)) return
+    seen.add(key)
+    routes.push(route)
+  }
+  const addLocal = (entry) => {
+    if (!entry?.baseUrl || !entry?.models?.[0]) return
+    add({ provider: 'opencode', label: `${entry.label} · ${entry.models[0]}`, override: { openCodeBaseUrl: entry.baseUrl, openCodeModel: entry.models[0], openCodeApiKey: '' } })
+  }
+
+  const addGemini = () => { if (geminiApiKey()) add({ provider: 'gemini', label: `Gemini · ${geminiModel()}` }) }
+  const addConfigured = () => {
+    const selectedModel = taskModel || cfg.openCodeModel
+    if (cfg.openCodeBaseUrl && selectedModel && hasOpenCodeAccess() && !coolingDown(`opencode:${cfg.openCodeBaseUrl}|${selectedModel}`)) {
+      add({ provider: 'opencode', label: `${cfg.mode === 'zen' ? 'Zen Free' : 'OpenCode'} · ${selectedModel}`, override: taskModel ? { openCodeModel: selectedModel } : undefined })
     }
   }
+
+  const addZen = (source) => {
+    const zen = source?.pick?.kind === 'zen' ? source.pick : null
+    if (zen) add({ provider: 'opencode', label: `Zen Free · ${zen.model}`, override: { openCodeBaseUrl: zen.baseUrl, openCodeModel: zen.model, openCodeApiKey: zen.apiKey } })
+  }
+  const addLocalKind = (source, wanted) => {
+    for (const entry of source?.local || []) {
+      if (wanted === 'ollama' && entry.kind !== 'ollama') continue
+      if (wanted === 'lmstudio' && !['lmstudio', 'local-1337'].includes(entry.kind)) continue
+      addLocal(entry)
+    }
+  }
+  const fallbackOrder = Array.isArray(readSettings().fallbackOrder) ? readSettings().fallbackOrder : ['gemini', 'zen', 'ollama', 'lmstudio', 'template']
+  const addDiscoveredFallbacks = (source) => {
+    for (const kind of fallbackOrder) {
+      if (kind === 'gemini') addGemini()
+      else if (kind === 'zen') addZen(source)
+      else if (kind === 'ollama' || kind === 'lmstudio') addLocalKind(source, kind)
+    }
+  }
+
+  // Auto first adds the discovered OpenCode/Desktop pick, then honours the
+  // user's reorderable fallback list. Explicit Gemini keeps Gemini first but
+  // still gets exactly the same auto chain after a 429/503.
+  if (cfg.mode === 'auto') {
+    addConfigured()
+    addDiscoveredFallbacks(discovered)
+  } else if (cfg.mode === 'gemini') {
+    addGemini()
+    const fallback = await autoDiscover({ force: true }).catch(() => null)
+    addDiscoveredFallbacks(fallback)
+  } else if (cfg.mode !== 'template') {
+    addConfigured()
+    const fallback = await autoDiscover({ force: true }).catch(() => null)
+    addDiscoveredFallbacks(fallback)
+  }
+  // Keep one last local probe for fallback cases where a configured desktop
+  // provider was selected before the local scan ran.
   const local = await discoverRunningLocalModel().catch(() => null)
-  if (local) routes.push({ provider: 'opencode', label: `Local · ${local.model}`, override: { openCodeBaseUrl: local.baseUrl, openCodeModel: local.model, openCodeApiKey: '' } })
+  if (local) add({ provider: 'opencode', label: `Local · ${local.model}`, override: { openCodeBaseUrl: local.baseUrl, openCodeModel: local.model, openCodeApiKey: '' } })
   return routes
 }
 
@@ -1851,8 +2371,12 @@ async function aiRoutes() {
 /** 1.8 — backoff schedule for transient AI errors, per route. */
 const AI_BACKOFF_MS = [1000, 4000]
 
-async function completeWithFallback({ system, user, json = false, temperature = 0.4, images = [], history = [], deadlineMs = 45_000, validate }) {
-  const routes = await aiRoutes()
+async function completeWithFallback({ system, user, json = false, temperature = 0.4, images = [], history = [], deadlineMs = 45_000, validate, task = 'draft' }) {
+  // Router contract: draft is cheap/free, lock prefers a stronger model, and
+  // agent-ops always requests strict JSON mode. Providers can override these
+  // model slots in settings without changing the fallback chain.
+  if (task === 'agent-ops') json = true
+  const routes = await aiRoutes(task)
   if (!routes.length) {
     const error = new Error('No live AI provider is configured and no local model server (Ollama, LM Studio, OpenCode) is running')
     error.code = 'NO_PROVIDER'
@@ -1896,8 +2420,7 @@ async function completeWithFallback({ system, user, json = false, temperature = 
             return await ask(extra)
           } catch (err) {
             const wait = AI_BACKOFF_MS[attempt]
-            const quota = /quota|resource_exhausted|exceeded your current/i.test(err?.message || String(err))
-            if (wait === undefined || quota || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
+            if (wait === undefined || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
             logLine('ai-backoff', `${route.label}: retry in ${wait}ms`, { error: (err?.message || String(err)).slice(0, 200) })
             await delay(wait)
           }
@@ -1936,7 +2459,7 @@ async function completeWithFallback({ system, user, json = false, temperature = 
 
 async function generateGeminiRundown(prompt, history, context) {
   const key = geminiApiKey()
-  if (!key) throw new Error('Gemini API key is not configured')
+  if (!key) throw new Error('Gemini needs a key in manual mode. Choose Auto or paste a Gemini key in Settings.')
   const result = await runGeminiGenerateContent(key, geminiRundownPrompt(prompt, history, context), { responseMimeType: 'application/json' })
   return normalizeRundown(parseJsonFromModel(result.response.text()), prompt)
 }
@@ -1954,26 +2477,55 @@ function withTimeout(promise, ms, label) {
 }
 
 function retryableAiError(err) {
-  return /408|409|425|429|500|502|503|504|timeout|timed out|temporar|overload|high demand|network|fetch failed/i.test(err?.message || String(err))
+  // Backoff is deliberately narrow: only provider throttling/high demand gets
+  // the 1s → 4s retry budget. Auth, malformed requests and 404s fall through
+  // immediately to the next route.
+  return /\b429\b|\b503\b|resource_exhausted|overload|high demand|temporar(?:y|ily) unavailable/i.test(err?.message || String(err))
+}
+
+function rundownCacheKey(prompt, context = {}) {
+  const input = `${String(prompt || '').trim().toLowerCase()}|${JSON.stringify({ aspect: context.aspect, fps: context.fps, mode: context.mode })}`
+  let hash = 2166136261
+  for (let i = 0; i < input.length; i += 1) hash = Math.imul(hash ^ input.charCodeAt(i), 16777619)
+  return `rundown-${(hash >>> 0).toString(16)}`
+}
+
+function rundownCacheFile() { return userDataPath('ai-cache', 'rundowns.json') }
+function readRundownCache() { return readJson(rundownCacheFile(), {}) }
+function cacheRundown(key, rundown) {
+  const cache = readRundownCache()
+  cache[key] = { savedAt: new Date().toISOString(), rundown }
+  writeJson(rundownCacheFile(), cache)
+  rundownCache.set(key, rundown)
 }
 
 async function generateRundown(prompt, history, context) {
+  const key = rundownCacheKey(prompt, context)
+  const memory = rundownCache.get(key) || readRundownCache()[key]?.rundown
+  if (memory) {
+    rundownCache.set(key, memory)
+    logLine('ai-rundown-cache-hit', key)
+    return memory
+  }
   const reply = await completeWithFallback({
     system: 'You are Cupric AI creative director. Return STRICT JSON only, no markdown.',
     user: geminiRundownPrompt(prompt, history, context),
     json: true,
     temperature: 0.6,
     deadlineMs: 60_000,
+    task: 'draft',
     validate: (value) => {
       if (!value || typeof value !== 'object' || !Array.isArray(value.scenes)) throw new Error('rundown JSON needs a scenes array')
     },
   })
   logLine('ai-rundown-route', reply.route)
-  return normalizeRundown(reply.parsed, prompt)
+  const rundown = normalizeRundown(reply.parsed, prompt)
+  cacheRundown(key, rundown)
+  return rundown
 }
 
 async function generateStudioEditPlan(instruction, studioContext) {
-  const schemaPrompt = `You are the edit-planning agent inside Cupric AI Studio — a senior motion designer and editor. Return STRICT JSON only.
+  const schemaPrompt = `${ADVANCED_VIDEO_PLAYBOOK_PROMPT}\nYou are the edit-planning agent inside Cupric AI Studio — a senior motion designer and editor. Return STRICT JSON only.
 The user instruction must become a batch of allowlisted, non-destructive edit operations. Never invent clip IDs.
 
 OUTPUT:
@@ -2008,6 +2560,8 @@ OPERATIONS:
   Only for custom paths applyMotion cannot express. scale and opacity are MULTIPLIERS of the clip's own value (1 = rest). x/y are absolute 0..1. The ease on a key controls travel to the NEXT key.
 - {"type":"clearKeyframes","clipId":string}
 - {"type":"moveClip","clipId":string,"track":number?,"startSec":number?}
+- {"type":"reframeClip","clipId":string,"aspect":"16:9"|"9:16"|"1:1"|"4:5","x"?:0..1,"y"?:0..1,"scale"?:0.05..10}  Reframe one video/image while preserving a safe subject centre.
+- {"type":"nestScene","sceneId":string,"at":number}  Place an existing saved scene as one editable sequence clip.
 - {"type":"deleteClip","clipId":string}
 - {"type":"reorderTrack","from":number,"to":number}
 - {"type":"applyStylePreset","preset":"editorial"|"bold-social"|"minimal"}
@@ -2024,7 +2578,7 @@ OPERATIONS:
 - {"type":"setAudioRole","clipId":string,"role":"music"|"voice"|"sfx"}
 - {"type":"setDucking","enabled":boolean,"amountDb"?:-30..-3}
 - {"type":"addTestimonialGrid","count":1..4,"startSec":number}  (EMPTY placeholders — never write testimonials)
-- {"type":"phoneDesign","clipId":"...","design":"product-launch"|"hero-product"|"app-scroll"|"notification"|"social-post"|"minimal"}  (animated phone mockup; copy stays placeholder for the user to edit)
+- {"type":"phoneDesign","clipId":"...","design":"product-launch"|"hero-product"|"app-scroll"|"notification"|"social-post"|"minimal"|"iphone-duo"}  (animated phone or foldable duo mockup; copy stays placeholder for the user to edit)
 - {"type":"addCaptions","transcript":string,"startSec":number,"durationSec":number}  (only the user's own words)
   Places a real animated UI component (buttons, toggles, counters, cards, loaders, charts…). Cupric plays the actual component,
   acts it out (hover, clicks) and records its genuine animation into an editable overlay clip. slug MUST be one of
@@ -2081,6 +2635,7 @@ ${instruction}`
     json: true,
     temperature: 0.25,
     deadlineMs: STUDIO_PLAN_DEADLINE_MS - 2000,
+    task: 'agent-ops',
     validate: (value) => {
       if (!value || typeof value !== 'object' || !Array.isArray(value.ops) || value.ops.length === 0) throw new Error('edit plan JSON needs a non-empty ops array')
     },
@@ -2106,30 +2661,78 @@ async function liveAiChat(text, ctx, extra = {}) {
   return reply.text
 }
 
-ipcMain.handle('gemini:ask', async (_event, payload) => {
-  const prompt = payload?.prompt || ''
-  const context = payload?.rundownContext || {}
-  const providerLabel = aiSettings().provider === 'opencode' ? 'OpenCode' : 'Gemini'
+async function handleGeminiAsk(payload) {
   try {
-    const rundownPatch = await generateRundown(prompt, payload?.history || [], context)
-    return {
-      source: 'live',
-      text: `Live ${providerLabel} drafted a ${rundownPatch.durationSec}s rundown with ${rundownPatch.scenes.length} scene${rundownPatch.scenes.length === 1 ? '' : 's'}. The Arena prompt is ready at the bottom when you lock it.`,
-      rundownPatch,
+    const prompt = String(payload?.prompt || '').trim()
+  const context = payload?.rundownContext || {}
+  const providerLabel = aiSettings().provider === 'opencode' ? 'OpenCode' : aiSettings().provider === 'gemini' ? 'Gemini' : 'local'
+  const cacheKey = rundownCacheKey(prompt, context)
+  const cached = rundownCache.get(cacheKey) || readRundownCache()[cacheKey]?.rundown
+  if (cached) {
+    return { source: 'live', cached: true, text: `Loaded your cached ${cached.durationSec}s rundown instantly.`, rundownPatch: cached }
+  }
+
+  // The timeline is never held hostage by a remote model. Return the
+  // deterministic shape now, then polish it in a small persisted queue. The
+  // renderer receives ai:rundownPolished when the live answer arrives.
+  const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
+  const instant = fallbackRundownForJob({ brief: prompt, aspect, fps: context.fps === 60 ? 60 : 30 })
+  const requestId = String(payload?.requestId || uid('rundown'))
+  const shouldPolish = aiSettings().provider !== 'template' || Boolean(geminiApiKey()) || hasOpenCodeAccess()
+  if (shouldPolish) {
+    rundownQueue.push({ requestId, prompt, history: payload?.history || [], context, cacheKey, projectId: payload?.projectId || null })
+    void pumpRundownQueue()
+  }
+  return {
+    source: 'local',
+    fallbackReason: shouldPolish ? undefined : 'No live AI provider was found; offline template is active.',
+    queued: shouldPolish,
+    requestId,
+    text: shouldPolish
+      ? `Instant template ready. ${providerLabel} is polishing it in the background — the timeline is usable now.`
+      : 'Instant offline template ready. Add a provider later to polish it; the timeline is fully editable now.',
+    rundownPatch: instant,
     }
   } catch (err) {
     const fallbackReason = err?.message || String(err)
+    const context = payload?.rundownContext || {}
     const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
-    const rundownPatch = fallbackRundownForJob({ brief: prompt, aspect, fps: context.fps === 60 ? 60 : 30 })
-    logLine('interactive-rundown-fallback', fallbackReason, { provider: providerLabel })
-    return {
-      source: 'local',
-      fallbackReason,
-      text: `The live ${providerLabel} connection was unavailable, so Cupric used the deterministic local planner. You can keep editing this rundown normally.`,
-      rundownPatch,
-    }
+    const rundownPatch = fallbackRundownForJob({ brief: String(payload?.prompt || ''), aspect, fps: context.fps === 60 ? 60 : 30 })
+    logLine('interactive-rundown-fallback', fallbackReason, { provider: aiSettings().provider })
+    return { source: 'local', fallbackReason: 'Live AI was unavailable; the offline template is ready.', text: 'Live AI was unavailable, so Cupric built an editable offline template instead.', rundownPatch }
   }
-})
+}
+ipcMain.handle('gemini:ask', (_event, payload) => handleGeminiAsk(payload))
+
+async function pumpRundownQueue() {
+  if (rundownQueueRunning) return
+  rundownQueueRunning = true
+  try {
+    while (rundownQueue.length) {
+      const task = rundownQueue.shift()
+      if (!task) continue
+      try {
+        const rundown = await generateRundown(task.prompt, task.history, task.context)
+        mainWindow?.webContents.send('ai:rundownPolished', { requestId: task.requestId, projectId: task.projectId, rundown })
+      } catch (err) {
+        const message = err?.message || String(err)
+        if ((retryableAiError(err) || /offline|fetch failed|timed out|connection refused/i.test(message)) && (task.attempts || 0) < 2) {
+          task.attempts = (task.attempts || 0) + 1
+          rundownQueue.push(task)
+          logLine('rundown-polish-retrying', message, { requestId: task.requestId, attempt: task.attempts })
+          mainWindow?.webContents.send('ai:rundownPolished', { requestId: task.requestId, projectId: task.projectId, status: 'retrying', message: `AI polish queued — retrying (${task.attempts}/2).` })
+          await delay(task.attempts === 1 ? 1000 : 4000)
+          continue
+        }
+        logLine('interactive-rundown-fallback', message, { requestId: task.requestId, projectId: task.projectId })
+        logLine('rundown-polish-failed', message, { requestId: task.requestId, projectId: task.projectId })
+        mainWindow?.webContents.send('ai:rundownPolished', { requestId: task.requestId, projectId: task.projectId, error: 'Live polish was unavailable; the instant template remains ready.' })
+      }
+    }
+  } finally {
+    rundownQueueRunning = false
+  }
+}
 ipcMain.handle('gemini:chat', async (_event, payload) => liveAiChat(payload?.text || '', payload?.ctx || {}, { images: payload?.images, history: payload?.history }))
 ipcMain.handle('studio:planEdits', async (_event, payload) => {
   const instruction = String(payload?.instruction || '').trim().slice(0, 2000)
@@ -2209,6 +2812,9 @@ async function createHiddenWindow(width, height) {
       nodeIntegration: false,
       webSecurity: true,
       backgroundThrottling: false,
+      // Background Studio exports use the same renderer compositor in an
+      // offscreen window, but never run inside the user's interactive window.
+      preload: path.join(__dirname, 'preload.cjs'),
       zoomFactor: 1,
     },
   })
@@ -2534,7 +3140,21 @@ async function buildWaveform(videoPath, durationSec) {
  * MP4 so the file plays anywhere. Without FFmpeg we say so instead of silently
  * renaming a WebM to .mp4.
  */
-ipcMain.handle('studio:exportMp4', async (_event, payload) => {
+async function executeStudioWebmJob(state, payload) {
+  const bytes = payload?.bytes
+  if (!bytes || !bytes.byteLength) throw new Error('No recording was received from the Studio.')
+  const outDir = userDataPath('renders', state.id)
+  ensureDir(outDir)
+  const base = safeFileName(String(payload?.fileName || 'cupric-studio'), 'cupric-studio').replace(/\.(webm|mp4)$/i, '')
+  const outputPath = path.join(outDir, `${base}.webm`)
+  await ensureNotCancelled(state)
+  await fsp.writeFile(outputPath, Buffer.from(bytes))
+  const { size } = await fsp.stat(outputPath)
+  if (payload?.reveal !== false) shell.showItemInFolder(outputPath)
+  return { outputPath, bytes: size }
+}
+
+async function executeStudioMp4Job(state, payload) {
   const bytes = payload?.bytes
   if (!bytes || !bytes.byteLength) throw new Error('No recording was received from the Studio.')
 
@@ -2543,28 +3163,23 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
     throw new Error('FFmpeg is unavailable in this build, so the WebM cannot be converted. Set CUPRIC_FFMPEG_PATH or install a build with ffmpeg-static unpacked.')
   }
 
-  const outDir = userDataPath('renders', 'studio')
+  const outDir = userDataPath('renders', state.id)
   ensureDir(outDir)
   const base = safeFileName(String(payload?.fileName || 'cupric-studio'), 'cupric-studio').replace(/\.(webm|mp4)$/i, '')
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-')
-  const source = path.join(outDir, `${base}-${stamp}.webm`)
-  const outputPath = path.join(outDir, `${base}-${stamp}.mp4`)
+  const source = path.join(outDir, `${base}.webm`)
+  const outputPath = path.join(outDir, `${base}.mp4`)
 
   await fsp.writeFile(source, Buffer.from(bytes))
 
   const fps = Number(payload?.fps) > 0 ? Math.round(Number(payload.fps)) : 30
   const crf = String(Math.max(14, Math.min(32, Number(payload?.crf) || 18)))
-  // Hardware encoder when one works (2.24); an explicit CRF keeps libx264.
   const buildArgs = (videoArgs) => [
     '-y',
     '-hide_banner',
     '-v', 'error',
     '-i', source,
-    // A canvas sized from the window can be odd (e.g. 1759×894); H.264 in
-    // yuv420p needs even sides, so round down to the nearest even pixel.
     '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos,setsar=1',
     ...videoArgs,
-    // MediaRecorder writes variable frame rate; pin it so players seek correctly.
     '-r', String(fps),
     '-movflags', '+faststart',
     ...encoders.loudnormArgs(payload?.loudnessTarget),
@@ -2573,10 +3188,13 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
     outputPath,
   ]
 
-  const softwareArgs = ['-c:v', 'libx264', '-preset', 'medium', '-crf', crf, '-profile:v', 'high', '-pix_fmt', 'yuv420p']
   try {
-    if (payload?.crf) await runProcess(null, ffmpegPath, buildArgs(softwareArgs))
-    else await runEncode(null, 'final', buildArgs)
+    await ensureNotCancelled(state)
+    if (payload?.crf) {
+      await runProcess(state, ffmpegPath, buildArgs(['-c:v', 'libx264', '-preset', 'medium', '-crf', crf, '-profile:v', 'high', '-pix_fmt', 'yuv420p']))
+    } else {
+      await runEncode(state, 'final', buildArgs)
+    }
   } catch (err) {
     await fsp.rm(source, { force: true })
     throw new Error(`FFmpeg could not convert the recording: ${err?.message || String(err)}`)
@@ -2587,11 +3205,101 @@ ipcMain.handle('studio:exportMp4', async (_event, payload) => {
     throw new Error('FFmpeg reported success but produced no file.')
   }
 
-  // Keep only the MP4 — the intermediate WebM is a build artifact.
   await fsp.rm(source, { force: true })
   const { size } = await fsp.stat(outputPath)
   if (payload?.reveal !== false) shell.showItemInFolder(outputPath)
   return { outputPath, bytes: size }
+}
+
+async function executeStudioBackgroundJob(state, payload) {
+  const doc = payload?.doc
+  if (!doc || !Array.isArray(doc.clips)) throw new Error('Studio export did not include an editable timeline.')
+  const width = Number(payload?.width) > 0 ? Math.round(Number(payload.width)) : 1920
+  const height = Number(payload?.height) > 0 ? Math.round(Number(payload.height)) : 1080
+  const win = await createHiddenWindow(width, height)
+  state.windows.add(win)
+  state.captureWindow = win
+  state.captureSender = win.webContents
+  const recording = new Promise((resolve, reject) => {
+    state.recordingResolve = resolve
+    state.recordingReject = reject
+  })
+  try {
+    if (DEV_URL) await win.loadURL(DEV_URL)
+    else await win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
+    await ensureNotCancelled(state)
+    win.webContents.send('studio:backgroundExport', {
+      jobId: state.id,
+      doc,
+      assets: Array.isArray(payload.assets) ? payload.assets : [],
+      fileName: payload.fileName,
+      scale: Number(payload.scale) > 0 ? Number(payload.scale) : 1,
+    })
+    const submitted = await recording
+    await ensureNotCancelled(state)
+    const outputPayload = { ...payload, ...(submitted || {}) }
+    return payload.format === 'webm'
+      ? await executeStudioWebmJob(state, outputPayload)
+      : await executeStudioMp4Job(state, outputPayload)
+  } finally {
+    state.recordingResolve = null
+    state.recordingReject = null
+    state.captureWindow = null
+    state.captureSender = null
+    state.windows.delete(win)
+    if (!win.isDestroyed()) win.destroy()
+  }
+}
+
+ipcMain.handle('studio:submitRecording', (event, payload) => {
+  const id = String(payload?.jobId || '')
+  const state = renderJobs.get(id)
+  if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) throw new Error('That Studio export is no longer accepting a recording.')
+  if (!payload?.bytes || !payload.bytes.byteLength) throw new Error('The background Studio recorder returned an empty file.')
+  state.recordingResolve?.({ bytes: payload.bytes })
+  return { accepted: true }
+})
+
+ipcMain.handle('studio:recordingError', (event, payload) => {
+  const id = String(payload?.jobId || '')
+  const state = renderJobs.get(id)
+  if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) return false
+  state.recordingReject?.(new Error(String(payload?.error || 'Background Studio recording failed.')))
+  return true
+})
+
+ipcMain.handle('studio:progress', (event, payload) => {
+  const id = String(payload?.jobId || '')
+  const state = renderJobs.get(id)
+  if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) return false
+  sendRenderEvent(state.sender, 'render:progress', { jobId: id, pct: Math.max(0, Math.min(100, Number(payload?.pct) || 0)) })
+  return true
+})
+
+ipcMain.handle('studio:exportMp4', async (event, payload) => {
+  const background = Boolean(payload?.background)
+  if (!background || payload?.format !== 'webm') assertMediaTools()
+  const id = uid('studio-export')
+  const state = {
+    id,
+    kind: background ? 'studio-background' : 'studio-mp4',
+    payload: { ...(payload || {}) },
+    captureSender: null,
+    event,
+    sender: event.sender,
+    status: 'queued',
+    codec: payload?.codec === 'av1' ? 'av1' : 'h264',
+    cancelled: false,
+    paused: false,
+    processes: new Set(),
+    windows: new Set(),
+    resumeWaiters: [],
+  }
+  renderJobs.set(id, state)
+  renderQueue.push(state)
+  sendRenderQueueStatus(state, 'queued', 0)
+  void pumpRenderQueue()
+  return { jobId: id, status: 'queued' }
 })
 
 ipcMain.handle('media:status', () => mediaToolStatus())
@@ -2833,14 +3541,15 @@ function videoEncoderState() {
  */
 async function runEncode(state, quality, build, options) {
   const name = await currentVideoEncoder()
+  const codec = state?.codec === 'av1' ? 'av1' : 'h264'
   try {
-    return await runProcess(state, ffmpegPath, build(encoders.videoArgs(name, quality)), options)
+    return await runProcess(state, ffmpegPath, build(encoders.videoArgs(name, quality, codec)), options)
   } catch (err) {
     if (!encoders.isHardware(name) || state?.cancelled) throw err
     encoderSession.disabledReason = `${name} failed during a render; switched to libx264 for this session.`
     logLine('video-encoder-fallback', encoderSession.disabledReason, { error: String(err?.message || err).slice(-600) })
     if (state) state.encoderSwitched = true
-    return runProcess(state, ffmpegPath, build(encoders.videoArgs(encoders.SOFTWARE, quality)), options)
+    return runProcess(state, ffmpegPath, build(encoders.videoArgs(codec === 'av1' ? encoders.AV1_SOFTWARE : encoders.SOFTWARE, quality, codec)), options)
   }
 }
 
@@ -2855,7 +3564,11 @@ function sendRenderEvent(sender, channel, payload) {
   } catch {}
 }
 
-function ensureNotCancelled(state) {
+async function ensureNotCancelled(state) {
+  if (state.cancelled) throw new Error('Render cancelled')
+  while (state.paused && !state.cancelled) {
+    await new Promise((resolve) => state.resumeWaiters.push(resolve))
+  }
   if (state.cancelled) throw new Error('Render cancelled')
 }
 
@@ -2959,7 +3672,7 @@ function intervalsWithoutCuts(start, end, cuts) {
 }
 
 async function renderArenaSegment(state, source, ctx) {
-  ensureNotCancelled(state)
+  await ensureNotCancelled(state)
   const duration = Math.min(MAX_RENDER_DURATION_SEC, durationOfSource(source))
   const frameCount = Math.max(1, Math.ceil(duration * ctx.fps))
   const frameDir = path.join(ctx.workDir, `arena-frames-${ctx.segmentIndex}`)
@@ -2976,7 +3689,7 @@ async function renderArenaSegment(state, source, ctx) {
     const hasSeek = await win.webContents.executeJavaScript('typeof window.__seek === "function"', true)
     if (!hasSeek) throw new Error('Arena source does not expose window.__seek(t)')
     for (let i = 0; i < frameCount; i += 1) {
-      ensureNotCancelled(state)
+      await ensureNotCancelled(state)
       const t = (Number(source.in) || 0) + i / ctx.fps
       await win.webContents.executeJavaScript(`window.__seek(${JSON.stringify(t)})`, true)
       await win.webContents.executeJavaScript('new Promise((resolve) => requestAnimationFrame(() => resolve(true)))', true)
@@ -3031,7 +3744,7 @@ async function renderArenaSegment(state, source, ctx) {
 }
 
 async function renderFootageInterval(state, source, interval, ctx, hasAudio) {
-  ensureNotCancelled(state)
+  await ensureNotCancelled(state)
   const [start, end] = interval
   const duration = Math.max(0.05, end - start)
   const segmentPath = path.join(ctx.workDir, `segment-${String(ctx.segmentIndex).padStart(4, '0')}.mp4`)
@@ -3094,7 +3807,7 @@ async function renderFootageSegments(state, source, ctx) {
 }
 
 async function concatSegments(state, segments, outputPath, ctx) {
-  ensureNotCancelled(state)
+  await ensureNotCancelled(state)
   if (segments.length === 1) {
     await fsp.copyFile(segments[0].path, outputPath)
     return
@@ -3106,12 +3819,12 @@ async function concatSegments(state, segments, outputPath, ctx) {
   // hardware encoder failed part-way (see runEncode), the segments differ,
   // so they are re-encoded together instead of risking a broken file.
   const codec = state?.encoderSwitched
-    ? [...encoders.videoArgs(encoders.SOFTWARE, 'final'), '-c:a', 'aac', '-ar', '48000', '-ac', '2']
+    ? [...encoders.videoArgs(state.codec === 'av1' ? encoders.AV1_SOFTWARE : encoders.SOFTWARE, 'final', state.codec === 'av1' ? 'av1' : 'h264'), '-c:a', 'aac', '-ar', '48000', '-ac', '2']
     : ['-c', 'copy']
   await runProcess(state, ffmpegPath, ['-y', '-hide_banner', '-f', 'concat', '-safe', '0', '-i', listPath, ...codec, '-movflags', '+faststart', outputPath])
 }
 
-ipcMain.handle('render:start', async (event, job) => {
+async function executeRenderJob(event, job, queuedState = null) {
   assertMediaTools()
   const sender = event.sender
   const id = String(job?.id || uid('render'))
@@ -3135,7 +3848,12 @@ ipcMain.handle('render:start', async (event, job) => {
   ensureDir(workDir)
   ensureDir(outDir)
 
-  const state = { id, cancelled: false, processes: new Set(), windows: new Set(), sender }
+  const state = queuedState || { id, cancelled: false, paused: false, processes: new Set(), windows: new Set(), resumeWaiters: [], sender }
+  state.id = id
+  state.sender = sender
+  state.processes ||= new Set()
+  state.windows ||= new Set()
+  state.resumeWaiters ||= []
   renderJobs.set(id, state)
 
   const totalUnits = Math.max(1, usableSources.reduce((sum, source) => sum + Math.max(1, Math.ceil(durationOfSource(source) * fps)), 0))
@@ -3151,7 +3869,7 @@ ipcMain.handle('render:start', async (event, job) => {
     sendRenderEvent(sender, 'render:progress', { jobId: id, pct: 1 })
     const segments = []
     for (const source of usableSources) {
-      ensureNotCancelled(state)
+      await ensureNotCancelled(state)
       currentSourceUnits = 0
       if (source.sourceType === 'arena' || source.type === 'arena') {
         const segment = await renderArenaSegment(state, source, {
@@ -3204,6 +3922,95 @@ ipcMain.handle('render:start', async (event, job) => {
     }
     renderJobs.delete(id)
   }
+}
+
+function sendRenderQueueStatus(state, status, pct = 0, extra = {}) {
+  state.status = status
+  sendRenderEvent(state.sender, 'render:progress', { jobId: state.id, status, pct, ...extra })
+}
+
+function resolveRenderPause(state) {
+  const waiters = state.resumeWaiters || []
+  state.resumeWaiters = []
+  for (const resolve of waiters) resolve()
+}
+
+function suspendChild(child) {
+  if (!child || child.killed || !child.pid) return
+  try {
+    if (process.platform === 'win32') {
+      spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Suspend-Process -Id ${Number(child.pid)}`], { windowsHide: true })
+    } else child.kill('SIGSTOP')
+  } catch {}
+}
+
+function resumeChild(child) {
+  if (!child || child.killed || !child.pid) return
+  try {
+    if (process.platform === 'win32') {
+      spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `Resume-Process -Id ${Number(child.pid)}`], { windowsHide: true })
+    } else child.kill('SIGCONT')
+  } catch {}
+}
+
+async function pumpRenderQueue() {
+  if (renderQueueRunning) return
+  renderQueueRunning = true
+  try {
+    while (renderQueue.length) {
+      const state = renderQueue.shift()
+      if (!state || state.cancelled) continue
+      try {
+        await ensureNotCancelled(state)
+        state.active = true
+        sendRenderQueueStatus(state, 'working', 0)
+        const result = state.kind === 'studio-mp4'
+          ? await executeStudioMp4Job(state, state.payload)
+          : state.kind === 'studio-background'
+            ? await executeStudioBackgroundJob(state, state.payload)
+            : await executeRenderJob(state.event, state.job, state)
+        if (state.kind === 'studio-mp4' || state.kind === 'studio-background') {
+          sendRenderEvent(state.sender, 'render:done', { jobId: state.id, outputPath: result?.outputPath || null, bytes: result?.bytes || null })
+        }
+        sendRenderQueueStatus(state, 'done', 100, { outputPath: result?.outputPath || null })
+      } catch (err) {
+        const message = err?.message || String(err)
+        if (state.kind === 'studio-mp4' || state.kind === 'studio-background') sendRenderEvent(state.sender, 'render:error', { jobId: state.id, error: state.cancelled ? 'Render cancelled' : message })
+        if (state.cancelled) sendRenderQueueStatus(state, 'error', 0, { error: 'Render cancelled' })
+        else {
+          sendRenderQueueStatus(state, 'error', 0, { error: message })
+          logLine('render-queue-error', message, { jobId: state.id })
+        }
+        state.active = false
+        renderJobs.delete(state.id)
+      }
+    }
+  } finally {
+    renderQueueRunning = false
+  }
+}
+
+ipcMain.handle('render:start', async (event, job) => {
+  assertMediaTools()
+  const id = String(job?.id || uid('render'))
+  const state = {
+    id,
+    job: { ...(job || {}), id },
+    event,
+    sender: event.sender,
+    status: 'queued',
+    codec: job?.codec === 'av1' ? 'av1' : 'h264',
+    cancelled: false,
+    paused: false,
+    processes: new Set(),
+    windows: new Set(),
+    resumeWaiters: [],
+  }
+  renderJobs.set(id, state)
+  renderQueue.push(state)
+  sendRenderQueueStatus(state, 'queued', 0)
+  void pumpRenderQueue()
+  return { jobId: id, status: 'queued' }
 })
 
 ipcMain.handle('render:cancel', (_event, payload) => {
@@ -3211,6 +4018,9 @@ ipcMain.handle('render:cancel', (_event, payload) => {
   const state = renderJobs.get(id)
   if (!state) return false
   state.cancelled = true
+  state.paused = false
+  state.recordingReject?.(new Error('Render cancelled'))
+  resolveRenderPause(state)
   for (const child of state.processes) stopChild(child)
   for (const win of state.windows) {
     try {
@@ -3219,6 +4029,34 @@ ipcMain.handle('render:cancel', (_event, payload) => {
   }
   sendRenderEvent(state.sender, 'render:error', { jobId: id, error: 'Render cancelled' })
   return true
+})
+
+ipcMain.handle('render:pause', (_event, payload) => {
+  const id = String(payload?.jobId || '')
+  const state = renderJobs.get(id)
+  if (!state || state.cancelled || state.status === 'done' || state.status === 'error') return false
+  state.paused = true
+  sendRenderQueueStatus(state, 'paused', Number(payload?.pct) || 0)
+  for (const child of state.processes) suspendChild(child)
+  return true
+})
+
+ipcMain.handle('render:resume', (_event, payload) => {
+  const id = String(payload?.jobId || '')
+  const state = renderJobs.get(id)
+  if (!state || state.cancelled || state.status === 'done' || state.status === 'error') return false
+  state.paused = false
+  for (const child of state.processes) resumeChild(child)
+  resolveRenderPause(state)
+  sendRenderQueueStatus(state, state.active ? 'working' : 'queued', 0)
+  return true
+})
+
+ipcMain.handle('render:preview', (_event, outputPath) => {
+  if (!outputPath || !fs.existsSync(outputPath)) throw new Error('Render output does not exist yet')
+  const rendersRoot = userDataPath('renders')
+  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
+  return pathToFileURL(outputPath).toString()
 })
 
 ipcMain.handle('render:reveal', (_event, outputPath) => {

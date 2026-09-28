@@ -1,5 +1,5 @@
 import { ARENA_SCENE_CSP, inlineBlobAssets, openSandboxedScene } from './studio/htmlTemplateCapture'
-export type RenderUpdate = (pct: number) => void
+export type RenderUpdate = (pct: number, status?: 'queued' | 'working' | 'paused' | 'rendering' | 'done' | 'error') => void
 import type { SceneRundown } from '../types/project'
 import { getIpc } from './bridge'
 import { humanError } from './humanError'
@@ -26,10 +26,13 @@ export type RenderSource = {
 }
 export type RenderJobInput = {
   id?: string
+  projectId?: string
+  sceneIds?: string[]
   aspect?: string
   fps?: number
   quality?: string
   outputName?: string | null
+  status?: 'queued' | 'working' | 'paused' | 'rendering' | 'done' | 'error'
   size?: [number, number]
   sources?: RenderSource[]
 }
@@ -421,6 +424,18 @@ function streamStop(stream?: MediaStream) {
   stream?.getTracks().forEach((track) => track.stop())
 }
 
+export async function pauseRender(jobId: string): Promise<boolean> {
+  const ipc = getIpc()
+  if (!ipc) return false
+  return Boolean(await ipc.invoke('render:pause', { jobId }))
+}
+
+export async function resumeRender(jobId: string): Promise<boolean> {
+  const ipc = getIpc()
+  if (!ipc) return false
+  return Boolean(await ipc.invoke('render:resume', { jobId }))
+}
+
 export function startRender(job: RenderJobInput, onUpdate: RenderUpdate, onDone: (result?: RenderResult) => void): () => void {
   const ipc = getIpc()
   if (ipc && !hasBrowserOnlySources(job)) {
@@ -436,8 +451,8 @@ export function startRender(job: RenderJobInput, onUpdate: RenderUpdate, onDone:
 
     if (typeof ipc.on === 'function') {
       cleanup.push(
-        ipc.on('render:progress', (event: { jobId?: string; pct?: number }) => {
-          if (event?.jobId === job.id && typeof event.pct === 'number') onUpdate(event.pct)
+        ipc.on('render:progress', (event: { jobId?: string; pct?: number; status?: RenderJobInput['status'] }) => {
+          if (event?.jobId === job.id && typeof event.pct === 'number') onUpdate(event.pct, event.status as Parameters<RenderUpdate>[1])
         }),
       )
       cleanup.push(
@@ -458,11 +473,14 @@ export function startRender(job: RenderJobInput, onUpdate: RenderUpdate, onDone:
     onUpdate(1)
     ipc
       .invoke('render:start', job)
-      .then((result: RenderResult) => {
-        if (!cancelled) {
-          onUpdate(100)
+      .then((result: RenderResult & { status?: string; jobId?: string }) => {
+        if (!cancelled && (result?.outputPath || result?.error)) {
+          onUpdate(result.error ? 0 : 100)
           done(result)
         }
+        // Desktop renders are queued in the main process. Completion arrives
+        // through render:done/render:error; do not treat the enqueue response
+        // as a finished render or the renderer would unlock too early.
       })
       .catch((err: Error) => {
         if (!cancelled) done({ error: err?.message || 'Render failed' })

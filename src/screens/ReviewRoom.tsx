@@ -5,6 +5,7 @@ import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { copyText } from '../lib/utils'
 import { humanError } from '../lib/humanError'
+import { getIpc } from '../lib/bridge'
 
 type RoomState = 'idle' | 'previewing' | 'connecting' | 'connected' | 'error'
 
@@ -20,11 +21,13 @@ type TwilioTrackLike = {
   detach?: () => HTMLElement[]
 }
 
+type ReviewComment = { id: string; at: number; text: string; author: string; resolved: boolean }
+
 function roomFromUrl() {
   try {
-    return new URLSearchParams(window.location.search).get('room') || `cupric-${Math.random().toString(36).slice(2, 7)}`
+    return new URLSearchParams(window.location.search).get('room') || 'cupric-review'
   } catch {
-    return `cupric-${Math.random().toString(36).slice(2, 7)}`
+    return 'cupric-review'
   }
 }
 
@@ -60,6 +63,10 @@ export function ReviewRoom() {
   const [micOff, setMicOff] = useState(false)
   const [copied, setCopied] = useState(false)
   const [remoteCount, setRemoteCount] = useState(0)
+  const [comments, setComments] = useState<ReviewComment[]>([])
+  const [commentAt, setCommentAt] = useState('0')
+  const [commentText, setCommentText] = useState('')
+  const [commentAuthor, setCommentAuthor] = useState('Guest reviewer')
 
   const inviteUrl = useMemo(() => {
     const url = new URL(window.location.href)
@@ -71,6 +78,46 @@ export function ReviewRoom() {
     if (!videoRef.current) return
     videoRef.current.srcObject = stream
   }, [stream])
+
+  useEffect(() => {
+    let alive = true
+    const ipc = getIpc()
+    if (ipc) {
+      void ipc.invoke('review:list', { room: roomName }).then((value: ReviewComment[]) => { if (alive) setComments(Array.isArray(value) ? value : []) }).catch(() => { if (alive) setComments([]) })
+    } else {
+      try { setComments(JSON.parse(localStorage.getItem(`cupric.review.${roomName}`) || '[]')) } catch { setComments([]) }
+    }
+    return () => { alive = false }
+  }, [roomName])
+
+  function toggleComment(comment: ReviewComment) {
+    const resolved = !comment.resolved
+    const ipc = getIpc()
+    if (ipc) {
+      void ipc.invoke('review:resolve', { room: roomName, id: comment.id, resolved }).then((value: ReviewComment[]) => setComments(Array.isArray(value) ? value : [])).catch((err: unknown) => setError(err instanceof Error ? err.message : 'Could not update review note.'))
+    } else {
+      setComments((current) => {
+        const next = current.map((item) => item.id === comment.id ? { ...item, resolved } : item)
+        try { localStorage.setItem(`cupric.review.${roomName}`, JSON.stringify(next)) } catch { /* private mode */ }
+        return next
+      })
+    }
+  }
+
+  function addComment() {
+    const text = commentText.trim()
+    if (!text) return
+    const payload = { room: roomName, at: Math.max(0, Number(commentAt) || 0), text, author: commentAuthor.trim() || 'Guest reviewer' }
+    const ipc = getIpc()
+    if (ipc) {
+      void ipc.invoke('review:add', payload).then((comment: ReviewComment) => setComments((current) => [...current, comment])).catch((err: unknown) => setError(err instanceof Error ? err.message : 'Could not save review note.'))
+    } else {
+      const comment = { id: `${roomName}-${comments.length}`, ...payload, resolved: false }
+      setComments((current) => [...current, comment])
+      try { localStorage.setItem(`cupric.review.${roomName}`, JSON.stringify([...comments, comment])) } catch { /* private mode */ }
+    }
+    setCommentText('')
+  }
 
   useEffect(() => {
     stream?.getVideoTracks().forEach((track) => {
@@ -208,6 +255,7 @@ export function ReviewRoom() {
             <div>
               <div className="text-sm font-semibold">Room setup</div>
               <p className="mt-1 text-xs text-muted">Local preview works without credentials. Multi-party calls need a Twilio Video access token from your own token server.</p>
+              <p className="rounded-md border border-line bg-bg/50 px-3 py-2 text-xs text-muted">{getIpc() ? 'Review notes persist in this desktop profile.' : 'Browser review notes stay on this browser. Cross-device guest sync needs a deployed, authenticated room service; this build never pretends local notes are shared.'}</p>
             </div>
             <label className="block text-xs font-medium text-muted">
               Room name
@@ -243,6 +291,26 @@ export function ReviewRoom() {
             >
               <Copy size={14} /> {copied ? 'Copied' : 'Copy invite'}
             </Button>
+          </Card>
+
+          <Card className="space-y-3 p-4">
+            <div>
+              <div className="text-sm font-semibold">Time-coded review notes</div>
+              <p className="mt-1 text-xs text-muted">Guests do not need an account. Notes are stored per room on this device and can be resolved after the fix lands.</p>
+            </div>
+            <div className="grid grid-cols-[90px_1fr] gap-2">
+              <input aria-label="Comment time in seconds" type="number" min="0" step="0.1" value={commentAt} onChange={(event) => setCommentAt(event.target.value)} className="h-9 rounded-lg border border-line bg-panel-alt px-2 text-xs" placeholder="Seconds" />
+              <input aria-label="Reviewer name" value={commentAuthor} onChange={(event) => setCommentAuthor(event.target.value)} className="h-9 rounded-lg border border-line bg-panel-alt px-2 text-xs" placeholder="Name" />
+            </div>
+            <textarea aria-label="Review note" value={commentText} onChange={(event) => setCommentText(event.target.value)} className="min-h-16 w-full rounded-lg border border-line bg-panel-alt px-2 py-1.5 text-xs" placeholder="What should change at this moment?" />
+            <Button variant="primary" className="w-full" onClick={addComment}>Add note at {Number(commentAt || 0).toFixed(1)}s</Button>
+            <div className="max-h-52 space-y-1.5 overflow-y-auto">
+              {comments.length === 0 && <p className="text-xs text-muted">No notes yet.</p>}
+              {comments.slice().sort((a, b) => a.at - b.at).map((comment) => <div key={comment.id} className={`rounded-lg border px-2.5 py-2 text-xs ${comment.resolved ? 'border-accent/20 bg-accent/5 opacity-60' : 'border-line bg-panel-alt/40'}`}>
+                <div className="flex items-center justify-between gap-2"><span className="font-mono text-accent-text">{comment.at.toFixed(1)}s</span><span className="truncate text-muted">{comment.author}</span><button type="button" className="text-[10px] text-muted underline" onClick={() => toggleComment(comment)}>{comment.resolved ? 'Reopen' : 'Resolve'}</button></div>
+                <p className="mt-1 text-text">{comment.text}</p>
+              </div>)}
+            </div>
           </Card>
 
           <Card className="space-y-2 p-4 text-xs leading-relaxed text-muted">

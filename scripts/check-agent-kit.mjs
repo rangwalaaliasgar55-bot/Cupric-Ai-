@@ -106,6 +106,12 @@ ok((textDoc.clips.find((c) => c.kind === 'text').keyframes ?? []).length >= 2, '
 /* prompt */
 const main = read('electron/main.cjs')
 for (const s of ['setComponentProps', 'COMPONENT PLAYBOOK', 'SMOOTHNESS', 'TYPOGRAPHY & COLOUR', 'props.fontFamily', 'ob-marquee-band', '"track"?:number']) ok(main.includes(s), `prompt mentions ${s}`)
+ok(main.includes('ADVANCED_VIDEO_PLAYBOOK_PROMPT') && main.includes('evaluateAutomationRender'), 'autonomous planner includes the advanced craft playbook and delivered-render QA')
+const opusPlaybook = read('electron/opus-playbook.cjs')
+ok(opusPlaybook.includes('not model training') && opusPlaybook.includes('shared timeline clock'), 'Opus guidance stays deterministic and does not claim model retraining')
+ok(opusPlaybook.includes('Never fabricate testimonials') && opusPlaybook.includes('rear-camera panel fixed'), 'Opus, dashi-motion, and foldable-promotion guidance preserve the agent rules')
+ok(read('src/screens/Autonomous.tsx').includes('Render QA:'), 'autonomous UI exposes mechanical render QA')
+ok(read('src/lib/studio/phone.ts').includes('drawDuoPhone') && read('src/lib/studio/resourceApply.ts').includes("nativeAction === 'phoneDesign'"), 'iPhone Duo is a native editable Studio action')
 ok(read('src/screens/Studio.tsx').includes('componentProps: clip.component.props'), 'agent sees current component props')
 
 console.log(`check-agent-kit passed (${n} assertions)`)

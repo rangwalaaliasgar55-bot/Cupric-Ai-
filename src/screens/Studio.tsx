@@ -30,6 +30,7 @@ import {
   CheckCircle2,
   Sticker,
   Shapes,
+  SlidersHorizontal,
   MousePointerClick,
   Square,
   Type as TypeIcon,
@@ -75,7 +76,7 @@ import { ComponentRecorderHost } from './studio/ComponentRecorderHost'
 import { ComponentsPanel } from './studio/ComponentsPanel'
 import { hasMedia, registerFile } from '../lib/studio/media'
 import { readDragPayload } from '../lib/studio/resourceDrop'
-import { canExportMp4, convertToMp4, exportStudio } from '../lib/studio/export'
+import { canExportMp4, convertToMp4, exportStudio, exportStudioInBackground } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
 import { cueDone, cueProblem } from '../lib/sound'
@@ -909,6 +910,18 @@ export function Studio() {
     setSelectedId(clip.id)
   }
 
+  function addAdjustmentLayer() {
+    const clip: StudioClip = {
+      id: uid(), kind: 'adjustment', track: Math.max(1, Math.min(MAX_TRACKS - 1, doc.trackCount - 1)),
+      startSec: Math.round(time * 100) / 100, durationSec: 4, name: 'Adjustment layer',
+      transitionIn: 'none', transitionOut: 'none', opacity: 1,
+      grade: [{ id: 'balance', enabled: true, exposure: 0, temperature: 0 }, { id: 'contrast', enabled: true, contrast: 12, fade: 0 }, { id: 'look', enabled: true, saturation: 8, hue: 0 }],
+    }
+    addStudioClip(projectId, clip)
+    setSelectedId(clip.id)
+    pushToast('success', 'Adjustment layer added above the timeline. Select it to tune the grade.')
+  }
+
   function addSticker() {
     const track = Math.min(1, doc.trackCount - 1)
     // At the playhead, like text: the store stacks it on the first free
@@ -1106,8 +1119,9 @@ export function Studio() {
       const outcome = await runExport(asMp4, aspects[i])
       setExportQueue((q) => q.map((job, j) => (j === i ? { ...job, status: outcome } : job)))
       if (outcome === 'cancelled') {
-        setExportQueue((q) => q.map((job, j) => (j > i ? { ...job, status: 'cancelled' } : job)))
-        break
+        // Stop only the active recording/conversion; the remaining aspect jobs
+        // stay queued and continue so one cancelled size does not poison the farm.
+        continue
       }
     }
   }
@@ -1119,7 +1133,7 @@ export function Studio() {
     for (let i = 0; i < scenes.length; i += 1) {
       pushToast('info', `Rendering scene ${i + 1} of ${scenes.length}: ${scenes[i].name}`)
       const outcome = await runExport(asMp4, undefined, { doc: { ...scenes[i].doc, scenes } as StudioDoc, tag: slugify(scenes[i].name) })
-      if (outcome === 'cancelled') break
+      if (outcome === 'cancelled') continue
     }
   }
 
@@ -1144,8 +1158,29 @@ export function Studio() {
     const signal = { cancelled: false }
     cancelRef.current = signal
     try {
+      const fileName = `${slugify(project?.name ?? 'cupric-studio')}-studio${suffix}`
+      // In Electron, the main-process farm owns the offscreen compositor and
+      // the durable output. The browser path below remains the portable
+      // fallback, but the interactive Studio never records its own canvas on
+      // desktop anymore.
+      if (getIpc()) {
+        const farm = await exportStudioInBackground(target, {
+          fileName,
+          fps: target.fps,
+          loudnessTarget: target.loudnessTarget ?? null,
+          format: asMp4 ? 'mp4' : 'webm',
+          onProgress: setExportPct,
+          signal,
+        })
+        const previewUrl = await getIpc()!.invoke('render:preview', farm.outputPath) as string
+        setLastExport({ url: previewUrl, fileName: `${fileName}.${asMp4 ? 'mp4' : 'webm'}` })
+        if (!asMp4) await getIpc()!.invoke('render:copyToDownloads', farm.outputPath)
+        pushToast('success', `Saved ${farm.outputPath.split(/[\\/]/).pop()} (${Math.round(farm.bytes / 1024)} KB)`)
+        cueDone()
+        return 'done'
+      }
       const result = await exportStudio(target, {
-        fileName: `${slugify(project?.name ?? 'cupric-studio')}-studio${suffix}`,
+        fileName,
         scale: 1,
         onProgress: setExportPct,
         signal,
@@ -1155,7 +1190,7 @@ export function Studio() {
         return 'cancelled'
       } else if (asMp4) {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
-        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null)
+        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal)
         setLastExport({ url: result.url, fileName: result.fileName })
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)`)
         cueDone()
@@ -1172,6 +1207,10 @@ export function Studio() {
       }
       return 'done'
     } catch (err) {
+      if (signal.cancelled) {
+        pushToast('info', 'Export cancelled')
+        return 'cancelled'
+      }
       pushToast('error', humanError(err, 'Export'))
       cueProblem()
       return 'failed'
@@ -1223,6 +1262,9 @@ export function Studio() {
         </Button>
         <Button size="sm" variant="outline" onClick={addBackgroundClip} disabled={exporting}>
           <ImageIcon size={13} /> Background
+        </Button>
+        <Button size="sm" variant="outline" onClick={addAdjustmentLayer} disabled={exporting} title="Non-destructive colour grade for clips below this layer">
+          <SlidersHorizontal size={13} /> Adjustment
         </Button>
         <Button size="sm" variant="outline" onClick={() => addGlassClip('panel')} disabled={exporting}>
           <Sparkles size={13} /> Glass

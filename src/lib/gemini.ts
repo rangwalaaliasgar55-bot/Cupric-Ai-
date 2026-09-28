@@ -243,12 +243,12 @@ export async function geminiChatLocal(
   return `Noted — I'd start from ${proj} on the ${ctx.view === 'home' ? 'Home' : ctx.view} screen. Without a live model I answer from the local planner; imports, previews, and browser/desktop renders still use real local media where available.`
 }
 
-export async function askGemini(userText: string, askCount: number): Promise<GeminiResult> {
+export async function askGemini(userText: string, askCount: number, projectId?: string): Promise<GeminiResult> {
   const api = getIpc()
   let fallbackReason = 'Running in the browser preview, where no model key is available.'
   if (api) {
     try {
-      const live = (await api.invoke('gemini:ask', { prompt: userText, history: [], rundownContext: {} })) as GeminiResult
+      const live = (await api.invoke('gemini:ask', { prompt: userText, history: [], projectId, requestId: `${projectId || 'brief'}-${Date.now()}`, rundownContext: {} })) as GeminiResult
       return { ...live, source: live.source === 'local' ? 'local' : 'live' }
     } catch (err) {
       // Swallowing this was the bug: the app looked like it had answered with a

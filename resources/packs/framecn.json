@@ -2,7 +2,7 @@
   "id": "framecn",
   "name": "framecn — video captions, type, transitions, scenes, shaders",
   "description": "112 video components from framecn.dev (MIT), vendored into src/lab/framecn. Captions, kinetic typography, transitions, full product scenes and WebGL shader backgrounds; each records into the Studio with editable props.",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "source": "https://www.framecn.dev/docs/components",
   "license": "MIT (framecn); shaders via @paper-design/shaders-react (Apache-2.0)",
   "items": [

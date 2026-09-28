@@ -2,7 +2,7 @@
   "id": "motion-kit",
   "name": "Motion kit — fonts, shapes, cursor, 3D",
   "description": "Fonts, shapes, cursor, 3D: bundled OFL video fonts, 21 Fontshare families (link-only — download them yourself, then Add fonts), and the Javis.jl ideas (MIT).",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "source": "curated",
   "license": "Per item (see each entry)",
   "items": [

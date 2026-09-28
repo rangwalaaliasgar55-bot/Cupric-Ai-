@@ -12,6 +12,17 @@ import { uid } from '../utils'
 const r3 = (v: number) => Math.round(v * 1000) / 1000
 export type ToolResult = { doc: StudioDoc; changed: boolean; reason?: string; notes?: string[] }
 
+export type SocialMetadata = { title: string; caption: string; hashtags: string[] }
+
+/** Derive honest share copy from existing project text; never invents results or testimonials. */
+export function socialMetadata(doc: StudioDoc, projectName = 'Untitled video'): SocialMetadata {
+  const text = doc.clips.filter((clip): clip is StudioTextClip => clip.kind === 'text' && Boolean(clip.text.trim())).sort((a, b) => a.startSec - b.startSec).map((clip) => clip.text.trim())
+  const title = (text[0] || projectName).replace(/\\s+/g, ' ').slice(0, 80)
+  const words = `${projectName} ${text.join(' ')}`.toLowerCase().match(/[a-z0-9]{4,}/g) || []
+  const hashtags = [...new Set(['video', ...words.filter((word) => !['this', 'that', 'with', 'from', 'your', 'have'].includes(word)).slice(0, 6)])].map((word) => `#${word}`)
+  return { title, caption: text.length > 1 ? text.slice(0, 3).join(' · ') : title, hashtags }
+}
+
 /* ─────────────────────────── Speed ramping ─────────────────────────── */
 
 export const SPEED_RAMPS = {

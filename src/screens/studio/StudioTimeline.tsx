@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, Type as TypeIcon, Video, Lock, EyeOff, VolumeX , Shapes, MousePointerClick } from 'lucide-react'
+import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, SlidersHorizontal, Type as TypeIcon, Video, Lock, EyeOff, VolumeX , Shapes, MousePointerClick } from 'lucide-react'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
 import { markerTimes } from '../../lib/studio/timelineOps'
@@ -44,6 +44,7 @@ function clipIcon(clip: StudioClip) {
   if (clip.kind === 'sticker') return Sticker
   if (clip.kind === 'shape') return Shapes
   if (clip.kind === 'cursor') return MousePointerClick
+  if (clip.kind === 'adjustment') return SlidersHorizontal
   return Music
 }
 
@@ -63,6 +64,8 @@ function clipTint(clip: StudioClip, selected: boolean): string {
                 ? 'bg-[rgb(200_245_66/0.10)] border-[rgb(200_245_66/0.34)]'
               : clip.kind === 'cursor'
                 ? 'bg-[rgb(79_182_232/0.12)] border-[rgb(79_182_232/0.40)]'
+              : clip.kind === 'adjustment'
+                ? 'bg-[rgb(255_196_92/0.14)] border-[rgb(255_196_92/0.42)]'
               : clip.kind === 'sticker'
                 ? 'bg-[rgb(255_196_92/0.16)] border-[rgb(255_196_92/0.44)]'
                 : clip.kind === 'audio'

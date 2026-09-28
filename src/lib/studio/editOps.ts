@@ -1,4 +1,4 @@
-import type { StudioOverlayClip, StudioShapeAnim, StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition } from '../../types/project'
+import type { StudioOverlayClip, StudioShapeAnim, StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition, StudioAspect } from '../../types/project'
 import { VIDEO_FONT_FAMILIES } from './videoFonts'
 import { isUserFont } from './userFonts'
 import { fontshareFont } from './fontStyles'
@@ -14,6 +14,7 @@ import { PHONE_DESIGNS } from './phone'
 import { MAX_TRACKS, defaultTextClip, docDuration, normaliseClip, reorderTracks, resolveOverlaps, aspectRatio } from './doc'
 import { componentFromInstruction, findComponent, validateComponentProps, withComponent } from './components'
 import { studioPlayhead } from './studioLink'
+import { nestScene } from './scenes'
 import {
   ALL_RECIPE_IDS,
   choreograph,
@@ -38,6 +39,8 @@ import {
 
 export type StudioEditOp =
   | { type: 'patchClip'; clipId: string; patch: Record<string, string | number> }
+  | { type: 'reframe' | 'reframeClip'; clipId: string; aspect: StudioAspect; x?: number; y?: number; scale?: number }
+  | { type: 'nestScene'; sceneId: string; at: number }
   | { type: 'moveClip'; clipId: string; track?: number; startSec?: number }
   | { type: 'deleteClip'; clipId: string }
   | {
@@ -181,6 +184,22 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       }
       if (!Object.keys(patch).length) throw new Error(`Operation ${index + 1} has an empty patch`)
       return { type, clipId, patch }
+    }
+    if (type === 'reframe' || type === 'reframeClip') {
+      const clipId = requireClip()
+      const clip = doc.clips.find((item) => item.id === clipId)!
+      if (clip.kind !== 'video' && clip.kind !== 'image') throw new Error('Reframe applies to video and image clips')
+      const aspect = String(op.aspect) as StudioAspect
+      if (!['16:9', '9:16', '1:1', '4:5'].includes(aspect)) throw new Error(`Unknown reframe aspect “${String(op.aspect)}”`)
+      const unit = (value: unknown, fallback: number) => value === undefined ? fallback : finite(value) ? clamp(value, 0.05, 0.95) : (() => { throw new Error('Reframe positions must be finite numbers') })()
+      const scale = op.scale === undefined ? undefined : finite(op.scale) ? clamp(op.scale, 0.05, 10) : (() => { throw new Error('Reframe scale must be finite') })()
+      return { type: type as 'reframe' | 'reframeClip', clipId, aspect, x: unit(op.x, 0.5), y: unit(op.y, 0.5), ...(scale === undefined ? {} : { scale }) }
+    }
+    if (type === 'nestScene') {
+      const sceneId = String(op.sceneId || '')
+      if (!doc.scenes?.some((scene) => scene.id === sceneId)) throw new Error(`Unknown scene “${sceneId}”`)
+      if (!finite(op.at) || op.at < 0) throw new Error('Nested scene placement needs a non-negative time')
+      return { type, sceneId, at: op.at }
     }
     if (type === 'moveClip') {
       const clipId = requireClip()
@@ -423,7 +442,10 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'addCaptions') return `Add captions from the transcript at ${op.startSec.toFixed(2)}s`
   if (op.type === 'setComponentProps') return `Update ${name}: ${Object.entries(op.props).map(([k, v]) => `${k} = ${typeof v === 'string' ? `“${v.slice(0, 40)}”` : v}`).join(', ')} (re-records)`
   if (op.type === 'addComponent') return `Add the “${findComponent(op.slug)?.name ?? op.slug}” component at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s (its real animation is recorded)${op.cursor ? ' · with a clicking cursor if it is interactive' : ''}${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
-  return `Apply ${op.preset} style across the timeline`
+  if (op.type === 'reframe' || op.type === 'reframeClip') return `Reframe ${name} for ${op.aspect}`
+  if (op.type === 'nestScene') return `Nest scene ${op.sceneId} at ${op.at.toFixed(2)}s`
+  if (op.type === 'applyStylePreset') return `Apply ${op.preset} style across the timeline`
+  return 'Edit timeline'
 }
 
 export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): StudioDoc {
@@ -431,6 +453,13 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
   const growTracks = (track: number) => Math.min(MAX_TRACKS, Math.max(next.trackCount, Math.round(track) + 1))
   for (const op of ops) {
     if (op.type === 'deleteClip') next = { ...next, clips: next.clips.filter((clip) => clip.id !== op.clipId) }
+    else if (op.type === 'reframe' || op.type === 'reframeClip') next = {
+      ...next,
+      clips: next.clips.map((clip) => clip.id === op.clipId && (clip.kind === 'video' || clip.kind === 'image')
+        ? { ...clip, fit: 'cover', x: op.x ?? clip.x ?? 0.5, y: op.y ?? clip.y ?? 0.5, ...(op.scale === undefined ? {} : { scale: op.scale }) }
+        : clip),
+    }
+    else if (op.type === 'nestScene') next = nestScene(next, op.sceneId, op.at).doc
     else if (op.type === 'moveClip') {
       if (op.track !== undefined) next = { ...next, trackCount: growTracks(op.track) }
       next = { ...next, clips: next.clips.map((clip) => clip.id === op.clipId ? normaliseClip({ ...clip, ...(op.track !== undefined ? { track: op.track } : {}), ...(op.startSec !== undefined ? { startSec: op.startSec } : {}) } as StudioClip, next.trackCount) : clip) }

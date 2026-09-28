@@ -29,7 +29,7 @@ import { getMedia, overlayImage, proxyMode } from './media'
 import { applyPixelGrade, chromaKey } from './color'
 import { bezierEase } from './curves'
 import { compareDivider, deviceGeometry } from './layouts'
-import { drawPhone, type DrawMedia } from './phone'
+import { drawDuoPhone, drawPhone, type DrawMedia } from './phone'
 import { kineticWord } from './textTools'
 import { hasRichMarkup, parseRich, RICH_DEFAULTS, type RichStyle, type RichWord } from './richText'
 import type { StudioBlendMode, StudioDevice } from '../../types/project'
@@ -1011,7 +1011,8 @@ function drawClipContent(
     ctx.translate(targetX, targetY)
     const device = clip.device && clip.device !== 'none' ? clip.device : null
     if (device === 'phone' && clip.phone) {
-      drawPhone(ctx, clip.phone, { x: 0, y: 0, w: targetW, h: targetH }, Math.max(0, t - clip.startSec), clip.durationSec, phoneMedia(ctx, source))
+      const draw = clip.phone.formFactor === 'duo' ? drawDuoPhone : drawPhone
+      draw(ctx, clip.phone, { x: 0, y: 0, w: targetW, h: targetH }, Math.max(0, t - clip.startSec), clip.durationSec, phoneMedia(ctx, source))
     } else if (source && device) {
       drawInDevice(ctx, device, 0, 0, targetW, targetH, (x, y, sw2, sh2) => {
         const [sw, sh] = sourceSize(source)
@@ -1089,7 +1090,8 @@ function drawClipContent(
         const dw = sw * base * clip.scale
         const dh = sh * base * clip.scale
         if (clip.device === 'phone' && clip.phone) {
-          drawPhone(ctx, clip.phone, { x: clip.x * width - dw / 2, y: clip.y * height - dh / 2, w: dw, h: dh }, Math.max(0, t - clip.startSec), clip.durationSec, phoneMedia(ctx, source))
+          const draw = clip.phone.formFactor === 'duo' ? drawDuoPhone : drawPhone
+          draw(ctx, clip.phone, { x: clip.x * width - dw / 2, y: clip.y * height - dh / 2, w: dw, h: dh }, Math.max(0, t - clip.startSec), clip.durationSec, phoneMedia(ctx, source))
         } else if (clip.device && clip.device !== 'none') {
           drawInDevice(ctx, clip.device, clip.x * width - dw / 2, clip.y * height - dh / 2, dw, dh, (x, y, w2, h2) => {
             drawFit(ctx, source, sw, sh, w2, h2, 'cover', x, y)
@@ -1197,6 +1199,25 @@ export function drawStudioFrame(
   }
 
   for (const raw of clipsAt(doc, t)) {
+    if (raw.kind === 'adjustment') {
+      // An adjustment layer is a full-frame, non-destructive pass: snapshot the
+      // composite below it, grade that snapshot, then continue drawing layers
+      // above. Preview and export therefore apply the same ordered layer stack.
+      const grade = gradeFilter(raw.grade)
+      if (grade) {
+        const snapshot = scratchFor(width, height)
+        if (snapshot) {
+          snapshot.ctx.clearRect(0, 0, width, height)
+          snapshot.ctx.drawImage(ctx.canvas, 0, 0, width, height)
+          ctx.save()
+          ctx.clearRect(0, 0, width, height)
+          ctx.filter = grade
+          ctx.drawImage(snapshot.canvas, 0, 0, width, height)
+          ctx.restore()
+        }
+      }
+      continue
+    }
     // Keyframes are resolved once, up front, so everything below — transitions,
     // rotation, the matte, the draw itself — sees the animated clip.
     const clip = animatedClip(raw, t)

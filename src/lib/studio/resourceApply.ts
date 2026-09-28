@@ -25,7 +25,7 @@
  * the UI performs, so the same code serves the button and the stage drop and
  * can be tested over every catalogue item in Node.
  */
-import type { StudioClip, StudioDoc, StudioGlassClip, StudioTextClip } from '../../types/project'
+import type { StudioClip, StudioDoc, StudioGlassClip, StudioMediaClip, StudioTextClip } from '../../types/project'
 import { uid } from '../utils'
 import { STUDIO_BACKGROUNDS } from './backgrounds'
 import { MAX_TRACKS, defaultGlassClip, defaultStickerClip, defaultTextClip, docDuration, placeClip, trackIsFree } from './doc'
@@ -41,6 +41,7 @@ import {
   type Archetype,
 } from './resourceLook'
 import { findComponent, withComponent } from './components'
+import { PHONE_DESIGNS } from './phone'
 import { buildStoryboard, directText, frameRatio, panelSize, placeLayers, plateBehind, templateSlots, type TemplateFillData } from './storyboard'
 import { TRANSITIONS } from './transitions'
 
@@ -298,7 +299,13 @@ function applySceneLike(doc: StudioDoc, item: ApplyItem, ctx: ApplyContext, labe
     return { ok: true, type: 'doc', doc: next, focusId: placed.id, focusSec: visibleMoment(placed), message: `“${item.name}” added as an editable ${painter} background under your edit.` }
   }
 
-  const layers = sceneLayers(doc, item, archetype, round2(ctx.atSec))
+  const layers = sceneLayers(doc, item, archetype, round2(ctx.atSec)).map((layer) => ({
+    ...layer,
+    keyframes: layer.keyframes?.map((keyframe) => ({
+      ...keyframe,
+      at: Math.max(0, Math.min(layer.durationSec, keyframe.at)),
+    })),
+  }) as StudioClip)
   const span = Math.max(...layers.map((l) => l.startSec + l.durationSec)) - Math.min(...layers.map((l) => l.startSec))
   const placed = withLayers(doc, ctx.atSec, span, layers)
   const focus = placed.clips.find((c) => c.kind === 'text') ?? placed.clips[0]
@@ -385,6 +392,33 @@ export function applyResource(doc: StudioDoc, item: ApplyItem, ctx: ApplyContext
     }
 
     case 'component': {
+      if (item.data?.nativeAction === 'phoneDesign') {
+        const designId = String(item.data.design || 'iphone-duo')
+        const design = PHONE_DESIGNS.find((candidate) => candidate.id === designId)
+        const target = doc.clips.find((clip) => clip.id === ctx.selectedId && (clip.kind === 'image' || clip.kind === 'video' || clip.kind === 'overlay'))
+        if (!design) return { ok: false, reason: `The native phone design “${designId}” is not registered.` }
+        if (!target) {
+          // Resource Apply must still land something on an empty timeline. The
+          // empty screen is an honest relink placeholder, not fabricated media;
+          // the user can replace it from the normal media picker afterwards.
+          const placeholder: StudioMediaClip = {
+            id: uid(), kind: 'image', track: 1, startSec: atSec, durationSec: 6,
+            name: `${design.label} · replace screen media`, transitionIn: 'fade', transitionOut: 'fade', opacity: 1,
+            mediaId: '', fileName: 'Add browser, SaaS, product, or campaign media', localPath: null,
+            trimInSec: 0, sourceDurationSec: 6, speed: 1, volume: 0.8, fit: 'contain', x: 0.5, y: 0.5, scale: 0.78,
+            device: 'phone', phone: structuredClone(design.style), posterDataUrl: null,
+          }
+          const placed = withPlacedClip(doc, placeholder, atSec)
+          return { ok: true, type: 'doc', doc: placed.doc, focusId: placed.clip.id, focusSec: visibleMoment(placed.clip), message: `“${design.label}” added with an empty editable screen. Replace the media to promote your browser, SaaS launch, product, or custom campaign.` }
+        }
+        const next = {
+          ...doc,
+          clips: doc.clips.map((clip) => clip.id === target.id
+            ? ({ ...clip, device: 'phone', phone: structuredClone(design.style), ...(clip.kind !== 'overlay' ? { fit: 'contain' } : {}) } as StudioClip)
+            : clip),
+        }
+        return { ok: true, type: 'doc', doc: next, focusId: target.id, focusSec: visibleMoment(target), message: `“${design.label}” applied to “${target.name}”. Its fold, hinge, screen projection, copy and colours remain editable in Phone Studio.` }
+      }
       const external = Boolean(item.source || item.data?.source || item.data?.provider)
       if (!external && findComponent(item.id) && (ctx.hasLabDemo?.(item.id) ?? true)) {
         // The real component, recorded with its real animation by the Studio.

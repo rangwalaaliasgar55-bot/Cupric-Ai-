@@ -1,0 +1,20 @@
+{
+  "name": "Cupric autonomous video production playbook",
+  "purpose": "A Cupric-native craft policy distilled from recurring patterns in the attributed Opus 5.5 video case catalogue. It is not model training and does not imply that every case used every rule.",
+  "license": "MIT for this catalogue/playbook text; third-party references and media retain their own rights.",
+  "source": "https://github.com/chuspeeism/awesome-opus-5-5-videos",
+  "rules": [
+    {"id":"brief-to-beat-sheet","name":"Brief to beat sheet","rule":"Turn the brief into a beat sheet before styling: hook in the first second, distinct beats, readable holds, one payoff, and a clean final frame.","tags":["planning","storyboard","pacing"]},
+    {"id":"single-clock-render","name":"Single clock render","rule":"Use one shared timeline clock for every visual, caption, audio cue, camera move and transition. Preview and export must sample the same pure frame function.","tags":["deterministic","renderer","timing"]},
+    {"id":"code-first-motion","name":"Code-first editable motion","rule":"Prefer editable native primitives, HTML canvas scenes, Remotion-style compositions, or deterministic SVG/CSS motion over flattened screenshots. Never depend on Date.now, Math.random, CSS animation time, or an external renderer.","tags":["editable","code","deterministic"]},
+    {"id":"hook-pacing","name":"Hook and pacing","rule":"Make the first frame legible and high-contrast, establish the visual grammar quickly, vary scale and composition across beats, and avoid filling every moment with motion.","tags":["hook","composition","pacing"]},
+    {"id":"system-not-random-effects","name":"One visual system","rule":"Choose one visual system per video: at most two type families, one accent, one caption treatment, one background family, and a small set of repeated easing and transition recipes.","tags":["design-system","typography","consistency"]},
+    {"id":"layered-production","name":"Layered production","rule":"Build in layers: background or atmosphere, subject/media, typography, accents, captions, then audio. Keep every layer editable and leave safe areas around faces, products and titles.","tags":["layers","safe-area","editable"]},
+    {"id":"audio-as-structure","name":"Audio as structure","rule":"Treat music, narration and sound effects as timing structure: mark beats, duck music under speech, land key reveals on changes, and keep audio optional when no local source exists.","tags":["audio","narration","beats"]},
+    {"id":"iterative-review","name":"Iterative review passes","rule":"Use staged passes instead of one opaque generation: composition pass, motion pass, typography and caption pass, audio pass, then an export QA pass for overflow, contrast, timing, missing media and even dimensions.","tags":["iteration","qa","review"]},
+    {"id":"multi-tool-adapters","name":"Safe multi-tool adapters","rule":"When a brief calls for a 3D, particle, shader, character or UI treatment, translate the intent into a Cupric-native component or sandboxed source scene. Do not execute arbitrary MCP, After Effects, Blender or remote code inside the desktop app.","tags":["3d","components","security"]},
+    {"id":"real-copy-real-data","name":"Real copy and data","rule":"Use the user brief, imported media and verified values. Never fabricate testimonials, statistics, reviews, before/after claims, credits or source ownership to make a case study look finished.","tags":["accuracy","attribution","claims"]},
+    {"id":"social-reframe","name":"Social reframe","rule":"Design the hero for the requested aspect ratio, then reframe with safe title/action areas. Keep text on the short-side safe zone and create separate queued variants rather than squeezing one composition.","tags":["aspect-ratio","social","safe-area"]},
+    {"id":"deliverable-check","name":"Deliverable check","rule":"Before declaring success, make a playable MP4, preserve the editable project, report any missing provider or media honestly, and show the exact source/credit trail for borrowed references.","tags":["export","delivery","credits"]}
+  ]
+}

@@ -1,6 +1,6 @@
 {
-  "version": "0.10.1",
-  "updated": "2026-09-27",
+  "version": "0.11.0",
+  "updated": "2026-09-28",
   "repo": "rangwalaaliasgar55-bot/Cupric-Ai-",
   "packs": [
     {
@@ -135,6 +135,34 @@
       "description": "React components vendored from lab.xevrion.dev into src/lab/components and browsable in the Lab screen.",
       "itemCount": 192,
       "bytes": 64446
+    },
+    {
+      "id": "uselayouts",
+      "name": "uselayouts — premium micro-interactions",
+      "description": "64 MIT-licensed React micro-interactions copied from uselayouts. Apply creates a native editable storyboard; source files and dependency notes stay bundled for reference.",
+      "itemCount": 64,
+      "bytes": 74180
+    },
+    {
+      "id": "dashi-motion",
+      "name": "dashi-motion native production skills",
+      "description": "10 attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; Cupric applies the principles through its own deterministic renderer.",
+      "itemCount": 10,
+      "bytes": 11357
+    },
+    {
+      "id": "iphone-duo",
+      "name": "iPhone Duo-inspired foldable promotion skills",
+      "description": "Attribution-preserving reference source plus 10 promotion rules and one editable Cupric Studio foldable-device action. Apple reference assets are excluded.",
+      "itemCount": 11,
+      "bytes": 12426
+    },
+    {
+      "id": "opus55",
+      "name": "Opus 5.5 video cases & production playbook",
+      "description": "300 attributed case studies plus 12 Cupric-native production rules. Linked media remains external; the autonomous agent uses the playbook as craft guidance for deterministic editable scenes.",
+      "itemCount": 312,
+      "bytes": 437636
     }
   ]
 }

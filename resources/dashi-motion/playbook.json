@@ -1,0 +1,17 @@
+{
+  "source": "https://github.com/chuspeeism/dashi-motion",
+  "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
+  "license": null,
+  "rules": [
+    {"id":"software-route","name":"Route by delivery software","rule":"Identify whether the task is an AE project, Rive state machine, Cavalry node scene, or Cupric native scene before choosing techniques. Do not silently replace an editable native deliverable with a flattened video.","tags":["routing","editable","workflow"]},
+    {"id":"reference-breakdown","name":"Break references into observable beats","rule":"Measure duration, frame rate, aspect ratio, shot boundaries, direction, spacing, counts, proportions, holds, speed peaks, transitions and end states before styling. Compare matching timestamps, not arbitrary frame numbers.","tags":["reference","timing","analysis"]},
+    {"id":"native-objects","name":"Use native editable objects","rule":"Keep text, paths, shapes, controls, keyframes, state machines and repeated relationships editable. A large script or flattened screenshot is not equivalent to user-facing editability.","tags":["native","layers","controls"]},
+    {"id":"shared-controls","name":"Share repeated motion controls","rule":"Use one master progress, duplicator, array, state value or timeline controller for repeated motion; keep genuinely independent actions independent. Do not expand every copy into opaque keyframes.","tags":["procedural","keyframes","efficiency"]},
+    {"id":"motion-before-texture","name":"Fix motion before polish","rule":"When a result feels wrong, check direction, pivot, layer distance, count, spacing, expansion, settle and speed curve before adding grain, shadow or extra effects.","tags":["review","motion","iteration"]},
+    {"id":"property-discovery","name":"Discover properties before writing","rule":"Enumerate effect properties, match names, ports, renderers, inputs and current values before changing them. Do not trust numeric indexes, old coordinates, or a similarly named property.","tags":["inspection","safety","automation"]},
+    {"id":"separate-open-render","name":"Separate open/save from render","rule":"Open the confirmed project, verify the correct file and visible frame, save it, then render in a separate step. Do not treat a generated script or queued job as proof of a rendered result.","tags":["render","evidence","delivery"]},
+    {"id":"compare-decoded","name":"Review decoded output","rule":"Decode the actual output, check dimensions, frame count, timestamps, audio and key action frames, then compare the motion at matching times. A thumbnail or metadata-only check is insufficient.","tags":["qa","export","comparison"]},
+    {"id":"evidence-boundary","name":"State evidence honestly","rule":"Distinguish file written, app opened, project saved, native-rendered, decoded and compared. Record unconfirmed causes as unconfirmed instead of claiming a professional result from a script exit code.","tags":["honesty","qa","reporting"]},
+    {"id":"continue-baseline","name":"Continue from the accepted baseline","rule":"When adding a new segment, find the newest accepted project, preserve accepted work, confirm its end frame and current controls, and change only the requested range before extending the scene.","tags":["iteration","versioning","editing"]}
+  ]
+}

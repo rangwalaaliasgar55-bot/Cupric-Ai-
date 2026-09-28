@@ -5,8 +5,9 @@
  *   v1 (implicit, no field) — anything written before 0.9.1
  *   v2 — `settingsVersion` recorded; legacy key names folded into current
  *        ones; invalid enum values reset to defaults instead of crashing.
+ *   v3 — auto provider mode, fallback order, and offline template defaults.
  */
-const SETTINGS_VERSION = 2
+const SETTINGS_VERSION = 3
 
 function migrateSettings(input) {
   const src = input && typeof input === 'object' && !Array.isArray(input) ? input : {}
@@ -26,6 +27,11 @@ function migrateSettings(input) {
   }
 
   if (out.aiProvider !== undefined && out.aiProvider !== 'gemini' && out.aiProvider !== 'opencode') delete out.aiProvider
+  const aiModes = ['auto', 'gemini', 'zen', 'openrouter', 'ollama', 'lmstudio', 'template']
+  if (!out.aiMode) out.aiMode = out.aiProvider === 'gemini' ? 'gemini' : out.aiProvider === 'opencode' ? 'openrouter' : 'auto'
+  if (!aiModes.includes(out.aiMode)) out.aiMode = 'auto'
+  if (!Array.isArray(out.fallbackOrder) || !out.fallbackOrder.length) out.fallbackOrder = ['gemini', 'zen', 'ollama', 'lmstudio', 'template']
+  out.fallbackOrder = out.fallbackOrder.filter((value, index, list) => aiModes.includes(value) && list.indexOf(value) === index)
   if (out.hardwareEncoding !== undefined && out.hardwareEncoding !== 'auto' && out.hardwareEncoding !== 'off') out.hardwareEncoding = 'auto'
   if (out.autoLaunch !== undefined) out.autoLaunch = Boolean(out.autoLaunch)
   out.settingsVersion = SETTINGS_VERSION

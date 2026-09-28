@@ -679,7 +679,7 @@ export const useProjectStore = create<AppState>()(
           const renderSources = opts.sources ?? renderSourcesForProject(p)
           const cancel = launchRender(
             { ...job, sources: renderSources },
-            (pct) => get().updateRenderJob(pid, job.id, { progressPct: pct, status: 'rendering' }),
+            (pct, status) => get().updateRenderJob(pid, job.id, { progressPct: pct, status: status === 'working' ? 'rendering' : status || 'rendering' }),
             (result) => {
               activeRenderCancels.delete(job.id)
               if (result?.error) {
@@ -704,7 +704,7 @@ export const useProjectStore = create<AppState>()(
           const renderSources = (job.sources as RenderSource[] | undefined) ?? renderSourcesForProject(p)
           const cancel = launchRender(
             { ...job, sources: renderSources },
-            (pct) => get().updateRenderJob(pid, jobId, { progressPct: pct, status: 'rendering' }),
+            (pct, status) => get().updateRenderJob(pid, jobId, { progressPct: pct, status: status === 'working' ? 'rendering' : status || 'rendering' }),
             (result) => {
               activeRenderCancels.delete(jobId)
               if (result?.error) {

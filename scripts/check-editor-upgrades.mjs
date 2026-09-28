@@ -114,6 +114,8 @@ const studio = read('src/screens/Studio.tsx')
 ok(studio.includes("c: 'copy', x: 'cut', v: 'paste', d: 'duplicate'") && studio.includes('<ClipContextMenu') && studio.includes('onContextMenu'), 'hotkeys + timeline and canvas menus wired')
 ok(read('src/screens/studio/StudioTimeline.tsx').includes('if (clip.locked) return'), 'timeline will not drag/trim locked clips')
 ok(read('src/lib/studio/renderer.ts').match(/(ctx|target)\.scale\(clip\.flipX \? -1 : 1, clip\.flipY \? -1 : 1\)/), 'renderer flips')
+ok(read('src/types/project.ts').includes("kind: 'adjustment'") && read('src/state/projectSchema.ts').includes("'adjustment'"), 'adjustment layers are persisted as a known clip kind')
+ok(read('src/lib/studio/renderer.ts').includes("raw.kind === 'adjustment'") && read('src/screens/Studio.tsx').includes('addAdjustmentLayer'), 'adjustment layers use the shared renderer and have a Studio entry point')
 
 /* scenes + variables */
 {
@@ -300,8 +302,15 @@ ok(read('src/lib/studio/renderer.ts').match(/(ctx|target)\.scale\(clip\.flipX \?
   P.drawPhone(c2.ctx, P.PHONE_DESIGNS[0].style, { x: 0, y: 0, w: 540, h: 960 }, 2, 4, () => {})
   ok(c1.log.filter((l) => l.startsWith('closePath')).length > c2.log.filter((l) => l.startsWith('closePath')).length, 'stars only drawn when a rating is entered')
   const r = read('src/lib/studio/renderer.ts')
-  ok((r.match(/drawPhone\(ctx, clip\.phone/g) || []).length === 2, 'renderer uses Phone Studio for media and component clips')
+  ok(r.includes('drawDuoPhone') && r.includes('drawPhone') && r.includes("formFactor === 'duo'"), 'renderer uses single and Duo Phone Studio for media and component clips')
   ok(!/Math\.random|Date\.now|performance\.now/.test(read('src/lib/studio/phone.ts')), 'phone module is pure (no random, no clock)')
+  const duo = P.PHONE_DESIGNS.find((design) => design.id === 'iphone-duo')
+  const d1 = mkCtx(), d2 = mkCtx()
+  let duoMedia = 0
+  P.drawDuoPhone(d1.ctx, duo.style, { x: 0, y: 0, w: 960, h: 960 }, 1.1, 4, () => { duoMedia += 1 })
+  P.drawDuoPhone(d2.ctx, duo.style, { x: 0, y: 0, w: 960, h: 960 }, 1.1, 4, () => {})
+  ok(duo && d1.depth() === 0 && d1.log.join('|') === d2.log.join('|') && duoMedia > 0, 'Duo fold projection is deterministic and paints both editable screens')
+  ok(P.duoFoldAt('fold-out', 0, 4) === 0 && P.duoFoldAt('fold-out', 4, 4) === 180, 'Duo fold-out has deterministic closed/open endpoints')
 }
 
 /* phoneDesign agent op */
