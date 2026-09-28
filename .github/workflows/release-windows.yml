@@ -39,8 +39,14 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      - name: Build application and Windows packages
-        run: npm run dist:win -- --publish never
+      # `npm run build` is a 65-step && chain. Run it through the reporting
+      # runner so a failure names the step that broke (v0.12.0 and v0.13.0 both
+      # died here with a bare exit 1 and no clue which check had failed).
+      - name: Run release checks and build the app
+        run: node scripts/run-checks.mjs
+
+      - name: Package Windows installers
+        run: npx electron-builder --win --publish never
 
       # 0.10.0 shipped a Studio that went white on mount. Boot the PACKAGED
       # app (real preload, real contextBridge) with --disable-gpu, visit every
