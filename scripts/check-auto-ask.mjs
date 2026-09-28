@@ -14,7 +14,7 @@
 import assert from 'node:assert/strict'
 import { readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import esbuild from 'esbuild'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -25,7 +25,7 @@ await esbuild.build({
   entryPoints: [path.join(root, 'src/lib/studio/autoPolishPlan.ts')],
   bundle: true, format: 'esm', platform: 'node', outfile: out, logLevel: 'silent',
 })
-const M = await import(`${out}?v=${Date.now()}`)
+const M = await import(`${pathToFileURL(out).href}?v=${Date.now()}`)
 await rm(out, { force: true })
 
 const clip = (over) => ({ id: Math.random().toString(36).slice(2), kind: 'text', track: 0, startSec: 0, durationSec: 2, ...over })

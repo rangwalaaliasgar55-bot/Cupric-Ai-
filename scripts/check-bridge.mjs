@@ -209,5 +209,26 @@ console.log('\ncheck:bridge passed — the desktop bridge is read-only everywher
   assert.deepEqual(pathnameUsers, [],
     `use fileURLToPath(import.meta.url), not URL.pathname — breaks the Windows release build: ${pathnameUsers.join(', ')}`)
 
-  console.log(`portability check passed — ${files.length} build scripts, 0 using URL.pathname for a filesystem path`)
+  /*
+   * Second instance of the same lesson, found the same way: a gate that
+   * esbuilds a module to a temp file and then dynamic-imports it must convert
+   * the path to a file:// URL first. On Windows the ESM loader reads the "C:"
+   * of a bare path as an unsupported URL scheme. Every gate in the repo did
+   * this correctly except the four added in this session, which is exactly
+   * the kind of drift a sweep catches and a code review does not.
+   */
+  const rawImporters = []
+  for (const f of files) {
+    const src = await readFile(nodePath.default.join(scriptsDir, f), 'utf8')
+    // import(`${somePath}...`) where the interpolated value is not a URL.
+    for (const m of src.matchAll(/await import\(`\$\{(\w+)\}/g)) {
+      const varName = m[1]
+      if (/URL|href|url/i.test(varName)) continue
+      rawImporters.push(`${f} (import\`\${${varName}}\`)`)
+    }
+  }
+  assert.deepEqual(rawImporters, [],
+    `dynamic import() needs pathToFileURL(...).href, not a bare path — breaks the Windows release build: ${rawImporters.join(', ')}`)
+
+  console.log(`portability check passed — ${files.length} build scripts, 0 using URL.pathname for a filesystem path, 0 importing a bare path`)
 }

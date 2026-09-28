@@ -14,7 +14,7 @@
 import assert from 'node:assert/strict'
 import { readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import esbuild from 'esbuild'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -25,7 +25,7 @@ await esbuild.build({
   entryPoints: [path.join(root, 'src/lib/production/productionPlan.ts')],
   bundle: true, format: 'esm', platform: 'node', outfile: out, logLevel: 'silent',
 })
-const P = await import(`${out}?v=${Date.now()}`)
+const P = await import(`${pathToFileURL(out).href}?v=${Date.now()}`)
 await rm(out, { force: true })
 
 /* ——— 1. the spine itself ————————————————————————————————————— */

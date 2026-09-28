@@ -13,7 +13,7 @@
 import assert from 'node:assert/strict'
 import { readFile, rm } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import esbuild from 'esbuild'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -22,7 +22,7 @@ const read = (rel) => readFile(path.join(root, rel), 'utf8')
 async function load(rel, name) {
   const out = path.join(root, `.motion-craft-${name}.mjs`)
   await esbuild.build({ entryPoints: [path.join(root, rel)], bundle: true, format: 'esm', platform: 'node', outfile: out, logLevel: 'silent' })
-  const mod = await import(`${out}?v=${Date.now()}`)
+  const mod = await import(`${pathToFileURL(out).href}?v=${Date.now()}`)
   await rm(out, { force: true })
   return mod
 }
