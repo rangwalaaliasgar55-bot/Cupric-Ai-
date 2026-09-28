@@ -6,7 +6,7 @@ const root = new URL('../', import.meta.url)
 const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
 const index = JSON.parse(await readFile(new URL('resources/packs/index.json', root), 'utf8'))
 assert.equal(index.version, pkg.version, 'bundled pack index must match the application version')
-assert.equal(index.packs.length, 23, 'all 23 resource packs must be indexed')
+assert.equal(index.packs.length, 24, 'all 24 resource packs must be indexed')
 let total = 0
 for (const entry of index.packs) {
   const pack = JSON.parse(await readFile(new URL(`resources/packs/${entry.id}.json`, root), 'utf8'))
@@ -14,7 +14,13 @@ for (const entry of index.packs) {
   assert.equal(pack.items.length, entry.itemCount, `${entry.id} item count must match the index`)
   total += pack.items.length
 }
-assert.equal(total, 4081, 'the complete resource catalogue must be bundled')
+assert.equal(total, 4095, 'the complete resource catalogue must be bundled')
+const tdev = JSON.parse(await readFile(new URL('resources/packs/transitions-dev.json', root), 'utf8'))
+assert.equal(tdev.items.length, 14, 'Transitions.dev: 2 thinking-state + 12 matrix loader presets')
+assert.ok(tdev.items.every((item) => item.data?.nativeAction === 'loader' && item.data?.deterministicExport && item.data?.source === 'https://transitions.dev'), 'Transitions.dev loaders apply natively with attribution')
+const ul = JSON.parse(await readFile(new URL('resources/packs/uselayouts.json', root), 'utf8'))
+assert.equal(ul.items.length, 64, 'uselayouts: the complete 64-item upstream catalogue')
+assert.ok(ul.items.every((item) => item.data?.audit && item.data?.category && item.data?.attribution?.includes('MIT')), 'every uselayouts item carries its audit, category and MIT attribution')
 const dashi = JSON.parse(await readFile(new URL('resources/packs/dashi-motion.json', root), 'utf8'))
 assert.equal(dashi.items.length, 10, 'all dashi-motion distilled skills must be indexed')
 assert.equal(dashi.source, 'https://github.com/chuspeeism/dashi-motion', 'dashi-motion attribution source must be retained')

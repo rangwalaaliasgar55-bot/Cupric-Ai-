@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { ThinkingStates } from '../components/loaders/ThinkingStates'
+import { MatrixLoader } from '../components/loaders/MatrixLoader'
 import { StudioProPanel } from './studio/StudioProPanel'
 import { ClipContextMenu } from './studio/ClipContextMenu'
 import { applyClipAction, getClipboard, setClipboard, type ClipActionId } from '../lib/studio/clipActions'
@@ -32,6 +34,7 @@ import {
   Shapes,
   SlidersHorizontal,
   MousePointerClick,
+  Loader as LoaderIcon,
   Square,
   Type as TypeIcon,
   Volume2,
@@ -40,9 +43,10 @@ import {
   ZoomOut,
 } from 'lucide-react'
 import { ShapePicker } from './studio/ShapePicker'
+import { LoaderPicker } from './studio/LoaderPicker'
 import { fontChoicesForAgent } from '../lib/studio/fontStyles'
 import { userFontFamilies, userFontsReady } from '../lib/studio/userFonts'
-import { addCursorTo, addShape as addShapeKit } from '../lib/studio/motionKit'
+import { addCursorTo, addLoader, addShape as addShapeKit } from '../lib/studio/motionKit'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { NoProject } from '../components/NoProject'
@@ -124,6 +128,7 @@ export function Studio() {
   const [muted, setMuted] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [shapeOpen, setShapeOpen] = useState(false)
+  const [loaderOpen, setLoaderOpen] = useState(false)
   useEffect(() => { void userFontsReady() }, [])
   const [zoom, setZoom] = useState(3)
   const [importing, setImporting] = useState(false)
@@ -939,6 +944,14 @@ export function Studio() {
     if (r.clipId) setSelectedId(r.clipId)
   }
 
+  function addLoaderAt(presetId: string) {
+    const r = addLoader(doc, presetId, Math.round(time * 100) / 100)
+    setLoaderOpen(false)
+    if (!r.changed) { pushToast('error', r.reason ?? 'Loader not added'); return }
+    patchStudio(projectId, { clips: r.doc.clips, trackCount: r.doc.trackCount }, 'Add loader')
+    if (r.clipId) setSelectedId(r.clipId)
+  }
+
   /** Cursor click on the selected clip — refuses with the reason when a pointer would be noise. */
   function addCursorClick(force = false) {
     if (!selectedId) { pushToast('info', 'Select the button, toggle or component the cursor should click.'); return }
@@ -1278,6 +1291,12 @@ export function Studio() {
           </Button>
           {shapeOpen && <ShapePicker onPick={addShapeAt} onClose={() => setShapeOpen(false)} />}
         </div>
+        <div className="relative">
+          <Button size="sm" variant="outline" onClick={() => setLoaderOpen((v) => !v)} disabled={exporting} aria-expanded={loaderOpen} title="Thinking states and matrix dot loaders (Transitions.dev), editable and export-exact">
+            <LoaderIcon size={13} /> Loader
+          </Button>
+          {loaderOpen && <LoaderPicker onPick={addLoaderAt} onClose={() => setLoaderOpen(false)} />}
+        </div>
         <Button size="sm" variant="outline" onClick={(e) => addCursorClick(e.shiftKey)} disabled={exporting} title="Animated cursor that clicks the selected clip — only added where an interaction needs showing">
           <MousePointerClick size={13} /> Cursor
         </Button>
@@ -1443,8 +1462,8 @@ export function Studio() {
       </form>
       {agentPlanning && (
         <div className="flex shrink-0 items-center gap-3 border-b border-line bg-accent/5 px-6 py-2 text-xs text-muted" role="status" aria-live="polite">
-          <Loader2 size={13} className="animate-spin text-accent-text" />
-          <span className="text-text">{agentPhase}</span>
+          <MatrixLoader variant="orbit" tone="lime" label="Planning the edit" />
+          <ThinkingStates states={[agentPhase || 'Planning the edit']} baseColor="var(--color-text)" />
           <span>· Live AI has at most 10 seconds, then Cupric instantly switches to its local editor.</span>
         </div>
       )}
@@ -1572,6 +1591,7 @@ export function Studio() {
 
       {exporting && (
         <div className="flex shrink-0 items-center gap-3 border-b border-line bg-panel px-6 py-2">
+          <MatrixLoader variant="scan" label={`Exporting, ${Math.round(exportPct ?? 0)} percent`} />
           <ProgressBar pct={exportPct ?? 0} className="flex-1" />
           <span className="font-mono text-xs text-muted tabular-nums">{Math.round(exportPct ?? 0)}%</span>
           <span className="text-xs text-muted">

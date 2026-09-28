@@ -47,6 +47,8 @@ export type ResourceDisposition = 'clip' | 'scene' | 'lab' | 'template' | 'rende
  * drop on the stage) produces — see resourceApply.ts, which implements it.
  */
 export function resourceDisposition(kind: string, item?: { source?: string; data?: Record<string, unknown> }): ResourceDisposition {
+  if (item?.data?.referenceOnly === true) return 'reference'
+  if (item?.data?.nativeAction === 'loader') return 'clip'
   if (kind === 'component') return item && (item.source || item.data?.source || item.data?.provider) ? 'scene' : 'lab'
   if (kind === 'saas-template') return 'template'
   if (['glass', 'background', 'animation', 'effect', 'transition'].includes(kind)) return 'clip'

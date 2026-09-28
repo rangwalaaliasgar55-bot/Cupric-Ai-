@@ -1,0 +1,36 @@
+---
+title: Pricing Card
+description: A narrow plan picker with monthly/yearly toggle, rolling prices, and a popular badge.
+---
+
+## Features
+
+- **Period toggle**: Monthly and yearly share a sliding highlight.
+- **Rolling numbers**: Prices tick with NumberFlow instead of snapping.
+- **Plan select**: Plus / Pro / etc. get a border and check when chosen.
+- **Feature lists**: Short bullets under each plan — space, recovery, the usual.
+- **Popular tag**: One plan can wear the badge without extra layout.
+
+## Usage
+
+Edit the `plans` array for names, prices, and bullets. Keep the column around 320–384px — it’s a card, not a full pricing table. Wire the CTA to checkout. Yearly should be the cheaper unit price if you want the toggle to feel honest.
+
+```tsx
+import PricingCard from "@/components/pricing-card";
+
+export default function Page() {
+  return (
+    <div className="flex items-center justify-center py-10 w-full">
+      <PricingCard />
+    </div>
+  );
+}
+```
+
+## Where to use
+
+- SaaS pricing pages
+- Waitlist or upgrade modals
+- Billing settings
+- Product marketing mid-page
+- Comparison sections next to a FAQ

@@ -1,0 +1,36 @@
+---
+title: Empty Testimonial
+description: A “Wall of Love” empty state — click the folder and three notes spring out, ready to add the first quote.
+---
+
+## Features
+
+- **Empty, on purpose**: Headline plus a closed folder instead of a blank gray box.
+- **Papers fly out**: Click and three sheets fan up with a spring, like pulling notes from a file.
+- **Add affordance**: A plus sits in the scene so the next step is obvious.
+- **Hover heartbeat**: The “Love” chip and heart scale a little when you linger.
+- **Folder SVG**: Custom back and front so it feels like stationery, not a UI widget.
+
+## Usage
+
+Use it when you have zero testimonials yet — waitlists, new products, first customers. Click is the whole interaction. Swap the heading if “Wall of Love” isn’t your voice. Don’t show this next to a full quote carousel; pick one empty state.
+
+```tsx
+import EmptyTestimonial from "@/components/empty-testimonial";
+
+export default function Page() {
+  return (
+    <div className="h-screen flex items-center justify-center">
+      <EmptyTestimonial />
+    </div>
+  );
+}
+```
+
+## Where to use
+
+- Pre-launch landing pages
+- New SaaS dashboards with no reviews yet
+- Waitlist thank-you screens
+- Community pages before the first member posts
+- Onboarding that asks for a first testimonial

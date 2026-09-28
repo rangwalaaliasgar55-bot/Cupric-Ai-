@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { LoaderPreview } from '../studio/LoaderPreview'
+import type { StudioLoaderClip } from '../../types/project'
+import { ThinkingStates } from '../../components/loaders/ThinkingStates'
+import { MatrixLoader } from '../../components/loaders/MatrixLoader'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   Check,
@@ -327,7 +331,7 @@ export function PackBrowser() {
 
       {loading ? (
         <div className="flex items-center gap-2 py-10 text-sm text-muted">
-          <Loader2 size={14} className="animate-spin" /> Loading {active}…
+          <MatrixLoader variant="scan" label={`Loading ${active}`} /> <ThinkingStates states={[`Loading ${active}…`]} />
         </div>
       ) : !pack ? (
         <div className="rounded-xl border border-dashed border-line px-6 py-10 text-center text-sm text-muted">
@@ -366,6 +370,22 @@ export function PackBrowser() {
                   }
                   className="group flex cursor-grab flex-col gap-2.5 cu-panel p-3.5 transition-colors duration-150 hover:border-text/25 active:cursor-grabbing"
                 >
+                  {item.data?.nativeAction === 'loader' && item.data?.loader ? (
+                    <LoaderPreview clip={item.data.loader as Partial<StudioLoaderClip>} width={224} height={72} label={`${item.name} preview`} />
+                  ) : typeof item.data?.posterUrl === 'string' ? (
+                    <img
+                      src={item.data.posterUrl}
+                      alt={`${item.name} preview (from ${String(item.data.provider ?? 'source')})`}
+                      loading="lazy"
+                      className="h-24 w-full rounded-lg border border-line bg-panel-alt object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none' }}
+                    />
+                  ) : null}
+                  {typeof item.data?.audit === 'object' && item.data.audit && (
+                    <p className="text-xs text-muted" title={String((item.data.audit as { cupricEquivalent?: string }).cupricEquivalent ?? '')}>
+                      {(item.data.audit as { interaction?: string }).interaction} · {(item.data.audit as { animation?: string }).animation} · {String(item.data.license ?? '')}
+                    </p>
+                  )}
                   {item.css && (
                     <div
                       className="h-14 w-full rounded-lg border border-line"

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { MatrixLoader } from '../components/loaders/MatrixLoader'
 import { Download, FolderOpen, Rocket, Square, RectangleHorizontal, RectangleVertical, X } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
@@ -259,6 +260,7 @@ function JobRow({
 
       {(job.status === 'rendering' || job.status === 'working' || job.status === 'queued' || job.status === 'paused') && (
         <div className="flex items-center gap-3">
+          <MatrixLoader variant={job.status === 'queued' ? 'pulse' : 'scan'} disabled={job.status === 'paused'} label={`Render ${job.status}`} />
           <ProgressBar pct={job.progressPct} />
           <span className="w-10 shrink-0 text-right font-mono text-xs tabular-nums text-muted">
             {Math.round(job.progressPct)}%

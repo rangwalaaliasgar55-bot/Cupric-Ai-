@@ -26,7 +26,7 @@ type MissingView = Exclude<View, (typeof VIEWS)[number]>
 const _allViewsListed: MissingView extends never ? true : MissingView = true
 void _allViewsListed
 
-export const KNOWN_CLIP_KINDS = ['video', 'image', 'audio', 'text', 'background', 'adjustment', 'overlay', 'glass', 'sticker', 'sequence', 'shape', 'cursor'] as const satisfies readonly StudioClip['kind'][]
+export const KNOWN_CLIP_KINDS = ['video', 'image', 'audio', 'text', 'background', 'adjustment', 'overlay', 'glass', 'sticker', 'sequence', 'shape', 'cursor', 'loader'] as const satisfies readonly StudioClip['kind'][]
 type MissingKind = Exclude<StudioClip['kind'], (typeof KNOWN_CLIP_KINDS)[number]>
 const _allKindsListed: MissingKind extends never ? true : MissingKind = true
 void _allKindsListed
@@ -114,6 +114,7 @@ export function validatePersistedState(raw: unknown, opts: Options): ValidationR
       timeline: objArray('timeline clip').transform(withIds('tl')).catch([]),
       renderJobs: objArray('render job').transform(withIds('job')).catch([]),
       studio: z.unknown(),
+      production: z.unknown(),
       brandKit: BrandKitSchema.catch({ colors: ['#C8F542'], font: 'Inter', logoDataUrl: null }),
     })
     .passthrough()

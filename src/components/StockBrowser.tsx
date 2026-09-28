@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { ThinkingStates } from './loaders/ThinkingStates'
+import { MatrixLoader } from './loaders/MatrixLoader'
 import { Download, ExternalLink, Loader2, Search, ShieldCheck } from 'lucide-react'
 import { Badge } from './Badge'
 import { Button } from './Button'
@@ -108,6 +110,12 @@ export function StockBrowser() {
         <select className="cu-input w-32" value={orientation} onChange={(event) => setOrientation(event.target.value)} aria-label="Stock orientation"><option value="all">All shapes</option><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option></select>
         <Button variant="primary" type="submit" disabled={busy}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />} Search</Button>
       </form>
+      {busy && results.length === 0 && (
+        <div className="flex items-center gap-2 rounded-md border border-line bg-panel-alt/40 px-2.5 py-2 text-xs" data-testid="stock-searching">
+          <MatrixLoader variant="twinkle" label="Searching stock" />
+          <ThinkingStates states={[`Searching ${PROVIDERS.find((item) => item.id === provider)?.label ?? 'stock'}${query.trim() ? ` for “${query.trim()}”` : ''}`]} />
+        </div>
+      )}
       {keyRequired && <p className="rounded-md border border-line bg-panel-alt/50 px-2.5 py-2 text-xs text-muted">{provider === 'pixabay' ? 'Pixabay' : 'Pexels'} is locked until you add your own key in Settings → Stock or configure the owner proxy. Keyless Openverse and Picsum are ready now.</p>}
       {message && <p className="rounded-md border border-danger/30 bg-danger/5 px-2.5 py-2 text-xs text-muted" role="status">{message}</p>}
       {observedQuota && <p className="rounded-md border border-line bg-panel-alt/40 px-2.5 py-2 text-[10px] text-muted" role="status">Live provider quota: {observedQuota.remaining ?? 'unknown'} remaining of {observedQuota.limit ?? 'unknown'}{observedQuota.reset ? ` · resets ${observedQuota.reset}` : ''}</p>}

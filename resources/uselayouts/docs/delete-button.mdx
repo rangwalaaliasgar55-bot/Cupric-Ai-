@@ -1,0 +1,32 @@
+---
+title: Delete Button
+description: A red delete control that morphs into a countdown with undo before anything is gone.
+---
+
+## Features
+
+- **Idle to armed**: One tap turns the soft button into a hard red “delete” state.
+- **Countdown ring**: A timer ticks down so accidental taps have a window to recover.
+- **Undo in place**: The same control becomes “Cancel Deletion” — no extra modal.
+- **Character morph**: Labels swap with a small blur so the change feels like one button, not two.
+- **Locked while animating**: Clicks are ignored mid-transition so you can’t double-fire.
+
+## Usage
+
+Use it for account deletion, trash, or any action you can’t easily reverse. Wire the countdown finish to your real delete. Keep it away from primary CTAs. Labels and duration live in the component — change `deleteText` / `cancelText` / countdown there.
+
+```tsx
+import DeleteButton from "@/components/delete-button";
+
+export default function Page() {
+  return <DeleteButton />;
+}
+```
+
+## Where to use
+
+- Account and team settings
+- Trash or archive confirms
+- Billing cancellation
+- Admin destructive actions
+- File or project delete in a dashboard

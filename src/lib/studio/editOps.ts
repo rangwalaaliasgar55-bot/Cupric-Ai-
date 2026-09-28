@@ -3,7 +3,8 @@ import { VIDEO_FONT_FAMILIES } from './videoFonts'
 import { isUserFont } from './userFonts'
 import { fontshareFont } from './fontStyles'
 import { SHAPES, shapeById } from './shapes'
-import { addCursorTo, addShape as addShapeKit } from './motionKit'
+import { addCursorTo, addLoader, addShape as addShapeKit } from './motionKit'
+import { LOADER_PRESETS, loaderPreset } from './loaders'
 import { closeGaps as closeGapsOp, addMarker as addMarkerOp, rippleDelete as rippleDeleteOp } from './timelineOps'
 import { LOGO_REVEALS, PRODUCT_PRESETS, buildTestimonialGrid, logoRevealKeyframes, withProductPreset, type LogoReveal, type ProductPreset } from './layouts'
 import { TEXT_PRESETS, applyTextPreset, captionsFromTranscript } from './textTools'
@@ -62,6 +63,7 @@ export type StudioEditOp =
     }
   | { type: 'applyMotion'; clipId: string; motion: MotionSpec }
   /** Vector shape from the shape library (see shapes.ts `use` for when). */
+  | { type: 'addLoader'; preset: string; startSec: number; durationSec: number; states?: string[]; x?: number; y?: number }
   | { type: 'addShape'; shape: string; startSec: number; durationSec: number; x?: number; y?: number; w?: number; fill?: string | null; stroke?: string | null; anim?: StudioShapeAnim; label?: string }
   /** Animated cursor clicking/hovering a clip — only where an interaction needs explaining. */
   | { type: 'addCursor'; clipId: string; action?: 'click' | 'double-click' | 'hover' | 'drag'; force?: boolean }
@@ -97,7 +99,7 @@ const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', '
 const BLEND_MODES = new Set<StudioBlendMode>(['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'soft-light', 'difference', 'add'])
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
 const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out', 'back-out', 'back-in', 'expo-out', 'expo-in-out', 'elastic-out', 'hold', 'bezier'])
-const KEYFRAME_SCALABLE = ['shape', 'overlay', 'sticker', 'video', 'image', 'text', 'glass']
+const KEYFRAME_SCALABLE = ['loader', 'shape', 'overlay', 'sticker', 'video', 'image', 'text', 'glass']
 
 /** Default motion for an agent-placed component, by what kind of component it is. */
 export function defaultComponentMotion(slug: string): MotionSpec {
@@ -207,6 +209,13 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       return { type, clipId, ...(finite(op.track) ? { track: op.track } : {}), ...(finite(op.startSec) ? { startSec: op.startSec } : {}) }
     }
     if (type === 'deleteClip') return { type, clipId: requireClip() }
+    if (type === 'addLoader') {
+      if (typeof op.preset !== 'string' || !loaderPreset(op.preset)) throw new Error(`Unknown loader preset “${String(op.preset)}” — use one of: ${LOADER_PRESETS.map((x) => x.id).join(', ')}`)
+      if (![op.startSec, op.durationSec].every(finite) || (op.startSec as number) < 0 || (op.durationSec as number) < 0.2) throw new Error(`Operation ${index + 1} has invalid timing`)
+      for (const k of ['x', 'y'] as const) if (op[k] !== undefined && (!finite(op[k]) || (op[k] as number) < 0 || (op[k] as number) > 1)) throw new Error(`Loader ${k} must be 0–1`)
+      if (op.states !== undefined && (!Array.isArray(op.states) || op.states.length < 1 || op.states.length > 8 || op.states.some((s: unknown) => typeof s !== 'string' || !s.trim() || s.length > 60))) throw new Error('Loader states must be 1–8 non-empty lines of at most 60 characters')
+      return { type, preset: op.preset, startSec: op.startSec as number, durationSec: op.durationSec as number, ...(op.states ? { states: (op.states as string[]).map((s) => s.trim()) } : {}), ...(op.x !== undefined ? { x: op.x as number } : {}), ...(op.y !== undefined ? { y: op.y as number } : {}) }
+    }
     if (type === 'addShape') {
       if (typeof op.shape !== 'string' || !shapeById(op.shape)) throw new Error(`Unknown shape “${String(op.shape)}” — use one of: ${SHAPES.map((x) => x.id).join(', ')}`)
       if (![op.startSec, op.durationSec].every(finite) || (op.startSec as number) < 0 || (op.durationSec as number) < 0.2) throw new Error(`Operation ${index + 1} has invalid timing`)
@@ -420,6 +429,7 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'patchClip') return `Change ${name}: ${Object.entries(op.patch).map(([key, value]) => `${key} → ${value}`).join(', ')}`
   if (op.type === 'moveClip') return `Move ${name}${op.track !== undefined ? ` to T${op.track + 1}` : ''}${op.startSec !== undefined ? ` at ${op.startSec.toFixed(2)}s` : ''}`
   if (op.type === 'deleteClip') return `Delete ${name}`
+  if (op.type === 'addLoader') return `Add ${loaderPreset(op.preset)?.name ?? op.preset} at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s`
   if (op.type === 'addShape') return `Add ${shapeById(op.shape)?.name ?? op.shape} at ${op.startSec.toFixed(2)}s${op.anim ? ` · ${op.anim}` : ''}`
   if (op.type === 'addCursor') return `Add a cursor ${op.action ?? 'click'} on clip ${op.clipId}`
   if (op.type === 'addText') return `Add text “${op.text}” at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
@@ -474,6 +484,10 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       }
       return patched
     }) }
+    else if (op.type === 'addLoader') {
+      const r = addLoader(next, op.preset, op.startSec, { durationSec: op.durationSec, ...(op.states ? { states: op.states } : {}), ...(op.x !== undefined ? { x: op.x } : {}), ...(op.y !== undefined ? { y: op.y } : {}) })
+      if (r.changed) next = r.doc
+    }
     else if (op.type === 'addShape') {
       const r = addShapeKit(next, op.shape, op.startSec, { durationSec: op.durationSec, ...(op.x !== undefined ? { x: op.x } : {}), ...(op.y !== undefined ? { y: op.y } : {}), ...(op.w !== undefined ? { w: op.w } : {}), ...(op.fill !== undefined ? { fill: op.fill } : {}), ...(op.stroke !== undefined ? { stroke: op.stroke } : {}), ...(op.anim ? { anim: op.anim } : {}), ...(op.label ? { label: op.label } : {}) })
       if (r.changed) next = r.doc

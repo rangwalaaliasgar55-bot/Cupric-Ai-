@@ -11,6 +11,7 @@ import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { EFFECTS } from '../lib/effects'
 import { GRADIENT_PRESETS } from '../lib/gradients'
 import { PackBrowser } from './library/PackBrowser'
+import { LibrariesDev } from './library/LibrariesDev'
 import { copyText, relTime } from '../lib/utils'
 
 /* Built-in starter library: rundowns, arena, presets, effects, backgrounds. */
@@ -236,6 +237,7 @@ export function Library() {
         </div>
 
         <PackBrowser />
+        <LibrariesDev />
 
         <div className="border-t border-line pt-5">
           <h2 className="text-sm font-semibold">Project starters</h2>

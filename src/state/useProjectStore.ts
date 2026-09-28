@@ -211,6 +211,8 @@ type AppState = {
 
   /* Studio — the in-app editor */
   patchStudio: (pid: string, patch: Partial<StudioDoc>, label?: string) => void
+  /** Save the production session (and optionally the Studio doc) as ONE undo step. */
+  commitProduction: (pid: string, session: unknown, label: string, studio?: StudioDoc) => void
   addStudioClip: (pid: string, clip: StudioClip) => void
   updateStudioClip: (pid: string, clipId: string, patch: Partial<StudioClip>) => void
   /**
@@ -477,6 +479,8 @@ export const useProjectStore = create<AppState>()(
           }))
         },
         setActiveProject: (activeProjectId) => set({ activeProjectId }),
+        commitProduction: (pid, session, label, studio) =>
+          updateProject(pid, (p) => ({ ...p, production: session, ...(studio ? { studio } : {}) }), label),
         renameProject: (id, name) => updateProject(id, (p) => ({ ...p, name: name || 'Untitled project' }), 'Rename project'),
 
         addBriefMessage: (pid, msg) =>

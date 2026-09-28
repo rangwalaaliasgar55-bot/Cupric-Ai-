@@ -4,7 +4,7 @@ import type { StudioAspect, StudioClip, StudioDoc } from '../../types/project'
 import { Button } from '../../components/Button'
 import { applyBrandKit, buildVariants, reframeForAspect, socialMetadata, speedRamp, SPEED_RAMPS, type BrandKit, type SpeedRampId } from '../../lib/studio/creativeTools'
 import { simpleIconSlug, simpleIconUrl } from '../../lib/simpleIcons'
-import { synthesizeVoiceover } from '../../lib/voice'
+import { synthesizeVoiceover, type VoiceoverLanguage } from '../../lib/voice'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { uid, copyText } from '../../lib/utils'
 import { captureStill } from '../../lib/studio/export'
@@ -49,6 +49,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
   const [logoBusy, setLogoBusy] = useState(false)
   const [script, setScript] = useState('')
   const [rate, setRate] = useState(0)
+  const [ttsLang, setTtsLang] = useState<VoiceoverLanguage>('auto')
   const [ttsBusy, setTtsBusy] = useState(false)
   const [variantCount, setVariantCount] = useState(3)
   const [aspect, setAspect] = useState<StudioAspect>(doc.aspect === '9:16' ? '16:9' : '9:16')
@@ -157,6 +158,11 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
 
       <Block icon={Mic} title="AI voiceover (offline)">
         <textarea className={`${inputCx} min-h-20`} placeholder="Write the narration. Your computer’s built-in voice reads it — no internet, no API key." value={script} onChange={(e) => setScript(e.target.value)} aria-label="Voiceover script" maxLength={5000} />
+        <label className="flex items-center gap-2 text-xs text-muted">Language
+          <select className={inputCx} value={ttsLang} onChange={(e) => setTtsLang(e.target.value as VoiceoverLanguage)} aria-label="Voiceover language">
+            <option value="auto">Auto (Devanagari → Hindi)</option><option value="en">English</option><option value="hi">Hindi (हिन्दी)</option>
+          </select>
+        </label>
         <label className="flex items-center gap-2 text-xs text-muted">Pace
           <input type="range" min={-6} max={6} value={rate} onChange={(e) => setRate(Number(e.target.value))} className="flex-1" aria-label="Voiceover pace" />
           <span className="w-8 text-right font-mono tabular-nums">{rate > 0 ? `+${rate}` : rate}</span>
@@ -165,13 +171,13 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
           if (!onImportFiles) { setMsg('Voiceover import is not available here.'); return }
           setTtsBusy(true)
           try {
-            const { file, engine } = await synthesizeVoiceover(script, { rate })
+            const { file, engine, language } = await synthesizeVoiceover(script, { rate, language: ttsLang })
             const dt = new DataTransfer(); dt.items.add(file)
             onImportFiles(dt.files)
-            setMsg(`Voiceover generated with ${engine} and added at the playhead as an audio clip.`)
+            setMsg(`${language === 'hi' ? 'Hindi' : 'English'} voiceover generated offline with ${engine} and added at the playhead as an audio clip.`)
           } catch (err) { setMsg(err instanceof Error ? err.message : String(err)) } finally { setTtsBusy(false) }
         }}>{ttsBusy ? 'Speaking…' : 'Generate voiceover'}</Button>
-        <p className="text-[11px] text-muted">Windows Speech · macOS voices · eSpeak NG on Linux. Tip: “Auto-captions” can then caption it.</p>
+        <p className="text-[11px] text-muted">English and Hindi, fully offline: Piper (if you add a voice model), else Windows Speech, macOS voices or eSpeak NG. If a Hindi voice is missing, Cupric tells you how to add it and never reads Hindi with an English voice. Tip: “Auto-captions” can then caption it.</p>
       </Block>
 
       <Block icon={Layers} title="Batch variants">

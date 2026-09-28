@@ -1,0 +1,460 @@
+{
+  "id": "transitions-dev",
+  "name": "Transitions.dev — thinking states & matrix loader",
+  "description": "14 loader presets rebuilt as native, export-exact Studio clips with editable text, timing, colour, easing, loop and reduced-motion props.",
+  "version": "0.11.0",
+  "source": "https://transitions.dev",
+  "license": "Original Cupric re-implementation; upstream snippets kept for reference with attribution (resources/transitions-dev/ATTRIBUTION.md).",
+  "items": [
+    {
+      "id": "transitions-dev-thinking-states",
+      "kind": "component",
+      "name": "Thinking states",
+      "description": "Rotating status lines with a blur-slide swap and a travelling shimmer. Editable text, timing, colours and easing.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p28",
+        "referencePath": "resources/transitions-dev/thinking-states.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "thinking-states",
+        "loader": {
+          "loader": "thinking"
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "thinking",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-thinking-states-agent",
+      "kind": "component",
+      "name": "Thinking states · agent steps",
+      "description": "Agent-style status copy (planning, searching, writing) on a lime shimmer. Replace the lines with the real steps of your video.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p28",
+        "referencePath": "resources/transitions-dev/thinking-states.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "thinking-states-agent",
+        "loader": {
+          "loader": "thinking",
+          "states": [
+            "Planning the edit",
+            "Searching references",
+            "Writing captions"
+          ],
+          "highlightColor": "#C8F542"
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "thinking",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-scan",
+      "kind": "component",
+      "name": "Matrix loader · scan",
+      "description": "Columns light up left to right.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-scan",
+        "loader": {
+          "loader": "matrix",
+          "variant": "scan"
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-twinkle",
+      "kind": "component",
+      "name": "Matrix loader · twinkle",
+      "description": "Cells twinkle in a fixed scattered order.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-twinkle",
+        "loader": {
+          "loader": "matrix",
+          "variant": "twinkle"
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-orbit",
+      "kind": "component",
+      "name": "Matrix loader · orbit",
+      "description": "A light runs around the outer ring; the centre stays still.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-orbit",
+        "loader": {
+          "loader": "matrix",
+          "variant": "orbit"
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-pulse",
+      "kind": "component",
+      "name": "Matrix loader · pulse",
+      "description": "The inner square pulses, then the outer cells answer.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-pulse",
+        "loader": {
+          "loader": "matrix",
+          "variant": "pulse"
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-rounded",
+      "kind": "component",
+      "name": "Matrix loader · rounded",
+      "description": "Scan with the four corners removed for a softer silhouette.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-rounded",
+        "loader": {
+          "loader": "matrix",
+          "variant": "scan",
+          "rounded": true
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-monochrome",
+      "kind": "component",
+      "name": "Matrix loader · monochrome",
+      "description": "Neutral greys from the Cupric palette.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-monochrome",
+        "loader": {
+          "loader": "matrix",
+          "variant": "twinkle",
+          "baseColor": "#1C1C24",
+          "activeColor": "#F4F1EA"
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-lime",
+      "kind": "component",
+      "name": "Matrix loader · lime accent",
+      "description": "Cupric lime active cells — use once per frame.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-lime",
+        "loader": {
+          "loader": "matrix",
+          "variant": "orbit",
+          "baseColor": "#2A2A33",
+          "activeColor": "#C8F542"
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-reduced",
+      "kind": "component",
+      "name": "Matrix loader · reduced motion",
+      "description": "Static grid: the honest still state for reduced-motion exports or disabled UI.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-reduced",
+        "loader": {
+          "loader": "matrix",
+          "variant": "scan",
+          "reducedMotion": true
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-compact",
+      "kind": "component",
+      "name": "Matrix loader · compact",
+      "description": "Small, for a corner status or a lower third.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-compact",
+        "loader": {
+          "loader": "matrix",
+          "variant": "scan",
+          "size": 0.006
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-large",
+      "kind": "component",
+      "name": "Matrix loader · large",
+      "description": "A hero-sized grid for a loading beat.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-large",
+        "loader": {
+          "loader": "matrix",
+          "variant": "pulse",
+          "size": 0.03
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-inline",
+      "kind": "component",
+      "name": "Matrix loader · inline",
+      "description": "Text-height grid to sit next to a caption.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-inline",
+        "loader": {
+          "loader": "matrix",
+          "variant": "twinkle",
+          "size": 0.008,
+          "x": 0.3
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    },
+    {
+      "id": "transitions-dev-matrix-fullscreen",
+      "kind": "component",
+      "name": "Matrix loader · full-screen",
+      "description": "Full-frame loading beat on the app background colour.",
+      "data": {
+        "provider": "transitions.dev",
+        "source": "https://transitions.dev",
+        "upstreamPattern": "p33",
+        "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
+        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "nativeAction": "loader",
+        "loaderPreset": "matrix-fullscreen",
+        "loader": {
+          "loader": "matrix",
+          "variant": "orbit",
+          "size": 0.035,
+          "backdrop": true
+        },
+        "editable": true,
+        "agentUsable": true,
+        "deterministicExport": true,
+        "previewable": true
+      },
+      "tags": [
+        "loader",
+        "transitions.dev",
+        "matrix",
+        "loading",
+        "status",
+        "empty state"
+      ]
+    }
+  ]
+}

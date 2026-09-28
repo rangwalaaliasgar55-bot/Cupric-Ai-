@@ -2551,6 +2551,7 @@ OPERATIONS:
   Text animations (content-level): none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
   Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
 - {"type":"addText","text":string,"track":number,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"fontSizePct"?:number,"weight"?:400|600|800,"align"?:"left"|"center"|"right","color"?:"#rrggbb","fontFamily"?:string,"anim"?:string,"highlightWord"?:string,"motion"?:{...as applyMotion}}
+- {"type":"addLoader","preset":"thinking-states"|"thinking-states-agent"|"matrix-scan"|"matrix-twinkle"|"matrix-orbit"|"matrix-pulse"|"matrix-rounded"|"matrix-monochrome"|"matrix-lime"|"matrix-reduced"|"matrix-compact"|"matrix-large"|"matrix-inline"|"matrix-fullscreen","startSec":number,"durationSec":number,"states"?:string[] (1-8 real process steps from the brief, never invented results),"x"?:0..1,"y"?:0..1} — Transitions.dev loader drawn natively; only for a genuine loading/thinking beat in the story
 - {"type":"addShape","shape":id,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"w"?:0.01..1.5 (width, fraction of frame),"fill"?:"#rrggbb"|null,"stroke"?:"#rrggbb"|null,"anim"?:"draw-on"|"draw-then-fill"|"pop"|"grow"|"spin-in"|"pulse"|"wiggle"|"none","label"?:string}
   Shapes: rectangle rounded-rect pill circle ellipse ring arc semicircle triangle diamond pentagon hexagon octagon polygon parallelogram trapezoid star sparkle burst seal sunburst arrow block-arrow curved-arrow loop-arrow double-arrow chevron elbow-arrow speech-bubble thought-bubble callout-box lower-third underline circle-scribble strike highlight-bar brackets frame button progress-bar toggle play browser check cross plus heart lightning pin quote-marks cloud line wave zigzag spiral blob.
   How editors use them: curved-arrow/elbow-arrow point FROM a caption TO the thing (before→after); underline/circle-scribble/highlight-bar mark ONE key word or number (draw-on, 0.4s); burst/seal/sparkle for price/NEW badges (pop); check/cross for do-vs-don't; lower-third/callout-box behind names; brackets/frame to isolate a detail. One accent shape per beat; match the brand accent; keep stroke 6–10px.
@@ -3336,7 +3337,14 @@ async function probeWindowsSpeech() {
   return windowsSpeechAvailable
 }
 
-ipcMain.handle('voice:tts', async (_event, payload) => tts.synthesize(payload))
+function piperDirs() {
+  return [
+    process.resourcesPath ? path.join(process.resourcesPath, 'piper') : null,
+    userDataPath('piper'),
+    path.join(__dirname, '..', 'vendor', 'piper'),
+  ].filter(Boolean)
+}
+ipcMain.handle('voice:tts', async (_event, payload) => tts.synthesize(payload, process.platform, { piperDirs: piperDirs() }))
 
 ipcMain.handle('voice:status', async () => {
   const whisper = whisperSetup()
@@ -3346,6 +3354,9 @@ ipcMain.handle('voice:status', async () => {
     windows,
     engine: whisper ? 'whisper' : windows ? 'windows' : null,
     whisperModel: whisper ? path.basename(whisper.model) : null,
+    // Offline voiceover languages: Piper models found (en/hi); the OS voice is probed on use.
+    piper: (() => { const p = tts.piperSetup({ platform: process.platform, dirs: piperDirs() }); return p ? { en: Boolean(p.models.en), hi: Boolean(p.models.hi) } : null })(),
+    piperFolder: userDataPath('piper'),
   }
 })
 

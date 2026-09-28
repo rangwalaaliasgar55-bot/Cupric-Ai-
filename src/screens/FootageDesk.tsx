@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ThinkingStates } from '../components/loaders/ThinkingStates'
+import { MatrixLoader } from '../components/loaders/MatrixLoader'
 import { Check, ChevronRight, Clapperboard, Film, Loader2, Square, RectangleHorizontal, RectangleVertical, Upload, X } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
@@ -151,8 +153,8 @@ export function FootageDesk() {
         >
           {uploading ? (
             <>
-              <Loader2 size={18} className="motion-safe:animate-spin text-accent-text" />
-              <div className="text-sm font-medium">Scanning {uploading.name} for silences…</div>
+              <MatrixLoader variant="twinkle" tone="lime" size="large" label={`Analysing ${uploading.name}`} />
+              <div className="text-sm font-medium"><ThinkingStates states={[`Scanning ${uploading.name} for silences…`]} baseColor="var(--color-text)" /></div>
               <div className="w-56">
                 <ProgressBar pct={uploading.pct} />
               </div>

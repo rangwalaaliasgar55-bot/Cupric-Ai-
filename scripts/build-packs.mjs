@@ -23,6 +23,7 @@ export { GRADIENT_PRESETS } from './src/lib/gradients'
 export { VOICE_PHRASES } from './src/lib/voice'
 export { SOURCES } from './src/lib/sources'
 export { VIDEO_TEMPLATES } from './src/lib/videoTemplates'
+export { LOADER_PRESETS } from './src/lib/studio/loaders'
 `
 
 await build({
@@ -583,10 +584,15 @@ try {
   const registry = JSON.parse(await readFile(path.join(sourceRoot, 'registry.json'), 'utf8'))
   const browse = JSON.parse(await readFile(path.join(sourceRoot, 'browse-media.json'), 'utf8'))
   const entries = Array.isArray(registry.items) ? registry.items : []
+  // Static audit (scripts/audit-uselayouts.mjs): category, interaction/animation
+  // model, props, Cupric equivalent, safety verdict. Missing audit = hard error,
+  // so a pack never ships unaudited third-party components.
+  const audit = JSON.parse(await readFile(path.join(sourceRoot, 'audit.json'), 'utf8'))
+  const auditBySlug = new Map(audit.items.map((row) => [row.slug, row]))
   packs.push({
     id: 'uselayouts',
     name: 'uselayouts — premium micro-interactions',
-    description: `${entries.length} MIT-licensed React micro-interactions copied from uselayouts. Apply creates a native editable storyboard; source files and dependency notes stay bundled for reference.`,
+    description: `${entries.length} MIT-licensed React micro-interactions from uselayouts (complete upstream catalogue, audited by scripts/audit-uselayouts.mjs). ${audit.insertable} apply as native editable storyboards; ${audit.referenceOnly} stay reference-only because their source uses unsafe patterns. Upstream code is never executed.`,
     version: VERSION,
     source: 'https://github.com/iurvish/uselayouts',
     license: 'MIT (Urvish Mali) — see resources/uselayouts/LICENSE',
@@ -606,11 +612,26 @@ try {
           agentUsable: true,
           sourceFiles: entry.files ?? [],
           dependencies: entry.dependencies ?? [],
-          copiedPath: `resources/uselayouts/${(entry.files?.[0]?.path || '').replace(/^registry\//, '')}`,
+          copiedPath: auditBySlug.get(entry.name)?.vendoredPaths?.[0] ?? `resources/uselayouts/registry/${(entry.files?.[0]?.path || '').replace(/^registry\//, '')}`,
+          category: auditBySlug.get(entry.name)?.category ?? null,
+          referenceOnly: auditBySlug.get(entry.name)?.referenceOnly === true,
+          ...(auditBySlug.get(entry.name)?.refusal ? { refusal: auditBySlug.get(entry.name).refusal } : {}),
+          attribution: auditBySlug.get(entry.name)?.attribution,
+          audit: auditBySlug.has(entry.name) ? {
+            interaction: auditBySlug.get(entry.name).interaction,
+            animation: auditBySlug.get(entry.name).animation,
+            requiredProps: auditBySlug.get(entry.name).requiredProps,
+            optionalProps: auditBySlug.get(entry.name).optionalProps,
+            cupricEquivalent: auditBySlug.get(entry.name).cupricEquivalent,
+            previewable: auditBySlug.get(entry.name).previewable,
+            deterministicExport: auditBySlug.get(entry.name).deterministicExport,
+            insertable: auditBySlug.get(entry.name).insertable,
+            docsUrl: auditBySlug.get(entry.name).sourceUrl,
+          } : undefined,
           ...(media.posterUrl ? { posterUrl: media.posterUrl } : {}),
           ...(media.videoUrl ? { videoUrl: media.videoUrl } : {}),
         },
-        tags: ['component', 'uselayouts', 'micro-interaction', ...(Array.isArray(entry.categories) ? entry.categories : [])],
+        tags: ['component', 'uselayouts', 'micro-interaction', ...(auditBySlug.get(entry.name)?.category ? [auditBySlug.get(entry.name).category.toLowerCase()] : []), ...(auditBySlug.get(entry.name)?.tags ?? [])],
       }
     }),
   })
@@ -758,6 +779,44 @@ try {
   })
 } catch (error) {
   console.warn(`resources/opus55 not readable — skipping Opus catalogue: ${error.message}`)
+}
+
+// Transitions.dev loaders: the two React snippets (p28 thinking states, p33
+// matrix dot loader) are re-implemented natively (src/lib/studio/loaders.ts
+// for Studio clips, src/components/loaders/* for app UI). No upstream code is
+// executed; the snippets are kept verbatim under resources/transitions-dev for
+// attribution and reference.
+{
+  const loaderItems = mod.LOADER_PRESETS.map((preset) => ({
+    id: `transitions-dev-${preset.id}`,
+    kind: 'component',
+    name: preset.name,
+    description: preset.description,
+    data: {
+      provider: 'transitions.dev',
+      source: 'https://transitions.dev',
+      upstreamPattern: preset.upstream,
+      referencePath: preset.upstream === 'p28' ? 'resources/transitions-dev/thinking-states.reference.jsx' : 'resources/transitions-dev/matrix-loader.reference.jsx',
+      license: 'Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.',
+      nativeAction: 'loader',
+      loaderPreset: preset.id,
+      loader: preset.patch,
+      editable: true,
+      agentUsable: true,
+      deterministicExport: true,
+      previewable: true,
+    },
+    tags: ['loader', 'transitions.dev', preset.upstream === 'p28' ? 'thinking' : 'matrix', 'loading', 'status', 'empty state'],
+  }))
+  packs.push({
+    id: 'transitions-dev',
+    name: 'Transitions.dev — thinking states & matrix loader',
+    description: `${loaderItems.length} loader presets rebuilt as native, export-exact Studio clips with editable text, timing, colour, easing, loop and reduced-motion props.`,
+    version: VERSION,
+    source: 'https://transitions.dev',
+    license: 'Original Cupric re-implementation; upstream snippets kept for reference with attribution (resources/transitions-dev/ATTRIBUTION.md).',
+    items: loaderItems,
+  })
 }
 
 await mkdir(outDir, { recursive: true })

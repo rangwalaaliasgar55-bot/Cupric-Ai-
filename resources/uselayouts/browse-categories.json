@@ -1,0 +1,325 @@
+{
+  "source": "https://github.com/iurvish/uselayouts/blob/78bfa803aed67d424755b66bb3f30eeed42d7502/lib/browse/items.ts",
+  "items": {
+    "3d-book": {
+      "title": "3D Book",
+      "tagline": "Page flips with real depth.",
+      "category": "Display"
+    },
+    "animated-collection": {
+      "title": "Animated Collection",
+      "tagline": "Items that rearrange themselves.",
+      "category": "List"
+    },
+    "bottom-menu": {
+      "title": "Bottom Menu",
+      "tagline": "A dock that expands on demand.",
+      "category": "Navigation"
+    },
+    "day-picker": {
+      "title": "Day Picker",
+      "tagline": "Dates chosen without friction.",
+      "category": "Input"
+    },
+    "delete-button": {
+      "title": "Delete Button",
+      "tagline": "Confirmation folded into one tap.",
+      "category": "Button"
+    },
+    "discover-button": {
+      "title": "Discover Button",
+      "tagline": "A button that opens up.",
+      "category": "Button"
+    },
+    "discrete-tabs": {
+      "title": "Discrete Tabs",
+      "tagline": "Sliding between quiet states.",
+      "category": "Navigation"
+    },
+    "dynamic-toolbar": {
+      "title": "Dynamic Toolbar",
+      "tagline": "Resizes around its content.",
+      "category": "Navigation"
+    },
+    "expandable-gallery": {
+      "title": "Expandable Gallery",
+      "tagline": "Photos that grow into place.",
+      "category": "Display"
+    },
+    "feature-carousel": {
+      "title": "Feature Carousel",
+      "tagline": "One idea at a time.",
+      "category": "Display"
+    },
+    "folder-interaction": {
+      "title": "Folder Interaction",
+      "tagline": "Files that feel physical.",
+      "category": "Display"
+    },
+    "inline-edit": {
+      "title": "Inline Edit",
+      "tagline": "Read and write in one field.",
+      "category": "Input"
+    },
+    "filter-interaction": {
+      "title": "List Item",
+      "tagline": "Rows that answer the cursor.",
+      "category": "List"
+    },
+    "morphing-input": {
+      "title": "Morphing Input",
+      "tagline": "One field, many shapes.",
+      "category": "Input"
+    },
+    "multi-step-form": {
+      "title": "Multi Step Form",
+      "tagline": "Long forms made short.",
+      "category": "Input"
+    },
+    "pricing-card": {
+      "title": "Pricing Card",
+      "tagline": "Hierarchy that sells itself.",
+      "category": "Display"
+    },
+    "shake-testimonial-card": {
+      "title": "Shake Testimonial",
+      "tagline": "Praise with a pulse.",
+      "category": "Display"
+    },
+    "smooth-dropdown": {
+      "title": "Smooth Dropdown",
+      "tagline": "Menus that never jump.",
+      "category": "Navigation"
+    },
+    "save-button": {
+      "title": "Status Button",
+      "tagline": "Idle, loading, done.",
+      "category": "Button"
+    },
+    "vertical-tabs": {
+      "title": "Vertical Tabs",
+      "tagline": "Switching along the edge.",
+      "category": "Navigation"
+    },
+    "stacked-list": {
+      "title": "Stacked List",
+      "tagline": "A stack that unfolds.",
+      "category": "List"
+    },
+    "bucket": {
+      "title": "Bucket",
+      "tagline": "Chips tossed with physics.",
+      "category": "Display"
+    },
+    "fluid-expanding-grid": {
+      "title": "Fluid Expanding Grid",
+      "tagline": "A grid that breathes.",
+      "category": "Layout"
+    },
+    "bento-card": {
+      "title": "Bento Card",
+      "tagline": "Tabs inside a single tile.",
+      "category": "Layout"
+    },
+    "magnified-bento": {
+      "title": "Magnified Bento",
+      "tagline": "A lens you can drag.",
+      "category": "Layout"
+    },
+    "editorial-deck": {
+      "title": "Editorial Deck",
+      "tagline": "Swipe stories back into the stack.",
+      "category": "Display"
+    },
+    "empty-testimonial": {
+      "title": "Empty Testimonial",
+      "tagline": "An empty state worth keeping.",
+      "category": "Display"
+    },
+    "accessible-action": {
+      "title": "Accessible Action",
+      "tagline": "A card stack you can tilt and swipe.",
+      "category": "Display"
+    },
+    "accordionos": {
+      "title": "AccordionOS",
+      "tagline": "Accordions with image transitions.",
+      "category": "Display"
+    },
+    "card-folder": {
+      "title": "Card Folder",
+      "tagline": "A folder card with hover depth.",
+      "category": "Display"
+    },
+    "confidential-folder": {
+      "title": "Confidential Folder",
+      "tagline": "A sleeve that pulls a letter out and flips it.",
+      "category": "Display"
+    },
+    "corner-video": {
+      "title": "Corner Video",
+      "tagline": "A player that morphs from the corner.",
+      "category": "Display"
+    },
+    "focus-testimonials": {
+      "title": "Focus Testimonials",
+      "tagline": "Hover to bring one voice forward.",
+      "category": "Display"
+    },
+    "infinite-grid": {
+      "title": "Infinite Canvas",
+      "tagline": "An endless product canvas you can drag.",
+      "category": "Layout"
+    },
+    "polaroid-drag": {
+      "title": "Polaroid Drag",
+      "tagline": "Photos that stack and tilt.",
+      "category": "Display"
+    },
+    "pop-tilt-cards": {
+      "title": "Pop Tilt Cards",
+      "tagline": "A deck that pops toward the cursor.",
+      "category": "Display"
+    },
+    "rolling-card-stack": {
+      "title": "Rolling Card Stack",
+      "tagline": "Cards that roll into place.",
+      "category": "Display"
+    },
+    "scroll-stack-deck": {
+      "title": "Scroll Stack Deck",
+      "tagline": "Cards that stack as you scroll.",
+      "category": "Display"
+    },
+    "stack-scroll-reveal": {
+      "title": "Stack Scroll Reveal",
+      "tagline": "Cards that peel off a stack as you scroll.",
+      "category": "Display"
+    },
+    "perspective-text-scroll": {
+      "title": "Perspective Text Scroll",
+      "tagline": "Text that tilts through scroll perspective.",
+      "category": "Display"
+    },
+    "wheel-carousel": {
+      "title": "Wheel Carousel",
+      "tagline": "A wheel you can spin through.",
+      "category": "Display"
+    },
+    "client-card": {
+      "title": "Client Card",
+      "tagline": "A CRM card with paid and deadline rings.",
+      "category": "Display"
+    },
+    "coverflow-drag": {
+      "title": "Coverflow Drag",
+      "tagline": "Portraits that coverflow as you drag.",
+      "category": "Display"
+    },
+    "overlapping-slider": {
+      "title": "Overlapping Slider",
+      "tagline": "A landing row of portraits. The left card scales back.",
+      "category": "Display"
+    },
+    "tactile-button": {
+      "title": "Tactile Button",
+      "tagline": "A glass rocker that tilts when you press.",
+      "category": "Button"
+    },
+    "gooey-navbar": {
+      "title": "Gooey Navbar",
+      "tagline": "Pills that melt into each other.",
+      "category": "Navigation"
+    },
+    "dynamic-grid-gallery": {
+      "title": "Dynamic Grid Gallery",
+      "tagline": "A grid that grows toward the cursor.",
+      "category": "Display"
+    },
+    "scroll-split-cards": {
+      "title": "Scroll Split Cards",
+      "tagline": "A still that splits into three cards, then flips.",
+      "category": "Display"
+    },
+    "create-menu": {
+      "title": "Create Menu",
+      "tagline": "A create pill that opens into actions.",
+      "category": "Button"
+    },
+    "liquid-index": {
+      "title": "Liquid Index",
+      "tagline": "A feature list with a liquid hover badge.",
+      "category": "Display"
+    },
+    "photo-albums": {
+      "title": "Photo Albums",
+      "tagline": "Album stacks that open into a grid.",
+      "category": "Display"
+    },
+    "slide-subscribe": {
+      "title": "Slide Subscribe",
+      "tagline": "Pick a plan, then slide to start.",
+      "category": "Input"
+    },
+    "set-timer": {
+      "title": "Set Timer",
+      "tagline": "A pill that morphs into a wheel, then a countdown.",
+      "category": "Input"
+    },
+    "stacked-outline-text": {
+      "title": "Stacked Outline Text",
+      "tagline": "Outlined type that leaves a velocity trail when you drag it.",
+      "category": "Display"
+    },
+    "drawer-buttons": {
+      "title": "Drawer Buttons",
+      "tagline": "Buttons that fold open a payment drawer and a cart.",
+      "category": "Button"
+    },
+    "prompt-box": {
+      "title": "Prompt Box",
+      "tagline": "A composer that expands into a prompt with a model menu.",
+      "category": "Input"
+    },
+    "get-in-touch": {
+      "title": "Get In Touch",
+      "tagline": "A contact pill that merges you with a portrait.",
+      "category": "Button"
+    },
+    "theme-toggle": {
+      "title": "Theme Toggle",
+      "tagline": "A dotted grip that slides across a recessed track.",
+      "category": "Button"
+    },
+    "scan-document": {
+      "title": "Scan Document",
+      "tagline": "A button that unfolds a page and scans it.",
+      "category": "Button"
+    },
+    "polaroid-stack": {
+      "title": "Polaroid Stack",
+      "tagline": "Prints that fan out from a pile on hover.",
+      "category": "Display"
+    },
+    "analog-stick": {
+      "title": "Analog Stick",
+      "tagline": "A metallic cap that tilts into the press.",
+      "category": "Button"
+    },
+    "paper-shred-button": {
+      "title": "Paper Shred Button",
+      "tagline": "A delete button that shreds a page into strips.",
+      "category": "Button"
+    },
+    "holographic-referral-card": {
+      "title": "Holographic Referral Card",
+      "tagline": "A dark invite card that tilts with a holographic glow.",
+      "category": "Display"
+    },
+    "curve-drawer": {
+      "title": "Curve Drawer",
+      "tagline": "A side drawer whose inner edge morphs from a bulge to a line.",
+      "category": "Display"
+    }
+  }
+}

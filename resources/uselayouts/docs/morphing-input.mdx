@@ -1,0 +1,32 @@
+---
+title: Morphing Input
+description: A search field whose placeholder letters flip, and whose icon toggles the mode — search vs generate.
+---
+
+## Features
+
+- **Letter-by-letter placeholder**: “Search anything…” and “Generate Image” enter with a tiny 3D flip.
+- **Icon as mode**: Tap the leading icon to cycle presets.
+- **Submit still there**: An arrow on the right for the actual query.
+- **Empty vs typed**: Placeholder animation only while the field is empty.
+- **Compact bar**: One rounded field, not a whole command palette.
+
+## Usage
+
+Use it as a prompt or search control. Edit `placeholderOptions` for extra modes. Needs a click on the icon to switch; typing is a normal input. Sit it in a header or an AI bar. Don’t auto-play the placeholder while someone’s mid-sentence.
+
+```tsx
+import InputSwitch from "@/components/morphing-input";
+
+export default function Page() {
+  return <InputSwitch />;
+}
+```
+
+## Where to use
+
+- AI prompt bars
+- Site search in the header
+- Image-gen or mixed-mode tools
+- Docs command-style search
+- Product demos of a “one box” UI

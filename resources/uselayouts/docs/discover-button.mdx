@@ -1,0 +1,32 @@
+---
+title: Discover Button
+description: A round search control that stretches into a field, sitting beside Popular and Favorites chips.
+---
+
+## Features
+
+- **Search that grows**: Click the magnifier and the pill expands into a real text field.
+- **Category chips**: Popular and Favorites sit beside it with their own color and icon.
+- **Blur on collapse**: The input width, opacity, and blur ease together so it doesn’t snap shut.
+- **Close affordance**: An X appears once you’re searching so you can tuck it back.
+- **One-row chrome**: Search + filters share a single toolbar height.
+
+## Usage
+
+Drop it in a header or a browse toolbar. You’ll edit the `TABS` array for extra categories. Needs a row that’s allowed to grow — don’t pin it to a fixed 40px width. Pair it with a results list; this is the control, not the grid.
+
+```tsx
+import DiscoverButton from "@/components/discover-button";
+
+export default function Page() {
+  return <DiscoverButton />;
+}
+```
+
+## Where to use
+
+- Marketplace or catalog headers
+- Recipe, music, or photo browse bars
+- Community “discover” pages
+- Docs or help search with topic chips
+- App store–style explore screens

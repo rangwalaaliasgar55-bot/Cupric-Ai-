@@ -14,6 +14,9 @@ import { cx } from '../lib/utils'
 import { getIpc } from '../lib/bridge'
 import { humanError } from '../lib/humanError'
 import { ProjectSafetyPanel } from './ProjectSafetyPanel'
+import { ThinkingOrb } from 'thinking-orbs'
+import { ThinkingStates } from '../components/loaders/ThinkingStates'
+import { useReducedMotion } from '../lib/use-reduced-motion'
 
 type ChatMsg = { role: 'user' | 'ai'; text: string; images?: ChatImage[] }
 
@@ -95,6 +98,9 @@ export function AskPanel() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
+  const [pendingSummary, setPendingSummary] = useState(false)
+  const theme = useProjectStore((s) => s.theme)
+  const reducedMotion = useReducedMotion()
   const [showSettings, setShowSettings] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash')
@@ -436,6 +442,7 @@ export function AskPanel() {
     setPending([])
     const history = msgs.slice(-8).map((m) => ({ role: m.role, text: m.text }))
     setMsgs((m) => [...m, { role: 'user', text, images }])
+    setPendingSummary(images.length > 0)
     setBusy(true)
     try {
       const reply = await askGeminiChat(text, { projectName: active?.name ?? null, view }, { images, history })
@@ -747,10 +754,12 @@ export function AskPanel() {
             ))}
             {busy && (
               <div className="flex justify-start">
-                <div className="nf-typing flex items-center gap-1 rounded-xl border border-line bg-bg/40 px-3.5 py-3">
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted" />
+                {/* Libraries.dev apply: Thinking orbs (composing, 20 px inline) beside a
+                    Transitions.dev thinking-states label. Both follow the real `busy`
+                    flag and stop under reduced motion. */}
+                <div className="flex items-center gap-2 rounded-xl border border-line bg-bg/40 px-3.5 py-2.5 text-xs" data-testid="ask-waiting">
+                  <ThinkingOrb state="composing" size={20} theme={theme === 'light' ? 'light' : 'dark'} paused={reducedMotion} aria-label="Assistant is writing a reply" />
+                  <ThinkingStates states={pendingSummary ? ['Reading your images', 'Waiting for the reply'] : ['Reading your message', 'Waiting for the reply']} holdMs={2400} reducedMotion={reducedMotion ? 'reduce' : 'system'} />
                 </div>
               </div>
             )}

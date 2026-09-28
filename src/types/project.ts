@@ -156,6 +156,8 @@ export type Project = {
   /** In-app editor document. Optional on projects created before 0.3.0. */
   studio?: StudioDoc
   brandKit: { colors: string[]; font: string; logoDataUrl: string | null }
+  /** Autonomous production session (lib/production). Normalised on read. */
+  production?: unknown
 }
 
 export type LibraryItem =
@@ -601,6 +603,50 @@ export type StudioClip =
   | StudioSequenceClip
   | StudioShapeClip
   | StudioCursorClip
+  | StudioLoaderClip
+
+export type StudioLoaderVariant = 'scan' | 'twinkle' | 'orbit' | 'pulse'
+export type StudioLoaderEase = 'ease-in-out' | 'ease' | 'ease-out' | 'ease-in' | 'linear' | 'soft'
+
+/**
+ * Transitions.dev loaders rebuilt natively (lib/studio/loaders.ts): "thinking
+ * states" (rotating status copy with a shimmer) and the 4×4 "matrix" dot
+ * loader. Every CSS timing is a prop; drawing is a pure function of time.
+ */
+export type StudioLoaderClip = StudioClipCommon & {
+  kind: 'loader'
+  loader: 'thinking' | 'matrix'
+  /** Library preset this clip came from (informational). */
+  presetId?: string
+  x: number
+  y: number
+  /** thinking: font height / frame height. matrix: cell side / frame height. */
+  size: number
+  states: string[]
+  holdMs: number
+  swapMs: number
+  gapMs: number
+  distancePx: number
+  blurPx: number
+  shimmerMs: number
+  shimmer: boolean
+  baseColor: string
+  highlightColor: string
+  activeColor: string
+  ease: StudioLoaderEase
+  variant: StudioLoaderVariant
+  rounded: boolean
+  cycleMs: number
+  /** Playback-rate multiplier on every timing. */
+  speed: number
+  loop: boolean
+  /** Export the reduced-motion (static) rendering. */
+  reducedMotion: boolean
+  /** Accessible name (matrix) — also used in captions/credits. */
+  label: string
+  /** Paint the app background under the loader (full-screen beat). */
+  backdrop: boolean
+}
 
 export type StudioShapeAnim = 'none' | 'draw-on' | 'pop' | 'grow' | 'spin-in' | 'pulse' | 'wiggle' | 'draw-then-fill'
 

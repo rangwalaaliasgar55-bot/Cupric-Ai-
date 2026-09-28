@@ -1,0 +1,1094 @@
+{
+ "name": "Cupric production skills",
+ "license": "MIT (Cupric-authored guidance). Evidence links point to attributed Opus catalogue cases; cases are cited, not copied.",
+ "skills": [
+  {
+   "id": "hook-construction",
+   "name": "Hook construction",
+   "when": "Every short-form video: the first 1–2 s decide retention.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.12,
+     "purpose": "State the payoff or tension in one legible line over the strongest visual"
+    },
+    {
+     "name": "Body",
+     "share": 0.73,
+     "purpose": "Deliver the promise"
+    },
+    {
+     "name": "Close",
+     "share": 0.15,
+     "purpose": "Resolve and CTA"
+    }
+   ],
+   "shotSec": [
+    0.8,
+    2
+   ],
+   "transitions": [
+    "cut",
+    "push-up"
+   ],
+   "text": "One large line ≤ 7 words on frame 1, high contrast, inside safe area",
+   "audio": "Hit or sound cue on the first cut; no fade-in from black",
+   "requiredInputs": [
+    "brief goal",
+    "strongest visual"
+   ],
+   "avoid": [
+    "Slow logo fades as the opener",
+    "Claims you cannot verify"
+   ],
+   "matchTags": [
+    "videoType:ad",
+    "videoType:launch",
+    "cat:brand-product"
+   ],
+   "energy": "high"
+  },
+  {
+   "id": "product-demo-pacing",
+   "name": "Product demo pacing",
+   "when": "Showing a physical or digital product doing its job.",
+   "beats": [
+    {
+     "name": "Problem",
+     "share": 0.15,
+     "purpose": "The situation before the product"
+    },
+    {
+     "name": "Product in action",
+     "share": 0.55,
+     "purpose": "2–4 features, one per shot, each with a caption"
+    },
+    {
+     "name": "Result",
+     "share": 0.15,
+     "purpose": "What the user gets — only real, demonstrated outcomes"
+    },
+    {
+     "name": "CTA",
+     "share": 0.15,
+     "purpose": "Where to get it"
+    }
+   ],
+   "shotSec": [
+    1.5,
+    3
+   ],
+   "transitions": [
+    "cut",
+    "zoom",
+    "glass-wipe"
+   ],
+   "text": "Feature captions ≤ 5 words, lower third",
+   "audio": "Music bed; duck under any voiceover",
+   "requiredInputs": [
+    "product footage or screenshots",
+    "feature list"
+   ],
+   "avoid": [
+    "Invented metrics or reviews"
+   ],
+   "matchTags": [
+    "videoType:product-demo",
+    "cat:brand-product"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "saas-walkthrough",
+   "name": "SaaS walkthrough",
+   "when": "Explaining a web/software product from its screens.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.12,
+     "purpose": "The job the tool does, in one line"
+    },
+    {
+     "name": "Screens",
+     "share": 0.63,
+     "purpose": "Screen recording zoomed to the action, cursor clicks shown"
+    },
+    {
+     "name": "Outcome",
+     "share": 0.12,
+     "purpose": "Finished state of the workflow"
+    },
+    {
+     "name": "CTA",
+     "share": 0.13,
+     "purpose": "URL / sign-up"
+    }
+   ],
+   "shotSec": [
+    2,
+    4
+   ],
+   "transitions": [
+    "zoom",
+    "push-up",
+    "cut"
+   ],
+   "text": "Callouts next to the clicked UI; keep UI legible (zoom ≥ 1.4×)",
+   "audio": "Soft music; UI clicks as SFX optional",
+   "requiredInputs": [
+    "screen recordings or screenshots",
+    "product URL"
+   ],
+   "avoid": [
+    "Unreadable full-screen UI",
+    "Fake dashboards with invented numbers"
+   ],
+   "matchTags": [
+    "videoType:saas-walkthrough",
+    "industries:software"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "talking-head",
+   "name": "Talking-head edit",
+   "when": "A person speaking to camera carries the message.",
+   "beats": [
+    {
+     "name": "Hook line",
+     "share": 0.1,
+     "purpose": "Strongest sentence first (cut from later in the take if needed)"
+    },
+    {
+     "name": "Points",
+     "share": 0.75,
+     "purpose": "Jump-cut out silences; punch-in every 2–4 s for rhythm"
+    },
+    {
+     "name": "CTA",
+     "share": 0.15,
+     "purpose": "Ask the viewer to act"
+    }
+   ],
+   "shotSec": [
+    2,
+    4
+   ],
+   "transitions": [
+    "cut",
+    "zoom"
+   ],
+   "text": "Word-level captions, one emphasis word per line",
+   "audio": "Voice at −14 LUFS target, music ducked −12 dB",
+   "requiredInputs": [
+    "talking-head footage",
+    "transcript or voiceover"
+   ],
+   "avoid": [
+    "Captions over the mouth",
+    "Over-zooming that crops the face"
+   ],
+   "matchTags": [
+    "audio:voiceover"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "ugc-ad",
+   "name": "UGC-style ad",
+   "when": "Authentic, phone-shot creator-style ad.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.12,
+     "purpose": "Relatable problem, first-person"
+    },
+    {
+     "name": "Demo",
+     "share": 0.58,
+     "purpose": "Handheld product use, real footage only"
+    },
+    {
+     "name": "Reaction",
+     "share": 0.15,
+     "purpose": "Genuine reaction from the actual creator"
+    },
+    {
+     "name": "CTA",
+     "share": 0.15,
+     "purpose": "Offer and link"
+    }
+   ],
+   "shotSec": [
+    1,
+    2.5
+   ],
+   "transitions": [
+    "cut"
+   ],
+   "text": "Native-looking captions, platform style",
+   "audio": "Voice-led; minimal music",
+   "requiredInputs": [
+    "creator footage"
+   ],
+   "avoid": [
+    "Staged testimonials presented as real",
+    "Invented user quotes"
+   ],
+   "matchTags": [
+    "videoType:ad"
+   ],
+   "energy": "high"
+  },
+  {
+   "id": "before-after",
+   "name": "Before/after edit",
+   "when": "Showing a real change the user can prove.",
+   "beats": [
+    {
+     "name": "Before",
+     "share": 0.35,
+     "purpose": "The real starting state"
+    },
+    {
+     "name": "Transition",
+     "share": 0.1,
+     "purpose": "Wipe or split reveal"
+    },
+    {
+     "name": "After",
+     "share": 0.4,
+     "purpose": "The real end state, same framing"
+    },
+    {
+     "name": "CTA",
+     "share": 0.15,
+     "purpose": "How to get the result"
+    }
+   ],
+   "shotSec": [
+    1.5,
+    3
+   ],
+   "transitions": [
+    "wipe",
+    "glass-wipe",
+    "push"
+   ],
+   "text": "Label both sides clearly: Before / After",
+   "audio": "Riser into the reveal",
+   "requiredInputs": [
+    "real before footage",
+    "real after footage"
+   ],
+   "avoid": [
+    "Fabricated before/after results — Cupric refuses to generate them"
+   ],
+   "matchTags": [
+    "videoType:comparison"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "testimonial-layout",
+   "name": "Testimonial layout",
+   "when": "Featuring a real customer quote with permission.",
+   "beats": [
+    {
+     "name": "Context",
+     "share": 0.2,
+     "purpose": "Who the customer is (as provided)"
+    },
+    {
+     "name": "Quote",
+     "share": 0.6,
+     "purpose": "The exact quote, attributed"
+    },
+    {
+     "name": "CTA",
+     "share": 0.2,
+     "purpose": "Next step"
+    }
+   ],
+   "shotSec": [
+    3,
+    5
+   ],
+   "transitions": [
+    "fade",
+    "cut"
+   ],
+   "text": "Quote in large type, name + role below; never paraphrase into a new claim",
+   "audio": "Soft bed",
+   "requiredInputs": [
+    "verbatim quote",
+    "customer name and permission"
+   ],
+   "avoid": [
+    "Invented testimonials or reviews — placeholders must say “Add real quote”"
+   ],
+   "matchTags": [
+    "videoType:ad",
+    "cat:brand-product"
+   ],
+   "energy": "calm"
+  },
+  {
+   "id": "logo-reveal",
+   "name": "Logo reveal",
+   "when": "Opening or closing brand sting.",
+   "beats": [
+    {
+     "name": "Build-up",
+     "share": 0.5,
+     "purpose": "Shapes/particles gather"
+    },
+    {
+     "name": "Reveal",
+     "share": 0.3,
+     "purpose": "Logo resolves on a sound hit"
+    },
+    {
+     "name": "Hold",
+     "share": 0.2,
+     "purpose": "Readable hold with tagline"
+    }
+   ],
+   "shotSec": [
+    0.5,
+    1.5
+   ],
+   "transitions": [
+    "iris",
+    "lens-sweep",
+    "blur"
+   ],
+   "text": "Tagline ≤ 6 words",
+   "audio": "Whoosh + hit on the reveal frame",
+   "requiredInputs": [
+    "logo file"
+   ],
+   "avoid": [
+    "Distorting the logo",
+    "Holding under 1 s"
+   ],
+   "matchTags": [
+    "videoType:logo-reveal",
+    "cat:motion-intro"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "app-walkthrough",
+   "name": "App walkthrough",
+   "when": "Mobile app features on a phone frame.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.12,
+     "purpose": "What the app does"
+    },
+    {
+     "name": "Screens",
+     "share": 0.63,
+     "purpose": "Phone frame, one screen per beat, tap cursor"
+    },
+    {
+     "name": "Outcome",
+     "share": 0.1,
+     "purpose": "Final screen"
+    },
+    {
+     "name": "CTA",
+     "share": 0.15,
+     "purpose": "Store badge text"
+    }
+   ],
+   "shotSec": [
+    1.5,
+    3
+   ],
+   "transitions": [
+    "push-up",
+    "zoom"
+   ],
+   "text": "Short callouts beside the phone",
+   "audio": "Tap SFX optional",
+   "requiredInputs": [
+    "app screen recordings or screenshots"
+   ],
+   "avoid": [
+    "Fake notification counts or ratings"
+   ],
+   "matchTags": [
+    "videoType:saas-walkthrough",
+    "videoType:product-demo"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "screen-recording",
+   "name": "Screen-recording edit",
+   "when": "Tightening a raw screen capture.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.1,
+     "purpose": "Outcome first"
+    },
+    {
+     "name": "Steps",
+     "share": 0.75,
+     "purpose": "Cut dead time, zoom to the cursor, speed up waits"
+    },
+    {
+     "name": "Result",
+     "share": 0.15,
+     "purpose": "Finished state"
+    }
+   ],
+   "shotSec": [
+    2,
+    5
+   ],
+   "transitions": [
+    "zoom",
+    "cut"
+   ],
+   "text": "Step numbers as small badges",
+   "audio": "Voiceover or captions carry the steps",
+   "requiredInputs": [
+    "screen recording"
+   ],
+   "avoid": [
+    "Leaving loading spinners in real time"
+   ],
+   "matchTags": [
+    "videoType:tutorial",
+    "videoType:saas-walkthrough"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "data-explainer",
+   "name": "Data/statistic explainer",
+   "when": "Explaining numbers the user supplies.",
+   "beats": [
+    {
+     "name": "Question",
+     "share": 0.15,
+     "purpose": "The question the data answers"
+    },
+    {
+     "name": "Build",
+     "share": 0.6,
+     "purpose": "Animated chart per figure, one number per beat"
+    },
+    {
+     "name": "Takeaway",
+     "share": 0.25,
+     "purpose": "What it means"
+    }
+   ],
+   "shotSec": [
+    2,
+    4
+   ],
+   "transitions": [
+    "fade",
+    "push-up"
+   ],
+   "text": "Numbers in mono, source line on every chart",
+   "audio": "Minimal bed",
+   "requiredInputs": [
+    "the actual data and its source"
+   ],
+   "avoid": [
+    "Any number not provided by the user — charts stay empty placeholders until data is added"
+   ],
+   "matchTags": [
+    "videoType:data-explainer"
+   ],
+   "energy": "calm"
+  },
+  {
+   "id": "educational-explainer",
+   "name": "Educational explainer",
+   "when": "Teaching one concept clearly.",
+   "beats": [
+    {
+     "name": "Question",
+     "share": 0.12,
+     "purpose": "A curiosity hook"
+    },
+    {
+     "name": "Concept",
+     "share": 0.63,
+     "purpose": "Build the idea in 3–5 visual steps"
+    },
+    {
+     "name": "Recap",
+     "share": 0.25,
+     "purpose": "One-sentence summary"
+    }
+   ],
+   "shotSec": [
+    2.5,
+    5
+   ],
+   "transitions": [
+    "fade",
+    "push-up",
+    "blur"
+   ],
+   "text": "Key term highlighted once per beat",
+   "audio": "Voiceover-led; music low",
+   "requiredInputs": [
+    "script or outline"
+   ],
+   "avoid": [
+    "Dense paragraphs on screen"
+   ],
+   "matchTags": [
+    "videoType:explainer",
+    "cat:education"
+   ],
+   "energy": "calm"
+  },
+  {
+   "id": "founder-video",
+   "name": "Founder video",
+   "when": "A founder explaining why the product exists.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.12,
+     "purpose": "The founder’s one-line why"
+    },
+    {
+     "name": "Story",
+     "share": 0.58,
+     "purpose": "Problem → insight → product"
+    },
+    {
+     "name": "Proof",
+     "share": 0.15,
+     "purpose": "Only real, provided proof"
+    },
+    {
+     "name": "CTA",
+     "share": 0.15,
+     "purpose": "Invite"
+    }
+   ],
+   "shotSec": [
+    2.5,
+    5
+   ],
+   "transitions": [
+    "cut",
+    "fade"
+   ],
+   "text": "Name/role lower third once",
+   "audio": "Voice-led, warm bed",
+   "requiredInputs": [
+    "founder footage or voiceover"
+   ],
+   "avoid": [
+    "Invented traction numbers"
+   ],
+   "matchTags": [
+    "videoType:founder"
+   ],
+   "energy": "calm"
+  },
+  {
+   "id": "launch-video",
+   "name": "Launch video",
+   "when": "Announcing a new product or feature.",
+   "beats": [
+    {
+     "name": "Tease",
+     "share": 0.15,
+     "purpose": "Tension / what is coming"
+    },
+    {
+     "name": "Reveal",
+     "share": 0.2,
+     "purpose": "Name + hero visual"
+    },
+    {
+     "name": "Features",
+     "share": 0.45,
+     "purpose": "3 fast feature beats"
+    },
+    {
+     "name": "CTA",
+     "share": 0.2,
+     "purpose": "Date / link"
+    }
+   ],
+   "shotSec": [
+    0.8,
+    2
+   ],
+   "transitions": [
+    "push-up",
+    "glass-wipe",
+    "zoom"
+   ],
+   "text": "Big type, one idea per frame",
+   "audio": "Build to a drop on the reveal",
+   "requiredInputs": [
+    "product visuals",
+    "launch date/link"
+   ],
+   "avoid": [
+    "Fake “sold out” or user counts"
+   ],
+   "matchTags": [
+    "videoType:launch",
+    "videoType:trailer"
+   ],
+   "energy": "high"
+  },
+  {
+   "id": "social-ad",
+   "name": "Social ad",
+   "when": "Paid short ad for a feed placement.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.15,
+     "purpose": "Thumb-stopping first frame"
+    },
+    {
+     "name": "Value",
+     "share": 0.55,
+     "purpose": "Benefit shown, not told"
+    },
+    {
+     "name": "Offer",
+     "share": 0.15,
+     "purpose": "Real offer only"
+    },
+    {
+     "name": "CTA",
+     "share": 0.15,
+     "purpose": "Action verb + where"
+    }
+   ],
+   "shotSec": [
+    1,
+    2
+   ],
+   "transitions": [
+    "cut",
+    "push"
+   ],
+   "text": "Captions on (most feeds play muted), safe zones for UI overlays",
+   "audio": "Designed to work with sound off",
+   "requiredInputs": [
+    "product visuals",
+    "offer",
+    "CTA"
+   ],
+   "avoid": [
+    "Unverifiable claims"
+   ],
+   "matchTags": [
+    "videoType:ad"
+   ],
+   "energy": "high"
+  },
+  {
+   "id": "comparison-video",
+   "name": "Comparison video",
+   "when": "Comparing options on facts the user provides.",
+   "beats": [
+    {
+     "name": "Setup",
+     "share": 0.15,
+     "purpose": "What is compared and on which criteria"
+    },
+    {
+     "name": "Rounds",
+     "share": 0.65,
+     "purpose": "One criterion per beat, split screen"
+    },
+    {
+     "name": "Verdict",
+     "share": 0.2,
+     "purpose": "Summary grounded in the shown facts"
+    }
+   ],
+   "shotSec": [
+    2,
+    4
+   ],
+   "transitions": [
+    "wipe",
+    "push"
+   ],
+   "text": "Consistent left/right labels",
+   "audio": "Neutral bed",
+   "requiredInputs": [
+    "facts for both sides"
+   ],
+   "avoid": [
+    "Invented competitor data"
+   ],
+   "matchTags": [
+    "videoType:comparison"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "tutorial",
+   "name": "Tutorial video",
+   "when": "Step-by-step how-to.",
+   "beats": [
+    {
+     "name": "Outcome",
+     "share": 0.12,
+     "purpose": "Show the end result first"
+    },
+    {
+     "name": "Steps",
+     "share": 0.73,
+     "purpose": "Numbered steps, one per beat"
+    },
+    {
+     "name": "Recap",
+     "share": 0.15,
+     "purpose": "Checklist"
+    }
+   ],
+   "shotSec": [
+    2.5,
+    5
+   ],
+   "transitions": [
+    "cut",
+    "push-up"
+   ],
+   "text": "Step number + verb-first instruction",
+   "audio": "Voiceover or captions per step",
+   "requiredInputs": [
+    "steps",
+    "footage of each step"
+   ],
+   "avoid": [
+    "Skipping steps to save time"
+   ],
+   "matchTags": [
+    "videoType:tutorial"
+   ],
+   "energy": "calm"
+  },
+  {
+   "id": "voiceover-led",
+   "name": "Voiceover-led edit",
+   "when": "A narration track sets the timing.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.12,
+     "purpose": "First sentence over strongest visual"
+    },
+    {
+     "name": "Body",
+     "share": 0.73,
+     "purpose": "Cut on sentence boundaries; B-roll per idea"
+    },
+    {
+     "name": "Close",
+     "share": 0.15,
+     "purpose": "Final line + CTA"
+    }
+   ],
+   "shotSec": [
+    2,
+    4
+   ],
+   "transitions": [
+    "cut",
+    "fade"
+   ],
+   "text": "Captions from the transcript, corrected",
+   "audio": "Duck music under speech; pause markers from silence detection",
+   "requiredInputs": [
+    "voiceover or script"
+   ],
+   "avoid": [
+    "Cutting mid-word"
+   ],
+   "matchTags": [
+    "audio:voiceover"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "silent-caption-first",
+   "name": "Silent caption-first edit",
+   "when": "Designed for mute autoplay.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.15,
+     "purpose": "Caption hook in frame 1"
+    },
+    {
+     "name": "Body",
+     "share": 0.7,
+     "purpose": "Every beat readable without sound"
+    },
+    {
+     "name": "CTA",
+     "share": 0.15,
+     "purpose": "Text CTA"
+    }
+   ],
+   "shotSec": [
+    1.5,
+    3
+   ],
+   "transitions": [
+    "cut",
+    "push-up"
+   ],
+   "text": "Large captions, max 2 lines, 3–5 words per line",
+   "audio": "Optional music only",
+   "requiredInputs": [
+    "copy / key messages"
+   ],
+   "avoid": [
+    "Relying on audio for meaning"
+   ],
+   "matchTags": [
+    "text:captions"
+   ],
+   "energy": "medium"
+  },
+  {
+   "id": "fast-cut",
+   "name": "Fast-cut edit",
+   "when": "High-rhythm montage.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.1,
+     "purpose": "Punchy opener"
+    },
+    {
+     "name": "Montage",
+     "share": 0.75,
+     "purpose": "Cuts on the beat"
+    },
+    {
+     "name": "Button",
+     "share": 0.15,
+     "purpose": "Hard end"
+    }
+   ],
+   "shotSec": [
+    0.4,
+    1
+   ],
+   "transitions": [
+    "cut",
+    "whip"
+   ],
+   "text": "Minimal text, one word per hit",
+   "audio": "Beat-synced music; cuts on downbeats",
+   "requiredInputs": [
+    "plenty of footage",
+    "music"
+   ],
+   "avoid": [
+    "Transition on every cut (density)"
+   ],
+   "matchTags": [
+    "techniques:transitions",
+    "audio:music"
+   ],
+   "energy": "high"
+  },
+  {
+   "id": "calm-premium",
+   "name": "Calm premium edit",
+   "when": "Luxury/craft brands, slow and confident.",
+   "beats": [
+    {
+     "name": "Open",
+     "share": 0.2,
+     "purpose": "Slow establishing shot"
+    },
+    {
+     "name": "Details",
+     "share": 0.6,
+     "purpose": "Macro details, long holds"
+    },
+    {
+     "name": "Brand",
+     "share": 0.2,
+     "purpose": "Logo + tagline hold"
+    }
+   ],
+   "shotSec": [
+    3,
+    6
+   ],
+   "transitions": [
+    "fade",
+    "blur"
+   ],
+   "text": "Small, widely spaced type; one serif display max",
+   "audio": "Ambient bed, no hits",
+   "requiredInputs": [
+    "high-quality footage"
+   ],
+   "avoid": [
+    "Fast cuts, stacked effects"
+   ],
+   "matchTags": [
+    "visualStyle:premium",
+    "visualStyle:minimal"
+   ],
+   "energy": "calm"
+  },
+  {
+   "id": "high-energy",
+   "name": "High-energy edit",
+   "when": "Sports, launches, hype.",
+   "beats": [
+    {
+     "name": "Hook",
+     "share": 0.12,
+     "purpose": "Impact first frame"
+    },
+    {
+     "name": "Build",
+     "share": 0.63,
+     "purpose": "Accelerating cuts, speed ramps"
+    },
+    {
+     "name": "Peak",
+     "share": 0.25,
+     "purpose": "Payoff on the drop"
+    }
+   ],
+   "shotSec": [
+    0.5,
+    1.2
+   ],
+   "transitions": [
+    "zoom",
+    "whip",
+    "push"
+   ],
+   "text": "Bold condensed type, kinetic",
+   "audio": "Drop-driven music",
+   "requiredInputs": [
+    "action footage",
+    "music"
+   ],
+   "avoid": [
+    "Unreadable text at speed"
+   ],
+   "matchTags": [
+    "videoType:trailer",
+    "videoType:launch"
+   ],
+   "energy": "high"
+  },
+  {
+   "id": "cinematic",
+   "name": "Cinematic edit",
+   "when": "Story-led, film-like.",
+   "beats": [
+    {
+     "name": "Establish",
+     "share": 0.2,
+     "purpose": "Wide shot, mood"
+    },
+    {
+     "name": "Story",
+     "share": 0.6,
+     "purpose": "Shot–reverse, motivated cuts"
+    },
+    {
+     "name": "Resolve",
+     "share": 0.2,
+     "purpose": "Emotional close"
+    }
+   ],
+   "shotSec": [
+    3,
+    6
+   ],
+   "transitions": [
+    "fade",
+    "cut",
+    "blur"
+   ],
+   "text": "Letterbox-safe titles, sparse",
+   "audio": "Score-led; sound design",
+   "requiredInputs": [
+    "story footage"
+   ],
+   "avoid": [
+    "Gratuitous effects"
+   ],
+   "matchTags": [
+    "visualStyle:cinematic",
+    "videoType:narrative",
+    "cat:story-music"
+   ],
+   "energy": "calm"
+  },
+  {
+   "id": "minimal-product",
+   "name": "Minimal product edit",
+   "when": "Product on clean backgrounds.",
+   "beats": [
+    {
+     "name": "Reveal",
+     "share": 0.25,
+     "purpose": "Product enters clean frame"
+    },
+    {
+     "name": "Angles",
+     "share": 0.55,
+     "purpose": "2–3 angles, one feature word each"
+    },
+    {
+     "name": "End",
+     "share": 0.2,
+     "purpose": "Name + CTA"
+    }
+   ],
+   "shotSec": [
+    1.5,
+    3
+   ],
+   "transitions": [
+    "fade",
+    "push-up"
+   ],
+   "text": "One word per beat, generous whitespace",
+   "audio": "Minimal bed",
+   "requiredInputs": [
+    "product shots or renders"
+   ],
+   "avoid": [
+    "Clutter, multiple accents"
+   ],
+   "matchTags": [
+    "visualStyle:minimal",
+    "cat:brand-product"
+   ],
+   "energy": "calm"
+  }
+ ]
+}

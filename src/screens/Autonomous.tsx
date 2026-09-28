@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ThinkingStates } from '../components/loaders/ThinkingStates'
+import { MatrixLoader } from '../components/loaders/MatrixLoader'
+import { ProductionPlanner } from './production/ProductionPlanner'
 import { dedupeMessages, humanError } from '../lib/humanError'
 import { Mic, MicOff, Volume2 } from 'lucide-react'
 import { Card } from '../components/Card'
@@ -180,6 +183,8 @@ export function Autonomous() {
           <p className="mt-2 text-sm text-muted">Cupric AI runs the creative pipeline while keeping review gates visible.</p>
         </div>
 
+        <ProductionPlanner />
+
         <Card className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="text-sm font-medium">Project goal / brief</label>
@@ -199,7 +204,7 @@ export function Autonomous() {
           </div>
           <div className="mt-2 flex items-center gap-2 text-xs text-muted" aria-live="polite">
             <span className="flex h-3 items-end gap-px" aria-label={`Microphone level ${Math.round(micLevel * 100)} percent`}>{Array.from({ length: 12 }, (_, i) => <span key={i} className={i / 12 < micLevel ? 'w-1 rounded-t bg-accent' : 'w-1 rounded-t bg-line'} style={{ height: `${4 + (i % 4) * 2}px` }} />)}</span>
-            {transcribing ? <span className="text-accent-text">Transcribing offline…</span> : heard || (listening ? 'Listening…' : 'Mic idle — type the brief instead if voice is unavailable.')}
+            {transcribing ? <span className="inline-flex items-center gap-2 text-accent-text"><MatrixLoader variant="scan" tone="lime" size="inline" label="Transcribing offline" /><ThinkingStates states={['Transcribing offline…']} baseColor="var(--color-accent-text)" /></span> : heard || (listening ? 'Listening…' : 'Mic idle — type the brief instead if voice is unavailable.')}
           </div>
           <textarea
             value={brief}
@@ -283,6 +288,14 @@ export function Autonomous() {
                 {job.outputPath && <Button variant="outline" onClick={() => openOutput(job.outputPath)}>Reveal MP4</Button>}
               </div>
             </div>
+
+            {job.status === 'running' && (
+              <div className="mt-3 flex items-center gap-2 text-sm" data-testid="autonomous-status">
+                <MatrixLoader variant="orbit" tone="lime" label="Autonomous job running" />
+                {/* Only real steps: the running step, then its own message if it has one. */}
+                <ThinkingStates states={[currentStep?.label ?? job.steps.find((s) => s.status === 'running')?.label ?? 'Working', ...(job.steps.find((s) => s.status === 'running')?.message ? [String(job.steps.find((s) => s.status === 'running')?.message)] : [])]} holdMs={2600} />
+              </div>
+            )}
 
             {job.status === 'waiting-for-user' && currentStep && (
               <div className="mt-4 rounded-xl border border-accent/30 bg-accent/10 p-3">

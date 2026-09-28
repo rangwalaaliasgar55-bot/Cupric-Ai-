@@ -1,0 +1,36 @@
+---
+title: Shake Testimonial Card
+description: Quote cards that shiver, then toss to the back of the stack — autoplay or click through.
+---
+
+## Features
+
+- **Shake, then toss**: The front card wobbles before it flies to the back of the pile.
+- **Stacked depth**: Scale and offset make the deck look three cards thick.
+- **Memoji + color**: Each quote has a face, a tinted field, and matching type.
+- **Autoplay**: A timer advances; click the stack if you don’t want to wait.
+- **Spring physics**: The toss settles instead of cutting.
+
+## Usage
+
+Swap the `testimonials` array — name, role, avatar, quote, colors. Needs a centered well (~500px tall). Autoplay is on; that’s the gag. Use it for social proof, not a long case study. Four quotes is enough.
+
+```tsx
+import ShakeTestimonial from "@/components/shake-testimonial-card";
+
+export default function Page() {
+  return (
+    <div className="h-[500px] w-full flex items-center justify-center">
+      <ShakeTestimonial />
+    </div>
+  );
+}
+```
+
+## Where to use
+
+- SaaS landing social proof
+- Pricing pages
+- Launch or waitlist sites
+- Agency homepages
+- Product Hunt–style launch pages

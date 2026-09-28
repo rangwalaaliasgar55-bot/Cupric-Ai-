@@ -24,6 +24,7 @@ import { backgroundById } from './backgrounds'
 import { clipProgress, clipsAt } from './doc'
 import { drawCursor, drawShape, has3D, project3D } from './renderExtras'
 import { cursorAt } from './cursor'
+import { drawLoader } from './loaders'
 import { paintGlass, paintGlassLens } from './glass'
 import { getMedia, overlayImage, proxyMode } from './media'
 import { applyPixelGrade, chromaKey } from './color'
@@ -772,6 +773,7 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
     // "Scale" means whatever size means for this kind of clip.
     if (clip.kind === 'overlay' || clip.kind === 'sticker' || clip.kind === 'cursor') (next as { scale?: number; size?: number }).scale = clip.kind === 'cursor' ? undefined : clip.scale * values.scale
     else if (clip.kind === 'shape') (next as unknown as { w: number }).w = clip.w * values.scale
+    else if (clip.kind === 'loader') (next as unknown as { size: number }).size = clip.size * values.scale
     else if (clip.kind === 'video' || clip.kind === 'image') next.scale = (clip.scale ?? 1) * values.scale
     else if (clip.kind === 'text') next.fontSizePct = clip.fontSizePct * values.scale
     else if (clip.kind === 'glass') {
@@ -790,7 +792,7 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
 
 /** Where a clip pivots. Positioned clips turn about themselves, full-frame ones about the frame. */
 function clipCentre(clip: StudioClip, w: number, h: number): { cx: number; cy: number } {
-  if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'shape' || clip.kind === 'cursor') {
+  if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'loader') {
     return { cx: clip.x * w, cy: clip.y * h }
   }
   if (clip.kind === 'video' || clip.kind === 'image') {
@@ -995,6 +997,10 @@ function drawClipContent(
   }
   if (clip.kind === 'cursor') {
     drawCursor(ctx, clip, t, width, height)
+    return
+  }
+  if (clip.kind === 'loader') {
+    drawLoader(ctx, clip, t, width, height)
     return
   }
   if (clip.kind === 'background') {

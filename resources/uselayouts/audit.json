@@ -1,0 +1,3178 @@
+{
+  "generatedBy": "scripts/audit-uselayouts.mjs",
+  "upstream": "https://github.com/iurvish/uselayouts",
+  "upstreamCommit": "78bfa803aed67d424755b66bb3f30eeed42d7502",
+  "catalogueUrl": "https://uselayouts.com/browse",
+  "license": "MIT (Copyright (c) 2025 Urvish Mali)",
+  "total": 64,
+  "insertable": 63,
+  "referenceOnly": 1,
+  "categories": {
+    "Button": 11,
+    "Display": 33,
+    "Input": 7,
+    "Layout": 4,
+    "List": 3,
+    "Navigation": 6
+  },
+  "items": [
+    {
+      "id": "uselayouts-3d-book",
+      "slug": "3d-book",
+      "name": "3D Book",
+      "category": "Display",
+      "tagline": "Page flips with real depth.",
+      "description": "An interactive 3D book component with page flip animations.",
+      "sourceUrl": "https://uselayouts.com/docs/components/3d-book",
+      "registryUrl": "https://uselayouts.com/r/3d-book",
+      "repositoryPaths": [
+        "registry/default/example/3d-book.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/3d-book.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/3d-book.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag",
+      "animation": "CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "book",
+        "pages",
+        "flip"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/3d-book/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/3d-book/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-accessible-action",
+      "slug": "accessible-action",
+      "name": "Accessible Action",
+      "category": "Display",
+      "tagline": "A card stack you can tilt and swipe.",
+      "description": "Interactive draggable card stack with 3D tilt, swipe-to-back gestures, click interactions, random rotation, and smooth spring animations.",
+      "sourceUrl": "https://uselayouts.com/docs/components/accessible-action",
+      "registryUrl": "https://uselayouts.com/r/accessible-action",
+      "repositoryPaths": [
+        "registry/default/example/accessible-action.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/accessible-action.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/accessible-action.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag + click",
+      "animation": "motion (framer), springs, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "cards",
+        "stack",
+        "swipe"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/accessible-action/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/accessible-action/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-accordionos",
+      "slug": "accordionos",
+      "name": "AccordionOS",
+      "category": "Display",
+      "tagline": "Accordions with image transitions.",
+      "description": "Interactive accordion showcase with animated content, image transitions, hover effects, keyboard navigation, autoplay, and responsive design.",
+      "sourceUrl": "https://uselayouts.com/docs/components/accordionos",
+      "registryUrl": "https://uselayouts.com/r/accordionos",
+      "repositoryPaths": [
+        "registry/default/example/accordionos.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/accordionos.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/accordionos.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs, enter/exit presence, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [
+        "delayDuration"
+      ],
+      "tags": [
+        "accordion",
+        "image"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/accordionos/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/accordionos/video.mp4",
+      "deterministicExport": true,
+      "insertable": false,
+      "referenceOnly": true,
+      "unsafePatterns": [
+        "raw HTML injection"
+      ],
+      "sourceNondeterminism": [
+        "setInterval timers"
+      ],
+      "refusal": "Source uses raw HTML injection. Cupric will not adapt it automatically; it stays reference-only.",
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-analog-stick",
+      "slug": "analog-stick",
+      "name": "Analog Stick",
+      "category": "Button",
+      "tagline": "A metallic cap that tilts into the press.",
+      "description": "A metallic stick that tilts into the press. Hover a quadrant and the cap leans, the shadow shifts, and the matching arrow goes amber.",
+      "sourceUrl": "https://uselayouts.com/docs/components/analog-stick",
+      "registryUrl": "https://uselayouts.com/r/analog-stick",
+      "repositoryPaths": [
+        "registry/default/example/analog-stick.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/analog-stick.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/analog-stick.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "passive (autoplay)",
+      "animation": "CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "stick",
+        "press"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/analog-stick/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/analog-stick/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-animated-collection",
+      "slug": "animated-collection",
+      "name": "Animated Collection",
+      "category": "List",
+      "tagline": "Items that rearrange themselves.",
+      "description": "A collection of items with smooth layout transitions and animations.",
+      "sourceUrl": "https://uselayouts.com/docs/components/animated-collection",
+      "registryUrl": "https://uselayouts.com/r/animated-collection",
+      "repositoryPaths": [
+        "registry/default/example/animated-collection.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/animated-collection.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/animated-collection.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "list",
+        "collection"
+      ],
+      "cupricEquivalent": "Native list scene: stacked text rows with staggered rise-in",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/animated-collection/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/animated-collection/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-bento-card",
+      "slug": "bento-card",
+      "name": "Bento Card",
+      "category": "Layout",
+      "tagline": "Tabs inside a single tile.",
+      "description": "An interactive bento card with animated tabs and workspace preview.",
+      "sourceUrl": "https://uselayouts.com/docs/components/bento-card",
+      "registryUrl": "https://uselayouts.com/r/bento-card",
+      "repositoryPaths": [
+        "registry/default/example/bento-card.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/bento-card.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/bento-card.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "bento",
+        "card",
+        "tabs"
+      ],
+      "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/bento-card/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/bento-card/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-bottom-menu",
+      "slug": "bottom-menu",
+      "name": "Bottom Menu",
+      "category": "Navigation",
+      "tagline": "A dock that expands on demand.",
+      "description": "A floating bottom navigation menu with smooth interactions.",
+      "sourceUrl": "https://uselayouts.com/docs/components/bottom-menu",
+      "registryUrl": "https://uselayouts.com/r/bottom-menu",
+      "repositoryPaths": [
+        "registry/default/example/bottom-menu.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/bottom-menu.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/bottom-menu.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "react-use-measure",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click + text/form input",
+      "animation": "motion (framer), enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "nav",
+        "menu",
+        "dock"
+      ],
+      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/bottom-menu/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/bottom-menu/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-bucket",
+      "slug": "bucket",
+      "name": "Bucket",
+      "category": "Display",
+      "tagline": "Chips tossed with physics.",
+      "description": "An interactive card component that simulates a bucket where chips are tossed and replaced with smooth physics-inspired animations.",
+      "sourceUrl": "https://uselayouts.com/docs/components/bucket",
+      "registryUrl": "https://uselayouts.com/r/bucket",
+      "repositoryPaths": [
+        "registry/default/example/bucket.tsx",
+        "hooks/use-mobile.ts"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/bucket.tsx",
+        "resources/uselayouts/hooks/use-mobile.ts"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/bucket.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "passive (autoplay)",
+      "animation": "motion (framer), enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "chips",
+        "bucket"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/bucket/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/bucket/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [
+        "setInterval timers"
+      ],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-card-folder",
+      "slug": "card-folder",
+      "name": "Card Folder",
+      "category": "Display",
+      "tagline": "A folder card with hover depth.",
+      "description": "This component creates an animated folder-style card with a background image, floating 3D object, hover effects, and customizable colors and text. You can easily change the images, colors, content, and animation settings from the card props.",
+      "sourceUrl": "https://uselayouts.com/docs/components/card-folder",
+      "registryUrl": "https://uselayouts.com/r/card-folder",
+      "repositoryPaths": [
+        "registry/default/example/card-folder.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/card-folder.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/card-folder.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "folder",
+        "card"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/card-folder/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/card-folder/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-client-card",
+      "slug": "client-card",
+      "name": "Client Card",
+      "category": "Display",
+      "tagline": "A CRM card with paid and deadline rings.",
+      "description": "A client CRM card with payment and deadline rings, plus a morphing avatar stack.",
+      "sourceUrl": "https://uselayouts.com/docs/components/client-card",
+      "registryUrl": "https://uselayouts.com/r/client-card",
+      "repositoryPaths": [
+        "registry/default/example/client-card.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/client-card.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/client-card.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "lucide-react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [
+        "className"
+      ],
+      "optionalProps": [
+        "name",
+        "country",
+        "image",
+        "service",
+        "amountPaid",
+        "totalAmount",
+        "plan",
+        "deadline",
+        "startDate"
+      ],
+      "tags": [
+        "card",
+        "crm"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/client-card/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/client-card/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [
+        "wall clock"
+      ],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-confidential-folder",
+      "slug": "confidential-folder",
+      "name": "Confidential Folder",
+      "category": "Display",
+      "tagline": "A sleeve that pulls a letter out and flips it.",
+      "description": "A charcoal sleeve that pulls a letter out, flips it, and lands it in front of you.",
+      "sourceUrl": "https://uselayouts.com/docs/components/confidential-folder",
+      "registryUrl": "https://uselayouts.com/r/confidential-folder",
+      "repositoryPaths": [
+        "registry/default/example/confidential-folder.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/confidential-folder.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/confidential-folder.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click + keyboard",
+      "animation": "CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "folder",
+        "letter"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/confidential-folder/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/confidential-folder/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-corner-video",
+      "slug": "corner-video",
+      "name": "Corner Video",
+      "category": "Display",
+      "tagline": "A player that morphs from the corner.",
+      "description": "A compact corner video player with smooth open/close morphing, autoplay, mute, enlarge, hover controls, and video scrubbing.",
+      "sourceUrl": "https://uselayouts.com/docs/components/corner-video",
+      "registryUrl": "https://uselayouts.com/r/corner-video",
+      "repositoryPaths": [
+        "registry/default/example/corner-video.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/corner-video.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/corner-video.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer)",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "video",
+        "player"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/corner-video/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/corner-video/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-coverflow-drag",
+      "slug": "coverflow-drag",
+      "name": "Coverflow Drag",
+      "category": "Display",
+      "tagline": "Portraits that coverflow as you drag.",
+      "description": "A drag coverflow of portraits that scale, dim, and snap as you swipe.",
+      "sourceUrl": "https://uselayouts.com/docs/components/coverflow-drag",
+      "registryUrl": "https://uselayouts.com/r/coverflow-drag",
+      "repositoryPaths": [
+        "registry/default/example/coverflow-drag.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/coverflow-drag.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/coverflow-drag.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag",
+      "animation": "motion (framer), springs, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "carousel",
+        "coverflow",
+        "slider",
+        "drag"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/coverflow-drag/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/coverflow-drag/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-create-menu",
+      "slug": "create-menu",
+      "name": "Create Menu",
+      "category": "Button",
+      "tagline": "A create pill that opens into actions.",
+      "description": "A Start Creating pill that springs open into a list of create actions.",
+      "sourceUrl": "https://uselayouts.com/docs/components/create-menu",
+      "registryUrl": "https://uselayouts.com/r/create-menu",
+      "repositoryPaths": [
+        "registry/default/example/create-menu.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/create-menu.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/create-menu.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/react",
+        "@hugeicons/core-free-icons"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "menu",
+        "create"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/create-menu/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/create-menu/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-curve-drawer",
+      "slug": "curve-drawer",
+      "name": "Curve Drawer",
+      "category": "Display",
+      "tagline": "A side drawer whose inner edge morphs from a bulge to a line.",
+      "description": "Side drawers whose inner edge starts as a bulge and morphs into a straight line as the panel settles.",
+      "sourceUrl": "https://uselayouts.com/docs/components/curve-drawer",
+      "registryUrl": "https://uselayouts.com/r/curve-drawer",
+      "repositoryPaths": [
+        "registry/default/example/curve-drawer.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/curve-drawer.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/curve-drawer.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "vaul",
+        "lucide-react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [
+        "button"
+      ],
+      "interaction": "drag",
+      "animation": "CSS transitions",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "drawer",
+        "sidebar"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/curve-drawer/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/curve-drawer/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-day-picker",
+      "slug": "day-picker",
+      "name": "Day Picker",
+      "category": "Input",
+      "tagline": "Dates chosen without friction.",
+      "description": "A custom day picker component with smooth animations.",
+      "sourceUrl": "https://uselayouts.com/docs/components/day-picker",
+      "registryUrl": "https://uselayouts.com/r/day-picker",
+      "repositoryPaths": [
+        "registry/default/example/day-picker.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/day-picker.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/day-picker.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "date",
+        "calendar",
+        "picker",
+        "input"
+      ],
+      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/day-picker/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/day-picker/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-delete-button",
+      "slug": "delete-button",
+      "name": "Delete Button",
+      "category": "Button",
+      "tagline": "Confirmation folded into one tap.",
+      "description": "A confirmation button with smooth icon transitions.",
+      "sourceUrl": "https://uselayouts.com/docs/components/delete-button",
+      "registryUrl": "https://uselayouts.com/r/delete-button",
+      "repositoryPaths": [
+        "registry/default/example/delete-button.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/delete-button.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/delete-button.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "dialkit",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), shared layout, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "delete",
+        "confirm"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/delete-button/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/delete-button/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-discover-button",
+      "slug": "discover-button",
+      "name": "Discover Button",
+      "category": "Button",
+      "tagline": "A button that opens up.",
+      "description": "An interactive button with expanding discovery state.",
+      "sourceUrl": "https://uselayouts.com/docs/components/discover-button",
+      "registryUrl": "https://uselayouts.com/r/discover-button",
+      "repositoryPaths": [
+        "registry/default/example/discover-button.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/discover-button.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/discover-button.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click + text/form input",
+      "animation": "motion (framer), springs, shared layout",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "discover"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/discover-button/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/discover-button/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-discrete-tabs",
+      "slug": "discrete-tabs",
+      "name": "Discrete Tabs",
+      "category": "Navigation",
+      "tagline": "Sliding between quiet states.",
+      "description": "A tab component with discrete sliding animations.",
+      "sourceUrl": "https://uselayouts.com/docs/components/discrete-tabs",
+      "registryUrl": "https://uselayouts.com/r/discrete-tabs",
+      "repositoryPaths": [
+        "registry/default/example/discrete-tabs.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/discrete-tabs.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/discrete-tabs.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "tabs",
+        "nav"
+      ],
+      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/discrete-tabs/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/discrete-tabs/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-drawer-buttons",
+      "slug": "drawer-buttons",
+      "name": "Drawer Buttons",
+      "category": "Button",
+      "tagline": "Buttons that fold open a payment drawer and a cart.",
+      "description": "Two buttons that open side drawers with a 3D fold. Payment comes from the right, cart from the left, and the fields stagger in.",
+      "sourceUrl": "https://uselayouts.com/docs/components/drawer-buttons",
+      "registryUrl": "https://uselayouts.com/r/drawer-buttons",
+      "repositoryPaths": [
+        "registry/default/example/drawer-buttons.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/drawer-buttons.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/drawer-buttons.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "vaul",
+        "lucide-react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [
+        "button",
+        "input",
+        "textarea",
+        "select",
+        "field"
+      ],
+      "interaction": "passive (autoplay)",
+      "animation": "motion (framer), CSS keyframes, CSS 3D",
+      "requiredProps": [
+        "children",
+        "className",
+        "open",
+        "side",
+        "transitionDuration"
+      ],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "drawer",
+        "cart",
+        "payment"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/drawer-buttons/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/drawer-buttons/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-dynamic-grid-gallery",
+      "slug": "dynamic-grid-gallery",
+      "name": "Dynamic Grid Gallery",
+      "category": "Display",
+      "tagline": "A grid that grows toward the cursor.",
+      "description": "A 3×2 photo grid that grows the hovered row and column so one still takes the stage.",
+      "sourceUrl": "https://uselayouts.com/docs/components/dynamic-grid-gallery",
+      "registryUrl": "https://uselayouts.com/r/dynamic-grid-gallery",
+      "repositoryPaths": [
+        "registry/default/example/dynamic-grid-gallery.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/dynamic-grid-gallery.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/dynamic-grid-gallery.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [],
+      "registryDependencies": [],
+      "interaction": "hover",
+      "animation": "CSS transitions",
+      "requiredProps": [],
+      "optionalProps": [
+        "items",
+        "gap",
+        "expandFactor",
+        "rounded",
+        "className"
+      ],
+      "tags": [
+        "gallery",
+        "grid",
+        "photos"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/dynamic-grid-gallery/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/dynamic-grid-gallery/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-dynamic-toolbar",
+      "slug": "dynamic-toolbar",
+      "name": "Dynamic Toolbar",
+      "category": "Navigation",
+      "tagline": "Resizes around its content.",
+      "description": "A toolbar that adapts its size and layout based on content.",
+      "sourceUrl": "https://uselayouts.com/docs/components/dynamic-toolbar",
+      "registryUrl": "https://uselayouts.com/r/dynamic-toolbar",
+      "repositoryPaths": [
+        "registry/default/example/dynamic-toolbar.tsx",
+        "hooks/use-measure.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/dynamic-toolbar.tsx",
+        "resources/uselayouts/hooks/use-measure.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/dynamic-toolbar.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "toolbar",
+        "nav"
+      ],
+      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/dynamic-toolbar/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/dynamic-toolbar/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-editorial-deck",
+      "slug": "editorial-deck",
+      "name": "Editorial Deck",
+      "category": "Display",
+      "tagline": "Swipe stories back into the stack.",
+      "description": "A stacked editorial story deck. Drag the front card and it springs back into the pile.",
+      "sourceUrl": "https://uselayouts.com/docs/components/editorial-deck",
+      "registryUrl": "https://uselayouts.com/r/editorial-deck",
+      "repositoryPaths": [
+        "registry/default/example/editorial-deck.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/editorial-deck.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/editorial-deck.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag + click",
+      "animation": "motion (framer), springs",
+      "requiredProps": [],
+      "optionalProps": [
+        "cards",
+        "title",
+        "subtitle",
+        "className"
+      ],
+      "tags": [
+        "cards",
+        "deck",
+        "swipe"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/editorial-deck/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/editorial-deck/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [
+        "wall clock"
+      ],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-empty-testimonial",
+      "slug": "empty-testimonial",
+      "name": "Empty Testimonial",
+      "category": "Display",
+      "tagline": "An empty state worth keeping.",
+      "description": "An interactive empty state for testimonials with a playful folder animation.",
+      "sourceUrl": "https://uselayouts.com/docs/components/empty-testimonial",
+      "registryUrl": "https://uselayouts.com/r/empty-testimonial",
+      "repositoryPaths": [
+        "registry/default/example/empty-testimonial.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/empty-testimonial.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/empty-testimonial.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "testimonial",
+        "empty"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/empty-testimonial/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/empty-testimonial/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-expandable-gallery",
+      "slug": "expandable-gallery",
+      "name": "Expandable Gallery",
+      "category": "Display",
+      "tagline": "Photos that grow into place.",
+      "description": "A photo gallery with smooth item expansion.",
+      "sourceUrl": "https://uselayouts.com/docs/components/expandable-gallery",
+      "registryUrl": "https://uselayouts.com/r/expandable-gallery",
+      "repositoryPaths": [
+        "registry/default/example/expandable-gallery.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/expandable-gallery.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/expandable-gallery.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [
+        "button"
+      ],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "gallery",
+        "photos"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/expandable-gallery/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/expandable-gallery/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-feature-carousel",
+      "slug": "feature-carousel",
+      "name": "Feature Carousel",
+      "category": "Display",
+      "tagline": "One idea at a time.",
+      "description": "A smooth carousel for showcasing product features.",
+      "sourceUrl": "https://uselayouts.com/docs/components/feature-carousel",
+      "registryUrl": "https://uselayouts.com/r/feature-carousel",
+      "repositoryPaths": [
+        "registry/default/example/feature-carousel.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/feature-carousel.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/feature-carousel.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "carousel",
+        "slider"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/feature-carousel/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/feature-carousel/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [
+        "setInterval timers"
+      ],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-filter-interaction",
+      "slug": "filter-interaction",
+      "name": "Filter Interaction",
+      "category": "List",
+      "tagline": "Rows that answer the cursor.",
+      "description": "Interactive list items with hover and focus effects.",
+      "sourceUrl": "https://uselayouts.com/docs/components/filter-interaction",
+      "registryUrl": "https://uselayouts.com/r/filter-interaction",
+      "repositoryPaths": [
+        "registry/default/example/filter-interaction.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/filter-interaction.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/filter-interaction.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, shared layout",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "list",
+        "filter"
+      ],
+      "cupricEquivalent": "Native list scene: stacked text rows with staggered rise-in",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/filter-interaction/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/filter-interaction/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-fluid-expanding-grid",
+      "slug": "fluid-expanding-grid",
+      "name": "Fluid Expanding Grid",
+      "category": "Layout",
+      "tagline": "A grid that breathes.",
+      "description": "A responsive gallery grid that fluidly shifts and expands items using motion layout.",
+      "sourceUrl": "https://uselayouts.com/docs/components/fluid-expanding-grid",
+      "registryUrl": "https://uselayouts.com/r/fluid-expanding-grid",
+      "repositoryPaths": [
+        "registry/default/example/fluid-expanding-grid.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/fluid-expanding-grid.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/fluid-expanding-grid.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, shared layout",
+      "requiredProps": [
+        "className"
+      ],
+      "optionalProps": [
+        "items",
+        "id"
+      ],
+      "tags": [
+        "grid",
+        "layout"
+      ],
+      "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/fluid-expanding-grid/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/fluid-expanding-grid/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-focus-testimonials",
+      "slug": "focus-testimonials",
+      "name": "Focus Testimonials",
+      "category": "Display",
+      "tagline": "Hover to bring one voice forward.",
+      "description": "Interactive testimonial section with hover-based focus effects, animated author tooltips, and expandable testimonials.",
+      "sourceUrl": "https://uselayouts.com/docs/components/focus-testimonials",
+      "registryUrl": "https://uselayouts.com/r/focus-testimonials",
+      "repositoryPaths": [
+        "registry/default/example/focus-testimonials.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/focus-testimonials.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/focus-testimonials.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "testimonial"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/focus-testimonials/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/focus-testimonials/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-folder-interaction",
+      "slug": "folder-interaction",
+      "name": "Folder Interaction",
+      "category": "Display",
+      "tagline": "Files that feel physical.",
+      "description": "A folder management system with drag-and-drop-like feel.",
+      "sourceUrl": "https://uselayouts.com/docs/components/folder-interaction",
+      "registryUrl": "https://uselayouts.com/r/folder-interaction",
+      "repositoryPaths": [
+        "registry/default/example/folder-interaction.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/folder-interaction.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/folder-interaction.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "folder",
+        "files"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/folder-interaction/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/folder-interaction/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-get-in-touch",
+      "slug": "get-in-touch",
+      "name": "Get In Touch",
+      "category": "Button",
+      "tagline": "A contact pill that merges you with a portrait.",
+      "description": "A glossy contact pill. Hover and the label lifts away so a portrait and YOU merge, then Let’s Talk! writes in.",
+      "sourceUrl": "https://uselayouts.com/docs/components/get-in-touch",
+      "registryUrl": "https://uselayouts.com/r/get-in-touch",
+      "repositoryPaths": [
+        "registry/default/example/get-in-touch.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/get-in-touch.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/get-in-touch.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover",
+      "animation": "motion (framer), springs",
+      "requiredProps": [
+        "href",
+        "className"
+      ],
+      "optionalProps": [
+        "imageSrc",
+        "defaultText",
+        "hoverText"
+      ],
+      "tags": [
+        "button",
+        "contact"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/get-in-touch/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/get-in-touch/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-holographic-referral-card",
+      "slug": "holographic-referral-card",
+      "name": "Holographic Referral Card",
+      "category": "Display",
+      "tagline": "A dark invite card that tilts with a holographic glow.",
+      "description": "A dark invite card that tilts in 3D with the pointer. A holographic glow follows. Touch stays still. Tab for a quiet glow.",
+      "sourceUrl": "https://uselayouts.com/docs/components/holographic-referral-card",
+      "registryUrl": "https://uselayouts.com/r/holographic-referral-card",
+      "repositoryPaths": [
+        "registry/default/example/holographic-referral-card.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/holographic-referral-card.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/holographic-referral-card.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover",
+      "animation": "motion (framer), springs, CSS 3D",
+      "requiredProps": [
+        "secondLogoHref",
+        "secondLogoAriaLabel",
+        "className"
+      ],
+      "optionalProps": [
+        "image",
+        "imageAlt",
+        "title",
+        "description",
+        "logo",
+        "logoAlt",
+        "secondLogo",
+        "secondLogoAlt",
+        "ariaLabel"
+      ],
+      "tags": [
+        "card",
+        "referral"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/holographic-referral-card/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/holographic-referral-card/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-gooey-navbar",
+      "slug": "gooey-navbar",
+      "name": "Gooey Navbar",
+      "category": "Navigation",
+      "tagline": "Pills that melt into each other.",
+      "description": "A pill nav that melts into its neighbor when you hover — liquid bridges, active dot.",
+      "sourceUrl": "https://uselayouts.com/docs/components/gooey-navbar",
+      "registryUrl": "https://uselayouts.com/r/gooey-navbar",
+      "repositoryPaths": [
+        "registry/default/example/gooey-navbar.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/gooey-navbar.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/gooey-navbar.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "canvas",
+      "requiredProps": [
+        "activeIndex",
+        "onSelect",
+        "0",
+        "0)\"",
+        "255",
+        "255",
+        "0.8)\"",
+        "255",
+        "255)\""
+      ],
+      "optionalProps": [
+        "items",
+        "defaultActiveIndex",
+        "pillColor",
+        "textColor",
+        "hoverTextColor",
+        "fontSize",
+        "paddingX",
+        "paddingY",
+        "cornerRadius",
+        "gap",
+        "neighborPush",
+        "anchorEdge",
+        "neckRatio",
+        "stiffness",
+        "damping",
+        "mass",
+        "className"
+      ],
+      "tags": [
+        "nav",
+        "navbar"
+      ],
+      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/gooey-navbar/poster-a23f8deef0.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/gooey-navbar/video-32facfe716.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-infinite-grid",
+      "slug": "infinite-grid",
+      "name": "Infinite Canvas",
+      "category": "Layout",
+      "tagline": "An endless product canvas you can drag.",
+      "description": "A free-panning product canvas that tiles forever — drag, scroll, and skim an endless grid of images and captions.",
+      "sourceUrl": "https://uselayouts.com/docs/components/infinite-grid",
+      "registryUrl": "https://uselayouts.com/r/infinite-grid",
+      "repositoryPaths": [
+        "registry/default/example/infinite-grid.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/infinite-grid.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/infinite-grid.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "CSS keyframes",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "canvas",
+        "grid",
+        "drag"
+      ],
+      "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/infinite-grid/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/infinite-grid/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-inline-edit",
+      "slug": "inline-edit",
+      "name": "Inline Edit",
+      "category": "Input",
+      "tagline": "Read and write in one field.",
+      "description": "An input that switches between read and edit modes.",
+      "sourceUrl": "https://uselayouts.com/docs/components/inline-edit",
+      "registryUrl": "https://uselayouts.com/r/inline-edit",
+      "repositoryPaths": [
+        "registry/default/example/inline-edit.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/inline-edit.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/inline-edit.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [
+        "input"
+      ],
+      "interaction": "click + text/form input",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "input",
+        "edit"
+      ],
+      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/inline-edit/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/inline-edit/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-liquid-index",
+      "slug": "liquid-index",
+      "name": "Liquid Index",
+      "category": "Display",
+      "tagline": "A feature list with a liquid hover badge.",
+      "description": "A feature list whose hover badge is a WebGL liquid gradient that tracks the row.",
+      "sourceUrl": "https://uselayouts.com/docs/components/liquid-index",
+      "registryUrl": "https://uselayouts.com/r/liquid-index",
+      "repositoryPaths": [
+        "registry/default/example/liquid-index.tsx",
+        "registry/default/example/liquid-index-canvas.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/liquid-index.tsx",
+        "resources/uselayouts/registry/default/example/liquid-index-canvas.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/liquid-index.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs, enter/exit presence, canvas",
+      "requiredProps": [
+        "colors",
+        "seed"
+      ],
+      "optionalProps": [
+        "speed",
+        "paused"
+      ],
+      "tags": [
+        "list",
+        "index"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/liquid-index/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/liquid-index/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-magnified-bento",
+      "slug": "magnified-bento",
+      "name": "Magnified Bento",
+      "category": "Layout",
+      "tagline": "A lens you can drag.",
+      "description": "A bento card component with a draggable magnifying lens effect over scrolling chips.",
+      "sourceUrl": "https://uselayouts.com/docs/components/magnified-bento",
+      "registryUrl": "https://uselayouts.com/r/magnified-bento",
+      "repositoryPaths": [
+        "registry/default/example/magnified-bento.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/magnified-bento.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/magnified-bento.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag",
+      "animation": "motion (framer)",
+      "requiredProps": [],
+      "optionalProps": [
+        "size"
+      ],
+      "tags": [
+        "bento",
+        "magnify"
+      ],
+      "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/magnified-bento/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/magnified-bento/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-morphing-input",
+      "slug": "morphing-input",
+      "name": "Morphing Input",
+      "category": "Input",
+      "tagline": "One field, many shapes.",
+      "description": "An input field that morphs between different states.",
+      "sourceUrl": "https://uselayouts.com/docs/components/morphing-input",
+      "registryUrl": "https://uselayouts.com/r/morphing-input",
+      "repositoryPaths": [
+        "registry/default/example/morphing-input.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/morphing-input.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/morphing-input.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [
+        "input"
+      ],
+      "interaction": "click + text/form input",
+      "animation": "motion (framer), springs, enter/exit presence",
+      "requiredProps": [
+        "text"
+      ],
+      "optionalProps": [],
+      "tags": [
+        "input",
+        "search"
+      ],
+      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/morphing-input/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/morphing-input/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-multi-step-form",
+      "slug": "multi-step-form",
+      "name": "Multi Step Form",
+      "category": "Input",
+      "tagline": "Long forms made short.",
+      "description": "A dynamic, animated multi-step form with validation.",
+      "sourceUrl": "https://uselayouts.com/docs/components/multi-step-form",
+      "registryUrl": "https://uselayouts.com/r/multi-step-form",
+      "repositoryPaths": [
+        "registry/default/example/multi-step-form.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/multi-step-form.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/multi-step-form.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "date-fns",
+        "react-hook-form",
+        "@hookform/resolvers",
+        "zod",
+        "sonner",
+        "lucide-react",
+        "react-use-measure",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [
+        "card",
+        "button",
+        "input",
+        "textarea",
+        "select",
+        "badge",
+        "calendar",
+        "popover"
+      ],
+      "interaction": "click + keyboard",
+      "animation": "motion (framer), springs, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "form",
+        "input"
+      ],
+      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/multi-step-form/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/multi-step-form/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-overlapping-slider",
+      "slug": "overlapping-slider",
+      "name": "Overlapping Slider",
+      "category": "Display",
+      "tagline": "A landing row of portraits. The left card scales back.",
+      "description": "A full-width landing row of portrait cards. They sit flat until you move — then the card on the left scales back.",
+      "sourceUrl": "https://uselayouts.com/docs/components/overlapping-slider",
+      "registryUrl": "https://uselayouts.com/r/overlapping-slider",
+      "repositoryPaths": [
+        "registry/default/example/overlapping-slider.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/overlapping-slider.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/overlapping-slider.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "lucide-react"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag + click",
+      "animation": "CSS transitions",
+      "requiredProps": [
+        "card"
+      ],
+      "optionalProps": [],
+      "tags": [
+        "carousel",
+        "slider"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/overlapping-slider/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/overlapping-slider/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-perspective-text-scroll",
+      "slug": "perspective-text-scroll",
+      "name": "Perspective Text Scroll",
+      "category": "Display",
+      "tagline": "Text that tilts through scroll perspective.",
+      "description": "A polished example interaction built with React and Motion.",
+      "sourceUrl": "https://uselayouts.com/docs/components/perspective-text-scroll",
+      "registryUrl": "https://uselayouts.com/r/perspective-text-scroll",
+      "repositoryPaths": [
+        "registry/default/example/perspective-text-scroll.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/perspective-text-scroll.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/perspective-text-scroll.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "clsx",
+        "motion",
+        "react",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "passive (autoplay)",
+      "animation": "CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "text",
+        "scroll"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/perspective-text-scroll/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/perspective-text-scroll/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-photo-albums",
+      "slug": "photo-albums",
+      "name": "Photo Albums",
+      "category": "Display",
+      "tagline": "Album stacks that open into a grid.",
+      "description": "Tilted album stacks that expand into a shared-element photo grid.",
+      "sourceUrl": "https://uselayouts.com/docs/components/photo-albums",
+      "registryUrl": "https://uselayouts.com/r/photo-albums",
+      "repositoryPaths": [
+        "registry/default/example/photo-albums.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/photo-albums.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/photo-albums.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "lucide-react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs, shared layout",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "gallery",
+        "album",
+        "photos",
+        "stack"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/photo-albums/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/photo-albums/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-paper-shred-button",
+      "slug": "paper-shred-button",
+      "name": "Paper Shred Button",
+      "category": "Button",
+      "tagline": "A delete button that shreds a page into strips.",
+      "description": "Hover Delete and a page appears above it. Click and the page clips away while paper strips draw in below. After a few seconds it resets so you can shred again.",
+      "sourceUrl": "https://uselayouts.com/docs/components/paper-shred-button",
+      "registryUrl": "https://uselayouts.com/r/paper-shred-button",
+      "repositoryPaths": [
+        "registry/default/example/paper-shred-button.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/paper-shred-button.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/paper-shred-button.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer)",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "delete",
+        "shred"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/paper-shred-button/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/paper-shred-button/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-polaroid-drag",
+      "slug": "polaroid-drag",
+      "name": "Polaroid Drag",
+      "category": "Display",
+      "tagline": "Photos that stack and tilt.",
+      "description": "Draggable Polaroid photo gallery with realistic tilt, stacking, smooth animations, and customizable captions, sizes, and decorations.",
+      "sourceUrl": "https://uselayouts.com/docs/components/polaroid-drag",
+      "registryUrl": "https://uselayouts.com/r/polaroid-drag",
+      "repositoryPaths": [
+        "registry/default/example/polaroid-drag.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/polaroid-drag.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/polaroid-drag.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag + hover + click",
+      "animation": "motion (framer), springs, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "photos",
+        "polaroid",
+        "drag",
+        "stack"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/polaroid-drag/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/polaroid-drag/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [
+        "Math.random"
+      ],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-polaroid-stack",
+      "slug": "polaroid-stack",
+      "name": "Polaroid Stack",
+      "category": "Display",
+      "tagline": "Prints that fan out from a pile on hover.",
+      "description": "Seven Polaroids sit in a pile. Hover and they fan into an arc from one corner.",
+      "sourceUrl": "https://uselayouts.com/docs/components/polaroid-stack",
+      "registryUrl": "https://uselayouts.com/r/polaroid-stack",
+      "repositoryPaths": [
+        "registry/default/example/polaroid-stack.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/polaroid-stack.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/polaroid-stack.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "passive (autoplay)",
+      "animation": "CSS transitions",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "photos",
+        "polaroid",
+        "stack"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/polaroid-stack/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/polaroid-stack/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-pop-tilt-cards",
+      "slug": "pop-tilt-cards",
+      "name": "Pop Tilt Cards",
+      "category": "Display",
+      "tagline": "A deck that pops toward the cursor.",
+      "description": "Interactive tilt card deck with smooth hover animations, 3D popping effects, images, links, and customizable card styling.",
+      "sourceUrl": "https://uselayouts.com/docs/components/pop-tilt-cards",
+      "registryUrl": "https://uselayouts.com/r/pop-tilt-cards",
+      "repositoryPaths": [
+        "registry/default/example/pop-tilt-cards.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/pop-tilt-cards.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/pop-tilt-cards.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "clsx",
+        "motion",
+        "react",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "cards",
+        "tilt"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/pop-tilt-cards/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/pop-tilt-cards/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-pricing-card",
+      "slug": "pricing-card",
+      "name": "Pricing Card",
+      "category": "Display",
+      "tagline": "Hierarchy that sells itself.",
+      "description": "A focused pricing card layout with clear hierarchy.",
+      "sourceUrl": "https://uselayouts.com/docs/components/pricing-card",
+      "registryUrl": "https://uselayouts.com/r/pricing-card",
+      "repositoryPaths": [
+        "registry/default/example/pricing-card.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/pricing-card.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/pricing-card.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "lucide-react",
+        "@number-flow/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "card",
+        "pricing"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/pricing-card/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/pricing-card/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-prompt-box",
+      "slug": "prompt-box",
+      "name": "Prompt Box",
+      "category": "Input",
+      "tagline": "A composer that expands into a prompt with a model menu.",
+      "description": "A collapsed chat composer that expands into a textarea with a model menu and send control.",
+      "sourceUrl": "https://uselayouts.com/docs/components/prompt-box",
+      "registryUrl": "https://uselayouts.com/r/prompt-box",
+      "repositoryPaths": [
+        "registry/default/example/prompt-box.tsx",
+        "registry/default/example/prompt-box-icons.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/prompt-box.tsx",
+        "resources/uselayouts/registry/default/example/prompt-box-icons.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/prompt-box.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@base-ui/react",
+        "lucide-react"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click + keyboard + text/form input",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [
+        "onSubmit",
+        "placeholder",
+        "settings",
+        "defaultSettings",
+        "onSettingsChange"
+      ],
+      "optionalProps": [
+        "menuActions",
+        "plusMenuItems",
+        "settingGroups"
+      ],
+      "tags": [
+        "input",
+        "prompt",
+        "ai"
+      ],
+      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/prompt-box/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/prompt-box/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-rolling-card-stack",
+      "slug": "rolling-card-stack",
+      "name": "Rolling Card Stack",
+      "category": "Display",
+      "tagline": "Cards that roll into place.",
+      "description": "It’s a responsive, animated rolling card stack component built with React, TypeScript, Tailwind CSS, and Framer Motion. It supports desktop/mobile layouts, swipe and keyboard navigation, autoplay, pagination, and customizable card content",
+      "sourceUrl": "https://uselayouts.com/docs/components/rolling-card-stack",
+      "registryUrl": "https://uselayouts.com/r/rolling-card-stack",
+      "repositoryPaths": [
+        "registry/default/example/rolling-card-stack.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/rolling-card-stack.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/rolling-card-stack.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag + hover + click",
+      "animation": "motion (framer), springs, shared layout",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "cards",
+        "stack"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/rolling-card-stack/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/rolling-card-stack/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [
+        "setInterval timers"
+      ],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-save-button",
+      "slug": "save-button",
+      "name": "Save Button",
+      "category": "Button",
+      "tagline": "Idle, loading, done.",
+      "description": "A button with animated states for idle, loading, and success.",
+      "sourceUrl": "https://uselayouts.com/docs/components/save-button",
+      "registryUrl": "https://uselayouts.com/r/save-button",
+      "repositoryPaths": [
+        "registry/default/example/save-button.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/save-button.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/save-button.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "save",
+        "status",
+        "loading"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/save-button/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/save-button/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-scan-document",
+      "slug": "scan-document",
+      "name": "Scan Document",
+      "category": "Button",
+      "tagline": "A button that unfolds a page and scans it.",
+      "description": "Click Scan and a page unfolds, flips, and a glowing bar reads it. Done holds, then it resets.",
+      "sourceUrl": "https://uselayouts.com/docs/components/scan-document",
+      "registryUrl": "https://uselayouts.com/r/scan-document",
+      "repositoryPaths": [
+        "registry/default/example/scan-document.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/scan-document.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/scan-document.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), enter/exit presence, CSS 3D",
+      "requiredProps": [
+        "transition",
+        "z"
+      ],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "scan",
+        "document"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/scan-document/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/scan-document/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-scroll-split-cards",
+      "slug": "scroll-split-cards",
+      "name": "Scroll Split Cards",
+      "category": "Display",
+      "tagline": "A still that splits into three cards, then flips.",
+      "description": "One photograph that splits into three panels as you scroll, then flips to copy.",
+      "sourceUrl": "https://uselayouts.com/docs/components/scroll-split-cards",
+      "registryUrl": "https://uselayouts.com/r/scroll-split-cards",
+      "repositoryPaths": [
+        "registry/default/example/scroll-split-cards.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/scroll-split-cards.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/scroll-split-cards.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion"
+      ],
+      "registryDependencies": [],
+      "interaction": "scroll",
+      "animation": "motion (framer), CSS 3D",
+      "requiredProps": [
+        "containerRef"
+      ],
+      "optionalProps": [
+        "items",
+        "imageSrc",
+        "className"
+      ],
+      "tags": [
+        "cards",
+        "scroll",
+        "split"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/scroll-split-cards/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/scroll-split-cards/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-scroll-stack-deck",
+      "slug": "scroll-stack-deck",
+      "name": "Scroll Stack Deck",
+      "category": "Display",
+      "tagline": "Cards that stack as you scroll.",
+      "description": "Scroll-linked project cards that pin in the viewport and stack, scale, and settle as you move down the page.",
+      "sourceUrl": "https://uselayouts.com/docs/components/scroll-stack-deck",
+      "registryUrl": "https://uselayouts.com/r/scroll-stack-deck",
+      "repositoryPaths": [
+        "registry/default/example/scroll-stack-deck.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/scroll-stack-deck.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/scroll-stack-deck.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "lenis",
+        "motion",
+        "react"
+      ],
+      "registryDependencies": [],
+      "interaction": "scroll",
+      "animation": "motion (framer), springs, CSS 3D",
+      "requiredProps": [
+        "clear systems",
+        "and product stories that hold up under a slow scroll.\"",
+        "container"
+      ],
+      "optionalProps": [
+        "projects",
+        "title",
+        "subtitle",
+        "scrollIndicatorText",
+        "className",
+        "showFooter",
+        "enableLenis"
+      ],
+      "tags": [
+        "cards",
+        "stack",
+        "scroll"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/scroll-stack-deck/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/scroll-stack-deck/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-set-timer",
+      "slug": "set-timer",
+      "name": "Set Timer",
+      "category": "Input",
+      "tagline": "A pill that morphs into a wheel, then a countdown.",
+      "description": "A dark timer pill that morphs into a minute wheel picker, then into a running timer with pause, cancel, and a rounded-rectangle progress border.",
+      "sourceUrl": "https://uselayouts.com/docs/components/set-timer",
+      "registryUrl": "https://uselayouts.com/r/set-timer",
+      "repositoryPaths": [
+        "registry/default/example/set-timer.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/set-timer.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/set-timer.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@ncdai/react-wheel-picker",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click + text/form input",
+      "animation": "motion (framer), springs, enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "timer",
+        "input"
+      ],
+      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/set-timer/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/set-timer/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [
+        "wall clock",
+        "setInterval timers"
+      ],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-shake-testimonial-card",
+      "slug": "shake-testimonial-card",
+      "name": "Shake Testimonial Card",
+      "category": "Display",
+      "tagline": "Praise with a pulse.",
+      "description": "An eye-catching testimonial card with playful animations.",
+      "sourceUrl": "https://uselayouts.com/docs/components/shake-testimonial-card",
+      "registryUrl": "https://uselayouts.com/r/shake-testimonial-card",
+      "repositoryPaths": [
+        "registry/default/example/shake-testimonial-card.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/shake-testimonial-card.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/shake-testimonial-card.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click",
+      "animation": "motion (framer), springs, enter/exit presence, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "card",
+        "testimonial"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/shake-testimonial-card/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/shake-testimonial-card/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [
+        "setInterval timers"
+      ],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-slide-subscribe",
+      "slug": "slide-subscribe",
+      "name": "Slide Subscribe",
+      "category": "Input",
+      "tagline": "Pick a plan, then slide to start.",
+      "description": "Pick a billing period, then slide to start a trial.",
+      "sourceUrl": "https://uselayouts.com/docs/components/slide-subscribe",
+      "registryUrl": "https://uselayouts.com/r/slide-subscribe",
+      "repositoryPaths": [
+        "registry/default/example/slide-subscribe.tsx",
+        "registry/default/example/slide-subscribe-unlock.tsx",
+        "registry/default/example/slide-subscribe-shimmer.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/slide-subscribe.tsx",
+        "resources/uselayouts/registry/default/example/slide-subscribe-unlock.tsx",
+        "resources/uselayouts/registry/default/example/slide-subscribe-shimmer.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/slide-subscribe.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/react",
+        "@hugeicons/core-free-icons",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag + click",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence, CSS keyframes",
+      "requiredProps": [
+        "className",
+        "children",
+        "onUnlock"
+      ],
+      "optionalProps": [
+        "handleWidth"
+      ],
+      "tags": [
+        "subscribe",
+        "slider",
+        "input"
+      ],
+      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/slide-subscribe/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/slide-subscribe/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-smooth-dropdown",
+      "slug": "smooth-dropdown",
+      "name": "Smooth Dropdown",
+      "category": "Navigation",
+      "tagline": "Menus that never jump.",
+      "description": "A dropdown menu with premium layout transitions.",
+      "sourceUrl": "https://uselayouts.com/docs/components/smooth-dropdown",
+      "registryUrl": "https://uselayouts.com/r/smooth-dropdown",
+      "repositoryPaths": [
+        "registry/default/example/smooth-dropdown.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/smooth-dropdown.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/smooth-dropdown.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs, shared layout",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "dropdown",
+        "menu",
+        "nav"
+      ],
+      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/smooth-dropdown/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/smooth-dropdown/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-stack-scroll-reveal",
+      "slug": "stack-scroll-reveal",
+      "name": "Stack Scroll Reveal",
+      "category": "Display",
+      "tagline": "Cards that peel off a stack as you scroll.",
+      "description": "Scroll-linked case-study cards that pin in the viewport and peel, scale, and fade as you move down the page.",
+      "sourceUrl": "https://uselayouts.com/docs/components/stack-scroll-reveal",
+      "registryUrl": "https://uselayouts.com/r/stack-scroll-reveal",
+      "repositoryPaths": [
+        "registry/default/example/stack-scroll-reveal.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/stack-scroll-reveal.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/stack-scroll-reveal.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "clsx",
+        "lenis",
+        "motion",
+        "react",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "scroll",
+      "animation": "motion (framer), CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "cards",
+        "stack",
+        "scroll"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/stack-scroll-reveal/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/stack-scroll-reveal/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-stacked-list",
+      "slug": "stacked-list",
+      "name": "Stacked List",
+      "category": "List",
+      "tagline": "A stack that unfolds.",
+      "description": "An expandable list widget with a stacked layout and smooth morphing transitions.",
+      "sourceUrl": "https://uselayouts.com/docs/components/stacked-list",
+      "registryUrl": "https://uselayouts.com/r/stacked-list",
+      "repositoryPaths": [
+        "registry/default/example/stacked-list.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/stacked-list.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/stacked-list.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [
+        "input",
+        "button"
+      ],
+      "interaction": "click + text/form input",
+      "animation": "motion (framer), springs, shared layout, enter/exit presence",
+      "requiredProps": [
+        "type",
+        "label"
+      ],
+      "optionalProps": [],
+      "tags": [
+        "list",
+        "stack"
+      ],
+      "cupricEquivalent": "Native list scene: stacked text rows with staggered rise-in",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/stacked-list/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/stacked-list/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-stacked-outline-text",
+      "slug": "stacked-outline-text",
+      "name": "Stacked Outline Text",
+      "category": "Display",
+      "tagline": "Outlined type that leaves a velocity trail when you drag it.",
+      "description": "Heavy outlined type you can drag. Speed leaves a stacked white-on-black trail that springs back when you stop.",
+      "sourceUrl": "https://uselayouts.com/docs/components/stacked-outline-text",
+      "registryUrl": "https://uselayouts.com/r/stacked-outline-text",
+      "repositoryPaths": [
+        "registry/default/example/stacked-outline-text.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/stacked-outline-text.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/stacked-outline-text.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "drag + keyboard",
+      "animation": "motion (framer), springs",
+      "requiredProps": [
+        "displayText",
+        "layerIndex",
+        "stackCount",
+        "shadowOpacity",
+        "shadowX",
+        "shadowY"
+      ],
+      "optionalProps": [],
+      "tags": [
+        "text",
+        "drag"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/stacked-outline-text/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/stacked-outline-text/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-theme-toggle",
+      "slug": "theme-toggle",
+      "name": "Theme Toggle",
+      "category": "Button",
+      "tagline": "A dotted grip that slides across a recessed track.",
+      "description": "A physical switch with a dotted grip. Click and the knob slides across a recessed track.",
+      "sourceUrl": "https://uselayouts.com/docs/components/theme-toggle",
+      "registryUrl": "https://uselayouts.com/r/theme-toggle",
+      "repositoryPaths": [
+        "registry/default/example/theme-toggle.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/theme-toggle.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/theme-toggle.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [],
+      "registryDependencies": [],
+      "interaction": "text/form input",
+      "animation": "CSS transitions",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "theme",
+        "toggle",
+        "dark"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/theme-toggle/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/theme-toggle/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-tactile-button",
+      "slug": "tactile-button",
+      "name": "Tactile Button",
+      "category": "Button",
+      "tagline": "A glass rocker that tilts when you press.",
+      "description": "A liquid-glass rocker that tilts into its well when you press it.",
+      "sourceUrl": "https://uselayouts.com/docs/components/tactile-button",
+      "registryUrl": "https://uselayouts.com/r/tactile-button",
+      "repositoryPaths": [
+        "registry/default/example/tactile-button.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/tactile-button.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/tactile-button.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), springs",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "button",
+        "press"
+      ],
+      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/tactile-button/poster-445352537e.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/tactile-button/video-afb6c148d5.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-vertical-tabs",
+      "slug": "vertical-tabs",
+      "name": "Vertical Tabs",
+      "category": "Navigation",
+      "tagline": "Switching along the edge.",
+      "description": "A vertical tab interaction with smooth content switching.",
+      "sourceUrl": "https://uselayouts.com/docs/components/vertical-tabs",
+      "registryUrl": "https://uselayouts.com/r/vertical-tabs",
+      "repositoryPaths": [
+        "registry/default/example/vertical-tabs.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/vertical-tabs.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/vertical-tabs.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "@hugeicons/core-free-icons",
+        "@hugeicons/react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "hover + click",
+      "animation": "motion (framer), enter/exit presence",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "tabs",
+        "nav"
+      ],
+      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/vertical-tabs/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/vertical-tabs/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [
+        "setInterval timers"
+      ],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    },
+    {
+      "id": "uselayouts-wheel-carousel",
+      "slug": "wheel-carousel",
+      "name": "Wheel Carousel",
+      "category": "Display",
+      "tagline": "A wheel you can spin through.",
+      "description": "This component creates a smooth wheel-style carousel with photos and selectable items. It supports drag, scroll, keyboard controls, snapping, momentum, themes, image crossfades, and customizable layout and colors.",
+      "sourceUrl": "https://uselayouts.com/docs/components/wheel-carousel",
+      "registryUrl": "https://uselayouts.com/r/wheel-carousel",
+      "repositoryPaths": [
+        "registry/default/example/wheel-carousel.tsx"
+      ],
+      "vendoredPaths": [
+        "resources/uselayouts/registry/default/example/wheel-carousel.tsx"
+      ],
+      "allFilesVendored": true,
+      "docsPath": "resources/uselayouts/docs/wheel-carousel.mdx",
+      "license": "MIT",
+      "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+      "dependencies": [
+        "motion",
+        "lucide-react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "registryDependencies": [],
+      "interaction": "click + keyboard",
+      "animation": "motion (framer), CSS keyframes, CSS 3D",
+      "requiredProps": [],
+      "optionalProps": [],
+      "tags": [
+        "carousel",
+        "wheel",
+        "slider"
+      ],
+      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "previewable": true,
+      "posterUrl": "https://cdn.uselayouts.com/components/wheel-carousel/poster.avif",
+      "videoUrl": "https://cdn.uselayouts.com/components/wheel-carousel/video.mp4",
+      "deterministicExport": true,
+      "insertable": true,
+      "referenceOnly": false,
+      "unsafePatterns": [],
+      "sourceNondeterminism": [],
+      "refusal": null,
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+    }
+  ]
+}

@@ -163,6 +163,8 @@ for (const file of files) {
       }
       if (JSON.stringify(doc) !== before) fail(item, label, 'mutated the input document')
       if (!result.ok) {
+        // Audited reference-only items (unsafe upstream source) must refuse, with the recorded reason.
+        if (item.data?.referenceOnly === true && result.reason === item.data.refusal) { tally['reference-only→refused'] = (tally['reference-only→refused'] ?? 0) + 1; continue }
         fail(item, label, `refused: ${result.reason}`)
         continue
       }

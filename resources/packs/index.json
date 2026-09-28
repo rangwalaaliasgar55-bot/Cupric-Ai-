@@ -139,9 +139,9 @@
     {
       "id": "uselayouts",
       "name": "uselayouts — premium micro-interactions",
-      "description": "64 MIT-licensed React micro-interactions copied from uselayouts. Apply creates a native editable storyboard; source files and dependency notes stay bundled for reference.",
+      "description": "64 MIT-licensed React micro-interactions from uselayouts (complete upstream catalogue, audited by scripts/audit-uselayouts.mjs). 63 apply as native editable storyboards; 1 stay reference-only because their source uses unsafe patterns. Upstream code is never executed.",
       "itemCount": 64,
-      "bytes": 74180
+      "bytes": 126413
     },
     {
       "id": "dashi-motion",
@@ -163,6 +163,13 @@
       "description": "300 attributed case studies plus 12 Cupric-native production rules. Linked media remains external; the autonomous agent uses the playbook as craft guidance for deterministic editable scenes.",
       "itemCount": 312,
       "bytes": 437636
+    },
+    {
+      "id": "transitions-dev",
+      "name": "Transitions.dev — thinking states & matrix loader",
+      "description": "14 loader presets rebuilt as native, export-exact Studio clips with editable text, timing, colour, easing, loop and reduced-motion props.",
+      "itemCount": 14,
+      "bytes": 15589
     }
   ]
 }
