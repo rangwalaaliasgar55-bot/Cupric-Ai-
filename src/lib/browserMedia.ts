@@ -1,5 +1,4 @@
 import { ARENA_SCENE_CSP, inlineBlobAssets, openSandboxedScene, type SandboxedScene } from './studio/htmlTemplateCapture'
-import JSZip from 'jszip'
 
 export type BrowserArenaImportResult = {
   htmlFileName: string
@@ -154,6 +153,7 @@ async function importHtmlFile(file: File, onProgress: (pct: number) => void): Pr
 
 async function importZipFile(file: File, onProgress: (pct: number) => void): Promise<BrowserArenaImportResult> {
   onProgress(8)
+  const { default: JSZip } = await import('jszip') // loaded only when a zip is dropped
   const zip = await JSZip.loadAsync(file)
   const entries = Object.values(zip.files).filter((entry) => !entry.dir)
   const htmlEntry = entries.find((entry) => /(^|\/)index\.html?$/i.test(entry.name)) || entries.find((entry) => /\.html?$/i.test(entry.name))

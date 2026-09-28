@@ -33,6 +33,7 @@ import { CurveEditor } from './CurveEditor'
 import { FontStudio, useUserFonts } from './FontStudio'
 import { FramecnFields, CursorFields, RichTextFields, ShapeFields, ThreeDFields } from './InspectorExtras'
 import { LoaderFields } from './LoaderFields'
+import { KitFields } from './KitFields'
 import { STUDIO_BACKGROUNDS } from '../../lib/studio/backgrounds'
 import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/transitions'
 import { GLASS_PRESETS } from '../../lib/glass'
@@ -388,6 +389,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
       {clip.kind === 'shape' && <ShapeFields clip={clip} onPatch={onPatch} />}
       {clip.kind === 'cursor' && <CursorFields clip={clip} doc={doc} onPatch={onPatch} />}
       {clip.kind === 'loader' && <LoaderFields clip={clip} onPatch={onPatch} />}
+      {clip.kind === 'kit' && <KitFields clip={clip} doc={doc} onPatch={onPatch} />}
       {(clip.kind === 'video' || clip.kind === 'image') && (
         <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
       )}
@@ -496,7 +498,7 @@ function KeyframeFields({
   const keys = clip.keyframes ?? []
   const local = Math.round((time - clip.startSec) * 100) / 100
   const withinClip = local >= 0 && local <= clip.durationSec + 0.001
-  const positioned = clip.kind === 'loader' || clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image'
+  const positioned = clip.kind === 'kit' || clip.kind === 'loader' || clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image'
 
   const currentScale =
     clip.kind === 'overlay' || clip.kind === 'sticker' ? 1 : clip.kind === 'text' ? 1 : clip.kind === 'glass' ? 1 : 1

@@ -1,4 +1,4 @@
-import type { StudioOverlayClip, StudioShapeAnim, StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition, StudioAspect } from '../../types/project'
+import type { StudioKitKind, StudioOverlayClip, StudioShapeAnim, StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition, StudioAspect } from '../../types/project'
 import { VIDEO_FONT_FAMILIES } from './videoFonts'
 import { isUserFont } from './userFonts'
 import { fontshareFont } from './fontStyles'
@@ -16,6 +16,8 @@ import { MAX_TRACKS, defaultTextClip, docDuration, normaliseClip, reorderTracks,
 import { componentFromInstruction, findComponent, validateComponentProps, withComponent } from './components'
 import { studioPlayhead } from './studioLink'
 import { nestScene } from './scenes'
+import { KIT_ACCENTS, KIT_KINDS, isKitKind, normaliseKit } from './homeKit'
+import { HOME_STYLES, planHomeVideo, type HomeFill, type HomeStyleId } from './homeVideos'
 import {
   ALL_RECIPE_IDS,
   choreograph,
@@ -88,6 +90,10 @@ export type StudioEditOp =
   | { type: 'setDucking'; enabled: boolean; amountDb?: number }
   | { type: 'addTestimonialGrid'; count: number; startSec: number }
   | { type: 'addCaptions'; transcript: string; startSec: number; durationSec: number }
+  /** Home_X kit piece (homeKit.ts). Text fields only — numbers must come from the user. */
+  | { type: 'addKit'; kit: StudioKitKind; variant?: string; startSec: number; durationSec: number; x?: number; y?: number; w?: number; title?: string; subtitle?: string; items?: string[]; accent?: string; track?: number }
+  /** One of the six Home_X styles, appended after the current edit. */
+  | { type: 'buildHomeVideo'; style: HomeStyleId; fill?: HomeFill }
 
 export type StudioEditPlan = { summary: string; ops: StudioEditOp[]; source: 'live' | 'local'; warning?: string }
 
@@ -99,7 +105,7 @@ const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', '
 const BLEND_MODES = new Set<StudioBlendMode>(['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'soft-light', 'difference', 'add'])
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
 const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out', 'back-out', 'back-in', 'expo-out', 'expo-in-out', 'elastic-out', 'hold', 'bezier'])
-const KEYFRAME_SCALABLE = ['loader', 'shape', 'overlay', 'sticker', 'video', 'image', 'text', 'glass']
+const KEYFRAME_SCALABLE = ['kit', 'loader', 'shape', 'overlay', 'sticker', 'video', 'image', 'text', 'glass']
 
 /** Default motion for an agent-placed component, by what kind of component it is. */
 export function defaultComponentMotion(slug: string): MotionSpec {
@@ -400,6 +406,30 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
     if (type === 'applyStylePreset' && ['editorial', 'bold-social', 'minimal'].includes(String(op.preset))) {
       return { type, preset: String(op.preset) as 'editorial' | 'bold-social' | 'minimal' }
     }
+    if (type === 'addKit') {
+      if (!isKitKind(op.kit)) throw new Error(`Unknown kit “${String(op.kit)}” — use one of: ${KIT_KINDS.map((k) => k.id).join(', ')}`)
+      const variants = KIT_KINDS.find((k) => k.id === op.kit)!.variants
+      if (op.variant !== undefined && (typeof op.variant !== 'string' || !variants.includes(op.variant))) throw new Error(`Kit ${op.kit} has no look “${String(op.variant)}” — use one of: ${variants.join(', ')}`)
+      if (![op.startSec, op.durationSec].every(finite) || (op.startSec as number) < 0 || (op.durationSec as number) < 0.2) throw new Error(`Operation ${index + 1} has invalid timing`)
+      for (const k of ['x', 'y'] as const) if (op[k] !== undefined && (!finite(op[k]) || (op[k] as number) < 0 || (op[k] as number) > 1)) throw new Error(`Kit ${k} must be 0–1`)
+      if (op.w !== undefined && (!finite(op.w) || (op.w as number) < 0.05 || (op.w as number) > 1.5)) throw new Error('Kit width must be 0.05–1.5 of the frame')
+      if (op.accent !== undefined && !KIT_ACCENTS.some((a) => a.color.toUpperCase() === String(op.accent).toUpperCase())) throw new Error('Kit accent must be a DESIGN video-palette token')
+      for (const k of ['title', 'subtitle'] as const) if (op[k] !== undefined && (typeof op[k] !== 'string' || (op[k] as string).length > 160)) throw new Error(`Kit ${k} must be text of at most 160 characters`)
+      if (op.items !== undefined && (!Array.isArray(op.items) || op.items.length > 12 || op.items.some((v: unknown) => typeof v !== 'string' || v.length > 120))) throw new Error('Kit items must be at most 12 lines of text')
+      if (op.track !== undefined && (!finite(op.track) || (op.track as number) < 0)) throw new Error('Kit track must be a non-negative number')
+      const pick = <K extends string>(keys: readonly K[]) => Object.fromEntries(keys.filter((k) => op[k] !== undefined).map((k) => [k, op[k]]))
+      return { type, kit: op.kit, startSec: op.startSec as number, durationSec: op.durationSec as number, ...pick(['variant', 'x', 'y', 'w', 'title', 'subtitle', 'items', 'accent', 'track'] as const) } as StudioEditOp
+    }
+    if (type === 'buildHomeVideo') {
+      if (!HOME_STYLES.some((st) => st.id === op.style)) throw new Error(`Unknown style “${String(op.style)}” — use one of: ${HOME_STYLES.map((st) => st.id).join(', ')}`)
+      const fill: HomeFill = {}
+      const f = (op.fill && typeof op.fill === 'object' ? op.fill : {}) as Record<string, unknown>
+      for (const k of ['headline', 'supporting', 'cta', 'brand', 'url'] as const) if (typeof f[k] === 'string' && (f[k] as string).trim()) fill[k] = (f[k] as string).trim().slice(0, 120)
+      if (Array.isArray(f.pillWords)) fill.pillWords = f.pillWords.filter((w): w is string => typeof w === 'string' && !!w.trim()).slice(0, 6)
+      if (Array.isArray(f.checklist)) fill.checklist = f.checklist.filter((w): w is string => typeof w === 'string' && !!w.trim()).slice(0, 6)
+      // Numbers (stats, prices, ratings) are NOT accepted from the model — only from the user's own form.
+      return { type, style: op.style as HomeStyleId, fill }
+    }
     throw new Error(`Operation ${index + 1} uses unsupported type “${type}”`)
   }
   // Keep every valid op and report the rest, instead of letting one invented
@@ -429,6 +459,8 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'patchClip') return `Change ${name}: ${Object.entries(op.patch).map(([key, value]) => `${key} → ${value}`).join(', ')}`
   if (op.type === 'moveClip') return `Move ${name}${op.track !== undefined ? ` to T${op.track + 1}` : ''}${op.startSec !== undefined ? ` at ${op.startSec.toFixed(2)}s` : ''}`
   if (op.type === 'deleteClip') return `Delete ${name}`
+  if (op.type === 'addKit') return `Add ${KIT_KINDS.find((k) => k.id === op.kit)?.name ?? op.kit} at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s`
+  if (op.type === 'buildHomeVideo') return `Build “${HOME_STYLES.find((st) => st.id === op.style)?.name ?? op.style}” after the current edit`
   if (op.type === 'addLoader') return `Add ${loaderPreset(op.preset)?.name ?? op.preset} at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s`
   if (op.type === 'addShape') return `Add ${shapeById(op.shape)?.name ?? op.shape} at ${op.startSec.toFixed(2)}s${op.anim ? ` · ${op.anim}` : ''}`
   if (op.type === 'addCursor') return `Add a cursor ${op.action ?? 'click'} on clip ${op.clipId}`
@@ -484,6 +516,16 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       }
       return patched
     }) }
+    else if (op.type === 'addKit') {
+      const dur = op.durationSec
+      let track = op.track !== undefined ? Math.round(op.track) : 1
+      const busy = (tr: number) => next.clips.some((c) => c.track === tr && c.startSec < op.startSec + dur - 0.005 && c.startSec + c.durationSec > op.startSec + 0.005)
+      while (track < MAX_TRACKS - 1 && busy(track)) track++
+      const id = `kit-${op.kit}-${next.clips.length.toString(36)}-${Math.round(op.startSec * 100).toString(36)}`
+      const clip = normaliseKit({ id, kit: op.kit, variant: op.variant, track, startSec: op.startSec, durationSec: dur, x: op.x, y: op.y, w: op.w, title: op.title, subtitle: op.subtitle, items: op.items, accent: op.accent })
+      next = { ...next, trackCount: growTracks(track), clips: [...next.clips, clip] }
+    }
+    else if (op.type === 'buildHomeVideo') next = planHomeVideo(next, op.style, op.fill ?? {}).doc
     else if (op.type === 'addLoader') {
       const r = addLoader(next, op.preset, op.startSec, { durationSec: op.durationSec, ...(op.states ? { states: op.states } : {}), ...(op.x !== undefined ? { x: op.x } : {}), ...(op.y !== undefined ? { y: op.y } : {}) })
       if (r.changed) next = r.doc
@@ -854,6 +896,27 @@ export function localStudioEditPlan(instruction: string, doc: StudioDoc, selecte
   const component = componentPlan(instruction, doc, opts)
   if (component) return component
   if (ADD_TEXT_RE.test(text)) return addTextPlan(instruction, doc, opts)
+  const styleMatch = HOME_STYLES.find((st) => text.includes(st.name.toLowerCase()) || text.includes(st.id))
+  if (styleMatch && /\b(?:build|make|create|add|use)\b/.test(text)) {
+    return { summary: `Build the “${styleMatch.name}” style after the current edit`, source: 'local', ops: [{ type: 'buildHomeVideo', style: styleMatch.id, fill: {} }] }
+  }
+  const pills = /\bemphasi[sz]e\s+(.+?)\s+as\s+pills?\b/i.exec(instruction)
+  if (pills) {
+    const target = doc.clips.find((c) => c.id === selectedId && c.kind === 'text')
+    if (!target || target.kind !== 'text') throw new Error('Select the text clip whose words should become pills, then ask again.')
+    const words = pills[1].split(/,|\band\b/).map((w) => w.trim().replace(/^[“"']|[”"']$/g, '')).filter(Boolean)
+    const missing = words.filter((w) => !new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(target.text))
+    if (missing.length) throw new Error(`“${missing.join('”, “')}” is not in the selected text.`)
+    const title = words.reduce((acc, w) => acc.replace(new RegExp(`\\b(${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'i'), '[$1]'), target.text)
+    return {
+      summary: `Turn ${words.length} word${words.length === 1 ? '' : 's'} into red pills`,
+      source: 'local',
+      ops: [
+        { type: 'addKit', kit: 'pill-text', variant: 'inline', startSec: target.startSec, durationSec: target.durationSec, x: clamp(target.x, 0, 1), y: clamp(target.y, 0, 1), w: 0.7, title, track: target.track },
+        { type: 'deleteClip', clipId: target.id },
+      ],
+    }
+  }
   if (!doc.clips.length) throw new Error('The timeline is empty. Import footage or say “add a title saying …” to start.')
 
   if (/\b(?:fix|resolve|untangle|organi[sz]e|clean up) (?:the )?(?:overlap|overlaps|overlapping|tracks|layers|timeline)/.test(text)) {

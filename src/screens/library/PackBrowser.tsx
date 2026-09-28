@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { LoaderPreview } from '../studio/LoaderPreview'
 import type { StudioLoaderClip } from '../../types/project'
 import { ThinkingStates } from '../../components/loaders/ThinkingStates'
@@ -105,6 +105,7 @@ export function PackBrowser() {
   const [source, setSource] = useState<Source>('none')
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
+  const deferredQuery = useDeferredValue(query)
   const [searchIds, setSearchIds] = useState<Set<string> | null>(null)
   const searchWorker = useRef<Worker | null>(null)
   const [visibleCount, setVisibleCount] = useState(90)
@@ -142,8 +143,8 @@ export function PackBrowser() {
   useEffect(() => {
     const all = pack?.items ?? []
     setSearchIds(null)
-    searchWorker.current?.postMessage({ items: all.map(({ id, name, description, tags }) => ({ id, name, description, tags })), query })
-  }, [pack, query])
+    searchWorker.current?.postMessage({ items: all.map(({ id, name, description, tags }) => ({ id, name, description, tags })), query: deferredQuery })
+  }, [pack, deferredQuery])
 
   useEffect(() => {
     let alive = true
@@ -173,15 +174,30 @@ export function PackBrowser() {
     }
   }, [active])
 
+  // Stable handlers so memoised cards do not re-render on every keystroke.
+  const applyRef = useRef<(item: PackItem) => void>(() => {})
+  const customizeRef = useRef<(item: PackItem) => void>(() => {})
+  const onApplyStable = useCallback((item: PackItem) => applyRef.current(item), [])
+  const onCustomizeStable = useCallback((item: PackItem) => customizeRef.current(item), [])
+
   const items = useMemo(() => {
     const all = pack?.items ?? []
-    if (!query.trim()) return all
+    if (!deferredQuery.trim()) return all
     if (!searchIds) return []
     return all.filter((item) => searchIds.has(item.id))
-  }, [pack, query, searchIds])
+  }, [pack, deferredQuery, searchIds])
   const visibleItems = useMemo(() => items.slice(0, visibleCount), [items, visibleCount])
 
-  useEffect(() => setVisibleCount(90), [active, query])
+  useEffect(() => setVisibleCount(90), [active, deferredQuery])
+  // Grow the window as the user nears the end (the button stays for keyboard users).
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const node = sentinelRef.current
+    if (!node || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) setVisibleCount((c) => c + 90) }, { rootMargin: '600px' })
+    io.observe(node)
+    return () => io.disconnect()
+  }, [visibleItems.length, items.length])
 
   const fillSlots = useMemo(
     () => templateFill ? templateSlots((templateFill.data ?? {}) as TemplateFillData) : [],
@@ -220,6 +236,8 @@ export function PackBrowser() {
   }
 
   /** Every card's Apply goes through the one shared path (also used by stage drops). */
+  applyRef.current = (item) => void addToStudio(item)
+  customizeRef.current = (item) => customizeTemplate(item)
   async function addToStudio(item: PackItem) {
     const ok = await apply(item)
     if (ok) markUsed(item)
@@ -342,116 +360,22 @@ export function PackBrowser() {
             browser lives full-width in Library and in Studio's narrow side panel. */
         <motion.div layout className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3">
           <AnimatePresence mode="popLayout" initial={false}>
-            {visibleItems.map((item, i) => {
-              const Icon = KIND_ICON[item.kind] ?? Layers
-              const disposition = resourceDisposition(item.kind, item)
-              const dispositionLabel = DISPOSITION_LABEL[disposition]
-              const rendering = progress?.id === item.id
-              return (
-                <motion.div
-                  key={item.id}
-                  layout
-                  initial={reduced ? false : { opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={reduced ? undefined : { opacity: 0, scale: 0.97 }}
-                  transition={{ duration: 0.22, ease: EASE_SOFT, delay: reduced ? 0 : Math.min(i, 12) * 0.015 }}
-                  whileHover={reduced ? undefined : { y: -2 }}
-                  // Draggable straight onto the Studio stage; the drop uses the
-                  // same mapping as the button below, so both paths agree.
-                  draggable
-                  onDragStart={(event) =>
-                    writeDragPayload((event as unknown as DragEvent<HTMLDivElement>).dataTransfer, {
-                      kind: item.kind,
-                      id: item.id,
-                      name: item.name,
-                      description: item.description,
-                      data: item.data,
-                    })
-                  }
-                  className="group flex cursor-grab flex-col gap-2.5 cu-panel p-3.5 transition-colors duration-150 hover:border-text/25 active:cursor-grabbing"
-                >
-                  {item.data?.nativeAction === 'loader' && item.data?.loader ? (
-                    <LoaderPreview clip={item.data.loader as Partial<StudioLoaderClip>} width={224} height={72} label={`${item.name} preview`} />
-                  ) : typeof item.data?.posterUrl === 'string' ? (
-                    <img
-                      src={item.data.posterUrl}
-                      alt={`${item.name} preview (from ${String(item.data.provider ?? 'source')})`}
-                      loading="lazy"
-                      className="h-24 w-full rounded-lg border border-line bg-panel-alt object-cover"
-                      onError={(e) => { e.currentTarget.style.display = 'none' }}
-                    />
-                  ) : null}
-                  {typeof item.data?.audit === 'object' && item.data.audit && (
-                    <p className="text-xs text-muted" title={String((item.data.audit as { cupricEquivalent?: string }).cupricEquivalent ?? '')}>
-                      {(item.data.audit as { interaction?: string }).interaction} · {(item.data.audit as { animation?: string }).animation} · {String(item.data.license ?? '')}
-                    </p>
-                  )}
-                  {item.css && (
-                    <div
-                      className="h-14 w-full rounded-lg border border-line"
-                      aria-hidden
-                      ref={(node) => {
-                        if (node) node.setAttribute('style', item.css ?? '')
-                      }}
-                    />
-                  )}
-                  <div className="flex items-start gap-2">
-                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-line bg-panel-alt text-muted">
-                      <Icon size={14} />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <div className="min-w-0 flex-1 basis-32 truncate text-sm font-semibold" title={item.name}>{item.name}</div>
-                        <Badge tone={disposition === 'reference' ? 'neutral' : disposition === 'clip' || disposition === 'template' ? 'accent' : 'info'}>
-                          {dispositionLabel}
-                        </Badge>
-                      </div>
-                      <p className="line-clamp-2 text-xs text-muted">{item.description}</p>
-                    </div>
-                  </div>
-                  <div className="mt-auto flex items-center justify-between gap-2 pt-0.5">
-                    <span className="min-w-0 truncate font-mono text-[11px] text-muted/70">
-                      {/* A source's id means nothing to the reader; its domain does. */}
-                      {item.kind === 'source'
-                        ? ((item.data as { url?: string } | undefined)?.url ?? '')
-                            .replace(/^https?:\/\//, '')
-                            .replace(/\/$/, '')
-                        : item.id}
-                    </span>
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      {item.kind === 'saas-template' && (
-                        <Button size="sm" variant="ghost" onClick={() => customizeTemplate(item)} aria-label={`Customize ${item.name}`}>
-                          Customize
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant={used.has(item.id) ? 'ghost' : 'outline'}
-                        onClick={() => void addToStudio(item)}
-                        disabled={rendering}
-                        aria-label={`${applyLabel(item)}: ${item.name}`}
-                        title={used.has(item.id) ? 'Applied — click to apply again' : undefined}
-                      >
-                        {rendering ? (
-                          <><Loader2 size={12} className="animate-spin" /> {progress?.pct ?? 0}%</>
-                        ) : used.has(item.id) ? (
-                          <><Check size={12} /> Again</>
-                        ) : disposition === 'reference' ? (
-                          <><ExternalLink size={12} /> {applyLabel(item)}</>
-                        ) : disposition === 'command' ? (
-                          <><Mic size={12} /> {applyLabel(item)}</>
-                        ) : (
-                          <><Wand2 size={12} /> Apply</>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </motion.div>
-              )
-            })}
+            {visibleItems.map((item, i) => (
+              <PackCard
+                key={item.id}
+                item={item}
+                index={i}
+                reduced={reduced}
+                isUsed={used.has(item.id)}
+                rendering={progress?.id === item.id}
+                pct={progress?.id === item.id ? progress?.pct ?? 0 : 0}
+                onApply={onApplyStable}
+                onCustomize={onCustomizeStable}
+              />
+            ))}
           </AnimatePresence>
           {visibleItems.length < items.length && (
-            <div className="col-span-full flex items-center justify-center gap-3 rounded-xl border border-dashed border-line bg-panel/50 p-4">
+            <div ref={sentinelRef} className="col-span-full flex items-center justify-center gap-3 rounded-xl border border-dashed border-line bg-panel/50 p-4">
               <span className="text-xs text-muted">Showing {visibleItems.length.toLocaleString()} of {items.length.toLocaleString()}</span>
               <Button size="sm" variant="outline" onClick={() => setVisibleCount((count) => count + 90)}>
                 Load 90 more
@@ -545,3 +469,116 @@ export function PackBrowser() {
     </section>
   )
 }
+
+
+/**
+ * One resource card. Memoised: the grid re-renders on search/progress, but a
+ * card only re-renders when its own props change. `content-visibility:auto`
+ * lets the browser skip layout/paint for off-screen cards (virtualisation
+ * without fixed row heights).
+ */
+const PackCard = memo(function PackCard({ item, index: i, reduced, isUsed, rendering, pct, onApply, onCustomize }: { item: PackItem; index: number; reduced: boolean; isUsed: boolean; rendering: boolean; pct: number; onApply: (item: PackItem) => void; onCustomize: (item: PackItem) => void }) {
+              const Icon = KIND_ICON[item.kind] ?? Layers
+              const disposition = resourceDisposition(item.kind, item)
+              const dispositionLabel = DISPOSITION_LABEL[disposition]
+                return (
+    <motion.div
+                  key={item.id}
+                                    initial={reduced ? false : { opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduced ? undefined : { opacity: 0, scale: 0.97 }}
+                  transition={{ duration: 0.22, ease: EASE_SOFT, delay: reduced ? 0 : Math.min(i, 12) * 0.015 }}
+                  whileHover={reduced ? undefined : { y: -2 }}
+                  // Draggable straight onto the Studio stage; the drop uses the
+                  // same mapping as the button below, so both paths agree.
+                  draggable
+                  onDragStart={(event) =>
+                    writeDragPayload((event as unknown as DragEvent<HTMLDivElement>).dataTransfer, {
+                      kind: item.kind,
+                      id: item.id,
+                      name: item.name,
+                      description: item.description,
+                      data: item.data,
+                    })
+                  }
+                  className="group flex cursor-grab [contain-intrinsic-size:auto_220px] [content-visibility:auto] flex-col gap-2.5 cu-panel p-3.5 transition-colors duration-150 hover:border-text/25 active:cursor-grabbing"
+                >
+                  {item.data?.nativeAction === 'loader' && item.data?.loader ? (
+                    <LoaderPreview clip={item.data.loader as Partial<StudioLoaderClip>} width={224} height={72} label={`${item.name} preview`} />
+                  ) : typeof item.data?.posterUrl === 'string' ? (
+                    <img
+                      src={item.data.posterUrl}
+                      alt={`${item.name} preview (from ${String(item.data.provider ?? 'source')})`}
+                      loading="lazy"
+                      className="h-24 w-full rounded-lg border border-line bg-panel-alt object-cover"
+                      onError={(e) => { e.currentTarget.style.display = 'none' }}
+                    />
+                  ) : null}
+                  {typeof item.data?.audit === 'object' && item.data.audit && (
+                    <p className="text-xs text-muted" title={String((item.data.audit as { cupricEquivalent?: string }).cupricEquivalent ?? '')}>
+                      {(item.data.audit as { interaction?: string }).interaction} · {(item.data.audit as { animation?: string }).animation} · {String(item.data.license ?? '')}
+                    </p>
+                  )}
+                  {item.css && (
+                    <div
+                      className="h-14 w-full rounded-lg border border-line"
+                      aria-hidden
+                      ref={(node) => {
+                        if (node) node.setAttribute('style', item.css ?? '')
+                      }}
+                    />
+                  )}
+                  <div className="flex items-start gap-2">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-line bg-panel-alt text-muted">
+                      <Icon size={14} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <div className="min-w-0 flex-1 basis-32 truncate text-sm font-semibold" title={item.name}>{item.name}</div>
+                        <Badge tone={disposition === 'reference' ? 'neutral' : disposition === 'clip' || disposition === 'template' ? 'accent' : 'info'}>
+                          {dispositionLabel}
+                        </Badge>
+                      </div>
+                      <p className="line-clamp-2 text-xs text-muted">{item.description}</p>
+                    </div>
+                  </div>
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-0.5">
+                    <span className="min-w-0 truncate font-mono text-[11px] text-muted/70">
+                      {/* A source's id means nothing to the reader; its domain does. */}
+                      {item.kind === 'source'
+                        ? ((item.data as { url?: string } | undefined)?.url ?? '')
+                            .replace(/^https?:\/\//, '')
+                            .replace(/\/$/, '')
+                        : item.id}
+                    </span>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {item.kind === 'saas-template' && (
+                        <Button size="sm" variant="ghost" onClick={() => onCustomize(item)} aria-label={`Customize ${item.name}`}>
+                          Customize
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant={isUsed ? 'ghost' : 'outline'}
+                        onClick={() => onApply(item)}
+                        disabled={rendering}
+                        aria-label={`${applyLabel(item)}: ${item.name}`}
+                        title={isUsed ? 'Applied — click to apply again' : undefined}
+                      >
+                        {rendering ? (
+                          <><Loader2 size={12} className="animate-spin" /> {pct}%</>
+                        ) : isUsed ? (
+                          <><Check size={12} /> Again</>
+                        ) : disposition === 'reference' ? (
+                          <><ExternalLink size={12} /> {applyLabel(item)}</>
+                        ) : disposition === 'command' ? (
+                          <><Mic size={12} /> {applyLabel(item)}</>
+                        ) : (
+                          <><Wand2 size={12} /> Apply</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
+  )
+})

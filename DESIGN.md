@@ -35,6 +35,29 @@ curve editor) cannot read CSS variables in the export path, so they use the toke
 / `--color-panel`, traffic lights `--color-danger` · `--color-muted` · `--color-accent`,
 dividers/labels `--color-text`, curve handles/scope blue `--color-info`. No new colours.
 
+### Video palette (Home_X kit — exported video only, never app chrome)
+
+The six Home_X video styles need stage colours the app UI never uses. They live
+in `@theme` as `--color-video-*` and are mirrored literally in
+`src/lib/studio/homeKit.ts` (`VIDEO_TOKENS`, canvas cannot read CSS variables);
+`check:ui-audit` fails if the two drift apart.
+
+| Token | Value | Use |
+|---|---|---|
+| `--color-video-orange` | `#FF5A1F` | style 2 stage, style 6 accent word/rim glow |
+| `--color-video-blue` | `#2F6BFF` | style 5 stage + Pay button |
+| `--color-video-cream` | `#F4EFE4` | style 4 stage |
+| `--color-video-paper` | `#F7F6F2` | style 1/3 stage (off-white) |
+| `--color-video-ink` | `#0E0E12` | near-black text/stage (style 6) |
+| `--color-video-yellow` | `#FFE58A` | pastel price card |
+| `--color-video-pink` | `#FFC6DA` | pastel price card |
+| `--color-video-mint` | `#BFF0D4` | pastel price card, "Ready to post" pill |
+| `--color-video-green` | `#1FA463` | positive state (Ready pill, active stat tint) |
+
+Red pills (style 3) use `--color-danger`; traffic lights keep danger/muted/accent.
+Kit motion uses `EASE_SOFT`; the only spring in the kit is the pill pop
+(scale 0.96 → 1). Reduced-motion renders are opacity-only.
+
 ### Type
 
 - UI sans: **Inter Variable**; Mono: **JetBrains Mono Variable**.

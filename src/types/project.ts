@@ -606,6 +606,55 @@ export type StudioClip =
   | StudioShapeClip
   | StudioCursorClip
   | StudioLoaderClip
+  | StudioKitClip
+
+/**
+ * Home_X video kit (lib/studio/homeKit.ts): eight native, parametric pieces
+ * drawn by the shared renderer. Every motion is a pure function of the clip's
+ * local time and `seed`, so preview and export match frame for frame.
+ */
+export type StudioKitKind = 'cursor-zoom' | 'pill-text' | 'stat-card' | 'rating-bars' | 'image-stack' | 'browser-mockup' | 'checkout-card' | 'block-row-3d'
+
+/** A user-supplied photo slot. `null` stays a visible "drop media here" slot. */
+export type StudioKitMedia = { mediaId: string; fileName: string } | null
+
+export type StudioKitClip = StudioClipCommon & {
+  kind: 'kit'
+  kit: StudioKitKind
+  /**
+   * Per-kind look: browser-mockup 'agent' | 'saas' | 'composer';
+   * pill-text 'inline' | 'checklist' | 'chips'; stat-card 'stat' | 'price';
+   * image-stack 'stack' | 'single' | 'landscape'. Unknown → the kind's default.
+   */
+  variant?: string
+  /** Centre (normalised) and width as a fraction of frame width. */
+  x: number
+  y: number
+  w: number
+  /** mulberry32 seed for layout jitter (image-stack rotation, float drift). */
+  seed: number
+  /** Opacity-only rendering (prefers-reduced-motion export). */
+  reducedMotion: boolean
+  /** Scrim behind text drawn over photos: null = auto (on when a photo is under text), 0–1 = manual strength. */
+  scrim: number | null
+  /** Surface theme of UI mockups. */
+  theme: 'light' | 'dark'
+  /** Accent token value (DESIGN.md video palette). */
+  accent: string
+  title?: string
+  subtitle?: string
+  eyebrow?: string
+  url?: string
+  items?: string[]
+  values?: number[]
+  media?: StudioKitMedia[]
+  /** Highlighted item (active chip, active stat card, active checklist line). */
+  active?: number
+  /** cursor-zoom: start point (normalised frame) and click moment (0–1 of the clip). */
+  fromX?: number
+  fromY?: number
+  clickAt?: number
+}
 
 export type StudioLoaderVariant = 'scan' | 'twinkle' | 'orbit' | 'pulse'
 export type StudioLoaderEase = 'ease-in-out' | 'ease' | 'ease-out' | 'ease-in' | 'linear' | 'soft'

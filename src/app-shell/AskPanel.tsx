@@ -1,3 +1,4 @@
+import { EASE_SPRING } from '../lib/motion'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ImagePlus, Send, Sparkles, X, Settings } from 'lucide-react'
@@ -463,7 +464,7 @@ export function AskPanel() {
           initial={{ x: 48, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 48, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 36 }}
+          transition={{ duration: 0.2, ease: EASE_SPRING }}
           className="fixed inset-y-0 right-0 z-40 flex w-[min(420px,100vw)] flex-col overflow-hidden border-l border-line bg-panel shadow-2xl"
         >
           <div className="flex items-center gap-2.5 border-b border-line px-4 py-3">

@@ -1,0 +1,102 @@
+{
+  "src/app-shell/AskPanel.tsx": {
+    "raw-hex": 1,
+    "disabled-help": 1
+  },
+  "src/app-shell/ProjectSafetyPanel.tsx": {
+    "disabled-help": 1
+  },
+  "src/components/HomeHero.tsx": {
+    "disabled-help": 1
+  },
+  "src/components/MotionCompositionPlayer.tsx": {
+    "raw-hex": 4
+  },
+  "src/components/StockBrowser.tsx": {
+    "disabled-help": 2
+  },
+  "src/components/editor/Editor.tsx": {
+    "raw-hex": 2,
+    "button-name": 1,
+    "disabled-help": 3,
+    "reduced-motion": 1
+  },
+  "src/components/editor/Timeline.tsx": {
+    "raw-hex": 7,
+    "disabled-help": 2
+  },
+  "src/screens/ArenaDesk.tsx": {
+    "raw-hex": 1,
+    "disabled-help": 2
+  },
+  "src/screens/Brief.tsx": {
+    "disabled-help": 3
+  },
+  "src/screens/FootageDesk.tsx": {
+    "raw-hex": 1
+  },
+  "src/screens/Lab.tsx": {
+    "disabled-help": 2
+  },
+  "src/screens/MotionEngine.tsx": {
+    "raw-hex": 2
+  },
+  "src/screens/Render.tsx": {
+    "disabled-help": 1
+  },
+  "src/screens/ReviewRoom.tsx": {
+    "disabled-help": 1
+  },
+  "src/screens/Timeline.tsx": {
+    "disabled-help": 1
+  },
+  "src/screens/library/PackBrowser.tsx": {
+    "disabled-help": 1
+  },
+  "src/screens/production/ProductStingPanel.tsx": {
+    "disabled-help": 4
+  },
+  "src/screens/production/ProductionPlanner.tsx": {
+    "disabled-help": 3
+  },
+  "src/screens/production/QuickVideoPanel.tsx": {
+    "disabled-help": 3
+  },
+  "src/screens/studio/ClipProFields.tsx": {
+    "disabled-help": 2
+  },
+  "src/screens/studio/ComponentsPanel.tsx": {
+    "raw-hex": 1,
+    "disabled-help": 1
+  },
+  "src/screens/studio/EditToolsBar.tsx": {
+    "disabled-help": 7
+  },
+  "src/screens/studio/FontStudio.tsx": {
+    "disabled-help": 1
+  },
+  "src/screens/studio/HomeVideoPanel.tsx": {
+    "disabled-help": 1
+  },
+  "src/screens/studio/InspectorExtras.tsx": {
+    "disabled-help": 1
+  },
+  "src/screens/studio/KeyframeGraph.tsx": {
+    "disabled-help": 1
+  },
+  "src/screens/studio/StudioCreativePanel.tsx": {
+    "disabled-help": 4
+  },
+  "src/screens/studio/StudioInspector.tsx": {
+    "disabled-help": 2
+  },
+  "src/screens/studio/StudioPreview.tsx": {
+    "raw-hex": 1
+  },
+  "src/screens/studio/StudioProPanel.tsx": {
+    "disabled-help": 7
+  },
+  "src/screens/studio/TextListPanel.tsx": {
+    "disabled-help": 2
+  }
+}

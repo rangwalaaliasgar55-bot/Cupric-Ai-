@@ -1,3 +1,4 @@
+import { EASE_SOFT } from '../../lib/motion'
 /**
  * App-chrome effects in the spirit of React Bits (https://github.com/DavidHDev/react-bits)
  * — shiny text, spotlight card, animated pipeline icons. Written from scratch
@@ -62,7 +63,7 @@ export function PipelineIcon({ step, state, label }: { step: keyof typeof PIPELI
         <Icon size={15} aria-hidden />
         {state === 'done' && (
           <motion.span className="absolute -right-1 -top-1 grid h-4 w-4 place-items-center rounded-full bg-accent text-black"
-            initial={reduced ? false : { scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 500, damping: 22 }}>
+            initial={reduced ? false : { scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.2, ease: EASE_SOFT }}>
             <Check size={10} strokeWidth={3} aria-hidden />
           </motion.span>
         )}

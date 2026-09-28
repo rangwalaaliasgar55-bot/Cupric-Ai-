@@ -44,9 +44,12 @@ import {
   VolumeX,
   ZoomIn,
   ZoomOut,
+  LayoutTemplate,
 } from 'lucide-react'
 import { ShapePicker } from './studio/ShapePicker'
 import { LoaderPicker } from './studio/LoaderPicker'
+import { HomeVideoPanel } from './studio/HomeVideoPanel'
+import { preloadLottie } from '../lib/studio/lottie'
 import { fontChoicesForAgent } from '../lib/studio/fontStyles'
 import { userFontFamilies, userFontsReady } from '../lib/studio/userFonts'
 import { addCursorTo, addLoader, addShape as addShapeKit } from '../lib/studio/motionKit'
@@ -136,6 +139,9 @@ export function Studio() {
   const [multiIds, setMultiIds] = useState<Set<string>>(() => new Set())
   const [shapeOpen, setShapeOpen] = useState(false)
   const [loaderOpen, setLoaderOpen] = useState(false)
+  const [homeOpen, setHomeOpen] = useState(false)
+  // Stickers render through lottie-web, which is code-split out of first paint.
+  useEffect(() => { void preloadLottie() }, [])
   useEffect(() => { void userFontsReady() }, [])
   const [zoom, setZoom] = useState(3)
   const [importing, setImporting] = useState(false)
@@ -1353,6 +1359,19 @@ export function Studio() {
             <LoaderIcon size={13} /> Loader
           </Button>
           {loaderOpen && <LoaderPicker onPick={addLoaderAt} onClose={() => setLoaderOpen(false)} />}
+        </div>
+        <div className="relative">
+          <Button size="sm" variant="outline" onClick={() => setHomeOpen((v) => !v)} disabled={exporting} aria-expanded={homeOpen} title="Six Home_X video styles built from native clips — offline and export-exact">
+            <LayoutTemplate size={13} /> Styles
+          </Button>
+          {homeOpen && (
+            <HomeVideoPanel
+              doc={doc}
+              project={project ?? null}
+              onApply={(next, label) => patchStudio(projectId, { clips: next.clips, trackCount: next.trackCount }, label)}
+              onClose={() => setHomeOpen(false)}
+            />
+          )}
         </div>
         <Button size="sm" variant="outline" onClick={(e) => addCursorClick(e.shiftKey)} disabled={exporting} title="Animated cursor that clicks the selected clip — only added where an interaction needs showing">
           <MousePointerClick size={13} /> Cursor

@@ -1,3 +1,4 @@
+import { EASE_SOFT } from '../lib/motion'
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -263,7 +264,7 @@ export function Studio({ initialTemplate = "ai-product-launch" }: StudioProps) {
 
         <section className="preview-panel">
           <div className="preview-toolbar"><div className="scene-crumb"><span>SCENE</span><strong>{(activeScene.scene?.name || "Scene")}</strong><i>›</i><button onClick={() => selectedNode && setSelectedNodeId(selectedNode.id)}>{selectedNode?.name ?? "No selection"}</button></div><div className="preview-quality"><span className="quality-dot" />FRAME SAFE <b>HIGH</b></div></div>
-          <div className="preview-surface"><motion.div className="canvas-wrap" layout transition={{ type: "spring", stiffness: 260, damping: 28 }}><SceneCanvas composition={composition} frame={frame} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} reducedMotion={reduceMotion ?? false} /></motion.div></div>
+          <div className="preview-surface"><motion.div className="canvas-wrap" layout transition={{ duration: 0.2, ease: EASE_SOFT }}><SceneCanvas composition={composition} frame={frame} selectedNodeId={selectedNodeId} onSelectNode={setSelectedNodeId} reducedMotion={reduceMotion ?? false} /></motion.div></div>
           <div className="preview-controls"><div className="transport"><button className="transport-button" onClick={() => selectFrame(0)} aria-label="Restart"><Icon name="restart" /></button><button className="play-button" onClick={() => setPlaying((value) => !value)} aria-label={playing ? "Pause preview" : "Play preview"} disabled={Boolean(reduceMotion)}><Icon name={playing ? "pause" : "play"} /></button><button className="transport-button" onClick={() => selectFrame(Math.min(composition.durationInFrames - 1, frame + 1))} aria-label="Advance one frame">›</button></div><span className="timecode">{formatTime(frame, composition.fps)} <i>/</i> {formatTime(composition.durationInFrames, composition.fps)}</span><div className="preview-hints"><kbd>SPACE</kbd><span>Play</span><kbd>←</kbd><kbd>→</kbd><span>Frames</span></div></div>
         </section>
 

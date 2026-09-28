@@ -25,6 +25,7 @@ import { clipProgress, clipsAt } from './doc'
 import { drawCursor, drawShape, has3D, project3D } from './renderExtras'
 import { cursorAt } from './cursor'
 import { drawLoader } from './loaders'
+import { drawKit, normaliseKit } from './homeKit'
 import { paintGlass, paintGlassLens } from './glass'
 import { getMedia, overlayImage, proxyMode } from './media'
 import { applyPixelGrade, chromaKey } from './color'
@@ -596,7 +597,7 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
           const wx = cursor + ctx.measureText(words[i]).width / 2
           ctx.translate(wx, y + st.dy * fontPx)
           ctx.scale(st.scale, st.scale)
-          ctx.fillStyle = isHighlight ? '#C8F542' : clip.color
+          ctx.fillStyle = isHighlight ? (clip.emphasisColor || '#C8F542') : clip.color
           ctx.textAlign = 'center'
           if (preset.stroke) ctx.strokeText(words[i], 0, 0)
           ctx.fillText(words[i], 0, 0)
@@ -622,7 +623,7 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
         if (visible) {
           const isHighlight =
             clip.highlightWord && words[i].toLowerCase().replace(/[^a-z0-9]/g, '') === clip.highlightWord.toLowerCase()
-          ctx.fillStyle = isHighlight ? '#C8F542' : clip.color
+          ctx.fillStyle = isHighlight ? (clip.emphasisColor || '#C8F542') : clip.color
           if (preset.stroke) ctx.strokeText(words[i], cursor, y)
           ctx.fillText(words[i], cursor, y)
         }
@@ -840,6 +841,7 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
     if (clip.kind === 'overlay' || clip.kind === 'sticker' || clip.kind === 'cursor') (next as { scale?: number; size?: number }).scale = clip.kind === 'cursor' ? undefined : clip.scale * values.scale
     else if (clip.kind === 'shape') (next as unknown as { w: number }).w = clip.w * values.scale
     else if (clip.kind === 'loader') (next as unknown as { size: number }).size = clip.size * values.scale
+    else if (clip.kind === 'kit') (next as unknown as { w: number }).w = clip.w * values.scale
     else if (clip.kind === 'video' || clip.kind === 'image') next.scale = (clip.scale ?? 1) * values.scale
     else if (clip.kind === 'text') next.fontSizePct = clip.fontSizePct * values.scale
     else if (clip.kind === 'glass') {
@@ -858,7 +860,7 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
 
 /** Where a clip pivots. Positioned clips turn about themselves, full-frame ones about the frame. */
 function clipCentre(clip: StudioClip, w: number, h: number): { cx: number; cy: number } {
-  if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'loader') {
+  if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'loader' || clip.kind === 'kit') {
     return { cx: clip.x * w, cy: clip.y * h }
   }
   if (clip.kind === 'video' || clip.kind === 'image') {
@@ -1067,6 +1069,11 @@ function drawClipContent(
   }
   if (clip.kind === 'loader') {
     drawLoader(ctx, clip, t, width, height)
+    return
+  }
+  if (clip.kind === 'kit') {
+    // Photo slots resolve through the same media registry as footage clips.
+    drawKit(ctx, normaliseKit(clip), t, width, height, (m) => sources.media({ kind: 'image', mediaId: m.mediaId, fileName: m.fileName, id: `${clip.id}:${m.mediaId}` } as unknown as StudioMediaClip))
     return
   }
   if (clip.kind === 'background') {

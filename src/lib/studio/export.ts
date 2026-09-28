@@ -19,7 +19,7 @@ import { resolveForOutput } from './resolve'
 import { clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
 import { mixGainAt } from './audioMix'
 import { getMedia, overlayImage } from './media'
-import { stickerFrame } from './lottie'
+import { preloadLottie, stickerFrame } from './lottie'
 import { ensurePhysicsFor } from './physics'
 import { drawableElement, drawStudioFrame, type FrameSources } from './renderer'
 
@@ -82,6 +82,7 @@ function rampGain(ctx: AudioContext, el: HTMLMediaElement, value: number) {
 }
 
 export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = {}): Promise<ExportResult> {
+  if (editDoc.clips.some((c) => c.kind === 'sticker')) await preloadLottie()
   const doc = resolveForOutput(editDoc)
   const duration = docDuration(doc)
   if (duration <= 0) throw new Error('Nothing to export — the timeline is empty.')
@@ -277,6 +278,7 @@ export async function exportStudioInBackground(
 ): Promise<{ outputPath: string; bytes: number; format: 'webm' | 'mp4' }> {
   const ipc = getIpc()
   if (!isDesktop() || !ipc) throw new Error('Background Studio export needs the desktop app.')
+  if (doc.clips.some((c) => c.kind === 'sticker')) await preloadLottie()
   const assets = new Map<string, { id: string; kind: 'video' | 'image' | 'audio'; fileName: string; localPath: string | null }>()
   for (const clip of doc.clips) {
     if (clip.kind === 'video' || clip.kind === 'image' || clip.kind === 'audio') {

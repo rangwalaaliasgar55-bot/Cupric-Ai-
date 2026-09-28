@@ -7,16 +7,16 @@ import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { Toasts } from '../components/Toasts'
 const ArenaDesk = lazy(() => import('../screens/ArenaDesk').then((m) => ({ default: m.ArenaDesk })))
-import { Brief } from '../screens/Brief'
-import { FootageDesk } from '../screens/FootageDesk'
+const Brief = lazy(() => import('../screens/Brief').then((m) => ({ default: m.Brief })))
+const FootageDesk = lazy(() => import('../screens/FootageDesk').then((m) => ({ default: m.FootageDesk })))
 import { HomeProject } from '../screens/HomeProject'
 const Library = lazy(() => import('../screens/Library').then((m) => ({ default: m.Library })))
 const Render = lazy(() => import('../screens/Render').then((m) => ({ default: m.Render })))
-import { ReviewRoom } from '../screens/ReviewRoom'
+const ReviewRoom = lazy(() => import('../screens/ReviewRoom').then((m) => ({ default: m.ReviewRoom })))
 const Timeline = lazy(() => import('../screens/Timeline').then((m) => ({ default: m.Timeline })))
 const Studio = lazy(() => import('../screens/Studio').then((m) => ({ default: m.Studio })))
 const Lab = lazy(() => import('../screens/Lab').then((m) => ({ default: m.Lab })))
-import { Autonomous } from '../screens/Autonomous'
+const Autonomous = lazy(() => import('../screens/Autonomous').then((m) => ({ default: m.Autonomous })))
 const MotionEngine = lazy(() => import('../screens/MotionEngine').then((m) => ({ default: m.MotionEngine })))
 import { useProjectStore } from '../state/useProjectStore'
 import { AppBackdrop } from './AppBackdrop'

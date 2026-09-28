@@ -1,4 +1,4 @@
-import JSZip from 'jszip'
+import type JSZip from 'jszip'
 
 export type GeneratedPackageAsset = {
   file: File
@@ -75,7 +75,8 @@ export async function readGeneratedPackage(file: File): Promise<GeneratedPackage
 
   let zip: JSZip
   try {
-    zip = await JSZip.loadAsync(file)
+    const { default: Zip } = await import('jszip')
+    zip = await Zip.loadAsync(file)
   } catch {
     throw new Error(`${file.name} is not a readable zip archive (it may be damaged or still downloading)`)
   }

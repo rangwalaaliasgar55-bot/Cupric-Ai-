@@ -4,6 +4,7 @@ import { motion } from 'motion/react'
 import type { View } from '../types/project'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx } from '../lib/utils'
+import { EASE_SPRING } from '../lib/motion'
 import logoUrl from '../assets/logo.svg'
 
 type NavItem = {
@@ -33,6 +34,7 @@ export function Sidebar() {
   const view = useProjectStore((s) => s.view)
   const setView = useProjectStore((s) => s.setView)
   const active = useActiveProject()
+  const createProject = useProjectStore((s) => s.createProject)
 
   const disabledReason = (item: NavItem): string | null => {
     if (item.needProject && !active) return ' — open a project'
@@ -57,6 +59,8 @@ export function Sidebar() {
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
                 disabled={!!reason}
+                aria-describedby={reason ? 'nav-lock-reason' : undefined}
+                title={reason ? reason.replace(/^ — /, '') : undefined}
                 onClick={() => setView(item.view)}
                 className={cx(
                   'relative flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium transition-colors duration-150',
@@ -70,22 +74,26 @@ export function Sidebar() {
                 {isActive && (
                   <motion.span
                     layoutId="rail-active"
-                    transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                    transition={{ duration: 0.2, ease: EASE_SPRING }}
                     className="absolute -left-3 h-6 w-[3px] rounded-r-full bg-accent"
                   />
                 )}
                 <Icon size={18} className={cx('shrink-0', isActive && 'text-accent-text')} />
                 <span className="truncate">{item.label}</span>
               </button>
-              {reason && (
-                <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-line bg-panel-alt px-2 py-1 text-xs text-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-                  {reason.replace(/^ — /, '')}
-                </span>
-              )}
             </div>
           )
         })}
       </nav>
+      {/* Inline (not tooltip-only) reason for the locked desks — DESIGN §2. */}
+      {!active ? (
+        <div className="mt-2 space-y-1.5 px-3">
+          <p id="nav-lock-reason" className="text-xs text-muted">Project desks unlock when a project is open.</p>
+          <button type="button" onClick={() => createProject()} className="w-full rounded-lg bg-accent px-2 py-1.5 text-xs font-medium text-accent-ink active:scale-[0.96]">New project</button>
+        </div>
+      ) : !active.brief.lockedRundown ? (
+        <p id="nav-lock-reason" className="mt-2 px-3 text-xs text-muted">Arena Desk unlocks after you lock a rundown in Brief.</p>
+      ) : null}
 
       <div className="mt-auto px-3 font-mono text-xs text-muted/50">v{__APP_VERSION__}</div>
     </aside>
