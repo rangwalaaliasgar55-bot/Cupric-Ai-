@@ -151,7 +151,7 @@ export function ProductStingPanel() {
             {!inputs.logoDataUrl && field('Mark letters (viewfinder mark)', 'markText', 3)}
             <div className="flex flex-wrap items-center gap-1.5">
               {[0, 1, 2].map((i) => <input key={i} type="color" aria-label={`Brand colour ${i + 1}`} className="h-8 w-10" value={inputs.brandColors[i] ?? [palette.a1, palette.a2, palette.a3][i]} onChange={(e) => { const c = [...inputs.brandColors]; c[i] = e.target.value; set({ brandColors: c }) }} />)}
-              <Button size="sm" variant="outline" disabled={!logo} onClick={() => { if (logo) { const c = coloursFromImage(logo); set({ brandColors: c }); pushToast('info', c.length ? `Pulled ${c.join(', ')}` : 'No usable colours in that logo.') } }}><Palette size={12} /> From logo</Button>
+              <Button size="sm" variant="outline" disabled={!logo} title={(!logo) ? 'Add a logo first' : undefined} onClick={() => { if (logo) { const c = coloursFromImage(logo); set({ brandColors: c }); pushToast('info', c.length ? `Pulled ${c.join(', ')}` : 'No usable colours in that logo.') } }}><Palette size={12} /> From logo</Button>
               <Button size="sm" variant="ghost" onClick={() => set({ brandColors: [] })}>Default blues</Button>
             </div>
             {rejected.length > 0 && <p className="text-[11px] text-danger">Skipped {rejected.join(', ')} — the style bans purple, violet, magenta and orange.</p>}
@@ -199,9 +199,9 @@ export function ProductStingPanel() {
               <input type="range" min={0} max={359} step={0.5} value={frame} onChange={(e) => { setPlaying(false); setFrame(Number(e.target.value)) }} className="w-full" aria-label="Frame" />
               <div className="flex flex-wrap gap-1 text-[10px] text-muted">{STING.cuts.map((c) => <button key={c} type="button" className="rounded border border-line px-1.5 py-0.5 hover:text-text" onClick={() => setFrame(c)}>cut f{c}</button>)}</div>
               <div className="flex flex-wrap gap-1.5 pt-1">
-                <Button size="sm" variant="primary" disabled={!!busy} onClick={() => void addToProject()}><Plus size={12} /> Add to project</Button>
-                <Button size="sm" variant="outline" disabled={!!busy} onClick={async () => save(new Blob([await htmlText()], { type: 'text/html' }), `${slug}-sting.html`)}><Film size={12} /> Download HTML</Button>
-                <Button size="sm" variant="outline" disabled={!!busy} onClick={() => void downloadAudio()}><Download size={12} /> Download sound (WAV)</Button>
+                <Button size="sm" variant="primary" disabled={!!busy} title={(!!busy) ? 'Busy — wait for the current step' : undefined} onClick={() => void addToProject()}><Plus size={12} /> Add to project</Button>
+                <Button size="sm" variant="outline" disabled={!!busy} title={(!!busy) ? 'Busy — wait for the current step' : undefined} onClick={async () => save(new Blob([await htmlText()], { type: 'text/html' }), `${slug}-sting.html`)}><Film size={12} /> Download HTML</Button>
+                <Button size="sm" variant="outline" disabled={!!busy} title={(!!busy) ? 'Busy — wait for the current step' : undefined} onClick={() => void downloadAudio()}><Download size={12} /> Download sound (WAV)</Button>
               </div>
               {busy && <p className="text-[11px] text-muted">{busy}…</p>}
               <p className="text-[10px] text-muted">The HTML defines window.__seek(t), so the desktop Render queue captures it frame by frame. Sound is mastered to −14 LUFS, −1 dBTP. <Upload size={10} className="inline" /> Nothing is published.</p>

@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const DIRS = ['src/app-shell', 'src/screens', 'src/components']
 const EXCLUDE = [/src\/components\/lab\//, /src\/components\/ui\//, /\.worker\.ts$/]
+const LIST = process.argv.includes('--list')
 const baselinePath = path.join(root, 'scripts/ui-audit-baseline.json')
 
 async function walk(dir) {
@@ -38,7 +39,31 @@ async function walk(dir) {
   return out
 }
 
-const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:])\/\/.*$/gm, '$1')
+// Comments only where a comment can start (not `image/*` or `https://` inside strings).
+const strip = (s) => s.replace(/(^|[\s{])\/\*[\s\S]*?\*\//g, (m, p) => p + m.slice(p.length).replace(/[^\n]/g, ' ')).replace(/(^|\s)\/\/.*$/gm, '$1')
+
+/** Opening tags of <button>/<Button>, scanned with brace/quote depth. */
+export function buttonTags(code) {
+  const out = []
+  const re = /<(button|Button)(?=[\s>])/g
+  let m
+  while ((m = re.exec(code))) {
+    let i = m.index + m[0].length, depth = 0, quote = null
+    for (; i < code.length; i++) {
+      const c = code[i]
+      if (quote) { if (c === quote && code[i - 1] !== '\\') quote = null; continue }
+      if (c === '"' || c === "'" || c === '`') { quote = c; continue }
+      if (c === '{') depth++
+      else if (c === '}') depth--
+      else if (c === '>' && depth === 0) break
+    }
+    const attrs = code.slice(m.index + m[0].length, i)
+    if (attrs.trimEnd().endsWith('/')) { out.push({ attrs, children: '' }); continue }
+    const close = code.indexOf(`</${m[1]}>`, i)
+    out.push({ attrs, children: close > 0 ? code.slice(i + 1, close) : '' })
+  }
+  return out
+}
 
 function audit(src) {
   const code = strip(src)
@@ -47,17 +72,18 @@ function audit(src) {
   for (const m of code.matchAll(/className=(?:"[^"]*"|\{`[^`]*`\})/g)) if (/#[0-9a-fA-F]{3,8}\b/.test(m[0])) hits['raw-hex']++
   for (const m of code.matchAll(/style=\{\{[^}]*\}\}/g)) if (/['"`]#[0-9a-fA-F]{3,8}['"`]/.test(m[0])) hits['raw-hex']++
   for (const m of code.matchAll(/transition=\{\{[^}]*\}\}/g)) if (/type:\s*['"]spring['"]|stiffness|damping/.test(m[0])) hits.motion++
-  // Buttons: opening tag + children up to the close.
-  for (const m of code.matchAll(/<(button|Button)\b([^>]*?)>([\s\S]*?)<\/\1>/g)) {
-    const [, , attrs, children] = m
+  // Buttons: opening tag (brace-aware, so `=>` inside handlers does not end it) + children.
+  for (const { attrs, children } of buttonTags(code)) {
     const named = /aria-label=|title=|aria-labelledby=/.test(attrs)
     const text = children.replace(/<[^>]+\/>/g, '').replace(/<[^>]+>/g, '').replace(/\{[^}]*\}/g, (x) => (/['"`][A-Za-z]/.test(x) || /\w+\s*\?/.test(x) || /^\{[a-z][\w.?]*\}$/.test(x) ? 'x' : '')).trim()
-    if (!named && !text) hits['button-name']++
-    if (/\bdisabled(=|\s|$)/.test(attrs) && !/title=|aria-describedby=|aria-disabled/.test(attrs)) hits['disabled-help']++
+    if (!named && !text && !/\{\.\.\.(rest|props)\}/.test(attrs)) hits['button-name']++
+    const bare = attrs.replace(/className=("[^"]*"|\{`[^`]*`\})/g, '')
+    if (/(?:^|\s)disabled(?=[=\s]|$)/.test(bare) && !/title=|aria-describedby=|aria-disabled/.test(attrs)) { hits['disabled-help']++; if (LIST) console.log('  disabled-help:', attrs.replace(/\s+/g, ' ').slice(0, 160)) }
+    if (!named && !text && LIST) console.log('  button-name:', attrs.replace(/\s+/g, ' ').slice(0, 160))
   }
   // motion.* and animate-* utilities are covered globally (checked below);
   // per file, flag hand-rolled CSS animations that ignore reduced motion.
-  const animates = /animation:\s*['"`]?[a-z]/.test(code) || /@keyframes/.test(code)
+  const animates = [...code.matchAll(/style=\{\{[^}]*\}\}/g)].some((m) => /animation:\s*['"`][a-z]/.test(m[0])) || /@keyframes/.test(code)
   const consults = /useReducedMotion|reducedMotion|prefers-reduced-motion|motion-safe|motion-reduce|reduced\b/.test(code)
   if (animates && !consults) hits['reduced-motion']++
   return hits
@@ -66,6 +92,7 @@ function audit(src) {
 const files = (await Promise.all(DIRS.map(walk))).flat().sort()
 const report = {}
 for (const f of files) {
+  if (LIST) console.log(f)
   const hits = audit(await readFile(path.join(root, f), 'utf8'))
   const nonzero = Object.fromEntries(Object.entries(hits).filter(([, v]) => v > 0))
   if (Object.keys(nonzero).length) report[f] = nonzero

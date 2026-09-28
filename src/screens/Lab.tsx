@@ -184,7 +184,7 @@ export function Lab() {
             <Button
               size="sm"
               variant="outline"
-              disabled={position <= 0}
+              disabled={position <= 0} title={(position <= 0) ? 'This is the first component' : undefined}
               onClick={() => setOpen(ordered[position - 1] ?? null)}
             >
               Previous
@@ -192,12 +192,12 @@ export function Lab() {
             <Button
               size="sm"
               variant="outline"
-              disabled={position < 0 || position >= ordered.length - 1}
+              disabled={position < 0 || position >= ordered.length - 1} title={(position < 0 || position >= ordered.length - 1) ? 'This is the last component' : undefined}
               onClick={() => setOpen(ordered[position + 1] ?? null)}
             >
               Next
             </Button>
-            <Button size="sm" variant="primary" onClick={() => void sendToStudio()} disabled={!project || capturing}>
+            <Button size="sm" variant="primary" onClick={() => void sendToStudio()} disabled={!project || capturing} title={(!project || capturing) ? 'Open a project first — or wait for the capture' : undefined}>
               {capturing ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
               {capturing ? 'Adding…' : 'Add animated to Studio'}
             </Button>

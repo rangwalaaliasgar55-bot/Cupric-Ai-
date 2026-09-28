@@ -592,7 +592,7 @@ function DomPreview({ doc, time, problem, onRetry }: { doc: StudioDoc; time: num
       data-cupric-dom-preview
       aria-label="Studio preview (simplified)"
       className="relative h-full w-full overflow-hidden rounded-xl border border-line shadow-[0_12px_32px_rgb(0_0_0/0.36)]"
-      style={{ backgroundColor: '#0B0B10', containerType: 'size', ...styleFromCss(bg.css) }}
+      style={{ backgroundColor: 'var(--color-stage)', containerType: 'size', ...styleFromCss(bg.css) }}
     >
       {texts.map((clip) => (
         <div

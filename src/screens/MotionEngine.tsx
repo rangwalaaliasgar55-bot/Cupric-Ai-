@@ -85,7 +85,7 @@ export function MotionEngine() {
           // glass chips), exactly like the Apex editor; in light mode they sit
           // on that stage instead of washing out against a light page.
           <div className="p-3">
-            <div className="min-h-full rounded-2xl border border-line bg-[#07080d] p-6 text-zinc-100 [color-scheme:dark]">
+            <div className="min-h-full rounded-2xl border border-line bg-stage-deep p-6 text-zinc-100 [color-scheme:dark]">
               <div className="mx-auto max-w-7xl space-y-6">
                 <TemplatePlayground />
               </div>
@@ -95,7 +95,7 @@ export function MotionEngine() {
 
         {tab === 'gallery' && (
           <div className="p-3">
-            <div className="min-h-full rounded-2xl border border-line bg-[#07080d] text-zinc-100 [color-scheme:dark]">
+            <div className="min-h-full rounded-2xl border border-line bg-stage-deep text-zinc-100 [color-scheme:dark]">
               <AssetGallery />
             </div>
           </div>

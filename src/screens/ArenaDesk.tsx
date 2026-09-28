@@ -428,7 +428,7 @@ function ArenaCard({
                 <Play size={13} />
                 Preview
               </Button>
-              <Button size="sm" variant="primary" onClick={onRender} disabled={!asset.localPath}>
+              <Button size="sm" variant="primary" onClick={onRender} disabled={!asset.localPath} title={(!asset.localPath) ? 'Import the Arena file first' : undefined}>
                 {asset.localPath ? 'Render video' : 'Import file first'}
               </Button>
               <Button
@@ -508,7 +508,7 @@ function PreviewModal({
               </span>
             </IconButton>
           </div>
-          <div className="relative aspect-video overflow-hidden bg-[#08080c]">
+          <div className="relative aspect-video overflow-hidden bg-stage-deep">
             {previewUrl ? (
               <iframe title="Arena preview" className="h-full w-full border-0" src={previewUrl} sandbox="allow-scripts" />
             ) : (
@@ -527,7 +527,7 @@ function PreviewModal({
             <span className="font-mono text-xs tabular-nums text-muted">
               {size[0]}×{size[1]} · {fps}fps · __seek(t) verified
             </span>
-            <Button size="sm" variant="primary" onClick={onRender} disabled={!asset.localPath}>
+            <Button size="sm" variant="primary" onClick={onRender} disabled={!asset.localPath} title={(!asset.localPath) ? 'Import the Arena file first' : undefined}>
               {asset.localPath ? 'Render video' : 'Import file first'}
             </Button>
           </div>

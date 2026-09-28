@@ -26,6 +26,11 @@ use raw hex or arbitrary magic values.
 | `--color-info` | `#4FB6E8` (blue) | informational badges, footage clips, links |
 | `--color-danger` | `#E24B4A` | destructive actions, silence-cut markers, errors |
 
+| `--color-stage` | `#0B0B10` | preview stage behind video (not swapped in light mode) |
+| `--color-stage-deep` | `#07080C` | editor/player wells, footage thumbnails, timeline gutter |
+| `--color-stage-raised` | `#11131B` | centre of the editor preview vignette |
+| `--color-stage-text` | `#F4F1EA` | labels drawn over video thumbnails (not swapped in light mode) |
+
 Light mode (`[data-theme="light"]`) swaps surfaces/text only; the brand lime
 stays on buttons. One accent per view — lime leads, blue informs, red warns.
 

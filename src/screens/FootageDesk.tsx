@@ -27,7 +27,7 @@ const CAPTIONS = [
     preview: (
       <span
         className="text-center text-sm font-black uppercase italic leading-tight tracking-tight text-white"
-        style={{ textShadow: '2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000' }}
+        style={{ textShadow: '2px 2px 0 var(--color-stage-deep), -2px 2px 0 var(--color-stage-deep), 2px -2px 0 var(--color-stage-deep), -2px -2px 0 var(--color-stage-deep)' }}
       >
         SHIPPING <span className="text-accent">NOW</span>
       </span>
@@ -39,7 +39,7 @@ const CAPTIONS = [
     preview: (
       <span
         className="text-center text-sm font-bold leading-tight text-white"
-        style={{ textShadow: '1px 1px 0 #000, -1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000' }}
+        style={{ textShadow: '1px 1px 0 var(--color-stage-deep), -1px 1px 0 var(--color-stage-deep), 1px -1px 0 var(--color-stage-deep), -1px -1px 0 var(--color-stage-deep)' }}
       >
         Shipping now.
       </span>
@@ -363,7 +363,7 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
                     active ? 'border-accent/60 bg-accent/5' : 'border-line hover:border-text/20',
                   )}
                 >
-                  <div className="flex h-16 items-center justify-center rounded-lg bg-[#08080c] px-2">{c.preview}</div>
+                  <div className="flex h-16 items-center justify-center rounded-lg bg-stage-deep px-2">{c.preview}</div>
                   <div className="mt-2 flex items-center justify-center gap-1.5 text-xs font-medium">
                     <span
                       className={cx(
@@ -397,7 +397,7 @@ function FootageDetail({ asset }: { asset: FootageAsset }) {
             <span className="text-xs tabular-nums text-muted">
               {cuts.length} cut{cuts.length === 1 ? '' : 's'} → −{round1(cutTotal)}s
             </span>
-            <Button variant="outline" onClick={() => void sendToStudio()} disabled={sending || !asset.localPath}>
+            <Button variant="outline" onClick={() => void sendToStudio()} disabled={sending || !asset.localPath} title={(sending || !asset.localPath) ? 'Sending — or import the file to disk first' : undefined}>
               {sending ? <Loader2 size={13} className="animate-spin" /> : <Clapperboard size={13} />}
               Edit in Studio
             </Button>

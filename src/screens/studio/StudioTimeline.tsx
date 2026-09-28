@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, SlidersHorizontal, Type as TypeIcon, Video, Lock, EyeOff, VolumeX , Shapes, MousePointerClick, Loader as LoaderIcon, LayoutTemplate } from 'lucide-react'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
@@ -128,6 +128,20 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
     },
     [pps],
   )
+  // Latest handlers behind one stable object, so memoised clip blocks never
+  // re-render just because a parent callback was re-created.
+  const latest = useRef({ onSelect, onToggleMulti, onClipContextMenu, onSeek, timeAt })
+  latest.current = { onSelect, onToggleMulti, onClipContextMenu, onSeek, timeAt }
+  const actions = useMemo<ClipActions>(() => ({
+    select: (id) => latest.current.onSelect(id),
+    toggleMulti: (id) => latest.current.onToggleMulti?.(id),
+    hasToggleMulti: () => !!latest.current.onToggleMulti,
+    contextMenu: (id, x, y) => latest.current.onClipContextMenu?.(id, x, y),
+    hasContextMenu: () => !!latest.current.onClipContextMenu,
+    seek: (t) => latest.current.onSeek(t),
+    setDrag: (d) => setDrag(d),
+    timeAt: (x) => latest.current.timeAt(x),
+  }), [])
 
   // Pointer handling lives on the window so a fast drag never "sticks" when
   // the cursor leaves the lane.
@@ -313,132 +327,9 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
                 >
                   {doc.clips
                     .filter((clip) => clip.track === track)
-                    .map((clip) => {
-                      const Icon = clipIcon(clip)
-                      const selected = clip.id === selectedId
-                      const poster = clip.kind === 'video' || clip.kind === 'image' ? clip.posterDataUrl : null
-                      return (
-                        <div
-                          key={clip.id}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`${clip.name}, ${clip.startSec.toFixed(1)} to ${clipEnd(clip).toFixed(1)} seconds`}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault()
-                              onSelect(clip.id)
-                            }
-                          }}
-                          onContextMenu={(e) => {
-                            if (!onClipContextMenu) return
-                            e.preventDefault()
-                            e.stopPropagation()
-                            onClipContextMenu(clip.id, e.clientX, e.clientY)
-                          }}
-                          onPointerDown={(e) => {
-                            if (e.button === 2) return
-                            e.stopPropagation()
-                            e.preventDefault()
-                            // Shift/Ctrl/⌘-click adds or removes the clip from the selection, with no drag.
-                            if (onToggleMulti && (e.shiftKey || e.ctrlKey || e.metaKey)) { onToggleMulti(clip.id); return }
-                            onSelect(clip.id)
-                            // Locked clips select but never drag.
-                            if (clip.locked) return
-                            setDrag({
-                              mode: 'move',
-                              id: clip.id,
-                              grabOffsetSec: timeAt(e.clientX) - clip.startSec,
-                              startTrack: clip.track,
-                              pointerStartY: e.clientY,
-                            })
-                          }}
-                          className={cx(
-                            'group absolute top-[3px] flex items-center gap-2 overflow-hidden rounded-lg border px-2 text-xs',
-                            clip.locked ? 'cursor-default select-none' : 'cursor-grab active:cursor-grabbing select-none',
-                            clipTint(clip, selected),
-                            multiIds?.has(clip.id) && 'ring-2 ring-info ring-offset-1 ring-offset-bg',
-                            clip.groupId && 'border-dashed',
-                            clip.hidden && 'opacity-40 [background-image:repeating-linear-gradient(135deg,transparent_0_6px,rgb(0_0_0/0.25)_6px_12px)]',
-                          )}
-                          style={{
-                            left: clip.startSec * pps,
-                            width: Math.max(18, clip.durationSec * pps),
-                            height: ROW_H,
-                          }}
-                        >
-                          {poster && (
-                            <img
-                              src={poster}
-                              alt=""
-                              aria-hidden
-                              className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30"
-                            />
-                          )}
-                          {clip.kind === 'audio' && <AudioWaveform clip={clip as StudioAudioClip} />}
-                          <span className="relative flex min-w-0 items-center gap-1.5">
-                            <Icon size={13} className="shrink-0 opacity-80" />
-                            <span className="truncate font-medium text-text">{clip.name}</span>
-                            {clip.locked && <Lock size={11} className="shrink-0 text-muted" aria-label="Locked" />}
-                            {clip.hidden && <EyeOff size={11} className="shrink-0 text-muted" aria-label="Hidden" />}
-                            {clip.muted && <VolumeX size={11} className="shrink-0 text-muted" aria-label="Muted" />}
-                          </span>
-                          <span className="relative ml-auto hidden font-mono text-xs text-muted tabular-nums sm:inline">
-                            {clip.durationSec.toFixed(1)}s
-                          </span>
-
-                          {selected && (clip.keyframes ?? []).map((keyframe, index) => (
-                            <button
-                              key={`${keyframe.at}-${index}`}
-                              type="button"
-                              title={`Keyframe at ${keyframe.at.toFixed(2)}s — drag to retime`}
-                              aria-label={`Keyframe ${index + 1} at ${keyframe.at.toFixed(2)} seconds`}
-                              onPointerDown={(event) => {
-                                event.stopPropagation()
-                                event.preventDefault()
-                                onSelect(clip.id)
-                                onSeek(clip.startSec + keyframe.at)
-                                setDrag({ mode: 'keyframe', id: clip.id, index })
-                              }}
-                              className="absolute bottom-1 z-10 h-2.5 w-2.5 -translate-x-1/2 rotate-45 cursor-ew-resize border border-accent-ink bg-accent shadow-sm"
-                              style={{ left: `${clamp(keyframe.at / clip.durationSec, 0, 1) * 100}%` }}
-                            />
-                          ))}
-
-                          {/* Trim handles */}
-                          <span
-                            role="presentation"
-                            onPointerDown={(e) => {
-                              e.stopPropagation()
-                              e.preventDefault()
-                              onSelect(clip.id)
-                              if (clip.locked) return
-                              setDrag({
-                                mode: 'trim-start',
-                                id: clip.id,
-                                originStart: clip.startSec,
-                                originDuration: clip.durationSec,
-                                originTrimIn:
-                                  clip.kind === 'video' || clip.kind === 'audio'
-                                    ? (clip as StudioMediaClip | StudioAudioClip).trimInSec
-                                    : 0,
-                              })
-                            }}
-                            className="absolute inset-y-0 left-0 w-2 cursor-ew-resize bg-text/0 hover:bg-text/25"
-                          />
-                          <span
-                            role="presentation"
-                            onPointerDown={(e) => {
-                              e.stopPropagation()
-                              e.preventDefault()
-                              onSelect(clip.id)
-                              if (clip.locked) return
-                              setDrag({ mode: 'trim-end', id: clip.id, originDuration: clip.durationSec })
-                            }}
-                            className="absolute inset-y-0 right-0 w-2 cursor-ew-resize bg-text/0 hover:bg-text/25"
-                          />
-                        </div>
-                      )
-                    })}
+                    .map((clip) => (
+                      <ClipBlock key={clip.id} clip={clip} selected={clip.id === selectedId} multi={!!multiIds?.has(clip.id)} pps={pps} actions={actions} />
+                    ))}
                 </div>
               ))}
 
@@ -465,3 +356,145 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
     </div>
   )
 }
+
+
+type ClipActions = {
+  select: (id: string) => void
+  toggleMulti: (id: string) => void
+  hasToggleMulti: () => boolean
+  contextMenu: (id: string, x: number, y: number) => void
+  hasContextMenu: () => boolean
+  seek: (t: number) => void
+  setDrag: (d: Drag) => void
+  timeAt: (clientX: number) => number
+}
+
+/**
+ * One timeline clip. Memoised: during playback `time` changes every frame,
+ * but a clip block only re-renders when its own clip, selection or zoom
+ * changes. `actions` is a stable object that forwards to the latest handlers.
+ */
+const ClipBlock = memo(function ClipBlock({ clip, selected, multi, pps, actions }: { clip: StudioClip; selected: boolean; multi: boolean; pps: number; actions: ClipActions }) {
+  const Icon = clipIcon(clip)
+  const poster = clip.kind === 'video' || clip.kind === 'image' ? clip.posterDataUrl : null
+  return (
+    <div
+                                role="button"
+      tabIndex={0}
+      aria-label={`${clip.name}, ${clip.startSec.toFixed(1)} to ${clipEnd(clip).toFixed(1)} seconds`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          actions.select(clip.id)
+        }
+      }}
+      onContextMenu={(e) => {
+        if (!actions.hasContextMenu()) return
+        e.preventDefault()
+        e.stopPropagation()
+        actions.contextMenu(clip.id, e.clientX, e.clientY)
+      }}
+      onPointerDown={(e) => {
+        if (e.button === 2) return
+        e.stopPropagation()
+        e.preventDefault()
+        // Shift/Ctrl/⌘-click adds or removes the clip from the selection, with no drag.
+        if (actions.hasToggleMulti() && (e.shiftKey || e.ctrlKey || e.metaKey)) { actions.toggleMulti(clip.id); return }
+        actions.select(clip.id)
+        // Locked clips select but never drag.
+        if (clip.locked) return
+        actions.setDrag({
+          mode: 'move',
+          id: clip.id,
+          grabOffsetSec: actions.timeAt(e.clientX) - clip.startSec,
+          startTrack: clip.track,
+          pointerStartY: e.clientY,
+        })
+      }}
+      className={cx(
+        'group absolute top-[3px] flex items-center gap-2 overflow-hidden rounded-lg border px-2 text-xs',
+        clip.locked ? 'cursor-default select-none' : 'cursor-grab active:cursor-grabbing select-none',
+        clipTint(clip, selected),
+        multi && 'ring-2 ring-info ring-offset-1 ring-offset-bg',
+        clip.groupId && 'border-dashed',
+        clip.hidden && 'opacity-40 [background-image:repeating-linear-gradient(135deg,transparent_0_6px,rgb(0_0_0/0.25)_6px_12px)]',
+      )}
+      style={{
+        left: clip.startSec * pps,
+        width: Math.max(18, clip.durationSec * pps),
+        height: ROW_H,
+      }}
+    >
+      {poster && (
+        <img
+          src={poster}
+          alt=""
+          aria-hidden
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover opacity-30"
+        />
+      )}
+      {clip.kind === 'audio' && <AudioWaveform clip={clip as StudioAudioClip} />}
+      <span className="relative flex min-w-0 items-center gap-1.5">
+        <Icon size={13} className="shrink-0 opacity-80" />
+        <span className="truncate font-medium text-text">{clip.name}</span>
+        {clip.locked && <Lock size={11} className="shrink-0 text-muted" aria-label="Locked" />}
+        {clip.hidden && <EyeOff size={11} className="shrink-0 text-muted" aria-label="Hidden" />}
+        {clip.muted && <VolumeX size={11} className="shrink-0 text-muted" aria-label="Muted" />}
+      </span>
+      <span className="relative ml-auto hidden font-mono text-xs text-muted tabular-nums sm:inline">
+        {clip.durationSec.toFixed(1)}s
+      </span>
+
+      {selected && (clip.keyframes ?? []).map((keyframe, index) => (
+        <button
+          key={`${keyframe.at}-${index}`}
+          type="button"
+          title={`Keyframe at ${keyframe.at.toFixed(2)}s — drag to retime`}
+          aria-label={`Keyframe ${index + 1} at ${keyframe.at.toFixed(2)} seconds`}
+          onPointerDown={(event) => {
+            event.stopPropagation()
+            event.preventDefault()
+            actions.select(clip.id)
+            actions.seek(clip.startSec + keyframe.at)
+            actions.setDrag({ mode: 'keyframe', id: clip.id, index })
+          }}
+          className="absolute bottom-1 z-10 h-2.5 w-2.5 -translate-x-1/2 rotate-45 cursor-ew-resize border border-accent-ink bg-accent shadow-sm"
+          style={{ left: `${clamp(keyframe.at / clip.durationSec, 0, 1) * 100}%` }}
+        />
+      ))}
+
+      {/* Trim handles */}
+      <span
+        role="presentation"
+        onPointerDown={(e) => {
+          e.stopPropagation()
+          e.preventDefault()
+          actions.select(clip.id)
+          if (clip.locked) return
+          actions.setDrag({
+            mode: 'trim-start',
+            id: clip.id,
+            originStart: clip.startSec,
+            originDuration: clip.durationSec,
+            originTrimIn:
+              clip.kind === 'video' || clip.kind === 'audio'
+                ? (clip as StudioMediaClip | StudioAudioClip).trimInSec
+                : 0,
+          })
+        }}
+        className="absolute inset-y-0 left-0 w-2 cursor-ew-resize bg-text/0 hover:bg-text/25"
+      />
+      <span
+        role="presentation"
+        onPointerDown={(e) => {
+          e.stopPropagation()
+          e.preventDefault()
+          actions.select(clip.id)
+          if (clip.locked) return
+          actions.setDrag({ mode: 'trim-end', id: clip.id, originDuration: clip.durationSec })
+        }}
+        className="absolute inset-y-0 right-0 w-2 cursor-ew-resize bg-text/0 hover:bg-text/25"
+      />
+    </div>
+  )
+})

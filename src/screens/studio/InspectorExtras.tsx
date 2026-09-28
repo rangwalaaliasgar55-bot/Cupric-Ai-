@@ -221,7 +221,7 @@ export function FramecnFields({ clip, onPatch }: { clip: StudioOverlayClip; onPa
         return <Row key={key} label={c.label}><select className={inputCx} value={String(v)} onChange={(e) => set(e.target.value)}>{[...new Set([...c.options, String(c.default)])].map((o) => <option key={o} value={o}>{o}</option>)}</select></Row>
       })}
       <div className="flex gap-2">
-        <button type="button" disabled={!dirty} onClick={apply} className={cx('cu-chip px-3 py-1 text-xs', dirty ? 'border-accent text-accent' : 'opacity-50')}>Apply & re-record</button>
+        <button type="button" disabled={!dirty} title={(!dirty) ? 'No changes to apply' : undefined} onClick={apply} className={cx('cu-chip px-3 py-1 text-xs', dirty ? 'border-accent text-accent' : 'opacity-50')}>Apply & re-record</button>
         {Object.keys(saved).length > 0 && <button type="button" className="cu-chip px-3 py-1 text-xs" onClick={() => { setDraft({}); clip.component && onPatch({ component: { ...clip.component, props: undefined, status: 'pending' } } as Partial<StudioClip>) }}>Reset to defaults</button>}
       </div>
     </div>

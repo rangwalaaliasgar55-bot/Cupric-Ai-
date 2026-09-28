@@ -155,7 +155,7 @@ export function Render() {
           <Button
             variant="primary"
             className="w-full"
-            disabled={!canRender}
+            disabled={!canRender} title={(!canRender) ? 'Add clips to the timeline or lock a rundown in Brief first' : undefined}
             onClick={() => startRender(project.id, { aspect, fps, quality })}
           >
             <Rocket size={15} />

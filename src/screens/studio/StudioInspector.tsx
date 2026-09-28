@@ -342,7 +342,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
                 title={bg.name}
               >
                 <span
-                  className="flex h-full w-full items-end px-2 pb-1 text-xs font-medium text-[#F4F1EA] [text-shadow:0_1px_2px_rgb(0_0_0/0.8)]"
+                  className="flex h-full w-full items-end px-2 pb-1 text-xs font-medium text-stage-text [text-shadow:0_1px_2px_rgb(0_0_0/0.8)]"
                   // Preview uses the same CSS the Library copies out.
                   ref={(node) => {
                     if (node) node.setAttribute('style', `${bg.css};display:flex;height:100%;width:100%`)
@@ -525,7 +525,7 @@ function KeyframeFields({
       active={keys.length > 0}
     >
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" onClick={record} disabled={!withinClip}>
+        <Button size="sm" variant="outline" onClick={record} disabled={!withinClip} title={(!withinClip) ? 'Move the playhead inside this clip' : undefined}>
           <Plus size={13} /> Record at {Math.max(0, local).toFixed(2)}s
         </Button>
         {keys.length > 0 && (
@@ -795,7 +795,7 @@ function MaskFields({ clip, onPatch, aspect }: { clip: StudioClip; onPatch: (p: 
             <>
               <p className="text-[11px] text-muted">Put the box around the subject at the clip's first frame, then track. The mask follows it through the clip.</p>
               <div className="flex flex-wrap items-center gap-1.5">
-                <Button size="sm" variant="outline" disabled={!canTrack || tracking !== null} onClick={runTrack}>
+                <Button size="sm" variant="outline" disabled={!canTrack || tracking !== null} title={(!canTrack || tracking !== null) ? 'Tracking needs a video clip — or wait for the current track' : undefined} onClick={runTrack}>
                   {tracking !== null ? `Tracking… ${tracking}%` : mask.track?.length ? 'Track again' : 'Track subject'}
                 </Button>
                 {mask.track?.length ? <Button size="sm" variant="ghost" onClick={() => { onPatch({ mask: { ...mask, track: null } }); setTrackMsg('Tracking removed — the mask is static again.') }}>Clear tracking</Button> : null}
@@ -1361,7 +1361,7 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
             Loop the animation when the clip is longer
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => rerecord({})} disabled={busy}>
+            <Button size="sm" variant="outline" onClick={() => rerecord({})} disabled={busy} title={(busy) ? 'Recording…' : undefined}>
               <RefreshCw size={12} /> Record again
             </Button>
             <Button size="sm" variant="ghost" onClick={rebuild} disabled={busy} title="Replace the recording with native text and glass layers you can type into">

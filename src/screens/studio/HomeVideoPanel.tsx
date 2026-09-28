@@ -116,7 +116,7 @@ export function HomeVideoPanel({ doc, project, onApply, onClose }: { doc: Studio
         {error && <p className="text-xs text-danger" role="alert">{error}</p>}
         <div className="flex items-center justify-end gap-2">
           <button type="button" className="cu-chip px-3 py-1.5 text-xs" onClick={onClose}>Close</button>
-          <button type="submit" className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink active:scale-[0.96]" disabled={typeof plan === 'string'}>Accept — add {meta.name} <kbd className="ml-1 font-mono">⌘↵</kbd></button>
+          <button type="submit" className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-accent-ink active:scale-[0.96]" disabled={typeof plan === 'string'} title={(typeof plan === 'string') ? 'Fix the error above first' : undefined}>Accept — add {meta.name} <kbd className="ml-1 font-mono">⌘↵</kbd></button>
         </div>
         {typeof plan === 'string' && <p className="text-right text-xs text-muted">Fix the error above to enable Accept.</p>}
       </form>

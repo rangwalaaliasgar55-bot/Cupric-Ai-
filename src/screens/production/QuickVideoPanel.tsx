@@ -203,8 +203,8 @@ export function QuickVideoPanel() {
               <textarea className={`${inputCx} min-h-28`} value={s.script} onChange={(e) => set({ script: e.target.value })} placeholder="Leave empty to write one from the topic, or paste your own." aria-label="Video script" />
             </label>
             <div className="flex flex-wrap gap-1.5">
-              <Button size="sm" variant="outline" disabled={!!busy} onClick={async () => { setBusy('Writing'); try { await writeScript() } catch (e) { pushToast('error', e instanceof Error ? e.message : String(e)) } finally { setBusy(null) } }}><Wand2 size={12} /> Write script</Button>
-              <Button size="sm" variant="outline" disabled={!s.script.trim()} onClick={() => makeTerms(s.script)}>Suggest terms</Button>
+              <Button size="sm" variant="outline" disabled={!!busy} title={(!!busy) ? 'Busy — wait for the current step' : undefined} onClick={async () => { setBusy('Writing'); try { await writeScript() } catch (e) { pushToast('error', e instanceof Error ? e.message : String(e)) } finally { setBusy(null) } }}><Wand2 size={12} /> Write script</Button>
+              <Button size="sm" variant="outline" disabled={!s.script.trim()} title={(!s.script.trim()) ? 'Write or generate a script first' : undefined} onClick={() => makeTerms(s.script)}>Suggest terms</Button>
               <Button size="sm" variant="ghost" onClick={() => { set({ script: '' }); setTerms([]) }}><RotateCcw size={12} /> Clear</Button>
             </div>
             <label className="block text-[11px] text-muted">Search terms (comma-separated)<input className={inputCx} value={terms.join(', ')} onChange={(e) => setTerms(e.target.value.split(',').map((t) => t.trim()).filter(Boolean))} aria-label="Search terms" /></label>
@@ -240,7 +240,7 @@ export function QuickVideoPanel() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="primary" disabled={!!busy || !project || (!s.topic.trim() && !s.script.trim())} onClick={() => void runAll()} data-testid="quick-video-run"><Play size={13} /> Build timeline</Button>
+          <Button variant="primary" disabled={!!busy || !project || (!s.topic.trim() && !s.script.trim())} title={(!!busy || !project || (!s.topic.trim() && !s.script.trim())) ? 'Open a project and enter a topic or script — or wait for the current step' : undefined} onClick={() => void runAll()} data-testid="quick-video-run"><Play size={13} /> Build timeline</Button>
           {busy && <span className="flex items-center gap-2 text-xs text-muted"><MatrixLoader variant="scan" label={busy} /> {busy}…</span>}
           <span className="text-[10px] text-muted">Replaces the current timeline as one undo step. Nothing is exported or published automatically.</span>
         </div>

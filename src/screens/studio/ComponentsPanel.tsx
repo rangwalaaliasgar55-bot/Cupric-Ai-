@@ -97,7 +97,7 @@ export function ComponentsPanel({
                 <span>s</span>
               </label>
               <label className="flex items-center gap-1.5 text-xs text-muted" title="Hover, move over and press its controls while recording, so interactive components show their motion">
-                <input type="checkbox" checked={interact} onChange={(e) => setInteract(e.target.checked)} className="accent-[var(--color-accent,#C8F542)]" />
+                <input type="checkbox" checked={interact} onChange={(e) => setInteract(e.target.checked)} className="accent-accent" />
                 <MousePointerClick size={12} /> Act it out
               </label>
               <Button size="sm" variant="primary" className="ml-auto" onClick={() => add(selected)} aria-label={`Add ${selected.name} to the timeline`}>
@@ -140,7 +140,7 @@ export function ComponentsPanel({
                       {busy ? 'Recording…' : failed ? `Not recorded: ${item.component?.error ?? 'error'}` : `${item.component?.recordSec ?? item.durationSec}s · ${item.frames?.length ?? 1} frames`}
                     </div>
                   </div>
-                  <Button size="sm" variant="primary" disabled={busy || failed} onClick={() => onPlaceShelf?.(item.id)} aria-label={`Place ${item.name} at the playhead`}>
+                  <Button size="sm" variant="primary" disabled={busy || failed} title={(busy || failed) ? 'Still recording, or the recording failed' : undefined} onClick={() => onPlaceShelf?.(item.id)} aria-label={`Place ${item.name} at the playhead`}>
                     <Plus size={12} /> Place
                   </Button>
                   <button type="button" onClick={() => onRemoveShelf?.(item.id)} className="flex h-6 w-6 items-center justify-center rounded-md text-muted hover:text-danger" aria-label={`Remove ${item.name} from the shelf`}>

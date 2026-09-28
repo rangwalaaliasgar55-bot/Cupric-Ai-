@@ -146,7 +146,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
           <input className={inputCx} placeholder="e.g. Stripe, GitHub, Figma" value={logoQuery} onChange={(e) => setLogoQuery(e.target.value)} aria-label="Brand name" />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <Button size="sm" variant="outline" disabled={logoBusy || !logoQuery.trim()} onClick={async () => {
+          <Button size="sm" variant="outline" disabled={logoBusy || !logoQuery.trim()} title={(logoBusy || !logoQuery.trim()) ? 'Type a brand name first — or wait' : undefined} onClick={async () => {
             const dataUrl = await fetchLogo()
             if (!dataUrl) return
             const track = Math.max(0, ...doc.clips.map((c) => c.track)) + 1
@@ -154,7 +154,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
             onCommit({ ...doc, clips: [...doc.clips, clip], trackCount: Math.max(doc.trackCount, track + 1) }, `Add ${logoQuery.trim()} logo`)
             setMsg(`${logoQuery.trim()} logo added at the playhead (Simple Icons, CC0).`)
           }}>{logoBusy ? 'Fetching…' : 'Add at playhead'}</Button>
-          <Button size="sm" variant="outline" disabled={logoBusy || !logoQuery.trim()} onClick={async () => { const d = await fetchLogo(); if (d) { saveKit({ ...kit, logoDataUrl: d }); setMsg('Saved as your Brand Kit logo.') } }}>Use as my logo</Button>
+          <Button size="sm" variant="outline" disabled={logoBusy || !logoQuery.trim()} title={(logoBusy || !logoQuery.trim()) ? 'Type a brand name first — or wait' : undefined} onClick={async () => { const d = await fetchLogo(); if (d) { saveKit({ ...kit, logoDataUrl: d }); setMsg('Saved as your Brand Kit logo.') } }}>Use as my logo</Button>
         </div>
       </Block>
 
@@ -169,7 +169,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
           <input type="range" min={-6} max={6} value={rate} onChange={(e) => setRate(Number(e.target.value))} className="flex-1" aria-label="Voiceover pace" />
           <span className="w-8 text-right font-mono tabular-nums">{rate > 0 ? `+${rate}` : rate}</span>
         </label>
-        <Button size="sm" variant="primary" disabled={ttsBusy || !script.trim()} onClick={async () => {
+        <Button size="sm" variant="primary" disabled={ttsBusy || !script.trim()} title={(ttsBusy || !script.trim()) ? 'Write a script first — or wait for the voice' : undefined} onClick={async () => {
           if (!onImportFiles) { setMsg('Voiceover import is not available here.'); return }
           setTtsBusy(true)
           try {
@@ -215,7 +215,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
               <ul className="list-disc pl-4 text-[11px]">{issues.map((i) => <li key={i.text} className={i.level === 'error' ? 'text-danger' : 'text-muted'}>{i.text}</li>)}</ul>
             )}
             <div className="flex flex-wrap gap-1.5">
-              <Button size="sm" variant="primary" disabled={doc.aspect === preset.aspect && doc.fps === preset.fps} onClick={() => { commitResult({ doc: { ...(doc.aspect === preset.aspect ? doc : reframeForAspect(doc, preset.aspect)), fps: preset.fps }, changed: true }, `Apply ${preset.label} preset`); setMsg(`Set to ${preset.aspect} at ${preset.fps} fps. Text was reframed into the new safe area. Undo reverts it.`) }}>Apply preset</Button>
+              <Button size="sm" variant="primary" disabled={doc.aspect === preset.aspect && doc.fps === preset.fps} title={(doc.aspect === preset.aspect && doc.fps === preset.fps) ? 'Already using this format' : undefined} onClick={() => { commitResult({ doc: { ...(doc.aspect === preset.aspect ? doc : reframeForAspect(doc, preset.aspect)), fps: preset.fps }, changed: true }, `Apply ${preset.label} preset`); setMsg(`Set to ${preset.aspect} at ${preset.fps} fps. Text was reframed into the new safe area. Undo reverts it.`) }}>Apply preset</Button>
               <Button size="sm" variant="outline" onClick={() => { const r = studioToSrt(doc); if (!r.cues) { setMsg('No text clips to turn into captions yet.'); return } const url = URL.createObjectURL(new Blob([r.srt], { type: 'application/x-subrip' })); const a = document.createElement('a'); a.href = url; a.download = `${(project?.name || 'captions').replace(/[^\w-]+/g, '-')}.srt`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); setMsg(`Saved ${r.cues} caption cue(s) as SRT${r.skipped ? `. Skipped ${r.skipped} placeholder line(s)` : ''}.`) }}><Download size={12} /> Captions (.srt)</Button>
             </div>
           </>

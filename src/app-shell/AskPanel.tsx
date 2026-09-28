@@ -526,7 +526,7 @@ export function AskPanel() {
                   </div>
                 )}
                 {setupRequired && aiMode === 'auto' && (
-                  <div className="rounded-lg border border-[#f59e0b]/30 bg-[#f59e0b]/10 p-2 text-xs text-text">
+                  <div className="rounded-lg border border-danger/30 bg-danger/10 p-2 text-xs text-text">
                     <div className="font-semibold">No live model found yet</div>
                     <div className="mt-1 text-muted">Your timeline still builds offline. Choose a zero-key setup:</div>
                     <div className="mt-2 grid grid-cols-3 gap-1.5">
@@ -557,7 +557,7 @@ export function AskPanel() {
                     <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.gemini.state === 'ok' ? 'bg-accent' : providerStatus.gemini.state === 'error' ? 'bg-danger' : providerStatus.gemini.state === 'testing' ? 'bg-info' : 'bg-muted')} />
                     <span className="truncate">Gemini · {providerStatus.gemini.message}</span>
                   </span>
-                  <button type="button" onClick={() => void testConnection('gemini')} disabled={providerStatus.gemini.state === 'testing'} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
+                  <button type="button" onClick={() => void testConnection('gemini')} disabled={providerStatus.gemini.state === 'testing'} title={(providerStatus.gemini.state === 'testing') ? 'Testing the connection…' : undefined} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
                 </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2">
                   <div className="mb-2 flex items-center justify-between gap-2">
@@ -635,7 +635,7 @@ export function AskPanel() {
                     <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.opencode.state === 'ok' ? 'bg-accent' : providerStatus.opencode.state === 'error' ? 'bg-danger' : providerStatus.opencode.state === 'testing' ? 'bg-info' : 'bg-muted')} />
                     <span className="truncate">OpenCode · {providerStatus.opencode.message}</span>
                   </span>
-                  <button type="button" onClick={() => void testConnection('opencode')} disabled={providerStatus.opencode.state === 'testing'} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
+                  <button type="button" onClick={() => void testConnection('opencode')} disabled={providerStatus.opencode.state === 'testing'} title={(providerStatus.opencode.state === 'testing') ? 'Testing the connection…' : undefined} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
                 </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
                   <div className="mb-1 font-semibold text-muted">Provider status</div>
@@ -645,7 +645,7 @@ export function AskPanel() {
                 </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
                   <div className="font-semibold text-muted">Fallback order</div>
-                  <div className="mt-1 space-y-1">{fallbackOrder.map((item, index) => <div key={`${item}-${index}`} className="flex items-center justify-between rounded bg-panel px-2 py-1"><span>{index + 1}. {item}</span><span className="flex gap-1"><button type="button" aria-label={`Move ${item} up`} onClick={() => moveFallback(index, -1)} disabled={index === 0}>↑</button><button type="button" aria-label={`Move ${item} down`} onClick={() => moveFallback(index, 1)} disabled={index === fallbackOrder.length - 1}>↓</button></span></div>)}</div>
+                  <div className="mt-1 space-y-1">{fallbackOrder.map((item, index) => <div key={`${item}-${index}`} className="flex items-center justify-between rounded bg-panel px-2 py-1"><span>{index + 1}. {item}</span><span className="flex gap-1"><button type="button" aria-label={`Move ${item} up`} onClick={() => moveFallback(index, -1)} disabled={index === 0} title={(index === 0) ? 'Already first in the fallback order' : undefined}>↑</button><button type="button" aria-label={`Move ${item} down`} onClick={() => moveFallback(index, 1)} disabled={index === fallbackOrder.length - 1} title={(index === fallbackOrder.length - 1) ? 'Already last in the fallback order' : undefined}>↓</button></span></div>)}</div>
                 </div>
                 <button type="submit" className="w-full rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink">
                   Save live AI settings
@@ -847,7 +847,7 @@ export function AskPanel() {
               <button
                 type="submit"
                 aria-label="Send"
-                disabled={(!input.trim() && !pending.length) || busy}
+                disabled={(!input.trim() && !pending.length) || busy} title={((!input.trim() && !pending.length) || busy) ? 'Type a message or attach a file first — or wait for the reply' : undefined}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-ink transition-transform duration-150 hover:bg-accent-hover active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
               >
                 <Send size={15} />

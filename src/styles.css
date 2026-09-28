@@ -58,6 +58,11 @@
   --color-accent-text: #c8f542;
   --color-info: #4fb6e8;
   --color-danger: #e24b4a;
+  /* Stage surfaces: never theme-swapped (video is always dark under the UI). */
+  --color-stage: #0b0b10;
+  --color-stage-deep: #07080c;
+  --color-stage-raised: #11131b;
+  --color-stage-text: #f4f1ea;
   /* Video palette — Home_X kit stages only (DESIGN.md §1). */
   --color-video-orange: #ff5a1f;
   --color-video-blue: #2f6bff;

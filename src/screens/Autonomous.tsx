@@ -273,7 +273,7 @@ export function Autonomous() {
             <div className="mt-1 text-muted">Deterministic frames · local asset fallback · preview/export parity</div>
           </div>
           <div className="mt-5 flex justify-end">
-            <Button onClick={() => startJob(brief)} disabled={!brief.trim()}>
+            <Button onClick={() => startJob(brief)} disabled={!brief.trim()} title={(!brief.trim()) ? 'Describe the video first' : undefined}>
               Start autonomous job
             </Button>
           </div>

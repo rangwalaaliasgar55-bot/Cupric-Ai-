@@ -57,7 +57,7 @@ export function TextListPanel({ doc, selectedId, onSelect, onCommit, onNote, bra
             <input className="cu-input w-40 px-2 py-1" placeholder="Find" aria-label="Find text" value={find} onChange={(e) => setFind(e.target.value)} />
             <input className="cu-input w-40 px-2 py-1" placeholder="Replace with" aria-label="Replace with" value={repl} onChange={(e) => setRepl(e.target.value)} />
             <label className="flex items-center gap-1 text-muted"><input type="checkbox" checked={whole} onChange={(e) => setWhole(e.target.checked)} /> Whole word</label>
-            <button type="submit" className="cu-chip px-2 py-1" disabled={!find}>Replace all</button>
+            <button type="submit" className="cu-chip px-2 py-1" disabled={!find} title={(!find) ? 'Type text to find first' : undefined}>Replace all</button>
           </form>
           <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Restyle text">
             <span className="text-muted">Restyle</span>
@@ -71,7 +71,7 @@ export function TextListPanel({ doc, selectedId, onSelect, onCommit, onNote, bra
               <option value="">Keep font</option>
               {VIDEO_FONTS.map((f) => <option key={f.family} value={f.family}>{f.label}</option>)}
             </select>
-            <button type="button" className="cu-chip px-2 py-1" disabled={!font} onClick={() => apply(restyleText(doc, { role, fontFamily: font }), 'Change font')}>Apply font</button>
+            <button type="button" className="cu-chip px-2 py-1" disabled={!font} title={(!font) ? 'Pick a font first' : undefined} onClick={() => apply(restyleText(doc, { role, fontFamily: font }), 'Change font')}>Apply font</button>
             <input type="color" aria-label="Colour" value={color} onChange={(e) => setColor(e.target.value)} className="h-6 w-8 rounded border border-line bg-transparent" />
             <button type="button" className="cu-chip px-2 py-1" onClick={() => apply(restyleText(doc, { role, color }), 'Change text colour')}>Apply colour</button>
             <button type="button" className="cu-chip px-2 py-1" aria-label="Smaller" onClick={() => apply(restyleText(doc, { role, scale: 0.9 }), 'Text smaller')}>A−</button>

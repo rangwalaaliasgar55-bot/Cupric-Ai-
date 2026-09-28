@@ -55,14 +55,14 @@ export function EditToolsBar({ doc, selectedId, multiIds, onClearMulti, onCommit
     <div className="flex flex-wrap items-center gap-1.5 border-b border-line bg-panel/40 px-6 py-1.5 text-xs text-muted" role="toolbar" aria-label="Edit tools for the selected clip">
       <span className="mr-1 font-medium text-text">{clip.name}</span>
       <span title="Slip: change which part of the source plays, without moving the clip">Slip</span>
-      <button type="button" className={btn} disabled={locked} aria-label="Slip back" onClick={(e) => run(slipClip(doc, clip.id, -step(e)), 'Slip clip')}>◀</button>
-      <button type="button" className={btn} disabled={locked} aria-label="Slip forward" onClick={(e) => run(slipClip(doc, clip.id, step(e)), 'Slip clip')}>▶</button>
+      <button type="button" className={btn} disabled={locked} title={(locked) ? 'Unlock the clip first' : undefined} aria-label="Slip back" onClick={(e) => run(slipClip(doc, clip.id, -step(e)), 'Slip clip')}>◀</button>
+      <button type="button" className={btn} disabled={locked} title={(locked) ? 'Unlock the clip first' : undefined} aria-label="Slip forward" onClick={(e) => run(slipClip(doc, clip.id, step(e)), 'Slip clip')}>▶</button>
       <span className="ml-2" title="Slide: move the clip between its neighbours, which shorten or grow to fit">Slide</span>
-      <button type="button" className={btn} disabled={locked} aria-label="Slide back" onClick={(e) => run(slideClip(doc, clip.id, -step(e)), 'Slide clip')}>◀</button>
-      <button type="button" className={btn} disabled={locked} aria-label="Slide forward" onClick={(e) => run(slideClip(doc, clip.id, step(e)), 'Slide clip')}>▶</button>
+      <button type="button" className={btn} disabled={locked} title={(locked) ? 'Unlock the clip first' : undefined} aria-label="Slide back" onClick={(e) => run(slideClip(doc, clip.id, -step(e)), 'Slide clip')}>◀</button>
+      <button type="button" className={btn} disabled={locked} title={(locked) ? 'Unlock the clip first' : undefined} aria-label="Slide forward" onClick={(e) => run(slideClip(doc, clip.id, step(e)), 'Slide clip')}>▶</button>
       <span className="ml-2" title="Roll: move the cut between this clip and the next one">Roll</span>
-      <button type="button" className={btn} disabled={locked} aria-label="Roll cut back" onClick={(e) => run(rollEdit(doc, clip.id, -step(e)), 'Roll edit')}>◀</button>
-      <button type="button" className={btn} disabled={locked} aria-label="Roll cut forward" onClick={(e) => run(rollEdit(doc, clip.id, step(e)), 'Roll edit')}>▶</button>
+      <button type="button" className={btn} disabled={locked} title={(locked) ? 'Unlock the clip first' : undefined} aria-label="Roll cut back" onClick={(e) => run(rollEdit(doc, clip.id, -step(e)), 'Roll edit')}>◀</button>
+      <button type="button" className={btn} disabled={locked} title={(locked) ? 'Unlock the clip first' : undefined} aria-label="Roll cut forward" onClick={(e) => run(rollEdit(doc, clip.id, step(e)), 'Roll edit')}>▶</button>
       <button type="button" className={`${btn} ml-2`} onClick={() => run(closeGaps(doc, clip.track), 'Close gaps')} title="Pull later clips on this track left to remove gaps">Close gaps</button>
       {clip.groupId
         ? <button type="button" className={btn} onClick={() => { const r = ungroup(doc, clip.id); onCommit(r.doc, 'Ungroup'); onNote('success', `Ungrouped ${r.count} clips.`) }}>Ungroup</button>
@@ -101,7 +101,7 @@ function TranscriptPanel({ words, struck, setStruck, onCut }: { words: Array<{ w
         ))}
       </p>
       <div className="flex items-center gap-2">
-        <button type="button" className="cu-chip px-2 py-1" disabled={!struck.size} onClick={onCut}>Cut {struck.size} word(s)</button>
+        <button type="button" className="cu-chip px-2 py-1" disabled={!struck.size} title={(!struck.size) ? 'Strike words in the transcript first' : undefined} onClick={onCut}>Cut {struck.size} word(s)</button>
         {struck.size > 0 && <button type="button" className="cu-chip px-2 py-1" onClick={() => setStruck(new Set())}>Clear</button>}
         <span className="text-muted/70">Click words to strike them out. One cut is one undo step.</span>
       </div>

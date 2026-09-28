@@ -133,7 +133,7 @@
       "file": "src/components/StockBrowser.tsx",
       "line": 111,
       "target": "Waiting state",
-      "existingComponent": "<Button variant=\"primary\" type=\"submit\" disabled={busy}>{busy ? <Loader2 size={13} className=\"animate-spin\" /> : <Search",
+      "existingComponent": "<Button variant=\"primary\" type=\"submit\" disabled={busy} title={(busy) ? 'Searching…' : undefined}>{busy ? <Loader2 size=",
       "suggestedLibrary": "Thinking orbs",
       "package": "thinking-orbs",
       "variant": "state from the activity (composing / searching / weaving), size 20 inline",
@@ -225,6 +225,19 @@
       "line": 1315,
       "target": "Waiting state",
       "existingComponent": "{importing ? <Loader2 size={13} className=\"animate-spin\" /> : <Plus size={13} />} Import",
+      "suggestedLibrary": "Thinking orbs",
+      "package": "thinking-orbs",
+      "variant": "state from the activity (composing / searching / weaving), size 20 inline",
+      "why": "An AI wait of 2 s or more gets an orb next to its label (skill decision rule).",
+      "risks": "Low: a 2D canvas or CSS layer. Check it pauses when hidden.",
+      "license": "MIT",
+      "status": "suggested"
+    },
+    {
+      "file": "src/screens/studio/ClipProFields.tsx",
+      "line": 143,
+      "target": "Waiting state",
+      "existingComponent": "disabled={variants?.busy} title={(variants?.busy) ? 'Generating variants…' : undefined}",
       "suggestedLibrary": "Thinking orbs",
       "package": "thinking-orbs",
       "variant": "state from the activity (composing / searching / weaving), size 20 inline",
@@ -627,7 +640,7 @@
       "file": "src/screens/Studio.tsx",
       "line": 1352,
       "target": "Plus menu / segmented control",
-      "existingComponent": "<Button size=\"sm\" variant=\"outline\" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} aria-expanded={shapeOpe",
+      "existingComponent": "<Button size=\"sm\" variant=\"outline\" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} title={(exporting) ? 'W",
       "suggestedLibrary": "Gooey",
       "package": "liquid-gooey",
       "variant": "Liquid 'morph' plus menu or 'move' indicator/thumb",
@@ -640,7 +653,7 @@
       "file": "src/screens/ArenaDesk.tsx",
       "line": 431,
       "target": "Primary button",
-      "existingComponent": "<Button size=\"sm\" variant=\"primary\" onClick={onRender} disabled={!asset.localPath}>",
+      "existingComponent": "<Button size=\"sm\" variant=\"primary\" onClick={onRender} disabled={!asset.localPath} title={(!asset.localPath) ? 'Import t",
       "suggestedLibrary": "Liquid metal",
       "package": "metal-fx",
       "variant": "MetalFx button variant on ONE selling CTA, or MetalBadge on a New/Pro badge",
@@ -677,9 +690,9 @@
     }
   ],
   "counts": {
-    "findings": 44,
+    "findings": 45,
     "applied": 1,
-    "files": 26
+    "files": 27
   },
   "footer": "Run `libraries apply` on any line to install it."
 }

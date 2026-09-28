@@ -168,7 +168,7 @@ export function ProductionPlanner() {
                 <p className="text-sm font-medium text-text">{na.title}</p>
                 <p className="text-xs text-muted">{na.why}</p>
               </div>
-              {na.runnable && <Button variant="primary" size="sm" disabled={!catalogue} onClick={run}>Do it</Button>}
+              {na.runnable && <Button variant="primary" size="sm" disabled={!catalogue} title={(!catalogue) ? 'The catalogue is still loading' : undefined} onClick={run}>Do it</Button>}
               {na.id === 'approve' && <Button size="sm" onClick={() => setViewStage('preview')}>Open preview</Button>}
             </motion.div>
           </AnimatePresence>
@@ -177,7 +177,7 @@ export function ProductionPlanner() {
 
       <nav className="mt-4 flex flex-wrap gap-1" aria-label="Production stages">
         {PRODUCTION_STAGES.map((s, i) => (
-          <button key={s} type="button" onClick={() => setViewStage(s)} disabled={i > stageIndex}
+          <button key={s} type="button" onClick={() => setViewStage(s)} disabled={i > stageIndex} title={(i > stageIndex) ? 'Finish the earlier stages first' : undefined}
             aria-current={view === s ? 'step' : undefined}
             className={`rounded-lg border px-2.5 py-1 text-xs transition-colors duration-150 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:opacity-40 ${view === s ? 'border-accent bg-accent/10 text-text' : 'border-line text-muted hover:text-text'}`}>
             {i + 1}. {STAGE_LABEL[s]}
@@ -231,7 +231,7 @@ export function ProductionPlanner() {
               ))}
             </div>
             {session.intake.making && (() => { const d = detectLanguage(`${session.intake.making} ${session.intake.mustKeep}`); return d.language ? <p className="text-xs text-muted">Detected language: {d.language} ({d.confidence} confidence)</p> : null })()}
-            <div className="flex flex-wrap gap-2"><Button onClick={makeBrief} disabled={!session.intake.making.trim()}>Generate brief</Button><Button variant="outline" onClick={runAll} disabled={!catalogue || !session.intake.making.trim()} title="Brief, research and plan in one go. Stops at the preview for your approval.">Run to approval</Button></div>
+            <div className="flex flex-wrap gap-2"><Button onClick={makeBrief} disabled={!session.intake.making.trim()} title={(!session.intake.making.trim()) ? 'Say what you are making first' : undefined}>Generate brief</Button><Button variant="outline" onClick={runAll} disabled={!catalogue || !session.intake.making.trim()} title="Brief, research and plan in one go. Stops at the preview for your approval.">Run to approval</Button></div>
           </>
         )}
 
@@ -252,7 +252,7 @@ export function ProductionPlanner() {
             <p className="text-xs text-muted">To change anything, edit the Intake answers and regenerate. Your answers always win over assumptions.</p>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" onClick={() => setViewStage('intake')}>Edit intake</Button>
-              <Button onClick={runResearch} disabled={!catalogue}>Research references</Button>
+              <Button onClick={runResearch} disabled={!catalogue} title={(!catalogue) ? 'The catalogue is still loading' : undefined}>Research references</Button>
             </div>
           </>
         )}
@@ -327,7 +327,7 @@ export function ProductionPlanner() {
               <input type="checkbox" checked={session.approved} onChange={(e) => save({ ...session, approved: e.target.checked, replaceApproved: e.target.checked ? session.replaceApproved : false }, e.target.checked ? 'Approve production plan' : 'Withdraw plan approval')} />
               I reviewed this plan and approve building it. Placeholders will be clearly labelled.
             </label>
-            <Button onClick={() => save({ ...session, stage: 'build' }, 'Ready to build')} disabled={!session.approved}>Continue to build</Button>
+            <Button onClick={() => save({ ...session, stage: 'build' }, 'Ready to build')} disabled={!session.approved} title={(!session.approved) ? 'Approve the plan first (manual approval is required)' : undefined}>Continue to build</Button>
           </>
         )}
 
@@ -336,13 +336,13 @@ export function ProductionPlanner() {
             <p className="text-xs text-muted">Build adds {session.plan.shots.length} media slots plus text as real, editable Studio clips <strong>after</strong> your current timeline. Cupric AI keyframes their motion (enter → hold → exit, eased for the tone), and every keyframe stays editable in the inspector. It's one undo step. Replacing the timeline is destructive and needs a second approval.</p>
             <div className="flex flex-wrap items-center gap-2">
               <Button onClick={() => finish(false)} disabled={!session.approved} title="Build, then review and polish until the score stops improving (max 3 rounds)">Build + Cupric AI polish</Button>
-              <Button variant="outline" onClick={() => build(false)} disabled={!session.approved}>Build only</Button>
+              <Button variant="outline" onClick={() => build(false)} disabled={!session.approved} title={(!session.approved) ? 'Approve the plan first (manual approval is required)' : undefined}>Build only</Button>
               <label className="flex items-center gap-1.5 text-xs text-muted"><input type="checkbox" checked={snapBeats} onChange={(e) => setSnapBeats(e.target.checked)} />Cut on music beats</label>
               <label className="flex items-center gap-2 text-xs text-muted">
                 <input type="checkbox" checked={session.replaceApproved} disabled={!session.approved} onChange={(e) => save({ ...session, replaceApproved: e.target.checked }, 'Approve timeline replacement')} />
                 Allow replacing my current timeline
               </label>
-              <Button variant="danger" onClick={() => build(true)} disabled={!session.approved || !session.replaceApproved}>Build (replace)</Button>
+              <Button variant="danger" onClick={() => build(true)} disabled={!session.approved || !session.replaceApproved} title={(!session.approved || !session.replaceApproved) ? 'Approve the plan and tick “replace timeline” first' : undefined}>Build (replace)</Button>
             </div>
           </>
         )}

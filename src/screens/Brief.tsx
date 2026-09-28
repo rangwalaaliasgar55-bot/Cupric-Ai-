@@ -222,7 +222,7 @@ export function Brief() {
             <Button
               type="submit"
               variant="primary"
-              disabled={!input.trim() || busy}
+              disabled={!input.trim() || busy} title={(!input.trim() || busy) ? 'Type a message first — or wait for the reply' : undefined}
               aria-label="Generate rundown"
               className="h-10 w-10 p-0"
             >
@@ -233,7 +233,7 @@ export function Brief() {
             <div className="text-xs text-muted">
               Press <Kbd>⌘</Kbd> <Kbd>↵</Kbd> to send
             </div>
-            <Button size="sm" variant="primary" disabled={busy || (!input.trim() && !locked && !canLock)} onClick={createVideoNow}>
+            <Button size="sm" variant="primary" disabled={busy || (!input.trim() && !locked && !canLock)} title={(busy || (!input.trim() && !locked && !canLock)) ? 'Describe the video first — or wait for the reply' : undefined} onClick={createVideoNow}>
               <Video size={14} />
               Create video file
             </Button>
@@ -254,7 +254,7 @@ export function Brief() {
               Locked
             </Badge>
           ) : (
-            <Button size="sm" variant={canLock ? 'primary' : 'outline'} disabled={!canLock} onClick={lock}>
+            <Button size="sm" variant={canLock ? 'primary' : 'outline'} disabled={!canLock} title={(!canLock) ? 'Fill every rundown field before locking' : undefined} onClick={lock}>
               <Lock size={13} />
               Lock rundown
             </Button>

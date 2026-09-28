@@ -96,7 +96,7 @@ export function FontStudio({ clip, onPatch }: { clip: StudioTextClip; onPatch: (
       <div className="flex flex-wrap items-center gap-1.5 border-t border-line pt-2.5">
         <span className="mr-auto text-xs font-medium text-text">Your fonts</span>
         <input ref={fileRef} type="file" multiple accept=".zip,.woff2,.woff,.otf,.ttf" className="hidden" onChange={(e) => void add(e.target.files)} />
-        <button type="button" disabled={busy} className="cu-chip flex items-center gap-1 px-2 py-0.5 text-[11px]" onClick={() => fileRef.current?.click()}><Plus size={11} /> {busy ? 'Adding…' : 'Add fonts'}</button>
+        <button type="button" disabled={busy} title={(busy) ? 'Adding font…' : undefined} className="cu-chip flex items-center gap-1 px-2 py-0.5 text-[11px]" onClick={() => fileRef.current?.click()}><Plus size={11} /> {busy ? 'Adding…' : 'Add fonts'}</button>
         <button type="button" className={cx('cu-chip px-2 py-0.5 text-[11px]', showShelf && 'border-accent text-accent')} onClick={() => setShowShelf((v) => !v)}>Fontshare</button>
       </div>
       {userFonts.length > 0 ? (

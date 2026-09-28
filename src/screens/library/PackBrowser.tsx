@@ -302,7 +302,7 @@ export function PackBrowser() {
         <span className="whitespace-nowrap font-mono text-xs text-muted tabular-nums">
           {offline.downloaded.length}/{offline.total || '—'} cached
         </span>
-        <Button size="sm" variant={fullyOffline ? 'outline' : 'primary'} onClick={() => void download()} disabled={downloading !== null}>
+        <Button size="sm" variant={fullyOffline ? 'outline' : 'primary'} onClick={() => void download()} disabled={downloading !== null} title={(downloading !== null) ? 'Downloading…' : undefined}>
           {downloading ? <Loader2 size={13} className="animate-spin" /> : fullyOffline ? <RefreshCw size={13} /> : <CloudDownload size={13} />}
           {downloading ? 'Downloading…' : fullyOffline ? 'Refresh' : 'Download all'}
         </Button>
@@ -460,7 +460,7 @@ export function PackBrowser() {
               setTemplateFill(null)
               setTemplateAssignments({})
             }}>Reject</Button>
-            <Button variant="primary" onClick={applyTemplateFill} disabled={!fillPlan || fillPlan.clips.length === 0}>
+            <Button variant="primary" onClick={applyTemplateFill} disabled={!fillPlan || fillPlan.clips.length === 0} title={(!fillPlan || fillPlan.clips.length === 0) ? 'Nothing to fill — this template has no usable slots' : undefined}>
               Accept & auto-fill
             </Button>
           </div>

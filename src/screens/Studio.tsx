@@ -1269,7 +1269,7 @@ export function Studio() {
             setShowComponents(false)
             setShowPro(false)
           }}
-          disabled={exporting}
+          disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}
         >
             <Boxes size={13} /> Resources
           </Button>
@@ -1322,7 +1322,7 @@ export function Studio() {
           className="hidden"
           onChange={(e) => void onFiles(e.target.files)}
         />
-        <Button size="sm" variant="outline" onClick={() => audioRef.current?.click()} disabled={importing || exporting}>
+        <Button size="sm" variant="outline" onClick={() => audioRef.current?.click()} disabled={importing || exporting} title={(importing || exporting) ? 'Wait for the import or export to finish' : undefined}>
           <Music size={13} /> Music
         </Button>
         <input
@@ -1333,23 +1333,23 @@ export function Studio() {
           className="hidden"
           onChange={(e) => void onFiles(e.target.files)}
         />
-        <Button size="sm" variant="outline" onClick={addText} disabled={exporting}>
+        <Button size="sm" variant="outline" onClick={addText} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}>
           <TypeIcon size={13} /> Text
         </Button>
-        <Button size="sm" variant="outline" onClick={addBackgroundClip} disabled={exporting}>
+        <Button size="sm" variant="outline" onClick={addBackgroundClip} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}>
           <ImageIcon size={13} /> Background
         </Button>
         <Button size="sm" variant="outline" onClick={addAdjustmentLayer} disabled={exporting} title="Non-destructive colour grade for clips below this layer">
           <SlidersHorizontal size={13} /> Adjustment
         </Button>
-        <Button size="sm" variant="outline" onClick={() => addGlassClip('panel')} disabled={exporting}>
+        <Button size="sm" variant="outline" onClick={() => addGlassClip('panel')} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}>
           <Sparkles size={13} /> Glass
         </Button>
-        <Button size="sm" variant="outline" onClick={addSticker} disabled={exporting}>
+        <Button size="sm" variant="outline" onClick={addSticker} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}>
           <Sticker size={13} /> Sticker
         </Button>
         <div className="relative">
-          <Button size="sm" variant="outline" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} aria-expanded={shapeOpen}>
+          <Button size="sm" variant="outline" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined} aria-expanded={shapeOpen}>
             <Shapes size={13} /> Shape
           </Button>
           {shapeOpen && <ShapePicker onPick={addShapeAt} onClose={() => setShapeOpen(false)} />}
@@ -1421,7 +1421,7 @@ export function Studio() {
             {issues.length === 0 ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
             {issues.length === 0 ? 'Checks' : `${issues.length} check${issues.length === 1 ? '' : 's'}`}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => void runExport(false)} disabled={exporting || duration <= 0}>
+          <Button size="sm" variant="outline" onClick={() => void runExport(false)} disabled={exporting || duration <= 0} title={(exporting || duration <= 0) ? 'Add clips first — or wait for the export' : undefined}>
             {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
             {exporting ? 'Recording…' : 'Export WebM'}
           </Button>
@@ -1497,7 +1497,7 @@ export function Studio() {
         >
           Auto effects
         </Button>
-        <Button size="sm" type="submit" disabled={!agentInstruction.trim() || agentPlanning || exporting}>
+        <Button size="sm" type="submit" disabled={!agentInstruction.trim() || agentPlanning || exporting} title={(!agentInstruction.trim() || agentPlanning || exporting) ? 'Type an instruction first — or wait for the current plan' : undefined}>
           {agentPlanning ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
           {agentPlanning ? 'Planning…' : 'Preview edit'}
         </Button>
@@ -1539,7 +1539,7 @@ export function Studio() {
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={!agentRevision.trim() || agentPlanning}
+                    disabled={!agentRevision.trim() || agentPlanning} title={(!agentRevision.trim() || agentPlanning) ? 'Type what to change first — or wait for the current plan' : undefined}
                     onClick={() => void planAgentEdit(`Revise this automatic edit. ${agentRevision.trim()}. Keep every other useful choice and return a complete corrected plan.`)}
                   >
                     Revise
