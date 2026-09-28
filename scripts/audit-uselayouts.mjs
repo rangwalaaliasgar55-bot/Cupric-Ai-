@@ -11,7 +11,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// fileURLToPath, not new URL(import.meta.url).pathname: on Windows the URL
+// fileURLToPath, not fileURLToPath(import.meta.url): on Windows the URL
 // path is '/C:/a/b/scripts/x.mjs', which resolves to the bogus root '\C:\a\b'
 // and every read below throws ENOENT. The release build runs on windows-latest.
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')

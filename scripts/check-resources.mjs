@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 
 const root = new URL('../', import.meta.url)
 const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'))
@@ -113,19 +114,35 @@ console.log(`resource check passed — ${index.packs.length} bundled packs, ${to
  * never rejects, and every caller has a cache or an explicit placeholder.
  */
 {
-  const { execSync } = await import('node:child_process')
   const { build } = await import('esbuild')
   const { rm } = await import('node:fs/promises')
   const { pathToFileURL } = await import('node:url')
   const nodePath = await import('node:path')
-  const rootDir = nodePath.default.resolve(nodePath.default.dirname(new URL(import.meta.url).pathname), '..')
+  // fileURLToPath, never URL.pathname: on Windows the latter yields
+  // "/C:/..." with a leading slash, which resolves to a path that does not
+  // exist, and execSync/esbuild then fail with an unhelpful ENOENT.
+  const rootDir = nodePath.default.resolve(nodePath.default.dirname(fileURLToPath(import.meta.url)), '..')
 
   // 1. Nothing outside net.ts (and the vendored `src/lab` showcase source,
   //    which is display-only code) may call fetch directly.
-  const offenders = execSync(
-    `grep -rln --include=*.ts --include=*.tsx -E "(await|=|return|void) fetch\\(" src || true`,
-    { cwd: rootDir, encoding: 'utf8' },
-  ).trim().split('\n').filter(Boolean).filter((f) => f !== 'src/lib/net.ts' && !f.startsWith('src/lab/'))
+  // Walked in Node rather than shelled out to grep: the release runs on
+  // windows-latest, where shell quoting for an -E pattern with alternation
+  // and parentheses is a coin flip, and `|| true` is not cmd syntax.
+  const walk = async (dir) => {
+    const out = []
+    for (const e of await readdir(nodePath.default.join(rootDir, dir), { withFileTypes: true })) {
+      const rel = `${dir}/${e.name}`
+      if (e.isDirectory()) out.push(...await walk(rel))
+      else if (/\.tsx?$/.test(e.name)) out.push(rel)
+    }
+    return out
+  }
+  const FETCH_CALL = /(await|=|return|void)\s+fetch\(/
+  const offenders = []
+  for (const file of await walk('src')) {
+    if (file === 'src/lib/net.ts' || file.startsWith('src/lab/')) continue
+    if (FETCH_CALL.test(await readFile(nodePath.default.join(rootDir, file), 'utf8'))) offenders.push(file)
+  }
   assert.deepEqual(offenders, [], `every renderer network read must go through src/lib/net.ts, found: ${offenders.join(', ')}`)
 
   // 2. The guard's contract, exercised for real.

@@ -180,3 +180,34 @@ if (problems.length) {
   process.exit(1)
 }
 console.log('\ncheck:bridge passed — the desktop bridge is read-only everywhere (lint, grep, preload, types, bundle)')
+
+/* ——— release portability: the checks must run on windows-latest ————————
+ * The release builds on windows-latest, but every check is written and run on
+ * Linux first, so a Windows-only defect is invisible until the tag is pushed.
+ * v0.14.0's first attempt died at step 18 of 75 on exactly this: taking the
+ * `.pathname` of a `new URL` built from import.meta.url, which on Windows
+ * yields "/C:/..." with a leading slash — a path that does not exist, so
+ * execSync's cwd threw. (Worded around the pattern so the sweep below does
+ * not match this comment.)
+ * The repo had already fixed that bug once elsewhere. Assert the class.
+ */
+{
+  const { readdir, readFile } = await import('node:fs/promises')
+  const nodePath = await import('node:path')
+  const { fileURLToPath: toPath } = await import('node:url')
+  const scriptsDir = nodePath.default.dirname(toPath(import.meta.url))
+
+  const files = (await readdir(scriptsDir)).filter((f) => f.endsWith('.mjs'))
+  const pathnameUsers = []
+  for (const f of files) {
+    const src = await readFile(nodePath.default.join(scriptsDir, f), 'utf8')
+    // Built from parts rather than written as a literal, so this detector
+    // does not match its own source and report itself.
+    const BAD = new RegExp(['new URL\\(', '\\s*import', '\\.meta', '\\.url\\s*\\)', '\\s*\\.pathname'].join(''))
+    if (BAD.test(src)) pathnameUsers.push(f)
+  }
+  assert.deepEqual(pathnameUsers, [],
+    `use fileURLToPath(import.meta.url), not URL.pathname — breaks the Windows release build: ${pathnameUsers.join(', ')}`)
+
+  console.log(`portability check passed — ${files.length} build scripts, 0 using URL.pathname for a filesystem path`)
+}
