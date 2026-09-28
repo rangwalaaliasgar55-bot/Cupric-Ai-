@@ -17,6 +17,8 @@ import { isVoiceSupported, shouldAutoStartBrief, speak, stopSpeaking, VoiceListe
 import type { AutomationMode, VotingMode } from '../types/project'
 import { planWithRemotionCapabilities } from '../lib/remotionResources'
 import { OWNER_LABEL, PRODUCTION_PLAN, stepIdForAutomationLabel } from '../lib/production/productionPlan'
+import { filmStyle, type FilmStyleId } from '../lib/studio/filmStyles'
+import { FilmStylePicker } from './production/FilmStylePicker'
 
 /** Silence after a complete-sounding phrase before hands-free starts a job. */
 const AUTO_START_SETTLE_MS = 1800
@@ -54,6 +56,12 @@ export function Autonomous() {
   const reject = useProjectStore(s => s.rejectAutomationStep)
   const pushToast = useProjectStore(s => s.pushToast)
   const [brief, setBrief] = useState('')
+  /**
+   * Which of the eight film styles the agent should build. Cupric proposes one
+   * only when the brief gives it real evidence; otherwise this stays null and
+   * the picker below asks, rather than the agent guessing.
+   */
+  const [filmStyleId, setFilmStyleId] = useState<FilmStyleId | null>(null)
   const [mode, setMode] = useState<AutomationMode>('auto-draft')
   const [vote, setVote] = useState<VotingMode>('local-scoring')
   const [aspect, setAspect] = useState<'16:9'|'9:16'|'1:1'>('16:9')
@@ -176,7 +184,14 @@ export function Autonomous() {
     const cfg = settingsRef.current
     const request = text.trim() || brief.trim()
     if (!request) return
-    const finalBrief = `Create exactly a ${cfg.targetDuration}-second video. ${request}`
+    // The chosen style travels with the brief, along with the pieces it is
+    // built from and the things it must not invent — so the agent builds this
+    // kind of film rather than a generic one.
+    const chosen = filmStyleId ? filmStyle(filmStyleId) : null
+    const styleLine = chosen
+      ? ` Build it as ${chosen.label}: ${chosen.blurb} Assemble it from ${chosen.builtFrom.join(', ')}. Do not treat it as ${chosen.notFor.slice(0, 3).join(', ')}. Leave any slot the brief does not fill visibly empty rather than inventing content for it.`
+      : ''
+    const finalBrief = `Create exactly a ${cfg.targetDuration}-second video. ${request}${styleLine}`
     start({
       brief: finalBrief,
       footageFolder: cfg.footageFolder,
@@ -228,6 +243,7 @@ export function Autonomous() {
             placeholder="Describe the video, audience, message, and feeling…"
             className="mt-3 min-h-28 w-full rounded-lg border border-line bg-bg p-3 text-sm outline-none focus:border-accent"
           />
+          <FilmStylePicker brief={brief} value={filmStyleId} onPick={setFilmStyleId} />
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Button variant="outline" onClick={() => pickFolder(setFootageFolder)}>Footage folder {footageFolder ? '✓' : '(optional)'}</Button>
             <Button variant="outline" onClick={() => pickFolder(setOutputFolder)}>Output folder {outputFolder ? '✓' : '(optional)'}</Button>

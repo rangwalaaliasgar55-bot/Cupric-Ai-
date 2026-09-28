@@ -245,6 +245,48 @@ console.log('Motion craft check passed — springs overshoot, settle to exactly 
   const ask = await read('src/lib/studio/autoPolishPlan.ts')
   assert.match(ask, /id: 'craft'/, 'the craft pass is offered as a choice you pick')
   assert.match(ask, /Runs locally, no AI/, 'and is honest that it needs no model')
+
+  /*
+   * The claim has to be true. v0.14.0 shipped this hint next to a choice that
+   * actually sent an instruction string to the AI planner -- craftPass() was
+   * written, gated, and never called. A label that lies about where the work
+   * happens is worse than no label, so the wiring is asserted, not assumed.
+   */
+  assert.match(ask, /runsLocally: true/, 'a choice claiming "no AI" must be flagged as local')
+  const localChoices = [...ask.matchAll(/runsLocally: true/g)].length
+  // Only hint strings count -- the doc comment on the type says "no AI" too.
+  const noAiHints = ask.split('\n').filter((l) => /^\s*hint: /.test(l) && /no AI/.test(l)).length
+  assert.equal(localChoices, noAiHints, 'every "no AI" hint belongs to a choice that really is local')
+  assert.ok(noAiHints > 0, 'and the sweep is actually finding the hint it checks')
+
+  const studio = await read('src/screens/Studio.tsx')
+  assert.match(studio, /if \(choice\.runsLocally\) \{/, 'the UI branches on the flag instead of always calling the planner')
+  assert.match(studio, /const pass = craftPass\(doc\)/, 'and a local choice really runs craftPass')
+  assert.match(studio, /setAgentPlan\(\{ summary: craftSummary\(pass\), ops: pass\.ops, source: 'local' \}\)/,
+    'the result becomes an ordinary reviewable plan marked local')
+  // The empty case must not present an empty plan for approval.
+  assert.match(studio, /if \(!pass\.ops\.length\) \{/, 'a timeline with nothing to fix is told so')
+  assert.match(studio, /pushToast\('info', craftSummary\(pass\)\)/, 'via a toast, not an empty approval card')
+  const craftBlock = studio.slice(studio.indexOf('if (choice.runsLocally)'), studio.indexOf('void planAgentEdit(choice.instruction)'))
+  assert.ok(!/planAgentEdit/.test(craftBlock), 'and the local path never reaches the planner')
+}
+
+/* ——— 5. the film styles are reachable, not dead code ————————————— */
+{
+  const picker = await read('src/screens/production/FilmStylePicker.tsx')
+  assert.match(picker, /pickFilmStyle\(trimmed\)/, 'the picker reads the brief')
+  assert.match(picker, /styleQuestion\(trimmed\)/, 'and asks when the brief does not say')
+  assert.match(picker, /suggestion\.because\.map/, 'a proposal quotes the words that decided it')
+  assert.match(picker, /will not pick for you/, 'and says plainly that it is not guessing')
+  assert.match(picker, /visibly empty slot/, 'the no-invention rule is stated before the agent starts')
+
+  const auto = await read('src/screens/Autonomous.tsx')
+  assert.match(auto, /<FilmStylePicker brief=\{brief\}/, 'the picker is mounted on the agent screen')
+  assert.match(auto, /const chosen = filmStyleId \? filmStyle\(filmStyleId\) : null/, 'and the choice is read at launch')
+  assert.match(auto, /Do not treat it as \$\{chosen\.notFor/, 'the notFor list travels to the agent, not just the label')
+  assert.match(auto, /Leave any slot the brief does not fill visibly empty/, 'and so does the no-invention instruction')
+  // Choosing nothing must still start a job — the style is guidance, not a gate.
+  assert.match(auto, /: ''/, 'no style chosen leaves the brief unchanged rather than blocking')
 }
 
 console.log('Craft pass check passed — deterministic, justified by findings, emits ordinary editable keyframes on real springs, and leaves already-animated clips alone')

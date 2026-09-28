@@ -122,6 +122,7 @@ import {
 import { blockRow3dError, loadBlockRow3d, needsBlockRow3d } from '../lib/studio/blockRow3d'
 import { backgroundPolishEnabled, backgroundPolishOffer, docSignature, POLISH_IDLE_MS, setBackgroundPolishEnabled, type PolishOffer } from '../lib/studio/backgroundPolish'
 import { isBlocked, polishAsk, type PolishAsk, type PolishBlocked } from '../lib/studio/autoPolishPlan'
+import { craftPass, craftSummary } from '../lib/studio/beautify'
 
 const ZOOM_STEPS = [12, 20, 32, 48, 72, 110, 160]
 
@@ -1720,6 +1721,19 @@ export function Studio() {
                       // Only now does anything generate — after your pick.
                       setAutoPlanName(choice.label)
                       setAutoAsk(null)
+                      if (choice.runsLocally) {
+                        // Computed here, so it lands instantly and works with
+                        // no model reachable. The hint promises "no AI"; this
+                        // branch is what makes that true.
+                        const pass = craftPass(doc)
+                        if (!pass.ops.length) {
+                          pushToast('info', craftSummary(pass))
+                          setAutoPlanName(null)
+                          return
+                        }
+                        setAgentPlan({ summary: craftSummary(pass), ops: pass.ops, source: 'local' })
+                        return
+                      }
                       void planAgentEdit(choice.instruction)
                     }}
                   >

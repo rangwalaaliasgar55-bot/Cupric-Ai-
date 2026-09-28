@@ -61,6 +61,12 @@ export type PolishChoice = {
   label: string
   hint: string
   instruction: string
+  /**
+   * True when this choice is computed by Cupric itself rather than sent to a
+   * model. The hint may only claim "no AI" when this is set — the caller
+   * branches on it, so the label cannot drift away from what actually runs.
+   */
+  runsLocally?: boolean
 }
 
 export type PolishAsk = {
@@ -126,7 +132,8 @@ export function polishAsk(doc: StudioDoc, mode: AutoMode): PolishAsk | PolishBlo
       {
         id: 'craft',
         label: 'Motion craft — sprung entrances on a beat',
-        hint: 'Fixes the three things a motion designer fixes first. Runs locally, no AI.',
+        hint: 'Fixes the three things a motion designer fixes first. Runs locally, no AI, no waiting.',
+        runsLocally: true,
         instruction: `${facts} Apply the MOTION CRAFT pass: give every clip without motion a sprung entrance, stagger clips that arrive at the same instant onto a rhythm grid so one thing happens at a time, and give held stills a fraction of drift. ${keep}`,
       },
       {
