@@ -19,6 +19,7 @@ import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { studioOf } from '../../lib/studio/doc'
 import { LOADER_PRESETS } from '../../lib/studio/loaders'
 import { uid } from '../../lib/utils'
+import { FORMAT_STARTERS, applyStarter } from '../../lib/production/starters'
 import {
   INTAKE_QUESTIONS, buildBrief, buildPlan, detectLanguage, normaliseSession, openQuestions, planToDoc, polishEdit, research, runToApproval, autoFinish, reviewEdit, reviewScore,
   type OpusIndex, type ResourceCandidate,
@@ -163,6 +164,15 @@ export function ProductionPlanner() {
         {view === 'intake' && (
           <>
             <p className="text-xs text-muted">{open.filter((q) => q.required).length ? `${open.filter((q) => q.required).length} key question(s) left before the brief.` : 'All key questions answered.'} Optional answers improve the plan; blanks become visible assumptions.</p>
+            <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Start from a format">
+              <span className="text-xs text-muted">Start from a format:</span>
+              {FORMAT_STARTERS.map((f) => (
+                <button key={f.id} type="button" title={f.hint} className="rounded-lg border border-line px-2.5 py-1 text-xs text-muted transition-colors duration-150 hover:border-accent hover:text-text"
+                  onClick={() => { const r = applyStarter(session.intake, f.id); if (!r.filled.length) { pushToast('info', 'Every field this format sets is already filled in. Nothing was changed.'); return } setIntake(r.patch); pushToast('success', `${f.label}: filled ${r.filled.length} blank field(s). Replace the [bracketed] parts with your own words.`) }}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               {INTAKE_QUESTIONS.map((q) => (
                 <label key={q.key} className="block space-y-1">
