@@ -436,7 +436,8 @@ const ClipBlock = memo(function ClipBlock({ clip, selected, multi, pps, actions 
       {clip.kind === 'audio' && <AudioWaveform clip={clip as StudioAudioClip} />}
       <span className="relative flex min-w-0 items-center gap-1.5">
         <Icon size={13} className="shrink-0 opacity-80" />
-        <span className="truncate font-medium text-text">{clip.name}</span>
+        {/* JOB 9 — a truncated name always carries the full one as a tooltip. */}
+        <span className="truncate font-medium text-text" title={clip.name}>{clip.name}</span>
         {clip.locked && <Lock size={11} className="shrink-0 text-muted" aria-label="Locked" />}
         {clip.hidden && <EyeOff size={11} className="shrink-0 text-muted" aria-label="Hidden" />}
         {clip.muted && <VolumeX size={11} className="shrink-0 text-muted" aria-label="Muted" />}

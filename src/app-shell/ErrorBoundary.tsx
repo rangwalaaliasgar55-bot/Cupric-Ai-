@@ -5,6 +5,7 @@
  * window down to white.
  */
 import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react'
+import { Z } from '../lib/studio/panelLayout'
 import { AlertTriangle, ClipboardCopy, Library, RotateCcw, X } from 'lucide-react'
 import {
   buildErrorReport,
@@ -168,7 +169,7 @@ export function GlobalErrorCards() {
   const latest = items[items.length - 1]
   const error = Object.assign(new Error(latest.message), { stack: latest.stack })
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-4 z-[1000] flex justify-center px-4">
+    <div style={{ zIndex: Z.crash }} className="pointer-events-none fixed inset-x-0 top-4 flex justify-center px-4">
       <div className="pointer-events-auto w-full max-w-lg">
         <FallbackCard
           kind="global"

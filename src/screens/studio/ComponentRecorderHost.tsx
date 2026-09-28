@@ -20,6 +20,7 @@ import { humanError } from '../../lib/humanError'
 import { findComponent, fitComponentScale, isPendingComponent } from '../../lib/studio/components'
 import { recordComponent } from '../../lib/studio/componentRecorder'
 import { useProjectStore } from '../../state/useProjectStore'
+import { Z } from '../../lib/studio/panelLayout'
 
 export function ComponentRecorderHost({ projectId, doc }: { projectId: string; doc: StudioDoc }) {
   const landRecording = useProjectStore((s) => s.landComponentRecording)
@@ -224,7 +225,7 @@ function RecorderCard({
   if (phase === 'review' && review) {
     const shots: Array<[string, string]> = [['First frame', review.first], ['Middle', review.mid], ['Last frame', review.last]]
     return (
-      <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]" role="dialog" aria-label={`Review the recording of ${clip.name}`}>
+      <div style={{ zIndex: Z.modal }} className="fixed inset-0 flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]" role="dialog" aria-label={`Review the recording of ${clip.name}`}>
         <div className="flex max-h-full w-[min(680px,94vw)] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
           <div className="flex items-center gap-3 border-b border-line px-4 py-2.5">
             <Check size={14} className="text-accent-text" />
@@ -269,7 +270,7 @@ function RecorderCard({
   }
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]" role="dialog" aria-label={`Recording ${clip.name}`}>
+    <div style={{ zIndex: Z.modal }} className="fixed inset-0 flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]" role="dialog" aria-label={`Recording ${clip.name}`}>
       <div className="flex max-h-full w-[min(640px,94vw)] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
         <div className="flex items-center gap-3 border-b border-line px-4 py-2.5">
           <Loader2 size={14} className="animate-spin text-accent-text" />

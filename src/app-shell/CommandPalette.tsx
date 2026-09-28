@@ -4,6 +4,7 @@
  * Enter, Esc, and focus comes back to where you were.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Z } from '../lib/studio/panelLayout'
 import { Search } from 'lucide-react'
 import { useProjectStore } from '../state/useProjectStore'
 import type { View } from '../types/project'
@@ -59,7 +60,7 @@ export function CommandPalette() {
   if (!open) return null
   const run = (c?: PaletteCommand) => { if (!c) return; setOpen(false); c.run() }
   return (
-    <div className="fixed inset-0 z-[200] flex items-start justify-center bg-black/50 p-4 pt-[12vh] backdrop-blur-[2px]" onMouseDown={() => setOpen(false)}>
+    <div style={{ zIndex: Z.modal }} className="fixed inset-0 flex items-start justify-center bg-black/50 p-4 pt-[12vh] backdrop-blur-[2px]" onMouseDown={() => setOpen(false)}>
       <div role="dialog" aria-modal="true" aria-label="Command palette" onMouseDown={(e) => e.stopPropagation()}
         className="w-[min(560px,94vw)] overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl motion-safe:animate-[fadeIn_120ms_ease-out]">
         <div className="flex items-center gap-2 border-b border-line px-3 py-2.5">

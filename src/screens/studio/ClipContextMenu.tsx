@@ -4,6 +4,7 @@
  * tooltip. Keyboard: ↑/↓ to move, Enter to run, Esc to close.
  */
 import { useEffect, useRef, useState } from 'react'
+import { Z } from '../../lib/studio/panelLayout'
 import type { StudioClip } from '../../types/project'
 import { clipMenu, type ClipActionId } from '../../lib/studio/clipActions'
 import { cx } from '../../lib/utils'
@@ -43,8 +44,8 @@ export function ClipContextMenu({ clip, x, y, time, hasClipboard, extra = [], on
       role="menu"
       tabIndex={-1}
       aria-label={`${clip.name} actions`}
-      className="fixed z-[100] w-60 cu-panel p-1 shadow-2xl outline-none"
-      style={{ left, top: Math.max(8, top) }}
+      className="fixed w-60 cu-panel p-1 shadow-2xl outline-none"
+      style={{ left, top: Math.max(8, top), zIndex: Z.panel }}
       onContextMenu={(e) => e.preventDefault()}
       onKeyDown={(e) => {
         const step = (d: number) => {

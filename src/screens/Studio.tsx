@@ -16,7 +16,11 @@ import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
   Boxes,
   ChevronLeft,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
+  PanelRightClose,
+  PanelRightOpen,
   Wand2,
   Component,
   Clapperboard,
@@ -63,6 +67,7 @@ import { EditToolsBar } from './studio/EditToolsBar'
 import { TextListPanel } from './studio/TextListPanel'
 import { moveWithGroup, toggleInSelection } from '../lib/studio/editTools'
 import { StudioInspector } from './studio/StudioInspector'
+import { clampInspectorWidth, readInspectorCollapsed, readInspectorWidth, writeInspectorCollapsed, writeInspectorWidth, RAIL_WIDTH, Z } from '../lib/studio/panelLayout'
 import { StudioPreview } from './studio/StudioPreview'
 import { StudioNotices } from './studio/StudioNotices'
 import { StudioTimeline } from './studio/StudioTimeline'
@@ -177,6 +182,36 @@ export function Studio() {
   const [showSafeAreas, setShowSafeAreas] = useState(true)
   const [keyframeRecord, setKeyframeRecord] = useState(false)
   const [showResources, setShowResources] = useState(false)
+  /**
+   * JOB 9 — the inspector collapses to a rail, and its width is remembered.
+   *
+   * Panels minimise, never the whole UI: collapsing leaves a 44px rail with the
+   * expand button, so the inspector is always one click away.
+   */
+  const [inspectorCollapsed, setInspectorCollapsed] = useState(readInspectorCollapsed)
+  const [inspectorWidth, setInspectorWidth] = useState(readInspectorWidth)
+  const resizeRef = useRef<{ startX: number; startWidth: number } | null>(null)
+  const toggleInspector = useCallback(() => {
+    setInspectorCollapsed((prev) => { writeInspectorCollapsed(!prev); return !prev })
+  }, [])
+  const onInspectorResize = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    ;(event.target as HTMLElement).setPointerCapture?.(event.pointerId)
+    resizeRef.current = { startX: event.clientX, startWidth: inspectorWidth }
+  }, [inspectorWidth])
+  const onInspectorResizeMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    const start = resizeRef.current
+    if (!start) return
+    // The inspector is on the right, so dragging left makes it wider.
+    setInspectorWidth(clampInspectorWidth(start.startWidth - (event.clientX - start.startX)))
+  }, [])
+  const onInspectorResizeEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!resizeRef.current) return
+    resizeRef.current = null
+    ;(event.target as HTMLElement).releasePointerCapture?.(event.pointerId)
+    writeInspectorWidth(inspectorWidth)
+  }, [inspectorWidth])
+
   const [showPro, setShowPro] = useState(false)
   /** A proposed edit shown on the stage but not yet committed (2.9 preview/accept). */
   const [previewDoc, setPreviewDoc] = useState<{ doc: StudioDoc; label: string } | null>(null)
@@ -185,6 +220,15 @@ export function Studio() {
   }, [showPro])
   const [showComponents, setShowComponents] = useState(false)
   const [agentInstruction, setAgentInstruction] = useState('')
+  const [agentBarCollapsed, setAgentBarCollapsed] = useState(() => {
+    try { return localStorage.getItem('cupric.studio.agentBar') === '0' } catch { return false }
+  })
+  const toggleAgentBar = useCallback(() => {
+    setAgentBarCollapsed((prev) => {
+      try { localStorage.setItem('cupric.studio.agentBar', prev ? '1' : '0') } catch { /* session only */ }
+      return !prev
+    })
+  }, [])
   const [agentRevision, setAgentRevision] = useState('')
   const [agentPlanning, setAgentPlanning] = useState(false)
   const [agentPhase, setAgentPhase] = useState('')
@@ -1574,6 +1618,21 @@ export function Studio() {
       <EditToolsBar doc={doc} selectedId={selectedId} multiIds={multiIds} onClearMulti={() => setMultiIds(new Set())} onCommit={(next, label) => patchStudio(projectId, { clips: next.clips, trackCount: next.trackCount, markers: next.markers }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
       <TextListPanel doc={doc} brandKit={project?.brandKit} selectedId={selectedId} onSelect={(id, at) => { setSelectedId(id); setMultiIds(new Set()); setTime(at) }} onCommit={(next, label) => patchStudio(projectId, { clips: resolveOverlaps(next).clips }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
 
+      {/* JOB 9 — this row is one of five that were stacked above a 270px
+          preview. It folds away to a single chip, and remembers that choice. */}
+      {agentBarCollapsed ? (
+        <div className="flex shrink-0 items-center gap-2 border-b border-line bg-panel-alt/50 px-6 py-1">
+          <button
+            type="button"
+            onClick={toggleAgentBar}
+            title="Show the editing agent bar"
+            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-0.5 text-[11px] text-muted transition-colors hover:text-text"
+          >
+            <Sparkles size={12} className="text-accent-text" /> Ask Cupric to edit
+            <ChevronDown size={12} />
+          </button>
+        </div>
+      ) : (
       <form
         className="flex shrink-0 items-center gap-2 border-b border-line bg-panel-alt/50 px-6 py-2"
         onSubmit={(event) => {
@@ -1581,7 +1640,7 @@ export function Studio() {
           void planAgentEdit()
         }}
       >
-        <Sparkles size={14} className="shrink-0 text-accent-text" />
+        <IconButton label="Hide the editing agent bar" onClick={toggleAgentBar}><ChevronUp size={14} /></IconButton>
         <input
           value={agentInstruction}
           onChange={(event) => setAgentInstruction(event.target.value)}
@@ -1614,6 +1673,7 @@ export function Studio() {
           {agentPlanning ? 'Planning…' : 'Preview edit'}
         </Button>
       </form>
+      )}
       {agentPlanning && (
         <div className="flex shrink-0 items-center gap-3 border-b border-line bg-accent/5 px-6 py-2 text-xs text-muted" role="status" aria-live="polite">
           <MatrixLoader variant="orbit" tone="lime" label="Planning the edit" />
@@ -2017,7 +2077,44 @@ export function Studio() {
           </div>
         </div>
 
-        <aside className={cx('w-80 shrink-0 overflow-y-auto border-l border-line bg-gradient-to-b from-panel-alt/60 to-panel px-5 py-4 shadow-[inset_1px_0_0_rgb(255_255_255/0.04)]')}>
+        {/* JOB 9 — collapsed, the inspector is a rail, not a 320px wall. */}
+        {inspectorCollapsed ? (
+          <aside
+            className="flex shrink-0 flex-col items-center gap-2 border-l border-line bg-gradient-to-b from-panel-alt/60 to-panel py-3"
+            style={{ width: RAIL_WIDTH, zIndex: Z.chrome }}
+            aria-label="Inspector (collapsed)"
+          >
+            <IconButton label="Show the inspector" onClick={toggleInspector}>
+              <PanelRightOpen size={15} />
+            </IconButton>
+            <span className="mt-1 text-[10px] uppercase tracking-wide text-muted [writing-mode:vertical-rl]">
+              {selected ? selected.name : 'Inspector'}
+            </span>
+          </aside>
+        ) : (
+        <aside
+          className={cx('relative shrink-0 overflow-y-auto border-l border-line bg-gradient-to-b from-panel-alt/60 to-panel px-5 py-4 shadow-[inset_1px_0_0_rgb(255_255_255/0.04)]')}
+          style={{ width: inspectorWidth, zIndex: Z.chrome }}
+          aria-label="Inspector"
+        >
+          {/* Drag to resize; the width is remembered for next time. */}
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize the inspector"
+            title="Drag to resize · double-click to collapse"
+            onPointerDown={onInspectorResize}
+            onPointerMove={onInspectorResizeMove}
+            onPointerUp={onInspectorResizeEnd}
+            onPointerCancel={onInspectorResizeEnd}
+            onDoubleClick={toggleInspector}
+            className="absolute left-0 top-0 z-10 h-full w-1.5 cursor-col-resize bg-transparent transition-colors hover:bg-accent/40"
+          />
+          <div className="mb-2 flex justify-end">
+            <IconButton label="Collapse the inspector" onClick={toggleInspector}>
+              <PanelRightClose size={15} />
+            </IconButton>
+          </div>
           <StudioInspector
             doc={doc}
             time={scrubTime}
@@ -2039,6 +2136,7 @@ export function Studio() {
             </p>
           </div>
         </aside>
+        )}
       </div>
     </div>
   )

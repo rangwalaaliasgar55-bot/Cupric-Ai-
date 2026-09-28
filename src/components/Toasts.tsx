@@ -1,4 +1,5 @@
 import { EASE_SPRING } from '../lib/motion'
+import { Z } from '../lib/studio/panelLayout'
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useProjectStore, type Toast } from '../state/useProjectStore'
@@ -28,7 +29,7 @@ export function Toasts() {
   const dismiss = useProjectStore((s) => s.dismissToast)
 
   return (
-    <div className="pointer-events-none fixed bottom-4 right-4 z-[70] flex w-80 flex-col gap-2">
+    <div style={{ zIndex: Z.toast }} className="pointer-events-none fixed bottom-4 right-4 flex w-80 flex-col gap-2">
       <AnimatePresence initial={false}>
         {toasts.map((t) => {
           const Icon = ICONS[t.kind]
