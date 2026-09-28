@@ -105,7 +105,7 @@
   "findings": [
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 836,
+      "line": 859,
       "target": "Existing placement",
       "existingComponent": "<ThinkingOrb state=\"composing\" size={20} theme={theme === 'light' ? 'light' : 'dark'} paused={reducedMotion} aria-label=",
       "suggestedLibrary": "Thinking orbs",
@@ -222,7 +222,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1471,
+      "line": 1479,
       "target": "Waiting state",
       "existingComponent": "{importing ? <Loader2 size={13} className=\"animate-spin\" /> : <Plus size={13} />} Import",
       "suggestedLibrary": "Thinking orbs",
@@ -274,7 +274,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 628,
+      "line": 651,
       "target": "Search input (loads after submit)",
       "existingComponent": "placeholder=\"Search free models…\"",
       "suggestedLibrary": "Border beam",
@@ -287,7 +287,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 917,
+      "line": 940,
       "target": "Chat input",
       "existingComponent": "placeholder=\"Ask anything, or paste an image…\"",
       "suggestedLibrary": "Border beam",
@@ -586,7 +586,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1755,
+      "line": 1806,
       "target": "Image placeholder",
       "existingComponent": "<span className={cx('h-2 w-2 shrink-0 rounded-full', listening ? 'animate-pulse bg-accent' : 'bg-muted')} />",
       "suggestedLibrary": "Image",
@@ -651,7 +651,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1508,
+      "line": 1516,
       "target": "Plus menu / segmented control",
       "existingComponent": "<Button size=\"sm\" variant=\"outline\" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} title={(exporting) ? 'W",
       "suggestedLibrary": "Gooey",

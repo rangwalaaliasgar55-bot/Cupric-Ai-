@@ -26,3 +26,4 @@ vendor/whisper/*
 .check-shapes-cursor-3d.mjs
 .check-framecn-fonts.mjs
 .check-agent-kit.mjs
+.auto-ask-check.mjs

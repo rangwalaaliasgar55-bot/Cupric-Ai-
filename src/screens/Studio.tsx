@@ -121,6 +121,7 @@ import {
 } from '../lib/studio/editOps'
 import { blockRow3dError, loadBlockRow3d, needsBlockRow3d } from '../lib/studio/blockRow3d'
 import { backgroundPolishEnabled, backgroundPolishOffer, docSignature, POLISH_IDLE_MS, setBackgroundPolishEnabled, type PolishOffer } from '../lib/studio/backgroundPolish'
+import { isBlocked, polishAsk, type PolishAsk, type PolishBlocked } from '../lib/studio/autoPolishPlan'
 
 const ZOOM_STEPS = [12, 20, 32, 48, 72, 110, 160]
 
@@ -233,6 +234,13 @@ export function Studio() {
   const [agentPlanning, setAgentPlanning] = useState(false)
   const [agentPhase, setAgentPhase] = useState('')
   const [agentPlan, setAgentPlan] = useState<StudioEditPlan | null>(null)
+  /**
+   * JOB 11 — Auto polish / Auto effects ask one question before they generate.
+   * `autoAsk` holds that question; `autoPlanName` names the plan it produced,
+   * so the preview header says which direction you chose.
+   */
+  const [autoAsk, setAutoAsk] = useState<PolishAsk | PolishBlocked | null>(null)
+  const [autoPlanName, setAutoPlanName] = useState<string | null>(null)
   const [timelineH, setTimelineH] = useState<number | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [clipMenuAt, setClipMenuAt] = useState<{ clipId: string; x: number; y: number } | null>(null)
@@ -696,7 +704,7 @@ export function Studio() {
     const instruction = (request ?? agentInstruction).trim()
     if (!instruction || agentPlanning) return
     setAgentPlanning(true)
-    setAgentPlan(null)
+    setAgentPlan(null); setAutoPlanName(null)
     const phases = ['Reading timeline and selected clips', 'Matching motion, fonts and effects', 'Directing keyframes and track changes', 'Validating a safe edit plan']
     let phaseIndex = 0
     setAgentPhase(phases[0])
@@ -823,12 +831,12 @@ export function Studio() {
       setTime(0)
       if (docDuration(next) > 0) window.setTimeout(() => setPlaying(true), 60)
       pushToast('success', `Applied ${currentPlan.ops.length} agent edit${currentPlan.ops.length === 1 ? '' : 's'} as one undo step. Playing the polished result from the start.`)
-      setAgentPlan(null)
+      setAgentPlan(null); setAutoPlanName(null)
       setAgentInstruction('')
       setAgentRevision('')
     } catch (err) {
       pushToast('error', humanError(err, 'The timeline changed; preview this edit again'))
-      setAgentPlan(null)
+      setAgentPlan(null); setAutoPlanName(null)
     }
   }
 
@@ -1653,8 +1661,12 @@ export function Studio() {
           type="button"
           variant="ghost"
           disabled={agentPlanning || exporting || doc.clips.length === 0}
-          onClick={() => void planAgentEdit(agentInstruction.trim() || 'Auto edit and polish the complete timeline. Read all clip names, copy, timing and duration. Apply context-appropriate bundled typography, automatic keyword highlighting, purposeful text animation, varied native transitions, safe-area placement, track hierarchy, and purposeful keyframe motion on visual clips. Match the style to the content. Preserve meaning and source media.')}
-          title="Analyze the complete timeline and preview an automatic edit"
+          onClick={() => {
+            // A typed instruction is already your input — honour it directly.
+            if (agentInstruction.trim()) { void planAgentEdit(agentInstruction.trim()); return }
+            setAutoAsk(polishAsk(doc, 'polish'))
+          }}
+          title="Read the timeline, then ask how the polish should feel before changing anything"
         >
           Auto polish
         </Button>
@@ -1663,8 +1675,8 @@ export function Studio() {
           type="button"
           variant="ghost"
           disabled={agentPlanning || exporting || doc.clips.length === 0}
-          onClick={() => void planAgentEdit('Create a cohesive automatic effects pass without deleting or rewriting source content. Choose a different suitable native transition at scene boundaries, animate and highlight the strongest existing word in each important caption, and add gentle start/end keyframes to images and videos. Keep effects readable.')}
-          title="Automatically choose native effects, then show every change for approval"
+          onClick={() => setAutoAsk(polishAsk(doc, 'effects'))}
+          title="Read the timeline, then ask which effects pass you want before changing anything"
         >
           Auto effects
         </Button>
@@ -1679,6 +1691,45 @@ export function Studio() {
           <MatrixLoader variant="orbit" tone="lime" label="Planning the edit" />
           <ThinkingStates states={[agentPhase || 'Planning the edit']} baseColor="var(--color-text)" />
           <span>· Live AI has at most 10 seconds, then Cupric instantly switches to its local editor.</span>
+        </div>
+      )}
+
+      {autoAsk && !agentPlan && !agentPlanning && (
+        <div className="shrink-0 border-b border-line bg-accent/5 px-6 py-3" role="group" aria-label="Choose a direction before Cupric edits">
+          {isBlocked(autoAsk) ? (
+            <div className="flex items-start gap-3 text-xs">
+              <span className="min-w-0 flex-1 text-muted">{autoAsk.blocked}</span>
+              <Button size="sm" variant="ghost" onClick={() => setAutoAsk(null)}>Dismiss</Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs text-muted">{autoAsk.headline}</div>
+                  <div className="mt-0.5 text-sm font-semibold">{autoAsk.question}</div>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => setAutoAsk(null)}>Cancel</Button>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {autoAsk.choices.map((choice) => (
+                  <button
+                    key={choice.id}
+                    type="button"
+                    className="max-w-xs rounded-lg border border-line bg-panel px-3 py-2 text-left transition-colors hover:border-accent hover:bg-accent/10"
+                    onClick={() => {
+                      // Only now does anything generate — after your pick.
+                      setAutoPlanName(choice.label)
+                      setAutoAsk(null)
+                      void planAgentEdit(choice.instruction)
+                    }}
+                  >
+                    <div className="text-xs font-semibold">{choice.label}</div>
+                    <div className="mt-0.5 text-xs text-muted">{choice.hint}</div>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1701,7 +1752,7 @@ export function Studio() {
         <div className="shrink-0 border-b border-line bg-panel px-6 py-3">
           <div className="flex items-start gap-4">
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold">{agentPlan.summary}</div>
+              <div className="text-sm font-semibold">{autoPlanName ? `${autoPlanName} — ${agentPlan.summary}` : agentPlan.summary}</div>
               <div className="mt-1 text-xs text-muted">{agentPlan.source === 'live' ? 'Planned by your connected AI model' : 'Planned locally'} · preview only until accepted</div>
               {agentPlan.warning && <div className="mt-1 text-xs text-danger">{agentPlan.warning}</div>}
               <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto pr-2 text-xs text-muted">
@@ -1735,7 +1786,7 @@ export function Studio() {
               </div>
             </div>
             <div className="flex shrink-0 gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setAgentPlan(null)}>Reject</Button>
+              <Button size="sm" variant="ghost" onClick={() => { setAgentPlan(null); setAutoPlanName(null) }}>Reject</Button>
               <Button size="sm" variant="primary" onClick={acceptAgentPlan}>Accept all</Button>
             </div>
           </div>

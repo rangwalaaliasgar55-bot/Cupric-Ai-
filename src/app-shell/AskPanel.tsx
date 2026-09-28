@@ -2,7 +2,7 @@ import { FreeModels } from './FreeModels'
 import { EASE_SPRING } from '../lib/motion'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ImagePlus, Send, Sparkles, X, Settings } from 'lucide-react'
+import { ImagePlus, Maximize2, Minimize2, Send, Sparkles, X, Settings } from 'lucide-react'
 import { askGeminiChat, type ChatImage } from '../lib/gemini'
 import {
   discoverLocalModels,
@@ -111,6 +111,20 @@ export function AskPanel() {
   const theme = useProjectStore((s) => s.theme)
   const reducedMotion = useReducedMotion()
   const [showSettings, setShowSettings] = useState(false)
+  /**
+   * JOB 11 — the panel was locked at 420px, which is too narrow to read a
+   * rundown or a code block Cupric just wrote. Expanding is remembered.
+   */
+  const [expanded, setExpanded] = useState(() => {
+    try { return localStorage.getItem('cupric.ask.expanded') === '1' } catch { return false }
+  })
+  function toggleExpanded() {
+    setExpanded((on) => {
+      const next = !on
+      try { localStorage.setItem('cupric.ask.expanded', next ? '1' : '0') } catch { /* private mode */ }
+      return next
+    })
+  }
   const [apiKey, setApiKey] = useState('')
   const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash')
   const [geminiModels, setGeminiModels] = useState<{ id: string; label: string }[]>([])
@@ -505,7 +519,7 @@ export function AskPanel() {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 48, opacity: 0 }}
           transition={{ duration: 0.2, ease: EASE_SPRING }}
-          className="fixed inset-y-0 right-0 z-40 flex w-[min(420px,100vw)] flex-col overflow-hidden border-l border-line bg-panel shadow-2xl"
+          className={cx('fixed inset-y-0 right-0 z-40 flex flex-col overflow-hidden border-l border-line bg-panel shadow-2xl', expanded ? 'w-[min(980px,100vw)]' : 'w-[min(420px,100vw)]')}
         >
           <div className="flex items-center gap-2.5 border-b border-line px-4 py-3">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-accent-ink">
@@ -530,6 +544,15 @@ export function AskPanel() {
               </div>
             </div>
             <button type="button" aria-label="AI settings" onClick={() => { const next = !showSettings; setShowSettings(next); if (next) void refreshDiscovery() }} className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:bg-panel-alt hover:text-text"><Settings size={15}/></button>
+            <button
+              type="button"
+              aria-label={expanded ? 'Shrink the panel back to the side' : 'Expand the panel for long answers'}
+              title={expanded ? 'Shrink the panel back to the side' : 'Expand the panel for long answers'}
+              onClick={toggleExpanded}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition-colors duration-150 hover:bg-panel-alt hover:text-text active:scale-[0.96]"
+            >
+              {expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+            </button>
             <button
               type="button"
               aria-label="Close panel"
