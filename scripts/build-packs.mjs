@@ -505,25 +505,37 @@ try {
   console.warn('resources/skiper/catalog.json not readable — skipping Skiper UI')
 }
 
+// Curated packs are hand-maintained in `resources/packs/*.json` and carried
+// through so regenerating packs never drops them. Unlike the generated packs
+// above they get no `version: VERSION` literal, so a release bump used to
+// leave them stamped with the previous app version — check-resources.mjs then
+// failed the whole release build (this is what broke v0.12.0). Re-stamp the
+// carried-through copy on every run so a curated pack can never go stale again.
+async function readCuratedPack(id) {
+  const curated = JSON.parse(await readFile(path.join(outDir, `${id}.json`), 'utf8'))
+  if (curated.version !== VERSION) {
+    console.log(`Re-stamped curated pack ${id}: ${curated.version} -> ${VERSION}`)
+  }
+  return { ...curated, version: VERSION }
+}
+
 // Curated link-only UI library index (Mantine, Pixel Perfect UI, Sora UI).
-// Hand-maintained in resources/packs/ui-libraries.json — carried through as-is
-// so regenerating packs never drops it.
 try {
-  packs.push(JSON.parse(await readFile(path.join(outDir, 'ui-libraries.json'), 'utf8')))
+  packs.push(await readCuratedPack('ui-libraries'))
 } catch {
   console.warn('resources/packs/ui-libraries.json not readable — skipping the UI libraries pack')
 }
 
 // Hand-picked free essentials (libraries, fonts, icons, media) — curated file.
 try {
-  packs.push(JSON.parse(await readFile(path.join(outDir, 'essentials.json'), 'utf8')))
+  packs.push(await readCuratedPack('essentials'))
 } catch {
   console.warn('resources/packs/essentials.json not readable — skipping Essentials')
 }
 
 // Motion kit — fonts, Javis.jl concepts (curated file).
 try {
-  packs.push(JSON.parse(await readFile(path.join(outDir, 'motion-kit.json'), 'utf8')))
+  packs.push(await readCuratedPack('motion-kit'))
 } catch {
   console.warn('resources/packs/motion-kit.json not readable — skipping Motion kit')
 }

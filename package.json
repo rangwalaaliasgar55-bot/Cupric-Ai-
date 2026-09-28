@@ -1,7 +1,7 @@
 {
   "name": "cupric-ai",
   "private": true,
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Cupric AI — desktop creator tool for short-form video: in-app Studio editor with liquid-glass effects, Gemini and free-model chat, Arena import, footage analysis, offline UI resource catalogs, and Electron packaging.",
   "type": "module",
   "main": "electron/main.cjs",
