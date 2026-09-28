@@ -40,7 +40,7 @@ import { GLASS_PRESETS } from '../../lib/glass'
 import { STICKERS } from '../../lib/studio/lottie'
 import { hasMedia, registerFile } from '../../lib/studio/media'
 
-import { clampRecordSec, findComponent, MAX_RECORD_SEC } from '../../lib/studio/components'
+import { clampRecordSec, findComponent, MAX_RECORD_SEC, rememberRecordSec } from '../../lib/studio/components'
 import { applyResource } from '../../lib/studio/resourceApply'
 import { cx } from '../../lib/utils'
 import { CHANNEL_PRESETS, matchingPreset, presetLabel, presetWarnings } from '../../lib/studio/formats'
@@ -1339,7 +1339,10 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
                 defaultValue={meta.recordSec}
                 onBlur={(e) => {
                   const next = clampRecordSec(e.target.value, meta.recordSec)
-                  if (next !== meta.recordSec) rerecord({ recordSec: next })
+                  if (next !== meta.recordSec) {
+                    rememberRecordSec(next)
+                    rerecord({ recordSec: next })
+                  }
                   else e.target.value = String(meta.recordSec)
                 }}
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}

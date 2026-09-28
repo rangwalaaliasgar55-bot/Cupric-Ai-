@@ -1,5 +1,5 @@
 /**
- * Home_X video kit — eight native clip kinds drawn by the shared Studio
+ * Home_X video kit — nine native clip kinds drawn by the shared Studio
  * renderer (preview and export call the same `drawKit`).
  *
  * Rules (DESIGN.md §1 "Video palette", §Motion):
@@ -12,7 +12,7 @@
  *  - Nothing here invents content: empty photo slots draw "drop media here",
  *    and numbers/labels come only from the clip's fields.
  */
-import type { StudioKitClip, StudioKitKind, StudioKitMedia } from '../../types/project'
+import type { StudioKitClip, StudioKitKind, StudioKitMedia, StudioKitWord } from '../../types/project'
 import { bezierEase, type Bezier } from './curves'
 
 /* ——— tokens ——— */
@@ -68,6 +68,7 @@ export const KIT_KINDS: Array<{ id: StudioKitKind; name: string; variants: strin
   { id: 'image-stack', name: 'Image stack', variants: ['stack', 'single', 'landscape'], use: '1–8 of your photos overlapped and rotated within bounds, staggered entrance.' },
   { id: 'browser-mockup', name: 'Browser mockup', variants: ['agent', 'saas', 'composer'], use: 'Browser chrome with sidebar, thinking bubble and progress; SaaS home; post composer.' },
   { id: 'checkout-card', name: 'Checkout card', variants: ['default'], use: 'Browser checkout: product, price, wallet buttons, fields, Pay button, summary.' },
+  { id: 'kinetic-headline', name: 'Kinetic headline', variants: ['rise', 'drop', 'fade'], use: 'Headline where every word has its own colour, weight and entrance delay; [keyword], {chip} and *glow* words.' },
   { id: 'block-row-3d', name: 'Block row 3D', variants: ['default'], use: 'Perspective row of numbered blocks with glowing pins that light in sequence.' },
 ]
 const KIND_IDS = new Set(KIT_KINDS.map((k) => k.id))
@@ -84,6 +85,7 @@ export function kitAspect(kit: StudioKitKind, variant?: string): number {
     case 'browser-mockup': return variant === 'composer' ? 0.62 : 0.6
     case 'checkout-card': return 0.9
     case 'block-row-3d': return 0.45
+    case 'kinetic-headline': return 0.32
   }
 }
 
@@ -319,7 +321,41 @@ export function normaliseKit(clip: Partial<StudioKitClip> & { id?: string }): St
     fromX: clip.fromX === undefined ? undefined : num(clip.fromX, 0.2, -1, 2),
     fromY: clip.fromY === undefined ? undefined : num(clip.fromY, 0.8, -1, 2),
     clickAt: clip.clickAt === undefined ? undefined : num(clip.clickAt, 0.6, 0, 1),
+    words: Array.isArray(clip.words) ? clip.words.slice(0, 24).map(normaliseWord).filter((w) => w.text.length) : undefined,
+    real3d: clip.real3d === true ? true : undefined,
   }
+}
+
+const WORD_STYLES = ['plain', 'keyword', 'chip', 'glow'] as const
+const WORD_WEIGHTS = [400, 500, 600, 700, 800] as const
+const WORD_COLORS = new Set(['text', ...KIT_ACCENTS.map((a) => a.id)])
+function normaliseWord(w: Partial<StudioKitWord> | null | undefined): StudioKitWord {
+  const o = (w && typeof w === 'object' ? w : {}) as Partial<StudioKitWord>
+  return {
+    text: str(o.text, '', 40).trim(),
+    color: typeof o.color === 'string' && WORD_COLORS.has(o.color) ? o.color : undefined,
+    weight: WORD_WEIGHTS.includes(o.weight as 400) ? o.weight : undefined,
+    delay: o.delay === undefined ? undefined : num(o.delay, 0, 0, 60),
+    style: WORD_STYLES.includes(o.style as 'plain') ? o.style : undefined,
+  }
+}
+
+/** Per-word runs of a kinetic headline: explicit `words`, else parsed from the title. */
+export function kineticWords(clip: Pick<StudioKitClip, 'title' | 'words'>): Required<StudioKitWord>[] {
+  const src: StudioKitWord[] = clip.words?.length
+    ? clip.words
+    : (clip.title ?? 'Say [what] it {does} *today*').split(/\s+/).filter(Boolean).slice(0, 24).map((raw) => {
+      const m = /^\[(.+)\]([.,!?]*)$/.exec(raw) ?? /^\{(.+)\}([.,!?]*)$/.exec(raw) ?? /^\*(.+)\*([.,!?]*)$/.exec(raw)
+      const style: StudioKitWord['style'] = !m ? 'plain' : raw[0] === '[' ? 'keyword' : raw[0] === '{' ? 'chip' : 'glow'
+      return { text: m ? m[1] + m[2] : raw, style }
+    })
+  return src.map((w, i) => ({
+    text: w.text,
+    style: w.style ?? 'plain',
+    color: w.color ?? (w.style && w.style !== 'plain' ? 'accent-of-clip' : 'text'),
+    weight: w.weight ?? (w.style && w.style !== 'plain' ? 800 : 700),
+    delay: w.delay ?? i * 0.09,
+  }))
 }
 
 /* ——— draw ——— */
@@ -351,6 +387,7 @@ export function drawKit(ctx: CanvasRenderingContext2D, clip: StudioKitClip, t: n
     case 'browser-mockup': drawBrowser(ctx, clip, box); break
     case 'checkout-card': drawCheckout(ctx, clip, box); break
     case 'block-row-3d': drawBlockRow(ctx, clip, box); break
+    case 'kinetic-headline': drawKineticHeadline(ctx, clip, box); break
   }
   ctx.restore()
 }
@@ -855,7 +892,30 @@ function drawCheckout(ctx: CanvasRenderingContext2D, clip: StudioKitClip, b: Box
   ctx.restore()
 }
 
+/**
+ * Optional real-3D block row. blockRow3d.ts registers a Three.js renderer after
+ * a dynamic import; until then (and in Node checks, or with WebGL missing) the
+ * 2.5D canvas draw below is used. The Three scene is also a pure function of
+ * (clip, local time), so it stays deterministic.
+ */
+export type BlockRow3dRenderer = (clip: StudioKitClip, e: number, p: number, w: number, h: number) => { image: CanvasImageSource; labels: Array<{ x: number; y: number; i: number; lit: number }> } | null
+let blockRow3d: BlockRow3dRenderer | null = null
+export function setBlockRow3dRenderer(fn: BlockRow3dRenderer | null) { blockRow3d = fn }
+export const hasBlockRow3dRenderer = () => blockRow3d !== null
+/** Lit amount (0–1) of block `i` of `n` at clip progress `p` — shared by both draws. */
+export function blockLit(i: number, n: number, p: number): number {
+  return soft(win(p, 0.15 + (i / n) * 0.6, 0.08))
+}
+
 function drawBlockRow(ctx: CanvasRenderingContext2D, clip: StudioKitClip, b: Box) {
+  if (clip.real3d && blockRow3d) {
+    const out = blockRow3d(clip, b.e, b.p, Math.max(2, Math.round(b.W)), Math.max(2, Math.round(b.H)))
+    if (out) {
+      ctx.drawImage(out.image, b.x0, b.y0, b.W, b.H)
+      for (const l of out.labels) text(ctx, String(l.i + 1), b.x0 + l.x, b.y0 + l.y, b.W * 0.028, mix(CORE_TOKENS.muted, CORE_TOKENS.text, l.lit), 700, 'center', MONO)
+      return
+    }
+  }
   const n = clamp(Math.round(clip.values?.[0] ?? 14), 2, 24)
   // 2.5D projection: blocks recede along z; camera pushes in over the clip.
   const push = clip.reducedMotion ? 0 : soft(b.p) * 0.18
@@ -872,8 +932,7 @@ function drawBlockRow(ctx: CanvasRenderingContext2D, clip: StudioKitClip, b: Box
   }
   blocks.sort((a, c) => c.z - a.z) // far → near
   for (const bl of blocks) {
-    const litAt = 0.15 + (bl.i / n) * 0.6
-    const lit = soft(win(b.p, litAt, 0.08))
+    const lit = blockLit(bl.i, n, b.p)
     const pulse = clip.reducedMotion ? 1 : 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(b.e * 2.4 + bl.i * 0.7))
     const top = bl.sy - bl.sh
     // Translucent block with a soft rim of the accent.
@@ -896,4 +955,63 @@ function drawBlockRow(ctx: CanvasRenderingContext2D, clip: StudioKitClip, b: Box
     ctx.fill()
     text(ctx, String(bl.i + 1), bl.sx, top + bl.sh * 0.45, bl.sw * 0.38, mix(CORE_TOKENS.muted, CORE_TOKENS.text, lit), 700, 'center', MONO)
   }
+}
+
+/* kinetic-headline — per-word runs; each word's motion is a pure function of (local time − its delay). */
+function wordColor(id: string, clip: StudioKitClip, s: Surf): string {
+  if (id === 'accent-of-clip') return clip.accent
+  if (id === 'text') return s.text
+  return KIT_ACCENTS.find((a) => a.id === id)?.color ?? s.text
+}
+function drawKineticHeadline(ctx: CanvasRenderingContext2D, clip: StudioKitClip, b: Box) {
+  const words = kineticWords(clip)
+  if (!words.length) return
+  const lineH = 1.3
+  // Largest size at which the words wrap into the box.
+  const layout = (px: number) => {
+    const lines: Array<Array<{ w: (typeof words)[number]; width: number }>> = [[]]
+    let lineW = 0
+    for (const w of words) {
+      ctx.font = font(px, w.weight)
+      const pad = w.style === 'chip' ? px * 0.7 : 0
+      const width = ctx.measureText(w.text).width + pad
+      const gap = px * 0.28
+      if (lines[lines.length - 1].length && lineW + gap + width > b.W) { lines.push([]); lineW = 0 }
+      lineW += (lines[lines.length - 1].length ? gap : 0) + width
+      lines[lines.length - 1].push({ w, width })
+    }
+    return lines
+  }
+  let px = b.H / lineH
+  let lines = layout(px)
+  for (let i = 0; i < 12 && lines.length * px * lineH > b.H; i += 1) { px *= 0.88; lines = layout(px) }
+  const gap = px * 0.28
+  const top = b.y0 + (b.H - lines.length * px * lineH) / 2 + (px * lineH) / 2
+  lines.forEach((line, li) => {
+    const total = line.reduce((a, r, i) => a + r.width + (i ? gap : 0), 0)
+    let cx = b.x0 + (b.W - total) / 2
+    const cy = top + li * px * lineH
+    for (const { w, width } of line) {
+      const k = soft(win(b.e, w.delay, 0.45))
+      const dy = clip.variant === 'fade' ? 0 : (clip.variant === 'drop' ? -1 : 1) * (1 - k) * px * 0.45
+      const color = wordColor(w.color, clip, b.s)
+      ctx.save()
+      ctx.globalAlpha *= k
+      if (w.style === 'chip') {
+        fillRR(ctx, cx, cy + dy - px * 0.62, width, px * 1.24, px * 0.62, color)
+        text(ctx, w.text, cx + width / 2, cy + dy, px, CORE_TOKENS.lightPanel, w.weight, 'center')
+      } else {
+        if (w.style === 'glow') { ctx.shadowColor = rgba(HEX.test(color) ? color : clip.accent, 0.85); ctx.shadowBlur = px * 0.45 * k }
+        text(ctx, w.text, cx, cy + dy, px, color, w.weight)
+        if (w.style === 'keyword') {
+          // underline sweeps in after the word lands
+          const u = soft(win(b.e, w.delay + 0.25, 0.35))
+          ctx.shadowBlur = 0
+          fillRR(ctx, cx, cy + dy + px * 0.5, width * u, Math.max(1, px * 0.08), px * 0.04, color)
+        }
+      }
+      ctx.restore()
+      cx += width + gap
+    }
+  })
 }

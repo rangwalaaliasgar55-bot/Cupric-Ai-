@@ -16,7 +16,7 @@ import { cx, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
 import { focusStudioClip } from '../lib/studio/focus'
 import { lastStudioPlayhead } from '../lib/studio/studioLink'
-import { withComponent } from '../lib/studio/components'
+import { preferredRecordSec, withComponent } from '../lib/studio/components'
 import { motionPatch } from '../lib/studio/motionDirector'
 
 /**
@@ -152,7 +152,7 @@ export function Lab() {
     setCapturing(true)
     try {
       const doc = studioOf(project)
-      const added = withComponent(doc, open.slug, { startSec: Math.min(lastStudioPlayhead(), docDuration(doc)), recordSec: 4, durationSec: 4 })
+      const added = withComponent(doc, open.slug, { startSec: Math.min(lastStudioPlayhead(), docDuration(doc)), recordSec: preferredRecordSec(), durationSec: preferredRecordSec() })
       const clip = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
       patchStudio(project.id, { trackCount: added.doc.trackCount, clips: added.doc.clips.map((c) => (c.id === clip.id ? clip : c)) })
       focusStudioClip(clip.id)

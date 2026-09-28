@@ -3,7 +3,8 @@
  * onPatch, so edits are one undo step each and saved with the project.
  */
 import type { StudioClip, StudioDoc, StudioKitClip, StudioKitMedia, StudioMediaClip } from '../../types/project'
-import { KIT_ACCENTS, KIT_KINDS, normaliseKit } from '../../lib/studio/homeKit'
+import { KIT_ACCENTS, KIT_KINDS, kineticWords, normaliseKit } from '../../lib/studio/homeKit'
+import type { StudioKitWord } from '../../types/project'
 
 const inputCx = 'w-full cu-input px-2.5 py-1.5 text-sm text-text'
 
@@ -48,7 +49,7 @@ export function KitFields({ clip: raw, doc, onPatch }: { clip: StudioKitClip; do
       {(clip.kit === 'browser-mockup' || clip.kit === 'checkout-card') && (
         <Row label="URL"><input className={inputCx} value={clip.url ?? ''} onChange={(e) => set({ url: e.target.value })} /></Row>
       )}
-      {clip.kit !== 'cursor-zoom' && clip.kit !== 'image-stack' && clip.kit !== 'block-row-3d' && (
+      {clip.kit !== 'cursor-zoom' && clip.kit !== 'image-stack' && clip.kit !== 'block-row-3d' && clip.kit !== 'kinetic-headline' && (
         <Row label="Items (one per line)" hint={clip.kit === 'checkout-card' ? 'Line 1 price, line 2 total, then "Label|Value" summary rows — your real numbers only.' : 'Your own words and numbers — nothing is invented.'}>
           <textarea className={inputCx} rows={4} value={(clip.items ?? []).join('\n')} onChange={(e) => set({ items: e.target.value.split('\n') })} />
         </Row>
@@ -62,6 +63,18 @@ export function KitFields({ clip: raw, doc, onPatch }: { clip: StudioKitClip; do
         <Row label="Active item" hint="Index from 0; stat cards use 1 for the green active tint.">
           <input type="number" className={`${inputCx} font-mono tabular-nums`} value={clip.active ?? 0} onChange={(e) => set({ active: Number(e.target.value) })} />
         </Row>
+      )}
+      {clip.kit === 'kinetic-headline' && <KineticWords clip={clip} set={set} />}
+      {clip.kit === 'block-row-3d' && (
+        <div className="space-y-1">
+          <label className="flex items-center gap-2 text-xs text-muted">
+            <input type="checkbox" checked={clip.real3d === true} onChange={(e) => set({ real3d: e.target.checked || undefined })} />
+            Real 3D (Three.js)
+          </label>
+          <p className="text-xs text-muted">
+            {clip.real3d ? 'Rendered with Three.js (loaded on demand) in both preview and export. Until it loads — or if this device has no WebGL — the deterministic 2.5D draw is shown, and export tells you if it had to fall back.' : 'Drawn as 2.5D perspective on the shared canvas — identical in preview and export.'}
+          </p>
+        </div>
       )}
       {takesMedia && (
         <div className="space-y-1">
@@ -105,6 +118,46 @@ export function KitFields({ clip: raw, doc, onPatch }: { clip: StudioKitClip; do
       <Row label="Layout seed" hint="Changes the deterministic jitter (stack rotation, drift). Same seed → same frames.">
         <input type="number" className={`${inputCx} font-mono tabular-nums`} value={clip.seed} onChange={(e) => set({ seed: Math.max(0, Math.round(Number(e.target.value) || 0)) })} />
       </Row>
+    </div>
+  )
+}
+
+const WEIGHTS = [400, 500, 600, 700, 800] as const
+const STYLES = ['plain', 'keyword', 'chip', 'glow'] as const
+
+/** Per-word editor: colour, weight, entrance delay and style for each word. */
+function KineticWords({ clip, set }: { clip: StudioKitClip; set: (p: Partial<StudioKitClip>) => void }) {
+  const explicit = Boolean(clip.words?.length)
+  const words = kineticWords(clip)
+  const patchWord = (i: number, p: Partial<StudioKitWord>) => {
+    const base: StudioKitWord[] = words.map((w) => ({ text: w.text, style: w.style, weight: w.weight, delay: w.delay, color: w.color === 'accent-of-clip' ? undefined : w.color }))
+    base[i] = { ...base[i], ...p }
+    set({ words: base })
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs font-medium text-muted">Words</span>
+        {explicit && <button type="button" className="text-xs text-accent-text underline" onClick={() => set({ words: undefined })}>Reset to title</button>}
+      </div>
+      {!explicit && <p className="text-xs text-muted">Parsed from the title: [keyword] {'{chip}'} *glow*. Edit any word below to take full control.</p>}
+      {words.map((w, i) => (
+        <div key={i} className="grid grid-cols-[1fr_auto_auto_auto_auto] items-center gap-1">
+          <input className="min-w-0 cu-input px-2 py-1 text-xs" aria-label={`Word ${i + 1}`} value={w.text} onChange={(e) => patchWord(i, { text: e.target.value })} />
+          <select className="cu-input px-1 py-1 text-xs" aria-label={`Word ${i + 1} style`} value={w.style} onChange={(e) => patchWord(i, { style: e.target.value as StudioKitWord['style'] })}>
+            {STYLES.map((st) => <option key={st} value={st}>{st}</option>)}
+          </select>
+          <select className="cu-input px-1 py-1 text-xs" aria-label={`Word ${i + 1} colour`} value={w.color === 'accent-of-clip' ? '' : w.color} onChange={(e) => patchWord(i, { color: e.target.value || undefined })}>
+            <option value="">Accent</option>
+            <option value="text">Text</option>
+            {KIT_ACCENTS.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+          </select>
+          <select className="cu-input px-1 py-1 text-xs" aria-label={`Word ${i + 1} weight`} value={w.weight} onChange={(e) => patchWord(i, { weight: Number(e.target.value) as StudioKitWord['weight'] })}>
+            {WEIGHTS.map((wt) => <option key={wt} value={wt}>{wt}</option>)}
+          </select>
+          <input type="number" min={0} max={60} step={0.05} className="w-16 cu-input px-1 py-1 font-mono text-xs tabular-nums" aria-label={`Word ${i + 1} delay in seconds`} value={w.delay} onChange={(e) => patchWord(i, { delay: Math.max(0, Number(e.target.value) || 0) })} />
+        </div>
+      ))}
     </div>
   )
 }

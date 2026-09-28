@@ -41,7 +41,7 @@ import {
   transitionFor,
   type Archetype,
 } from './resourceLook'
-import { findComponent, withComponent } from './components'
+import { findComponent, preferredRecordSec, withComponent } from './components'
 import { PHONE_DESIGNS } from './phone'
 import { buildStoryboard, directText, frameRatio, panelSize, placeLayers, plateBehind, templateSlots, type TemplateFillData } from './storyboard'
 import { TRANSITIONS } from './transitions'
@@ -433,7 +433,7 @@ export function applyResource(doc: StudioDoc, item: ApplyItem, ctx: ApplyContext
       const external = Boolean(item.source || item.data?.source || item.data?.provider)
       if (!external && findComponent(item.id) && (ctx.hasLabDemo?.(item.id) ?? true)) {
         // The real component, recorded with its real animation by the Studio.
-        const added = withComponent(doc, item.id, { startSec: atSec, recordSec: 4, durationSec: 4 })
+        const added = withComponent(doc, item.id, { startSec: atSec, recordSec: preferredRecordSec(), durationSec: preferredRecordSec() })
         const clip = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
         return {
           ok: true,

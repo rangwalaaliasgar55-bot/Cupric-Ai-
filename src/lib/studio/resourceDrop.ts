@@ -20,7 +20,7 @@ import { STUDIO_BACKGROUNDS } from './backgrounds'
 import { defaultGlassClip, defaultTextClip, nextFreeStart } from './doc'
 import { TEXT_ANIMATIONS, TRANSITIONS } from './transitions'
 import { planTemplateFill, templateSlots, type TemplateFillData } from './templateFill'
-import { findComponent, withComponent } from './components'
+import { findComponent, preferredRecordSec, withComponent } from './components'
 
 /** Custom MIME so a drag from the Library can never be confused with a file. */
 export const RESOURCE_MIME = 'application/x-cupric-resource'
@@ -230,7 +230,7 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
       // The real component, recorded with its real animation by the Studio's
       // recorder (ComponentRecorderHost) — never a dead placeholder.
       if (!findComponent(payload.id)) return { ok: false, reason: `“${payload.name}” is not a built-in component.` }
-      const added = withComponent(doc, payload.id, { startSec: atSec, recordSec: 4, durationSec: 4 })
+      const added = withComponent(doc, payload.id, { startSec: atSec, recordSec: preferredRecordSec(), durationSec: preferredRecordSec() })
       return { ok: true, docPatch: { clips: added.doc.clips, trackCount: added.doc.trackCount }, message: `“${payload.name}” added — recording its real animation.` }
     }
 

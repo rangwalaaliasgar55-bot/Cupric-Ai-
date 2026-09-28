@@ -112,6 +112,8 @@ import {
   validateStudioEditPlan,
   type StudioEditPlan,
 } from '../lib/studio/editOps'
+import { blockRow3dError, loadBlockRow3d, needsBlockRow3d } from '../lib/studio/blockRow3d'
+import { backgroundPolishEnabled, backgroundPolishOffer, docSignature, POLISH_IDLE_MS, setBackgroundPolishEnabled, type PolishOffer } from '../lib/studio/backgroundPolish'
 
 const ZOOM_STEPS = [12, 20, 32, 48, 72, 110, 160]
 
@@ -561,6 +563,33 @@ export function Studio() {
     }
   }, [pushToast])
 
+  // V-2: background polish. After the timeline sits still, plan (never apply)
+  // a polish pass; the user previews it in the normal agent diff and accepts it
+  // as one undo step. A dismissed or accepted timeline is never re-offered.
+  const [polishOn, setPolishOn] = useState(() => backgroundPolishEnabled())
+  const [polishOffer, setPolishOffer] = useState<PolishOffer | null>(null)
+  const polishSeen = useRef<Set<string>>(new Set())
+  const polishSig = project ? docSignature(doc) : ''
+  useEffect(() => {
+    setPolishOffer((cur) => (cur && cur.signature !== polishSig ? null : cur))
+    if (!polishOn || !project || agentPlan || agentPlanning || polishSeen.current.has(polishSig)) return
+    let idle = 0
+    const timer = window.setTimeout(() => {
+      const run = () => {
+        const offer = backgroundPolishOffer(doc)
+        polishSeen.current.add(polishSig)
+        if (offer && offer.signature === polishSig) setPolishOffer(offer)
+      }
+      if ('requestIdleCallback' in window) idle = window.requestIdleCallback(run, { timeout: 2000 })
+      else run()
+    }, POLISH_IDLE_MS)
+    return () => {
+      window.clearTimeout(timer)
+      if (idle && 'cancelIdleCallback' in window) window.cancelIdleCallback(idle)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [polishSig, polishOn, agentPlan, agentPlanning])
+
   if (!project || !pid) return <NoProject />
 
   const projectId: string = pid
@@ -668,6 +697,8 @@ export function Studio() {
       const currentPlan = validateStudioEditPlan(agentPlan, doc)
       const next = applyStudioEditPlan(doc, currentPlan.ops)
       patchStudio(projectId, next)
+      polishSeen.current.add(docSignature(next))
+      setPolishOffer(null)
       setTime(0)
       if (docDuration(next) > 0) window.setTimeout(() => setPlaying(true), 60)
       pushToast('success', `Applied ${currentPlan.ops.length} agent edit${currentPlan.ops.length === 1 ? '' : 's'} as one undo step. Playing the polished result from the start.`)
@@ -1181,6 +1212,10 @@ export function Studio() {
       pushToast('info', 'A component is still recording its animation — export as soon as it lands on the timeline.')
       return 'failed'
     }
+    // Real-3D block rows: export waits for Three.js so it draws exactly what the preview shows.
+    if (needsBlockRow3d(target.clips as Array<{ kind: string; kit?: string; real3d?: boolean }>) && !(await loadBlockRow3d())) {
+      pushToast('info', `Real 3D is unavailable: ${blockRow3dError()}. Exporting the 2.5D block row instead.`)
+    }
     setPlaying(false)
     setExportPct(0)
     const signal = { cancelled: false }
@@ -1507,6 +1542,21 @@ export function Studio() {
           <MatrixLoader variant="orbit" tone="lime" label="Planning the edit" />
           <ThinkingStates states={[agentPhase || 'Planning the edit']} baseColor="var(--color-text)" />
           <span>· Live AI has at most 10 seconds, then Cupric instantly switches to its local editor.</span>
+        </div>
+      )}
+
+      {polishOffer && !agentPlan && (
+        <div role="status" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-line bg-accent/5 px-6 py-2 text-xs">
+          <Sparkles size={13} className="text-accent-text" />
+          <span className="min-w-0 flex-1 text-text">Background polish ready: {polishOffer.plan.ops.length} edit{polishOffer.plan.ops.length === 1 ? '' : 's'} planned locally while you paused. Nothing changes until you accept.</span>
+          <Button size="sm" variant="primary" onClick={() => { setAgentPlan(polishOffer.plan); setPolishOffer(null) }}>Preview</Button>
+          <Button size="sm" variant="ghost" onClick={() => setPolishOffer(null)}>Dismiss</Button>
+          <Button size="sm" variant="ghost" onClick={() => { setBackgroundPolishEnabled(false); setPolishOn(false); setPolishOffer(null) }} title="Stop offering background polish passes (turn back on from the agent bar)">Turn off</Button>
+        </div>
+      )}
+      {!polishOn && (
+        <div className="flex shrink-0 justify-end px-6 py-1">
+          <Button size="sm" variant="ghost" onClick={() => { setBackgroundPolishEnabled(true); setPolishOn(true) }}>Turn background polish on</Button>
         </div>
       )}
 

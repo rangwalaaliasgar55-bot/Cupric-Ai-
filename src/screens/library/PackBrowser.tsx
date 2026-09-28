@@ -3,7 +3,7 @@ import { LoaderPreview } from '../studio/LoaderPreview'
 import type { StudioLoaderClip } from '../../types/project'
 import { ThinkingStates } from '../../components/loaders/ThinkingStates'
 import { MatrixLoader } from '../../components/loaders/MatrixLoader'
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import {
   Check,
   CloudDownload,
@@ -21,7 +21,10 @@ import {
   Wand2,
   WifiOff,
   Zap,
+  History,
+  Star,
 } from 'lucide-react'
+import { filterPackItems, loadFavourites, loadRecent, pushRecent, toggleFavourite, windowRange, type PackFilter } from '../../lib/library/packPrefs'
 import { Badge } from '../../components/Badge'
 import { Button } from '../../components/Button'
 import { ProgressBar } from '../../components/ProgressBar'
@@ -108,7 +111,9 @@ export function PackBrowser() {
   const deferredQuery = useDeferredValue(query)
   const [searchIds, setSearchIds] = useState<Set<string> | null>(null)
   const searchWorker = useRef<Worker | null>(null)
-  const [visibleCount, setVisibleCount] = useState(90)
+  const [filter, setFilter] = useState<PackFilter>('all')
+  const [favourites, setFavourites] = useState<string[]>(() => loadFavourites())
+  const [recent, setRecent] = useState<string[]>(() => loadRecent())
   const [downloading, setDownloading] = useState<{ pct: number; label: string } | null>(null)
   const [offline, setOffline] = useState<{ downloaded: string[]; total: number }>({ downloaded: [], total: 0 })
   const [used, setUsed] = useState<Set<string>>(new Set())
@@ -186,18 +191,40 @@ export function PackBrowser() {
     if (!searchIds) return []
     return all.filter((item) => searchIds.has(item.id))
   }, [pack, deferredQuery, searchIds])
-  const visibleItems = useMemo(() => items.slice(0, visibleCount), [items, visibleCount])
-
-  useEffect(() => setVisibleCount(90), [active, deferredQuery])
-  // Grow the window as the user nears the end (the button stays for keyboard users).
-  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  // Only the rows on screen are mounted: the grid measures its own width for the
+  // column count, then renders the visible row range between two spacers.
+  const gridRef = useRef<HTMLDivElement | null>(null)
+  const [gridView, setGridView] = useState({ cols: 3, top: 0, height: 900 })
   useEffect(() => {
-    const node = sentinelRef.current
-    if (!node || typeof IntersectionObserver === 'undefined') return
-    const io = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) setVisibleCount((c) => c + 90) }, { rootMargin: '600px' })
-    io.observe(node)
-    return () => io.disconnect()
-  }, [visibleItems.length, items.length])
+    const node = gridRef.current
+    if (!node) return
+    let frame = 0
+    const measure = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        const rect = node.getBoundingClientRect()
+        const cols = Math.max(1, Math.floor((rect.width + GRID_GAP) / (CARD_MIN_W + GRID_GAP)))
+        setGridView((prev) => (prev.cols === cols && Math.abs(prev.top - rect.top) < 1 && prev.height === window.innerHeight ? prev : { cols, top: rect.top, height: window.innerHeight }))
+      })
+    }
+    measure()
+    const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    ro?.observe(node)
+    // Scroll events don't bubble, but capture on document sees every scroll container.
+    document.addEventListener('scroll', measure, { capture: true, passive: true })
+    window.addEventListener('resize', measure)
+    return () => {
+      cancelAnimationFrame(frame)
+      ro?.disconnect()
+      document.removeEventListener('scroll', measure, { capture: true })
+      window.removeEventListener('resize', measure)
+    }
+  }, [pack, loading])
+  const shownItems = useMemo(() => filterPackItems(items, filter, favourites, recent), [items, filter, favourites, recent])
+  const range = windowRange(shownItems.length, gridView.cols, ROW_H, gridView.top, gridView.height)
+  const visibleItems = useMemo(() => shownItems.slice(range.start, range.end), [shownItems, range.start, range.end])
+  const favSet = useMemo(() => new Set(favourites), [favourites])
+  const onFavouriteStable = useCallback((item: PackItem) => setFavourites((cur) => toggleFavourite(item.id, cur)), [])
 
   const fillSlots = useMemo(
     () => templateFill ? templateSlots((templateFill.data ?? {}) as TemplateFillData) : [],
@@ -271,6 +298,7 @@ export function PackBrowser() {
 
   function markUsed(item: PackItem) {
     setUsed((prev) => new Set(prev).add(item.id))
+    setRecent((cur) => pushRecent(item.id, cur))
   }
 
   const fullyOffline = offline.total > 0 && offline.downloaded.length === offline.total
@@ -339,6 +367,13 @@ export function PackBrowser() {
             className="h-8 w-full cu-panel pl-8 pr-3 text-xs placeholder:text-muted/70"
           />
         </div>
+        <div className="flex items-center gap-1" role="group" aria-label="Show">
+          {(['all', 'favourites', 'recent'] as const).map((f) => (
+            <Button key={f} size="sm" variant={filter === f ? 'primary' : 'ghost'} onClick={() => setFilter(f)} aria-pressed={filter === f}>
+              {f === 'all' ? 'All' : f === 'favourites' ? <><Star size={12} /> Favourites</> : <><History size={12} /> Recent</>}
+            </Button>
+          ))}
+        </div>
       </div>
 
       {pack && (
@@ -358,31 +393,36 @@ export function PackBrowser() {
       ) : (
         /* Columns from the space the grid actually has, not the window: the same
             browser lives full-width in Library and in Studio's narrow side panel. */
-        <motion.div layout className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3">
-          <AnimatePresence mode="popLayout" initial={false}>
-            {visibleItems.map((item, i) => (
-              <PackCard
-                key={item.id}
-                item={item}
-                index={i}
-                reduced={reduced}
-                isUsed={used.has(item.id)}
-                rendering={progress?.id === item.id}
-                pct={progress?.id === item.id ? progress?.pct ?? 0 : 0}
-                onApply={onApplyStable}
-                onCustomize={onCustomizeStable}
-              />
-            ))}
-          </AnimatePresence>
-          {visibleItems.length < items.length && (
-            <div ref={sentinelRef} className="col-span-full flex items-center justify-center gap-3 rounded-xl border border-dashed border-line bg-panel/50 p-4">
-              <span className="text-xs text-muted">Showing {visibleItems.length.toLocaleString()} of {items.length.toLocaleString()}</span>
-              <Button size="sm" variant="outline" onClick={() => setVisibleCount((count) => count + 90)}>
-                Load 90 more
-              </Button>
+        <div ref={gridRef}>
+          {shownItems.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-line px-6 py-10 text-center text-sm text-muted">
+              {filter === 'favourites' ? 'No favourites in this pack yet — star a card to keep it here.' : filter === 'recent' ? 'Nothing from this pack applied yet — applied items show up here.' : 'No items match this search.'}
             </div>
+          ) : (
+            <>
+              <div style={{ height: range.padTop }} aria-hidden />
+              <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${gridView.cols}, minmax(0, 1fr))` }}>
+                {visibleItems.map((item, i) => (
+                  <PackCard
+                    key={item.id}
+                    item={item}
+                    index={i}
+                    reduced={reduced}
+                    isUsed={used.has(item.id)}
+                    isFavourite={favSet.has(item.id)}
+                    rendering={progress?.id === item.id}
+                    pct={progress?.id === item.id ? progress?.pct ?? 0 : 0}
+                    onApply={onApplyStable}
+                    onCustomize={onCustomizeStable}
+                    onFavourite={onFavouriteStable}
+                  />
+                ))}
+              </div>
+              <div style={{ height: range.padBottom }} aria-hidden />
+              <p className="pt-2 text-center text-xs text-muted">{shownItems.length.toLocaleString()} items · showing rows {Math.floor(range.start / gridView.cols) + 1}–{Math.ceil(range.end / gridView.cols)}</p>
+            </>
           )}
-        </motion.div>
+        </div>
       )}
 
       <Modal
@@ -477,7 +517,11 @@ export function PackBrowser() {
  * lets the browser skip layout/paint for off-screen cards (virtualisation
  * without fixed row heights).
  */
-const PackCard = memo(function PackCard({ item, index: i, reduced, isUsed, rendering, pct, onApply, onCustomize }: { item: PackItem; index: number; reduced: boolean; isUsed: boolean; rendering: boolean; pct: number; onApply: (item: PackItem) => void; onCustomize: (item: PackItem) => void }) {
+const ROW_H = 264 // card 252px + 12px gap (gap-3)
+const GRID_GAP = 12
+const CARD_MIN_W = 240
+
+const PackCard = memo(function PackCard({ item, index: i, reduced, isUsed, isFavourite, rendering, pct, onApply, onCustomize, onFavourite }: { item: PackItem; index: number; reduced: boolean; isUsed: boolean; isFavourite: boolean; rendering: boolean; pct: number; onApply: (item: PackItem) => void; onCustomize: (item: PackItem) => void; onFavourite: (item: PackItem) => void }) {
               const Icon = KIND_ICON[item.kind] ?? Layers
               const disposition = resourceDisposition(item.kind, item)
               const dispositionLabel = DISPOSITION_LABEL[disposition]
@@ -486,7 +530,6 @@ const PackCard = memo(function PackCard({ item, index: i, reduced, isUsed, rende
                   key={item.id}
                                     initial={reduced ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={reduced ? undefined : { opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.22, ease: EASE_SOFT, delay: reduced ? 0 : Math.min(i, 12) * 0.015 }}
                   whileHover={reduced ? undefined : { y: -2 }}
                   // Draggable straight onto the Studio stage; the drop uses the
@@ -501,7 +544,7 @@ const PackCard = memo(function PackCard({ item, index: i, reduced, isUsed, rende
                       data: item.data,
                     })
                   }
-                  className="group flex cursor-grab [contain-intrinsic-size:auto_220px] [content-visibility:auto] flex-col gap-2.5 cu-panel p-3.5 transition-colors duration-150 hover:border-text/25 active:cursor-grabbing"
+                  className="group flex h-[252px] cursor-grab flex-col gap-2.5 overflow-hidden cu-panel p-3.5 transition-colors duration-150 hover:border-text/25 active:cursor-grabbing"
                 >
                   {item.data?.nativeAction === 'loader' && item.data?.loader ? (
                     <LoaderPreview clip={item.data.loader as Partial<StudioLoaderClip>} width={224} height={72} label={`${item.name} preview`} />
@@ -552,6 +595,9 @@ const PackCard = memo(function PackCard({ item, index: i, reduced, isUsed, rende
                         : item.id}
                     </span>
                     <div className="flex shrink-0 items-center gap-1.5">
+                      <Button size="sm" variant="ghost" onClick={() => onFavourite(item)} aria-pressed={isFavourite} aria-label={isFavourite ? `Remove ${item.name} from favourites` : `Add ${item.name} to favourites`}>
+                        <Star size={12} className={isFavourite ? 'fill-current text-accent-text' : undefined} />
+                      </Button>
                       {item.kind === 'saas-template' && (
                         <Button size="sm" variant="ghost" onClick={() => onCustomize(item)} aria-label={`Customize ${item.name}`}>
                           Customize

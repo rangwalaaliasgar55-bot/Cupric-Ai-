@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * check:home-videos — the six Home_X styles and the eight kit clip kinds.
+ * check:home-videos — the six Home_X styles and the nine kit clip kinds.
  *
  * Bundles the REAL planner, kit and Studio renderer (esbuild) and proves:
  *  1. all 6 styles plan offline with placeholder data, in 16:9 and 9:16;
@@ -79,7 +79,7 @@ globalThis.document = {
 }
 
 let uncaught = 0
-process.on('uncaughtException', (e) => { uncaught++; console.error('Uncaught', e) })
+process.on('uncaughtException', (e) => { uncaught++; process.exitCode = 1; console.error('Uncaught', e) })
 
 await build({
   bundle: true,
@@ -198,7 +198,7 @@ for (const k of m.KIT_KINDS) {
     }
   }
 }
-assert.equal(m.KIT_KINDS.length, 8)
+assert.equal(m.KIT_KINDS.length, 9)
 assert.deepEqual(m.pillRuns('connect [with] over [+]').map((r) => r.pill), [false, true, false, true])
 assert.equal(m.tickNumber('$400M', 0.5), '$200M')
 assert.equal(m.tickNumber('¥22,800', 1), '¥22,800')
@@ -300,4 +300,4 @@ for (const file of ['src/lib/studio/homeKit.ts', 'src/lib/studio/homeVideos.ts']
 }
 
 assert.equal(uncaught, 0, 'zero Uncaught')
-console.log(`home-videos check passed — 6 styles × 2 aspects, ${frames} frames, 8 kit kinds, agent ops strict`)
+console.log(`home-videos check passed — 6 styles × 2 aspects, ${frames} frames, 9 kit kinds, agent ops strict`)

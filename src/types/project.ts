@@ -609,11 +609,22 @@ export type StudioClip =
   | StudioKitClip
 
 /**
- * Home_X video kit (lib/studio/homeKit.ts): eight native, parametric pieces
+ * Home_X video kit (lib/studio/homeKit.ts): nine native, parametric pieces
  * drawn by the shared renderer. Every motion is a pure function of the clip's
  * local time and `seed`, so preview and export match frame for frame.
  */
-export type StudioKitKind = 'cursor-zoom' | 'pill-text' | 'stat-card' | 'rating-bars' | 'image-stack' | 'browser-mockup' | 'checkout-card' | 'block-row-3d'
+export type StudioKitKind = 'cursor-zoom' | 'pill-text' | 'stat-card' | 'rating-bars' | 'image-stack' | 'browser-mockup' | 'checkout-card' | 'block-row-3d' | 'kinetic-headline'
+
+/** One word of a kinetic headline: its own colour (accent id), weight and entrance delay. */
+export type StudioKitWord = {
+  text: string
+  /** KIT_ACCENTS id, or 'text' for the surface text colour. */
+  color?: string
+  weight?: 400 | 500 | 600 | 700 | 800
+  /** Seconds after the clip starts that this word enters. */
+  delay?: number
+  style?: 'plain' | 'keyword' | 'chip' | 'glow'
+}
 
 /** A user-supplied photo slot. `null` stays a visible "drop media here" slot. */
 export type StudioKitMedia = { mediaId: string; fileName: string } | null
@@ -654,6 +665,10 @@ export type StudioKitClip = StudioClipCommon & {
   fromX?: number
   fromY?: number
   clickAt?: number
+  /** kinetic-headline: per-word runs. Missing → derived from `title` ([keyword] {chip} *glow*). */
+  words?: StudioKitWord[]
+  /** block-row-3d: render with real Three.js when available (falls back to the 2.5D canvas draw). */
+  real3d?: boolean
 }
 
 export type StudioLoaderVariant = 'scan' | 'twinkle' | 'orbit' | 'pulse'

@@ -47,6 +47,36 @@ export function clampRecordSec(value: unknown, fallback = DEFAULT_RECORD_SEC): n
   return Math.round(Math.min(MAX_RECORD_SEC, Math.max(MIN_RECORD_SEC, n)) * 100) / 100
 }
 
+const RECORD_SEC_KEY = 'cupric.component.recordSec'
+/** Fired on window when the remembered length changes (e.g. from the inspector). */
+export const RECORD_SEC_EVENT = 'cupric:record-sec'
+
+/**
+ * The record length the user last chose, shared by every route into the one
+ * recorder pipeline (panel, inspector, drag-drop, Library Apply, Lab). DOM-guarded:
+ * the Node checks bundle this file with no localStorage.
+ */
+export function preferredRecordSec(): number {
+  try {
+    if (typeof localStorage === 'undefined') return DEFAULT_RECORD_SEC
+    return clampRecordSec(localStorage.getItem(RECORD_SEC_KEY) ?? undefined)
+  } catch {
+    return DEFAULT_RECORD_SEC
+  }
+}
+
+/** Remember the chosen record length for every later route (no-op without a DOM). */
+export function rememberRecordSec(sec: unknown): void {
+  try {
+    if (typeof localStorage === 'undefined') return
+    const value = clampRecordSec(sec)
+    localStorage.setItem(RECORD_SEC_KEY, String(value))
+    if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent(RECORD_SEC_EVENT, { detail: value }))
+  } catch {
+    /* storage unavailable — the choice just isn't remembered */
+  }
+}
+
 const words = (text: string) => text.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length > 2)
 
 /** Components ranked for a free-text query (names first, then keywords and descriptions). */
