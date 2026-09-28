@@ -2,7 +2,7 @@
   "id": "uselayouts",
   "name": "uselayouts — premium micro-interactions",
   "description": "64 MIT-licensed React micro-interactions from uselayouts (complete upstream catalogue, audited by scripts/audit-uselayouts.mjs). 63 apply as native editable storyboards; 1 stay reference-only because their source uses unsafe patterns. Upstream code is never executed.",
-  "version": "0.11.0",
+  "version": "0.13.0",
   "source": "https://github.com/iurvish/uselayouts",
   "license": "MIT (Urvish Mali) — see resources/uselayouts/LICENSE",
   "items": [
