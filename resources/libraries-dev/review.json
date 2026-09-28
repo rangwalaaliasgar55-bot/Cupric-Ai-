@@ -118,7 +118,7 @@
     },
     {
       "file": "src/components/editor/Editor.tsx",
-      "line": 212,
+      "line": 233,
       "target": "Waiting state",
       "existingComponent": "{render.busy ? <button type=\"button\" className=\"inline-flex items-center gap-1.5 rounded-lg bg-rose-500/20 px-3 py-1.5 t",
       "suggestedLibrary": "Thinking orbs",
@@ -300,7 +300,7 @@
     },
     {
       "file": "src/components/editor/Editor.tsx",
-      "line": 222,
+      "line": 243,
       "target": "Chat input",
       "existingComponent": "<textarea id=\"ai-prompt\" rows={5} value={prompt} onChange={(e) => setPrompt(e.target.value)} className=\"w-full rounded-l",
       "suggestedLibrary": "Border beam",

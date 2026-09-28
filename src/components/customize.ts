@@ -20,7 +20,31 @@ export function customizePreview(asset: AssetDef, values: Record<string, unknown
 }
 
 export const LOCAL_DOC_KEY = "motionos:editor-transfer";
+
+/**
+ * JOB 8 — this used to blank the whole app.
+ *
+ * It navigated with a hard location assignment to "/editor?from=local".
+ * Cupric is a single-page
+ * shell whose routing is a `View` union in the store, not URLs — so that line
+ * navigated the browser off the app to a path no server serves, and the user
+ * got a black screen with no way back except a reload.
+ *
+ * The handoff contract is unchanged (the doc still goes through LOCAL_DOC_KEY,
+ * which is what Editor.tsx reads); only the navigation is. We raise an event
+ * the Motion Engine listens for and open its editor tab in place.
+ */
+export const OPEN_EDITOR_EVENT = "cupric:open-motion-editor";
+
 export function sendToEditor(doc: VideoDoc) {
-  localStorage.setItem(LOCAL_DOC_KEY, JSON.stringify(doc));
-  window.location.href = "/editor?from=local";
+  try {
+    localStorage.setItem(LOCAL_DOC_KEY, JSON.stringify(doc));
+  } catch (err) {
+    // A full quota is an expected failure, not a crash: say so and stop.
+    window.dispatchEvent(new CustomEvent(OPEN_EDITOR_EVENT, {
+      detail: { ok: false, reason: `Could not hand this composition to the editor: ${err instanceof Error ? err.message : String(err)}. Export the template.json instead.` },
+    }));
+    return;
+  }
+  window.dispatchEvent(new CustomEvent(OPEN_EDITOR_EVENT, { detail: { ok: true } }));
 }

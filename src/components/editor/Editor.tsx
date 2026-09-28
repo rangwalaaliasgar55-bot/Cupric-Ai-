@@ -65,7 +65,13 @@ export default function Editor() {
   // Load: ?from=local | ?project=id
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
-    if (sp.get("from") === "local") { const raw = localStorage.getItem(LOCAL_DOC_KEY); if (raw) { const r = importDoc(raw); if (r.ok) setDoc(r.doc); else setErrors(r.errors); } }
+    // JOB 8 — the handoff no longer travels as a URL query (that navigation is
+    // what blanked the app), so an in-app open has no "?from=local". Read the
+    // handed-over doc whenever one is waiting; the query still works for links.
+    if (sp.get("from") === "local" || !sp.get("project")) {
+      const raw = localStorage.getItem(LOCAL_DOC_KEY);
+      if (raw) { const r = importDoc(raw); if (r.ok) setDoc(r.doc); else setErrors(r.errors); }
+    }
     const pid = sp.get("project");
     // F-3: guarded — the project API only exists behind the dev server.
     if (pid) void guardedJson<{ project?: { doc: unknown } }>(`/api/projects/${pid}`, { allowOffline: true }).then((res) => { if (!res.ok || !res.data.project) return; const r = importDoc(res.data.project.doc); if (r.ok) { setDoc(r.doc); setProjectId(pid); } });
@@ -154,6 +160,21 @@ export default function Editor() {
     flash("Project saved");
   };
   const openProjects = async () => { const res = await guardedJson<{ projects?: unknown[] }>("/api/projects", { allowOffline: true }); setProjects((res.ok ? res.data.projects ?? [] : []) as NonNullable<typeof projects>); };
+  /**
+   * JOB 8 — opening a saved project used to set window.location.href, which
+   * navigates this single-page shell off itself and leaves a black screen.
+   * It loads the project in place now, and says so when it cannot.
+   */
+  const openProject = async (id: string) => {
+    const res = await guardedJson<{ project?: { doc: unknown } }>(`/api/projects/${id}`, { allowOffline: true });
+    if (!res.ok || !res.data.project) { setProjects(null); flash("That project could not be loaded — the project service is not running."); return; }
+    const r = importDoc(res.data.project.doc);
+    if (!r.ok) { setProjects(null); setErrors(r.errors); return; }
+    replaceDoc(r.doc);
+    setProjectId(id);
+    setProjects(null);
+    flash("Project opened.");
+  };
   const loadPresets = async () => { const res = await guardedJson<{ presets?: unknown[] }>("/api/presets", { allowOffline: true }); setPresets((res.ok ? res.data.presets ?? [] : []) as typeof presets); };
   useEffect(() => { if (tab === "presets") loadPresets(); }, [tab]);
   const importFile = async (f?: File) => { if (!f) return; const r = importDoc(await f.text()); if (r.ok) { replaceDoc(r.doc); flash("Template imported"); } else setErrors(r.errors); };
@@ -289,7 +310,7 @@ export default function Editor() {
         <span className="ml-auto">Space play/pause · ←/→ step · S split · Del delete · ⌘Z undo · drag layers on the canvas</span>
       </div>
       {errors.length > 0 && <div role="alert" className="fixed bottom-4 right-4 z-50 max-w-md rounded-xl border border-rose-500/30 bg-rose-950/90 p-4 text-xs text-rose-100 shadow-xl"><div className="mb-1 flex items-center justify-between font-semibold">Something needs attention<button type="button" aria-label="Dismiss" onClick={() => setErrors([])}><X size={14} /></button></div><ul className="list-disc pl-4">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
-      {projects && <div role="dialog" aria-modal="true" aria-label="Projects" className="fixed inset-0 z-50 grid place-items-center bg-black/60" onClick={() => setProjects(null)}><div className="w-[480px] rounded-2xl border border-white/10 bg-zinc-950 p-4" onClick={(e) => e.stopPropagation()}><div className="mb-3 flex items-center justify-between text-sm font-semibold text-white">Saved projects<button type="button" aria-label="Close" onClick={() => setProjects(null)}><X size={16} /></button></div>{projects.length === 0 && <p className="text-xs text-zinc-500">Nothing saved yet.</p>}<ul className="max-h-80 space-y-1 overflow-y-auto">{projects.map((pr) => <li key={pr.id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 text-xs"><button type="button" className="flex-1 truncate text-left text-zinc-200" onClick={() => { window.location.href = `/editor?project=${pr.id}`; }}>{pr.name}</button><span className="text-zinc-500">{new Date(pr.updatedAt).toLocaleString()}</span><button type="button" aria-label="Delete project" onClick={async () => { await guardedFetch(`/api/projects/${pr.id}`, { allowOffline: true, init: { method: "DELETE" } }); openProjects(); }}><X size={12} /></button></li>)}</ul></div></div>}
+      {projects && <div role="dialog" aria-modal="true" aria-label="Projects" className="fixed inset-0 z-50 grid place-items-center bg-black/60" onClick={() => setProjects(null)}><div className="w-[480px] rounded-2xl border border-white/10 bg-zinc-950 p-4" onClick={(e) => e.stopPropagation()}><div className="mb-3 flex items-center justify-between text-sm font-semibold text-white">Saved projects<button type="button" aria-label="Close" onClick={() => setProjects(null)}><X size={16} /></button></div>{projects.length === 0 && <p className="text-xs text-zinc-500">Nothing saved yet.</p>}<ul className="max-h-80 space-y-1 overflow-y-auto">{projects.map((pr) => <li key={pr.id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 text-xs"><button type="button" className="flex-1 truncate text-left text-zinc-200" onClick={() => { void openProject(pr.id); }}>{pr.name}</button><span className="text-zinc-500">{new Date(pr.updatedAt).toLocaleString()}</span><button type="button" aria-label="Delete project" onClick={async () => { await guardedFetch(`/api/projects/${pr.id}`, { allowOffline: true, init: { method: "DELETE" } }); openProjects(); }}><X size={12} /></button></li>)}</ul></div></div>}
     </div>
   );
 }

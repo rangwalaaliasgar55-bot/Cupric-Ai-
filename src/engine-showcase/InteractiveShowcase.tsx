@@ -30,6 +30,7 @@ import { Inspector } from '@/editor/inspector/Inspector';
 import { COMPLETE_ASSET_CATALOG, CatalogItem } from '@/core/registry/asset-catalog';
 import { motionRegistry } from '@/core/registry/motion-registry';
 import { guardedJson } from '../lib/net';
+import { getIpc } from '../lib/bridge';
 
 export default function MotionEngineStudio() {
   const [activeTab, setActiveTab] = useState<'editor' | 'catalog' | 'motion' | 'ai'>('editor');
@@ -66,6 +67,10 @@ export default function MotionEngineStudio() {
 
   const [aiPrompt, setAiPrompt] = useState('Create a futuristic high-growth SaaS product video with 3D glass physics');
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  // JOB 8 — the two selects used to be uncontrolled and their values ignored.
+  const [aiAspect, setAiAspect] = useState<'16:9' | '9:16' | '1:1'>('16:9');
+  const [aiDuration, setAiDuration] = useState(8);
+  const [aiNote, setAiNote] = useState<{ tone: 'ok' | 'info'; text: string } | null>(null);
   const [renderStatus, setRenderStatus] = useState<string | null>(null);
 
   // Inspector element representation
@@ -121,27 +126,69 @@ export default function MotionEngineStudio() {
     }
   };
 
+  /**
+   * JOB 8 — this button used to do nothing at all.
+   *
+   * It called /api/ai/generate, which only exists behind the dev API server.
+   * With no server the guarded fetch returned ok:false, `composition` stayed
+   * undefined, and the handler fell out of the bottom in silence — a button
+   * that spins for a moment and then leaves you exactly where you were.
+   *
+   * Now it has a chain, the same shape as every other AI path in the app:
+   * the API if it is there, then the desktop router from JOB 3 (which has its
+   * own provider fallback and 20s cap), then a deterministic reading of the
+   * user's own prompt. The last step invents nothing — it only uses words the
+   * user typed — and whichever step answers, it says which one it was.
+   */
   const handleAiGenerate = async () => {
+    const prompt = aiPrompt.trim();
+    if (!prompt) { setAiNote({ tone: 'info', text: 'Describe the video first — one sentence is enough.' }); return; }
     setIsGeneratingAi(true);
+    setAiNote(null);
+    const apply = (c: { primaryColor?: string; secondaryColor?: string; headline?: string; subheadline?: string }, via: string) => {
+      setCompositionState((prev) => ({
+        ...prev,
+        ...(c.primaryColor ? { primaryColor: c.primaryColor } : {}),
+        ...(c.secondaryColor ? { secondaryColor: c.secondaryColor } : {}),
+        ...(c.headline ? { brandName: c.headline } : {}),
+        ...(c.subheadline ? { tagline: c.subheadline } : {}),
+      }));
+      setActiveTab('editor');
+      setAiNote({ tone: 'ok', text: `Scene graph built ${via}. It is open in the editor tab — every value is editable.` });
+    };
     try {
-      // F-3: guarded — no `Failed to fetch` when the API is not running.
+      // 1. The dev API, when it is running.
       const result = await guardedJson<{ success?: boolean; composition?: { theme: { primaryColor: string; secondaryColor: string }; scenes: { headline: string; subheadline: string }[] } }>('/api/ai/generate', {
         allowOffline: true,
-        init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: aiPrompt, duration: 8 }) },
+        init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, duration: aiDuration }) },
       });
       const composition = result.ok && result.data.success ? result.data.composition : undefined;
-      if (composition) {
-        setCompositionState((prev) => ({
-          ...prev,
-          primaryColor: composition.theme.primaryColor,
-          secondaryColor: composition.theme.secondaryColor,
-          brandName: composition.scenes[0].headline,
-          tagline: composition.scenes[0].subheadline,
-        }));
-        setActiveTab('editor');
+      if (composition?.scenes?.length) {
+        apply({ primaryColor: composition.theme.primaryColor, secondaryColor: composition.theme.secondaryColor, headline: composition.scenes[0].headline, subheadline: composition.scenes[0].subheadline }, 'by the scene-graph service');
+        return;
       }
+
+      // 2. The desktop router (JOB 3): provider fallback, 20s cap, never hangs.
+      const ipc = getIpc();
+      if (ipc) {
+        const reply = await ipc.invoke('gemini:ask', {
+          prompt: `Write a ${aiDuration}-second ${aiAspect} motion-graphics opening for: ${prompt}`,
+          rundownContext: { aspect: aiAspect, durationSec: aiDuration },
+        }) as { rundownPatch?: { hook?: string; summary?: string; title?: string }; source?: string } | null;
+        const patch = reply?.rundownPatch;
+        if (patch?.hook || patch?.title) {
+          apply({ headline: patch.title || patch.hook, subheadline: patch.summary || patch.hook }, reply?.source === 'live' ? 'by your AI route' : 'from the offline outline');
+          return;
+        }
+      }
+
+      // 3. The user's own words. Nothing is invented — the headline is the
+      //    first clause they typed, and the rest stays as it was.
+      const clause = prompt.split(/[.,;]/)[0].trim();
+      const headline = clause.length > 48 ? `${clause.slice(0, 45).trimEnd()}…` : clause;
+      apply({ headline }, 'from your prompt, offline — no model was reachable, so only your own words were used');
     } catch (e) {
-      console.error(e);
+      setAiNote({ tone: 'info', text: `The scene graph could not be generated: ${e instanceof Error ? e.message : String(e)}. Your prompt is still here — try again, or build the scene by hand in the editor tab.` });
     } finally {
       setIsGeneratingAi(false);
     }
@@ -610,7 +657,7 @@ export default function MotionEngineStudio() {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="text-slate-400 block mb-1">Target Aspect Ratio</label>
-                  <select className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white">
+                  <select value={aiAspect} onChange={(e) => setAiAspect(e.target.value as '16:9' | '9:16' | '1:1')} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white">
                     <option value="16:9">16:9 (Landscape YouTube/Web)</option>
                     <option value="9:16">9:16 (Shorts / Reels / TikTok)</option>
                     <option value="1:1">1:1 (Square Feed)</option>
@@ -618,7 +665,7 @@ export default function MotionEngineStudio() {
                 </div>
                 <div>
                   <label className="text-slate-400 block mb-1">Target Duration</label>
-                  <select className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white">
+                  <select value={aiDuration} onChange={(e) => setAiDuration(Number(e.target.value))} className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-white">
                     <option value="8">8 Seconds (Hook + Feature)</option>
                     <option value="15">15 Seconds (Story Reel)</option>
                     <option value="30">30 Seconds (Complete Commercial)</option>
@@ -629,7 +676,7 @@ export default function MotionEngineStudio() {
               <button
                 onClick={handleAiGenerate}
                 disabled={isGeneratingAi}
-                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 hover:from-indigo-600 hover:to-pink-600 text-white font-bold text-sm shadow-xl shadow-indigo-500/20 transition-all flex items-center justify-center gap-2 mt-4"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3.5 text-sm font-bold text-accent-ink shadow-lg transition-all hover:brightness-110 disabled:opacity-60"
               >
                 {isGeneratingAi ? (
                   <>
@@ -643,6 +690,12 @@ export default function MotionEngineStudio() {
                   </>
                 )}
               </button>
+              {/* Whatever happened, say so. A silent button is the bug. */}
+              {aiNote && (
+                <p className={`rounded-lg border px-2.5 py-2 text-[11px] ${aiNote.tone === 'ok' ? 'border-accent/40 bg-accent/10 text-text' : 'border-info/40 bg-info/10 text-text'}`} role="status">
+                  {aiNote.text}
+                </p>
+              )}
             </div>
           </div>
         </div>
