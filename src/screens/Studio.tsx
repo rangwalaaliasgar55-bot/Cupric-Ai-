@@ -1133,7 +1133,7 @@ export function Studio() {
 
   /** A UI component at the playhead; the recorder captures its real animation. */
   function addComponentAt(slug: string, opts: { recordSec: number; interact: boolean }) {
-    const added = withComponent(doc, slug, { startSec: time, recordSec: opts.recordSec, durationSec: Math.max(opts.recordSec, 3), interact: opts.interact })
+    const added = withComponent(doc, slug, { startSec: time, recordSec: opts.recordSec, durationSec: opts.recordSec, interact: opts.interact })
     const withMotion = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
     patchStudio(projectId, { trackCount: added.doc.trackCount, clips: added.doc.clips.map((c) => (c.id === withMotion.id ? withMotion : c)) })
     setSelectedId(withMotion.id)

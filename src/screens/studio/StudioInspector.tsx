@@ -1298,7 +1298,10 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
   const busy = meta?.status === 'pending' || meta?.status === 'recording'
   const rerecord = (patch: Partial<NonNullable<StudioOverlayClip['component']>>) => {
     if (!meta) return
-    onPatch({ component: { ...meta, ...patch, status: 'pending', error: undefined } } as Partial<StudioClip>)
+    // A clip still at its old recording length follows the new one; a clip the
+    // user trimmed/extended keeps its length (the loop toggle covers longer).
+    const follows = patch.recordSec !== undefined && Math.abs(clip.durationSec - meta.recordSec) < 0.01
+    onPatch({ ...(follows ? { durationSec: patch.recordSec } : {}), component: { ...meta, ...patch, status: 'pending', error: undefined } } as Partial<StudioClip>)
   }
   /** Swap the recording for native layers you can type into (text, glass). */
   const rebuild = () => {

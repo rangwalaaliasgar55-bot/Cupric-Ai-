@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const tmp = path.join(root, '.component-director-check.mjs')
 await build({ bundle: true, outfile: tmp, format: 'esm', platform: 'node', logLevel: 'error', jsx: 'automatic', loader: { '.tsx': 'tsx', '.css': 'empty', '.svg': 'dataurl', '.png': 'dataurl', '.jpg': 'dataurl' },
-  stdin: { contents: "export * from './src/lib/studio/componentDirector'; export { applyStudioEditPlan, validateStudioEditPlan } from './src/lib/studio/editOps'; export { suggestEdits } from './src/lib/studio/suggestions'; export { findComponent, clampRecordSec, preferredRecordSec, rememberRecordSec, DEFAULT_RECORD_SEC, HEAVY_RECORD_SEC } from './src/lib/studio/components'; export { resampleShots } from './src/lib/studio/componentRecorder'", resolveDir: root, loader: 'ts' } })
+  stdin: { contents: "export * from './src/lib/studio/componentDirector'; export { applyStudioEditPlan, validateStudioEditPlan } from './src/lib/studio/editOps'; export { suggestEdits } from './src/lib/studio/suggestions'; export { findComponent, clampRecordSec, preferredRecordSec, rememberRecordSec, DEFAULT_RECORD_SEC, HEAVY_RECORD_SEC } from './src/lib/studio/components'; export { resampleShots, fitShotTimes } from './src/lib/studio/componentRecorder'", resolveDir: root, loader: 'ts' } })
 const m = await import(`${pathToFileURL(tmp).href}?t=${Date.now()}`)
 await rm(tmp, { force: true })
 let n = 0
@@ -86,6 +86,18 @@ for (const [dur, fps] of [[0.5, 12], [1, 12], [2, 6], [0.5, 24]]) {
   const shots = [{ t: 0, url: 'rest' }, { t: dur * 0.35, url: 'pressed' }, { t: dur * 0.7, url: 'settled' }]
   const frames = m.resampleShots(shots, dur, fps)
   ok(frames.length === Math.round(dur * fps) && new Set(frames).size >= 2, `${dur}s @ ${fps}fps keeps ≥2 distinct frames`)
+}
+// Slow capture (each shot slower than the whole recording): shots overrun the
+// end, get compressed into the chosen length, and the result still moves.
+{
+  const slow = [{ t: 0, url: 'rest' }, { t: 1.4, url: 'pressed' }, { t: 2.9, url: 'settled' }]
+  m.fitShotTimes(slow, 1)
+  ok(slow.every((s) => s.t <= 1) && slow[2].t > 0.99, 'overrun shot times are fitted into the chosen duration')
+  const frames = m.resampleShots(slow, 1, 12)
+  ok(frames.length === 12 && frames[0] === 'rest' && frames[11] === 'settled' && frames.includes('pressed'), '1 s on a slow machine: rest → pressed → settled, not a still')
+  const fast = [{ t: 0, url: 'a' }, { t: 0.5, url: 'b' }]
+  m.fitShotTimes(fast, 1)
+  ok(fast[1].t === 0.5, 'shots within the duration keep their real times')
 }
 ok(m.HEAVY_RECORD_SEC === 30, 'heavy-recording warning threshold unchanged')
 console.log(`component director check passed — ${n} assertions`)
