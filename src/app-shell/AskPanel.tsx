@@ -1,3 +1,4 @@
+import { FreeModels } from './FreeModels'
 import { EASE_SPRING } from '../lib/motion'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -89,7 +90,7 @@ export function AskPanel() {
   const [msgs, setMsgs] = useState<ChatMsg[]>([
     {
       role: 'ai',
-      text: "Hey — I'm Cupric AI. Live chat uses Gemini or an OpenCode/OpenAI-compatible model configured in settings. Video creation does not need chat; use Brief → Create video file.",
+      text: "Hey — I'm Cupric AI. Ask me anything — I use a local model if one is running, otherwise the built-in free brain. No setup needed; your own keys are optional.",
     },
   ])
   const [input, setInput] = useState('')
@@ -475,7 +476,7 @@ export function AskPanel() {
               <div className="flex items-center gap-2 text-sm font-semibold">
                 Ask Cupric AI
                 <span className={cx('h-2 w-2 rounded-full', aiMode === 'auto' ? (autoPick?.kind === 'template' ? 'bg-muted' : 'bg-accent') : providerStatus[aiProvider].state === 'ok' ? 'bg-accent' : providerStatus[aiProvider].state === 'error' ? 'bg-danger' : providerStatus[aiProvider].state === 'testing' ? 'bg-info' : 'bg-muted')} title={aiMode === 'auto' ? autoPick?.reason || 'Auto-discovering available providers' : providerStatus[aiProvider].message} />
-                <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{aiMode === 'template' ? 'OFFLINE' : hasKey ? 'LIVE' : 'SETUP'}</span>
+                <span className="rounded-full border border-line px-1.5 py-0.5 text-xs text-muted">{aiMode === 'template' || autoPick?.kind === 'template' ? 'OFFLINE' : hasKey ? 'LIVE' : 'FREE'}</span>
               </div>
               <div className="text-xs text-muted">{aiMode === 'auto' ? `Auto · ${autoPick?.label || 'discovering…'}` : aiMode === 'template' ? 'Offline deterministic template' : aiProvider === 'opencode' ? `${aiMode === 'zen' ? 'Zen Free' : 'OpenCode'} · ${openCodeModel}` : `Gemini · ${geminiModel}`}</div>
             </div>
@@ -522,17 +523,18 @@ export function AskPanel() {
                 {aiMode === 'auto' && (
                   <div className="rounded-lg border border-accent/25 bg-accent/5 p-2 text-xs">
                     <div className="flex items-center justify-between gap-2"><span className="font-semibold text-text">Auto-using: {autoPick?.label || 'discovering…'}</span><button type="button" onClick={() => void refreshDiscovery()} className="text-accent-text underline">Change / refresh</button></div>
-                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric checks OpenCode Desktop, Zen, then local models.'}</div>
+                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric uses a local model if one is running, else the built-in free brain, then any keys you added.'}</div>
                   </div>
                 )}
+                <FreeModels />
                 {setupRequired && aiMode === 'auto' && (
-                  <div className="rounded-lg border border-danger/30 bg-danger/10 p-2 text-xs text-text">
-                    <div className="font-semibold">No live model found yet</div>
-                    <div className="mt-1 text-muted">Your timeline still builds offline. Choose a zero-key setup:</div>
+                  <div className="rounded-lg border border-line bg-panel p-2 text-xs text-text">
+                    <div className="font-semibold">offline brain</div>
+                    <div className="mt-1 text-muted">Everything still works offline; live AI comes back on its own. Optional overrides:</div>
                     <div className="mt-2 grid grid-cols-3 gap-1.5">
-                      <button type="button" onClick={() => void openSetup('zen')} className="rounded border border-line bg-panel px-2 py-1.5 text-[10px]">Paste Zen key<br /><span className="text-muted">opencode.ai/auth</span></button>
-                      <button type="button" onClick={() => void openSetup('ollama')} className="rounded border border-line bg-panel px-2 py-1.5 text-[10px]">Install Ollama</button>
-                      <button type="button" onClick={() => void openSetup('template')} className="rounded border border-line bg-panel px-2 py-1.5 text-[10px]">Use offline template</button>
+                      <button type="button" onClick={() => void openSetup('zen')} className="rounded border border-line bg-panel px-2 py-1.5 text-xs">Zen key</button>
+                      <button type="button" onClick={() => void openSetup('ollama')} className="rounded border border-line bg-panel px-2 py-1.5 text-xs">Install Ollama</button>
+                      <button type="button" onClick={() => void openSetup('template')} className="rounded border border-line bg-panel px-2 py-1.5 text-xs">Stay offline</button>
                     </div>
                   </div>
                 )}

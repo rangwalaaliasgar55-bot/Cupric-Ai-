@@ -1,3 +1,5 @@
+import { agentSlug, animationIntent, describeRejections, forbiddenRequest } from '../lib/studio/agentCode'
+import { writeAgentAnimation } from '../lib/studio/agentWriter'
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { ThinkingStates } from '../components/loaders/ThinkingStates'
 import { MatrixLoader } from '../components/loaders/MatrixLoader'
@@ -607,6 +609,21 @@ export function Studio() {
       setAgentPhase(phases[phaseIndex])
     }, 3500)
     try {
+      // JOB 4: explicit forbidden techniques are refused up front, quoting the rule.
+      const forbidden = forbiddenRequest(instruction)
+      if (forbidden) {
+        pushToast('info', describeRejections([forbidden]))
+        return
+      }
+      const intent = animationIntent(instruction)
+      if (intent) {
+        setAgentPhase('Writing and validating a new animation')
+        const written = await writeAgentAnimation(instruction, intent.durationSec)
+        if (!written.ok) { pushToast('info', written.message); return }
+        const draft = { summary: `New ${written.spec.name} (${written.spec.durationSec}s), written by the agent and validated${written.rounds ? ` after ${written.rounds} repair${written.rounds === 1 ? '' : 's'}` : ''}.`, ops: [{ type: 'addAnimation', ...written.spec, startSec: Math.round(time * 100) / 100 }], source: 'live' as const }
+        setAgentPlan(validateStudioEditPlan(draft, doc))
+        return
+      }
       const ipc = getIpc()
       let raw: unknown
       if (ipc) {
@@ -697,6 +714,10 @@ export function Studio() {
       const currentPlan = validateStudioEditPlan(agentPlan, doc)
       const next = applyStudioEditPlan(doc, currentPlan.ops)
       patchStudio(projectId, next)
+      // Accepted agent-written animations are also saved as files (best effort, silent).
+      for (const op of currentPlan.ops) {
+        if (op.type === 'addAnimation') void getIpc()?.invoke('agent:saveGenerated', { slug: agentSlug(op.name), name: op.name, code: op.code }).catch(() => undefined)
+      }
       polishSeen.current.add(docSignature(next))
       setPolishOffer(null)
       setTime(0)

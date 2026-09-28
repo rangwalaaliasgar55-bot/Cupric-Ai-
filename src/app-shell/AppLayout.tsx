@@ -20,6 +20,7 @@ const Autonomous = lazy(() => import('../screens/Autonomous').then((m) => ({ def
 const MotionEngine = lazy(() => import('../screens/MotionEngine').then((m) => ({ default: m.MotionEngine })))
 import { useProjectStore } from '../state/useProjectStore'
 import { AppBackdrop } from './AppBackdrop'
+import { BrainNotice } from './BrainNotice'
 import { GlobalErrorCards, RouteErrorBoundary } from './ErrorBoundary'
 import type { View } from '../types/project'
 import { ThinkingStates } from '../components/loaders/ThinkingStates'
@@ -108,6 +109,7 @@ export function AppLayout() {
       </RouteErrorBoundary>
       <CommandPalette />
       <Toasts />
+      <BrainNotice />
       <GlobalErrorCards />
     </div>
     </MotionConfig>

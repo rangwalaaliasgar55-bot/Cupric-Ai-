@@ -6,6 +6,10 @@ const invokeChannels = new Set([
   'settings:hasKey',
   'settings:autoLaunch',
   'ai:autoDiscover',
+  'ai:freeModels',
+  'agent:generateAnimation',
+  'agent:saveGenerated',
+  'ai:ackNewModels',
   'ai:openZenAuth',
   'ai:installOllama',
   'ai:useTemplate',
@@ -48,7 +52,7 @@ const invokeChannels = new Set([
   'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput', 'automation:openArena',
 ])
 
-const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'studio:backgroundExport', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress', 'ai:discovery', 'ai:rundownPolished'])
+const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'studio:backgroundExport', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress', 'ai:discovery', 'ai:rundownPolished', 'ai:notice', 'ai:models'])
 
 function assertChannel(channel, allowed) {
   if (!allowed.has(channel)) throw new Error(`IPC channel is not exposed: ${channel}`)

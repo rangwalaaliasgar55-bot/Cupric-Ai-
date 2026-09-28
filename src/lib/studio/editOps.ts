@@ -1,3 +1,4 @@
+import { agentSlug, readAgentAnimation } from './agentCode'
 import type { StudioKitKind, StudioOverlayClip, StudioShapeAnim, StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition, StudioAspect } from '../../types/project'
 import { VIDEO_FONT_FAMILIES } from './videoFonts'
 import { isUserFont } from './userFonts'
@@ -92,6 +93,8 @@ export type StudioEditOp =
   | { type: 'addCaptions'; transcript: string; startSec: number; durationSec: number }
   /** Home_X kit piece (homeKit.ts). Text fields only — numbers must come from the user. */
   | { type: 'addKit'; kit: StudioKitKind; variant?: string; startSec: number; durationSec: number; x?: number; y?: number; w?: number; title?: string; subtitle?: string; items?: string[]; accent?: string; track?: number }
+  /** JOB 4 — a NEW animation the agent wrote (validated by agentCode.ts), recorded like any component. */
+  | { type: 'addAnimation'; name: string; kind: string; durationSec: number; code: string; props: Record<string, string | number | boolean>; ease: string; startSec: number; x?: number; y?: number }
   /** One of the six Home_X styles, appended after the current edit. */
   | { type: 'buildHomeVideo'; style: HomeStyleId; fill?: HomeFill }
 
@@ -314,6 +317,14 @@ export function validateStudioEditPlan(value: unknown, doc: StudioDoc): StudioEd
       if (!Object.keys(props).length) throw new Error(`Operation ${index + 1} sets no props`)
       return { type, clipId, props }
     }
+    if (type === 'addAnimation') {
+      if (!finite(op.startSec) || (op.startSec as number) < 0) throw new Error(`Operation ${index + 1} has invalid timing`)
+      const spec = readAgentAnimation(op)
+      const unit = (v: unknown) => (finite(v) ? clamp(v, 0.05, 0.95) : undefined)
+      const x = unit(op.x)
+      const y = unit(op.y)
+      return { type, ...spec, startSec: op.startSec as number, ...(x !== undefined ? { x } : {}), ...(y !== undefined ? { y } : {}) }
+    }
     if (type === 'addComponent') {
       const slug = String(op.slug ?? op.component ?? '').trim()
       if (!findComponent(slug)) throw new Error(`Unknown component “${slug}”`)
@@ -483,6 +494,7 @@ export function describeStudioEditOp(op: StudioEditOp, doc: StudioDoc): string {
   if (op.type === 'addTestimonialGrid') return `Add ${op.count} empty testimonial card${op.count > 1 ? 's' : ''} at ${op.startSec.toFixed(2)}s (you fill in real quotes)`
   if (op.type === 'addCaptions') return `Add captions from the transcript at ${op.startSec.toFixed(2)}s`
   if (op.type === 'setComponentProps') return `Update ${name}: ${Object.entries(op.props).map(([k, v]) => `${k} = ${typeof v === 'string' ? `“${v.slice(0, 40)}”` : v}`).join(', ')} (re-records)`
+  if (op.type === 'addAnimation') return `Write a new “${op.name}” ${op.kind} animation (${op.durationSec}s, agent-generated, validated) at ${op.startSec.toFixed(2)}s`
   if (op.type === 'addComponent') return `Add the “${findComponent(op.slug)?.name ?? op.slug}” component at ${op.startSec.toFixed(2)}s for ${op.durationSec.toFixed(1)}s (its real animation is recorded)${op.cursor ? ' · with a clicking cursor if it is interactive' : ''}${op.motion ? ` · ${describeMotionSpec(op.motion)}` : ''}`
   if (op.type === 'reframe' || op.type === 'reframeClip') return `Reframe ${name} for ${op.aspect}`
   if (op.type === 'nestScene') return `Nest scene ${op.sceneId} at ${op.at.toFixed(2)}s`
@@ -573,6 +585,16 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       if (clip.id !== op.clipId || !ov.component) return clip
       return { ...ov, component: { ...ov.component, props: { ...(ov.component.props ?? {}), ...op.props }, status: 'pending' } } as StudioClip
     }) }
+    else if (op.type === 'addAnimation') {
+      const slug = agentSlug(op.name)
+      const added = withComponent(next, slug, { startSec: op.startSec, durationSec: op.durationSec, recordSec: op.durationSec, interact: false, x: op.x, y: op.y })
+      next = {
+        ...added.doc,
+        clips: added.doc.clips.map((clip) => clip.id === added.clip.id && clip.kind === 'overlay' && clip.component
+          ? { ...clip, name: op.name, source: `Agent-generated · ${op.name}`, component: { ...clip.component, props: op.props, generated: { source: 'agent-generated' as const, name: op.name, kind: op.kind, code: op.code, ease: op.ease } } }
+          : clip),
+      }
+    }
     else if (op.type === 'addComponent') {
       const added = withComponent(next, op.slug, {
         startSec: op.startSec,

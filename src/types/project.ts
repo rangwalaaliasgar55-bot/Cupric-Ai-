@@ -499,6 +499,8 @@ export type StudioComponentMeta = {
   /** Props for props-driven components (framecn text, colours, sizes). Changing them re-records. */
   props?: Record<string, string | number | boolean>
   error?: string
+  /** JOB 4 — an animation the agent wrote; validated code travels with the clip (undo, re-record). */
+  generated?: { source: 'agent-generated'; name: string; kind: string; code: string; ease: string }
 }
 
 export type StudioOverlayClip = StudioClipCommon & {

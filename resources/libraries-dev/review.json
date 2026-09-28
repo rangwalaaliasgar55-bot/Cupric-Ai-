@@ -105,7 +105,7 @@
   "findings": [
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 762,
+      "line": 764,
       "target": "Existing placement",
       "existingComponent": "<ThinkingOrb state=\"composing\" size={20} theme={theme === 'light' ? 'light' : 'dark'} paused={reducedMotion} aria-label=",
       "suggestedLibrary": "Thinking orbs",
@@ -222,7 +222,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1350,
+      "line": 1371,
       "target": "Waiting state",
       "existingComponent": "{importing ? <Loader2 size={13} className=\"animate-spin\" /> : <Plus size={13} />} Import",
       "suggestedLibrary": "Thinking orbs",
@@ -248,7 +248,7 @@
     },
     {
       "file": "src/screens/studio/ComponentRecorderHost.tsx",
-      "line": 150,
+      "line": 154,
       "target": "Waiting state",
       "existingComponent": "<Loader2 size={14} className=\"animate-spin text-accent-text\" />",
       "suggestedLibrary": "Thinking orbs",
@@ -274,7 +274,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 577,
+      "line": 579,
       "target": "Search input (loads after submit)",
       "existingComponent": "placeholder=\"Search free models…\"",
       "suggestedLibrary": "Border beam",
@@ -287,7 +287,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 843,
+      "line": 845,
       "target": "Chat input",
       "existingComponent": "placeholder=\"Ask anything, or paste an image…\"",
       "suggestedLibrary": "Border beam",
@@ -469,7 +469,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 26,
+      "line": 28,
       "target": "Mic button",
       "existingComponent": "MicOff,",
       "suggestedLibrary": "Voice",
@@ -573,7 +573,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1618,
+      "line": 1639,
       "target": "Image placeholder",
       "existingComponent": "<span className={cx('h-2 w-2 shrink-0 rounded-full', listening ? 'animate-pulse bg-accent' : 'bg-muted')} />",
       "suggestedLibrary": "Image",
@@ -638,7 +638,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1387,
+      "line": 1408,
       "target": "Plus menu / segmented control",
       "existingComponent": "<Button size=\"sm\" variant=\"outline\" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} title={(exporting) ? 'W",
       "suggestedLibrary": "Gooey",

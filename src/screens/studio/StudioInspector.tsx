@@ -1294,7 +1294,9 @@ function GlassFields({ clip, onPatch }: { clip: StudioGlassClip; onPatch: (p: Pa
 
 function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlayClip; onPatch: (p: Partial<StudioClip>) => void; doc: StudioDoc; onPatchDoc: (patch: Partial<StudioDoc>) => void }) {
   const meta = clip.component
-  const entry = findComponent(meta?.slug)
+  const generated = meta?.generated?.source === 'agent-generated' ? meta.generated : null
+  // Agent-written animations get the same re-record controls (badged below).
+  const entry = findComponent(meta?.slug) ?? (generated && meta ? { slug: meta.slug, name: generated.name, description: `Agent-generated ${generated.kind}`, category: 'motion' as const } : null)
   const busy = meta?.status === 'pending' || meta?.status === 'recording'
   const rerecord = (patch: Partial<NonNullable<StudioOverlayClip['component']>>) => {
     if (!meta) return
@@ -1305,7 +1307,7 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
   }
   /** Swap the recording for native layers you can type into (text, glass). */
   const rebuild = () => {
-    if (!entry) return
+    if (!entry || generated) return
     const without = { ...doc, clips: doc.clips.filter((c) => c.id !== clip.id) }
     const result = applyResource(without, { kind: 'block', id: entry.slug, name: entry.name, description: entry.description, data: { category: entry.category } }, { atSec: clip.startSec })
     if (result.ok && result.type === 'doc') onPatchDoc({ clips: result.doc.clips, trackCount: result.doc.trackCount })
@@ -1316,7 +1318,7 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
         <div className="space-y-3 rounded-lg border border-line bg-panel-alt p-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-text">UI component · {entry.name}</p>
+              <p className="text-xs font-semibold text-text">{generated ? 'Agent-generated' : 'UI component'} · {entry.name}</p>
               <p className="mt-0.5 text-[11px] text-muted">
                 {busy
                   ? 'Recording its real animation…'

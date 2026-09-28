@@ -167,7 +167,7 @@ export function Brief() {
           <p className="text-sm text-muted">
             Describe the video you want. Cupric AI drafts an instant offline rundown, then polishes it in the background when a model is available.
           </p>
-          {aiStatus.setupRequired && <p className="mt-2 text-xs text-muted">No live provider found — offline template is ready. Open AI settings for Zen, Ollama, or the template setup card.</p>}
+          {aiStatus.setupRequired && <p className="mt-2 text-xs text-muted">offline brain — the deterministic planner is active; live AI resumes automatically when you are online.</p>}
         </div>
 
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">

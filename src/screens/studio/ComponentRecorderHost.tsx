@@ -14,6 +14,7 @@ import { Loader2, X } from 'lucide-react'
 import type { StudioClip, StudioDoc } from '../../types/project'
 import { DemoFrame } from '../../lab/DemoFrame'
 import { availableSlugs } from '../../lab/demos'
+import { GeneratedFrame } from './GeneratedFrame'
 import { Button } from '../../components/Button'
 import { humanError } from '../../lib/humanError'
 import { findComponent, fitComponentScale, isPendingComponent } from '../../lib/studio/components'
@@ -89,8 +90,11 @@ function RecorderCard({
   // The shared clock for clock-driven components: each shot renders exactly its own moment.
   const [clockSec, setClockSec] = useState(0)
 
+  const generated = meta.generated?.source === 'agent-generated' ? meta.generated : null
+  const label = entry?.name ?? generated?.name ?? meta.slug
+
   useEffect(() => {
-    if (!entry || !availableSlugs.has(meta.slug)) {
+    if (!generated && (!entry || !availableSlugs.has(meta.slug))) {
       onError(`The “${meta.slug}” component is not part of this build, so it cannot be recorded.`)
       return
     }
@@ -127,12 +131,12 @@ function RecorderCard({
           frameFps: result.animated ? result.frameFps : undefined,
           // Keep a size the user chose; size fresh placements to read well.
           scale: clip.scale !== 1 ? clip.scale : fitComponentScale(result.width, result.height, density, aspect),
-          source: `UI component · ${entry.name} · ${result.animated ? `${result.frames.length} frames recorded live` : 'still (it has no motion on its own)'}`,
+          source: `${generated ? 'Agent-generated' : 'UI component'} · ${label} · ${result.animated ? `${result.frames.length} frames recorded live` : 'still (it has no motion on its own)'}`,
           component: { ...meta, status: 'ready', error: undefined },
         })
       } catch (error) {
         if (!alive || controller.signal.aborted) return
-        onError(humanError(error, `Could not record “${entry.name}”`))
+        onError(humanError(error, `Could not record “${label}”`))
       }
     })()
     return () => {
@@ -161,7 +165,14 @@ function RecorderCard({
         </div>
         {/* Natural size, on screen: exactly what lands in the video. */}
         <div ref={stageRef} className="lab-canvas relative flex h-[min(400px,62vh)] w-full items-center justify-center overflow-hidden p-6">
-          <DemoFrame slug={meta.slug} play forceMotion props={meta.props} className="place-items-center" atSeconds={clockSec} />
+          {generated ? (
+            // Same recorder pipeline; the agent's code is a pure function of t = clock / length.
+            <div className="lab-canvas grid place-items-center">
+              <GeneratedFrame code={generated.code} props={meta.props} t={Math.min(1, clockSec / Math.max(0.5, meta.recordSec))} />
+            </div>
+          ) : (
+            <DemoFrame slug={meta.slug} play forceMotion props={meta.props} className="place-items-center" atSeconds={clockSec} />
+          )}
         </div>
         {/* Inset footer, so the bar never gets cut off by the card's rounded corner. */}
         <div className="flex items-center gap-3 border-t border-line px-4 py-2.5">
