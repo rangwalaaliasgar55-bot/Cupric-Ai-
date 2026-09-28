@@ -13,8 +13,12 @@
 //   node scripts/build-opus-index.mjs → resources/opus55/data/index.json
 import { readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
+// fileURLToPath, not new URL(import.meta.url).pathname: on Windows the URL
+// path is '/C:/a/b/scripts/x.mjs', which resolves to the bogus root '\C:\a\b'
+// and every read below throws ENOENT. The release build runs on windows-latest.
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const cases = JSON.parse(readFileSync(path.join(root, 'resources/opus55/data/cases.json'), 'utf8'))
 const skillsDef = JSON.parse(readFileSync(path.join(root, 'resources/opus55/skills.json'), 'utf8'))
 
