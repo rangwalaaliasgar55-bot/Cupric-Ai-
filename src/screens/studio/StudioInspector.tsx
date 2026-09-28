@@ -1067,8 +1067,10 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
 
   async function relink(file: File | undefined) {
     if (!file) return
-    const handle = await registerFile(file, clip.mediaId)
+    const handle = await registerFile(file, clip.mediaId || undefined)
     onPatch({
+      // An empty slot gets its first media id; a video fills an image slot as video.
+      ...(!clip.mediaId ? { mediaId: handle.id, ...(handle.kind === 'video' || handle.kind === 'image' ? { kind: handle.kind } : {}) } : {}),
       fileName: handle.fileName,
       localPath: handle.localPath,
       sourceDurationSec: handle.kind === 'video' ? handle.durationSec : 0,
@@ -1078,11 +1080,20 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
 
   return (
     <div className="space-y-4 border-t border-line pt-4">
-      <p className="truncate font-mono text-xs text-muted" title={clip.localPath ?? clip.fileName}>
-        {clip.fileName}
-      </p>
+      {clip.mediaId ? (
+        <p className="truncate font-mono text-xs text-muted" title={clip.localPath ?? clip.fileName}>
+          {clip.fileName}
+        </p>
+      ) : (
+        <div className="space-y-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5">
+          <p className="text-xs leading-relaxed text-muted">Empty media slot — {clip.fileName.toLowerCase()}. Everything else on this layer (frame, fold, position, scale, motion) is already editable.</p>
+          <Button size="sm" variant="outline" onClick={() => relinkRef.current?.click()}>
+            <Link2 size={13} /> Add media
+          </Button>
+        </div>
+      )}
 
-      {!linked && (
+      {!linked && !!clip.mediaId && (
         <div className="space-y-2 rounded-lg border border-danger/40 bg-danger/5 p-2.5">
           <p className="text-xs leading-relaxed text-muted">
             This clip lost its file handle — browsers cannot keep one across reloads. Pick{' '}
@@ -1091,15 +1102,9 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
           <Button size="sm" variant="outline" onClick={() => relinkRef.current?.click()}>
             <Link2 size={13} /> Relink file
           </Button>
-          <input
-            ref={relinkRef}
-            type="file"
-            accept="video/*,image/*,.heic,.heif"
-            className="hidden"
-            onChange={(e) => void relink(e.target.files?.[0])}
-          />
         </div>
       )}
+      <input ref={relinkRef} type="file" accept="video/*,image/*,.heic,.heif" className="hidden" onChange={(e) => void relink(e.target.files?.[0])} />
 
       {clip.kind === 'video' && (
         <>

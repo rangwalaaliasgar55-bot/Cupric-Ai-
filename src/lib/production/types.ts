@@ -82,6 +82,11 @@ export type PlanShot = {
   transitionIn: string
   motion: string
   confidence: Confidence
+  /**
+   * Type-led shot (kinetic brand film): built from native typography over a
+   * backdrop, so it needs no footage. Absent on ordinary footage shots.
+   */
+  typeShot?: { lines: string[]; label: string; layout: 'center' | 'stack' | 'cloud' | 'split' | 'logo' | 'end'; words?: string[] }
 }
 
 export type ProductionPlan = {

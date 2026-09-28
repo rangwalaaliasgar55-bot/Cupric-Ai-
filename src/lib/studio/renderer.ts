@@ -1067,7 +1067,7 @@ function drawClipContent(
       ctx.font = `600 ${Math.round(height * 0.028)}px 'Inter Variable', Inter, system-ui, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText(`Relink “${clip.fileName}”`, targetW / 2, targetH / 2)
+      ctx.fillText(clip.mediaId ? `Relink “${clip.fileName}”` : 'Add your media here', targetW / 2, targetH / 2)
     }
     ctx.restore()
   } else if (clip.kind === 'text') {
@@ -1354,7 +1354,30 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 /** Phone screen painter: cover-fit, or a top→bottom scroll for tall screenshots. */
 function phoneMedia(ctx: CanvasRenderingContext2D, source: CanvasImageSource | null): DrawMedia {
   return (x, y, w, h, scroll) => {
-    if (!source) return
+    if (!source) {
+      // Empty screen slot: a clear, deterministic "your media goes here" panel
+      // instead of a black hole, identical in preview and export.
+      const g = ctx.createLinearGradient(x, y, x + w, y + h)
+      g.addColorStop(0, '#1A1D24'); g.addColorStop(1, '#0E1014')
+      ctx.save()
+      ctx.fillStyle = g
+      ctx.fillRect(x, y, w, h)
+      ctx.strokeStyle = 'rgba(200,245,66,0.55)'
+      ctx.setLineDash([Math.max(4, w * 0.03), Math.max(3, w * 0.02)])
+      ctx.lineWidth = Math.max(1, w * 0.008)
+      ctx.strokeRect(x + w * 0.08, y + h * 0.08, w * 0.84, h * 0.84)
+      ctx.setLineDash([])
+      ctx.fillStyle = 'rgba(244,241,234,0.78)'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = `600 ${Math.max(9, Math.round(w * 0.075))}px 'Inter Variable', Inter, system-ui, sans-serif`
+      ctx.fillText('Add your media', x + w / 2, y + h / 2 - w * 0.05)
+      ctx.fillStyle = 'rgba(244,241,234,0.45)'
+      ctx.font = `500 ${Math.max(8, Math.round(w * 0.05))}px 'Inter Variable', Inter, system-ui, sans-serif`
+      ctx.fillText('screen · product · campaign', x + w / 2, y + h / 2 + w * 0.06)
+      ctx.restore()
+      return
+    }
     const [sw, sh] = sourceSize(source)
     if (!sw || !sh) return
     if (scroll !== null && sh / sw > h / w) {

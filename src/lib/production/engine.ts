@@ -14,6 +14,7 @@
  *  - Missing footage becomes a named placeholder clip that the review flags.
  *  - Cases are cited by id/author/URL and adapted structurally, never copied.
  */
+import { BRAND_FILM_SOURCE, brandFilmShots, cloudLayout, isBrandFilmBrief } from './brandFilm'
 import type { StudioClip, StudioDoc, StudioMediaClip, StudioTextClip, StudioTransition } from '../../types/project'
 import type {
   CaseCitation, Confidence, PlanDecision, PlanShot, ProductionAspect, ProductionBrief, ProductionIntake, ProductionPlan,
@@ -352,8 +353,11 @@ export function buildPlan(index: OpusIndex, brief: ProductionBrief, found: Produ
       t += len
     }
   })
+  const typeLed = isBrandFilmBrief(brief)
+  if (typeLed) shots.splice(0, shots.length, ...brandFilmShots(brief))
   const shotCount = shots.length
   const decisions: PlanDecision[] = [
+    ...(typeLed ? [{ area: 'Format', decision: 'Kinetic brand film: 14 type-led beats over a particle backdrop, mono HUD labels, lime accent', why: `Your brief asks for a brand film. The structure and pacing are learned from the reference films in ${BRAND_FILM_SOURCE.pr}. The copy is yours, or a visible placeholder.`, confidence: 'high' as Confidence, cites: [] }] : []),
     { area: 'Structure', decision: `${skill.name}: ${skill.beats.map((b) => b.name).join(' → ')}`, why: `${skill.when} Picked because: ${found.skills.find((s) => s.id === skill.id)?.why || 'best available match'}.`, confidence: found.skills[0]?.score >= 5 ? 'high' : 'medium', cites },
     { area: 'Pacing', decision: `${shotCount} shots, about ${avgShot.toFixed(1)}s each (range ${lo}–${hi}s)`, why: `${brief.tone} tone within the skill's shot-length range.`, confidence: 'medium', cites },
     { area: 'Hook', decision: shots[0]?.onScreenText ?? '', why: 'First frame states the goal in ≤ 7 words, taken from your own words.', confidence: brief.goal ? 'medium' : 'low', cites: [] },
@@ -363,16 +367,16 @@ export function buildPlan(index: OpusIndex, brief: ProductionBrief, found: Produ
     { area: 'Audio', decision: skill.audio, why: brief.avoid.some((a) => /music|lyric/i.test(a)) ? 'Respecting your "avoid" list for music.' : 'Skill recipe.', confidence: 'medium', cites: [] },
   ]
   const unresolved = [
-    ...shots.filter((s) => !s.mediaName).map((s) => `${s.id} (${s.beat}): no footage assigned`),
+    ...shots.filter((s) => !s.mediaName && !s.typeShot).map((s) => `${s.id} (${s.beat}): no footage assigned`),
     ...shots.filter((s) => s.onScreenText.startsWith('[')).map((s) => `${s.id} (${s.beat}): copy needed: ${s.onScreenText}`),
-    ...skill.requiredInputs.filter((i) => !brief.assets.toLowerCase().includes(i.split(' ')[0].toLowerCase())).map((i) => `Skill input not confirmed: ${i}`),
+    ...(typeLed ? [] : skill.requiredInputs).filter((i) => !brief.assets.toLowerCase().includes(i.split(' ')[0].toLowerCase())).map((i) => `Skill input not confirmed: ${i}`),
   ]
   const needsApproval = [
     ...decisions.filter((d) => d.confidence === 'low').map((d) => `${d.area}: low confidence`),
     ...(shots.some((s) => s.confidence === 'low') ? [`${shots.filter((s) => s.confidence === 'low').length} low-confidence shot(s) will be placeholders`] : []),
   ]
   return {
-    skillId: skill.id,
+    skillId: typeLed ? 'kinetic-brand-film' : skill.id,
     shots,
     decisions,
     audio: { music: brief.avoid.some((a) => /music/i.test(a)) ? 'None (avoided)' : 'Add a licensed track from your media; none is invented', voice: brief.narration === 'voiceover' || brief.narration === 'both' ? `Record or import a ${brief.language} voiceover; captions are generated from its transcript` : 'None', ducking: brief.narration === 'voiceover' || brief.narration === 'both', notes: [skill.audio] },
@@ -415,7 +419,50 @@ export function planToDoc(doc: StudioDoc, plan: ProductionPlan, brief: Productio
   let placeholders = 0
   let reused = 0
   const color = brief.brandColors.find((c) => c !== '#0B0B10') ?? '#F4F1EA'
+  const typeShots = plan.shots.filter((sh) => sh.typeShot)
+  if (typeShots.length) {
+    const accent = brief.brandColors.find((c) => c !== '#0B0B10' && c !== '#F4F1EA') ?? '#C8F542'
+    const end = Math.max(...typeShots.map((sh) => sh.startSec + sh.durationSec))
+    const bid = opts.makeId(n++)
+    out.push({ id: bid, kind: 'background', backgroundId: 'liquid-chrome', track: mediaTrack, startSec: r2(offset), durationSec: r2(end), name: 'Film backdrop', transitionIn: 'fade', transitionOut: 'fade', opacity: 1 } as unknown as StudioClip)
+    clipIds.push(bid)
+  }
   for (const shot of plan.shots) {
+    if (shot.typeShot) {
+      const ts = shot.typeShot
+      const accent = brief.brandColors.find((c) => c !== '#0B0B10' && c !== '#F4F1EA') ?? '#C8F542'
+      const t0 = r2(offset + shot.startSec)
+      const hindi = brief.language === 'hi'
+      const font = hindi ? 'Noto Sans Devanagari' : brief.brandFonts[0] ?? 'Inter Variable'
+      const add = (c: Partial<StudioTextClip> & { text: string; track: number; startSec: number; durationSec: number }) => {
+        const id = opts.makeId(n++)
+        out.push({ id, kind: 'text', name: `${shot.id} · ${c.text.slice(0, 20)}`, transitionIn: 'none', transitionOut: 'fade', opacity: 1, fontSizePct: 12, fontFamily: font, color: '#F4F1EA', weight: 800, align: 'center', x: 0.5, y: 0.5, anim: 'word-reveal', captionStyle: null, highlightWord: null, legibility: 'off', ...c, startSec: r2(c.startSec), durationSec: r2(Math.max(0.3, c.durationSec)) } as StudioTextClip)
+        clipIds.push(id)
+      }
+      const vertical = brief.aspect === '9:16'
+      const big = vertical ? 9 : 13
+      add({ text: ts.label, track: Math.min(23, textTrack + 1), startSec: t0 + 0.15, durationSec: shot.durationSec - 0.3, fontSizePct: 1.8, fontFamily: 'JetBrains Mono', color: '#9AA3AD', weight: 600, x: vertical ? 0.3 : 0.16, y: 0.07, anim: 'typewriter', transitionOut: 'fade' })
+      const placeholder = (l: string) => (l.startsWith('[') ? { color: '#9A9AA5' } : {})
+      if (ts.layout === 'stack' && ts.lines.length >= 2) {
+        const half = r2(shot.durationSec * 0.45)
+        add({ text: ts.lines[0], track: textTrack, startSec: t0 + 0.25, durationSec: half, fontSizePct: big * 1.25, anim: 'kinetic', ...placeholder(ts.lines[0]) })
+        add({ text: ts.lines[1], track: textTrack, startSec: t0 + 0.25 + half, durationSec: shot.durationSec - 0.25 - half, fontSizePct: big * 0.8, anim: 'word-reveal', color: accent, textGlow: 0.35, ...placeholder(ts.lines[1]) })
+      } else if (ts.layout === 'split' && ts.lines.length >= 2) {
+        add({ text: ts.lines[0], track: textTrack, startSec: t0 + 0.2, durationSec: shot.durationSec - 0.2, fontSizePct: big * 0.6, x: 0.5, y: 0.4, anim: 'slide-left', ...placeholder(ts.lines[0]) })
+        add({ text: ts.lines[1], track: Math.min(23, textTrack + 2), startSec: t0 + 0.2 + shot.durationSec * 0.3, durationSec: shot.durationSec * 0.7 - 0.2, fontSizePct: big * 0.6, x: 0.5, y: 0.6, color: accent, anim: 'slide-left', ...placeholder(ts.lines[1]) })
+      } else if (ts.layout === 'cloud') {
+        const words = ts.words ?? []
+        const pos = cloudLayout(words.length)
+        words.forEach((w, i) => add({ text: w, track: Math.min(23, textTrack + 2 + i), startSec: t0 + 0.1 + i * 0.08, durationSec: shot.durationSec * 0.55, fontSizePct: big * 0.55, x: pos[i].x, y: pos[i].y, color: i % 3 === 1 ? accent : '#F4F1EA', anim: 'pop' }))
+        add({ text: ts.lines[0] ?? '', track: textTrack, startSec: t0 + shot.durationSec * 0.55, durationSec: shot.durationSec * 0.45, fontSizePct: big * 1.1, anim: 'kinetic' })
+      } else if (ts.layout === 'end') {
+        add({ text: ts.lines[0], track: textTrack, startSec: t0 + 0.1, durationSec: shot.durationSec - 0.1, fontSizePct: big * 0.8, y: 0.44, anim: 'fade-up', ...placeholder(ts.lines[0]) })
+        if (ts.lines[1]) add({ text: ts.lines[1], track: Math.min(23, textTrack + 2), startSec: t0 + 0.4, durationSec: shot.durationSec - 0.4, fontSizePct: big * 0.28, y: 0.6, color: accent, weight: 600, anim: 'fade-up', ...placeholder(ts.lines[1]) })
+      } else {
+        add({ text: ts.lines.join(' '), track: textTrack, startSec: t0 + 0.2, durationSec: shot.durationSec - 0.2, fontSizePct: ts.layout === 'logo' ? big * 1.2 : big, anim: ts.layout === 'logo' ? 'pop' : 'kinetic', ...(ts.layout === 'logo' ? { textGlow: 0.4 } : {}), ...placeholder(ts.lines.join(' ')) })
+      }
+      continue
+    }
     const match = shot.mediaName ? media.find((m) => lc(m.fileName) === lc(shot.mediaName!) || lc(m.fileName).includes(lc(shot.mediaName!).replace(/\.[a-z0-9]+$/, ''))) : null
     const id = opts.makeId(n++)
     const common = { id, track: mediaTrack, startSec: r2(offset + shot.startSec), durationSec: shot.durationSec, transitionIn: shot.transitionIn as StudioTransition, transitionOut: 'none' as StudioTransition, opacity: 1 }
@@ -440,7 +487,7 @@ export function planToDoc(doc: StudioDoc, plan: ProductionPlan, brief: Productio
       clipIds.push(tid)
     }
   }
-  const built: StudioDoc = { ...doc, aspect: destructive ? brief.aspect : doc.aspect, clips: [...baseClips, ...out], trackCount: Math.max(destructive ? 1 : doc.trackCount, textTrack + 1) }
+  const built: StudioDoc = { ...doc, aspect: destructive ? brief.aspect : doc.aspect, clips: [...baseClips, ...out], trackCount: Math.max(destructive ? 1 : doc.trackCount, textTrack + 1, ...out.map((c) => c.track + 1)) }
   return { doc: opts.motion === false ? built : directProduction(built, clipIds, brief), clipIds, placeholders, reused, destructive }
 }
 
