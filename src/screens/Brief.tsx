@@ -160,7 +160,7 @@ export function Brief() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-lg font-bold">Brief</h1>
             <div className="flex items-center gap-2 text-[10px] text-muted" aria-label="AI provider status">
-              {([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1"><span className={cx('h-2 w-2 rounded-full', aiStatus.statusDots?.[key] === 'ok' ? 'bg-accent' : aiStatus.statusDots?.[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label}</span>)}
+              <span className="flex items-center gap-1" title="Built-in Cupric AI engine: rundowns, plans, edits and checks, fully offline"><span className="h-2 w-2 rounded-full bg-accent" />Cupric AI</span>{([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local model']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1"><span className={cx('h-2 w-2 rounded-full', aiStatus.statusDots?.[key] === 'ok' ? 'bg-accent' : aiStatus.statusDots?.[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label}</span>)}
               {aiStatus.mode === 'auto' && <span className="rounded-full border border-line px-1.5 py-0.5">Auto · {aiStatus.pick?.label || 'discovering…'}</span>}
             </div>
           </div>

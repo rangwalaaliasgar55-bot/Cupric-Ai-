@@ -72,6 +72,24 @@ ok(m.pe.planToDoc(existing, plan, brief, { makeId: (i) => `d${i}` }).doc.clips.l
 const parsed = m.schema.ProjectSchema?.safeParse ? null : null
 void parsed
 
+/* Cupric AI motion + polish */
+ok(r.clipIds.every((id) => { const c = r.doc.clips.find((x) => x.id === id); return Array.isArray(c.keyframes) && c.keyframes.length >= 2 && c.keyframes.every((k, i, a) => i === 0 || k.at >= a[i - 1].at) }), 'every built clip gets sorted, editable keyframes')
+ok(r.doc.clips.find((c) => c.id === 'mine').keyframes == null, 'your own clips are never re-animated')
+ok(m.pe.planToDoc(existing, plan, brief, { makeId: (i) => `z${i}`, motion: false }).doc.clips.every((c) => !c.keyframes), 'motion can be turned off')
+{
+  const messy = { ...r.doc, clips: r.doc.clips.map((c) => (r.clipIds.includes(c.id) && c.kind === 'text' ? { ...c, y: 0.95 } : r.clipIds.includes(c.id) ? { ...c, transitionIn: 'fade' } : c)) }
+  const p1 = m.pe.polishEdit(messy, brief, plan, r.clipIds)
+  const txt = (d) => d.clips.filter((c) => c.kind === 'text').map((c) => c.text).join('|')
+  ok(txt(p1.doc) === txt(messy), 'polish never rewrites copy')
+  ok(p1.doc.clips.filter((c) => r.clipIds.includes(c.id) && c.kind === 'text').every((c) => c.y >= 0.14 && c.y <= 0.78), 'polish moves text into the safe area')
+  ok(p1.doc.clips.filter((c) => r.clipIds.includes(c.id) && (c.kind === 'image' || c.kind === 'video') && !c.mediaId).length === r.placeholders, 'polish never fakes media for placeholders')
+  ok(p1.leftForYou.some((l) => /placeholder/.test(l)), 'polish lists what still needs you')
+  ok(p1.doc.aspect === messy.aspect, 'polish never changes aspect on its own')
+  ok(JSON.stringify(p1) === JSON.stringify(m.pe.polishEdit(messy, brief, plan, r.clipIds)), 'polish deterministic')
+  const before = m.pe.reviewEdit(messy, brief, plan, r.clipIds), after = m.pe.reviewEdit(p1.doc, brief, plan, r.clipIds)
+  ok(m.pe.reviewScore(after) > m.pe.reviewScore(before), `polish raises the review score (${m.pe.reviewScore(before)} → ${m.pe.reviewScore(after)})`)
+}
+
 /* review */
 const review = m.pe.reviewEdit(r.doc, brief, plan, r.clipIds)
 ok(review.length >= 10 && review.every((c) => ['pass', 'warn', 'fail'].includes(c.status) && c.label), `review runs ${review.length} checks`)
@@ -93,4 +111,9 @@ const ui = read('src/screens/production/ProductionPlanner.tsx')
 ok(/<ProductionPlanner \/>/.test(read('src/screens/Autonomous.tsx')), 'planner is on the Autonomous screen')
 ok(/disabled=\{!session\.approved\}/.test(ui) && /replaceApproved/.test(ui), 'UI: build gated on manual approval; replace needs second consent')
 ok(!/approved: true/.test(ui), 'UI never sets approval programmatically')
+ok(/Cupric AI polish/.test(ui) && /setAskOpen\(true\)/.test(ui), 'UI: Cupric AI polish + Ask Cupric AI in review')
+const main = read('electron/main.cjs')
+ok(/CANDIDATE_DEADLINE_MS/.test(main) && /Promise\.race\(\[Promise\.allSettled/.test(main), 'candidates run in parallel under one deadline (no endless spinner)')
+ok(/const liveModel = /.test(main), 'no model → Cupric AI built-in candidates straight away')
+ok(!/is polishing it in the background/.test(main) && /Cupric AI drafted this rundown/.test(main), 'Brief credits Cupric AI, not a hidden provider')
 console.log(`production: ${n} assertions passed`)

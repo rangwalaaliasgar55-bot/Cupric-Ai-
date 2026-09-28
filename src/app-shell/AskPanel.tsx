@@ -639,7 +639,7 @@ export function AskPanel() {
                 <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
                   <div className="mb-1 font-semibold text-muted">Provider status</div>
                   <div className="grid grid-cols-3 gap-1.5 text-[10px]">
-                    {([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1 rounded bg-panel px-1.5 py-1"><span className={cx('h-2 w-2 rounded-full', statusDots[key] === 'ok' ? 'bg-accent' : statusDots[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label} · {statusDots[key]}</span>)}
+                    <span className="flex items-center gap-1 rounded bg-panel px-1.5 py-1" title="Built-in Cupric AI engine, fully offline"><span className="h-2 w-2 rounded-full bg-accent" />Cupric AI · ready</span>{([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local model']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1 rounded bg-panel px-1.5 py-1"><span className={cx('h-2 w-2 rounded-full', statusDots[key] === 'ok' ? 'bg-accent' : statusDots[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label} · {statusDots[key]}</span>)}
                   </div>
                 </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">

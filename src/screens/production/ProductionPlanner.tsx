@@ -20,7 +20,7 @@ import { studioOf } from '../../lib/studio/doc'
 import { LOADER_PRESETS } from '../../lib/studio/loaders'
 import { uid } from '../../lib/utils'
 import {
-  INTAKE_QUESTIONS, buildBrief, buildPlan, detectLanguage, normaliseSession, openQuestions, planToDoc, research, reviewEdit, reviewScore,
+  INTAKE_QUESTIONS, buildBrief, buildPlan, detectLanguage, normaliseSession, openQuestions, planToDoc, polishEdit, research, reviewEdit, reviewScore,
   type OpusIndex, type ResourceCandidate,
 } from '../../lib/production/engine'
 import { PRODUCTION_STAGES, type Confidence, type ProductionIntake, type ProductionSession, type ProductionStage } from '../../lib/production/types'
@@ -58,6 +58,8 @@ export function ProductionPlanner() {
   const commit = useProjectStore((s) => s.commitProduction)
   const setView = useProjectStore((s) => s.setView)
   const pushToast = useProjectStore((s) => s.pushToast)
+  const setAskOpen = useProjectStore((s) => s.setAskOpen)
+  const [polishNotes, setPolishNotes] = useState<{ fixes: string[]; leftForYou: string[] } | null>(null)
   const { data: catalogue, error } = useCatalogue()
   const session = useMemo(() => normaliseSession(project?.production), [project?.production])
   const [view, setViewStage] = useState<ProductionStage>(session.stage)
@@ -98,6 +100,16 @@ export function ProductionPlanner() {
     } catch (e) {
       pushToast('error', e instanceof Error ? e.message : String(e))
     }
+  }
+  function polish() {
+    if (!session.brief || !session.builtClipIds.length) return
+    const live = new Set(studioOf(project).clips.map((c) => c.id))
+    const ids = session.builtClipIds.filter((id) => live.has(id))
+    const r = polishEdit(studioOf(project), session.brief, session.plan, ids)
+    const review = reviewEdit(r.doc, session.brief, session.plan, ids)
+    save({ ...session, builtClipIds: ids, review }, 'Cupric AI polish', r.doc)
+    setPolishNotes({ fixes: r.fixes, leftForYou: r.leftForYou })
+    pushToast('success', `Cupric AI applied ${r.fixes.length} fix(es). Undo reverts them all.`)
   }
   function rerunReview() {
     if (!session.brief) return
@@ -263,7 +275,7 @@ export function ProductionPlanner() {
 
         {view === 'build' && session.plan && (
           <>
-            <p className="text-xs text-muted">Build adds {session.plan.shots.length} media slots plus text as real, editable Studio clips <strong>after</strong> your current timeline. It's one undo step. Replacing the timeline is destructive and needs a second approval.</p>
+            <p className="text-xs text-muted">Build adds {session.plan.shots.length} media slots plus text as real, editable Studio clips <strong>after</strong> your current timeline. Cupric AI keyframes their motion (enter → hold → exit, eased for the tone), and every keyframe stays editable in the inspector. It's one undo step. Replacing the timeline is destructive and needs a second approval.</p>
             <div className="flex flex-wrap items-center gap-2">
               <Button onClick={() => build(false)} disabled={!session.approved}>Build (append)</Button>
               <label className="flex items-center gap-2 text-xs text-muted">
@@ -277,7 +289,14 @@ export function ProductionPlanner() {
 
         {view === 'review' && session.review && (
           <>
-            <div className="flex items-center gap-3"><Badge tone={reviewScore(session.review) >= 80 ? 'accent' : reviewScore(session.review) >= 50 ? 'info' : 'danger'}>Review {reviewScore(session.review)}/100</Badge><Button size="sm" variant="outline" onClick={rerunReview}>Re-run review</Button><Button size="sm" variant="outline" onClick={() => setView('studio')}>Open Studio</Button></div>
+            <div className="flex items-center gap-3"><Badge tone={reviewScore(session.review) >= 80 ? 'accent' : reviewScore(session.review) >= 50 ? 'info' : 'danger'}>Review {reviewScore(session.review)}/100</Badge><Button size="sm" onClick={polish} disabled={!session.builtClipIds.length} title="Fixes safe-area, volume, transition density, ducking and keyframe motion. It never writes copy or fakes footage.">Cupric AI polish</Button><Button size="sm" variant="outline" onClick={rerunReview}>Re-run review</Button><Button size="sm" variant="outline" onClick={() => setAskOpen(true)} title="Ask Cupric AI for specific edits: trims, captions, keyframes, transitions">Ask Cupric AI</Button><Button size="sm" variant="outline" onClick={() => setView('studio')}>Open Studio</Button></div>
+            {polishNotes && (
+              <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 text-xs">
+                <div className="font-medium text-text">Cupric AI polish</div>
+                <ul className="mt-1 list-disc pl-4 text-muted">{polishNotes.fixes.map((f) => <li key={f}>{f}</li>)}</ul>
+                {polishNotes.leftForYou.length > 0 && <><div className="mt-2 font-medium text-text">Needs you</div><ul className="mt-1 list-disc pl-4 text-muted">{polishNotes.leftForYou.map((f) => <li key={f}>{f}</li>)}</ul></>}
+              </div>
+            )}
             <ul className="space-y-1.5">
               {session.review.map((c) => (
                 <li key={c.id} className="flex items-start gap-2 rounded-lg border border-line px-3 py-2 text-xs">

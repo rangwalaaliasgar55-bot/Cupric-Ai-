@@ -20,6 +20,7 @@ import type {
   ProductionResearch, ProductionSession, ProductionStage, ResourcePick, ReviewCheck, SkillPick, BriefField,
 } from './types'
 import { PRODUCTION_STAGES } from './types'
+import { directClip, motionPatch, type DirectionStyle } from '../studio/motionDirector'
 
 /* ——— catalogue shapes (resources/opus55/data/index.json) ——— */
 type Tagged = { tag: string; evidence: string }
@@ -398,7 +399,7 @@ export type BuildResult = { doc: StudioDoc; clipIds: string[]; placeholders: num
  * imported media (existing video/image clips whose file name matches an
  * intake asset) is reused. Anything unresolved becomes a named placeholder.
  */
-export function planToDoc(doc: StudioDoc, plan: ProductionPlan, brief: ProductionBrief, opts: { makeId: (n: number) => string; replace?: boolean; replaceApproved?: boolean }): BuildResult {
+export function planToDoc(doc: StudioDoc, plan: ProductionPlan, brief: ProductionBrief, opts: { makeId: (n: number) => string; replace?: boolean; replaceApproved?: boolean; motion?: boolean }): BuildResult {
   const destructive = Boolean(opts.replace)
   if (destructive && !opts.replaceApproved) throw new Error('Replacing the timeline is destructive and needs explicit approval.')
   const baseClips = destructive ? [] : doc.clips
@@ -438,7 +439,88 @@ export function planToDoc(doc: StudioDoc, plan: ProductionPlan, brief: Productio
       clipIds.push(tid)
     }
   }
-  return { doc: { ...doc, aspect: destructive ? brief.aspect : doc.aspect, clips: [...baseClips, ...out], trackCount: Math.max(destructive ? 1 : doc.trackCount, textTrack + 1) }, clipIds, placeholders, reused, destructive }
+  const built: StudioDoc = { ...doc, aspect: destructive ? brief.aspect : doc.aspect, clips: [...baseClips, ...out], trackCount: Math.max(destructive ? 1 : doc.trackCount, textTrack + 1) }
+  return { doc: opts.motion === false ? built : directProduction(built, clipIds, brief), clipIds, placeholders, reused, destructive }
+}
+
+/* ——— Cupric AI: motion direction + polish (deterministic, never touches copy) ——— */
+
+export function styleForBrief(brief: ProductionBrief): DirectionStyle {
+  if (brief.tone === 'high') return 'bold-social'
+  if (brief.tone === 'calm') return /film|story|brand|cinematic|travel/i.test(`${brief.fields.map((f) => f.value).join(' ')}`) ? 'cinematic' : 'minimal'
+  return 'editorial'
+}
+
+/**
+ * Keyframe the built clips like a motion designer: enter → live → leave, timed
+ * to each clip's length, with eases chosen for the style (motionDirector).
+ * Only touches the clips in `clipIds`, so your own clips stay exactly as they were.
+ */
+export function directProduction(doc: StudioDoc, clipIds: string[], brief: ProductionBrief): StudioDoc {
+  const style = styleForBrief(brief)
+  const ids = new Set(clipIds)
+  const mine = doc.clips.filter((c) => ids.has(c.id)).sort((a, b) => a.startSec - b.startSec || a.track - b.track)
+  const texts = mine.filter((c) => c.kind === 'text')
+  const media = mine.filter((c) => c.kind === 'video' || c.kind === 'image')
+  const patches = new Map<string, Partial<StudioClip>>()
+  mine.forEach((clip, index) => {
+    const textIndex = (texts as StudioClip[]).indexOf(clip)
+    const mediaIndex = media.indexOf(clip)
+    const isLast = clip.kind === 'text' ? textIndex === texts.length - 1 : mediaIndex === media.length - 1
+    const spec = directClip(clip, { index, textIndex: Math.max(0, textIndex), mediaIndex: Math.max(0, mediaIndex), isHero: textIndex === 0, isLast }, style)
+    patches.set(clip.id, motionPatch(clip, spec))
+  })
+  return { ...doc, clips: doc.clips.map((c) => (patches.has(c.id) ? ({ ...c, ...patches.get(c.id) } as StudioClip) : c)) }
+}
+
+export type PolishResult = { doc: StudioDoc; fixes: string[]; leftForYou: string[] }
+
+/**
+ * "Cupric AI polish": fixes what the review can fix safely and lists the rest.
+ * It never writes copy, never swaps placeholders for fake media, and never
+ * changes the aspect ratio (that needs your say-so).
+ */
+export function polishEdit(doc: StudioDoc, brief: ProductionBrief, plan: ProductionPlan | null, clipIds: string[]): PolishResult {
+  const ids = new Set(clipIds)
+  const fixes: string[] = []
+  const leftForYou: string[] = []
+  let clips = doc.clips.map((c) => {
+    if (!ids.has(c.id)) return c
+    let next = c
+    if (c.kind === 'text' && (c.y < 0.14 || c.y > 0.78)) next = { ...next, y: Math.min(0.78, Math.max(0.14, c.y)) } as StudioClip
+    if ('volume' in next && typeof (next as { volume?: number }).volume === 'number' && (next as { volume: number }).volume > 1) next = { ...next, volume: 1 } as StudioClip
+    return next
+  })
+  const moved = clips.filter((c, i) => c !== doc.clips[i] && c.kind === 'text').length
+  if (moved) fixes.push(`Moved ${moved} text clip(s) into the caption-safe area.`)
+  const quieted = clips.filter((c, i) => c !== doc.clips[i] && c.kind !== 'text').length
+  if (quieted) fixes.push(`Brought ${quieted} boosted clip(s) back to 100% volume.`)
+  // Transition density: keep transitions only where the beat changes.
+  const media = clips.filter((c) => ids.has(c.id) && (c.kind === 'video' || c.kind === 'image')).sort((a, b) => a.startSec - b.startSec)
+  const withT = media.filter((m) => m.transitionIn !== 'none')
+  if (media.length && withT.length / media.length > 0.7) {
+    const beatOf = (name: string) => plan?.shots.find((s) => name.startsWith(`${s.id} `))?.beat ?? name
+    const keep = new Set(media.filter((m, i) => i === 0 || beatOf(m.name) !== beatOf(media[i - 1].name)).map((m) => m.id))
+    clips = clips.map((c) => (ids.has(c.id) && (c.kind === 'video' || c.kind === 'image') && !keep.has(c.id) && c.transitionIn !== 'none' ? ({ ...c, transitionIn: 'none' } as StudioClip) : c))
+    fixes.push(`Switched ${withT.length - keep.size} in-beat transition(s) to hard cuts, keeping transitions on beat changes.`)
+  }
+  let next: StudioDoc = { ...doc, clips }
+  const hasVoice = clips.some((c) => c.kind === 'audio' && /voice|vo\b|narrat/i.test(c.name))
+  if (plan?.audio.ducking && hasVoice && !doc.ducking?.enabled) {
+    next = { ...next, ducking: { enabled: true, amountDb: doc.ducking?.amountDb ?? -12, fadeSec: doc.ducking?.fadeSec ?? 0.25 } }
+    fixes.push('Turned on music ducking under the voiceover.')
+  }
+  next = directProduction(next, clipIds, brief)
+  fixes.push(`Re-timed keyframe motion on ${clipIds.length} built clip(s) for a ${styleForBrief(brief)} feel.`)
+  const scoped = next.clips.filter((c) => ids.has(c.id))
+  const copyPh = scoped.filter((c) => c.kind === 'text' && c.text.trim().startsWith('[')).length
+  const mediaPh = scoped.filter((c) => (c.kind === 'video' || c.kind === 'image') && !(c as StudioMediaClip).mediaId).length
+  const fast = scoped.filter((c) => c.kind === 'text' && c.text.split(/\s+/).length / Math.max(0.1, c.durationSec) > 3.5).length
+  if (copyPh) leftForYou.push(`Write ${copyPh} bracketed line(s). Cupric AI won't invent claims or quotes.`)
+  if (mediaPh) leftForYou.push(`Replace ${mediaPh} placeholder shot(s) with your footage.`)
+  if (fast) leftForYou.push(`Shorten ${fast} line(s) that read faster than 3.5 words per second.`)
+  if (doc.aspect !== brief.aspect) leftForYou.push(`Switch the Studio aspect to ${brief.aspect} if you want the brief's format. That changes framing, so it's your call.`)
+  return { doc: next, fixes, leftForYou }
 }
 
 /* ——— review ——————————————————————————————————————————————————— */

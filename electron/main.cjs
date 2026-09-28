@@ -1270,6 +1270,8 @@ async function generateCandidateHtml(prompt) {
 }
 
 const CANDIDATE_COUNT = 3
+// One overall budget for the candidate step (all candidates run in parallel).
+const CANDIDATE_DEADLINE_MS = 150000
 
 /** How many times a candidate may be sent back for repair. */
 const REPAIR_ROUNDS = 2
@@ -1363,8 +1365,17 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
   const candidates = []
   const attempts = []
   let fallbackUsed = false
+  // With no model at all, don't sit on a spinner: Cupric AI's built-in
+  // deterministic candidates (below) are the honest answer straight away.
+  const liveModel = aiSettings().provider !== 'template' || Boolean(geminiApiKey()) || hasOpenCodeAccess()
+  const progress = (done, note) => {
+    if (!job?.id) return
+    try { patchAutomationStep(job.id, 3, { progressPct: Math.min(95, 5 + Math.round((90 * done) / CANDIDATE_COUNT)), message: note }) } catch {}
+  }
+  let settled = 0
+  let closed = false
 
-  for (let i = 0; i < CANDIDATE_COUNT; i += 1) {
+  const runOne = async (i) => {
     const file = path.join(root, `candidate-${i + 1}.html`)
     // Each candidate gets a different creative constraint so the battle
     // compares genuinely different pieces, not three samples of one prompt.
@@ -1388,9 +1399,10 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
         score: verdict.score,
         repairRounds: history,
       })
+      if (closed) return
       if (!verdict.valid) {
         logLine('automation-candidate-invalid', `Candidate ${i + 1} failed the render contract even after repair`, verdict.failures)
-        continue
+        return
       }
       if (history.some((h) => h.accepted)) {
         warnings.push(`Candidate ${i + 1} needed ${history.filter((h) => h.accepted).length} repair round(s) before it met the render contract.`)
@@ -1405,9 +1417,28 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
         repaired: history.some((h) => h.accepted),
       })
     } catch (err) {
+      if (closed) return
       attempts.push({ candidate: i + 1, generated: false, error: err?.message || String(err) })
       logLine('automation-candidate-failed', err?.message || String(err), { candidate: i + 1 })
+    } finally {
+      if (!closed) { settled += 1; progress(settled, `Candidate ${settled} of ${CANDIDATE_COUNT} finished`) }
     }
+  }
+
+  if (liveModel) {
+    // In parallel, under one deadline: a slow or stuck model can't hold the run hostage.
+    progress(0, `Generating ${CANDIDATE_COUNT} candidates in parallel (up to ${Math.round(CANDIDATE_DEADLINE_MS / 1000)}s)`)
+    let timer
+    const deadline = new Promise((resolve) => { timer = setTimeout(() => resolve('timeout'), CANDIDATE_DEADLINE_MS) })
+    const outcome = await Promise.race([Promise.allSettled(Array.from({ length: CANDIDATE_COUNT }, (_, i) => runOne(i))), deadline])
+    clearTimeout(timer)
+    closed = true
+    if (outcome === 'timeout') {
+      warnings.push(`The AI model took longer than ${Math.round(CANDIDATE_DEADLINE_MS / 1000)}s, so Cupric kept the ${candidates.length} candidate(s) that finished in time.`)
+      attempts.push({ generated: false, error: 'deadline reached' })
+    }
+  } else {
+    attempts.push({ generated: false, error: 'no AI model configured, so Cupric AI built-in candidates were used' })
   }
 
   if (!candidates.length) {
@@ -2666,7 +2697,7 @@ async function handleGeminiAsk(payload) {
   try {
     const prompt = String(payload?.prompt || '').trim()
   const context = payload?.rundownContext || {}
-  const providerLabel = aiSettings().provider === 'opencode' ? 'OpenCode' : aiSettings().provider === 'gemini' ? 'Gemini' : 'local'
+  const providerLabel = aiSettings().provider === 'opencode' ? 'your OpenCode model' : aiSettings().provider === 'gemini' ? 'Gemini' : 'your local model'
   const cacheKey = rundownCacheKey(prompt, context)
   const cached = rundownCache.get(cacheKey) || readRundownCache()[cacheKey]?.rundown
   if (cached) {
@@ -2690,8 +2721,8 @@ async function handleGeminiAsk(payload) {
     queued: shouldPolish,
     requestId,
     text: shouldPolish
-      ? `Instant template ready. ${providerLabel} is polishing it in the background — the timeline is usable now.`
-      : 'Instant offline template ready. Add a provider later to polish it; the timeline is fully editable now.',
+      ? `Cupric AI drafted this rundown instantly. It's asking ${providerLabel} to refine it in the background, and the timeline is usable now.`
+      : 'Cupric AI drafted this rundown offline. The timeline is fully editable now. Connecting Gemini, Zen or a local model lets Cupric AI refine it further.',
     rundownPatch: instant,
     }
   } catch (err) {

@@ -7,6 +7,7 @@
  * capture what is on screen), is acted out, and its actual animation replaces
  * the placeholder card on the timeline. One at a time, in timeline order.
  */
+import { ProgressBar } from '../../components/ProgressBar'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Loader2, X } from 'lucide-react'
 import type { StudioClip, StudioDoc } from '../../types/project'
@@ -158,8 +159,10 @@ function RecorderCard({
         <div ref={stageRef} className="lab-canvas relative flex h-[min(400px,62vh)] w-full items-center justify-center overflow-hidden p-6">
           <DemoFrame slug={meta.slug} play forceMotion props={meta.props} className="place-items-center" />
         </div>
-        <div className="h-1 w-full bg-panel-alt">
-          <div className="h-full bg-accent transition-[width] duration-200" style={{ width: `${pct}%` }} />
+        {/* Inset footer, so the bar never gets cut off by the card's rounded corner. */}
+        <div className="flex items-center gap-3 border-t border-line px-4 py-2.5">
+          <ProgressBar pct={pct} className="flex-1" />
+          <span className="w-10 text-right font-mono text-xs tabular-nums text-muted">{Math.round(pct)}%</span>
         </div>
       </div>
     </div>

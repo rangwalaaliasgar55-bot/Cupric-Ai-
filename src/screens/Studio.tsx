@@ -13,6 +13,9 @@ import { addMarker, jumpMarker, rippleDelete, rollEdit, slideClip, slipClip, tri
 import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
   Boxes,
+  ChevronLeft,
+  ChevronRight,
+  Wand2,
   Component,
   Clapperboard,
   Download,
@@ -171,6 +174,8 @@ export function Studio() {
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [clipMenuAt, setClipMenuAt] = useState<{ clipId: string; x: number; y: number } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const stripRef = useRef<HTMLDivElement>(null)
+  const setAskOpen = useProjectStore((st) => st.setAskOpen)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
   const cancelRef = useRef<{ cancelled: boolean } | null>(null)
@@ -1242,9 +1247,57 @@ export function Studio() {
       {/* Toolbar */}
       {/* One row at every width: the add-strip scrolls sideways instead of
           wrapping, so the preview never loses a whole row of height. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-line bg-panel/50 px-6 py-2.5 shadow-[var(--shadow-sheen)] backdrop-blur-xl">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-2 border-b border-line bg-panel/50 px-6 py-2.5 shadow-[var(--shadow-sheen)] backdrop-blur-xl">
         <h1 className="mr-2 shrink-0 text-md font-semibold">Studio</h1>
-        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5 pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-28px),transparent)] [scrollbar-width:none] [&>button]:shrink-0"
+        {/* Row 1: panels are always visible (they used to hide past the fade). */}
+        <div className="flex shrink-0 items-center gap-1.5" role="group" aria-label="Studio panels">
+          <Button
+          size="sm"
+          variant={showResources ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowResources((shown) => !shown)
+            setShowComponents(false)
+            setShowPro(false)
+          }}
+          disabled={exporting}
+        >
+            <Boxes size={13} /> Resources
+          </Button>
+          <Button
+          size="sm"
+          variant={showComponents ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowComponents((shown) => !shown)
+            setShowResources(false)
+            setShowPro(false)
+          }}
+          disabled={exporting}
+          title="Every UI component, recorded with its real animation"
+        >
+            <Component size={13} /> Components
+          </Button>
+          <Button
+          size="sm"
+          variant={showPro ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowPro((shown) => !shown)
+            setShowResources(false)
+            setShowComponents(false)
+          }}
+          disabled={exporting}
+          title="Suggestions, build-from-assets, layouts, captions, markers, scopes, import from link"
+        >
+            <Sparkles size={13} /> Pro tools
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setAskOpen(true)} title="Ask Cupric AI to edit this timeline: trims, captions, keyframes, transitions">
+            <Wand2 size={13} /> Cupric AI
+          </Button>
+        </div>
+        <div className="flex-1" />
+        {/* Row 2 (order-last, full width): the add-strip, scrollable with visible arrows. */}
+        <div className="order-last flex w-full min-w-0 basis-full items-center gap-1">
+        <IconButton label="Scroll tools left" onClick={() => stripRef.current?.scrollBy({ left: -240, behavior: 'smooth' })}><ChevronLeft size={15} /></IconButton>
+        <div ref={stripRef} className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5 [scrollbar-width:thin] [&>*]:shrink-0"
           onWheel={(e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY }}
         >
 
@@ -1309,44 +1362,6 @@ export function Studio() {
         >
           <Scissors size={13} /> Split
         </Button>
-        <Button
-          size="sm"
-          variant={showResources ? 'primary' : 'outline'}
-          onClick={() => {
-            setShowResources((shown) => !shown)
-            setShowComponents(false)
-            setShowPro(false)
-          }}
-          disabled={exporting}
-        >
-          <Boxes size={13} /> Resources
-        </Button>
-        <Button
-          size="sm"
-          variant={showComponents ? 'primary' : 'outline'}
-          onClick={() => {
-            setShowComponents((shown) => !shown)
-            setShowResources(false)
-            setShowPro(false)
-          }}
-          disabled={exporting}
-          title="Every UI component, recorded with its real animation"
-        >
-          <Component size={13} /> Components
-        </Button>
-        <Button
-          size="sm"
-          variant={showPro ? 'primary' : 'outline'}
-          onClick={() => {
-            setShowPro((shown) => !shown)
-            setShowResources(false)
-            setShowComponents(false)
-          }}
-          disabled={exporting}
-          title="Suggestions, build-from-assets, layouts, captions, markers, scopes, import from link"
-        >
-          <Sparkles size={13} /> Pro tools
-        </Button>
 
         <Button
           size="sm"
@@ -1358,6 +1373,8 @@ export function Studio() {
           {listening ? <Mic size={13} /> : <MicOff size={13} />} {listening ? 'Listening' : voiceSupported ? 'Voice' : 'Voice setup'}
         </Button>
 
+        </div>
+        <IconButton label="Scroll tools right" onClick={() => stripRef.current?.scrollBy({ left: 240, behavior: 'smooth' })}><ChevronRight size={15} /></IconButton>
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
