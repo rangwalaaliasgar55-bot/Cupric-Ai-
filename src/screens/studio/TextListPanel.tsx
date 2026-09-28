@@ -5,7 +5,7 @@
  */
 import { useState } from 'react'
 import type { StudioDoc } from '../../types/project'
-import { findReplaceText, listTextClips, restyleText, roleOf, setClipText, shiftAllText, type TextRole } from '../../lib/studio/textList'
+import { applyBrandKit, findReplaceText, listTextClips, matchStyleFrom, restyleText, roleOf, setClipText, shiftAllText, type TextRole } from '../../lib/studio/textList'
 import { VIDEO_FONTS } from '../../lib/studio/videoFonts'
 
 type Props = {
@@ -14,9 +14,10 @@ type Props = {
   onSelect: (id: string, atSec: number) => void
   onCommit: (doc: StudioDoc, label: string) => void
   onNote: (kind: 'info' | 'success', msg: string) => void
+  brandKit?: { colors: string[]; font: string }
 }
 
-export function TextListPanel({ doc, selectedId, onSelect, onCommit, onNote }: Props) {
+export function TextListPanel({ doc, selectedId, onSelect, onCommit, onNote, brandKit }: Props) {
   const [open, setOpen] = useState(false)
   const [find, setFind] = useState('')
   const [repl, setRepl] = useState('')
@@ -27,6 +28,7 @@ export function TextListPanel({ doc, selectedId, onSelect, onCommit, onNote }: P
   const [shift, setShift] = useState('0.5')
   const texts = listTextClips(doc)
   if (!texts.length) return null
+  const selectedText = texts.find((t) => t.id === selectedId) ?? null
   const apply = (r: { doc: StudioDoc; count: number }, label: string) => {
     if (!r.count) { onNote('info', 'Nothing to change (no matching unlocked text).'); return }
     onCommit(r.doc, label)
@@ -69,6 +71,8 @@ export function TextListPanel({ doc, selectedId, onSelect, onCommit, onNote }: P
             <button type="button" className="cu-chip px-2 py-1" onClick={() => apply(restyleText(doc, { role, color }), 'Change text colour')}>Apply colour</button>
             <button type="button" className="cu-chip px-2 py-1" aria-label="Smaller" onClick={() => apply(restyleText(doc, { role, scale: 0.9 }), 'Text smaller')}>A−</button>
             <button type="button" className="cu-chip px-2 py-1" aria-label="Larger" onClick={() => apply(restyleText(doc, { role, scale: 1.1 }), 'Text larger')}>A+</button>
+            <button type="button" className="cu-chip px-2 py-1" disabled={!selectedText} title={selectedText ? `Copy the look of “${selectedText.text.slice(0, 24)}” (not size, words or timing)` : 'Select a text clip first'} onClick={() => selectedText && apply(matchStyleFrom(doc, selectedText.id, role), 'Match selected style')}>Match selected</button>
+            <button type="button" className="cu-chip px-2 py-1" disabled={!brandKit || (!brandKit.font && !brandKit.colors.length)} title="Brand font on headlines and lines; brand colours on text" onClick={() => { if (!brandKit) return; const r = applyBrandKit(doc, brandKit); apply(r, `Apply brand kit (${r.used.join(', ')})`) }}>Brand kit</button>
             <span className="ml-3 text-muted">Shift all text</span>
             <input className="cu-input w-14 px-1.5 py-1" inputMode="decimal" aria-label="Seconds to shift" value={shift} onChange={(e) => setShift(e.target.value)} />
             <button type="button" className="cu-chip px-2 py-1" onClick={() => apply(shiftAllText(doc, -Math.abs(Number(shift) || 0)), 'Shift text earlier')}>◀ s</button>

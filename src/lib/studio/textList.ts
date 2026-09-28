@@ -68,3 +68,53 @@ export function shiftAllText(doc: StudioDoc, dt: number): { doc: StudioDoc; coun
   if (!d) return { doc, count: 0 }
   return { doc: { ...doc, clips: doc.clips.map((c) => (c.kind === 'text' && !c.locked ? { ...c, startSec: Math.round((c.startSec + d) * 1000) / 1000 } : c)) }, count: t.length }
 }
+
+/* ——— batch 8: match style from a clip, apply the project brand kit ——— */
+
+const STYLE_KEYS = ['fontFamily', 'color', 'weight', 'fontSizePct', 'anim', 'textGlow', 'emphasisColor', 'accentColor', 'legibility'] as const
+
+/** Copy the look (not the words, position or timing) of `sourceId` onto every text of `role`. */
+export function matchStyleFrom(doc: StudioDoc, sourceId: string, role: TextRole | 'all', opts: { size?: boolean } = {}): { doc: StudioDoc; count: number } {
+  const src = doc.clips.find((c): c is StudioTextClip => c.id === sourceId && c.kind === 'text')
+  if (!src) return { doc, count: 0 }
+  const look: Partial<StudioTextClip> = {}
+  for (const k of STYLE_KEYS) if (k !== 'fontSizePct' || opts.size) (look as Record<string, unknown>)[k] = src[k]
+  let count = 0
+  const clips = doc.clips.map((c) => {
+    if (c.kind !== 'text' || c.locked || c.id === src.id) return c
+    if (role !== 'all' && roleOf(c) !== role) return c
+    count += 1
+    return { ...c, ...look }
+  })
+  return { doc: count ? { ...doc, clips } : doc, count }
+}
+
+/**
+ * Brand kit → text: the brand font on headlines and lines, the lightest
+ * brand colour on body text, the most saturated one on headlines. Labels keep
+ * their mono font. Missing kit parts are skipped, not invented.
+ */
+export function applyBrandKit(doc: StudioDoc, kit: { colors: string[]; font: string }): { doc: StudioDoc; count: number; used: string[] } {
+  const hex = kit.colors.filter((c) => /^#[0-9a-f]{6}$/i.test(c))
+  const rgb = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
+  const lum = (h: string) => { const [r, g, b] = rgb(h); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
+  const sat = (h: string) => { const v = rgb(h); return Math.max(...v) - Math.min(...v) }
+  const light = hex.length ? [...hex].sort((a, b) => lum(b) - lum(a))[0] : null
+  const accent = hex.length ? [...hex].sort((a, b) => sat(b) - sat(a))[0] : null
+  const font = kit.font?.trim() || null
+  const used = [font && `font ${font}`, light && `text ${light}`, accent && accent !== light && `accent ${accent}`].filter(Boolean) as string[]
+  if (!used.length) return { doc, count: 0, used }
+  let count = 0
+  const clips = doc.clips.map((c) => {
+    if (c.kind !== 'text' || c.locked) return c
+    const r = roleOf(c)
+    const next = { ...c }
+    if (font && r !== 'label') next.fontFamily = font
+    if (r === 'headline' && accent && sat(accent) > 0.25 && lum(accent) > 0.35) next.color = accent
+    else if (r !== 'label' && light && lum(light) > 0.5) next.color = light
+    if (JSON.stringify(next) === JSON.stringify(c)) return c
+    count += 1
+    return next
+  })
+  return { doc: count ? { ...doc, clips } : doc, count, used }
+}
