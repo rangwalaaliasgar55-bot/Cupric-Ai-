@@ -21,6 +21,7 @@ import { LOADER_PRESETS } from '../../lib/studio/loaders'
 import { uid } from '../../lib/utils'
 import { FORMAT_STARTERS, applyStarter } from '../../lib/production/starters'
 import { nextAction } from '../../lib/production/nextAction'
+import { QuickVideoPanel } from './QuickVideoPanel'
 import { ActivityTimeline } from '../../lab/components/activity-timeline'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -384,6 +385,7 @@ export function ProductionPlanner() {
           }))} />
         </details>
       )}
+      <QuickVideoPanel />
     </Card>
   )
 }
