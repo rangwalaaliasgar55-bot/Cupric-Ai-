@@ -236,3 +236,155 @@ if (problems.length) {
   process.exit(1)
 }
 console.log('\nscrub profile passed')
+
+/* ————————————————————————————————————————————————————————————————————————
+ * F-4 — the frame has to stay identical, and the UI has to stay out of the way
+ *
+ * The speed above comes from caches (draw order, keyframe order, grade
+ * strings, wrapped lines) and from React no longer re-rendering two large
+ * panels per scrub frame. Caches are only allowed if a frame is still a pure
+ * function of `t`, so the first block below proves that, and the second pins
+ * the render-side work in source so it cannot quietly come back.
+ * ———————————————————————————————————————————————————————————————————————— */
+
+/** A context that writes down every call instead of drawing. */
+function recordingCtx(width, height, log) {
+  const note = (name) => (...args) => {
+    log.push(`${name}(${args.map((a) => (typeof a === 'number' ? a.toFixed(4) : typeof a === 'object' && a ? '#' : String(a))).join(',')})`)
+  }
+  const gradient = { addColorStop: note('stop') }
+  const ctx = {
+    canvas: { width, height },
+    save: note('save'),
+    restore: note('restore'),
+    measureText: (text) => ({ width: String(text).length * 8 }),
+    createLinearGradient: (...a) => { note('linear')(...a); return gradient },
+    createRadialGradient: (...a) => { note('radial')(...a); return gradient },
+    getImageData: () => ({ data: new Uint8ClampedArray(4), width: 1, height: 1 }),
+    putImageData: note('putImageData'),
+    drawImage: note('drawImage'),
+  }
+  for (const name of [
+    'fillRect', 'strokeRect', 'clearRect', 'beginPath', 'closePath', 'moveTo', 'lineTo',
+    'arc', 'ellipse', 'quadraticCurveTo', 'bezierCurveTo', 'rect', 'roundRect', 'clip',
+    'fill', 'stroke', 'fillText', 'strokeText', 'translate', 'scale', 'rotate', 'setTransform',
+    'resetTransform', 'transform', 'setLineDash',
+  ]) ctx[name] = note(name)
+  // Style writes matter as much as draw calls: a stale cached filter string
+  // would show up here and nowhere else.
+  for (const prop of [
+    'globalAlpha', 'globalCompositeOperation', 'filter', 'fillStyle', 'strokeStyle', 'lineWidth',
+    'lineJoin', 'font', 'textAlign', 'textBaseline', 'shadowColor', 'shadowBlur', 'shadowOffsetY',
+    'imageSmoothingEnabled', 'imageSmoothingQuality',
+  ]) {
+    let value = null
+    Object.defineProperty(ctx, prop, {
+      get: () => value,
+      set: (next) => { value = next; log.push(`${prop}=${typeof next === 'number' ? next.toFixed(4) : String(next)}`) },
+    })
+  }
+  return ctx
+}
+
+const pureDoc = heavyDoc(40)
+const pureDuration = pureDoc.clips.reduce((m, c) => Math.max(m, c.startSec + c.durationSec), 0)
+const pureSources = { media: () => null, overlay: () => null, sticker: () => null }
+const frameAt = (t) => {
+  const log = []
+  mod.drawStudioFrame(recordingCtx(1080, 1920, log), pureDoc, t, 1080, 1920, pureSources)
+  return log.join('\n')
+}
+
+const times = Array.from({ length: 24 }, (_, i) => (i / 24) * pureDuration)
+// Cold: nothing is cached yet. Warm: every cache is full. Shuffled: the caches
+// are being read for times they were not filled in.
+const cold = new Map(times.map((t) => [t, frameAt(t)]))
+const warm = new Map(times.map((t) => [t, frameAt(t)]))
+const shuffled = new Map([...times].sort(() => Math.random() - 0.5).map((t) => [t, frameAt(t)]))
+
+const pureProblems = []
+for (const t of times) {
+  if (cold.get(t) !== warm.get(t)) pureProblems.push(`frame at ${t.toFixed(3)}s differs between a cold and a warm cache`)
+  else if (cold.get(t) !== shuffled.get(t)) pureProblems.push(`frame at ${t.toFixed(3)}s differs when frames are drawn out of order`)
+}
+if (new Set(cold.values()).size < 2) pureProblems.push('every frame recorded the same calls — the harness is not exercising the renderer')
+
+if (pureProblems.length) {
+  console.error(`\nF-4 determinism FAILED:\n  - ${pureProblems.join('\n  - ')}`)
+  process.exit(1)
+}
+console.log(`  frame output is identical cold, warm and out of order across ${times.length} sampled times`)
+
+/* ——— source rules: the work that keeps a scrub cheap ——— */
+const { readFileSync } = await import('node:fs')
+const read = (rel) => readFileSync(path.join(root, rel), 'utf8')
+const rules = [
+  ['src/lib/studio/doc.ts', /export function orderedClips/, 'draw order must be cached per clip-list identity, not re-sorted every frame'],
+  ['src/lib/studio/doc.ts', /clipOrderCache = new WeakMap/, 'the draw-order cache must be a WeakMap keyed on the clip array'],
+  ['src/lib/studio/renderer.ts', /orderedKeys\(/, 'keyframes must not be copied and sorted on every lookup'],
+  ['src/lib/studio/renderer.ts', /memoClip/, 'the keyframe solve must be memoised: it is asked for twice per clip per frame'],
+  ['src/lib/studio/renderer.ts', /gradeFilterCache = new WeakMap/, 'grade filter strings must be cached per grade chain'],
+  ['src/lib/studio/renderer.ts', /HEX_CACHE = new Map/, 'hex colour parsing must be memoised'],
+  ['src/lib/studio/renderer.ts', /const WRAP_CACHE = new Map<string, Map<number, Map<string, string\[\]>>>/, 'line wrapping must key on font/width/text without building a composite key string'],
+  ['src/lib/studio/renderer.ts', /const order = orderedClips\(doc\.clips\)/, 'drawStudioFrame must walk the cached draw order'],
+  ['src/lib/studio/glass.ts', /scratch\.width < w \|\| scratch\.height < h/, 'the glass backdrop canvas must grow rather than be resized every frame'],
+  ['src/screens/Studio.tsx', /const scrubTime = useDeferredValue\(time\)/, 'the playhead must be deferred for the heavy side panels'],
+  ['src/screens/Studio.tsx', /<StudioInspector[\s\S]{0,120}time=\{scrubTime\}/, 'the inspector must read the deferred playhead'],
+  ['src/screens/Studio.tsx', /<StudioProPanel[\s\S]{0,120}time=\{scrubTime\}/, 'the pro panel must read the deferred playhead'],
+  ['src/screens/Studio.tsx', /onPatch=\{inspectorPatch\}/, 'inspector callbacks must be stable, or memo cannot hold'],
+  ['src/screens/Studio.tsx', /onImportFiles=\{proImportFiles\}/, 'pro panel callbacks must be stable, or memo cannot hold'],
+  ['src/screens/studio/StudioInspector.tsx', /export const StudioInspector = memo\(/, 'the inspector must be memoised'],
+  ['src/screens/studio/StudioProPanel.tsx', /export const StudioProPanel = memo\(/, 'the pro panel must be memoised'],
+  ['src/screens/studio/StudioTimeline.tsx', /const ClipBlock = memo\(/, 'studio clip rows must be memoised'],
+  ['src/screens/Timeline.tsx', /const TimelineClipBlock = memo\(/, 'timeline clip rows must be memoised'],
+  ['src/screens/library/PackBrowser.tsx', /const PackCard = memo\(/, 'pack cards must be memoised'],
+  ['src/screens/library/PackBrowser.tsx', /useDeferredValue\(query\)/, 'pack search must be deferred'],
+  ['src/app-shell/AppLayout.tsx', /AskPanelHost/, 'the Ask panel must mount on first open, not at first paint'],
+  ['src/components/MotionCompositionPlayer.tsx', /lazy\(\(\) => import\('\.\/MotionCompositionPlayer\.impl'\)\)/, 'the Remotion player must be lazy'],
+  ['src/main.tsx', /await import\('\.\/lib\/studio\/backgroundExportHost'\)/, 'the export compositor must be fetched on the first export job'],
+]
+const sourceProblems = []
+for (const [file, pattern, why] of rules) {
+  if (!pattern.test(read(file))) sourceProblems.push(`${file}: ${why}`)
+}
+
+// Nothing heavy may be imported statically anywhere in src/.
+const heavyStatic = [
+  ["import 'heic2any'", /^\s*import\s+[^\n]*from\s+'heic2any'/m],
+  ['@dimforge/rapier3d-compat', /^\s*import\s+[^\n]*from\s+'@dimforge\/rapier3d-compat'/m],
+  ['html2canvas', /^\s*import\s+[^\n]*from\s+'html2canvas'/m],
+  ['@remotion/player', /^\s*import\s+[^\n]*from\s+'@remotion\/player'/m],
+]
+const { readdirSync } = await import('node:fs')
+const walk = (dir) => readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+  const full = path.join(dir, e.name)
+  if (e.isDirectory()) return walk(full)
+  return /\.(ts|tsx)$/.test(e.name) ? [full] : []
+})
+for (const file of walk(path.join(root, 'src'))) {
+  // `*.impl.tsx` is the far side of a `lazy(() => import(...))` — the whole
+  // point of the file is that nothing reaches it until it is needed, so a
+  // plain import inside one is correct. The rule list above pins the wrapper.
+  if (/\.impl\.tsx?$/.test(file)) continue
+  const text = readFileSync(file, 'utf8')
+  for (const [label, pattern] of heavyStatic) {
+    if (pattern.test(text)) {
+      sourceProblems.push(`${path.relative(root, file)} imports ${label} statically — it must be a dynamic import`)
+    }
+  }
+}
+
+// Every screen behind React.lazy, so first paint is the shell plus Home.
+const layout = read('src/app-shell/AppLayout.tsx')
+for (const screen of ['ArenaDesk', 'Brief', 'FootageDesk', 'Library', 'Render', 'ReviewRoom', 'Timeline', 'Studio', 'Lab', 'Autonomous', 'MotionEngine']) {
+  if (!new RegExp(`const ${screen} = lazy\\(`).test(layout)) {
+    sourceProblems.push(`AppLayout.tsx: ${screen} must be a React.lazy screen`)
+  }
+}
+
+if (sourceProblems.length) {
+  console.error(`\nF-4 render budget FAILED:\n  - ${sourceProblems.join('\n  - ')}`)
+  process.exit(1)
+}
+console.log(`  ${rules.length} render-cost rules hold; every screen and every WASM dependency is split out`)
+console.log('\nF-4 check passed — cached frame work, memoised panels, deferred scrub, split bundle')

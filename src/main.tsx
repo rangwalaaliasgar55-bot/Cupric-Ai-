@@ -5,32 +5,10 @@ import './styles.css'
 import { installDiagnostics } from './lib/diagnostics'
 import { installCrashGuard, renderFatalFallback, setCrashContextProvider } from './lib/crashGuard'
 import { describeBridge, getIpc } from './lib/bridge'
-import { exportStudio } from './lib/studio/export'
-import { registerUrl } from './lib/studio/media'
-import type { StudioDoc } from './types/project'
 import { rlog } from './lib/log'
 import { RouteErrorBoundary } from './app-shell/ErrorBoundary'
 import { useProjectStore } from './state/useProjectStore'
-import { primeVoiceEngines } from './lib/voice'
-import './lib/studio/proxy' // registers the auto-proxy hook (2.7)
-
-type BackgroundExportAsset = {
-  id: string
-  kind: 'video' | 'image' | 'audio'
-  fileName: string
-  localPath: string | null
-  /** Pre-resolved file:// URL from the main process (F-2). */
-  url?: string
-  /** Set when the sandbox refused the path — skip it, never fail the batch. */
-  unusable?: string
-}
-type BackgroundExportRequest = {
-  jobId: string
-  doc: StudioDoc
-  assets: BackgroundExportAsset[]
-  fileName?: string
-  scale?: number
-}
+import type { BackgroundExportRequest } from './lib/studio/backgroundExportHost'
 
 // Desktop Studio exports are farm jobs. The main process owns this offscreen
 // renderer, so a user's interactive window remains responsive and the exact
@@ -41,30 +19,11 @@ if (backgroundIpc) {
   backgroundIpc.on('studio:backgroundExport', (request: BackgroundExportRequest) => {
     void (async () => {
       try {
-        // F-2: the main process already resolved each asset against the
-        // project-data sandbox, so a single unreadable clip is skipped with a
-        // logged reason instead of failing the whole export batch.
-        for (const asset of request.assets || []) {
-          if (!asset.localPath || asset.unusable) continue
-          try {
-            const url = asset.url || (await backgroundIpc.invoke('arena:previewPath', asset.localPath) as string)
-            await registerUrl(url, asset.fileName, asset.kind, asset.localPath, asset.id)
-          } catch (assetError) {
-            await backgroundIpc.invoke('log:write', {
-              level: 'warn',
-              scope: 'export-asset-skipped',
-              message: assetError instanceof Error ? assetError.message : String(assetError),
-              data: { jobId: request.jobId, asset: asset.id },
-            }).catch(() => undefined)
-          }
-        }
-        const result = await exportStudio(request.doc, {
-          fileName: request.fileName,
-          scale: request.scale,
-          onProgress: (pct) => { void backgroundIpc.invoke('studio:progress', { jobId: request.jobId, pct }) },
-        })
-        const bytes = new Uint8Array(await result.blob.arrayBuffer())
-        await backgroundIpc.invoke('studio:submitRecording', { jobId: request.jobId, bytes })
+        // F-4: the compositor is fetched on the first export job rather than
+        // carried through first paint — a window that never exports never
+        // parses it.
+        const { runBackgroundExport } = await import('./lib/studio/backgroundExportHost')
+        await runBackgroundExport(backgroundIpc, request)
       } catch (error) {
         await backgroundIpc.invoke('studio:recordingError', {
           jobId: request.jobId,
@@ -89,8 +48,16 @@ setCrashContextProvider(
 // bridge is never written to (see lib/bridge.ts).
 rlog.info('boot', 'bridge:init', { ...describeBridge(), sinceNavigationMs: Math.round(performance.now()) })
 
-// Offline speech engines (1.10): known before the first mic press.
-void primeVoiceEngines()
+// Offline speech engines (1.10): known before the first mic press, and the
+// auto-proxy hook (2.7). F-4: both are fetched just after first paint instead
+// of inside it — nothing can ask for either before the window is on screen.
+void (async () => {
+  const [{ primeVoiceEngines }] = await Promise.all([
+    import('./lib/voice'),
+    import('./lib/studio/proxy'),
+  ])
+  void primeVoiceEngines()
+})()
 
 const container = document.getElementById('root')
 try {

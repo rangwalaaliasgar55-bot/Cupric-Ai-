@@ -21,7 +21,7 @@ import type {
 } from '../../types/project'
 import { glassPreset } from '../glass'
 import { backgroundById } from './backgrounds'
-import { clipProgress, clipsAt } from './doc'
+import { clipProgress, orderedClips } from './doc'
 import { drawCursor, drawShape, has3D, project3D } from './renderExtras'
 import { cursorAt } from './cursor'
 import { drawLoader } from './loaders'
@@ -195,15 +195,34 @@ function sourceSize(source: CanvasImageSource): [number, number] {
 
 /* ——— text ——— */
 
-/** Line-wrap results keyed by font + width + text. Wrapping is pure, so caching can't change a frame. */
-const WRAP_CACHE = new Map<string, string[]>()
+/**
+ * Line-wrap results keyed by font → width → text. Wrapping is pure, so caching
+ * can't change a frame.
+ *
+ * F-4: this used to build one `font|width|text` string per call. Hashing a
+ * fresh ~90-character key for every text clip on every frame cost more than
+ * the lookup saved — the nested maps below reuse the clip's own `text` string,
+ * whose hash V8 computes once and keeps, so a cache hit allocates nothing.
+ */
+const WRAP_CACHE = new Map<string, Map<number, Map<string, string[]>>>()
+let wrapCacheEntries = 0
 function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
-  const key = `${ctx.font}|${Math.round(maxWidth * 100)}|${text}`
-  const hit = WRAP_CACHE.get(key)
+  const widthKey = Math.round(maxWidth * 100)
+  let byWidth = WRAP_CACHE.get(ctx.font)
+  if (!byWidth) WRAP_CACHE.set(ctx.font, (byWidth = new Map()))
+  let byText = byWidth.get(widthKey)
+  if (!byText) byWidth.set(widthKey, (byText = new Map()))
+  const hit = byText.get(text)
   if (hit) return hit
   const lines = wrapLinesUncached(ctx, text, maxWidth)
-  if (WRAP_CACHE.size > 800) WRAP_CACHE.clear()
-  WRAP_CACHE.set(key, lines)
+  if (wrapCacheEntries > 800) {
+    WRAP_CACHE.clear()
+    wrapCacheEntries = 0
+    WRAP_CACHE.set(ctx.font, (byWidth = new Map()))
+    byWidth.set(widthKey, (byText = new Map()))
+  }
+  byText.set(text, lines)
+  wrapCacheEntries += 1
   return lines
 }
 function wrapLinesUncached(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
@@ -286,7 +305,19 @@ export function measureTextBlock(ctx: CanvasRenderingContext2D, clip: StudioText
 
 /* ——— legibility (2.14) ——— */
 
+// F-4: colours come from a fixed palette, so the same handful of strings are
+// re-parsed on every frame. Memoise the parse, including the misses.
+const HEX_CACHE = new Map<string, [number, number, number] | null>()
 function hexToRgb(color: string): [number, number, number] | null {
+  const hit = HEX_CACHE.get(color)
+  if (hit !== undefined) return hit
+  const parsed = parseHex(color)
+  if (HEX_CACHE.size > 400) HEX_CACHE.clear()
+  HEX_CACHE.set(color, parsed)
+  return parsed
+}
+
+function parseHex(color: string): [number, number, number] | null {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color.trim())
   if (!m) return null
   const hex = m[1].length === 3 ? m[1].split('').map((c) => c + c).join('') : m[1]
@@ -775,11 +806,55 @@ export type KeyframeValues = { x?: number; y?: number; scale?: number; rotation?
  * holds — the same convention every NLE uses, and the one that makes a single
  * keyframe mean "set this value" rather than "animate from nothing".
  */
+/**
+ * Keyframes in `at` order, without allocating when they already are (F-4).
+ *
+ * Authored keyframes are always written in order (see `keyframeEdit.ts` and
+ * `resourceDrop.ts`, which sort before attaching), so the ordered check below
+ * is the whole cost in the common case. Out-of-order lists get sorted once and
+ * remembered against the array's identity — every edit makes a new array.
+ */
+const orderedKeyCache = new WeakMap<readonly StudioKeyframe[], { len: number; sorted: StudioKeyframe[] }>()
+function orderedKeys(keys: readonly StudioKeyframe[]): readonly StudioKeyframe[] {
+  for (let i = 1; i < keys.length; i += 1) {
+    if (keys[i].at < keys[i - 1].at) {
+      const cached = orderedKeyCache.get(keys)
+      if (cached && cached.len === keys.length) return cached.sorted
+      const sorted = [...keys].sort((a, b) => a.at - b.at)
+      orderedKeyCache.set(keys, { len: keys.length, sorted })
+      return sorted
+    }
+  }
+  return keys
+}
+
+/**
+ * One-slot memo for the keyframe solve (F-4).
+ *
+ * `drawStudioFrame` asks for the same clip at the same `t` twice per frame —
+ * once through `animatedClip`, once through `keyframeFilter` — so half of all
+ * keyframe work was duplicate. The result is treated as read-only by every
+ * caller (the renderer, `keyframeGraph`, `StudioPreview`); it is never handed
+ * out for mutation.
+ */
+let memoClip: StudioClip | null = null
+let memoT = Number.NaN
+let memoValues: KeyframeValues | null = null
+
 export function keyframeValuesAt(clip: StudioClip, t: number): KeyframeValues | null {
+  if (clip === memoClip && t === memoT) return memoValues
+  const values = solveKeyframes(clip, t)
+  memoClip = clip
+  memoT = t
+  memoValues = values
+  return values
+}
+
+function solveKeyframes(clip: StudioClip, t: number): KeyframeValues | null {
   const keys = clip.keyframes
   if (!keys || keys.length === 0) return null
   const local = t - clip.startSec
-  const sorted = keys.length > 1 ? [...keys].sort((a, b) => a.at - b.at) : keys
+  const sorted = keys.length > 1 ? orderedKeys(keys) : keys
 
   if (local <= sorted[0].at) return pick(sorted[0])
   const last = sorted[sorted.length - 1]
@@ -878,8 +953,20 @@ function clipCentre(clip: StudioClip, w: number, h: number): { cx: number; cy: n
  * temperature is a sepia/hue-rotate pair (there is no white-balance
  * primitive), and `fade` lifts the blacks by trading contrast for brightness.
  */
+const gradeFilterCache = new WeakMap<StudioGradeNode[], { len: number; filter: string }>()
 export function gradeFilter(nodes: StudioGradeNode[] | null | undefined): string {
   if (!nodes || !nodes.length) return ''
+  // F-4: a grade chain is rebuilt into the same CSS filter string on every
+  // frame. Grade edits always replace the array (`{ grade: [...others, next] }`
+  // in ClipProFields), so identity is a sound cache key.
+  const cached = gradeFilterCache.get(nodes)
+  if (cached && cached.len === nodes.length) return cached.filter
+  const filter = buildGradeFilter(nodes)
+  gradeFilterCache.set(nodes, { len: nodes.length, filter })
+  return filter
+}
+
+function buildGradeFilter(nodes: StudioGradeNode[]): string {
   const parts: string[] = []
   for (const node of nodes) {
     if (!node.enabled) continue
@@ -1272,14 +1359,24 @@ export function drawStudioFrame(
 
   // Cursor → target reactions: a linked clip presses in on each click (or
   // lifts on hover). Computed once per frame from the active cursor clips.
-  const press = new Map<string, number>()
-  for (const c of doc.clips) {
+  // F-4: most documents have no cursor clip at all, so the map is only built
+  // when one is actually live — a scrub should not allocate what it won't read.
+  let press: Map<string, number> | null = null
+  const all = doc.clips
+  for (let i = 0; i < all.length; i += 1) {
+    const c = all[i]
     if (c.kind !== 'cursor' || !c.targetClipId || t < c.startSec || t > c.startSec + c.durationSec) continue
     const f = cursorAt(c, t - c.startSec)
-    if (f.targetPress) press.set(c.targetClipId, f.targetPress)
+    if (f.targetPress) (press ??= new Map<string, number>()).set(c.targetClipId, f.targetPress)
   }
 
-  for (const raw of clipsAt(doc, t)) {
+  // F-4: draw order comes from a cache keyed on the clip array, and the "is it
+  // on screen right now" test is inline, so a frame walks the clip list once
+  // and allocates nothing to decide what to paint.
+  const order = orderedClips(doc.clips)
+  for (let index = 0; index < order.length; index += 1) {
+    const raw = order[index]
+    if (t < raw.startSec || t >= raw.startSec + raw.durationSec) continue
     if (raw.kind === 'adjustment') {
       // An adjustment layer is a full-frame, non-destructive pass: snapshot the
       // composite below it, grade that snapshot, then continue drawing layers
@@ -1325,7 +1422,7 @@ export function drawStudioFrame(
       target.scale(clip.flipX ? -1 : 1, clip.flipY ? -1 : 1)
       target.translate(-cx, -cy)
     }
-    const pressed = press.get(raw.id)
+    const pressed = press?.get(raw.id)
     if (pressed) {
       // Press-in (click) shrinks 5%; hover (negative) lifts 3%.
       const k = pressed > 0 ? 1 - 0.05 * pressed : 1 + 0.03 * -pressed

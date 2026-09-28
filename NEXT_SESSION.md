@@ -1,3 +1,50 @@
+## Latest: F-4 — scrub cost and bundle weight
+
+Two complaints from the 0.13.0 logs: a 120-clip scrub ran at 10.45ms mean /
+29.3ms p95 against a 3ms / 6ms budget, and the build shipped a 4.31MB `index`
+chunk with heic2any (1.35MB) and rapier (2.05MB) inside the first-paint graph.
+
+**Per-frame work.** The renderer was recomputing answers that never changed:
+
+| what | before | after |
+| --- | --- | --- |
+| draw order | `filter().sort()` every frame | cached per clip-array identity, validated with one linear pass (`orderedClips` in `doc.ts`) |
+| keyframes | `[...keys].sort()` twice per clip per frame | ordered in place when already ordered, plus a one-slot memo (`drawStudioFrame` asks the same question twice) |
+| grade filters | rebuilt per clip per frame | `WeakMap` per grade chain |
+| line wrapping | a fresh `font\|width\|text` key string per call | nested maps, so the clip's own string is the key |
+| hex colours | re-parsed per call | memoised |
+| glass backdrop | `canvas.width = …` per panel per frame (a full reallocation) | a scratch canvas that only grows, read back as a sub-rect |
+| cursor press map | allocated every frame | only when a cursor clip is live |
+
+120-clip mean fell from 0.361ms to ~0.27ms on the reference machine, p95 from
+0.628ms to ~0.43ms, and `check:perf` now proves the caches are sound: the same
+frame is recorded cold, warm and out of order and must be byte-identical.
+
+**React.** `Studio.tsx` defers the playhead (`useDeferredValue`) for the two
+heavy side panels, which are now `memo`-wrapped with stable callbacks that read
+live state through the existing `apiState` ref. The canvas and the timeline
+playhead still get the urgent value, so the picture tracks the pointer.
+
+**Bundle.** The initial route went from 4.31MB to 115kB:
+
+- `main.tsx` no longer imports the compositor — background export jobs pull
+  `lib/studio/backgroundExportHost.ts` on the first job;
+- the Ask panel mounts on first open (`AskPanelHost`), not at first paint;
+- Remotion sits behind `MotionCompositionPlayer.impl.tsx`;
+- `importHtml`, `voice` and `studio/proxy` load after first paint;
+- `manualChunks` gives remotion / rapier / heic2any / lottie / html2canvas /
+  three / zod+tailwind-merge a file each.
+
+`check:bundle` (new, in the build chain) rebuilds in memory and fails if the
+entry chunk passes 500kB, if first paint needs more than 700kB, if a screen
+stops being `React.lazy`, or if any of those heavyweights turns up in the eager
+set. Current numbers: entry 115kB, eager 601kB across 5 chunks, 10.2MB deferred
+across 376 chunks.
+
+Not verified in a real browser (no Electron binary or headless browser in this
+sandbox). Eyeball: a long scrub in a heavy project, the Ask panel's first open,
+and a locked rundown in the Arena desk.
+
 ## Latest: framecn, fonts, cursor v2
 - `check:framecn-fonts` has 721 assertions, and every framecn component is server-rendered in the check.
 - Not verified in a real browser. Eyeball these:

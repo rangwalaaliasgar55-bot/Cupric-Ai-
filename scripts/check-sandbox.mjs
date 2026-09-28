@@ -167,9 +167,14 @@ console.log(`sandbox check passed — ${windows.length} sandboxed windows, scene
   const bg = main.slice(main.indexOf('async function executeStudioBackgroundJob'), main.indexOf("ipcMain.handle('studio:submitRecording'"))
   assert.match(bg, /resolveProjectDataPath\(asset\.localPath\)/, 'the main process resolves asset URLs where the roots are known')
   assert.match(bg, /unusable: verdict\.message/, 'a refused asset carries its reason to the renderer')
+  // F-4 moved the offscreen export host behind a dynamic import; the skip rule
+  // travelled with it, so the assertions follow the code.
   const renderMain = await read('src/main.tsx')
-  assert.match(renderMain, /if \(!asset\.localPath \|\| asset\.unusable\) continue/, 'the renderer skips unusable assets instead of failing the job')
-  assert.match(renderMain, /asset\.url \|\|/, 'the renderer prefers the pre-resolved URL')
+  assert.match(renderMain, /backgroundExportHost/, 'the renderer hands background export jobs to the export host')
+  const exportHost = await read('src/lib/studio/backgroundExportHost.ts')
+  assert.match(exportHost, /if \(!asset\.localPath \|\| asset\.unusable\) continue/, 'the renderer skips unusable assets instead of failing the job')
+  assert.match(exportHost, /asset\.url \|\|/, 'the renderer prefers the pre-resolved URL')
+  assert.match(exportHost, /export-asset-skipped/, 'a skipped asset is logged with its reason')
   const preview = await read('src/lib/previewPath.ts')
   assert.match(preview, /path:reveal/, 'the renderer can reveal a refused path')
   assert.match(await read('src/components/VideoPreview.tsx'), /Reveal folder/, 'a refused preview offers Reveal folder inline')

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { memo, useEffect, useRef, useState } from 'react'
 import { VIDEO_FONT_FAMILIES, VIDEO_FONTS, fontInfo } from '../../lib/studio/videoFonts'
 import {
   CAMERA_RECIPES,
@@ -149,7 +149,12 @@ function Slider({
   )
 }
 
-export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicate, onSplit, onPatchDoc }: Props) {
+/**
+ * F-4: the inspector is the heaviest panel in the Studio and none of it moves
+ * while the playhead does. Memoising it — with the stable callbacks Studio.tsx
+ * now passes and a deferred `time` — takes it out of the scrub entirely.
+ */
+export const StudioInspector = memo(function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicate, onSplit, onPatchDoc }: Props) {
   const bgFileRef = useRef<HTMLInputElement>(null)
   if (!clip) {
     return (
@@ -475,7 +480,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
 
     </div>
   )
-}
+})
 
 
 

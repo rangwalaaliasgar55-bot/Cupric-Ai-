@@ -6,7 +6,6 @@ import { setSoundEnabled } from './lib/sound'
 import { transitionSoft } from './lib/motion'
 import { useProjectStore } from './state/useProjectStore'
 import { studioOf } from './lib/studio/doc'
-import { rundownToStudioClips } from './lib/studio/importHtml'
 
 export default function App() {
   const theme = useProjectStore((s) => s.theme)
@@ -89,14 +88,19 @@ export default function App() {
             const latestProject = useProjectStore.getState().projects.find((project) => project.id === job.projectId)
             const doc = studioOf(latestProject)
             if (latestProject && doc.clips.length === 0) {
-              const clips = rundownToStudioClips(job.rundown, doc, 'Autonomous')
-              store.patchStudio(job.projectId, {
-                clips,
-                aspect: job.aspect,
-                fps: job.fps,
-              })
-              store.pushToast('success', 'Editable generated scenes are ready in Studio.', {
-                action: { label: 'Open Studio', run: () => useProjectStore.getState().setView('studio') },
+              // F-4: the HTML/rundown importer is a large module that only a
+              // finished autonomous job ever needs, so it is fetched here
+              // rather than carried through first paint.
+              void import('./lib/studio/importHtml').then(({ rundownToStudioClips }) => {
+                const clips = rundownToStudioClips(job.rundown, doc, 'Autonomous')
+                store.patchStudio(job.projectId, {
+                  clips,
+                  aspect: job.aspect,
+                  fps: job.fps,
+                })
+                store.pushToast('success', 'Editable generated scenes are ready in Studio.', {
+                  action: { label: 'Open Studio', run: () => useProjectStore.getState().setView('studio') },
+                })
               })
             }
           }

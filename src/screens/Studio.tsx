@@ -1,6 +1,6 @@
 import { agentSlug, animationIntent, describeRejections, forbiddenRequest } from '../lib/studio/agentCode'
 import { writeAgentAnimation } from '../lib/studio/agentWriter'
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
 import { ThinkingStates } from '../components/loaders/ThinkingStates'
 import { MatrixLoader } from '../components/loaders/MatrixLoader'
 import { StudioProPanel } from './studio/StudioProPanel'
@@ -137,6 +137,11 @@ export function Studio() {
   const startAutomationJob = useProjectStore((s) => s.startAutomationJob)
 
   const [time, setTime] = useState(0)
+  // F-4: the canvas and the playhead follow the pointer frame for frame; the
+  // inspector and the pro panel are hundreds of fields that only need to catch
+  // up when the drag pauses. Deferring their copy of the time keeps a scrub at
+  // the renderer's own cost instead of React's.
+  const scrubTime = useDeferredValue(time)
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -486,6 +491,53 @@ export function Studio() {
   // object, and writing to it is what blanked the Studio in 0.10.0.
   const apiState = useRef({ doc, selectedId, time })
   apiState.current = { doc, selectedId, time }
+
+  /* ——— F-4: stable props for the two memoised side panels ———
+   *
+   * `React.memo` only earns its keep when the props hold still, and a fresh
+   * arrow function per render is a changed prop. These read the playhead and
+   * the document through `apiState` (the same live ref the scripting API uses)
+   * so a scrub never invalidates them.
+   */
+  const inspectorPatch = useCallback(
+    (patch: Partial<StudioClip>) => {
+      const id = apiState.current.selectedId
+      if (!id || !pid) return
+      updateStudioClip(pid, id, patch)
+    },
+    [pid, updateStudioClip],
+  )
+  const inspectorPatchDoc = useCallback(
+    (patch: Partial<StudioDoc>) => { if (pid) patchStudio(pid, patch) },
+    [pid, patchStudio],
+  )
+  const inspectorDelete = useCallback(() => {
+    const id = apiState.current.selectedId
+    if (!id || !pid) return
+    removeStudioClip(pid, id)
+    setSelectedId(null)
+  }, [pid, removeStudioClip])
+  const inspectorDuplicate = useCallback(() => {
+    const id = apiState.current.selectedId
+    if (id && pid) duplicateStudioClip(pid, id)
+  }, [pid, duplicateStudioClip])
+  const inspectorSplit = useCallback(() => {
+    const id = apiState.current.selectedId
+    if (id && pid) splitStudioClip(pid, id, apiState.current.time)
+  }, [pid, splitStudioClip])
+  const proImportFiles = useCallback((files: FileList | null) => {
+    const live = apiState.current
+    const track = Math.max(0, ...live.doc.clips.filter((c) => c.kind === 'audio').map((c) => c.track), live.doc.trackCount)
+    void onFiles(files, { sec: live.time, track })
+  }, [])
+  const proPreview = useCallback(
+    (next: StudioDoc | null, label: string) => setPreviewDoc(next ? { doc: next, label } : null),
+    [],
+  )
+  const proCommit = useCallback(
+    (next: StudioDoc, label: string) => { if (pid) patchStudio(pid, { ...next }, label) },
+    [pid, patchStudio],
+  )
   useEffect(() => {
     if (!pid) return
     const api = createStudioApi({
@@ -1745,15 +1797,12 @@ export function Studio() {
           <aside className="w-[380px] shrink-0 overflow-y-auto border-r border-line bg-gradient-to-b from-panel/80 to-bg px-4 py-4 shadow-[inset_-1px_0_0_rgb(255_255_255/0.03)]" aria-label="Studio pro tools">
             <StudioProPanel
               doc={doc}
-              time={time}
+              time={scrubTime}
               selectedId={selectedId}
               onSeek={seek}
-              onImportFiles={(files) => void onFiles(files, { sec: time, track: Math.max(0, ...doc.clips.filter((c) => c.kind === 'audio').map((c) => c.track), doc.trackCount) })}
-              onPreview={(next, label) => setPreviewDoc(next ? { doc: next, label } : null)}
-              onCommit={(next, label) => {
-                const { ...patch } = next
-                patchStudio(projectId, patch, label)
-              }}
+              onImportFiles={proImportFiles}
+              onPreview={proPreview}
+              onCommit={proCommit}
             />
           </aside>
         )}
@@ -1971,17 +2020,13 @@ export function Studio() {
         <aside className={cx('w-80 shrink-0 overflow-y-auto border-l border-line bg-gradient-to-b from-panel-alt/60 to-panel px-5 py-4 shadow-[inset_1px_0_0_rgb(255_255_255/0.04)]')}>
           <StudioInspector
             doc={doc}
-            time={time}
+            time={scrubTime}
             clip={selected}
-            onPatch={(patch) => selectedId && updateStudioClip(projectId, selectedId, patch)}
-            onPatchDoc={(patch) => patchStudio(projectId, patch)}
-            onDelete={() => {
-              if (!selectedId) return
-              removeStudioClip(projectId, selectedId)
-              setSelectedId(null)
-            }}
-            onDuplicate={() => selectedId && duplicateStudioClip(projectId, selectedId)}
-            onSplit={() => selectedId && splitStudioClip(projectId, selectedId, time)}
+            onPatch={inspectorPatch}
+            onPatchDoc={inspectorPatchDoc}
+            onDelete={inspectorDelete}
+            onDuplicate={inspectorDuplicate}
+            onSplit={inspectorSplit}
           />
 
           <div className="mt-6 border-t border-line pt-4">

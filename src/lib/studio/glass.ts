@@ -15,12 +15,21 @@ type Rect = { x: number; y: number; w: number; h: number; radius: number }
 
 /** One scratch canvas per session — glass clips are small and frequent. */
 let scratch: HTMLCanvasElement | null = null
+/**
+ * A backdrop scratch canvas that only ever grows (F-4).
+ *
+ * Assigning `canvas.width` reallocates and clears the backing store, and an
+ * animated glass panel changes size on almost every frame — so the old
+ * exact-fit version threw away and rebuilt a full-frame buffer sixty times a
+ * second per panel. Keeping the largest size asked for and reading back a
+ * sub-rectangle costs one allocation for the whole scrub instead.
+ */
 function scratchCanvas(w: number, h: number): HTMLCanvasElement | null {
   if (typeof document === 'undefined') return null
   if (!scratch) scratch = document.createElement('canvas')
-  if (scratch.width !== w || scratch.height !== h) {
-    scratch.width = w
-    scratch.height = h
+  if (scratch.width < w || scratch.height < h) {
+    scratch.width = Math.max(scratch.width, w)
+    scratch.height = Math.max(scratch.height, h)
   }
   return scratch
 }
@@ -78,7 +87,7 @@ export function paintGlass(
   const dy = rect.y - (dh - sh) / 2
   const blurPx = (params.blur * scale) / 1
   ctx.filter = `blur(${blurPx.toFixed(2)}px) saturate(${params.saturate})`
-  ctx.drawImage(behind, dx, dy, dw, dh)
+  ctx.drawImage(behind, 0, 0, sw, sh, dx, dy, dw, dh)
   ctx.filter = 'none'
 
   // 3. Chromatic fringe: two extra copies offset in opposite directions,
@@ -88,9 +97,9 @@ export function paintGlass(
     ctx.globalCompositeOperation = 'lighter'
     ctx.globalAlpha = 0.16 * params.chroma
     ctx.filter = `blur(${(blurPx * 0.6).toFixed(2)}px) hue-rotate(-18deg)`
-    ctx.drawImage(behind, dx - shift, dy, dw, dh)
+    ctx.drawImage(behind, 0, 0, sw, sh, dx - shift, dy, dw, dh)
     ctx.filter = `blur(${(blurPx * 0.6).toFixed(2)}px) hue-rotate(18deg)`
-    ctx.drawImage(behind, dx + shift, dy, dw, dh)
+    ctx.drawImage(behind, 0, 0, sw, sh, dx + shift, dy, dw, dh)
     ctx.filter = 'none'
     ctx.globalAlpha = 1
     ctx.globalCompositeOperation = 'source-over'

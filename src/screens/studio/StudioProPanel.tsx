@@ -7,7 +7,7 @@
  * Nothing here edits the project directly: builders produce a proposed doc
  * that is PREVIEWED on the stage, then committed as ONE undo step on Accept.
  */
-import { useMemo, useState } from 'react'
+import { memo, useMemo, useState } from 'react'
 import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { Button } from '../../components/Button'
 import { suggestEdits } from '../../lib/studio/suggestions'
@@ -69,7 +69,12 @@ async function refsFrom(files: FileList | null): Promise<{ refs: MediaRef[]; err
   return { refs, errors }
 }
 
-export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selectedId, onImportFiles }: Props) {
+/**
+ * F-4: memoised for the same reason as the inspector — the pro panel reads the
+ * playhead but nothing in it animates with it, so a scrub should not re-render
+ * six hundred lines of controls sixty times a second.
+ */
+export const StudioProPanel = memo(function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selectedId, onImportFiles }: Props) {
   const [transcribing, setTranscribing] = useState(false)
   const [sceneName, setSceneName] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
@@ -600,4 +605,4 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
       </Section>
     </div>
   )
-}
+})

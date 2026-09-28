@@ -67,20 +67,38 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(appVersion) },
   plugins: [react(), tailwindcss(), serveResources()],
   build: {
-    // heic2any and rapier are already dynamic imports (loaded only on HEIC
-    // import / physics use); they are big because they embed WASM, so the
-    // warning threshold is set just above them rather than splitting further.
+    // rapier and heic2any embed their own WASM and are only fetched when a
+    // physics clip or a HEIC photo actually turns up (F-4 keeps them out of
+    // every other path), so the warning threshold sits just above them.
     chunkSizeWarningLimit: 2200,
     rollupOptions: {
       output: {
-        // Split stable vendors out of the entry chunk so it stays cacheable
-        // and smaller; app code changes no longer invalidate them.
+        /**
+         * Chunking (F-4).
+         *
+         * Two jobs. Stable vendors come out of the entry chunk so app edits
+         * don't invalidate them — and so the entry itself stays small enough
+         * to parse before first paint. Then the heavyweights that only some
+         * sessions ever touch (Remotion, Rapier, heic2any, Lottie, Three) get
+         * their own files, reachable only through the dynamic imports that
+         * need them.
+         */
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler|zustand)[\\/]/.test(id)) return 'vendor-react'
           if (/[\\/]node_modules[\\/]three[\\/]/.test(id)) return 'vendor-three'
           if (/[\\/]node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return 'vendor-motion'
           if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return 'vendor-icons'
+          // Validation and the class-name merger are eagerly needed (the
+          // project store validates on load) but never change — a chunk of
+          // their own keeps them out of the parse budget for app code.
+          if (/[\\/]node_modules[\\/](zod|tailwind-merge|clsx)[\\/]/.test(id)) return 'vendor-utils'
+          // Lazy-only heavyweights, one file each.
+          if (/[\\/]node_modules[\\/](remotion|@remotion)[\\/]/.test(id)) return 'vendor-remotion'
+          if (/[\\/]node_modules[\\/]@dimforge[\\/]/.test(id)) return 'vendor-rapier'
+          if (/[\\/]node_modules[\\/]heic2any[\\/]/.test(id)) return 'vendor-heic'
+          if (/[\\/]node_modules[\\/]lottie-web[\\/]/.test(id)) return 'vendor-lottie'
+          if (/[\\/]node_modules[\\/]html2canvas[\\/]/.test(id)) return 'vendor-html2canvas'
           return undefined
         },
       },

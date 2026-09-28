@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, type ReactElement } from 'react'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { recoveryInfo } from '../lib/projectHistory'
-import { AskPanel } from './AskPanel'
+import { AskPanelHost } from './AskPanelHost'
 import { CommandPalette } from './CommandPalette'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
@@ -105,7 +105,7 @@ export function AppLayout() {
         </main>
       </div>
       <RouteErrorBoundary route="ask-panel">
-        <AskPanel />
+        <AskPanelHost />
       </RouteErrorBoundary>
       <CommandPalette />
       <Toasts />

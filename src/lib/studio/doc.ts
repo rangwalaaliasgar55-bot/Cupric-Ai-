@@ -67,11 +67,54 @@ export function docDuration(doc: StudioDoc): number {
   return doc.clips.reduce((max, clip) => Math.max(max, clipEnd(clip)), 0)
 }
 
+/**
+ * Draw order for a clip list, computed once per list identity (F-4).
+ *
+ * Every edit replaces `doc.clips` with a new array, so the sorted order is a
+ * pure function of that array's identity. Sorting it on every frame was the
+ * single biggest avoidable cost in a scrub: at 120 clips it re-ran ~700
+ * comparator calls sixty times a second for an answer that never changed. The
+ * length guard is the cheap belt to that pair of braces — a list mutated in
+ * place (never done by the edit ops, but possible) falls back to a re-sort.
+ */
+const clipOrderCache = new WeakMap<readonly StudioClip[], { len: number; order: StudioClip[] }>()
+export function orderedClips(clips: readonly StudioClip[]): readonly StudioClip[] {
+  const cached = clipOrderCache.get(clips)
+  if (cached && cached.len === clips.length && stillOrdered(cached.order)) return cached.order
+  const order = [...clips].sort((a, b) => a.track - b.track || a.startSec - b.startSec)
+  clipOrderCache.set(clips, { len: clips.length, order })
+  return order
+}
+
+/**
+ * The cached order is only valid while it is still an order. One linear pass
+ * of two number reads is far cheaper than the sort it replaces, and it means a
+ * clip restacked or retimed in place (which the edit ops never do, but agent
+ * code and importers are free to) can never draw in the wrong layer.
+ */
+function stillOrdered(order: readonly StudioClip[]): boolean {
+  for (let i = 1; i < order.length; i += 1) {
+    const a = order[i - 1]
+    const b = order[i]
+    if (a.track > b.track || (a.track === b.track && a.startSec > b.startSec)) return false
+  }
+  return true
+}
+
+/** True when the clip covers time `t`. Start is inclusive, end exclusive. */
+export function clipCovers(clip: StudioClip, t: number): boolean {
+  return t >= clip.startSec && t < clip.startSec + clip.durationSec
+}
+
 /** Clips visible at time t, bottom track first (draw order). */
 export function clipsAt(doc: StudioDoc, t: number): StudioClip[] {
-  return doc.clips
-    .filter((clip) => t >= clip.startSec && t < clipEnd(clip))
-    .sort((a, b) => a.track - b.track || a.startSec - b.startSec)
+  const order = orderedClips(doc.clips)
+  const out: StudioClip[] = []
+  for (let i = 0; i < order.length; i += 1) {
+    const clip = order[i]
+    if (t >= clip.startSec && t < clip.startSec + clip.durationSec) out.push(clip)
+  }
+  return out
 }
 
 /** 0→1 progress through a clip, used by every animation. */
