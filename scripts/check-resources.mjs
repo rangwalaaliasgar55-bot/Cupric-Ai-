@@ -104,3 +104,127 @@ for (const id of ['framer-motion', 'gsap', 'font-inter', 'font-geist', 'font-sat
   assert.ok(it && /^https:\/\//.test(it.data.url) && it.data.license, `essentials must include ${id} with url + license`)
 }
 console.log(`resource check passed — ${index.packs.length} bundled packs, ${total} items, shared by Library and Studio`)
+
+/* ——— F-3: no renderer fetch may reject ————————————————————————————————
+ * Production log: `(renderer-console) TypeError: Failed to fetch` ×8 inside
+ * one minute — a packaged app asking `file://` for `/resources/packs/*.json`,
+ * five dead localhost `/models` probes, a stock/updater poll. Every renderer
+ * network read now goes through `src/lib/net.ts`, which resolves a verdict and
+ * never rejects, and every caller has a cache or an explicit placeholder.
+ */
+{
+  const { execSync } = await import('node:child_process')
+  const { build } = await import('esbuild')
+  const { rm } = await import('node:fs/promises')
+  const { pathToFileURL } = await import('node:url')
+  const nodePath = await import('node:path')
+  const rootDir = nodePath.default.resolve(nodePath.default.dirname(new URL(import.meta.url).pathname), '..')
+
+  // 1. Nothing outside net.ts (and the vendored `src/lab` showcase source,
+  //    which is display-only code) may call fetch directly.
+  const offenders = execSync(
+    `grep -rln --include=*.ts --include=*.tsx -E "(await|=|return|void) fetch\\(" src || true`,
+    { cwd: rootDir, encoding: 'utf8' },
+  ).trim().split('\n').filter(Boolean).filter((f) => f !== 'src/lib/net.ts' && !f.startsWith('src/lab/'))
+  assert.deepEqual(offenders, [], `every renderer network read must go through src/lib/net.ts, found: ${offenders.join(', ')}`)
+
+  // 2. The guard's contract, exercised for real.
+  const tmp = nodePath.default.join(rootDir, '.net-check.mjs')
+  await build({
+    bundle: true, outfile: tmp, format: 'esm', platform: 'node', logLevel: 'warning',
+    stdin: { contents: "export * from './src/lib/net'", resolveDir: rootDir, loader: 'ts' },
+  })
+  const net = await import(`${pathToFileURL(tmp).href}?t=${Date.now()}`)
+  await rm(tmp, { force: true })
+
+  // `navigator` is a getter-only global in Node 22, so patch by descriptor.
+  const withGlobals = async (patch, fn) => {
+    const saved = Object.fromEntries(Object.keys(patch).map((k) => [k, Object.getOwnPropertyDescriptor(globalThis, k)]))
+    for (const [k, v] of Object.entries(patch)) Object.defineProperty(globalThis, k, { value: v, configurable: true, writable: true })
+    try {
+      return await fn()
+    } finally {
+      for (const [k, descriptor] of Object.entries(saved)) {
+        if (descriptor) Object.defineProperty(globalThis, k, descriptor)
+        else delete globalThis[k]
+      }
+    }
+  }
+
+  // Wifi off: no request is even attempted, and the caller is told plainly.
+  const offline = await withGlobals(
+    { navigator: { onLine: false }, fetch: () => { throw new Error('must not be called when offline') } },
+    () => net.guardedJson('https://example.com/models'),
+  )
+  assert.equal(offline.ok, false)
+  assert.equal(offline.offline, true)
+  assert.equal(offline.expected, true, 'offline is an expected state, not an error to shout about')
+  assert.equal(offline.reason, net.OFFLINE_REASON)
+
+  // Same-origin/bundled reads still run with the wifi off — that is exactly
+  // what has to keep the Library alive.
+  const bundled = await withGlobals(
+    { navigator: { onLine: false }, fetch: async () => ({ ok: true, status: 200, json: async () => ({ packs: [] }) }) },
+    () => net.guardedJson('/resources/packs/index.json', { allowOffline: true }),
+  )
+  assert.ok(bundled.ok && bundled.data.packs, 'bundled packs load offline')
+
+  // A dead localhost /models probe: a verdict, never a rejection.
+  const refused = await withGlobals(
+    { navigator: { onLine: true }, fetch: async () => { throw new TypeError('Failed to fetch') } },
+    () => net.guardedJson('http://localhost:11434/v1/models'),
+  )
+  assert.equal(refused.ok, false)
+  assert.ok(!/Failed to fetch/.test(refused.reason), 'the raw TypeError never reaches a user')
+  assert.match(refused.reason, /could not be reached — Cupric used what it already has\./)
+
+  // Non-2xx is a failure, so no caller parses a 404 page as JSON.
+  const notFound = await withGlobals(
+    { navigator: { onLine: true }, fetch: async () => ({ ok: false, status: 404, statusText: 'Not Found' }) },
+    () => net.guardedJson('https://example.com/nope.json'),
+  )
+  assert.equal(notFound.ok, false)
+  assert.equal(notFound.status, 404)
+  assert.equal(notFound.expected, true)
+
+  // A body that is not JSON is a verdict too.
+  const badBody = await withGlobals(
+    { navigator: { onLine: true }, fetch: async () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError('Unexpected token <') } }) },
+    () => net.guardedJson('https://example.com/html-instead.json'),
+  )
+  assert.equal(badBody.ok, false)
+
+  // Every helper resolves — nothing in this module can produce an unhandled
+  // rejection, whatever fetch does.
+  for (const helper of ['guardedFetch', 'guardedJson', 'guardedText', 'guardedBlob']) {
+    const result = await withGlobals(
+      { navigator: { onLine: true }, fetch: async () => { throw new Error('boom') } },
+      () => net[helper]('https://example.com/x'),
+    )
+    assert.equal(result.ok, false, `${helper} resolves instead of rejecting`)
+    assert.ok(typeof result.reason === 'string' && result.reason.length > 0, `${helper} explains itself`)
+  }
+  // A timeout aborts rather than holding a socket open.
+  const aborted = await withGlobals(
+    { navigator: { onLine: true }, fetch: (_url, init) => new Promise((_, reject) => init.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))) },
+    () => net.guardedFetch('https://example.com/slow', { timeoutMs: 30 }),
+  )
+  assert.equal(aborted.ok, false)
+  assert.match(aborted.reason, /did not answer in time/)
+
+  // 3. The offline UI: the Library works from what it has, and says so.
+  const packs = await readFile(new URL('src/lib/packs.ts', root), 'utf8')
+  assert.match(packs, /guardedJson</, 'pack reads go through the guard')
+  assert.ok(packs.includes("fetchJson<T>(`/resources/packs/${name}.json`, 4000, true)"), 'bundled pack reads are allowed offline')
+  const browser = await readFile(new URL('src/screens/library/PackBrowser.tsx', root), 'utf8')
+  assert.match(browser, /offline — cached copy/, 'a cached catalogue is labelled with a stale dot')
+  assert.match(browser, /Everything already downloaded still works/, 'a failed pack load is an honest inline notice, not a dialog')
+  assert.ok(!/window\.alert|confirm\(/.test(browser), 'never a dialog for an expected state')
+  const ask = await readFile(new URL('src/app-shell/AskPanel.tsx', root), 'utf8')
+  assert.match(ask, /modelsStale &&/, 'the model list shows a cached/stale state')
+  assert.match(ask, /You are offline — showing the cached model list\./, 'and says so in words')
+  const opencode = await readFile(new URL('src/lib/opencode.ts', root), 'utf8')
+  assert.match(opencode, /allowOffline: isLocalBase/, 'localhost probes still run with the wifi off')
+  assert.doesNotMatch(opencode, /await fetch\(/, 'no raw fetch left in the model client')
+}
+console.log('F-3 check passed — one guarded fetch for the renderer, zero possible unhandled rejections, offline Library + cached models with a stale dot')

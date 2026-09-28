@@ -17,6 +17,8 @@ const BUNDLED = new Set(['inter', 'inter variable', 'jetbrains mono', 'jetbrains
 import { isUserFont, userFontsReady } from './userFonts'
 
 const CACHE_NAME = 'cupric-fonts-v1'
+import { guardedFetch } from '../net'
+
 const pending = new Map<string, Promise<boolean>>()
 export const FONTS_CHANGED_EVENT = 'cupric:fonts-changed'
 
@@ -24,14 +26,19 @@ export function isBundledFont(family: string): boolean {
   return BUNDLED.has(family.trim().toLowerCase())
 }
 
+/**
+ * F-3: the Cache API copy answers first (that is what keeps fonts working
+ * offline); a miss goes through the shared guard, which never rejects with a
+ * bare `Failed to fetch`.
+ */
 async function cachedFetch(url: string): Promise<Response> {
   const cache = typeof caches !== 'undefined' ? await caches.open(CACHE_NAME).catch(() => null) : null
   const hit = cache ? await cache.match(url).catch(() => undefined) : undefined
   if (hit) return hit
-  const response = await fetch(url, { mode: 'cors', credentials: 'omit' })
-  if (!response.ok) throw new Error(`Font download failed (${response.status})`)
-  if (cache) await cache.put(url, response.clone()).catch(() => undefined)
-  return response
+  const result = await guardedFetch(url, { timeoutMs: 15_000, init: { mode: 'cors', credentials: 'omit' } })
+  if (!result.ok) throw new Error(result.reason)
+  if (cache) await cache.put(url, result.response.clone()).catch(() => undefined)
+  return result.response
 }
 
 type Face = { weight: string; style: string; url: string; unicodeRange?: string }

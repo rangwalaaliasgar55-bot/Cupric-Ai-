@@ -30,6 +30,7 @@ import { placeClip } from '../../lib/studio/doc'
 import { registerFile } from '../../lib/studio/media'
 import { StudioCreativePanel } from './StudioCreativePanel'
 import { checkResourceLink, githubRepoOf, withRepoLicense, type LinkVerdict } from '../../lib/resourceLinks'
+import { guardedBlob, guardedJson } from '../../lib/net'
 
 type Props = {
   doc: StudioDoc
@@ -118,13 +119,10 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
     let v = checkResourceLink(link)
     const repo = githubRepoOf(v.url)
     if (repo) {
-      try {
-        const res = await fetch(`https://api.github.com/repos/${repo}/license`)
-        const spdx = res.ok ? ((await res.json()) as { license?: { spdx_id?: string } }).license?.spdx_id ?? null : null
-        v = withRepoLicense(v, spdx)
-      } catch {
-        v = { ...v, reason: `${v.reason} (Licence lookup failed — offline?)` }
-      }
+      // F-3: a licence lookup that cannot run is an expected state.
+      const res = await guardedJson<{ license?: { spdx_id?: string } }>(`https://api.github.com/repos/${repo}/license`, { timeoutMs: 8000 })
+      if (res.ok) v = withRepoLicense(v, res.data.license?.spdx_id ?? null)
+      else v = { ...v, reason: `${v.reason} (Licence lookup unavailable: ${res.reason})` }
     }
     setVerdict(v)
   }
@@ -136,9 +134,9 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
     const credits = [...(doc.credits ?? []).filter((c) => c.url !== credit.url), credit]
     if (verdict.kind === 'image' || verdict.kind === 'video' || verdict.kind === 'audio') {
       try {
-        const res = await fetch(verdict.url)
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const blob = await res.blob()
+        const res = await guardedBlob(verdict.url, { timeoutMs: 30_000 })
+        if (!res.ok) throw new Error(res.reason)
+        const blob = res.data
         const file = new File([blob], decodeURIComponent(new URL(verdict.url).pathname.split('/').pop() || 'download'), { type: blob.type })
         const { refs, errors } = await refsFrom(Object.assign([file], { item: (i: number) => [file][i] }) as unknown as FileList)
         if (!refs.length) throw new Error(errors[0] ?? 'not a usable media file')

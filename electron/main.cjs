@@ -18,6 +18,7 @@ const { migrateSettings } = require('./settings-migration.cjs')
 const voiceEngines = require('./voice-engines.cjs')
 const { ADVANCED_VIDEO_PLAYBOOK_PROMPT } = require('./opus-playbook.cjs')
 const { createStockService } = require('./stock.cjs')
+const pathSandbox = require('./path-sandbox.cjs')
 
 let elog = null
 try {
@@ -834,6 +835,11 @@ ipcMain.handle('ai:ackNewModels', () => {
   writeModelCatalogue({ ...cat, models: (cat.models || []).map((m) => ({ ...m, isNew: false, seen: true })) })
   return true
 })
+/**
+ * F-1 — endpoint health for the Settings dots. Presence only: a route key
+ * (baseUrl|model), its label, and whether it is quarantined. Never a key.
+ */
+ipcMain.handle('ai:health', () => ({ routes: healthRows(), at: Date.now() }))
 ipcMain.handle('ai:autoDiscover', async () => publicDiscovery(await autoDiscover({ force: true })))
 ipcMain.handle('ai:openZenAuth', () => shell.openExternal('https://opencode.ai/auth'))
 ipcMain.handle('ai:installOllama', () => shell.openExternal('https://ollama.com/download'))
@@ -2418,7 +2424,91 @@ async function aiRoutes(task = 'draft') {
 /* ——— zero-setup brain wiring (free-brain.cjs) ——————————————————————— */
 
 const brainCooldowns = freeBrain.createCooldowns()
+/**
+ * F-1 — endpoint health. Two failures inside 5 minutes quarantine a route for
+ * 15 minutes; Settings shows it red; a cheap probe restores it automatically
+ * with one quiet toast. Keys never enter this map — only `baseUrl|model`.
+ */
+const routeHealth = freeBrain.createHealthLedger()
+let routeProbeTimer = null
 let brainLocalsCache = { at: 0, locals: [] }
+
+function healthRows() {
+  return routeHealth.entries().map((row) => ({
+    key: row.key,
+    label: row.label,
+    unhealthy: row.unhealthy,
+    until: row.until,
+    reason: row.reason,
+    failures: row.failures,
+  }))
+}
+
+function sendHealth() {
+  try { mainWindow?.webContents.send('ai:health', { routes: healthRows(), at: Date.now() }) } catch {}
+}
+
+/** Route → the URL a health probe can hit without spending a completion. */
+function routeProbeUrl(route) {
+  if (route?.provider === 'keyless') return route.brain?.modelsUrl || `${normalizedBaseUrl(route.brain?.baseUrl || '')}/models`
+  if (route?.provider === 'gemini') return 'https://generativelanguage.googleapis.com/v1beta/models'
+  const cfg = { ...aiSettings(), ...(route?.override || {}) }
+  return `${normalizedBaseUrl(cfg.openCodeBaseUrl)}/models`
+}
+
+/** key → the URL a probe can hit; recorded when a route first misbehaves. */
+const routeProbeUrls = new Map()
+
+/**
+ * One failure against one route. Two inside 5 minutes quarantine it for 15,
+ * which the routing then skips and Settings shows red.
+ */
+function noteRouteFailure(route, reason) {
+  const key = routeKey(route)
+  routeProbeUrls.set(key, routeProbeUrl(route))
+  const state = routeHealth.fail(key, { label: route.label, reason })
+  if (state.unhealthy) {
+    logLine('ai-route-unhealthy', `${route.label} paused for ${Math.round((state.until - Date.now()) / 60_000)} min`, { reason })
+    scheduleHealthProbes()
+  }
+  sendHealth()
+  return state
+}
+
+/**
+ * Recovery. Every 60 s, quietly GET the endpoint's model list for each
+ * quarantined route; the first 2xx restores it and says so once. No dialogs,
+ * no user action, no completion spent.
+ */
+function scheduleHealthProbes() {
+  if (routeProbeTimer) return
+  routeProbeTimer = setInterval(() => {
+    const queue = routeHealth.probeQueue()
+    if (!queue.length) {
+      clearInterval(routeProbeTimer)
+      routeProbeTimer = null
+      return
+    }
+    for (const key of queue) {
+      const url = routeProbeUrls.get(key)
+      if (!url) { routeHealth.ok(key); sendHealth(); continue }
+      routeHealth.markProbing(key, true)
+      void fetch(url, { signal: AbortSignal.timeout(freeBrain.HEALTH_PROBE_MS) })
+        .then((res) => {
+          if (!res.ok) throw new Error(String(res.status))
+          const restored = routeHealth.ok(key)
+          brainCooldowns.set(key, 0, 'recovered')
+          if (restored.restored) {
+            sendAiNotice(`${restored.label || 'that model'} is answering again`, 'toast')
+            logLine('ai-route-restored', String(restored.label || key))
+          }
+          sendHealth()
+        })
+        .catch(() => { routeHealth.fail(key, { reason: 'probe-failed' }); routeHealth.markProbing(key, false); sendHealth() })
+    }
+  }, 60_000)
+  routeProbeTimer.unref?.()
+}
 
 function routeKey(route) {
   if (route.provider === 'keyless') return `${route.brain.chatUrl}|${route.brain.model}`
@@ -2458,7 +2548,11 @@ async function brainRoutes(task = 'draft') {
   const strong = task !== 'draft' && task !== 'classify'
   const ordered = strong ? [...userRoutes, ...localRoutes, ...keyless] : [...localRoutes, ...keyless, ...userRoutes]
   const seen = new Set()
-  return ordered.filter((r) => { const k = routeKey(r); if (seen.has(k) || brainCooldowns.cooling(k)) return false; seen.add(k); return true })
+  const unique = ordered.filter((r) => { const k = routeKey(r); if (seen.has(k)) return false; seen.add(k); return true })
+  const ready = unique.filter((r) => { const k = routeKey(r); return !brainCooldowns.cooling(k) && !routeHealth.unhealthy(k) })
+  // If everything is cooling or quarantined we still try (the deterministic
+  // template is the caller's fallback, but a blip must not lock AI out).
+  return ready.length ? ready : unique.filter((r) => !brainCooldowns.cooling(routeKey(r)))
 }
 
 function noteRetiredModel(route) {
@@ -2556,9 +2650,19 @@ async function completeWithFallback({ system, user, json = false, temperature = 
   }
   const deadline = Date.now() + deadlineMs
   const failures = []
+  // F-1: once a route has failed, the answer that finally arrives came from a
+  // *different* brain. Say that once, in words, never as a raw timeout.
+  let hopped = false
   for (const route of routes) {
     const remaining = deadline - Date.now()
     if (remaining < 2500) break
+    // Per-attempt cap by route class (local 8 s, remote/free 20 s) instead of
+    // one 30 s budget that a single hung endpoint could eat whole.
+    const routeClass = route.provider === 'keyless' ? 'keyless'
+      : route.provider === 'gemini' ? 'gemini'
+        : isLocalModelBase(route.override?.openCodeBaseUrl || aiSettings().openCodeBaseUrl) ? 'local'
+          : 'free'
+    const attemptMs = freeBrain.attemptTimeoutMs(routeClass, remaining)
     try {
       const ask = async (extraInstruction = '') => {
         const userText = extraInstruction ? `${user}\n\n${extraInstruction}` : user
@@ -2574,7 +2678,7 @@ async function completeWithFallback({ system, user, json = false, temperature = 
             { role: 'system', content: system },
             ...history.map((h) => ({ role: h.role === 'ai' ? 'assistant' : 'user', content: h.text })),
             { role: 'user', content: userText },
-          ], { json, temperature: Math.min(temperature, 0.3), timeoutMs: Math.max(2000, deadline - Date.now()) })
+          ], { json, temperature: Math.min(temperature, 0.3), timeoutMs: freeBrain.attemptTimeoutMs(routeClass, deadline - Date.now()) })
           return { text, model: route.brain.model }
         }
         if (route.provider === 'gemini') {
@@ -2582,7 +2686,7 @@ async function completeWithFallback({ system, user, json = false, temperature = 
           const parts = [{ text: `${system}\n\n${historyText}${userText}` }, ...images.map((image) => ({ inlineData: { mimeType: image.mimeType || 'image/jpeg', data: image.data } }))]
           const result = await withTimeout(
             runGeminiGenerateContent(geminiApiKey(), images.length ? parts : parts[0].text, { ...(json ? { responseMimeType: 'application/json' } : {}), temperature }),
-            Math.max(2000, deadline - Date.now()),
+            freeBrain.attemptTimeoutMs(routeClass, deadline - Date.now()),
             'Gemini request',
           )
           return { text: result.response.text(), model: result.modelName || geminiModel() }
@@ -2594,18 +2698,19 @@ async function completeWithFallback({ system, user, json = false, temperature = 
           { role: 'system', content: system },
           ...history.map((h) => ({ role: h.role === 'ai' ? 'assistant' : 'user', content: h.text })),
           { role: 'user', content: userContent },
-        ], { json, temperature, override: route.override, timeoutMs: Math.max(2000, deadline - Date.now()) })
+        ], { json, temperature, override: route.override, timeoutMs: freeBrain.attemptTimeoutMs(routeClass, deadline - Date.now()) })
         return { text, model: route.override?.openCodeModel || aiSettings().openCodeModel }
       }
-      // 1.8 — transient failures (503 / overload / timeouts / plain rate
-      // limits) get the same route again after 1 s, then 4 s, while the
-      // deadline allows. A quota exhaustion moves straight to the next route
-      // (retrying it only burns the remaining quota and the user's time).
+      // 1.8 / F-1 — provider throttling (429 / 503 / overload) gets the same
+      // route again after 1 s, then 4 s, while the deadline allows. A timeout
+      // or a quota exhaustion moves straight to the next route: retrying a
+      // hung endpoint is exactly what killed AI twice in the 0.13.0 logs.
       const askWithBackoff = async (extra = '') => {
         for (let attempt = 0; ; attempt += 1) {
           try {
             return await ask(extra)
           } catch (err) {
+            if (freeBrain.isTimeoutError(err)) throw err
             const wait = AI_BACKOFF_MS[attempt]
             if (route.provider === 'keyless' && retryableAiError(err)) sendAiNotice(freeBrain.BUSY_NOTICE, 'inline')
             if (wait === undefined || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
@@ -2627,16 +2732,27 @@ async function completeWithFallback({ system, user, json = false, temperature = 
           parsed = parseJsonFromModel(reply.text)
           if (validate) validate(parsed)
         }
-        return { ...reply, parsed, route: route.label }
+        if (hopped) sendAiNotice(freeBrain.switchedNotice(route.label), 'inline')
+        return { ...reply, parsed, route: route.label, switched: hopped }
       }
-      return { ...reply, route: route.label }
+      if (hopped) sendAiNotice(freeBrain.switchedNotice(route.label), 'inline')
+      routeHealth.ok(routeKey(route), { label: route.label })
+      return { ...reply, route: route.label, switched: hopped }
     } catch (err) {
       failures.push(`${route.label}: ${err?.message || String(err)}`)
       logLine('ai-route-failed', (err?.message || String(err)).slice(0, 600), { route: route.label })
-      // Per-route cooldown for every route (not only the configured one).
-      if (isQuotaError(err) || /\b503\b|overload/i.test(err?.message || '')) {
-        brainCooldowns.set(routeKey(route), isQuotaError(err) ? quotaCooldownMs(err) : 20_000, isQuotaError(err) ? 'quota' : 'unavailable')
-      }
+      hopped = true
+      // F-1: a timeout cools the route for a minute and counts against its
+      // health — it never gets retried inside the same request.
+      const timedOut = freeBrain.isTimeoutError(err)
+      // Per-route cooldown for EVERY route and every failure class, not only
+      // quota on the configured one.
+      brainCooldowns.set(
+        routeKey(route),
+        timedOut ? freeBrain.TIMEOUT_COOLDOWN_MS : isQuotaError(err) ? quotaCooldownMs(err) : /\b503\b|overload/i.test(err?.message || '') ? 20_000 : 20_000,
+        timedOut ? 'timeout' : isQuotaError(err) ? 'quota' : /\b503\b|overload/i.test(err?.message || '') ? 'unavailable' : 'failed',
+      )
+      noteRouteFailure(route, timedOut ? 'timeout' : isQuotaError(err) ? 'quota' : 'failed')
       if (route.provider === 'opencode' && !route.override && isQuotaError(err)) {
         const cfg = aiSettings()
         aiCooldowns.set(`opencode:${cfg.openCodeBaseUrl}|${cfg.openCodeModel}`, { until: Date.now() + quotaCooldownMs(err), reason: 'quota' })
@@ -2650,7 +2766,16 @@ async function completeWithFallback({ system, user, json = false, temperature = 
   const ordered = [...failures].sort((a, b) => Number(isQuotaError(b)) - Number(isQuotaError(a)))
   sendAiNotice(freeBrain.OFFLINE_NOTICE, 'inline')
   const error = new Error(ordered.length ? ordered.join(' | ').slice(0, 1800) : 'The AI request ran out of time before any provider answered')
+  // F-1: the diagnostic text stays on `message` for the log; anything a user
+  // can read uses `friendly`, which never contains a raw URL or "timed out".
+  error.friendly = freeBrain.friendlyAiMessage(ordered[0] || '')
+  error.code = error.code || 'NO_ANSWER'
   throw error
+}
+
+/** User-facing sentence for an AI failure — honest, never a raw provider dump. */
+function friendlyAiError(err) {
+  return err?.friendly || freeBrain.friendlyAiMessage(err?.message || String(err || ''))
 }
 
 async function generateGeminiRundown(prompt, history, context) {
@@ -2885,6 +3010,17 @@ const STUDIO_PLAN_DEADLINE_MS = 25_000
 async function liveAiChat(text, ctx, extra = {}) {
   const images = Array.isArray(extra.images) ? extra.images.filter((image) => image && typeof image.data === 'string' && image.data.length < 12_000_000).slice(0, 4) : []
   const history = Array.isArray(extra.history) ? extra.history.slice(-8).map((h) => ({ role: h?.role === 'ai' ? 'ai' : 'user', text: String(h?.text || '').slice(0, 4000) })) : []
+  try {
+    return await liveAiChatOnce(text, ctx, { images, history })
+  } catch (err) {
+    // F-1: the chat bubble gets one honest line, never "Request to
+    // https://… timed out". The full reason is in the log.
+    logLine('ai-chat-failed', (err?.message || String(err)).slice(0, 600))
+    throw Object.assign(new Error(friendlyAiError(err)), { code: err?.code || 'NO_ANSWER' })
+  }
+}
+
+async function liveAiChatOnce(text, ctx, { images, history }) {
   const reply = await completeWithFallback({
     system: "You are Cupric AI's desktop creative copilot: a senior video editor and motion designer. Be concise, practical and specific. Help with video creation, keyframe animation, typography, transitions, rendering, resources, prompts and edits. When images are attached, look at them carefully and refer to what is actually in them.",
     user: `Context: ${JSON.stringify(ctx || {})}\nUser: ${text}`,
@@ -2988,6 +3124,38 @@ function projectRoot(projectId) {
 function isSubPath(child, parent) {
   const rel = path.relative(path.resolve(parent), path.resolve(child))
   return rel === '' || (!!rel && !rel.startsWith('..') && !path.isAbsolute(rel))
+}
+
+/* ——— F-2: the project-data sandbox ————————————————————————————————————
+ * Everything Cupric writes for a project, as real directories. A preview path
+ * must canonicalise (symlinks, junctions, Windows case, 8.3 short names) into
+ * one of these — the 0.13.0 build compared raw strings against `projects`
+ * alone, which rejected every `renders/<jobId>/…` export in a batch.
+ */
+function projectDataRoots() {
+  return pathSandbox.PROJECT_DATA_DIRS.map((dir) => userDataPath(dir))
+}
+
+const realpathNative = (p) => (fs.realpathSync.native ? fs.realpathSync.native(p) : fs.realpathSync(p))
+
+/** `{ ok, canonical, root }` — or `{ ok:false, canonical, reason, message }`. */
+function resolveProjectDataPath(candidate) {
+  const roots = projectDataRoots()
+  const verdict = pathSandbox.resolveInsideRoots(candidate, roots, { realpath: realpathNative, platform: process.platform })
+  if (verdict.ok) return verdict
+  return { ...verdict, message: pathSandbox.outsideMessage(verdict.canonical || String(candidate || ''), roots) }
+}
+
+/**
+ * Honest rejection: an Error the renderer can render inline, naming the path
+ * and offering "Reveal folder". Never a bare "…is outside…" IPC string.
+ */
+function outsideProjectDataError(candidate, verdict) {
+  const error = new Error(verdict.message)
+  error.code = 'PATH_OUTSIDE_PROJECT_DATA'
+  error.path = verdict.canonical || String(candidate || '')
+  error.canReveal = Boolean(error.path)
+  return error
 }
 
 function safeFileName(name, fallback = 'file') {
@@ -3137,9 +3305,23 @@ ipcMain.handle('arena:import', async (_event, payload) => {
 
 ipcMain.handle('arena:previewPath', async (_event, localPath) => {
   if (!localPath) throw new Error('No preview path provided')
-  const root = userDataPath('projects')
-  if (!isSubPath(localPath, root)) throw new Error('Preview path is outside Cupric AI project data')
-  return pathToFileURL(localPath).toString()
+  const verdict = resolveProjectDataPath(localPath)
+  if (!verdict.ok) throw outsideProjectDataError(localPath, verdict)
+  // The canonical path is what actually exists on disk — file:// URLs built
+  // from an 8.3 or wrong-case spelling fail to load on some Windows setups.
+  return pathToFileURL(verdict.canonical).toString()
+})
+
+/**
+ * F-2 — "Reveal folder" for a path the sandbox refused. Opening Explorer on a
+ * file the user picked themselves leaks nothing back into the renderer, and it
+ * is the one action that actually helps when a path is in the wrong place.
+ */
+ipcMain.handle('path:reveal', async (_event, target) => {
+  const p = String(target || '').trim()
+  if (!p || !path.isAbsolute(p) || !fs.existsSync(p)) throw new Error('That file is no longer on disk.')
+  shell.showItemInFolder(p)
+  return true
 })
 
 /**
@@ -3172,8 +3354,9 @@ ipcMain.handle('capture:rect', async (event, rect) => {
 
 ipcMain.handle('arena:readHtml', async (_event, localPath) => {
   if (!localPath) throw new Error('No file path provided')
-  const root = userDataPath('projects')
-  if (!isSubPath(localPath, root)) throw new Error('That file is outside Cupric AI project data')
+  const verdict = resolveProjectDataPath(localPath)
+  if (!verdict.ok) throw outsideProjectDataError(localPath, verdict)
+  localPath = verdict.canonical
   const stat = fs.statSync(localPath)
   const MAX_BYTES = 8 * 1024 * 1024
   if (stat.size > MAX_BYTES) throw new Error('That file is larger than 8 MB, which is too big to be a single-file scene')
@@ -3465,10 +3648,24 @@ async function executeStudioBackgroundJob(state, payload) {
     if (DEV_URL) await win.loadURL(DEV_URL)
     else await win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
     await ensureNotCancelled(state)
+    // F-2: resolve every asset URL *here*, where the roots are known. The
+    // 0.13.0 renderer asked `arena:previewPath` per asset and one rejection
+    // killed the whole job — seven `render-queue-error`s from one batch.
+    const assets = (Array.isArray(payload.assets) ? payload.assets : []).map((asset) => {
+      if (!asset?.localPath) return { ...asset, url: '' }
+      const verdict = resolveProjectDataPath(asset.localPath)
+      if (!verdict.ok) {
+        logLine('export-asset-skipped', verdict.message, { jobId: state.id, asset: asset.id })
+        return { ...asset, url: '', unusable: verdict.message }
+      }
+      return { ...asset, localPath: verdict.canonical, url: pathToFileURL(verdict.canonical).toString() }
+    })
+    const skipped = assets.filter((a) => a.unusable)
+    if (skipped.length) sendRenderQueueStatus(state, 'working', 0, { warning: `${skipped.length} clip${skipped.length === 1 ? '' : 's'} could not be read from disk and were skipped: ${skipped.map((a) => a.fileName || a.id).join(', ')}` })
     win.webContents.send('studio:backgroundExport', {
       jobId: state.id,
       doc,
-      assets: Array.isArray(payload.assets) ? payload.assets : [],
+      assets,
       fileName: payload.fileName,
       scale: Number(payload.scale) > 0 ? Number(payload.scale) : 1,
     })
@@ -4301,23 +4498,32 @@ ipcMain.handle('render:resume', (_event, payload) => {
 
 ipcMain.handle('render:preview', (_event, outputPath) => {
   if (!outputPath || !fs.existsSync(outputPath)) throw new Error('Render output does not exist yet')
-  const rendersRoot = userDataPath('renders')
-  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
+  // F-2: canonicalise before comparing — a Windows 8.3 or wrong-case spelling
+  // of the very folder we wrote must not read as "outside".
+  const renders = pathSandbox.resolveInsideRoots(outputPath, [userDataPath('renders')], { realpath: realpathNative, platform: process.platform })
+  if (!renders.ok) throw outsideProjectDataError(outputPath, { ...renders, message: pathSandbox.outsideMessage(renders.canonical, [userDataPath('renders')]) })
+  outputPath = renders.canonical
   return pathToFileURL(outputPath).toString()
 })
 
 ipcMain.handle('render:reveal', (_event, outputPath) => {
   if (!outputPath || !fs.existsSync(outputPath)) throw new Error('Render output does not exist yet')
-  const rendersRoot = userDataPath('renders')
-  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
+  // F-2: canonicalise before comparing — a Windows 8.3 or wrong-case spelling
+  // of the very folder we wrote must not read as "outside".
+  const renders = pathSandbox.resolveInsideRoots(outputPath, [userDataPath('renders')], { realpath: realpathNative, platform: process.platform })
+  if (!renders.ok) throw outsideProjectDataError(outputPath, { ...renders, message: pathSandbox.outsideMessage(renders.canonical, [userDataPath('renders')]) })
+  outputPath = renders.canonical
   shell.showItemInFolder(outputPath)
   return true
 })
 
 ipcMain.handle('render:copyToDownloads', async (_event, outputPath) => {
   if (!outputPath || !fs.existsSync(outputPath)) throw new Error('Render output does not exist yet')
-  const rendersRoot = userDataPath('renders')
-  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
+  // F-2: canonicalise before comparing — a Windows 8.3 or wrong-case spelling
+  // of the very folder we wrote must not read as "outside".
+  const renders = pathSandbox.resolveInsideRoots(outputPath, [userDataPath('renders')], { realpath: realpathNative, platform: process.platform })
+  if (!renders.ok) throw outsideProjectDataError(outputPath, { ...renders, message: pathSandbox.outsideMessage(renders.canonical, [userDataPath('renders')]) })
+  outputPath = renders.canonical
   const downloads = app.getPath('downloads')
   const dest = path.join(downloads, safeFileName(path.basename(outputPath), 'cupric-render.mp4'))
   await fsp.copyFile(outputPath, dest)

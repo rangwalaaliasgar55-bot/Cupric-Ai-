@@ -7,6 +7,7 @@ const invokeChannels = new Set([
   'settings:autoLaunch',
   'ai:autoDiscover',
   'ai:freeModels',
+  'ai:health',
   'agent:generateAnimation',
   'agent:saveGenerated',
   'ai:ackNewModels',
@@ -31,6 +32,7 @@ const invokeChannels = new Set([
   'arena:import',
   'arena:previewPath',
   'arena:readHtml',
+  'path:reveal',
   'capture:rect',
   'arena:openBuilder',
   'dialog:pickFootage', 'dialog:pickFolder',
@@ -52,7 +54,7 @@ const invokeChannels = new Set([
   'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput', 'automation:openArena',
 ])
 
-const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'studio:backgroundExport', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress', 'ai:discovery', 'ai:rundownPolished', 'ai:notice', 'ai:models'])
+const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'studio:backgroundExport', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress', 'ai:discovery', 'ai:rundownPolished', 'ai:notice', 'ai:models', 'ai:health'])
 
 function assertChannel(channel, allowed) {
   if (!allowed.has(channel)) throw new Error(`IPC channel is not exposed: ${channel}`)

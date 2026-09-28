@@ -19,6 +19,10 @@ type BackgroundExportAsset = {
   kind: 'video' | 'image' | 'audio'
   fileName: string
   localPath: string | null
+  /** Pre-resolved file:// URL from the main process (F-2). */
+  url?: string
+  /** Set when the sandbox refused the path — skip it, never fail the batch. */
+  unusable?: string
 }
 type BackgroundExportRequest = {
   jobId: string
@@ -37,10 +41,22 @@ if (backgroundIpc) {
   backgroundIpc.on('studio:backgroundExport', (request: BackgroundExportRequest) => {
     void (async () => {
       try {
+        // F-2: the main process already resolved each asset against the
+        // project-data sandbox, so a single unreadable clip is skipped with a
+        // logged reason instead of failing the whole export batch.
         for (const asset of request.assets || []) {
-          if (!asset.localPath) continue
-          const url = await backgroundIpc.invoke('arena:previewPath', asset.localPath) as string
-          await registerUrl(url, asset.fileName, asset.kind, asset.localPath, asset.id)
+          if (!asset.localPath || asset.unusable) continue
+          try {
+            const url = asset.url || (await backgroundIpc.invoke('arena:previewPath', asset.localPath) as string)
+            await registerUrl(url, asset.fileName, asset.kind, asset.localPath, asset.id)
+          } catch (assetError) {
+            await backgroundIpc.invoke('log:write', {
+              level: 'warn',
+              scope: 'export-asset-skipped',
+              message: assetError instanceof Error ? assetError.message : String(assetError),
+              data: { jobId: request.jobId, asset: asset.id },
+            }).catch(() => undefined)
+          }
         }
         const result = await exportStudio(request.doc, {
           fileName: request.fileName,

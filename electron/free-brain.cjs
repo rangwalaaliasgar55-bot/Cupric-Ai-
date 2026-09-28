@@ -49,7 +49,122 @@ const FIXED_SEED = 7
 const BUSY_NOTICE = 'free brain busy, retrying'
 const OFFLINE_NOTICE = 'offline brain'
 
+/* ——— F-1: fail fast, hop silently, quarantine what keeps timing out ———
+ *
+ * Production 0.13.0 logs showed a remote free route (tokenharbor.ai) eating
+ * the whole 30 s per-attempt budget ten times in one day, which left the rest
+ * of the 45 s deadline too small for any other provider to answer. So:
+ *   • every route class has its own *small* per-attempt cap (below), and a
+ *     timeout is never retried on the same route — it hops immediately;
+ *   • two failures inside 5 minutes quarantine an endpoint for 15 minutes
+ *     (red dot in Settings), and a cheap probe restores it automatically;
+ *   • the user only ever sees "free brain busy, used <x> instead".
+ */
+const ROUTE_ATTEMPT_MS = {
+  local: 8_000,      // localhost: if it has not answered in 8 s it is wedged
+  keyless: 20_000,   // built-in free cloud
+  free: 20_000,      // remote ":free" tiers — the class that hung in production
+  user: 20_000,      // the user's own key; still fails fast, we have fallbacks
+  gemini: 25_000,
+  default: 20_000,
+}
+const HEALTH_WINDOW_MS = 5 * 60_000
+const HEALTH_QUARANTINE_MS = 15 * 60_000
+const HEALTH_FAIL_LIMIT = 2
+const HEALTH_PROBE_MS = 3_000
+/** Timeout is not quota: a short cooldown so a blip does not blacklist a good route. */
+const TIMEOUT_COOLDOWN_MS = 60_000
+const DEFAULT_COOLDOWN_MS = 20_000
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** Per-attempt deadline for a route class, never longer than what is left. */
+function attemptTimeoutMs(routeClass, remainingMs = Infinity) {
+  const cap = ROUTE_ATTEMPT_MS[routeClass] ?? ROUTE_ATTEMPT_MS.default
+  return Math.max(2_000, Math.min(cap, Number.isFinite(remainingMs) ? remainingMs : cap))
+}
+
+/** True for aborts/timeouts however the runtime spelled them. */
+function isTimeoutError(err) {
+  const name = err?.name || ''
+  if (name === 'TimeoutError' || name === 'AbortError') return true
+  return /timed out|timeout|ETIMEDOUT|aborted|UND_ERR_(?:HEADERS|BODY)_TIMEOUT/i.test(err?.message || String(err || ''))
+}
+
+/**
+ * Endpoint health ledger. Keys are route keys (`chatUrl|model`), never keys
+ * or URLs with secrets in them. `now` is injectable so the checks run instantly.
+ *
+ *   fail(key, meta)  → { unhealthy, until }   two strikes in 5 min = 15 min out
+ *   ok(key)          → { restored }           clears strikes, one quiet toast
+ *   unhealthy(key)   → boolean                routing skips these
+ *   dueForProbe(key) → boolean                quarantine elapsed → probe it
+ *   entries()        → rows for the Settings dots (no secrets)
+ */
+function createHealthLedger({ now = () => Date.now(), windowMs = HEALTH_WINDOW_MS, quarantineMs = HEALTH_QUARANTINE_MS, limit = HEALTH_FAIL_LIMIT } = {}) {
+  const rows = new Map()
+  const row = (key) => {
+    let r = rows.get(key)
+    if (!r) { r = { key, label: key, failures: [], until: 0, reason: '', probing: false }; rows.set(key, r) }
+    return r
+  }
+  return {
+    fail(key, { label = '', reason = 'failed' } = {}) {
+      const r = row(key)
+      if (label) r.label = label
+      r.reason = reason
+      r.failures = [...r.failures, now()].filter((t) => now() - t < windowMs)
+      if (r.failures.length >= limit) r.until = now() + quarantineMs
+      return { unhealthy: r.until > now(), until: r.until, failures: r.failures.length }
+    },
+    ok(key, { label = '' } = {}) {
+      const r = rows.get(key)
+      if (!r) return { restored: false }
+      // "Restored" means it had been quarantined at all — the probe that
+      // clears it usually runs *after* the 15 minutes have elapsed.
+      const wasOut = r.until > 0
+      if (label) r.label = label
+      r.failures = []
+      r.until = 0
+      r.reason = ''
+      r.probing = false
+      return { restored: wasOut, label: r.label }
+    },
+    unhealthy: (key) => { const r = rows.get(key); return Boolean(r && r.until > now()) },
+    dueForProbe: (key) => { const r = rows.get(key); return Boolean(r && r.until && r.until <= now() && !r.probing) },
+    /** Keys whose quarantine has elapsed — probe these, restore the ones that answer. */
+    probeQueue: () => [...rows.values()].filter((r) => r.until && r.until <= now() && !r.probing).map((r) => r.key),
+    markProbing: (key, value = true) => { const r = rows.get(key); if (r) r.probing = value },
+    entries: () => [...rows.values()].map((r) => ({
+      key: r.key,
+      label: r.label,
+      unhealthy: r.until > now(),
+      until: r.until,
+      reason: r.reason,
+      failures: r.failures.length,
+    })),
+    clear: () => rows.clear(),
+  }
+}
+
+/** The only sentence a user sees when a route timed out mid-task. */
+function switchedNotice(usedLabel) {
+  const short = String(usedLabel || '').split('·')[0].trim().toLowerCase() || 'another model'
+  return `free brain busy, used ${short} instead`
+}
+
+/**
+ * Raw provider errors ("Request to https://tokenharbor.ai timed out") must
+ * never reach a user mid-task. Everything expected becomes one honest line.
+ */
+function friendlyAiMessage(raw) {
+  const text = String(raw?.message || raw || '')
+  if (!text) return OFFLINE_NOTICE
+  if (isTimeoutError({ message: text })) return 'the free brain was too slow, so Cupric used its offline outline instead'
+  if (/\b429\b|quota|rate.?limit|resource_exhausted/i.test(text)) return 'the free model is rate-limited right now, so Cupric used its offline outline instead'
+  if (/fetch failed|ENOTFOUND|ECONNREFUSED|offline|DNS/i.test(text)) return 'no model was reachable, so Cupric used its offline outline instead'
+  return 'no model could answer, so Cupric used its offline outline instead'
+}
 const isChatModel = (id) => id && !/embed|rerank|whisper|tts|audio|image|video|vision-only|moderation/i.test(id)
 
 /** Probe local servers in order; returns every one that answers with a chat model. Silent. */
@@ -176,33 +291,66 @@ async function chatOnce(route, messages, { json = false, temperature = 0.2, time
  * when nothing answered, so callers drop to the deterministic template.
  */
 async function completeViaRoutes(routes, messages, opts = {}) {
-  const { fetchImpl = fetch, cooldowns = createCooldowns(), onNotice = () => {}, onRetired = () => {}, validate, deadlineMs = 45_000, now = () => Date.now(), sleepImpl = sleep } = opts
+  const { fetchImpl = fetch, cooldowns = createCooldowns(), health = null, onNotice = () => {}, onRetired = () => {}, onUnhealthy = () => {}, validate, deadlineMs = 45_000, now = () => Date.now(), sleepImpl = sleep } = opts
   const deadline = now() + deadlineMs
   const failures = []
   let noticed = false
+  let hopped = false
   for (const route of routes) {
     const key = `${route.chatUrl || route.baseUrl}|${route.model}`
     if (cooldowns.cooling(key)) continue
+    if (health?.unhealthy(key)) continue
     for (let attempt = 0; ; attempt += 1) {
       if (deadline - now() < 1500) break
       const wait = cooldowns.reserve(key, route.minIntervalMs)
       if (wait > deadline - now() - 1500) break
       if (wait) await sleepImpl(wait)
       try {
-        const text = await chatOnce(route, messages, { ...opts, fetchImpl, timeoutMs: Math.max(2000, Math.min(opts.timeoutMs ?? 30_000, deadline - now())) })
+        // F-1: the per-attempt cap comes from the route class, not from one
+        // global 30 s. A hung free endpoint costs 20 s at most, never the
+        // whole request budget.
+        const timeoutMs = Number(route.attemptMs) > 0
+          ? Number(route.attemptMs)
+          : attemptTimeoutMs(route.kind, Math.min(opts.timeoutMs ?? Infinity, deadline - now()))
+        const text = await chatOnce(route, messages, { ...opts, fetchImpl, timeoutMs })
         if (validate) validate(text)
-        return { ok: true, text, route: route.label, kind: route.kind, model: route.model, notice: noticed ? BUSY_NOTICE : '' }
+        health?.ok(key, { label: route.label })
+        return {
+          ok: true,
+          text,
+          route: route.label,
+          kind: route.kind,
+          model: route.model,
+          // Hop first, explain quietly: one friendly line, never a raw timeout.
+          notice: hopped ? switchedNotice(route.label) : noticed ? BUSY_NOTICE : '',
+        }
       } catch (err) {
         const status = err?.status ?? 0
         failures.push(`${route.label}: ${err?.message || err}`)
         if (route.kind === 'keyless' && keylessRevoked(status)) { cooldowns.set(key, 24 * 3600_000, 'keyless-revoked'); break }
         if (isDeadModel(status, err?.message)) { onRetired({ baseUrl: route.baseUrl, model: route.model, label: route.label }); cooldowns.set(key, 24 * 3600_000, 'retired'); break }
+        // A timeout is never retried on the same route — that is what burned
+        // the deadline in production. Cool it down and hop immediately.
+        if (isTimeoutError(err)) {
+          hopped = true
+          cooldowns.set(key, TIMEOUT_COOLDOWN_MS, 'timeout')
+          const state = health?.fail(key, { label: route.label, reason: 'timeout' })
+          if (state?.unhealthy) onUnhealthy({ key, label: route.label, until: state.until, reason: 'timeout' })
+          break
+        }
         if (retryable(status, err?.message)) {
           if (route.kind === 'keyless' && !noticed) { noticed = true; onNotice(BUSY_NOTICE) }
           const backoff = BACKOFF_MS[attempt]
           if (backoff !== undefined && deadline - now() > backoff + 2000) { await sleepImpl(backoff); continue }
           cooldowns.set(key, status === 429 ? 60_000 : 20_000, status === 429 ? 'rate-limit' : 'unavailable')
+        } else {
+          // Every other failure also cools down — a route that just answered
+          // with 500/empty must not be re-tried ahead of a healthy one.
+          cooldowns.set(key, DEFAULT_COOLDOWN_MS, 'failed')
         }
+        hopped = true
+        const state = health?.fail(key, { label: route.label, reason: status ? `http-${status}` : 'failed' })
+        if (state?.unhealthy) onUnhealthy({ key, label: route.label, until: state.until, reason: state.reason || 'failed' })
         break
       }
     }
@@ -308,4 +456,7 @@ module.exports = {
   KEYLESS_ENDPOINTS, LOCAL_PROBE_ORDER, BUSY_NOTICE, OFFLINE_NOTICE, FIXED_SEED, BACKOFF_MS,
   probeLocals, modelQuality, keylessRevoked, planRoutes, stripSponsored, createCooldowns, chatOnce, completeViaRoutes,
   MODEL_CACHE_TTL_MS, WEEK_MS, MODEL_CAP, costBadge, aggregateModels, mergeCatalogue, retireModel, isStale, fallbackModel,
+  // F-1
+  ROUTE_ATTEMPT_MS, HEALTH_WINDOW_MS, HEALTH_QUARANTINE_MS, HEALTH_FAIL_LIMIT, HEALTH_PROBE_MS, TIMEOUT_COOLDOWN_MS,
+  attemptTimeoutMs, isTimeoutError, createHealthLedger, switchedNotice, friendlyAiMessage,
 }

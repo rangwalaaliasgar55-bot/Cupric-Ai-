@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import videojs from 'video.js'
 import 'video.js/dist/video-js.css'
 import { getIpc } from '../lib/bridge'
+import { resolvePreviewUrl, revealPath } from '../lib/previewPath'
 
 function isBrowserUrl(path: string) {
   return /^(blob|data|https?):/i.test(path)
@@ -13,6 +14,8 @@ export function VideoPreview({ path, poster, className }: { path?: string | null
   const playerRef = useRef<ReturnType<typeof videojs> | null>(null)
   const [url, setUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // F-2: a refused path names itself and offers one click to find it.
+  const [revealTarget, setRevealTarget] = useState<string>('')
 
   useEffect(() => {
     let alive = true
@@ -24,10 +27,12 @@ export function VideoPreview({ path, poster, className }: { path?: string | null
       setUrl(path)
       return
     }
-    void ipc
-      .invoke('arena:previewPath', path)
-      .then((value: string) => alive && setUrl(value))
-      .catch(() => alive && setError('Preview is unavailable for this local file'))
+    void resolvePreviewUrl(path).then((result) => {
+      if (!alive) return
+      if (result.ok) { setUrl(result.url); setRevealTarget(''); return }
+      setError(result.message)
+      setRevealTarget(result.canReveal ? result.path : '')
+    })
     return () => {
       alive = false
     }
@@ -64,7 +69,18 @@ export function VideoPreview({ path, poster, className }: { path?: string | null
   }, [])
 
   if (!path) return <div className="grid aspect-video place-items-center rounded-lg bg-bg text-xs text-muted">No preview available</div>
-  if (error) return <div className="grid aspect-video place-items-center rounded-lg bg-bg px-4 text-center text-xs text-muted">{error}</div>
+  if (error) {
+    return (
+      <div className="grid aspect-video place-items-center gap-2 rounded-lg bg-bg px-4 text-center text-xs text-muted">
+        <p>{error}</p>
+        {revealTarget && (
+          <button type="button" onClick={() => void revealPath(revealTarget)} className="rounded-md border border-line px-2 py-1 text-text">
+            Reveal folder
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className={`overflow-hidden rounded-lg bg-black ${className ?? ''}`}>

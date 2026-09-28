@@ -378,7 +378,16 @@ export function PackBrowser() {
 
       {pack && (
         <p className="text-xs text-muted">
-          {pack.description} <span className="opacity-70">· {pack.source} · {pack.license} · loaded from {SOURCE_LABEL[source]}</span>
+          {pack.description}{' '}
+          <span className="opacity-70">· {pack.source} · {pack.license} · loaded from {SOURCE_LABEL[source]}</span>
+          {/* F-3: a stale dot whenever the on-screen catalogue came from a
+              cache rather than this build — honest, inline, no dialog. */}
+          {(source === 'cache' || !online) && (
+            <span className="ml-1.5 inline-flex items-center gap-1 align-middle" title={online ? 'Shown from the offline cache — refresh when convenient.' : 'You are offline — this is the cached catalogue.'}>
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-info" aria-hidden />
+              <span>{online ? 'cached copy' : 'offline — cached copy'}</span>
+            </span>
+          )}
         </p>
       )}
 
@@ -388,7 +397,9 @@ export function PackBrowser() {
         </div>
       ) : !pack ? (
         <div className="rounded-xl border border-dashed border-line px-6 py-10 text-center text-sm text-muted">
-          Could not load the “{active}” pack. It is not cached and the repository could not be reached.
+          {/* F-3: an honest inline refusal — never a dialog, never a raw fetch error. */}
+          <p>Could not load the “{active}” pack. It is not cached{online ? ' and the repository could not be reached' : ' and you are offline'}.</p>
+          <p className="mt-1 text-xs">Everything already downloaded still works. Use “Download all” once you are back online to keep this pack offline too.</p>
         </div>
       ) : (
         /* Columns from the space the grid actually has, not the window: the same

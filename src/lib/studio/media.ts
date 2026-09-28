@@ -10,6 +10,7 @@
 import { getBridge } from '../bridge'
 import { uid } from '../utils'
 import { convertHeic, isHeicBytes, looksLikeHeicName, preparePhoto } from './photoImport'
+import { guardedBlob } from '../net'
 
 export type MediaHandle = {
   id: string
@@ -313,7 +314,9 @@ export async function registerUrl(
   // orientation and a preview proxy.
   let blob: Blob
   try {
-    blob = await (await fetch(url)).blob()
+    const fetched = await guardedBlob(url, { timeoutMs: 30_000, allowOffline: true })
+    if (!fetched.ok) throw new Error(fetched.reason)
+    blob = fetched.data
   } catch {
     // Not fetchable (e.g. a cross-origin URL): load it directly, unproxied.
     const element = await loadImage(url)

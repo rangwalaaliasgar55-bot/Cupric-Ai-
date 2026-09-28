@@ -16,6 +16,7 @@ import Player from "../Player";
 import Inspector from "./Inspector";
 import Timeline from "./Timeline";
 import { LOCAL_DOC_KEY } from "../customize";
+import { guardedFetch, guardedJson } from "@/lib/net";
 
 type Tab = "ai" | "templates" | "text" | "shapes" | "media" | "backgrounds" | "particles" | "3d" | "ui" | "charts" | "logos" | "effects" | "transitions" | "motion" | "audio" | "captions" | "presets";
 const TABS: [Tab, string, string[]][] = [["ai", "AI", []], ["templates", "Templates", ["template"]], ["text", "Text", ["typography"]], ["shapes", "Shapes", ["shape"]], ["media", "Media", []], ["backgrounds", "Backgrounds", ["background", "shader"]], ["particles", "Particles", ["particles"]], ["3d", "3D", ["material", "three", "lighting", "camera"]], ["ui", "UI", ["ui", "device"]], ["charts", "Charts", ["chart"]], ["logos", "Logos", ["logo"]], ["motion", "Motion", ["motion"]], ["effects", "Effects", ["effect"]], ["transitions", "Transitions", ["transition"]], ["audio", "Audio", []], ["captions", "Captions", ["caption"]], ["presets", "Presets", []]];
@@ -66,7 +67,8 @@ export default function Editor() {
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("from") === "local") { const raw = localStorage.getItem(LOCAL_DOC_KEY); if (raw) { const r = importDoc(raw); if (r.ok) setDoc(r.doc); else setErrors(r.errors); } }
     const pid = sp.get("project");
-    if (pid) fetch(`/api/projects/${pid}`).then((r) => r.json()).then((j) => { if (j.project) { const r = importDoc(j.project.doc); if (r.ok) { setDoc(r.doc); setProjectId(pid); } } });
+    // F-3: guarded — the project API only exists behind the dev server.
+    if (pid) void guardedJson<{ project?: { doc: unknown } }>(`/api/projects/${pid}`, { allowOffline: true }).then((res) => { if (!res.ok || !res.data.project) return; const r = importDoc(res.data.project.doc); if (r.ok) { setDoc(r.doc); setProjectId(pid); } });
   }, []);
 
   const spans = useMemo(() => sceneSpans(doc), [doc]);
@@ -145,14 +147,14 @@ export default function Editor() {
 
   /* ---------- Persistence & IO ---------- */
   const save = async () => {
-    const r = await fetch(projectId ? `/api/projects/${projectId}` : "/api/projects", { method: projectId ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: doc.name, doc }) });
-    const j = await r.json();
-    if (!r.ok) { setErrors(j.details ?? [j.error]); return; }
-    if (!projectId) { setProjectId(j.id); window.history.replaceState(null, "", `/editor?project=${j.id}`); }
+    const r = await guardedJson<{ id?: string; error?: string; details?: string[] }>(projectId ? `/api/projects/${projectId}` : "/api/projects", { allowOffline: true, init: { method: projectId ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: doc.name, doc }) } });
+    if (!r.ok) { setErrors([r.reason]); return; }
+    if (r.data.error || r.data.details) { setErrors(r.data.details ?? [r.data.error ?? "Save failed"]); return; }
+    if (!projectId && r.data.id) { setProjectId(r.data.id); window.history.replaceState(null, "", `/editor?project=${r.data.id}`); }
     flash("Project saved");
   };
-  const openProjects = async () => { const j = await fetch("/api/projects").then((r) => r.json()); setProjects(j.projects ?? []); };
-  const loadPresets = async () => { const j = await fetch("/api/presets").then((r) => r.json()); setPresets(j.presets ?? []); };
+  const openProjects = async () => { const res = await guardedJson<{ projects?: unknown[] }>("/api/projects", { allowOffline: true }); setProjects((res.ok ? res.data.projects ?? [] : []) as NonNullable<typeof projects>); };
+  const loadPresets = async () => { const res = await guardedJson<{ presets?: unknown[] }>("/api/presets", { allowOffline: true }); setPresets((res.ok ? res.data.presets ?? [] : []) as typeof presets); };
   useEffect(() => { if (tab === "presets") loadPresets(); }, [tab]);
   const importFile = async (f?: File) => { if (!f) return; const r = importDoc(await f.text()); if (r.ok) { replaceDoc(r.doc); flash("Template imported"); } else setErrors(r.errors); };
   const doRender = async () => {
@@ -239,7 +241,7 @@ export default function Editor() {
               <form onSubmit={(e) => { e.preventDefault(); const t = String(new FormData(e.currentTarget).get("script") ?? ""); if (t.trim()) commit((d) => ({ ...d, captions: [{ id: uid("cap"), style: d.captions?.[0]?.style ?? "highlight", cues: scriptToCues(t) }] })); }} className="space-y-1"><textarea name="script" rows={3} placeholder="Paste a script to auto-time captions…" className="w-full rounded-md border border-white/10 bg-zinc-900 p-2 text-white" /><button type="submit" className="w-full rounded-md bg-white/10 py-1">Create captions</button></form>
               <p>{Object.keys(CAPTION_STYLES).length} styles — choose one below.</p>
             </div>}
-            {tab === "presets" && <div className="space-y-1">{presets.length === 0 && <p className="text-[11px] text-zinc-500">No saved presets yet. Use “Save as preset” in the inspector or in the gallery.</p>}{presets.map((pr) => <div key={pr.id} className="flex items-center gap-1 rounded-lg bg-white/[0.03] px-2 py-1.5 text-[11px]"><button type="button" className="flex-1 truncate text-left text-zinc-200" onClick={() => { if (pr.data.node) insert(cloneWithNewIds(pr.data.node)); else if (pr.data.asset) { const a = allAssets().find((x) => x.id === pr.data.asset); if (a) fromAsset({ ...a, defaults: { ...a.defaults, ...(pr.data.props ?? {}) } }); } }}>{pr.name}<span className="ml-1 text-zinc-500">{pr.kind}</span></button><button type="button" aria-label="Delete preset" onClick={async () => { await fetch(`/api/presets?id=${pr.id}`, { method: "DELETE" }); loadPresets(); }} className="text-zinc-500 hover:text-white"><X size={11} /></button></div>)}</div>}
+            {tab === "presets" && <div className="space-y-1">{presets.length === 0 && <p className="text-[11px] text-zinc-500">No saved presets yet. Use “Save as preset” in the inspector or in the gallery.</p>}{presets.map((pr) => <div key={pr.id} className="flex items-center gap-1 rounded-lg bg-white/[0.03] px-2 py-1.5 text-[11px]"><button type="button" className="flex-1 truncate text-left text-zinc-200" onClick={() => { if (pr.data.node) insert(cloneWithNewIds(pr.data.node)); else if (pr.data.asset) { const a = allAssets().find((x) => x.id === pr.data.asset); if (a) fromAsset({ ...a, defaults: { ...a.defaults, ...(pr.data.props ?? {}) } }); } }}>{pr.name}<span className="ml-1 text-zinc-500">{pr.kind}</span></button><button type="button" aria-label="Delete preset" onClick={async () => { await guardedFetch(`/api/presets?id=${pr.id}`, { allowOffline: true, init: { method: "DELETE" } }); loadPresets(); }} className="text-zinc-500 hover:text-white"><X size={11} /></button></div>)}</div>}
             {libAssets.length > 0 && <>
               <input aria-label="Filter library" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Filter…" className="mb-2 w-full rounded-md border border-white/10 bg-zinc-900 px-2 py-1 text-[11px] text-white" />
               <ul className="space-y-1">{libAssets.slice(0, 200).map((a) => <li key={a.id}><button type="button" onClick={() => fromAsset(a)} className="w-full rounded-lg px-2 py-1.5 text-left hover:bg-white/5"><span className="block truncate text-[12px] text-zinc-200">{a.name}</span><span className="block truncate text-[10px] text-zinc-500">{a.description}</span></button></li>)}</ul>
@@ -264,7 +266,7 @@ export default function Editor() {
             onScene={(fn, key) => current && commit((d) => updateScene(d, current.scene.id, fn), key ? `${current.scene.id}-${key}` : undefined)}
             onDoc={(fn, key) => commit(fn, key)}
             onDelete={() => { if (node) { commit((d) => removeNode(d, node.id)); setSelectedId(null); } }}
-            onSavePreset={async (n) => { const r = await fetch("/api/presets", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: `${n.name ?? n.type} preset`, kind: "node", nodeType: n.type, data: { node: n }, tags: [n.type] }) }); flash(r.ok ? "Preset saved" : "Preset save failed"); }} />
+            onSavePreset={async (n) => { const r = await guardedFetch("/api/presets", { allowOffline: true, init: { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: `${n.name ?? n.type} preset`, kind: "node", nodeType: n.type, data: { node: n }, tags: [n.type] }) } }); flash(r.ok ? "Preset saved" : `Preset library unavailable — ${r.reason}`); }} />
         </aside>
       </div>
       <div className="h-[230px] border-t border-white/[0.06]">
@@ -287,7 +289,7 @@ export default function Editor() {
         <span className="ml-auto">Space play/pause · ←/→ step · S split · Del delete · ⌘Z undo · drag layers on the canvas</span>
       </div>
       {errors.length > 0 && <div role="alert" className="fixed bottom-4 right-4 z-50 max-w-md rounded-xl border border-rose-500/30 bg-rose-950/90 p-4 text-xs text-rose-100 shadow-xl"><div className="mb-1 flex items-center justify-between font-semibold">Something needs attention<button type="button" aria-label="Dismiss" onClick={() => setErrors([])}><X size={14} /></button></div><ul className="list-disc pl-4">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul></div>}
-      {projects && <div role="dialog" aria-modal="true" aria-label="Projects" className="fixed inset-0 z-50 grid place-items-center bg-black/60" onClick={() => setProjects(null)}><div className="w-[480px] rounded-2xl border border-white/10 bg-zinc-950 p-4" onClick={(e) => e.stopPropagation()}><div className="mb-3 flex items-center justify-between text-sm font-semibold text-white">Saved projects<button type="button" aria-label="Close" onClick={() => setProjects(null)}><X size={16} /></button></div>{projects.length === 0 && <p className="text-xs text-zinc-500">Nothing saved yet.</p>}<ul className="max-h-80 space-y-1 overflow-y-auto">{projects.map((pr) => <li key={pr.id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 text-xs"><button type="button" className="flex-1 truncate text-left text-zinc-200" onClick={() => { window.location.href = `/editor?project=${pr.id}`; }}>{pr.name}</button><span className="text-zinc-500">{new Date(pr.updatedAt).toLocaleString()}</span><button type="button" aria-label="Delete project" onClick={async () => { await fetch(`/api/projects/${pr.id}`, { method: "DELETE" }); openProjects(); }}><X size={12} /></button></li>)}</ul></div></div>}
+      {projects && <div role="dialog" aria-modal="true" aria-label="Projects" className="fixed inset-0 z-50 grid place-items-center bg-black/60" onClick={() => setProjects(null)}><div className="w-[480px] rounded-2xl border border-white/10 bg-zinc-950 p-4" onClick={(e) => e.stopPropagation()}><div className="mb-3 flex items-center justify-between text-sm font-semibold text-white">Saved projects<button type="button" aria-label="Close" onClick={() => setProjects(null)}><X size={16} /></button></div>{projects.length === 0 && <p className="text-xs text-zinc-500">Nothing saved yet.</p>}<ul className="max-h-80 space-y-1 overflow-y-auto">{projects.map((pr) => <li key={pr.id} className="flex items-center gap-2 rounded-lg bg-white/[0.03] px-3 py-2 text-xs"><button type="button" className="flex-1 truncate text-left text-zinc-200" onClick={() => { window.location.href = `/editor?project=${pr.id}`; }}>{pr.name}</button><span className="text-zinc-500">{new Date(pr.updatedAt).toLocaleString()}</span><button type="button" aria-label="Delete project" onClick={async () => { await guardedFetch(`/api/projects/${pr.id}`, { allowOffline: true, init: { method: "DELETE" } }); openProjects(); }}><X size={12} /></button></li>)}</ul></div></div>}
     </div>
   );
 }

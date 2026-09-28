@@ -9,7 +9,12 @@
  * Chat only. Video is never generated through this path.
  */
 
+import { guardedJson } from './net'
+
 const SETTINGS_KEY = 'cupric.opencode.settings'
+
+/** localhost endpoints keep working with the wifi off — never offline-gate them. */
+const isLocalBase = (url: string) => /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\]|0\.0\.0\.0)(:|\/|$)/i.test(url)
 
 export type OpenCodeSettings = {
   baseUrl: string
@@ -79,13 +84,24 @@ function headers(settings: OpenCodeSettings): Record<string, string> {
   return out
 }
 
-/** List models from an OpenAI-compatible `/models` endpoint. */
+/**
+ * List models from an OpenAI-compatible `/models` endpoint.
+ *
+ * F-3: a stopped local server is an expected state, not an exception. The
+ * read goes through the shared offline guard (`allowOffline` because
+ * localhost works with the wifi off) and a failure becomes one honest
+ * sentence, never a `TypeError: Failed to fetch` in the console.
+ */
 export async function listModels(baseUrl: string, apiKey = ''): Promise<OpenCodeModel[]> {
   const root = baseUrl.trim().replace(/\/$/, '')
   if (!root) throw new Error('Set a base URL first.')
-  const response = await fetch(`${root}/models`, { headers: headers({ baseUrl: root, apiKey, model: '' }) })
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText || 'request failed'}`)
-  const data = await response.json()
+  const result = await guardedJson<{ data?: unknown[]; models?: unknown[] }>(`${root}/models`, {
+    timeoutMs: 6000,
+    allowOffline: isLocalBase(root),
+    init: { headers: headers({ baseUrl: root, apiKey, model: '' }) },
+  })
+  if (!result.ok) throw new Error(result.reason)
+  const data = result.data
   const raw: unknown[] = Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : []
   const mapped: (OpenCodeModel | null)[] = raw.map((entry) => {
       const item = entry as { id?: string; name?: string; description?: string }
@@ -120,16 +136,18 @@ export type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: stri
 /** One non-streaming completion. Throws with a readable message on failure. */
 export async function chat(messages: ChatMessage[], settings = loadSettings()): Promise<string> {
   if (!isConfigured(settings)) throw new Error('No model configured.')
-  const response = await fetch(`${settings.baseUrl.replace(/\/$/, '')}/chat/completions`, {
-    method: 'POST',
-    headers: headers(settings),
-    body: JSON.stringify({ model: settings.model, messages, temperature: 0.7, stream: false }),
+  const base = settings.baseUrl.replace(/\/$/, '')
+  const result = await guardedJson<Record<string, unknown>>(`${base}/chat/completions`, {
+    timeoutMs: 20_000,
+    allowOffline: isLocalBase(base),
+    init: {
+      method: 'POST',
+      headers: headers(settings),
+      body: JSON.stringify({ model: settings.model, messages, temperature: 0.7, stream: false }),
+    },
   })
-  if (!response.ok) {
-    const detail = await response.text().catch(() => '')
-    throw new Error(`${response.status} ${response.statusText}${detail ? ` — ${detail.slice(0, 160)}` : ''}`)
-  }
-  const data = await response.json()
+  if (!result.ok) throw new Error(result.reason)
+  const data = result.data as { choices?: { message?: { content?: unknown }; text?: unknown }[]; message?: { content?: unknown } }
   const text =
     data?.choices?.[0]?.message?.content ??
     data?.choices?.[0]?.text ??

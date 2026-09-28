@@ -3,6 +3,7 @@ export type RenderUpdate = (pct: number, status?: 'queued' | 'working' | 'paused
 import type { SceneRundown } from '../types/project'
 import { getIpc } from './bridge'
 import { humanError } from './humanError'
+import { guardedText } from './net'
 
 export type RenderSource = {
   sourceType?: 'arena' | 'footage' | 'rundown'
@@ -319,10 +320,14 @@ async function renderArenaSource(source: RenderSource, context: BrowserRenderCon
   // Imported Arena HTML is third-party code: it runs only inside the
   // opaque-origin sandbox (2.28), never with the app's origin.
   let html: string
-  try {
-    html = await inlineBlobAssets(await (await fetch(src)).text())
-  } catch {
-    throw new Error('Arena HTML could not be read for browser rendering. Re-import the Arena file.')
+  {
+    const fetched = await guardedText(src, { timeoutMs: 15_000, allowOffline: true })
+    if (!fetched.ok) throw new Error(`Arena HTML could not be read for browser rendering (${fetched.reason}). Re-import the Arena file.`)
+    try {
+      html = await inlineBlobAssets(fetched.data)
+    } catch {
+      throw new Error('Arena HTML could not be read for browser rendering. Re-import the Arena file.')
+    }
   }
   const scene = await openSandboxedScene(html, context.width, context.height, { csp: ARENA_SCENE_CSP })
   const captureFps = Math.min(12, context.fps)

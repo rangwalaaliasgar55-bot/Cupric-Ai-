@@ -28,21 +28,27 @@ export type HtmlCaptureOptions = {
   signal?: AbortSignal
 }
 
+import { guardedBlob, guardedText } from '../net'
+
 export type HtmlCaptureResult = { frames: string[]; frameFps: number; width: number; height: number }
+
+/** Blob reads for inlining: guarded, and a miss throws a sentence (callers already retry/skip). */
+async function defaultFetchBlob(url: string): Promise<Blob> {
+  const result = await guardedBlob(url, { timeoutMs: 15_000, allowOffline: true })
+  if (!result.ok) throw new Error(result.reason)
+  return result.data
+}
 
 async function fetchText(file: string): Promise<string> {
   const rel = file.replace(/^\/+/, '')
   const candidates = [`/${rel}`, `./${rel}`, `../${rel}`]
   let lastError: unknown = null
   for (const url of candidates) {
-    try {
-      const response = await fetch(url, { cache: 'no-cache' })
-      if (!response.ok) continue
-      const text = await response.text()
-      if (/<html|<body|<div/i.test(text)) return text
-    } catch (error) {
-      lastError = error
-    }
+    // F-3: guarded — a bundled scene read must not surface as `Failed to
+    // fetch` when one of the three candidate paths does not exist.
+    const result = await guardedText(url, { timeoutMs: 8000, allowOffline: true, init: { cache: 'no-cache' } })
+    if (!result.ok) { lastError = result.reason; continue }
+    if (/<html|<body|<div/i.test(result.data)) return result.data
   }
   throw new Error(`The scene file ${rel} is not bundled with this build${lastError ? '' : ''}.`)
 }
@@ -245,7 +251,7 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
  * become inline <script>, everything else a data: URL. `fetchBlob` is
  * injectable for tests.
  */
-export async function inlineBlobAssets(html: string, fetchBlob: (url: string) => Promise<Blob> = async (u) => (await fetch(u)).blob()): Promise<string> {
+export async function inlineBlobAssets(html: string, fetchBlob: (url: string) => Promise<Blob> = defaultFetchBlob): Promise<string> {
   const cache = new Map<string, Blob>()
   const get = async (u: string) => {
     if (!cache.has(u)) cache.set(u, await fetchBlob(u))

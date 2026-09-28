@@ -17,6 +17,8 @@
  * atomically; an old cache or temporary development branch cannot hide items.
  */
 
+import { guardedJson, isOnline } from './net'
+
 export type PackItemKind =
   | 'glass'
   | 'transition'
@@ -148,20 +150,21 @@ export async function clearPackCache(): Promise<void> {
 
 const memory = new Map<string, Pack | PackIndex>()
 
-async function fetchJson<T>(url: string, timeoutMs = 12_000): Promise<T | null> {
-  if (typeof fetch === 'undefined') return null
-  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null
-  const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null
-  try {
-    const res = await fetch(url, { signal: ctrl?.signal, cache: 'no-cache' })
-    if (!res.ok) return null
-    return (await res.json()) as T
-  } catch {
-    return null
-  } finally {
-    if (timer) clearTimeout(timer)
-  }
+/**
+ * F-3: every pack read goes through the shared offline guard, which never
+ * rejects. Same-origin reads pass `allowOffline` because the bundled copy is
+ * on disk — that is exactly what has to keep working with the wifi off.
+ */
+async function fetchJson<T>(url: string, timeoutMs = 12_000, allowOffline = false): Promise<T | null> {
+  const result = await guardedJson<T>(url, { timeoutMs, allowOffline, init: { cache: 'no-cache' } })
+  if (result.ok) return result.data
+  lastNetworkReason = result.reason
+  return null
 }
+
+/** The reason the last network read failed — shown inline, never thrown. */
+let lastNetworkReason = ''
+export function lastPackNetworkReason(): string { return lastNetworkReason }
 
 /**
  * Same-origin copy. `/resources/...` is the Vite dev middleware; the relative
@@ -171,18 +174,16 @@ async function fetchJson<T>(url: string, timeoutMs = 12_000): Promise<T | null> 
 async function fetchLocal<T>(name: string): Promise<T | null> {
   return (
     // Vite development server.
-    (await fetchJson<T>(`/resources/packs/${name}.json`, 4000)) ??
+    (await fetchJson<T>(`/resources/packs/${name}.json`, 4000, true)) ??
     // Web builds that copy resources beside index.html.
-    (await fetchJson<T>(`./resources/packs/${name}.json`, 4000)) ??
+    (await fetchJson<T>(`./resources/packs/${name}.json`, 4000, true)) ??
     // Packaged Electron: dist/index.html sits one directory below the bundled
     // resources tree included by electron-builder.
-    (await fetchJson<T>(`../resources/packs/${name}.json`, 4000))
+    (await fetchJson<T>(`../resources/packs/${name}.json`, 4000, true))
   )
 }
 
-export function isOnline(): boolean {
-  return typeof navigator === 'undefined' ? true : navigator.onLine !== false
-}
+export { isOnline }
 
 export async function loadPackIndex(): Promise<{ index: PackIndex | null; source: 'memory' | 'cache' | 'network' | 'local' | 'none' }> {
   const mem = memory.get('index') as PackIndex | undefined

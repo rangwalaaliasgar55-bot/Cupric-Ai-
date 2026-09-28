@@ -3,6 +3,7 @@
 import type { AudioTrack, VideoDoc } from "@/core/types";
 import { sanitizeUrl } from "@/core/scene-graph";
 import type { AudioFeatures } from "@/render/core";
+import { guardedFetch } from "@/lib/net";
 
 export type Analysis = { fps: number; amp: Float32Array; bass: Float32Array; mid: Float32Array; treble: Float32Array; beat: Float32Array };
 const buffers = new Map<string, AudioBuffer>();
@@ -13,8 +14,11 @@ async function decode(url: string): Promise<AudioBuffer | null> {
   const u = sanitizeUrl(url);
   if (!u || typeof window === "undefined") return null;
   if (buffers.has(u)) return buffers.get(u)!;
-  const res = await fetch(u);
-  const arr = await res.arrayBuffer();
+  // F-3: guarded — a revoked blob or an unreachable URL returns null (the
+  // caller already treats that as "no audio"), never an unhandled rejection.
+  const res = await guardedFetch(u, { timeoutMs: 20_000, allowOffline: true });
+  if (!res.ok) return null;
+  const arr = await res.response.arrayBuffer();
   const ctx = new OfflineAudioContext(1, 1, 44100);
   const buf = await ctx.decodeAudioData(arr);
   buffers.set(u, buf);

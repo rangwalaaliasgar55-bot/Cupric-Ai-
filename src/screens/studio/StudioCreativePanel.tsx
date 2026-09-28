@@ -9,6 +9,7 @@ import { synthesizeVoiceover, type VoiceoverLanguage } from '../../lib/voice'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { uid, copyText } from '../../lib/utils'
 import { captureStill } from '../../lib/studio/export'
+import { guardedText } from '../../lib/net'
 
 type Props = {
   doc: StudioDoc
@@ -71,13 +72,16 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
     setLogoBusy(true)
     try {
       const color = (kit.colors.find((c, i) => i > 0 && /^#[0-9a-f]{6}$/i.test(c)) ?? '#F4F1EA').slice(1)
-      const res = await fetch(simpleIconUrl(slug, color))
-      if (!res.ok) { setMsg(`Simple Icons has no logo called “${logoQuery}” (${slug}). Check the spelling on simpleicons.org.`); return null }
-      const svg = await res.text()
-      return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`
-    } catch {
-      setMsg('Could not reach Simple Icons — logos need an internet connection. Upload a logo file instead.')
-      return null
+      // F-3: guarded — offline is an expected state with an honest sentence,
+      // not a `Failed to fetch` in the console.
+      const res = await guardedText(simpleIconUrl(slug, color), { timeoutMs: 8000 })
+      if (!res.ok) {
+        setMsg(res.status === 404
+          ? `Simple Icons has no logo called “${logoQuery}” (${slug}). Check the spelling on simpleicons.org.`
+          : `${res.reason} Upload a logo file instead.`)
+        return null
+      }
+      return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(res.data)))}`
     } finally { setLogoBusy(false) }
   }
 

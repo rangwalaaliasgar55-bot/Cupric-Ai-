@@ -9,6 +9,7 @@ import type { AssetCategory, AssetSchema, Composition, JsonValue, MotionElement,
 import { getComponentSchema, listAssets, searchAssets } from "@/registry";
 import { SceneCanvas } from "@/renderer/scene-canvas";
 import { applyAspectRatio, getTemplate, listTemplates, type TemplateId } from "@/templates";
+import { guardedJson } from "@/lib/net";
 
 type StudioProps = { initialTemplate?: TemplateId };
 
@@ -226,10 +227,11 @@ export function Studio({ initialTemplate = "ai-product-launch" }: StudioProps) {
 
   const persistComposition = async () => {
     try {
-      const response = await fetch("/api/compositions", { method: "POST", headers: { "Content-Type": "application/json" }, body: exportCompositionJson(composition) });
-      const payload = await response.json() as { error?: string; savedAt?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Could not save composition.");
-      setNotice({ type: "success", message: `Saved to local workspace at ${new Date(payload.savedAt ?? Date.now()).toLocaleTimeString()}.` });
+      // F-3: guarded — the compositions API only exists behind the dev server.
+      const response = await guardedJson<{ error?: string; savedAt?: string }>("/api/compositions", { allowOffline: true, init: { method: "POST", headers: { "Content-Type": "application/json" }, body: exportCompositionJson(composition) } });
+      if (!response.ok) throw new Error(response.reason);
+      if (response.data.error) throw new Error(response.data.error);
+      setNotice({ type: "success", message: `Saved to local workspace at ${new Date(response.data.savedAt ?? Date.now()).toLocaleTimeString()}.` });
     } catch (error) {
       setNotice({ type: "error", message: error instanceof Error ? error.message : "Could not save composition." });
     }

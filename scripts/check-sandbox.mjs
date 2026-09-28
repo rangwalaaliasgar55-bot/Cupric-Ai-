@@ -90,3 +90,88 @@ for (const f of scenes) {
 }
 assert.match(mod.sandboxedSceneDoc('<div>x</div>'), /^<!doctype html><html><head><meta http-equiv="Content-Security-Policy"/)
 console.log(`sandbox check passed — ${windows.length} sandboxed windows, scene capture isolated (opaque origin, no network), ${scenes.length} bundled scenes wrapped`)
+
+/* ——— F-2: the project-data path allowlist ————————————————————————————
+ * Production log: `[render-queue-error] 'arena:previewPath': Preview path is
+ * outside Cupric AI project data { jobId: 'studio-export-*' }` — seven jobs,
+ * one batch. Two root causes, both asserted here: too few roots, and a raw
+ * string prefix that cannot see through Windows case / 8.3 / junctions.
+ */
+{
+  const { createRequire } = await import('node:module')
+  const require = createRequire(import.meta.url)
+  const sandbox = require('../electron/path-sandbox.cjs')
+
+  // 1. Every directory Cupric writes media into is a root — and userData
+  //    itself never is (settings.json lives there).
+  for (const dir of ['projects', 'renders', 'proxies', 'stock-cache', 'automation', 'agent-generated', 'voice-tmp']) {
+    assert.ok(sandbox.PROJECT_DATA_DIRS.includes(dir), `${dir} must be inside the project-data sandbox`)
+  }
+  assert.ok(!sandbox.PROJECT_DATA_DIRS.some((d) => !d || d === '.' || d === '/' || d === ''), 'the userData root is never a root')
+  assert.match(main, /function projectDataRoots\(\)/, 'main builds the roots from one list')
+  assert.match(main, /pathSandbox\.PROJECT_DATA_DIRS\.map/, 'main uses the shared list, not a second copy')
+  assert.doesNotMatch(main, /Preview path is outside Cupric AI project data/, 'the bare rejection string is gone')
+  assert.match(main, /resolveProjectDataPath\(localPath\)/, 'arena:previewPath goes through the canonicalising resolver')
+  assert.match(main, /PATH_OUTSIDE_PROJECT_DATA/, 'a refusal is a typed, explainable error')
+  assert.match(main, /ipcMain\.handle\('path:reveal'/, 'a refused path can be revealed in one click')
+
+  // 2. A real export batch: renders/<jobId>/ and projects/<id>/arena/<assetId>/
+  //    must both resolve INSIDE, on both platforms.
+  const winRoot = 'C:\\Users\\Aliasgar Rangwala\\AppData\\Roaming\\Cupric AI'
+  const winRoots = sandbox.PROJECT_DATA_DIRS.map((d) => `${winRoot}\\${d}`)
+  const inside = (p, opts = {}) => sandbox.resolveInsideRoots(p, winRoots, { platform: 'win32', ...opts }).ok
+  assert.ok(inside(`${winRoot}\\renders\\studio-export-1a2b3c\\cupric-studio.mp4`), 'a finished render is inside project data')
+  assert.ok(inside(`${winRoot}\\projects\\default\\arena\\asset-42\\index.html`), 'an imported Arena asset is inside project data')
+  assert.ok(inside(`${winRoot}\\projects\\default\\footage\\1730000000-clip.mp4`), 'imported footage is inside project data')
+  assert.ok(inside(`${winRoot}\\proxies\\9f8e7d.mp4`), 'an editing proxy is inside project data')
+
+  // 3. Windows spellings of the SAME file: mixed case, 8.3 short names and a
+  //    junction. All three used to read as "outside".
+  const shortNames = new Map([
+    ['C:\\Users\\ALIASG~1\\AppData\\Roaming\\CUPRIC~1', winRoot],
+    ['c:\\users\\aliasgar rangwala\\appdata\\roaming\\cupric ai', winRoot],
+    ['D:\\Redirected\\Cupric AI', winRoot],
+  ])
+  const realpath = (p) => {
+    for (const [short, long] of shortNames) {
+      if (p.toLowerCase() === short.toLowerCase()) return long
+      if (p.toLowerCase().startsWith(`${short.toLowerCase()}\\`)) return `${long}${p.slice(short.length)}`
+    }
+    return p
+  }
+  assert.ok(inside('C:\\Users\\ALIASG~1\\AppData\\Roaming\\CUPRIC~1\\renders\\studio-export-7\\out.mp4', { realpath }), '8.3 short names resolve inside')
+  assert.ok(inside('c:\\users\\aliasgar rangwala\\appdata\\roaming\\cupric ai\\RENDERS\\Studio-Export-7\\OUT.MP4', { realpath }), 'mixed case resolves inside')
+  assert.ok(inside('D:\\Redirected\\Cupric AI\\projects\\p1\\arena\\a1\\index.html', { realpath }), 'a junction/symlinked userData resolves inside')
+  assert.equal(
+    sandbox.canonicalize('C:\\Users\\ALIASG~1\\AppData\\Roaming\\CUPRIC~1\\renders\\job\\new-file.mp4', { realpath, platform: 'win32' }),
+    `${winRoot}\\renders\\job\\new-file.mp4`,
+    'a not-yet-written render target canonicalises via its deepest existing ancestor',
+  )
+
+  // 4. Containment is still real: no prefix tricks, no traversal, no siblings.
+  assert.ok(!inside('C:\\Users\\Aliasgar Rangwala\\Desktop\\secret.mp4'), 'a desktop file is outside')
+  assert.ok(!inside(`${winRoot}\\settings.json`), 'settings.json (keys) is never previewable')
+  assert.ok(!inside(`${winRoot}\\renders-private\\x.mp4`), 'a sibling with the same prefix is outside')
+  assert.ok(!inside(`${winRoot}\\renders\\..\\settings.json`), 'traversal out of a root is outside')
+  assert.ok(!sandbox.isInside('/home/u/.config/Cupric AI/rendersX', '/home/u/.config/Cupric AI/renders', { platform: 'linux' }), 'POSIX prefix sibling is outside')
+  assert.ok(!sandbox.isInside('/home/u/.config/Cupric AI/RENDERS/x', '/home/u/.config/Cupric AI/renders', { platform: 'linux' }), 'POSIX stays case-sensitive')
+  assert.ok(sandbox.isInside('/home/u/.config/Cupric AI/renders/x', '/home/u/.config/Cupric AI/renders', { platform: 'linux' }))
+
+  // 5. A refusal is a sentence a person can act on, naming the path.
+  const refused = sandbox.outsideMessage('C:\\Users\\A\\Desktop\\clip.mp4', winRoots)
+  assert.ok(refused.includes('C:\\Users\\A\\Desktop\\clip.mp4'), 'the message names the file')
+  assert.ok(/renders/.test(refused) && /Reveal folder/i.test(refused), 'the message says where files may live and offers reveal')
+
+  // 6. An export batch never dies because one clip is unreadable.
+  assert.match(main, /export-asset-skipped/, 'an unusable export asset is logged and skipped')
+  const bg = main.slice(main.indexOf('async function executeStudioBackgroundJob'), main.indexOf("ipcMain.handle('studio:submitRecording'"))
+  assert.match(bg, /resolveProjectDataPath\(asset\.localPath\)/, 'the main process resolves asset URLs where the roots are known')
+  assert.match(bg, /unusable: verdict\.message/, 'a refused asset carries its reason to the renderer')
+  const renderMain = await read('src/main.tsx')
+  assert.match(renderMain, /if \(!asset\.localPath \|\| asset\.unusable\) continue/, 'the renderer skips unusable assets instead of failing the job')
+  assert.match(renderMain, /asset\.url \|\|/, 'the renderer prefers the pre-resolved URL')
+  const preview = await read('src/lib/previewPath.ts')
+  assert.match(preview, /path:reveal/, 'the renderer can reveal a refused path')
+  assert.match(await read('src/components/VideoPreview.tsx'), /Reveal folder/, 'a refused preview offers Reveal folder inline')
+}
+console.log('F-2 check passed — 7 project-data roots, Windows case/8.3/junction normalisation, honest refusals with reveal, export batches survive one bad clip')

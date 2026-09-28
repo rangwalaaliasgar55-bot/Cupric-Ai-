@@ -19,6 +19,7 @@ import { ProjectSafetyPanel } from './ProjectSafetyPanel'
 import { ThinkingOrb } from 'thinking-orbs'
 import { ThinkingStates } from '../components/loaders/ThinkingStates'
 import { useReducedMotion } from '../lib/use-reduced-motion'
+import { isOnline, onConnectivityChange } from '../lib/net'
 
 type ChatMsg = { role: 'user' | 'ai'; text: string; images?: ChatImage[] }
 
@@ -111,6 +112,12 @@ export function AskPanel() {
   const [autoPick, setAutoPick] = useState<{ label?: string; reason?: string; kind?: string; model?: string } | null>(null)
   const [setupRequired, setSetupRequired] = useState(false)
   const [statusDots, setStatusDots] = useState<{ gemini: StatusDot; zen: StatusDot; local: StatusDot }>({ gemini: 'unknown', zen: 'unknown', local: 'unknown' })
+  // F-1 — per-endpoint health (presence only; the main process never sends keys).
+  const [routeHealth, setRouteHealth] = useState<{ key: string; label: string; unhealthy: boolean; until: number; reason: string }[]>([])
+  // F-3 — the model list is served from a 24 h disk cache when the network is
+  // gone; `modelsStale` drives the inline "cached" dot.
+  const [online, setOnline] = useState(isOnline())
+  const [modelsStale, setModelsStale] = useState(false)
   const [fallbackOrder, setFallbackOrder] = useState<AiMode[]>(['gemini', 'zen', 'ollama', 'lmstudio', 'template'])
   const [openCodeKey, setOpenCodeKey] = useState('')
   const [openCodeBaseUrl, setOpenCodeBaseUrl] = useState('https://openrouter.ai/api/v1')
@@ -182,6 +189,22 @@ export function AskPanel() {
     if (!hasGeminiKey || !getIpc()) return
     void testConnection('gemini')
   }, [hasGeminiKey])
+
+  // F-3 — follow connectivity so the cached-list notice is always truthful.
+  useEffect(() => onConnectivityChange((next) => {
+    setOnline(next)
+    if (!next) setModelsStale(true)
+  }), [])
+
+  // F-1 — endpoint health: read once, then follow the main process's pushes.
+  useEffect(() => {
+    const ipc = getIpc()
+    if (!ipc) return
+    type HealthPayload = { routes?: { key: string; label: string; unhealthy: boolean; until: number; reason: string }[] }
+    void ipc.invoke('ai:health').then((payload: HealthPayload) => setRouteHealth(payload?.routes ?? [])).catch(() => undefined)
+    if (typeof ipc.on !== 'function') return
+    return ipc.on('ai:health', (payload: HealthPayload) => setRouteHealth(payload?.routes ?? []))
+  }, [])
 
   const shownFreeModels = freeModels.filter((preset) => {
     const q = modelSearch.trim().toLowerCase()
@@ -272,6 +295,7 @@ export function AskPanel() {
       setFreeModels(merged.filter((model) => (seen.has(`${model.baseUrl}|${model.model}`) ? false : (seen.add(`${model.baseUrl}|${model.model}`), true))))
       setModelLoadStatus(models.length ? `${models.length} OpenCode Desktop model${models.length === 1 ? '' : 's'} loaded` : 'No OpenCode Desktop models found yet')
     } catch (err) {
+      setModelsStale(true)
       setModelLoadStatus(humanError(err, 'Could not read OpenCode Desktop models'))
     }
   }
@@ -296,7 +320,9 @@ export function AskPanel() {
         return seen.has(key) ? false : (seen.add(key), true)
       }))
       setModelLoadStatus(`${models.length} free models loaded`)
+      setModelsStale(!isOnline())
     } catch (err) {
+      setModelsStale(true)
       setModelLoadStatus(humanError(err, 'Could not load free models'))
     }
   }
@@ -603,6 +629,14 @@ export function AskPanel() {
                   <p className="mt-2 text-xs leading-relaxed text-muted">
                     {modelLoadStatus || `${freeModels.length} presets included. Load OpenCode reads your desktop OpenCode providers without exposing keys to the UI; OpenRouter “:free” models still need a free key.`}
                   </p>
+                  {/* F-3: offline is an expected state. The list keeps working
+                      from the 24 h disk cache and says so with a stale dot. */}
+                  {modelsStale && (
+                    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted" role="status">
+                      <span className="inline-block h-1.5 w-1.5 rounded-full bg-info" aria-hidden />
+                      {online ? 'Showing the cached model list — it refreshes on its own.' : 'You are offline — showing the cached model list.'}
+                    </p>
+                  )}
                 </div>
                 {aiMode !== 'auto' && aiMode !== 'template' && <label className="block text-xs text-muted">
                   OpenCode base URL
@@ -644,6 +678,21 @@ export function AskPanel() {
                   <div className="grid grid-cols-3 gap-1.5 text-[10px]">
                     <span className="flex items-center gap-1 rounded bg-panel px-1.5 py-1" title="Built-in Cupric AI engine, fully offline"><span className="h-2 w-2 rounded-full bg-accent" />Cupric AI · ready</span>{([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local model']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1 rounded bg-panel px-1.5 py-1"><span className={cx('h-2 w-2 rounded-full', statusDots[key] === 'ok' ? 'bg-accent' : statusDots[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label} · {statusDots[key]}</span>)}
                   </div>
+                  {/* F-1 — endpoints that timed out twice in five minutes sit out
+                      for fifteen, and Cupric re-probes them on its own. */}
+                  {routeHealth.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <div className="font-semibold text-muted">Endpoint health</div>
+                      {routeHealth.map((route) => (
+                        <div key={route.key} className="flex items-center gap-1.5 rounded bg-panel px-1.5 py-1 text-[10px]">
+                          <span className={cx('h-2 w-2 shrink-0 rounded-full', route.unhealthy ? 'bg-danger' : 'bg-accent')} />
+                          <span className="min-w-0 flex-1 truncate">{route.label}</span>
+                          <span className="shrink-0 text-muted">{route.unhealthy ? `paused ${Math.max(1, Math.round((route.until - Date.now()) / 60000))} min · ${route.reason}` : 'healthy'}</span>
+                        </div>
+                      ))}
+                      <p className="text-muted">Paused endpoints are skipped and re-checked automatically — nothing to click.</p>
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
                   <div className="font-semibold text-muted">Fallback order</div>

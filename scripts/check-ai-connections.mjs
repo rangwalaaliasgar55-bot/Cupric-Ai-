@@ -121,6 +121,105 @@ assert.equal(brain.stripSponsored('Keep --- this dash text'), 'Keep --- this das
   assert.equal(brain.isStale({ fetchedAt: 1 }, brain.MODEL_CACHE_TTL_MS + 1), true, '24h TTL')
   assert.ok(brain.aggregateModels.length >= 1 && brain.MODEL_CAP === 300)
 }
+/* ——— F-1: tokenharbor-class timeouts must cost ~nothing ————————————————
+ * Production log: `[ai-route-failed] Request to https://tokenharbor.ai timed
+ * out { route: 'OpenCode · deepseek-v4.1-flash:free' }` ten times in a day.
+ * The contract now: per-attempt cap by route class, never a retry on the same
+ * hung route, instant hop, 2 strikes in 5 min = 15 min quarantine.
+ */
+{
+  // Per-attempt caps: local fails fastest, no class above 25 s, never below 2 s.
+  assert.equal(brain.attemptTimeoutMs('free'), 20_000, 'remote free routes fail fast at 20s')
+  assert.equal(brain.attemptTimeoutMs('local'), 8_000, 'a wedged localhost costs 8s, not 30s')
+  assert.ok(Object.values(brain.ROUTE_ATTEMPT_MS).every((ms) => ms >= 2_000 && ms <= 25_000), 'no route class may hold the request for half a minute')
+  assert.equal(brain.attemptTimeoutMs('free', 5_000), 5_000, 'the remaining deadline still wins')
+  assert.equal(brain.attemptTimeoutMs('free', 10), 2_000, 'a floor keeps the last attempt meaningful')
+  assert.ok(brain.isTimeoutError({ name: 'TimeoutError' }) && brain.isTimeoutError(new Error('Request to https://tokenharbor.ai timed out')), 'both shapes of timeout are recognised')
+  assert.ok(!brain.isTimeoutError(new Error('429 rate limit')), 'a rate limit is not a timeout')
+
+  // First route hangs until aborted, second answers instantly.
+  const hang = (url, init) => new Promise((_, reject) => {
+    const signal = init?.signal
+    if (!signal) return
+    signal.addEventListener('abort', () => reject(Object.assign(new Error('The operation was aborted'), { name: 'TimeoutError' })), { once: true })
+  })
+  const routes = [
+    // attemptMs stands in for the shipped 20 s class cap so the check is instant.
+    { kind: 'free', label: 'OpenCode · deepseek-v4.1-flash:free', baseUrl: 'https://tokenharbor.ai/v1', model: 'deepseek-v4.1-flash:free', attemptMs: 250 },
+    { kind: 'local', label: 'Ollama · llama3.2:3b', baseUrl: 'http://localhost:11434/v1', model: 'llama3.2:3b' },
+  ]
+  const fetchImpl = async (url, init) => (url.includes('tokenharbor') ? hang(url, init) : reply('local answer'))
+  const cooldowns = brain.createCooldowns()
+  const health = brain.createHealthLedger()
+  const started = Date.now()
+  // AbortSignal.timeout uses an unref'd timer; hold the loop open for the test.
+  const keepAlive = setInterval(() => {}, 25)
+  const out = await brain.completeViaRoutes(routes, [{ role: 'user', content: 'x' }], { fetchImpl, cooldowns, health, sleepImpl: noSleep })
+  clearInterval(keepAlive)
+  const elapsed = Date.now() - started
+  assert.ok(out.ok && out.text === 'local answer', 'the second route answers')
+  assert.ok(elapsed < 1000, `total user-visible stall must stay under 1s, was ${elapsed}ms`)
+  assert.equal(out.notice, 'free brain busy, used ollama instead', 'the user reads one friendly line, never a raw timeout')
+  assert.equal(cooldowns.dump().find((c) => c.key.includes('tokenharbor'))?.reason, 'timeout', 'the hung route is cooled down')
+  assert.equal(health.entries().find((e) => e.label.includes('deepseek'))?.failures, 1, 'strike one recorded')
+  assert.equal(health.unhealthy('https://tokenharbor.ai/v1|deepseek-v4.1-flash:free'), false, 'one timeout is not a quarantine')
+}
+// Two failures in five minutes → 15 min quarantine → probe restores it.
+{
+  let t = 0
+  const health = brain.createHealthLedger({ now: () => t })
+  const key = 'https://tokenharbor.ai/v1|m'
+  assert.equal(health.fail(key, { label: 'OpenCode · m', reason: 'timeout' }).unhealthy, false)
+  t += 60_000
+  const second = health.fail(key, { label: 'OpenCode · m', reason: 'timeout' })
+  assert.ok(second.unhealthy && second.until === t + brain.HEALTH_QUARANTINE_MS, '2 strikes in 5 min = 15 min out')
+  assert.equal(brain.HEALTH_WINDOW_MS, 5 * 60_000)
+  assert.equal(brain.HEALTH_QUARANTINE_MS, 15 * 60_000)
+  assert.deepEqual(health.entries().map((e) => [e.label, e.unhealthy, e.reason]), [['OpenCode · m', true, 'timeout']], 'Settings gets a red row, no key material')
+  assert.deepEqual(health.probeQueue(), [], 'nothing is probed while it is quarantined')
+  t += brain.HEALTH_QUARANTINE_MS
+  assert.deepEqual(health.probeQueue(), [key], 'quarantine elapsed → probe it')
+  assert.equal(health.ok(key).restored, true, 'a successful probe restores it (one quiet toast)')
+  assert.equal(health.unhealthy(key), false)
+  // Strikes older than the window do not accumulate into a quarantine.
+  const slow = brain.createHealthLedger({ now: () => t })
+  slow.fail(key); t += brain.HEALTH_WINDOW_MS + 1
+  assert.equal(slow.fail(key).unhealthy, false, 'one failure every ten minutes is not an outage')
+  // Quarantined routes are skipped entirely by the router.
+  const skipped = await brain.completeViaRoutes(
+    [{ kind: 'free', label: 'dead', baseUrl: 'https://tokenharbor.ai/v1', model: 'm' }],
+    [{ role: 'user', content: 'x' }],
+    { fetchImpl: async () => { throw new Error('must not be called') }, health: { unhealthy: () => true, ok() {}, fail: () => ({}) }, sleepImpl: noSleep },
+  )
+  assert.equal(skipped.ok, false, 'an unhealthy route is not even attempted')
+}
+// No raw provider text ever reaches a user.
+{
+  assert.equal(brain.friendlyAiMessage('Request to https://tokenharbor.ai timed out'), 'the free brain was too slow, so Cupric used its offline outline instead')
+  assert.ok(!brain.friendlyAiMessage('Request to https://tokenharbor.ai timed out').includes('tokenharbor'), 'no raw host in user-facing copy')
+  assert.match(brain.friendlyAiMessage('429 quota exceeded'), /rate-limited/)
+  assert.match(brain.friendlyAiMessage('fetch failed: ECONNREFUSED'), /no model was reachable/)
+  assert.equal(brain.switchedNotice('Ollama · llama3.2:3b'), 'free brain busy, used ollama instead')
+}
+// Main-process wiring for all of the above.
+assert.match(main, /freeBrain\.attemptTimeoutMs\(routeClass/, 'completeWithFallback caps each attempt by route class')
+assert.match(main, /if \(freeBrain\.isTimeoutError\(err\)\) throw err/, 'a timeout is never retried on the same route')
+assert.match(main, /const routeHealth = freeBrain\.createHealthLedger\(\)/, 'main keeps an endpoint health ledger')
+assert.match(main, /noteRouteFailure\(route,/, 'every route failure is recorded against health')
+assert.match(main, /scheduleHealthProbes/, 'quarantined endpoints are auto-probed')
+assert.match(main, /is answering again/, 'recovery says so once, quietly')
+assert.match(main, /freeBrain\.switchedNotice\(route\.label\)/, 'a silent failover explains itself inline')
+assert.match(main, /error\.friendly = freeBrain\.friendlyAiMessage/, 'the thrown error carries a user-safe sentence')
+assert.match(main, /ipcMain\.handle\('ai:health'/, 'Settings can read endpoint health')
+assert.doesNotMatch(main.slice(main.indexOf("ipcMain.handle('ai:health'"), main.indexOf("ipcMain.handle('ai:health'") + 400), /apiKey|authorization/i, 'health rows carry no key material')
+assert.match(preload, /'ai:health'/, 'ai:health is allowlisted')
+{
+  const ask = await readFile(new URL('../src/app-shell/AskPanel.tsx', import.meta.url), 'utf8')
+  assert.match(ask, /routeHealth\.map/, 'Settings renders a dot per endpoint')
+  assert.match(ask, /route\.unhealthy \? 'bg-danger' : 'bg-accent'/, 'an unhealthy endpoint is red')
+}
+console.log('F-1 check passed — 20s fail-fast cap, instant hop, 5min/15min quarantine with auto-recovery, no raw timeouts in the UI')
+
 // Wiring: RULE ZERO + key hygiene.
 assert.match(main, /value === 'openrouter' \|\| value === 'zen'\) && !String/, 'keyless openrouter/zen mode falls back to auto')
 assert.match(main, /const shouldPolish = configuredAiMode\(\) !== 'template'/, 'fresh installs polish via the free brain')

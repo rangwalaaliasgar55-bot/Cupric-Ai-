@@ -8,19 +8,18 @@
  */
 
 import type { ArenaAsset, FootageAsset, Project, StudioClip, StudioMediaClip, StudioOverlayClip } from '../../types/project'
-import { getIpc } from '../bridge'
+import { resolvePreviewUrl } from '../previewPath'
 import { uid } from '../utils'
 import { nextFreeStart, studioOf } from './doc'
 import { registerUrl } from './media'
 
 /** Resolve a desktop path to something a <video> can load. */
 async function playableUrl(localPath: string): Promise<string> {
-  if (/^(blob|data|https?|file):/i.test(localPath)) return localPath
-  const ipc = getIpc()
-  if (!ipc) throw new Error('This file lives on disk — open the desktop app to use it in the Studio.')
-  const url: string = await ipc.invoke('arena:previewPath', localPath)
-  if (!url) throw new Error('The main process could not produce a preview URL for that file.')
-  return url
+  // F-2: one resolver, one honest refusal (which names the file and can
+  // reveal it) instead of a raw IPC rejection surfacing as a toast.
+  const result = await resolvePreviewUrl(localPath)
+  if (!result.ok) throw new Error(result.message)
+  return result.url
 }
 
 /** Footage → a video clip on track 1. */

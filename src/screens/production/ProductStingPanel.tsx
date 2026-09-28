@@ -13,6 +13,7 @@ import { importArenaZip } from '../../lib/arena'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { DEFAULT_STING, STING, buildStingHtml, isBannedHue, paletteFor, sanitizeSting, stingProgram, type StingInputs } from '../../lib/stings/productSting'
 import { encodeWav16, renderStingAudio } from '../../lib/stings/stingAudio'
+import { guardedFetch } from '../../lib/net'
 
 const KEY = 'cupric.productSting'
 const inputCx = 'cu-input w-full'
@@ -101,7 +102,11 @@ export function ProductStingPanel() {
   }, [playing])
 
   async function htmlText() {
-    const res = await fetch(interWoff2); const b = new Uint8Array(await res.arrayBuffer())
+    // F-3: the bundled woff2 is same-origin, but a guarded read still cannot
+    // throw a bare `Failed to fetch` if the asset is missing from a build.
+    const res = await guardedFetch(interWoff2, { timeoutMs: 10_000, allowOffline: true })
+    if (!res.ok) throw new Error(`The bundled Inter font could not be read (${res.reason})`)
+    const b = new Uint8Array(await res.response.arrayBuffer())
     let bin = ''; for (let i = 0; i < b.length; i += 0x8000) bin += String.fromCharCode(...b.subarray(i, i + 0x8000))
     return buildStingHtml(inputs, { fontDataUrl: `data:font/woff2;base64,${btoa(bin)}` })
   }

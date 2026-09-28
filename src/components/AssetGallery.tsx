@@ -12,6 +12,7 @@ import Player from "./Player";
 import SchemaForm from "./SchemaForm";
 import { customizePreview, sendToEditor } from "./customize";
 import { download, exportTemplateJSON } from "@/video/export";
+import { guardedFetch } from "@/lib/net";
 
 function useInView<T extends Element>() {
   const ref = useRef<T>(null);
@@ -84,8 +85,10 @@ function Detail({ a, onClose }: { a: AssetDef; onClose: () => void }) {
   const config = JSON.stringify({ asset: a.id, props: values }, null, 2);
   const save = async () => {
     setStatus("Saving…");
-    const r = await fetch("/api/presets", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: `${a.name} (custom)`, kind: a.kind === "motion" ? "animation" : a.kind === "effect" ? "effects" : a.kind === "theme" ? "theme" : "node", nodeType: a.kind, data: { asset: a.id, props: values }, tags: a.tags.slice(0, 8) }) });
-    setStatus(r.ok ? "Saved to your preset library" : `Save failed (${r.status})`);
+    // F-3: the preset API only exists behind the dev server; guarded so the
+    // desktop build says so instead of throwing `Failed to fetch`.
+    const r = await guardedFetch("/api/presets", { timeoutMs: 8000, allowOffline: true, init: { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: `${a.name} (custom)`, kind: a.kind === "motion" ? "animation" : a.kind === "effect" ? "effects" : a.kind === "theme" ? "theme" : "node", nodeType: a.kind, data: { asset: a.id, props: values }, tags: a.tags.slice(0, 8) }) } });
+    setStatus(r.ok ? "Saved to your preset library" : `Preset library unavailable — ${r.reason}`);
   };
   return (
     <Dialog.Root open onOpenChange={(o: boolean) => !o && onClose()}>

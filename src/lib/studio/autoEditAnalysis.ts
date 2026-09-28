@@ -8,11 +8,15 @@
 import type { StudioAudioClip, StudioMediaClip } from '../../types/project'
 import { detectBeats, type SubjectSample } from './autoEdit'
 import { getMedia, loadVideo, seekTo } from './media'
+import { guardedFetch } from '../net'
 
 export async function analyseBeats(clip: StudioAudioClip): Promise<{ bpm: number; times: number[] }> {
   const handle = getMedia(clip.mediaId)
   if (!handle) throw new Error('The music file is not loaded — relink it first.')
-  const buf = await (await fetch(handle.url)).arrayBuffer()
+  // F-3: guarded — an unreadable track is an honest message, not a crash.
+  const fetched = await guardedFetch(handle.url, { timeoutMs: 30_000, allowOffline: true })
+  if (!fetched.ok) throw new Error(`The music file could not be read: ${fetched.reason}`)
+  const buf = await fetched.response.arrayBuffer()
   const Ctor = window.OfflineAudioContext || (window as unknown as { webkitOfflineAudioContext: typeof OfflineAudioContext }).webkitOfflineAudioContext
   const ctx = new Ctor(1, 1, 44100)
   const audio = await ctx.decodeAudioData(buf)

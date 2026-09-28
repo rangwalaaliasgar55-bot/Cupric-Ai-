@@ -29,6 +29,7 @@ import { Timeline } from '@/editor/timeline/Timeline';
 import { Inspector } from '@/editor/inspector/Inspector';
 import { COMPLETE_ASSET_CATALOG, CatalogItem } from '@/core/registry/asset-catalog';
 import { motionRegistry } from '@/core/registry/motion-registry';
+import { guardedJson } from '../lib/net';
 
 export default function MotionEngineStudio() {
   const [activeTab, setActiveTab] = useState<'editor' | 'catalog' | 'motion' | 'ai'>('editor');
@@ -123,19 +124,19 @@ export default function MotionEngineStudio() {
   const handleAiGenerate = async () => {
     setIsGeneratingAi(true);
     try {
-      const res = await fetch('/api/ai/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: aiPrompt, duration: 8 }),
+      // F-3: guarded — no `Failed to fetch` when the API is not running.
+      const result = await guardedJson<{ success?: boolean; composition?: { theme: { primaryColor: string; secondaryColor: string }; scenes: { headline: string; subheadline: string }[] } }>('/api/ai/generate', {
+        allowOffline: true,
+        init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: aiPrompt, duration: 8 }) },
       });
-      const data = await res.json();
-      if (data.success && data.composition) {
+      const composition = result.ok && result.data.success ? result.data.composition : undefined;
+      if (composition) {
         setCompositionState((prev) => ({
           ...prev,
-          primaryColor: data.composition.theme.primaryColor,
-          secondaryColor: data.composition.theme.secondaryColor,
-          brandName: data.composition.scenes[0].headline,
-          tagline: data.composition.scenes[0].subheadline,
+          primaryColor: composition.theme.primaryColor,
+          secondaryColor: composition.theme.secondaryColor,
+          brandName: composition.scenes[0].headline,
+          tagline: composition.scenes[0].subheadline,
         }));
         setActiveTab('editor');
       }
@@ -149,21 +150,16 @@ export default function MotionEngineStudio() {
   const handleExportRender = async () => {
     setRenderStatus('Exporting deterministic video frames...');
     try {
-      const res = await fetch('/api/render', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          compositionId: 'Apex_AI_Launch',
-          format: 'mp4',
-          fps: 30,
-        }),
+      const result = await guardedJson<{ success?: boolean; jobId?: string }>('/api/render', {
+        allowOffline: true,
+        init: { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ compositionId: 'Apex_AI_Launch', format: 'mp4', fps: 30 }) },
       });
-      const data = await res.json();
-      if (data.success) {
-        setRenderStatus(`Render job ${data.jobId} completed! WebM / MP4 stream verified.`);
+      if (!result.ok) { setRenderStatus(`Render export unavailable — ${result.reason}`); return; }
+      if (result.data.success) {
+        setRenderStatus(`Render job ${result.data.jobId} completed! WebM / MP4 stream verified.`);
         setTimeout(() => setRenderStatus(null), 4000);
       }
-    } catch (e) {
+    } catch {
       setRenderStatus('Render export error.');
     }
   };

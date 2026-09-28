@@ -1,4 +1,5 @@
 import { ARENA_SCENE_CSP, inlineBlobAssets, openSandboxedScene, type SandboxedScene } from './studio/htmlTemplateCapture'
+import { guardedText } from './net'
 
 export type BrowserArenaImportResult = {
   htmlFileName: string
@@ -118,7 +119,9 @@ function ensureSeekFunction(html: string) {
 async function captureArenaThumbnail(src: string): Promise<string | null> {
   let scene: SandboxedScene | null = null
   try {
-    const html = await inlineBlobAssets(await (await fetch(src)).text())
+    const fetched = await guardedText(src, { timeoutMs: 15_000, allowOffline: true })
+    if (!fetched.ok) return null
+    const html = await inlineBlobAssets(fetched.data)
     scene = await openSandboxedScene(html, 1280, 720, { csp: ARENA_SCENE_CSP })
     const canvas = document.createElement('canvas')
     canvas.width = 640
