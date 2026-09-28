@@ -22,6 +22,7 @@ import { uid } from '../../lib/utils'
 import { FORMAT_STARTERS, applyStarter } from '../../lib/production/starters'
 import { nextAction } from '../../lib/production/nextAction'
 import { QuickVideoPanel } from './QuickVideoPanel'
+import { ProductStingPanel } from './ProductStingPanel'
 import { ActivityTimeline } from '../../lab/components/activity-timeline'
 import { AnimatePresence, motion } from 'motion/react'
 import {
@@ -386,6 +387,7 @@ export function ProductionPlanner() {
         </details>
       )}
       <QuickVideoPanel />
+      <ProductStingPanel />
     </Card>
   )
 }
