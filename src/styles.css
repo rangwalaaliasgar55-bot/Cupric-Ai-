@@ -1,5 +1,12 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/inter';
+@import '@fontsource/noto-sans-devanagari/400.css';
+@import '@fontsource/noto-sans-devanagari/600.css';
+@import '@fontsource/noto-sans-devanagari/700.css';
+@import '@fontsource/noto-sans-devanagari/800.css';
+@import '@fontsource/hind/400.css';
+@import '@fontsource/hind/600.css';
+@import '@fontsource/hind/700.css';
 @import '@fontsource-variable/jetbrains-mono';
 @import '@fontsource-variable/syne';
 @import '@fontsource-variable/unbounded';
@@ -476,4 +483,10 @@
   .\[animation\:cupric-drift_46s_ease-in-out_infinite\] {
     animation: none !important;
   }
+}
+
+/* Command palette entrance (motion-safe only). */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.99); }
+  to { opacity: 1; transform: none; }
 }

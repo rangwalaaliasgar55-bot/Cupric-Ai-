@@ -2,6 +2,7 @@ import { useEffect, type ReactElement } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { recoveryInfo } from '../lib/projectHistory'
 import { AskPanel } from './AskPanel'
+import { CommandPalette } from './CommandPalette'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { Toasts } from '../components/Toasts'
@@ -93,6 +94,7 @@ export function AppLayout() {
       <RouteErrorBoundary route="ask-panel">
         <AskPanel />
       </RouteErrorBoundary>
+      <CommandPalette />
       <Toasts />
       <GlobalErrorCards />
     </div>

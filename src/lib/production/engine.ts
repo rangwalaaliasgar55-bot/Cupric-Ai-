@@ -21,6 +21,7 @@ import type {
 } from './types'
 import { PRODUCTION_STAGES } from './types'
 import { directClip, motionPatch, type DirectionStyle } from '../studio/motionDirector'
+import { snapCutsToBeats, timelineBeats } from '../studio/autoEdit'
 
 /* ——— catalogue shapes (resources/opus55/data/index.json) ——— */
 type Tagged = { tag: string; evidence: string }
@@ -431,7 +432,7 @@ export function planToDoc(doc: StudioDoc, plan: ProductionPlan, brief: Productio
       const text: StudioTextClip = {
         id: tid, kind: 'text', track: textTrack, startSec: r2(offset + shot.startSec), durationSec: shot.durationSec, name: `${shot.id} · text`,
         transitionIn: 'none', transitionOut: 'none', opacity: 1, text: shot.onScreenText, fontSizePct: shot.startSec === 0 ? 8 : 6,
-        fontFamily: 'Inter Variable',
+        fontFamily: /[\u0900-\u097F]/.test(shot.onScreenText) || brief.language === 'hi' ? 'Noto Sans Devanagari' : 'Inter Variable',
         color: shot.onScreenText.startsWith('[') ? '#9A9AA5' : color, weight: 800, align: 'center', x: 0.5, y: brief.aspect === '9:16' ? 0.62 : 0.72,
         anim: brief.tone === 'high' ? 'kinetic' : 'fade-up', captionStyle: null, highlightWord: null,
       }
@@ -571,4 +572,54 @@ export function reviewEdit(doc: StudioDoc, brief: ProductionBrief, plan: Product
 export function reviewScore(checks: ReviewCheck[]): number {
   if (!checks.length) return 0
   return Math.round((checks.reduce((s, c) => s + (c.status === 'pass' ? 1 : c.status === 'warn' ? 0.5 : 0), 0) / checks.length) * 100)
+}
+
+/* ——— Run until approval / auto-finish ——————————————————————————— */
+
+/** Intake → brief → research → plan in one go. Stops at the preview: approval stays manual. */
+export function runToApproval(index: OpusIndex, intake: ProductionIntake, resources: ResourceCandidate[] = []): Pick<ProductionSession, 'brief' | 'research' | 'plan'> {
+  const brief = buildBrief(intake)
+  const found = research(index, brief, resources)
+  return { brief, research: found, plan: buildPlan(index, brief, found) }
+}
+
+export type FinishRound = { round: number; score: number; fixes: string[] }
+export type FinishResult = BuildResult & { rounds: FinishRound[]; review: ReviewCheck[]; leftForYou: string[]; beatsSnapped: number; beatNote: string | null }
+
+/**
+ * After approval: build, then review → polish → review until the score stops
+ * improving (max 3 rounds). Optionally rolls cuts onto analysed music beats.
+ * Pure and deterministic. The caller commits it as ONE undo step.
+ */
+export function autoFinish(doc: StudioDoc, plan: ProductionPlan, brief: ProductionBrief, opts: { makeId: (n: number) => string; replace?: boolean; replaceApproved?: boolean; snapToBeats?: boolean; maxRounds?: number }): FinishResult {
+  const built = planToDoc(doc, plan, brief, opts)
+  let cur = built.doc
+  let review = reviewEdit(cur, brief, plan, built.clipIds)
+  let score = reviewScore(review)
+  const rounds: FinishRound[] = [{ round: 0, score, fixes: ['Built from the approved plan with keyframed motion.'] }]
+  let leftForYou: string[] = []
+  let beatsSnapped = 0
+  let beatNote: string | null = null
+  if (opts.snapToBeats) {
+    if (!timelineBeats(cur).length) beatNote = 'No analysed music on the timeline. Add music and run Beats in the audio inspector, then Cupric AI can cut on the beat.'
+    else {
+      const snapped = snapCutsToBeats(cur, 0.3)
+      cur = snapped.doc
+      beatsSnapped = snapped.moved
+      beatNote = `Rolled ${snapped.moved} cut(s) onto music beats.`
+    }
+  }
+  for (let round = 1; round <= (opts.maxRounds ?? 3); round++) {
+    const p = polishEdit(cur, brief, plan, built.clipIds)
+    const nextReview = reviewEdit(p.doc, brief, plan, built.clipIds)
+    const nextScore = reviewScore(nextReview)
+    leftForYou = p.leftForYou
+    if (nextScore <= score && round > 1) break
+    cur = p.doc
+    review = nextReview
+    rounds.push({ round, score: nextScore, fixes: p.fixes })
+    if (nextScore <= score) break
+    score = nextScore
+  }
+  return { ...built, doc: cur, rounds, review, leftForYou, beatsSnapped, beatNote }
 }

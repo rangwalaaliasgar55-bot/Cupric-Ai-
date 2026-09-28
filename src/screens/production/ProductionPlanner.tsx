@@ -20,7 +20,7 @@ import { studioOf } from '../../lib/studio/doc'
 import { LOADER_PRESETS } from '../../lib/studio/loaders'
 import { uid } from '../../lib/utils'
 import {
-  INTAKE_QUESTIONS, buildBrief, buildPlan, detectLanguage, normaliseSession, openQuestions, planToDoc, polishEdit, research, reviewEdit, reviewScore,
+  INTAKE_QUESTIONS, buildBrief, buildPlan, detectLanguage, normaliseSession, openQuestions, planToDoc, polishEdit, research, runToApproval, autoFinish, reviewEdit, reviewScore,
   type OpusIndex, type ResourceCandidate,
 } from '../../lib/production/engine'
 import { PRODUCTION_STAGES, type Confidence, type ProductionIntake, type ProductionSession, type ProductionStage } from '../../lib/production/types'
@@ -60,6 +60,7 @@ export function ProductionPlanner() {
   const pushToast = useProjectStore((s) => s.pushToast)
   const setAskOpen = useProjectStore((s) => s.setAskOpen)
   const [polishNotes, setPolishNotes] = useState<{ fixes: string[]; leftForYou: string[] } | null>(null)
+  const [snapBeats, setSnapBeats] = useState(true)
   const { data: catalogue, error } = useCatalogue()
   const session = useMemo(() => normaliseSession(project?.production), [project?.production])
   const [view, setViewStage] = useState<ProductionStage>(session.stage)
@@ -97,6 +98,23 @@ export function ProductionPlanner() {
       const review = reviewEdit(r.doc, session.brief, session.plan, r.clipIds)
       save({ ...session, builtClipIds: r.clipIds, review, stage: 'review' }, replace ? 'Build production (replace timeline)' : 'Build production (append)', r.doc)
       pushToast('success', `Built ${r.clipIds.length} editable clips${r.reused ? ` · ${r.reused} use your imported media` : ''}${r.placeholders ? ` · ${r.placeholders} placeholder(s) to replace` : ''}. Undo reverts the whole build.`)
+    } catch (e) {
+      pushToast('error', e instanceof Error ? e.message : String(e))
+    }
+  }
+  function runAll() {
+    if (!catalogue || !session.intake.making.trim()) return
+    const r = runToApproval(catalogue.index, session.intake, catalogue.resources)
+    save({ ...session, ...r, approved: false, replaceApproved: false, review: null, stage: 'preview' }, 'Cupric AI: run to approval')
+    pushToast('success', 'Cupric AI planned everything up to the preview. Check it and approve when you are happy.')
+  }
+  function finish(replace: boolean) {
+    if (!session.plan || !session.brief || !session.approved) return
+    try {
+      const r = autoFinish(studioOf(project), session.plan, session.brief, { makeId: () => uid(), replace, replaceApproved: session.replaceApproved, snapToBeats: snapBeats })
+      save({ ...session, builtClipIds: r.clipIds, review: r.review, stage: 'review' }, 'Cupric AI: build + polish', r.doc)
+      setPolishNotes({ fixes: [...r.rounds.map((x) => `Round ${x.round}: score ${x.score}. ${x.fixes.join(' ')}`), ...(r.beatNote ? [r.beatNote] : [])], leftForYou: r.leftForYou })
+      pushToast('success', `Built and polished in ${r.rounds.length - 1} round(s). Final score ${r.rounds[r.rounds.length - 1].score}/100. One undo reverts it all.`)
     } catch (e) {
       pushToast('error', e instanceof Error ? e.message : String(e))
     }
@@ -173,7 +191,7 @@ export function ProductionPlanner() {
               ))}
             </div>
             {session.intake.making && (() => { const d = detectLanguage(`${session.intake.making} ${session.intake.mustKeep}`); return d.language ? <p className="text-xs text-muted">Detected language: {d.language} ({d.confidence} confidence)</p> : null })()}
-            <Button onClick={makeBrief} disabled={!session.intake.making.trim()}>Generate brief</Button>
+            <div className="flex flex-wrap gap-2"><Button onClick={makeBrief} disabled={!session.intake.making.trim()}>Generate brief</Button><Button variant="outline" onClick={runAll} disabled={!catalogue || !session.intake.making.trim()} title="Brief, research and plan in one go. Stops at the preview for your approval.">Run to approval</Button></div>
           </>
         )}
 
@@ -277,7 +295,9 @@ export function ProductionPlanner() {
           <>
             <p className="text-xs text-muted">Build adds {session.plan.shots.length} media slots plus text as real, editable Studio clips <strong>after</strong> your current timeline. Cupric AI keyframes their motion (enter → hold → exit, eased for the tone), and every keyframe stays editable in the inspector. It's one undo step. Replacing the timeline is destructive and needs a second approval.</p>
             <div className="flex flex-wrap items-center gap-2">
-              <Button onClick={() => build(false)} disabled={!session.approved}>Build (append)</Button>
+              <Button onClick={() => finish(false)} disabled={!session.approved} title="Build, then review and polish until the score stops improving (max 3 rounds)">Build + Cupric AI polish</Button>
+              <Button variant="outline" onClick={() => build(false)} disabled={!session.approved}>Build only</Button>
+              <label className="flex items-center gap-1.5 text-xs text-muted"><input type="checkbox" checked={snapBeats} onChange={(e) => setSnapBeats(e.target.checked)} />Cut on music beats</label>
               <label className="flex items-center gap-2 text-xs text-muted">
                 <input type="checkbox" checked={session.replaceApproved} disabled={!session.approved} onChange={(e) => save({ ...session, replaceApproved: e.target.checked }, 'Approve timeline replacement')} />
                 Allow replacing my current timeline
