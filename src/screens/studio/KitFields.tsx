@@ -3,6 +3,7 @@
  * onPatch, so edits are one undo step each and saved with the project.
  */
 import type { StudioClip, StudioDoc, StudioKitClip, StudioKitMedia, StudioMediaClip } from '../../types/project'
+import { CursorPicker } from './CursorPicker'
 import { KIT_ACCENTS, KIT_KINDS, kineticWords, normaliseKit } from '../../lib/studio/homeKit'
 import type { StudioKitWord } from '../../types/project'
 
@@ -48,6 +49,12 @@ export function KitFields({ clip: raw, doc, onPatch }: { clip: StudioKitClip; do
       )}
       {(clip.kit === 'browser-mockup' || clip.kit === 'checkout-card') && (
         <Row label="URL"><input className={inputCx} value={clip.url ?? ''} onChange={(e) => set({ url: e.target.value })} /></Row>
+      )}
+      {/* Cursor pack v2 — every pointer previewed doing the thing it does. */}
+      {clip.kit === 'cursor-zoom' && (
+        <Row label="Pointer" hint="Each card runs the real loop — fly in, travel, press, ripple — painted by the same code the export uses.">
+          <CursorPicker value={clip.cursor ?? 'arrow'} onPick={(cursor) => set({ cursor })} />
+        </Row>
       )}
       {clip.kit !== 'cursor-zoom' && clip.kit !== 'image-stack' && clip.kit !== 'block-row-3d' && clip.kit !== 'kinetic-headline' && (
         <Row label="Items (one per line)" hint={clip.kit === 'checkout-card' ? 'Line 1 price, line 2 total, then "Label|Value" summary rows — your real numbers only.' : 'Your own words and numbers — nothing is invented.'}>

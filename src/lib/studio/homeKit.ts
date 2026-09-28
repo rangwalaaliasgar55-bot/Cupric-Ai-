@@ -13,6 +13,7 @@
  *    and numbers/labels come only from the clip's fields.
  */
 import type { StudioKitClip, StudioKitKind, StudioKitMedia, StudioKitWord } from '../../types/project'
+import { clickPress, clickRipple, cursorPosition, drawCursor } from './cursorPack'
 import { bezierEase, type Bezier } from './curves'
 
 /* ——— tokens ——— */
@@ -399,36 +400,28 @@ function drawCursorZoom(ctx: CanvasRenderingContext2D, clip: StudioKitClip, b: B
   const clickAt = clip.clickAt ?? 0.6
   const fx = (clip.fromX ?? 0.2) * b.width, fy = (clip.fromY ?? 0.8) * b.height
   const tx = clip.x * b.width, ty = clip.y * b.height
-  const move = soft(clamp01(b.p / Math.max(0.05, clickAt - 0.04)))
-  const cx = fx + (tx - fx) * move, cy = fy + (ty - fy) * move
+  // Cursor pack v2: sprung travel, so the pointer accelerates away and eases
+  // into the target the way a hand does, instead of sliding at constant speed.
+  const travel = clamp01(b.p / Math.max(0.05, clickAt - 0.04))
+  const [mx, my] = cursorPosition(travel, [fx, fy], [tx, ty])
   const size = b.W * 0.12
   const rip = b.p - clickAt
   if (rip >= 0 && rip < 0.25) {
-    const k = soft(rip / 0.25)
-    ctx.beginPath()
-    ctx.arc(tx, ty, size * (0.3 + 1.4 * k), 0, Math.PI * 2)
-    ctx.fillStyle = rgba(clip.accent, 0.35 * (1 - k))
-    ctx.fill()
+    const k = clickRipple(rip / 0.25, size)
+    if (k.alpha > 0.004) {
+      ctx.beginPath()
+      ctx.arc(tx, ty, k.radius, 0, Math.PI * 2)
+      ctx.fillStyle = rgba(clip.accent, 0.8 * k.alpha)
+      ctx.fill()
+    }
   }
-  const press = rip >= 0 && rip < 0.06 ? 0.9 : 1
-  ctx.save()
-  ctx.translate(cx, cy)
-  ctx.scale(press, press)
-  ctx.beginPath()
-  ctx.moveTo(0, 0)
-  ctx.lineTo(0, size)
-  ctx.lineTo(size * 0.27, size * 0.76)
-  ctx.lineTo(size * 0.47, size * 1.12)
-  ctx.lineTo(size * 0.62, size * 1.04)
-  ctx.lineTo(size * 0.43, size * 0.7)
-  ctx.lineTo(size * 0.74, size * 0.7)
-  ctx.closePath()
-  ctx.fillStyle = VIDEO_TOKENS.ink
-  ctx.fill()
-  ctx.lineWidth = Math.max(1, size * 0.07)
-  ctx.strokeStyle = CORE_TOKENS.lightPanel
-  ctx.stroke()
-  ctx.restore()
+  const press = rip >= 0 && rip < 0.18 ? clickPress(rip / 0.18) : 0
+  drawCursor(ctx, clip.cursor ?? 'arrow', mx, my, {
+    size,
+    press,
+    fill: VIDEO_TOKENS.ink,
+    stroke: CORE_TOKENS.lightPanel,
+  })
 }
 
 /** Split "connect [with] over [+]" into plain and pill runs. */

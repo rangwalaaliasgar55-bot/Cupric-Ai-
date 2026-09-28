@@ -217,6 +217,22 @@ scripts/             build-packs.mjs · check-renderer.mjs
 build/icon.png       Windows app icon
 ```
 
+## Motion craft credits
+
+The closed-form spring core, the loop-exact noise and the pointer-motion rules
+are adapted from [motion-launch-videos](https://github.com/Kimeur/motion-launch-videos)
+by Marouane Gazouzi (MIT). No code is vendored; the techniques were
+reimplemented against Cupric's own renderer:
+
+| Borrowed idea | Where it lives here | Why it matters |
+| --- | --- | --- |
+| Damped springs in closed form | `src/lib/studio/springs.ts` | Real overshoot and ring-down that is still a pure function of `t`, so preview == export and scrubbing backwards is bit-identical. `back-out` only imitates a bounce. |
+| Snap to exactly 1 once settled | `settle()` | A value at rest really is at rest, which is what makes a loop seamless rather than almost-seamless. |
+| `landT` vs `settle` | `springLand()` | Motion "arrives" long before it stops ringing. Timing cuts to the settle time is what makes graphics feel sluggish. |
+| Loop-exact noise | `loopNoise()` | Three whole harmonics with seeded phases, so value *and* slope match at the seam — idle drift that never ticks on the wrap. |
+| Pointer travels, never teleports | `src/lib/studio/cursorPack.ts` | Sprung travel with a real duration, plus lift-out between beats so the pointer is not parked on what you are meant to read. |
+| Every style owns a `notFor` list | `src/lib/studio/filmStyles.ts` | A router with only positive descriptions will pick a particle swarm for a quarterly report. `notFor` is disqualifying, not a penalty. |
+
 ## Design system
 
 `DESIGN.md` is the source of truth for palette, type scale, radii, motion,

@@ -335,6 +335,15 @@ export type StudioEase =
   | 'hold'
   /** 2.2 — custom curve from the curve editor; control points in `bezier`. */
   | 'bezier'
+  /**
+   * Real damped springs, evaluated in closed form so they stay a pure
+   * function of t. Unlike `back-out` (a polynomial imitating a bounce) these
+   * overshoot, ring down and settle the way physical motion does.
+   */
+  | 'spring-slam'
+  | 'spring-land'
+  | 'spring-punch'
+  | 'spring-glide'
 
 export type StudioKeyframe = {
   at: number
@@ -675,6 +684,8 @@ export type StudioKitClip = StudioClipCommon & {
   fromX?: number
   fromY?: number
   clickAt?: number
+  /** Cursor pack v2 — which pointer the cursor-zoom rig draws. Default 'arrow'. */
+  cursor?: 'arrow' | 'hand' | 'finger' | 'text' | 'crosshair' | 'grab' | 'zoom' | 'dot'
   /** kinetic-headline: per-word runs. Missing → derived from `title` ([keyword] {chip} *glow*). */
   words?: StudioKitWord[]
   /** block-row-3d: render with real Three.js when available (falls back to the 2.5D canvas draw). */

@@ -35,6 +35,7 @@ import { compareDivider, deviceGeometry } from './layouts'
 import { drawDuoPhone, drawPhone, type DrawMedia } from './phone'
 import { kineticWord } from './textTools'
 import { CHIP, chipReveal, markRuns, runSpec } from './highlightRuns'
+import { springEase } from './springs'
 import { hasRichMarkup, parseRich, RICH_DEFAULTS, type RichStyle, type RichWord } from './richText'
 import type { StudioBlendMode, StudioDevice } from '../../types/project'
 
@@ -832,6 +833,11 @@ const EASES: Record<StudioKeyframe['ease'], (p: number) => number> = {
   hold: (p) => (p >= 1 ? 1 : 0),
   // Custom curves are resolved per keyframe (see keyframeValuesAt).
   bezier: (p) => p,
+  // Real damped springs in closed form — overshoot, ring-down and settle.
+  'spring-slam': springEase('slam'),
+  'spring-land': springEase('land'),
+  'spring-punch': springEase('punch'),
+  'spring-glide': springEase('glide'),
 }
 
 /** The animated properties, resolved at time `t`. */

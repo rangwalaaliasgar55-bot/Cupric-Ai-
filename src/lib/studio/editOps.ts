@@ -108,7 +108,7 @@ const fontError = (f: unknown) => fontshareFont(String(f)) ? `“${f}” is a Fo
 const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', 'word-reveal', 'shimmer', 'slide-left', 'glass-rise', 'liquid-wave', 'kinetic'])
 const BLEND_MODES = new Set<StudioBlendMode>(['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'soft-light', 'difference', 'add'])
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
-const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out', 'back-out', 'back-in', 'expo-out', 'expo-in-out', 'elastic-out', 'hold', 'bezier'])
+const EASES = new Set<StudioKeyframe['ease']>(['linear', 'ease-in', 'ease-out', 'ease-in-out', 'back-out', 'back-in', 'expo-out', 'expo-in-out', 'elastic-out', 'hold', 'bezier', 'spring-slam', 'spring-land', 'spring-punch', 'spring-glide'])
 const KEYFRAME_SCALABLE = ['kit', 'loader', 'shape', 'overlay', 'sticker', 'video', 'image', 'text', 'glass']
 
 /** Default motion for an agent-placed component, by what kind of component it is. */

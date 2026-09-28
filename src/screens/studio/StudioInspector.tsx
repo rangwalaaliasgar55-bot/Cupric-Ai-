@@ -572,6 +572,13 @@ function KeyframeFields({
                 <option value="back-out">Back out — overshoot and settle</option>
                 <option value="back-in">Back in — wind up, then leave</option>
                 <option value="elastic-out">Elastic — spring</option>
+                {/* Real damped springs: overshoot, ring down, settle. */}
+                <optgroup label="Real springs">
+                  <option value="spring-land">Land — confident, one small overshoot</option>
+                  <option value="spring-slam">Slam — heavy arrival with a bounce</option>
+                  <option value="spring-punch">Punch — tight and fast</option>
+                  <option value="spring-glide">Glide — smooth, never wobbles</option>
+                </optgroup>
                 <option value="hold">Hold — step to next key</option>
                 <option value="bezier">Custom curve…</option>
               </select>
