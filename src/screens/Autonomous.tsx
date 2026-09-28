@@ -4,7 +4,7 @@ import { MatrixLoader } from '../components/loaders/MatrixLoader'
 import { ProductionPlanner } from './production/ProductionPlanner'
 import { rundownToDoc } from '../lib/production/fromRundown'
 import { studioOf } from '../lib/studio/doc'
-import { uid } from '../lib/utils'
+import { cx, uid } from '../lib/utils'
 import type { AutomationJob } from '../types/project'
 import { dedupeMessages, humanError } from '../lib/humanError'
 import { Mic, MicOff, Volume2 } from 'lucide-react'
@@ -16,6 +16,7 @@ import { useProjectStore } from '../state/useProjectStore'
 import { isVoiceSupported, shouldAutoStartBrief, speak, stopSpeaking, VoiceListener } from '../lib/voice'
 import type { AutomationMode, VotingMode } from '../types/project'
 import { planWithRemotionCapabilities } from '../lib/remotionResources'
+import { OWNER_LABEL, PRODUCTION_PLAN, stepIdForAutomationLabel } from '../lib/production/productionPlan'
 
 /** Silence after a complete-sounding phrase before hands-free starts a job. */
 const AUTO_START_SETTLE_MS = 1800
@@ -362,17 +363,37 @@ export function Autonomous() {
             })()}
 
             <div className="mt-5 space-y-3">
-              {job.steps.map(step => (
+              {job.steps.map(step => {
+                /**
+                 * JOB 12 — the agent's own label is mapped onto the shared
+                 * eight-step plan, so this row shows the SAME owner Cupric
+                 * would name for the same step. One plan, one answer.
+                 */
+                const shared = PRODUCTION_PLAN.find(s => s.id === stepIdForAutomationLabel(step.label))
+                return (
                 <div key={step.id}>
-                  <div className="flex justify-between gap-3 text-xs">
-                    <span>{step.label}</span>
+                  <div className="flex items-center justify-between gap-3 text-xs">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {shared && (
+                        <span
+                          className={cx('shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold tracking-wide',
+                            shared.owner === 'you' ? 'bg-accent/15 text-accent-text' : shared.owner === 'cupric' ? 'bg-info/15 text-info' : 'bg-panel-alt text-muted')}
+                          title={`${OWNER_LABEL[shared.owner]} does this step — ${shared.why}`}
+                        >{OWNER_LABEL[shared.owner]}</span>
+                      )}
+                      <span className="truncate" title={step.label}>{step.label}</span>
+                      {shared?.destructive && (
+                        <span className="shrink-0 text-[10px] text-muted" title="This step overwrites work, so it asks before running">needs OK</span>
+                      )}
+                    </span>
                     <span className="text-muted">{step.status}</span>
                   </div>
                   <ProgressBar pct={step.progressPct} className="mt-1" />
                   {step.message && <div className="mt-1 text-xs text-muted">{step.message}</div>}
                   {step.errorMessage && <div className="mt-1 text-xs text-danger">{step.errorMessage}</div>}
                 </div>
-              ))}
+                )
+              })}
             </div>
           </Card>
         )}

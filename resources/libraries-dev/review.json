@@ -443,7 +443,7 @@
     },
     {
       "file": "src/screens/Autonomous.tsx",
-      "line": 71,
+      "line": 72,
       "target": "Mic button",
       "existingComponent": "const [transcribing, setTranscribing] = useState(false)",
       "suggestedLibrary": "Voice",
