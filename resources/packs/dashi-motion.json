@@ -2,7 +2,7 @@
   "id": "dashi-motion",
   "name": "dashi-motion native production skills",
   "description": "10 attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; Cupric applies the principles through its own deterministic renderer.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "source": "https://github.com/chuspeeism/dashi-motion",
   "license": "No upstream license declared — reference-only attribution; see resources/dashi-motion/UPSTREAM-NOTICE.md",
   "items": [
