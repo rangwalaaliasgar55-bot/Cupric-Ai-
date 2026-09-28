@@ -9,6 +9,7 @@ import {
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { usePreviewPlay } from "@/lab/preview-play";
 import { cn } from "@/lib/cn";
+import { useFrameClock } from "@/lib/progress";
 
 export type StorageCategory = {
   id: string;
@@ -294,6 +295,8 @@ function Crumble({
   width: number;
   color: string;
 }) {
+  // Captured: loops run on the driving clock in fixed steps, randomness is seeded.
+  const frameClock = useFrameClock(1343);
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -308,7 +311,7 @@ function Crumble({
     canvas.height = H * dpr;
     ctx.scale(dpr, dpr);
 
-    const rand = Math.random;
+    const rand = frameClock.random;
     const x0 = (left / 100) * W;
     const w = Math.max(6, (width / 100) * W - 2);
     const squashed = BAR * 0.45;
@@ -360,7 +363,7 @@ function Crumble({
     }));
 
     let raf = 0;
-    const start = performance.now();
+    const start = frameClock.now();
     let last = start;
     const tick = (now: number) => {
       const t = (now - start) / 1000;
@@ -368,7 +371,7 @@ function Crumble({
       last = now;
       ctx.clearRect(0, 0, W, H);
       if (t < CRUSH) {
-        raf = requestAnimationFrame(tick);
+        raf = frameClock.raf(tick);
         return;
       }
       let alive = false;
@@ -434,11 +437,11 @@ function Crumble({
         ctx.fill();
       }
 
-      if (alive) raf = requestAnimationFrame(tick);
+      if (alive) raf = frameClock.raf(tick);
       else ctx.clearRect(0, 0, W, H);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    raf = frameClock.raf(tick);
+    return () => frameClock.caf(raf);
   }, [left, width, color]);
 
   return (

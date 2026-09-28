@@ -28,6 +28,12 @@ export type RecordOptions = {
   pixelRatio?: number
   onProgress?: (pct: number) => void
   signal?: AbortSignal
+  /**
+   * Drives the shared clock: called with each shot's time before it is
+   * painted, so clock-driven components render exactly that moment and the
+   * shot is stamped with it.
+   */
+  onClock?: (sec: number) => void
 }
 
 export type RecordResult = {
@@ -63,7 +69,9 @@ export function createActor(root: HTMLElement, durationSec: number): Actor {
   // Press controls through the middle of the recording, leaving the start to
   // show the resting state and the end to show the settled result.
   const presses = controls.length ? Math.max(1, Math.min(5, Math.floor(durationSec / 0.9))) : 0
-  const pressAt = Array.from({ length: presses }, (_, i) => 0.5 + ((durationSec - 1.2) * i) / Math.max(1, presses - (presses > 1 ? 1 : 0)))
+  // Short recordings (< 1.2 s) press early so the reaction is still on screen.
+  const firstAt = Math.min(0.5, durationSec * 0.3)
+  const pressAt = Array.from({ length: presses }, (_, i) => firstAt + (Math.max(0, durationSec - 1.2) * i) / Math.max(1, presses - (presses > 1 ? 1 : 0)))
   let pressed = 0
   let hovered: Element | null = null
   let down: { el: Element; until: number; x: number; y: number } | null = null
@@ -139,6 +147,15 @@ export function createActor(root: HTMLElement, durationSec: number): Actor {
 
 /* ——— the recorder ———————————————————————————————————————————————— */
 
+/** Scale shot times into [0, durationSec] when capture overran it (in place). */
+export function fitShotTimes(shots: { t: number }[], durationSec: number): void {
+  const last = shots.length ? shots[shots.length - 1].t : 0
+  if (last <= durationSec || last <= 0) return
+  // Map the last shot onto the final output frame, everything else proportionally.
+  const k = (durationSec * 0.999) / last
+  for (const shot of shots) shot.t *= k
+}
+
 /** Pick, for every output frame time, the latest shot taken at or before it. */
 export function resampleShots(shots: { t: number; url: string }[], durationSec: number, fps: number): string[] {
   if (!shots.length) return []
@@ -150,6 +167,8 @@ export function resampleShots(shots: { t: number; url: string }[], durationSec: 
     while (j + 1 < shots.length && shots[j + 1].t <= at + 1e-3) j += 1
     out.push(shots[j].url)
   }
+  // The recording always ends on the settled result (the last shot).
+  if (count > 1) out[count - 1] = shots[shots.length - 1].url
   return out
 }
 
@@ -166,27 +185,48 @@ export async function recordComponent(stage: HTMLElement, opts: RecordOptions): 
   const shots: { t: number; url: string }[] = []
   let method: CaptureMethod | '' = ''
   const started = performance.now()
+  const wall = () => (performance.now() - started) / 1000
+  // The recording clock starts once the first (resting) shot is safely taken:
+  // a slow capture path (html-to-image's cold first shot can take seconds)
+  // would otherwise clone the DOM after the first press, losing the resting
+  // state. Every shot is stamped on this same clock.
+  let clockZero: number | null = null
+  const clock = () => (clockZero === null ? 0 : wall() - clockZero)
+  // The actor runs on its own ~60 Hz timer, not between captures, so presses
+  // land on time however slow each capture is.
+  const actorTimer = actor ? setInterval(() => { if (clockZero !== null) actor.step(Math.min(durationSec, clock())) }, 16) : null
+  // Past the end, keep shooting until the settled result is captured
+  // (at least MIN_SHOTS), so short recordings on slow machines still move.
+  const MIN_SHOTS = 3
+  // Hard ceiling so a broken capture path can never hang the recorder.
+  const graceUntil = durationSec + 20
   try {
     for (;;) {
       if (opts.signal?.aborted) throw new DOMException('Cancelled', 'AbortError')
-      const elapsed = (performance.now() - started) / 1000
-      if (elapsed > durationSec) break
-      actor?.step(elapsed)
+      const elapsed = clock()
+      if (elapsed > durationSec && (shots.length >= MIN_SHOTS || elapsed > graceUntil)) break
+      if (clockZero !== null) actor?.step(Math.min(durationSec, elapsed))
+      opts.onClock?.(Math.min(durationSec, elapsed))
       await nextPaint()
-      const t = (performance.now() - started) / 1000
+      const t = opts.onClock ? elapsed : clock()
       const shot = await captureElement(stage, capture, method || undefined)
       method = shot.method
-      shots.push({ t: Math.min(durationSec, t), url: shot.dataUrl })
-      opts.onProgress?.(Math.min(90, Math.round((t / durationSec) * 90)))
+      shots.push({ t, url: shot.dataUrl })
+      if (clockZero === null) clockZero = wall()
+      opts.onProgress?.(Math.min(90, Math.round((Math.min(durationSec, clock()) / durationSec) * 90)))
       // A fast capture path would otherwise take shots far above the frame
       // rate; spacing them saves memory without losing any motion.
-      const spent = (performance.now() - started) / 1000 - t
+      const spent = clock() - t
       if (spent < 1 / fps) await sleep((1 / fps - spent) * 1000)
     }
   } finally {
+    if (actorTimer) clearInterval(actorTimer)
     actor?.stop()
   }
 
+  // Grace shots ran past the end: compress the real timeline into the chosen
+  // length so the settled result is the last frame (the motion fits the duration).
+  fitShotTimes(shots, durationSec)
   const animated = new Set(shots.map((s) => s.url)).size > 1
   let frames = animated ? resampleShots(shots, durationSec, fps) : shots.slice(0, 1).map((s) => s.url)
   const trimmed = await trimFrames(frames)

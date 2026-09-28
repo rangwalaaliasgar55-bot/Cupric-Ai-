@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
+import { useFrameClock } from "@/lib/progress";
 
 /* The teachable part: the pen's speed comes from the path itself. The path
    is sampled once, each sample gets a cost from how sharply the line turns
@@ -110,6 +111,8 @@ export function FooterSignature({
   replayKey?: number;
   className?: string;
 }) {
+  // Captured: loops run on the driving clock in fixed steps, randomness is seeded.
+  const frameClock = useFrameClock(1678);
   const reduceMotion = useReducedMotion() ?? false;
   const root = useRef<HTMLElement>(null);
   const measure = useRef<SVGPathElement>(null);
@@ -149,7 +152,7 @@ export function FooterSignature({
       const p = Math.min(1, (now - start) / DURATION);
       setDrawn(lengthAt(timing, penEase(p)));
       if (p < 1) {
-        frame = requestAnimationFrame(tick);
+        frame = frameClock.raf(tick);
       } else {
         finished = true;
         frame = 0;
@@ -168,7 +171,7 @@ export function FooterSignature({
         }
         timing ??= buildTiming(path);
         setPhase("writing");
-        frame = requestAnimationFrame(tick);
+        frame = frameClock.raf(tick);
       },
       // Most of the footer has to be on screen, or the signature would be
       // half written before anyone looks at it.
@@ -181,20 +184,20 @@ export function FooterSignature({
     const onVisibility = () => {
       if (!frame && !pausedAt) return;
       if (document.hidden && frame) {
-        cancelAnimationFrame(frame);
+        frameClock.caf(frame);
         frame = 0;
-        pausedAt = performance.now();
+        pausedAt = frameClock.now();
       } else if (!document.hidden && pausedAt) {
-        start += performance.now() - pausedAt;
+        start += frameClock.now() - pausedAt;
         pausedAt = 0;
-        frame = requestAnimationFrame(tick);
+        frame = frameClock.raf(tick);
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
     return () => {
       io.disconnect();
-      cancelAnimationFrame(frame);
+      frameClock.caf(frame);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [subpaths, scrollRef, replayKey, reduceMotion]);

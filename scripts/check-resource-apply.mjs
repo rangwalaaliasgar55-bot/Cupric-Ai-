@@ -163,6 +163,8 @@ for (const file of files) {
       }
       if (JSON.stringify(doc) !== before) fail(item, label, 'mutated the input document')
       if (!result.ok) {
+        // Audited reference-only items (unsafe upstream source) must refuse, with the recorded reason.
+        if (item.data?.referenceOnly === true && result.reason === item.data.refusal) { tally['reference-only→refused'] = (tally['reference-only→refused'] ?? 0) + 1; continue }
         fail(item, label, `refused: ${result.reason}`)
         continue
       }
@@ -171,6 +173,10 @@ for (const file of files) {
         if (checkDoc(item, label, JSON.parse(before), result.doc) !== true) continue
         if (result.focusId && !result.doc.clips.some((c) => c.id === result.focusId)) fail(item, label, 'focus clip missing')
         if (!(result.focusSec >= 0)) fail(item, label, `focusSec ${result.focusSec}`)
+        // The playhead Apply jumps to must actually show the focused layer.
+        const fc = result.focusId && result.doc.clips.find((c) => c.id === result.focusId)
+        if (fc && !(fc.startSec <= result.focusSec + 1e-6 && result.focusSec < fc.startSec + fc.durationSec - 1e-6)) fail(item, label, `focus ${result.focusSec}s is outside the focused clip ${fc.startSec}–${fc.startSec + fc.durationSec}s`)
+        if (fc && !(fc.opacity > 0)) fail(item, label, 'focused clip is invisible (opacity 0)')
         if (!result.message) fail(item, label, 'no message')
         if (JSON.stringify(result.doc) === before && item.kind !== 'font' && item.kind !== 'transition') fail(item, label, 'Apply changed nothing')
         if (item.kind === 'component' && result.needsStudio) {

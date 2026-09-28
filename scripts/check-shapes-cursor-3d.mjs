@@ -59,7 +59,7 @@ for (const name of no) { const v = m.cur.cursorNeeded({ name }); ok(!v.needed &&
 /* kit + agent ops */
 const base = () => ({ aspect: '16:9', fps: 30, backgroundId: 'bg', trackCount: 2, clips: [
   { ...m.docm.defaultTextClip(0, 1), id: 't1', text: 'Hello' },
-  { id: 'btn', kind: 'overlay', name: 'Shiny button', dataUrl: '', source: 'component', x: 0.5, y: 0.6, scale: 1, track: 1, startSec: 1, durationSec: 4, transitionIn: 'none', transitionOut: 'none', opacity: 1, component: { slug: 'nope', status: 'ready', recordSec: 4, interact: false } },
+  { id: 'btn', kind: 'overlay', name: 'Shiny button', dataUrl: '', source: 'component', x: 0.5, y: 0.6, scale: 1, track: 1, startSec: 1, durationSec: 4, transitionIn: 'none', transitionOut: 'none', opacity: 1, component: { slug: 'nope', status: 'ready', recordSec: 3, interact: false } },
 ] })
 {
   const r = m.kit.addShape(base(), 'underline', 1)

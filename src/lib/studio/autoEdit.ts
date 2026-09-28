@@ -206,15 +206,15 @@ export function speechCuts(words: StudioWord[], range: [number, number], opts: {
  * butted together, and every other clip after the clip's start is remapped
  * through the same cut list so captions and overlays stay on their words.
  */
-export function tightenClip(doc: StudioDoc, clipId: string, opts: { maxPauseSec?: number; padSec?: number; fillers?: boolean } = {}): { doc: StudioDoc; removedSec: number; cuts: number; reason?: string } {
+export function tightenClip(doc: StudioDoc, clipId: string, opts: { maxPauseSec?: number; padSec?: number; fillers?: boolean; cuts?: Array<[number, number]> } = {}): { doc: StudioDoc; removedSec: number; cuts: number; reason?: string } {
   const clip = doc.clips.find((c) => c.id === clipId) as StudioMediaClip | StudioAudioClip | undefined
   if (!clip || (clip.kind !== 'video' && clip.kind !== 'audio')) return { doc, removedSec: 0, cuts: 0, reason: 'Select a video or audio clip.' }
   if (clip.locked) return { doc, removedSec: 0, cuts: 0, reason: 'That clip is locked.' }
   if (!clip.words?.length) return { doc, removedSec: 0, cuts: 0, reason: 'Transcribe this clip first (Auto-captions) so its word timings are known.' }
   const speed = clip.kind === 'video' && clip.speed > 0 ? clip.speed : 1
   const range: [number, number] = [clip.trimInSec, clip.trimInSec + clip.durationSec * speed]
-  const cuts = speechCuts(clip.words, range, opts)
-  if (!cuts.length) return { doc, removedSec: 0, cuts: 0, reason: 'No fillers or long pauses found.' }
+  const cuts = opts.cuts ? [...opts.cuts].sort((a, b) => a[0] - b[0]) : speechCuts(clip.words, range, opts)
+  if (!cuts.length) return { doc, removedSec: 0, cuts: 0, reason: opts.cuts ? 'No words selected to cut.' : 'No fillers or long pauses found.' }
   // Keep ranges = complement of cuts.
   const keeps: Array<[number, number]> = []
   let cursor = range[0]

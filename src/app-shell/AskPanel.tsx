@@ -1,3 +1,5 @@
+import { FreeModels } from './FreeModels'
+import { EASE_SPRING } from '../lib/motion'
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { ImagePlus, Send, Sparkles, X, Settings } from 'lucide-react'
@@ -14,6 +16,9 @@ import { cx } from '../lib/utils'
 import { getIpc } from '../lib/bridge'
 import { humanError } from '../lib/humanError'
 import { ProjectSafetyPanel } from './ProjectSafetyPanel'
+import { ThinkingOrb } from 'thinking-orbs'
+import { ThinkingStates } from '../components/loaders/ThinkingStates'
+import { useReducedMotion } from '../lib/use-reduced-motion'
 
 type ChatMsg = { role: 'user' | 'ai'; text: string; images?: ChatImage[] }
 
@@ -85,7 +90,7 @@ export function AskPanel() {
   const [msgs, setMsgs] = useState<ChatMsg[]>([
     {
       role: 'ai',
-      text: "Hey — I'm Cupric AI. Live chat uses Gemini or an OpenCode/OpenAI-compatible model configured in settings. Video creation does not need chat; use Brief → Create video file.",
+      text: "Hey — I'm Cupric AI. Ask me anything — I use a local model if one is running, otherwise the built-in free brain. No setup needed; your own keys are optional.",
     },
   ])
   const [input, setInput] = useState('')
@@ -95,6 +100,9 @@ export function AskPanel() {
   const scrollRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
+  const [pendingSummary, setPendingSummary] = useState(false)
+  const theme = useProjectStore((s) => s.theme)
+  const reducedMotion = useReducedMotion()
   const [showSettings, setShowSettings] = useState(false)
   const [apiKey, setApiKey] = useState('')
   const [geminiModel, setGeminiModel] = useState('gemini-2.5-flash')
@@ -436,6 +444,7 @@ export function AskPanel() {
     setPending([])
     const history = msgs.slice(-8).map((m) => ({ role: m.role, text: m.text }))
     setMsgs((m) => [...m, { role: 'user', text, images }])
+    setPendingSummary(images.length > 0)
     setBusy(true)
     try {
       const reply = await askGeminiChat(text, { projectName: active?.name ?? null, view }, { images, history })
@@ -456,7 +465,7 @@ export function AskPanel() {
           initial={{ x: 48, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 48, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 400, damping: 36 }}
+          transition={{ duration: 0.2, ease: EASE_SPRING }}
           className="fixed inset-y-0 right-0 z-40 flex w-[min(420px,100vw)] flex-col overflow-hidden border-l border-line bg-panel shadow-2xl"
         >
           <div className="flex items-center gap-2.5 border-b border-line px-4 py-3">
@@ -467,7 +476,7 @@ export function AskPanel() {
               <div className="flex items-center gap-2 text-sm font-semibold">
                 Ask Cupric AI
                 <span className={cx('h-2 w-2 rounded-full', aiMode === 'auto' ? (autoPick?.kind === 'template' ? 'bg-muted' : 'bg-accent') : providerStatus[aiProvider].state === 'ok' ? 'bg-accent' : providerStatus[aiProvider].state === 'error' ? 'bg-danger' : providerStatus[aiProvider].state === 'testing' ? 'bg-info' : 'bg-muted')} title={aiMode === 'auto' ? autoPick?.reason || 'Auto-discovering available providers' : providerStatus[aiProvider].message} />
-                <span className="rounded-full border border-line px-1.5 py-0.5 text-[10px] text-muted">{aiMode === 'template' ? 'OFFLINE' : hasKey ? 'LIVE' : 'SETUP'}</span>
+                <span className="rounded-full border border-line px-1.5 py-0.5 text-xs text-muted">{aiMode === 'template' || autoPick?.kind === 'template' ? 'OFFLINE' : hasKey ? 'LIVE' : 'FREE'}</span>
               </div>
               <div className="text-xs text-muted">{aiMode === 'auto' ? `Auto · ${autoPick?.label || 'discovering…'}` : aiMode === 'template' ? 'Offline deterministic template' : aiProvider === 'opencode' ? `${aiMode === 'zen' ? 'Zen Free' : 'OpenCode'} · ${openCodeModel}` : `Gemini · ${geminiModel}`}</div>
             </div>
@@ -514,17 +523,18 @@ export function AskPanel() {
                 {aiMode === 'auto' && (
                   <div className="rounded-lg border border-accent/25 bg-accent/5 p-2 text-xs">
                     <div className="flex items-center justify-between gap-2"><span className="font-semibold text-text">Auto-using: {autoPick?.label || 'discovering…'}</span><button type="button" onClick={() => void refreshDiscovery()} className="text-accent-text underline">Change / refresh</button></div>
-                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric checks OpenCode Desktop, Zen, then local models.'}</div>
+                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric uses a local model if one is running, else the built-in free brain, then any keys you added.'}</div>
                   </div>
                 )}
+                <FreeModels />
                 {setupRequired && aiMode === 'auto' && (
-                  <div className="rounded-lg border border-[#f59e0b]/30 bg-[#f59e0b]/10 p-2 text-xs text-text">
-                    <div className="font-semibold">No live model found yet</div>
-                    <div className="mt-1 text-muted">Your timeline still builds offline. Choose a zero-key setup:</div>
+                  <div className="rounded-lg border border-line bg-panel p-2 text-xs text-text">
+                    <div className="font-semibold">offline brain</div>
+                    <div className="mt-1 text-muted">Everything still works offline; live AI comes back on its own. Optional overrides:</div>
                     <div className="mt-2 grid grid-cols-3 gap-1.5">
-                      <button type="button" onClick={() => void openSetup('zen')} className="rounded border border-line bg-panel px-2 py-1.5 text-[10px]">Paste Zen key<br /><span className="text-muted">opencode.ai/auth</span></button>
-                      <button type="button" onClick={() => void openSetup('ollama')} className="rounded border border-line bg-panel px-2 py-1.5 text-[10px]">Install Ollama</button>
-                      <button type="button" onClick={() => void openSetup('template')} className="rounded border border-line bg-panel px-2 py-1.5 text-[10px]">Use offline template</button>
+                      <button type="button" onClick={() => void openSetup('zen')} className="rounded border border-line bg-panel px-2 py-1.5 text-xs">Zen key</button>
+                      <button type="button" onClick={() => void openSetup('ollama')} className="rounded border border-line bg-panel px-2 py-1.5 text-xs">Install Ollama</button>
+                      <button type="button" onClick={() => void openSetup('template')} className="rounded border border-line bg-panel px-2 py-1.5 text-xs">Stay offline</button>
                     </div>
                   </div>
                 )}
@@ -549,7 +559,7 @@ export function AskPanel() {
                     <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.gemini.state === 'ok' ? 'bg-accent' : providerStatus.gemini.state === 'error' ? 'bg-danger' : providerStatus.gemini.state === 'testing' ? 'bg-info' : 'bg-muted')} />
                     <span className="truncate">Gemini · {providerStatus.gemini.message}</span>
                   </span>
-                  <button type="button" onClick={() => void testConnection('gemini')} disabled={providerStatus.gemini.state === 'testing'} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
+                  <button type="button" onClick={() => void testConnection('gemini')} disabled={providerStatus.gemini.state === 'testing'} title={(providerStatus.gemini.state === 'testing') ? 'Testing the connection…' : undefined} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
                 </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2">
                   <div className="mb-2 flex items-center justify-between gap-2">
@@ -627,17 +637,17 @@ export function AskPanel() {
                     <span className={cx('h-2 w-2 shrink-0 rounded-full', providerStatus.opencode.state === 'ok' ? 'bg-accent' : providerStatus.opencode.state === 'error' ? 'bg-danger' : providerStatus.opencode.state === 'testing' ? 'bg-info' : 'bg-muted')} />
                     <span className="truncate">OpenCode · {providerStatus.opencode.message}</span>
                   </span>
-                  <button type="button" onClick={() => void testConnection('opencode')} disabled={providerStatus.opencode.state === 'testing'} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
+                  <button type="button" onClick={() => void testConnection('opencode')} disabled={providerStatus.opencode.state === 'testing'} title={(providerStatus.opencode.state === 'testing') ? 'Testing the connection…' : undefined} className="shrink-0 rounded-md border border-line px-2 py-1 text-text disabled:opacity-50">Test</button>
                 </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
                   <div className="mb-1 font-semibold text-muted">Provider status</div>
                   <div className="grid grid-cols-3 gap-1.5 text-[10px]">
-                    {([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1 rounded bg-panel px-1.5 py-1"><span className={cx('h-2 w-2 rounded-full', statusDots[key] === 'ok' ? 'bg-accent' : statusDots[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label} · {statusDots[key]}</span>)}
+                    <span className="flex items-center gap-1 rounded bg-panel px-1.5 py-1" title="Built-in Cupric AI engine, fully offline"><span className="h-2 w-2 rounded-full bg-accent" />Cupric AI · ready</span>{([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local model']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1 rounded bg-panel px-1.5 py-1"><span className={cx('h-2 w-2 rounded-full', statusDots[key] === 'ok' ? 'bg-accent' : statusDots[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label} · {statusDots[key]}</span>)}
                   </div>
                 </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
                   <div className="font-semibold text-muted">Fallback order</div>
-                  <div className="mt-1 space-y-1">{fallbackOrder.map((item, index) => <div key={`${item}-${index}`} className="flex items-center justify-between rounded bg-panel px-2 py-1"><span>{index + 1}. {item}</span><span className="flex gap-1"><button type="button" aria-label={`Move ${item} up`} onClick={() => moveFallback(index, -1)} disabled={index === 0}>↑</button><button type="button" aria-label={`Move ${item} down`} onClick={() => moveFallback(index, 1)} disabled={index === fallbackOrder.length - 1}>↓</button></span></div>)}</div>
+                  <div className="mt-1 space-y-1">{fallbackOrder.map((item, index) => <div key={`${item}-${index}`} className="flex items-center justify-between rounded bg-panel px-2 py-1"><span>{index + 1}. {item}</span><span className="flex gap-1"><button type="button" aria-label={`Move ${item} up`} onClick={() => moveFallback(index, -1)} disabled={index === 0} title={(index === 0) ? 'Already first in the fallback order' : undefined}>↑</button><button type="button" aria-label={`Move ${item} down`} onClick={() => moveFallback(index, 1)} disabled={index === fallbackOrder.length - 1} title={(index === fallbackOrder.length - 1) ? 'Already last in the fallback order' : undefined}>↓</button></span></div>)}</div>
                 </div>
                 <button type="submit" className="w-full rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-accent-ink">
                   Save live AI settings
@@ -747,10 +757,12 @@ export function AskPanel() {
             ))}
             {busy && (
               <div className="flex justify-start">
-                <div className="nf-typing flex items-center gap-1 rounded-xl border border-line bg-bg/40 px-3.5 py-3">
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted" />
+                {/* Libraries.dev apply: Thinking orbs (composing, 20 px inline) beside a
+                    Transitions.dev thinking-states label. Both follow the real `busy`
+                    flag and stop under reduced motion. */}
+                <div className="flex items-center gap-2 rounded-xl border border-line bg-bg/40 px-3.5 py-2.5 text-xs" data-testid="ask-waiting">
+                  <ThinkingOrb state="composing" size={20} theme={theme === 'light' ? 'light' : 'dark'} paused={reducedMotion} aria-label="Assistant is writing a reply" />
+                  <ThinkingStates states={pendingSummary ? ['Reading your images', 'Waiting for the reply'] : ['Reading your message', 'Waiting for the reply']} holdMs={2400} reducedMotion={reducedMotion ? 'reduce' : 'system'} />
                 </div>
               </div>
             )}
@@ -837,7 +849,7 @@ export function AskPanel() {
               <button
                 type="submit"
                 aria-label="Send"
-                disabled={(!input.trim() && !pending.length) || busy}
+                disabled={(!input.trim() && !pending.length) || busy} title={((!input.trim() && !pending.length) || busy) ? 'Type a message or attach a file first — or wait for the reply' : undefined}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent text-accent-ink transition-transform duration-150 hover:bg-accent-hover active:scale-[0.96] disabled:pointer-events-none disabled:opacity-40"
               >
                 <Send size={15} />

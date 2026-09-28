@@ -19,6 +19,7 @@
  * constants it has already read — anything else is ignored.
  */
 import type { StudioClip, StudioDoc, StudioKeyframe, StudioMarker } from '../../types/project'
+import { chaptersFromTexts, extractTimedText, timedTextToSpecs, type SourceText } from './sourceFilm'
 
 export type SourceFile = { path: string; text: string }
 export type SourceChapter = { name: string; startSec: number; durationSec: number }
@@ -36,6 +37,9 @@ export type SourceProject = {
   audio: { module: string | null; synthesized: boolean }
   webgl: { file: string; kind: 'three' | 'webgl' | 'particles' | 'canvas' } | null
   notes: string[]
+  /** Every timed piece of copy the film draws (sourceFilm.ts). */
+  texts: SourceText[]
+  frame: { w: number; h: number }
 }
 
 type Channel = 'opacity' | 'scale' | 'x' | 'y' | 'rotation' | 'blur' | 'glow' | 'hue'
@@ -196,7 +200,7 @@ export function readConstants(files: SourceFile[]): Map<string, Val> {
 const isNum = (v: Val): v is number => typeof v === 'number' && Number.isFinite(v)
 const isObj = (v: Val): v is { [k: string]: Val } => !!v && typeof v === 'object' && !Array.isArray(v)
 const norm = (s: string) => s.toLowerCase().replace(/scene|beat|chapter|section|component|act|\d+[_-]?/g, '').replace(/[^a-z]/g, '')
-const titleCase = (s: string) => s.replace(/[_-]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, (c) => c.toUpperCase()).trim()
+const titleCase = (s: string) => s.replace(/[_-]+/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/(^|[\s/+(])(\w)/g, (_m, a: string, c: string) => a + c.toUpperCase()).trim()
 
 const NAME_KEYS = ['name', 'title', 'label', 'id', 'chapter', 'key', 'scene']
 const START_KEYS = ['start', 'startSec', 'startTime', 't', 't0', 'at', 'time', 'from', 's', 'begin', 'startFrame', 'frame', 'startMs']
@@ -373,7 +377,19 @@ export function detectSourceProject(files: SourceFile[], html = ''): SourceProje
   }
   const unique = found.filter((s, i) => found.findIndex((o) => o.name === s.name) === i)
 
-  if (!chapters.length && unique.length < 2) return null
+  const frameW = numConst(/^(?:W|WIDTH|FRAME_?W(?:IDTH)?|VIDEO_?W(?:IDTH)?)$/) ?? 1920
+  const frameH = numConst(/^(?:H|HEIGHT|FRAME_?H(?:EIGHT)?|VIDEO_?H(?:EIGHT)?)$/) ?? 1080
+  const withHtml = html ? [...files, { path: 'index.html.jsx', text: html }] : files
+  let early: SourceText[] | null = null
+  if (!chapters.length && unique.length < 2) {
+    // No chapter map and no scene components — but a GSAP/canvas film still
+    // has timed copy. Build the chapters from it rather than refusing.
+    early = extractTimedText(withHtml, { consts: consts as Map<string, unknown>, W: frameW, H: frameH }).texts
+    if (early.length < 3) return null
+    chapters = chaptersFromTexts(early)
+    if (!duration) duration = Math.max(...early.map((t) => t.endSec))
+    notes.push('No chapter map was found — chapters were built from when its text appears.')
+  }
 
   // Order hint: an array/object of component references (SCENES = [Intro, Problem]).
   let order: string[] = []
@@ -441,9 +457,14 @@ export function detectSourceProject(files: SourceFile[], html = ''): SourceProje
     notes.push('No chapter/timestamp map was found — scenes were spaced evenly; retime them on the timeline.')
   }
 
+  const durationSec = Math.max(film, ...chapters.map((c) => c.startSec + c.durationSec))
+  const extracted = extractTimedText(withHtml, { chapters, consts: consts as Map<string, unknown>, W: frameW, H: frameH, durationSec })
+  const texts = extracted.texts.length >= (early?.length ?? 0) ? extracted.texts : early ?? []
+  if (extracted.untimed.length) notes.push(`${extracted.untimed.length} interface/HUD string${extracted.untimed.length === 1 ? '' : 's'} had no timing in the code and were left out: ${extracted.untimed.slice(0, 4).map((u) => `“${u}”`).join(', ')}${extracted.untimed.length > 4 ? '…' : ''}.`)
   return {
+    texts, frame: { w: frameW, h: frameH },
     framework: scan.hasVite ? 'Vite + React' : scan.hasReact ? 'React' : 'JavaScript',
-    durationSec: Math.max(film, ...chapters.map((c) => c.startSec + c.durationSec)),
+    durationSec,
     fps, chapters, scenes, globalTracks, palette: palette.slice(0, 12), fonts,
     audio: { module: audioFile?.path ?? null, synthesized },
     webgl, notes,
@@ -533,16 +554,37 @@ export function sourceProjectToClips(p: SourceProject, doc: Pick<StudioDoc, 'tra
   const roles = paletteRoles(p.palette)
   const clips: StudioClip[] = []
   const bgTrack = 0
-  const chapterTrack = Math.min(21, Math.max(1, doc.trackCount))
-  const sceneTrack = Math.min(22, chapterTrack + 1)
+  let chapterTrack = Math.min(21, Math.max(1, doc.trackCount))
+  let sceneTrack = Math.min(22, chapterTrack + 1)
   const common = { transitionIn: 'fade' as const, transitionOut: 'fade' as const, opacity: 1 }
 
+  if (!p.webgl && p.texts?.length) {
+    // A 2D canvas film paints its own backdrop; a native one stands in so the type never sits on empty black.
+    clips.push({ ...common, id: makeId('bg'), kind: 'background', backgroundId: backgroundForLayer('canvas', roles.accent), track: bgTrack, startSec: base, durationSec: p.durationSec, name: 'Film backdrop (swap in the inspector)' } as unknown as StudioClip)
+  }
   if (p.webgl) {
     clips.push({ ...common, id: makeId('bg'), kind: 'background', backgroundId: backgroundForLayer(p.webgl.kind, roles.accent), track: bgTrack, startSec: base, durationSec: p.durationSec, name: `${p.webgl.kind === 'three' ? '3D' : p.webgl.kind === 'particles' ? 'Particle' : 'WebGL'} layer (${p.webgl.file.split('/').pop()})` } as unknown as StudioClip)
   }
 
+  // The film's own typography, beat by beat, as native text clips.
+  // Copy timed only by its chapter stays on that chapter's scene card when the
+  // chapter has a scene component (the card keeps its keyframes); otherwise it
+  // comes in as real text.
+  const sceneChapters = new Set(p.scenes.map((sc) => sc.chapterIndex))
+  const chapterIdx = (sec: number) => p.chapters.findIndex((c) => sec >= c.startSec - 1e-3 && sec < c.startSec + c.durationSec - 1e-3)
+  const film = timedTextToSpecs((p.texts ?? []).filter((t) => t.timing !== 'chapter' || !sceneChapters.has(chapterIdx(t.startSec))), { base, firstTrack: 1, maxTrack: 20, fg: roles.fg, muted: mutedOf(roles), accent: roles.accent, fonts: p.fonts, H: p.frame?.h })
+  const covered = (c: SourceChapter) => film.specs.some((sp) => sp.startSec < base + c.startSec + c.durationSec - 0.05 && sp.startSec + sp.durationSec > base + c.startSec + 0.05)
+  for (const sp of film.specs) {
+    clips.push({ ...common, id: makeId('tx'), kind: 'text', track: sp.track, startSec: sp.startSec, durationSec: Math.max(0.2, sp.durationSec), name: sp.name,
+      text: sp.text, fontSizePct: sp.fontSizePct, fontFamily: sp.fontFamily, color: sp.color, weight: sp.weight, align: sp.align, x: sp.x, y: sp.y, anim: sp.anim,
+      captionStyle: null, highlightWord: null, legibility: 'off', ...(sp.textGlow ? { textGlow: sp.textGlow } : {}) } as unknown as StudioClip)
+  }
+  const textTop = Math.max(0, film.tracksUsed)
+  if (film.specs.length) { chapterTrack = Math.min(21, Math.max(chapterTrack, textTop)); sceneTrack = Math.min(22, chapterTrack + 1) }
+
   const globalKeys = p.globalTracks.filter((t) => t.channel)
   p.chapters.forEach((c, i) => {
+    if (covered(c)) return
     const scene = p.scenes.find((s) => s.chapterIndex === i)
     const copy = scene?.lines[0] ?? c.name
     const chapterKeys = tracksToKeyframes(globalKeys.filter((t) => !t.owner || norm(t.owner) === norm(c.name)).filter((t) => t.channel === 'opacity' || t.channel === 'y' || t.channel === 'scale'), c.startSec, c.durationSec)
@@ -556,6 +598,8 @@ export function sourceProjectToClips(p: SourceProject, doc: Pick<StudioDoc, 'tra
   for (const s of p.scenes) {
     const ch = p.chapters[s.chapterIndex] ?? p.chapters[0]
     if (!ch) continue
+    // Its copy already came in as real text clips; a picture of that copy would duplicate it.
+    if (covered(ch)) continue
     const keys = tracksToKeyframes([...s.tracks, ...globalKeys.filter((t) => t.owner && norm(t.owner) === norm(s.name))], 0, ch.durationSec)
       ?? tracksToKeyframes(globalKeys.filter((t) => !t.owner), ch.startSec, ch.durationSec)
     clips.push({
@@ -570,9 +614,12 @@ export function sourceProjectToClips(p: SourceProject, doc: Pick<StudioDoc, 'tra
   const notes = [...p.notes]
   if (p.webgl) notes.push(`${p.webgl.file} draws with ${p.webgl.kind === 'three' ? 'Three.js' : p.webgl.kind}; it can't run inside Studio, so it came in as a swappable animated background layer.`)
   if (p.audio.synthesized && p.audio.module) notes.push(`The sound in ${p.audio.module} is synthesised in code, so there is no audio file to import — add a music track or voiceover.`)
-  const summary = `${p.framework} project: ${p.chapters.length} chapters, ${p.scenes.length} scene components, ${keyed} clips with converted keyframes${p.palette.length ? `, ${p.palette.length} palette colours` : ''}${p.webgl ? ', 1 background layer' : ''}`
-  return { clips, markers, tracksUsed: sceneTrack + 1, palette: p.palette, summary, notes }
+  if (film.dropped) notes.push(`${film.dropped} overlapping text layer${film.dropped === 1 ? '' : 's'} did not fit on the timeline's tracks.`)
+  const summary = `${p.framework} project: ${p.chapters.length} chapters, ${film.specs.length} timed text layers, ${p.scenes.length} scene components, ${keyed} clips with converted keyframes${p.palette.length ? `, ${p.palette.length} palette colours` : ''}${p.webgl ? ', 1 background layer' : ''}`
+  return { clips, markers, tracksUsed: Math.max(sceneTrack + 1, textTop), palette: p.palette, summary, notes }
 }
+
+const mutedOf = (r: { fg: string }) => (luminance(r.fg) > 0.5 ? '#9AA3AD' : '#5B616B')
 
 /** The explicit "neither format" message. */
 export function unrecognizedMessage(fileName: string, files: SourceFile[], html: string): string {

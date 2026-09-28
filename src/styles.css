@@ -1,5 +1,12 @@
 @import '@fontsource-variable/geist';
 @import '@fontsource-variable/inter';
+@import '@fontsource/noto-sans-devanagari/400.css';
+@import '@fontsource/noto-sans-devanagari/600.css';
+@import '@fontsource/noto-sans-devanagari/700.css';
+@import '@fontsource/noto-sans-devanagari/800.css';
+@import '@fontsource/hind/400.css';
+@import '@fontsource/hind/600.css';
+@import '@fontsource/hind/700.css';
 @import '@fontsource-variable/jetbrains-mono';
 @import '@fontsource-variable/syne';
 @import '@fontsource-variable/unbounded';
@@ -51,6 +58,21 @@
   --color-accent-text: #c8f542;
   --color-info: #4fb6e8;
   --color-danger: #e24b4a;
+  /* Stage surfaces: never theme-swapped (video is always dark under the UI). */
+  --color-stage: #0b0b10;
+  --color-stage-deep: #07080c;
+  --color-stage-raised: #11131b;
+  --color-stage-text: #f4f1ea;
+  /* Video palette — Home_X kit stages only (DESIGN.md §1). */
+  --color-video-orange: #ff5a1f;
+  --color-video-blue: #2f6bff;
+  --color-video-cream: #f4efe4;
+  --color-video-paper: #f7f6f2;
+  --color-video-ink: #0e0e12;
+  --color-video-yellow: #ffe58a;
+  --color-video-pink: #ffc6da;
+  --color-video-mint: #bff0d4;
+  --color-video-green: #1fa463;
 
   /* Type scale — 12 / 13 / 14 / 16 / 20 / 28. Never smaller than 12px. */
   --text-xs: 0.75rem;
@@ -475,5 +497,22 @@
   [style*='cupric-drift'],
   .\[animation\:cupric-drift_46s_ease-in-out_infinite\] {
     animation: none !important;
+  }
+}
+
+/* Command palette entrance (motion-safe only). */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+/* DESIGN §Motion: Tailwind utility animations stop under reduced motion
+   (motion/react components are covered app-wide by <MotionConfig reducedMotion="user">). */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin,
+  .animate-pulse,
+  .animate-ping,
+  .animate-bounce {
+    animation: none;
   }
 }

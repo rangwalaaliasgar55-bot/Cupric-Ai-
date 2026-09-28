@@ -16,7 +16,7 @@ import { cx, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
 import { focusStudioClip } from '../lib/studio/focus'
 import { lastStudioPlayhead } from '../lib/studio/studioLink'
-import { withComponent } from '../lib/studio/components'
+import { preferredRecordSec, withComponent } from '../lib/studio/components'
 import { motionPatch } from '../lib/studio/motionDirector'
 
 /**
@@ -152,7 +152,7 @@ export function Lab() {
     setCapturing(true)
     try {
       const doc = studioOf(project)
-      const added = withComponent(doc, open.slug, { startSec: Math.min(lastStudioPlayhead(), docDuration(doc)), recordSec: 4, durationSec: 4 })
+      const added = withComponent(doc, open.slug, { startSec: Math.min(lastStudioPlayhead(), docDuration(doc)), recordSec: preferredRecordSec(), durationSec: preferredRecordSec() })
       const clip = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
       patchStudio(project.id, { trackCount: added.doc.trackCount, clips: added.doc.clips.map((c) => (c.id === clip.id ? clip : c)) })
       focusStudioClip(clip.id)
@@ -184,7 +184,7 @@ export function Lab() {
             <Button
               size="sm"
               variant="outline"
-              disabled={position <= 0}
+              disabled={position <= 0} title={(position <= 0) ? 'This is the first component' : undefined}
               onClick={() => setOpen(ordered[position - 1] ?? null)}
             >
               Previous
@@ -192,12 +192,12 @@ export function Lab() {
             <Button
               size="sm"
               variant="outline"
-              disabled={position < 0 || position >= ordered.length - 1}
+              disabled={position < 0 || position >= ordered.length - 1} title={(position < 0 || position >= ordered.length - 1) ? 'This is the last component' : undefined}
               onClick={() => setOpen(ordered[position + 1] ?? null)}
             >
               Next
             </Button>
-            <Button size="sm" variant="primary" onClick={() => void sendToStudio()} disabled={!project || capturing}>
+            <Button size="sm" variant="primary" onClick={() => void sendToStudio()} disabled={!project || capturing} title={(!project || capturing) ? 'Open a project first — or wait for the capture' : undefined}>
               {capturing ? <Loader2 size={13} className="animate-spin" /> : <Wand2 size={13} />}
               {capturing ? 'Adding…' : 'Add animated to Studio'}
             </Button>

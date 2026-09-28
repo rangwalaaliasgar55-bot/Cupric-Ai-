@@ -1,3 +1,4 @@
+import { EASE_SPRING } from '../lib/motion'
 import { AlertTriangle, CheckCircle2, Info } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useProjectStore, type Toast } from '../state/useProjectStore'
@@ -41,7 +42,7 @@ export function Toasts() {
               initial={{ opacity: 0, y: 16, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 520, damping: 34 }}
+              transition={{ duration: 0.2, ease: EASE_SPRING }}
             >
               <Icon size={16} className={cx('mt-0.5 shrink-0', TONES[t.kind])} />
               <div className="min-w-0 flex-1">

@@ -1,0 +1,32 @@
+---
+title: Inline Edit
+description: A username field that stays read-only until you tap the pencil, then saves with a check.
+---
+
+## Features
+
+- **Read, then write**: Default is a quiet label; the pencil wakes the input.
+- **Select on edit**: Focus lands in the field and highlights the value so you can type over it.
+- **Pencil to check**: The trailing button morphs from edit to save.
+- **Ring when live**: A focus ring appears only while you’re editing.
+- **One control**: No separate modal, no extra “Save” in a toolbar.
+
+## Usage
+
+Good for names, handles, and other single-line values. Wire the check to persist. Keep it in a form row or a profile header. Don’t use it for long copy — that’s a textarea’s job.
+
+```tsx
+import SaveInput from "@/components/inline-edit";
+
+export default function Page() {
+  return <SaveInput />;
+}
+```
+
+## Where to use
+
+- Profile and account settings
+- Workspace or project rename
+- Admin tables with inline titles
+- Onboarding “pick a handle” steps
+- Billing display-name fields

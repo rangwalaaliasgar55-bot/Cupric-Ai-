@@ -83,12 +83,9 @@ const ZEN_FREE_MODELS = ['big-pickle', 'space-bunny-free', 'mimo-v2.6-flash-free
 const ZEN_BASE_URL = 'https://opencode.ai/zen/v1'
 const AI_DISCOVERY_TIMEOUT_MS = 1500
 const AI_DISCOVERY_CACHE_MS = 30_000
+const freeBrain = require('./free-brain.cjs')
 const AI_MODES = new Set(['auto', 'gemini', 'zen', 'openrouter', 'ollama', 'lmstudio', 'template'])
-const LOCAL_DISCOVERY_ENDPOINTS = [
-  { kind: 'ollama', label: 'Ollama', baseUrl: 'http://localhost:11434/v1' },
-  { kind: 'lmstudio', label: 'LM Studio', baseUrl: 'http://localhost:1234/v1' },
-  { kind: 'local-1337', label: 'Local model', baseUrl: 'http://127.0.0.1:1337/v1' },
-]
+// Discovery uses freeBrain.LOCAL_PROBE_ORDER (4096 → 11434 → 1234 → 8080).
 
 const renderJobs = new Map()
 const renderQueue = []
@@ -542,6 +539,11 @@ function configuredOpenCodeKey(baseUrl, model) {
 
 function configuredAiMode(settings = readSettings()) {
   const value = String(settings.aiMode || '').toLowerCase()
+  // RULE ZERO: a remote mode that has no key (e.g. an old "openrouter" default
+  // migrated from aiProvider) must never make the first AI action fail — it
+  // behaves exactly like Auto until the user actually adds a key.
+  if ((value === 'openrouter' || value === 'zen') && !String(settings.openCodeApiKey || process.env.OPENROUTER_API_KEY || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || '').trim()) return 'auto'
+  if (value === 'gemini' && !String(settings.geminiApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '').trim()) return 'auto'
   if (AI_MODES.has(value)) return value
   if (settings.aiProvider === 'gemini') return 'gemini'
   if (settings.aiProvider === 'opencode') return 'openrouter'
@@ -619,24 +621,27 @@ async function autoDiscover(options = {}) {
 
     // These probes are deliberately parallel and short. A stopped localhost
     // service must never make the first Generate click feel hung.
-    const local = (await Promise.allSettled(LOCAL_DISCOVERY_ENDPOINTS.map(async (endpoint) => {
-      const response = await fetch(`${endpoint.baseUrl}/models`, { signal: AbortSignal.timeout(AI_DISCOVERY_TIMEOUT_MS) })
-      if (!response.ok) throw new Error(`${response.status}`)
-      const data = await response.json()
-      const models = (Array.isArray(data?.data) ? data.data : Array.isArray(data?.models) ? data.models : [])
-        .map((item) => String(item?.id || item?.name || item?.model || '').trim())
-        .filter((model) => model && !/embed|rerank|whisper|tts/i.test(model))
-      if (!models.length) throw new Error('no chat model')
-      return { ...endpoint, models }
-    }))).flatMap((settled) => settled.status === 'fulfilled' ? [settled.value] : [])
+    // Order: OpenCode :4096 → Ollama :11434 → LM Studio :1234 → 127.0.0.1:8080.
+    const local = await freeBrain.probeLocals({ timeoutMs: AI_DISCOVERY_TIMEOUT_MS }).catch(() => [])
+    brainLocalsCache = { at: Date.now(), locals: local }
     const firstLocal = local[0]
     if (firstLocal) {
       const picked = { kind: firstLocal.kind, provider: 'opencode', baseUrl: firstLocal.baseUrl, model: firstLocal.models[0], label: `${firstLocal.label} · ${firstLocal.models[0]}`, reason: `${firstLocal.label} is running locally; no key is required.`, source: 'local', models: firstLocal.models }
       return { pick: picked, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
     }
 
-    const offline = { kind: 'template', provider: 'template', baseUrl: '', model: '', label: 'Offline template', reason: 'No configured key or local model was found. The deterministic planner keeps the timeline usable.', source: 'builtin' }
-    return { pick: offline, local, configured, setupRequired: true, checkedAt: new Date().toISOString() }
+    // Built-in keyless free cloud: no key, no signup. A short silent reachability
+    // check only decides the label; routing still hops between both endpoints.
+    for (const endpoint of freeBrain.KEYLESS_ENDPOINTS) {
+      const reachable = await fetch(endpoint.modelsUrl, { signal: AbortSignal.timeout(AI_DISCOVERY_TIMEOUT_MS * 2) }).then((r) => r.ok).catch(() => false)
+      if (reachable) {
+        const picked = { kind: 'keyless', provider: 'keyless', baseUrl: endpoint.baseUrl, model: endpoint.draftModel, label: `${endpoint.label} · built in`, reason: 'Built-in free brain — no key or setup needed. A local model or your own key is used automatically when present.', source: 'builtin' }
+        return { pick: picked, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
+      }
+    }
+
+    const offline = { kind: 'template', provider: 'template', baseUrl: '', model: '', label: 'offline brain', reason: 'No network and no local model — the deterministic planner keeps everything working. Live AI resumes automatically when you are back online.', source: 'builtin' }
+    return { pick: offline, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
   })().then((result) => {
     const current = readSettings()
     if (configuredAiMode(current) === 'auto') {
@@ -671,12 +676,12 @@ function aiSettings() {
   const settings = readSettings()
   const mode = configuredAiMode(settings)
   const pick = mode === 'auto' && settings.autoPick ? settings.autoPick : null
-  const baseFromPick = pick?.baseUrl || settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || ''
-  const modelFromPick = pick?.model || settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || ''
+  const baseFromPick = (pick?.kind === 'keyless' ? '' : pick?.baseUrl) || settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || ''
+  const modelFromPick = (pick?.kind === 'keyless' ? '' : pick?.model) || settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || ''
   const openCodeBaseUrl = String(baseFromPick || (mode === 'openrouter' ? 'https://openrouter.ai/api/v1' : mode === 'zen' ? ZEN_BASE_URL : '')).trim()
   const openCodeModel = String(modelFromPick || (mode === 'zen' ? ZEN_FREE_MODELS[0] : mode === 'openrouter' ? 'qwen/qwen3-235b-a22b:free' : '')).trim()
   const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || resolveOpenCodeApiKey(openCodeBaseUrl, openCodeModel) || (mode === 'zen' ? openCodeAuthSecrets()[0] : '') || '').trim()
-  const provider = mode === 'gemini' ? 'gemini' : mode === 'template' || pick?.kind === 'template' || (mode === 'auto' && !pick) ? 'template' : mode === 'auto' && pick?.kind === 'gemini' ? 'gemini' : 'opencode'
+  const provider = mode === 'auto' && pick?.kind === 'keyless' ? 'keyless' : mode === 'gemini' ? 'gemini' : mode === 'template' || pick?.kind === 'template' || (mode === 'auto' && !pick) ? 'template' : mode === 'auto' && pick?.kind === 'gemini' ? 'gemini' : 'opencode'
   return { mode, pick, provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
 }
 
@@ -818,6 +823,16 @@ ipcMain.handle('settings:set', async (_event, patch) => {
   const result = applySettingsPatch(patch || {})
   if (configuredAiMode(readSettings()) === 'auto') await autoDiscover({ force: true })
   return publicSettings()
+})
+ipcMain.handle('ai:freeModels', async (_event, payload = {}) => {
+  const cat = await refreshModelCatalogue({ force: Boolean(payload?.force) }).catch(() => readModelCatalogue())
+  // Presence-only: never any key material in what the renderer receives.
+  return { fetchedAt: cat.fetchedAt, models: (cat.models || []).map((m) => ({ id: m.id, source: m.source, kind: m.kind, badge: m.badge, isNew: Boolean(m.isNew), retired: Boolean(m.retired) })) }
+})
+ipcMain.handle('ai:ackNewModels', () => {
+  const cat = readModelCatalogue()
+  writeModelCatalogue({ ...cat, models: (cat.models || []).map((m) => ({ ...m, isNew: false, seen: true })) })
+  return true
 })
 ipcMain.handle('ai:autoDiscover', async () => publicDiscovery(await autoDiscover({ force: true })))
 ipcMain.handle('ai:openZenAuth', () => shell.openExternal('https://opencode.ai/auth'))
@@ -1270,6 +1285,8 @@ async function generateCandidateHtml(prompt) {
 }
 
 const CANDIDATE_COUNT = 3
+// One overall budget for the candidate step (all candidates run in parallel).
+const CANDIDATE_DEADLINE_MS = 150000
 
 /** How many times a candidate may be sent back for repair. */
 const REPAIR_ROUNDS = 2
@@ -1363,8 +1380,17 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
   const candidates = []
   const attempts = []
   let fallbackUsed = false
+  // With no model at all, don't sit on a spinner: Cupric AI's built-in
+  // deterministic candidates (below) are the honest answer straight away.
+  const liveModel = aiSettings().provider !== 'template' || Boolean(geminiApiKey()) || hasOpenCodeAccess()
+  const progress = (done, note) => {
+    if (!job?.id) return
+    try { patchAutomationStep(job.id, 3, { progressPct: Math.min(95, 5 + Math.round((90 * done) / CANDIDATE_COUNT)), message: note }) } catch {}
+  }
+  let settled = 0
+  let closed = false
 
-  for (let i = 0; i < CANDIDATE_COUNT; i += 1) {
+  const runOne = async (i) => {
     const file = path.join(root, `candidate-${i + 1}.html`)
     // Each candidate gets a different creative constraint so the battle
     // compares genuinely different pieces, not three samples of one prompt.
@@ -1388,9 +1414,10 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
         score: verdict.score,
         repairRounds: history,
       })
+      if (closed) return
       if (!verdict.valid) {
         logLine('automation-candidate-invalid', `Candidate ${i + 1} failed the render contract even after repair`, verdict.failures)
-        continue
+        return
       }
       if (history.some((h) => h.accepted)) {
         warnings.push(`Candidate ${i + 1} needed ${history.filter((h) => h.accepted).length} repair round(s) before it met the render contract.`)
@@ -1405,9 +1432,28 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
         repaired: history.some((h) => h.accepted),
       })
     } catch (err) {
+      if (closed) return
       attempts.push({ candidate: i + 1, generated: false, error: err?.message || String(err) })
       logLine('automation-candidate-failed', err?.message || String(err), { candidate: i + 1 })
+    } finally {
+      if (!closed) { settled += 1; progress(settled, `Candidate ${settled} of ${CANDIDATE_COUNT} finished`) }
     }
+  }
+
+  if (liveModel) {
+    // In parallel, under one deadline: a slow or stuck model can't hold the run hostage.
+    progress(0, `Generating ${CANDIDATE_COUNT} candidates in parallel (up to ${Math.round(CANDIDATE_DEADLINE_MS / 1000)}s)`)
+    let timer
+    const deadline = new Promise((resolve) => { timer = setTimeout(() => resolve('timeout'), CANDIDATE_DEADLINE_MS) })
+    const outcome = await Promise.race([Promise.allSettled(Array.from({ length: CANDIDATE_COUNT }, (_, i) => runOne(i))), deadline])
+    clearTimeout(timer)
+    closed = true
+    if (outcome === 'timeout') {
+      warnings.push(`The AI model took longer than ${Math.round(CANDIDATE_DEADLINE_MS / 1000)}s, so Cupric kept the ${candidates.length} candidate(s) that finished in time.`)
+      attempts.push({ generated: false, error: 'deadline reached' })
+    }
+  } else {
+    attempts.push({ generated: false, error: 'no AI model configured, so Cupric AI built-in candidates were used' })
   }
 
   if (!candidates.length) {
@@ -2257,10 +2303,11 @@ async function runGeminiGenerateContent(key, prompt, generationConfig) {
 }
 
 /** Local OpenAI-compatible servers worth probing when nothing else answers. */
+// Same order as freeBrain.LOCAL_PROBE_ORDER: OpenCode → Ollama → LM Studio → :8080.
 const LOCAL_AI_ENDPOINTS = [
+  'http://localhost:4096/v1',
   'http://localhost:11434/v1',
   'http://localhost:1234/v1',
-  'http://localhost:4096/v1',
   'http://127.0.0.1:8080/v1',
   'http://127.0.0.1:1337/v1',
 ]
@@ -2368,6 +2415,131 @@ async function aiRoutes(task = 'draft') {
  * that does not parse gets exactly one stricter repair round on the same route
  * before moving on.
  */
+/* ——— zero-setup brain wiring (free-brain.cjs) ——————————————————————— */
+
+const brainCooldowns = freeBrain.createCooldowns()
+let brainLocalsCache = { at: 0, locals: [] }
+
+function routeKey(route) {
+  if (route.provider === 'keyless') return `${route.brain.chatUrl}|${route.brain.model}`
+  if (route.provider === 'gemini') return `gemini|${geminiModel()}`
+  const cfg = { ...aiSettings(), ...(route.override || {}) }
+  return `${normalizedBaseUrl(cfg.openCodeBaseUrl)}|${cfg.openCodeModel}`
+}
+
+/** Inline/toast notice to the renderer — never a dialog. */
+function sendAiNotice(text, kind = 'inline') {
+  try { mainWindow?.webContents.send('ai:notice', { text, kind, at: Date.now() }) } catch {}
+}
+
+async function brainLocals() {
+  if (Date.now() - brainLocalsCache.at < 60_000) return brainLocalsCache.locals
+  const locals = await freeBrain.probeLocals().catch(() => [])
+  brainLocalsCache = { at: Date.now(), locals }
+  return locals
+}
+
+/**
+ * JOB 1 route order. draft: local → keyless → user keys; strong (lock, repair,
+ * agent-ops): user keys (best first) → local → keyless. First working wins;
+ * the deterministic template stays the callers' final fallback.
+ */
+async function brainRoutes(task = 'draft') {
+  const existing = await aiRoutes(task).catch(() => [])
+  const isLocalRoute = (r) => r.provider === 'opencode' && isLocalModelBase(r.override?.openCodeBaseUrl || aiSettings().openCodeBaseUrl)
+  const locals = await brainLocals()
+  const localRoutes = [
+    ...locals.map((l) => ({ provider: 'opencode', label: `${l.label} · ${l.models[0]}`, override: { openCodeBaseUrl: l.baseUrl, openCodeModel: l.models[0], openCodeApiKey: '' } })),
+    ...existing.filter(isLocalRoute),
+  ]
+  const userRoutes = existing.filter((r) => !isLocalRoute(r))
+  const keyless = freeBrain.planRoutes({ task, keyless: freeBrain.KEYLESS_ENDPOINTS }).filter((r) => r.kind === 'keyless')
+    .map((brain) => ({ provider: 'keyless', label: brain.label, brain }))
+  const strong = task !== 'draft' && task !== 'classify'
+  const ordered = strong ? [...userRoutes, ...localRoutes, ...keyless] : [...localRoutes, ...keyless, ...userRoutes]
+  const seen = new Set()
+  return ordered.filter((r) => { const k = routeKey(r); if (seen.has(k) || brainCooldowns.cooling(k)) return false; seen.add(k); return true })
+}
+
+function noteRetiredModel(route) {
+  const model = route.provider === 'keyless' ? route.brain.model : route.provider === 'gemini' ? geminiModel() : (route.override?.openCodeModel || aiSettings().openCodeModel)
+  brainCooldowns.set(routeKey(route), 24 * 3600_000, 'retired')
+  const cat = readModelCatalogue()
+  writeModelCatalogue(freeBrain.retireModel(cat, null, model))
+  const next = freeBrain.fallbackModel(cat, { id: model })
+  sendAiNotice(`${model} was retired by its provider — switched to ${next ? next.id : 'the next free model'} for now.`, 'inline')
+}
+
+/* ——— JOB 2: free-model catalogue (silent, cached 24 h, weekly refresh) ——— */
+
+function modelCatalogueFile() { return userDataPath('ai-cache', 'models.json') }
+function readModelCatalogue() { return readJson(modelCatalogueFile(), { fetchedAt: 0, models: [], knownIds: [] }) }
+function writeModelCatalogue(cat) { try { writeJson(modelCatalogueFile(), cat) } catch {} }
+
+/** Sources: keyless defaults + locals + OpenCode imports; keyed providers only when a key exists. */
+async function modelSources() {
+  const sources = freeBrain.KEYLESS_ENDPOINTS.map((k) => ({
+    id: k.id, kind: 'keyless', url: k.modelsUrl,
+    parse: (data) => (Array.isArray(data) ? data : data?.data || [])
+      .filter((m) => k.id !== 'pollinations' || !m.tier || m.tier === 'anonymous'),
+  }))
+  for (const l of await brainLocals()) sources.push({ id: l.kind, kind: 'local', url: `${l.baseUrl}/models` })
+  const settings = readSettings()
+  const orKey = String(process.env.OPENROUTER_API_KEY || (/openrouter\.ai/i.test(settings.openCodeBaseUrl || '') ? settings.openCodeApiKey : '') || '').trim()
+  if (orKey) sources.push({ id: 'openrouter', kind: 'user', url: 'https://openrouter.ai/api/v1/models', headers: { authorization: `Bearer ${orKey}` } })
+  const gKey = geminiApiKey()
+  if (gKey) sources.push({ id: 'gemini', kind: 'user', url: `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(gKey)}`, parse: (d) => (d?.models || []).filter((m) => (m.supportedGenerationMethods || []).includes('generateContent')) })
+  const groqKey = String(process.env.GROQ_API_KEY || settings.groqApiKey || '').trim()
+  if (groqKey) sources.push({ id: 'groq', kind: 'user', url: 'https://api.groq.com/openai/v1/models', headers: { authorization: `Bearer ${groqKey}` } })
+  const metaKey = String(process.env.MODEL_API_KEY || settings.metaApiKey || '').trim()
+  const metaBase = normalizedBaseUrl(process.env.MODEL_API_BASE_URL || settings.metaBaseUrl || '')
+  if (metaKey && metaBase) sources.push({ id: 'meta', kind: 'user', url: `${metaBase}/models`, headers: { authorization: `Bearer ${metaKey}` } })
+  for (const preset of discoverOpenCodeConfiguredModels()) {
+    const key = resolveOpenCodeApiKey(preset.baseUrl, preset.model)
+    if (key || isLocalModelBase(preset.baseUrl)) sources.push({ id: `opencode:${preset.baseUrl}`, kind: isLocalModelBase(preset.baseUrl) ? 'local' : 'user', url: `${normalizedBaseUrl(preset.baseUrl)}/models`, headers: key ? { authorization: `Bearer ${key}` } : {} })
+  }
+  const seen = new Set()
+  return sources.filter((src) => (seen.has(src.url) ? false : seen.add(src.url)))
+}
+
+let modelRefreshPromise = null
+async function refreshModelCatalogue({ force = false } = {}) {
+  const prev = readModelCatalogue()
+  if (!force && !freeBrain.isStale(prev)) return prev
+  if (modelRefreshPromise) return modelRefreshPromise
+  modelRefreshPromise = (async () => {
+    const fresh = await freeBrain.aggregateModels(await modelSources())
+    // Everything failed (offline): keep the cache, don't mark anything retired.
+    if (!fresh.models.length && fresh.errors.length) return prev
+    const { catalogue, added, retired } = freeBrain.mergeCatalogue(prev, fresh)
+    writeModelCatalogue(catalogue)
+    try { mainWindow?.webContents.send('ai:models', { added: added.map((m) => m.id).slice(0, 12), retired: retired.map((m) => m.id).slice(0, 12), count: catalogue.models.length }) } catch {}
+    if (added.length) sendAiNotice(`${added.length} new free model${added.length === 1 ? '' : 's'} available: ${added.slice(0, 3).map((m) => m.id).join(', ')}${added.length > 3 ? '…' : ''}`, 'toast')
+    logLine('ai-models', `catalogue ${catalogue.models.length} (+${added.length}, retired ${retired.length}, failed ${fresh.failedSources.join(',') || 'none'})`)
+    return catalogue
+  })().finally(() => { modelRefreshPromise = null })
+  return modelRefreshPromise
+}
+
+/** On start: silent local probe ("local brain found, switched") + stale-catalogue refresh + weekly timer. */
+async function startZeroSetupBrain() {
+  try {
+    const locals = await brainLocals()
+    const settings = readSettings()
+    const found = locals[0] ? `${locals[0].kind}|${locals[0].models[0]}` : ''
+    if (found && found !== settings.lastLocalBrain) {
+      settings.lastLocalBrain = found
+      writeSettings(settings)
+      sendAiNotice(`local brain found, switched to ${locals[0].label}`, 'toast')
+    } else if (!found && settings.lastLocalBrain) {
+      settings.lastLocalBrain = ''
+      writeSettings(settings)
+    }
+  } catch {}
+  void refreshModelCatalogue().catch(() => undefined)
+  setInterval(() => void refreshModelCatalogue({ force: true }).catch(() => undefined), freeBrain.WEEK_MS).unref?.()
+}
+
 /** 1.8 — backoff schedule for transient AI errors, per route. */
 const AI_BACKOFF_MS = [1000, 4000]
 
@@ -2376,7 +2548,7 @@ async function completeWithFallback({ system, user, json = false, temperature = 
   // agent-ops always requests strict JSON mode. Providers can override these
   // model slots in settings without changing the fallback chain.
   if (task === 'agent-ops') json = true
-  const routes = await aiRoutes(task)
+  const routes = await brainRoutes(task)
   if (!routes.length) {
     const error = new Error('No live AI provider is configured and no local model server (Ollama, LM Studio, OpenCode) is running')
     error.code = 'NO_PROVIDER'
@@ -2390,6 +2562,21 @@ async function completeWithFallback({ system, user, json = false, temperature = 
     try {
       const ask = async (extraInstruction = '') => {
         const userText = extraInstruction ? `${user}\n\n${extraInstruction}` : user
+        if (route.provider === 'keyless') {
+          // Built-in keyless free endpoint: spacing per endpoint, low temp, fixed seed.
+          const key = `${route.brain.chatUrl}|${route.brain.model}`
+          // Queue behind other requests to the same free endpoint (≈1 per 15 s)
+          // instead of bursting into its rate limit.
+          const wait = brainCooldowns.reserve(key, route.brain.minIntervalMs)
+          if (wait > deadline - Date.now() - 2500) throw new Error('429 free brain queue is longer than this request can wait')
+          if (wait) await delay(wait)
+          const text = await freeBrain.chatOnce(route.brain, [
+            { role: 'system', content: system },
+            ...history.map((h) => ({ role: h.role === 'ai' ? 'assistant' : 'user', content: h.text })),
+            { role: 'user', content: userText },
+          ], { json, temperature: Math.min(temperature, 0.3), timeoutMs: Math.max(2000, deadline - Date.now()) })
+          return { text, model: route.brain.model }
+        }
         if (route.provider === 'gemini') {
           const historyText = history.length ? `Conversation so far:\n${history.map((h) => `${h.role === 'ai' ? 'Assistant' : 'User'}: ${h.text}`).join('\n')}\n\n` : ''
           const parts = [{ text: `${system}\n\n${historyText}${userText}` }, ...images.map((image) => ({ inlineData: { mimeType: image.mimeType || 'image/jpeg', data: image.data } }))]
@@ -2420,6 +2607,7 @@ async function completeWithFallback({ system, user, json = false, temperature = 
             return await ask(extra)
           } catch (err) {
             const wait = AI_BACKOFF_MS[attempt]
+            if (route.provider === 'keyless' && retryableAiError(err)) sendAiNotice(freeBrain.BUSY_NOTICE, 'inline')
             if (wait === undefined || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
             logLine('ai-backoff', `${route.label}: retry in ${wait}ms`, { error: (err?.message || String(err)).slice(0, 200) })
             await delay(wait)
@@ -2445,14 +2633,22 @@ async function completeWithFallback({ system, user, json = false, temperature = 
     } catch (err) {
       failures.push(`${route.label}: ${err?.message || String(err)}`)
       logLine('ai-route-failed', (err?.message || String(err)).slice(0, 600), { route: route.label })
+      // Per-route cooldown for every route (not only the configured one).
+      if (isQuotaError(err) || /\b503\b|overload/i.test(err?.message || '')) {
+        brainCooldowns.set(routeKey(route), isQuotaError(err) ? quotaCooldownMs(err) : 20_000, isQuotaError(err) ? 'quota' : 'unavailable')
+      }
       if (route.provider === 'opencode' && !route.override && isQuotaError(err)) {
         const cfg = aiSettings()
         aiCooldowns.set(`opencode:${cfg.openCodeBaseUrl}|${cfg.openCodeModel}`, { until: Date.now() + quotaCooldownMs(err), reason: 'quota' })
       }
+      if (route.provider === 'keyless' && /\((401|402|403|410)\)/.test(err?.message || '')) brainCooldowns.set(routeKey(route), 24 * 3600_000, 'keyless-revoked')
+      // Dead model (404 / model_not_found): grey it out, fall through silently.
+      if (/\b404\b|model_not_found|model not found|does not exist/i.test(err?.message || '')) noteRetiredModel(route)
     }
   }
   // Report the most useful failure first: quota beats "connection refused".
   const ordered = [...failures].sort((a, b) => Number(isQuotaError(b)) - Number(isQuotaError(a)))
+  sendAiNotice(freeBrain.OFFLINE_NOTICE, 'inline')
   const error = new Error(ordered.length ? ordered.join(' | ').slice(0, 1800) : 'The AI request ran out of time before any provider answered')
   throw error
 }
@@ -2551,6 +2747,9 @@ OPERATIONS:
   Text animations (content-level): none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
   Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
 - {"type":"addText","text":string,"track":number,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"fontSizePct"?:number,"weight"?:400|600|800,"align"?:"left"|"center"|"right","color"?:"#rrggbb","fontFamily"?:string,"anim"?:string,"highlightWord"?:string,"motion"?:{...as applyMotion}}
+- {"type":"addKit","kit":"cursor-zoom"|"pill-text"|"stat-card"|"rating-bars"|"image-stack"|"browser-mockup"|"checkout-card"|"block-row-3d","variant"?:string,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"w"?:0.05..1.5,"title"?:string,"subtitle"?:string,"items"?:string[],"accent"?:"#E24B4A"|"#FF5A1F"|"#2F6BFF"|"#1FA463"|"#C8F542"|"#4FB6E8"} — Home_X kit piece; pill-text wraps [words] in pills. Never put invented numbers, prices or ratings in title/items
+- {"type":"buildHomeVideo","style":"saas-capture"|"kinetic-float"|"red-pill"|"launch-stats"|"mascot-checkout"|"dark-3d","fill"?:{"headline"?:string,"supporting"?:string,"cta"?:string,"brand"?:string,"url"?:string,"pillWords"?:string[],"checklist"?:string[]}} — append a whole Home_X style; stats/prices come only from the user
+- {"type":"addLoader","preset":"thinking-states"|"thinking-states-agent"|"matrix-scan"|"matrix-twinkle"|"matrix-orbit"|"matrix-pulse"|"matrix-rounded"|"matrix-monochrome"|"matrix-lime"|"matrix-reduced"|"matrix-compact"|"matrix-large"|"matrix-inline"|"matrix-fullscreen","startSec":number,"durationSec":number,"states"?:string[] (1-8 real process steps from the brief, never invented results),"x"?:0..1,"y"?:0..1} — Transitions.dev loader drawn natively; only for a genuine loading/thinking beat in the story
 - {"type":"addShape","shape":id,"startSec":number,"durationSec":number,"x"?:0..1,"y"?:0..1,"w"?:0.01..1.5 (width, fraction of frame),"fill"?:"#rrggbb"|null,"stroke"?:"#rrggbb"|null,"anim"?:"draw-on"|"draw-then-fill"|"pop"|"grow"|"spin-in"|"pulse"|"wiggle"|"none","label"?:string}
   Shapes: rectangle rounded-rect pill circle ellipse ring arc semicircle triangle diamond pentagon hexagon octagon polygon parallelogram trapezoid star sparkle burst seal sunburst arrow block-arrow curved-arrow loop-arrow double-arrow chevron elbow-arrow speech-bubble thought-bubble callout-box lower-third underline circle-scribble strike highlight-bar brackets frame button progress-bar toggle play browser check cross plus heart lightning pin quote-marks cloud line wave zigzag spiral blob.
   How editors use them: curved-arrow/elbow-arrow point FROM a caption TO the thing (before→after); underline/circle-scribble/highlight-bar mark ONE key word or number (draw-on, 0.4s); burst/seal/sparkle for price/NEW badges (pop); check/cross for do-vs-don't; lower-third/callout-box behind names; brackets/frame to isolate a detail. One accent shape per beat; match the brand accent; keep stroke 6–10px.
@@ -2643,6 +2842,42 @@ ${instruction}`
   return { ...reply.parsed, source: 'live', model: reply.model, route: reply.route }
 }
 
+/* ——— JOB 4: agent writes NEW animations (validated in the renderer by agentCode.ts) ——— */
+ipcMain.handle('agent:generateAnimation', async (_event, payload = {}) => {
+  const instruction = String(payload?.instruction || '').slice(0, 800)
+  const durationSec = Math.min(30, Math.max(0.5, Number(payload?.durationSec) || 2))
+  const rules = String(payload?.rules || '').slice(0, 4000)
+  const fewShots = (Array.isArray(payload?.fewShots) ? payload.fewShots : []).slice(0, 3)
+    .map((shot) => `REQUEST: ${String(shot?.request || '').slice(0, 200)}\nANSWER: ${JSON.stringify(shot?.answer || {}).slice(0, 5000)}`).join('\n\n')
+  const previous = payload?.previous && typeof payload.previous === 'object'
+    ? `\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED. Fix exactly these problems and return the whole corrected JSON:\n${String(payload.previous.problems || '').slice(0, 1500)}\nPREVIOUS CODE:\n${String(payload.previous.code || '').slice(0, 15_500)}`
+    : ''
+  const reply = await completeWithFallback({
+    system: 'You write small, original, deterministic animation components for Cupric AI Studio. Return ONLY one JSON object: {"name","kind","durationSec","ease","props","code"}. The code is one plain JavaScript function (no JSX, no TypeScript types) exactly like the examples. Write project-original code; never copy third-party source.',
+    user: `RULES (every one is enforced; violations are rejected):\n${rules}\n\nEXAMPLES (fewShots):\n${fewShots}\n\nREQUEST: ${instruction}\nLength: ${durationSec}s (t goes 0→1 over this length).${previous}`,
+    json: true,
+    temperature: 0.2,
+    deadlineMs: 40_000,
+    task: previous ? 'repair' : 'agent-code',
+    validate: (value) => { if (!value || typeof value !== 'object' || typeof value.code !== 'string' || !value.code.trim()) throw new Error('animation JSON needs a code string') },
+  })
+  const v = reply.parsed || {}
+  return { name: String(v.name || 'Agent animation').slice(0, 60), kind: String(v.kind || 'title').slice(0, 30), ease: String(v.ease || 'ease-out'), props: v.props && typeof v.props === 'object' ? v.props : {}, code: String(v.code || '').slice(0, 16_000), durationSec, model: reply.model, route: reply.route }
+})
+
+/** Persist accepted agent code as a file: repo src/lab/generated in dev, userData when packaged. */
+ipcMain.handle('agent:saveGenerated', async (_event, payload = {}) => {
+  const slug = String(payload?.slug || '')
+  const code = String(payload?.code || '')
+  if (!/^gen-[a-z0-9-]{1,40}$/.test(slug) || !code || code.length > 16_000) return { ok: false }
+  const dir = DEV_URL ? path.join(__dirname, '..', 'src', 'lab', 'generated') : userDataPath('agent-generated')
+  fs.mkdirSync(dir, { recursive: true })
+  const file = path.join(dir, `${slug}.tsx`)
+  const header = `// @ts-nocheck\n// Agent-generated animation “${String(payload?.name || slug).replace(/[\r\n*/]/g, ' ').slice(0, 60)}” — source: agent-generated.\n// Validated by src/lib/studio/agentCode.ts (pure function of t, seeded, token colours, reduced motion).\n// Rendered only through GeneratedFrame's allowlisted tree; never imported directly.\n`
+  fs.writeFileSync(file, header + code + '\n', 'utf8')
+  return { ok: true, file: DEV_URL ? path.relative(path.join(__dirname, '..'), file) : `agent-generated/${slug}.tsx` }
+})
+
 // Long enough for one fallback hop (Gemini → a local/OpenCode model), short
 // enough that the renderer's deterministic local plan takes over quickly.
 const STUDIO_PLAN_DEADLINE_MS = 25_000
@@ -2665,7 +2900,7 @@ async function handleGeminiAsk(payload) {
   try {
     const prompt = String(payload?.prompt || '').trim()
   const context = payload?.rundownContext || {}
-  const providerLabel = aiSettings().provider === 'opencode' ? 'OpenCode' : aiSettings().provider === 'gemini' ? 'Gemini' : 'local'
+  const providerLabel = aiSettings().provider === 'opencode' ? 'your OpenCode model' : aiSettings().provider === 'gemini' ? 'Gemini' : 'the free built-in brain'
   const cacheKey = rundownCacheKey(prompt, context)
   const cached = rundownCache.get(cacheKey) || readRundownCache()[cacheKey]?.rundown
   if (cached) {
@@ -2678,7 +2913,9 @@ async function handleGeminiAsk(payload) {
   const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
   const instant = fallbackRundownForJob({ brief: prompt, aspect, fps: context.fps === 60 ? 60 : 30 })
   const requestId = String(payload?.requestId || uid('rundown'))
-  const shouldPolish = aiSettings().provider !== 'template' || Boolean(geminiApiKey()) || hasOpenCodeAccess()
+  // Zero setup: the keyless free brain is always a route, so polish unless the
+  // user explicitly chose the offline template.
+  const shouldPolish = configuredAiMode() !== 'template'
   if (shouldPolish) {
     rundownQueue.push({ requestId, prompt, history: payload?.history || [], context, cacheKey, projectId: payload?.projectId || null })
     void pumpRundownQueue()
@@ -2689,8 +2926,8 @@ async function handleGeminiAsk(payload) {
     queued: shouldPolish,
     requestId,
     text: shouldPolish
-      ? `Instant template ready. ${providerLabel} is polishing it in the background — the timeline is usable now.`
-      : 'Instant offline template ready. Add a provider later to polish it; the timeline is fully editable now.',
+      ? `Cupric AI drafted this rundown instantly. It's asking ${providerLabel} to refine it in the background, and the timeline is usable now.`
+      : 'Cupric AI drafted this rundown offline. The timeline is fully editable now. Connecting Gemini, Zen or a local model lets Cupric AI refine it further.',
     rundownPatch: instant,
     }
   } catch (err) {
@@ -3336,7 +3573,14 @@ async function probeWindowsSpeech() {
   return windowsSpeechAvailable
 }
 
-ipcMain.handle('voice:tts', async (_event, payload) => tts.synthesize(payload))
+function piperDirs() {
+  return [
+    process.resourcesPath ? path.join(process.resourcesPath, 'piper') : null,
+    userDataPath('piper'),
+    path.join(__dirname, '..', 'vendor', 'piper'),
+  ].filter(Boolean)
+}
+ipcMain.handle('voice:tts', async (_event, payload) => tts.synthesize(payload, process.platform, { piperDirs: piperDirs() }))
 
 ipcMain.handle('voice:status', async () => {
   const whisper = whisperSetup()
@@ -3346,6 +3590,9 @@ ipcMain.handle('voice:status', async () => {
     windows,
     engine: whisper ? 'whisper' : windows ? 'windows' : null,
     whisperModel: whisper ? path.basename(whisper.model) : null,
+    // Offline voiceover languages: Piper models found (en/hi); the OS voice is probed on use.
+    piper: (() => { const p = tts.piperSetup({ platform: process.platform, dirs: piperDirs() }); return p ? { en: Boolean(p.models.en), hi: Boolean(p.models.hi) } : null })(),
+    piperFolder: userDataPath('piper'),
   }
 })
 
@@ -3520,7 +3767,7 @@ async function currentVideoEncoder() {
       .detect((args) => runProcess(null, ffmpegPath, args), process.platform, hardwareEncodingMode())
       .then((result) => {
         encoderSession.result = result
-        logLine('video-encoder', result.reason, { name: result.name, tried: result.tried })
+        logLine('video-encoder', result.reason, { name: result.name, tried: result.tried, errors: result.errors, legacy: !!result.legacy })
         return result
       })
       .finally(() => { encoderSession.pending = null })
@@ -4315,6 +4562,8 @@ app.whenReady().then(() => {
     if (stateRecovery.previousSessionCrashed) logLine('unclean-exit', 'The previous session did not close cleanly')
   } catch {}
   createWindow()
+  // Zero-setup brain: silent local probe + free-model catalogue refresh.
+  setTimeout(() => void startZeroSetupBrain(), 2500)
   if (autoUpdater && !DEV_URL) autoUpdater.checkForUpdatesAndNotify().catch((err) => logLine('updater-launch-failed', err?.message || String(err)))
   startPeriodicUpdateChecks()
   app.on('activate', () => {

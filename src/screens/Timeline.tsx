@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import { Film, GanttChart, Pause, Play, Plus, Swords } from 'lucide-react'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
@@ -118,6 +118,15 @@ export function Timeline() {
 
   /* ——— display order while dragging ——— */
 
+  // Stable forwarders to the latest pointer handlers (keeps memoised clips still).
+  const handlers = useRef({ onPointerDown, onPointerMove, onPointerUp })
+  handlers.current = { onPointerDown, onPointerMove, onPointerUp }
+  const clipActions = useMemo<TimelineClipActions>(() => ({
+    down: (e, clip, index, kind) => handlers.current.onPointerDown(e, clip, index, kind),
+    move: (e) => handlers.current.onPointerMove(e),
+    up: () => handlers.current.onPointerUp(),
+  }), [])
+
   const display: { clip: TimelineClip; originalIndex: number }[] = useMemo(() => {
     const withIdx = clips.map((clip, originalIndex) => ({ clip, originalIndex }))
     if (!drag || drag.kind !== 'move') return withIdx
@@ -151,7 +160,7 @@ export function Timeline() {
             variant="primary"
             size="sm"
             className="w-9 p-0"
-            disabled={clips.length === 0}
+            disabled={clips.length === 0} title={(clips.length === 0) ? 'Add a clip first' : undefined}
             aria-label={playing ? 'Pause' : 'Play'}
             onClick={() => setPlaying((p) => !p)}
           >
@@ -197,63 +206,20 @@ export function Timeline() {
             {/* Track */}
             <div className="relative flex h-24 items-stretch py-2" style={{ touchAction: 'none' }}>
               <InsertButton index={0} onOpen={setInsert} />
-              {display.map(({ clip, originalIndex }) => {
-                const isDragging = drag?.id === clip.id && drag.kind === 'move'
-                const shownDur = drag?.id === clip.id && drag.kind === 'resize' ? drag.dur : clip.durationSec
-                const isArena = clip.sourceType === 'arena'
-                return (
-                  <div key={clip.id} className="flex items-stretch">
-                    <div
-      role="button"
-                      tabIndex={0}
-                      aria-label={`${isArena ? 'Arena' : 'Footage'} clip: ${clipName(clip)}, ${fmtDur(shownDur)}. Drag to reorder, drag right edge to resize.`}
-                      onPointerDown={(e) => {
-                        if ((e.target as HTMLElement).dataset.handle) return
-                        onPointerDown(e, clip, originalIndex, 'move')
-                      }}
-                      onPointerMove={onPointerMove}
-                      onPointerUp={onPointerUp}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Backspace' || e.key === 'Delete') {
-                          useProjectStore.getState().removeTimelineClip(project.id, clip.id)
-                        }
-                      }}
-                      className={cx(
-                        'group relative select-none rounded-lg border',
-                        isArena ? 'border-accent/40 bg-accent/10' : 'border-info/40 bg-info/10',
-                        isDragging ? 'z-10 cursor-grabbing opacity-90 ring-2 ring-accent/60' : 'cursor-grab',
-                      )}
-                      style={{ width: shownDur * PPS }}
-                    >
-                      <div className="pointer-events-none flex h-full flex-col justify-between p-2">
-                        <div className="min-w-0">
-                          <div className={cx('truncate text-xs font-semibold', isArena ? 'text-accent-text' : 'text-info')}>
-                            {clipName(clip)}
-                          </div>
-                          <div className="text-xs tabular-nums text-muted">{fmtDur(shownDur)}</div>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted">
-                          {isArena ? <Swords size={10} /> : <Film size={10} />}
-                          {clip.sourceType}
-                        </div>
-                      </div>
-                      <div
-                        data-handle="1"
-                        onPointerDown={(e) => {
-                          e.stopPropagation()
-                          onPointerDown(e, clip, originalIndex, 'resize')
-                        }}
-                        onPointerMove={onPointerMove}
-                        onPointerUp={onPointerUp}
-                        className="absolute inset-y-0 right-0 w-2.5 cursor-ew-resize rounded-r-lg transition-colors duration-150 group-hover:bg-white/10"
-                        aria-label="Resize clip duration"
-                        role="separator"
-                      />
-                    </div>
-                    <InsertButton index={originalIndex + 1} onOpen={setInsert} />
-                  </div>
-                )
-              })}
+              {display.map(({ clip, originalIndex }) => (
+                <div key={clip.id} className="flex items-stretch">
+                  <TimelineClipBlock
+                    clip={clip}
+                    index={originalIndex}
+                    dragKind={drag?.id === clip.id ? drag.kind : null}
+                    shownDur={drag?.id === clip.id && drag.kind === 'resize' ? drag.dur : clip.durationSec}
+                    projectId={project.id}
+                    name={clipName(clip)}
+                    actions={clipActions}
+                  />
+                  <InsertButton index={originalIndex + 1} onOpen={setInsert} />
+                </div>
+              ))}
 
               {/* Playhead */}
               {total > 0 && (
@@ -385,3 +351,65 @@ function InsertPopover({
     </>
   )
 }
+
+
+type TimelineClipActions = {
+  down: (e: React.PointerEvent, clip: TimelineClip, index: number, kind: 'move' | 'resize') => void
+  move: (e: React.PointerEvent) => void
+  up: () => void
+}
+
+/** One timeline clip, memoised so playback ticks do not re-render every block. */
+const TimelineClipBlock = memo(function TimelineClipBlock({ clip, index, dragKind, shownDur, projectId, name, actions }: { clip: TimelineClip; name: string; index: number; dragKind: 'move' | 'resize' | null; shownDur: number; projectId: string; actions: TimelineClipActions }) {
+  const isDragging = dragKind === 'move'
+  const isArena = clip.sourceType === 'arena'
+  return (
+                  <div
+    role="button"
+                    tabIndex={0}
+                    aria-label={`${isArena ? 'Arena' : 'Footage'} clip: ${name}, ${fmtDur(shownDur)}. Drag to reorder, drag right edge to resize.`}
+                    onPointerDown={(e) => {
+                      if ((e.target as HTMLElement).dataset.handle) return
+                      actions.down(e, clip, index, 'move')
+                    }}
+                    onPointerMove={actions.move}
+                    onPointerUp={actions.up}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace' || e.key === 'Delete') {
+                        useProjectStore.getState().removeTimelineClip(projectId, clip.id)
+                      }
+                    }}
+                    className={cx(
+                      'group relative select-none rounded-lg border',
+                      isArena ? 'border-accent/40 bg-accent/10' : 'border-info/40 bg-info/10',
+                      isDragging ? 'z-10 cursor-grabbing opacity-90 ring-2 ring-accent/60' : 'cursor-grab',
+                    )}
+                    style={{ width: shownDur * PPS }}
+                  >
+                    <div className="pointer-events-none flex h-full flex-col justify-between p-2">
+                      <div className="min-w-0">
+                        <div className={cx('truncate text-xs font-semibold', isArena ? 'text-accent-text' : 'text-info')}>
+                          {name}
+                        </div>
+                        <div className="text-xs tabular-nums text-muted">{fmtDur(shownDur)}</div>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-muted">
+                        {isArena ? <Swords size={10} /> : <Film size={10} />}
+                        {clip.sourceType}
+                      </div>
+                    </div>
+                    <div
+                      data-handle="1"
+                      onPointerDown={(e) => {
+                        e.stopPropagation()
+                        actions.down(e, clip, index, 'resize')
+                      }}
+                      onPointerMove={actions.move}
+                      onPointerUp={actions.up}
+                      className="absolute inset-y-0 right-0 w-2.5 cursor-ew-resize rounded-r-lg transition-colors duration-150 group-hover:bg-white/10"
+                      aria-label="Resize clip duration"
+                      role="separator"
+                    />
+                  </div>
+  )
+})

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
+import { useDriverSeconds } from "@/lib/progress";
 
 export type IslandState = "idle" | "timer" | "music" | "ring";
 
@@ -310,12 +311,15 @@ export default function DynamicIslandDemo() {
   const [playing, setPlaying] = useState(true);
   const [announcement, setAnnouncement] = useState("");
   const buttons = useRef(new Map<IslandState, HTMLButtonElement>());
+  // Captured: the timer reads the driving clock instead of counting ticks.
+  const driven = useDriverSeconds();
 
   useEffect(() => {
-    if (state !== "timer") return;
+    if (state !== "timer" || driven !== null) return;
     const id = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, [state]);
+  }, [state, driven]);
+  const shownElapsed = driven !== null ? 12 + Math.floor(driven) : elapsed;
 
   // Announced once per change rather than on every tick, so a screen
   // reader is not read the clock every second.
@@ -333,7 +337,7 @@ export default function DynamicIslandDemo() {
     <div className="flex w-[420px] max-w-full flex-col items-center gap-8">
       <DynamicIsland
         state={state}
-        elapsed={elapsed}
+        elapsed={shownElapsed}
         title={TITLE}
         playing={playing}
         onPlayingChange={togglePlaying}

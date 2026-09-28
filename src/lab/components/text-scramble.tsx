@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useDriverSeconds } from "@/lib/progress";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 
 const GLYPHS = "abcdefghijklmnopqrstuvwxyz0123456789#%&*+=/<>";
@@ -24,17 +25,62 @@ function noise(original: string) {
   return original === original.toUpperCase() ? glyph.toUpperCase() : glyph;
 }
 
+/** Seeded noise glyph for captures: the same tick and cell always give the same glyph. */
+function seededNoise(original: string, tick: number, cell: number) {
+  const n = Math.sin(tick * 127.1 + cell * 311.7) * 43758.5453;
+  const glyph = GLYPHS[Math.floor((n - Math.floor(n)) * GLYPHS.length)];
+  return original === original.toUpperCase() ? glyph.toUpperCase() : glyph;
+}
+
+/** One decode frame as a pure function of elapsed ms (captures). Null once settled. */
+export function scrambleFrame(text: string, elapsed: number): { done: string; ahead: string } | null {
+  const chars = [...text];
+  let head = chars.length;
+  for (let i = 0; i < chars.length; i++) {
+    if (chars[i] !== " " && elapsed < LEAD + i * STAGGER) { head = i; break; }
+  }
+  if (head === chars.length) return null;
+  const tick = Math.floor(Math.max(0, elapsed) / TICK);
+  return {
+    done: chars.slice(0, head).join(""),
+    ahead: chars.map((c, i) => (c === " " ? " " : seededNoise(c, tick, i))).slice(head + 1).join(""),
+  };
+}
+
 // Writes straight to the node every frame, so decoding never re-renders React.
 export function useScramble<T extends HTMLElement>(text: string) {
   const ref = useRef<T>(null);
   const frame = useRef(0);
   const reduceMotion = useReducedMotion();
+  // Captured: a hover starts the decode at the current clock time, and each
+  // frame is then drawn from (clock − start) with seeded noise.
+  const driven = useDriverSeconds();
+  const drivenRef = useRef(driven);
+  drivenRef.current = driven;
+  const triggeredAt = useRef<number | null>(null);
 
   useEffect(() => () => cancelAnimationFrame(frame.current), []);
+
+  useLayoutEffect(() => {
+    const node = ref.current;
+    if (driven === null || triggeredAt.current === null || !node) return;
+    const f = scrambleFrame(text, (driven - triggeredAt.current) * 1000);
+    if (!f) { node.textContent = text; triggeredAt.current = null; return; }
+    const cursor = document.createElement("span");
+    cursor.className = CURSOR;
+    const ahead = document.createElement("span");
+    ahead.className = AHEAD;
+    ahead.textContent = f.ahead;
+    node.replaceChildren(document.createTextNode(f.done), cursor, ahead);
+  }, [driven, text]);
 
   const scramble = useCallback(() => {
     const node = ref.current;
     if (!node || reduceMotion) return;
+    if (drivenRef.current !== null) {
+      triggeredAt.current = drivenRef.current;
+      return;
+    }
     cancelAnimationFrame(frame.current);
 
     const chars = [...text];

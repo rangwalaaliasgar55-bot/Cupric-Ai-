@@ -35,6 +35,8 @@ export const VIDEO_FONTS: VideoFont[] = [
   { family: 'Archivo Black', label: 'Archivo Black', role: 'display', bestFor: 'Heavy sale / promo punch lines', customize: 'Single black weight; box behind it or a thick stroke on footage.', weights: [400, 400] },
   { family: 'Fraunces Variable', label: 'Fraunces', role: 'emphasis', bestFor: 'Warm soft-serif emphasis, food, lifestyle, books', customize: 'Italic 400–600 for emphasis words; upright 700 for cosy titles.', italic: true, weights: [100, 900] },
   { family: 'DM Serif Display', label: 'DM Serif Display', role: 'emphasis', bestFor: 'High-contrast magazine headlines and quotes', customize: 'Use large (10%+ of frame); italic for pull-quotes.', italic: true, weights: [400, 400] },
+  { family: 'Noto Sans Devanagari', label: 'Noto Sans Devanagari (हिन्दी)', role: 'caption', bestFor: 'Hindi and Hinglish captions: full Devanagari with conjuncts and matras', customize: 'Weight 700–800 for captions. Line-height 1.25 so matras never clip. Latin words render too.', weights: [400, 800] },
+  { family: 'Hind', label: 'Hind (हिन्दी)', role: 'headline', bestFor: 'Hindi headlines and UI-style labels', customize: 'Weight 600–700; pairs with Poppins (same designer family) for bilingual lines.', weights: [400, 700] },
   { family: 'JetBrains Mono Variable', label: 'JetBrains Mono', role: 'mono', bestFor: 'Code, timecodes, numbers that tick', customize: 'Weight 500–700; use for counters so digits do not jitter.', weights: [100, 800] },
 ]
 
@@ -47,6 +49,8 @@ export function fontInfo(family: string | undefined): VideoFont | undefined {
 
 /** Pick a caption font by the feel of the words (used by the agent). */
 export function suggestFont(text: string): string {
+  // Devanagari needs a font that actually has the glyphs (conjuncts, matras).
+  if (/[\u0900-\u097F]/.test(text)) return 'Noto Sans Devanagari'
   const s = text.toLowerCase()
   if (/\b(ai|api|software|data|tech|code|launch|app|saas)\b/.test(s)) return 'Space Grotesk Variable'
   if (/\b(luxury|elegant|wedding|fashion|beauty|story|love)\b/.test(s)) return 'Playfair Display Variable'

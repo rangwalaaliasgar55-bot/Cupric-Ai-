@@ -19,7 +19,7 @@ function Composition({ rundown }: { rundown: SceneRundown }) {
   const drift = interpolate(frame, [0, Math.max(1, rundown.durationSec * fps)], [-width * 0.04, width * 0.04])
 
   return (
-    <AbsoluteFill style={{ background: '#0B0B10', color: '#F4F1EA', fontFamily: 'Inter, Arial, sans-serif', overflow: 'hidden' }}>
+    <AbsoluteFill style={{ background: 'var(--color-stage)', color: 'var(--color-text)', fontFamily: 'Inter, Arial, sans-serif', overflow: 'hidden' }}>
       <div
         style={{
           position: 'absolute',
@@ -44,17 +44,17 @@ function Composition({ rundown }: { rundown: SceneRundown }) {
           filter: 'blur(62px)',
         }}
       />
-      <div style={{ position: 'absolute', left: width * 0.065, top: height * 0.085, color: '#C8F542', fontSize: width * 0.028, fontWeight: 800, letterSpacing: 5 }}>
+      <div style={{ position: 'absolute', left: width * 0.065, top: height * 0.085, color: 'var(--color-accent)', fontSize: width * 0.028, fontWeight: 800, letterSpacing: 5 }}>
         CUPRIC AI
       </div>
       <div style={{ position: 'absolute', left: width * 0.065, right: width * 0.065, top: height * 0.31, transform: `scale(${0.96 + enter * 0.04})`, opacity: wordOpacity }}>
-        <div style={{ color: '#9A9AA5', fontSize: width * 0.022, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', marginBottom: height * 0.026 }}>
+        <div style={{ color: 'var(--color-muted)', fontSize: width * 0.022, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', marginBottom: height * 0.026 }}>
           {scene?.type ?? 'scene'} · {Math.max(0, Math.round(time * 10) / 10).toFixed(1)}s
         </div>
         <div style={{ fontSize: width * 0.07, lineHeight: 0.92, fontWeight: 900, letterSpacing: -3, maxWidth: width * 0.78 }}>
           {scene?.copy || rundown.title}
         </div>
-        <div style={{ marginTop: height * 0.05, maxWidth: width * 0.72, color: '#9A9AA5', fontSize: width * 0.026, lineHeight: 1.32 }}>
+        <div style={{ marginTop: height * 0.05, maxWidth: width * 0.72, color: 'var(--color-muted)', fontSize: width * 0.026, lineHeight: 1.32 }}>
           {scene?.motion || rundown.style}
         </div>
       </div>

@@ -1,26 +1,39 @@
-import { useEffect, type ReactElement } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { Suspense, lazy, useEffect, type ReactElement } from 'react'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { recoveryInfo } from '../lib/projectHistory'
 import { AskPanel } from './AskPanel'
+import { CommandPalette } from './CommandPalette'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { Toasts } from '../components/Toasts'
-import { ArenaDesk } from '../screens/ArenaDesk'
-import { Brief } from '../screens/Brief'
-import { FootageDesk } from '../screens/FootageDesk'
+const ArenaDesk = lazy(() => import('../screens/ArenaDesk').then((m) => ({ default: m.ArenaDesk })))
+const Brief = lazy(() => import('../screens/Brief').then((m) => ({ default: m.Brief })))
+const FootageDesk = lazy(() => import('../screens/FootageDesk').then((m) => ({ default: m.FootageDesk })))
 import { HomeProject } from '../screens/HomeProject'
-import { Library } from '../screens/Library'
-import { Render } from '../screens/Render'
-import { ReviewRoom } from '../screens/ReviewRoom'
-import { Timeline } from '../screens/Timeline'
-import { Studio } from '../screens/Studio'
-import { Lab } from '../screens/Lab'
-import { Autonomous } from '../screens/Autonomous'
-import { MotionEngine } from '../screens/MotionEngine'
+const Library = lazy(() => import('../screens/Library').then((m) => ({ default: m.Library })))
+const Render = lazy(() => import('../screens/Render').then((m) => ({ default: m.Render })))
+const ReviewRoom = lazy(() => import('../screens/ReviewRoom').then((m) => ({ default: m.ReviewRoom })))
+const Timeline = lazy(() => import('../screens/Timeline').then((m) => ({ default: m.Timeline })))
+const Studio = lazy(() => import('../screens/Studio').then((m) => ({ default: m.Studio })))
+const Lab = lazy(() => import('../screens/Lab').then((m) => ({ default: m.Lab })))
+const Autonomous = lazy(() => import('../screens/Autonomous').then((m) => ({ default: m.Autonomous })))
+const MotionEngine = lazy(() => import('../screens/MotionEngine').then((m) => ({ default: m.MotionEngine })))
 import { useProjectStore } from '../state/useProjectStore'
 import { AppBackdrop } from './AppBackdrop'
+import { BrainNotice } from './BrainNotice'
 import { GlobalErrorCards, RouteErrorBoundary } from './ErrorBoundary'
 import type { View } from '../types/project'
+import { ThinkingStates } from '../components/loaders/ThinkingStates'
+
+// Heavy screens (Studio, Lab, Motion, Library…) are split into their own
+// chunks so first paint only pays for Home and the shell.
+function ScreenFallback() {
+  return (
+    <div className="flex h-full items-center justify-center p-8 text-sm" role="status">
+      <ThinkingStates states={['Opening', 'Loading tools']} />
+    </div>
+  )
+}
 
 const SCREENS = {
   home: <HomeProject />,
@@ -60,6 +73,7 @@ export function AppLayout() {
   }, [pushToast])
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="relative flex h-full overflow-hidden text-text">
       {/* The backdrop is a sibling behind the chrome, not a parent background,
           so panels can be translucent over it. */}
@@ -84,7 +98,7 @@ export function AppLayout() {
               {/* One boundary per route, keyed by view: a screen that throws
                   shows a fallback card; the shell and other screens live on. */}
               <RouteErrorBoundary key={screen} route={screen}>
-                {SCREENS[screen]}
+                <Suspense fallback={<ScreenFallback />}>{SCREENS[screen]}</Suspense>
               </RouteErrorBoundary>
             </motion.div>
           </AnimatePresence>
@@ -93,8 +107,11 @@ export function AppLayout() {
       <RouteErrorBoundary route="ask-panel">
         <AskPanel />
       </RouteErrorBoundary>
+      <CommandPalette />
       <Toasts />
+      <BrainNotice />
       <GlobalErrorCards />
     </div>
+    </MotionConfig>
   )
 }

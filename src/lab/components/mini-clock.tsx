@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import { DRIVEN_EPOCH_MS, useDriverSeconds } from "@/lib/progress";
 import { cn } from "@/lib/cn";
 import { usePreviewPlay } from "@/lab/preview-play";
 
@@ -60,7 +61,7 @@ const HAND_ORIGIN = { transformOrigin: "20px 20px" } as const;
 
 export function MiniClock({
   place,
-  timeZone,
+  timeZone: zoneProp,
   size = 36,
   paused = false,
   className,
@@ -74,7 +75,13 @@ export function MiniClock({
   paused?: boolean;
   className?: string;
 }) {
-  const minute = useSyncExternalStore(subscribeMinute, minuteSnapshot, serverSnapshot);
+  const liveMinute = useSyncExternalStore(subscribeMinute, minuteSnapshot, serverSnapshot);
+  // Captured: a fixed instant plus the driving clock. The reader's own zone
+  // would differ per machine, so an unset zone reads as UTC while captured.
+  const driven = useDriverSeconds();
+  const drivenNow = driven !== null ? DRIVEN_EPOCH_MS + driven * 1000 : null;
+  const timeZone = driven !== null ? zoneProp ?? "UTC" : zoneProp;
+  const minute = drivenNow !== null ? Math.floor(drivenNow / 60_000) : liveMinute;
   const face = useRef<SVGSVGElement>(null);
   const hourHand = useRef<SVGLineElement>(null);
   const minuteHand = useRef<SVGLineElement>(null);
@@ -102,8 +109,20 @@ export function MiniClock({
 
   const ready = info !== null;
 
+  // Captured hands: a pure function of the driving clock (continuous sweep).
+  useLayoutEffect(() => {
+    if (drivenNow === null || !ready) return;
+    const t = new Date(drivenNow + zoneOffset(timeZone, drivenNow));
+    const s = t.getUTCSeconds() + t.getUTCMilliseconds() / 1000;
+    const m = t.getUTCMinutes() + s / 60;
+    const h = (t.getUTCHours() % 12) + m / 60;
+    secondHand.current?.style.setProperty("transform", `rotate(${paused ? 0 : s * 6}deg)`);
+    minuteHand.current?.style.setProperty("transform", `rotate(${m * 6}deg)`);
+    hourHand.current?.style.setProperty("transform", `rotate(${h * 30}deg)`);
+  }, [drivenNow, ready, timeZone, paused]);
+
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || driven !== null) return;
     const svg = face.current;
     if (!svg) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -181,7 +200,7 @@ export function MiniClock({
       document.removeEventListener("visibilitychange", restart);
       reduce.removeEventListener("change", restart);
     };
-  }, [ready, timeZone, paused, pausedMinute]);
+  }, [ready, timeZone, paused, pausedMinute, driven !== null]);
 
   const night = info?.night ?? false;
 

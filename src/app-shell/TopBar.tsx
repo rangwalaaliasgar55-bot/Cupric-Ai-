@@ -1,3 +1,4 @@
+import { StatusCenter } from './StatusCenter'
 import { useEffect, useRef, useState } from 'react'
 import { Moon, Sparkles, Sun, Volume2, VolumeX } from 'lucide-react'
 import { Button } from '../components/Button'
@@ -5,6 +6,10 @@ import { IconButton } from '../components/IconButton'
 import { Kbd } from '../components/Kbd'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx } from '../lib/utils'
+import { AutosaveStatus } from '../lab/components/autosave-status'
+import { Breadcrumbs } from '../lab/components/breadcrumbs'
+
+const VIEW_LABEL: Record<string, string> = { auto: 'Auto', review: 'Review Room', brief: 'Brief', arena: 'Arena Desk', footage: 'Footage Desk', studio: 'Studio', motion: 'Motion Engine', timeline: 'Timeline', lab: 'UI Lab', render: 'Render', library: 'Library' }
 
 export function TopBar() {
   const active = useActiveProject()
@@ -15,6 +20,11 @@ export function TopBar() {
   const soundCues = useProjectStore((s) => s.soundCues)
   const setSoundCues = useProjectStore((s) => s.setSoundCues)
   const setAskOpen = useProjectStore((s) => s.setAskOpen)
+  const view = useProjectStore((s) => s.view)
+  const setView = useProjectStore((s) => s.setView)
+  const [savedAt, setSavedAt] = useState<number | null>(null)
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => { const t = window.setInterval(() => setNow(Date.now()), 30_000); return () => window.clearInterval(t) }, [])
 
   // "Saving…" pulse on every write, settling to "All changes saved".
   const [saving, setSaving] = useState(false)
@@ -25,7 +35,7 @@ export function TopBar() {
       return
     }
     setSaving(true)
-    const t = window.setTimeout(() => setSaving(false), 700)
+    const t = window.setTimeout(() => { setSaving(false); setSavedAt(Date.now()); setNow(Date.now()) }, 700)
     return () => window.clearTimeout(t)
   }, [projects])
 
@@ -45,12 +55,17 @@ export function TopBar() {
         <span className="px-2 text-sm text-muted">No project open</span>
       )}
 
-      <div className="flex items-center gap-1.5 text-xs text-muted" aria-live="polite">
-        <span className={cx('h-1.5 w-1.5 rounded-full', saving ? 'bg-accent motion-safe:animate-pulse' : 'bg-muted/50')} />
-        {saving ? 'Saving…' : 'All changes saved'}
-      </div>
+      <AutosaveStatus state={saving ? 'saving' : 'saved'} savedAt={savedAt} now={now} className="text-xs text-muted" />
+      {active && view !== 'home' && (
+        <Breadcrumbs
+          className="hidden text-xs text-muted lg:flex"
+          items={[{ label: 'Projects', href: 'home' }, { label: active.name || 'Untitled', href: 'brief' }, { label: VIEW_LABEL[view] ?? view, href: view }]}
+          onNavigate={(item) => setView(item.href as typeof view)}
+        />
+      )}
 
       <div className="ml-auto flex items-center gap-2">
+        <StatusCenter />
         <IconButton
           label={soundCues ? 'Turn off the two export sounds' : 'Turn on the two export sounds'}
           onClick={() => setSoundCues(!soundCues)}

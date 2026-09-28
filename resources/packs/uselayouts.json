@@ -1,7 +1,7 @@
 {
   "id": "uselayouts",
   "name": "uselayouts — premium micro-interactions",
-  "description": "64 MIT-licensed React micro-interactions copied from uselayouts. Apply creates a native editable storyboard; source files and dependency notes stay bundled for reference.",
+  "description": "64 MIT-licensed React micro-interactions from uselayouts (complete upstream catalogue, audited by scripts/audit-uselayouts.mjs). 63 apply as native editable storyboards; 1 stay reference-only because their source uses unsafe patterns. Upstream code is never executed.",
   "version": "0.11.0",
   "source": "https://github.com/iurvish/uselayouts",
   "license": "MIT (Urvish Mali) — see resources/uselayouts/LICENSE",
@@ -29,14 +29,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/3d-book.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/3d-book.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag",
+          "animation": "CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/3d-book"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/3d-book/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/3d-book/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "book",
+        "pages",
+        "flip"
       ]
     },
     {
@@ -62,14 +80,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/accessible-action.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/accessible-action.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag + click",
+          "animation": "motion (framer), springs, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/accessible-action"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/accessible-action/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/accessible-action/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "cards",
+        "stack",
+        "swipe"
       ]
     },
     {
@@ -95,14 +131,34 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/accordionos.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/accordionos.tsx",
+        "category": "Display",
+        "referenceOnly": true,
+        "refusal": "Source uses raw HTML injection. Cupric will not adapt it automatically; it stays reference-only.",
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs, enter/exit presence, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [
+            "delayDuration"
+          ],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": false,
+          "docsUrl": "https://uselayouts.com/docs/components/accordionos"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/accordionos/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/accordionos/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "accordion",
+        "image"
       ]
     },
     {
@@ -127,14 +183,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/analog-stick.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/analog-stick.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "passive (autoplay)",
+          "animation": "CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/analog-stick"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/analog-stick/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/analog-stick/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "stick",
+        "press"
       ]
     },
     {
@@ -162,14 +236,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/animated-collection.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/animated-collection.tsx",
+        "category": "List",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native list scene: stacked text rows with staggered rise-in",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/animated-collection"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/animated-collection/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/animated-collection/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "list",
+        "list",
+        "collection"
       ]
     },
     {
@@ -197,14 +288,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/bento-card.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/bento-card.tsx",
+        "category": "Layout",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/bento-card"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/bento-card/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/bento-card/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "layout",
+        "bento",
+        "card",
+        "tabs"
       ]
     },
     {
@@ -233,14 +342,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/bottom-menu.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/bottom-menu.tsx",
+        "category": "Navigation",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click + text/form input",
+          "animation": "motion (framer), enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/bottom-menu"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/bottom-menu/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/bottom-menu/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "navigation",
+        "nav",
+        "menu",
+        "dock"
       ]
     },
     {
@@ -272,14 +399,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/bucket.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/bucket.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "passive (autoplay)",
+          "animation": "motion (framer), enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/bucket"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/bucket/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/bucket/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "chips",
+        "bucket"
       ]
     },
     {
@@ -305,14 +449,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/card-folder.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/card-folder.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/card-folder"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/card-folder/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/card-folder/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "folder",
+        "card"
       ]
     },
     {
@@ -339,14 +500,43 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/client-card.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/client-card.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [
+            "className"
+          ],
+          "optionalProps": [
+            "name",
+            "country",
+            "image",
+            "service",
+            "amountPaid",
+            "totalAmount",
+            "plan",
+            "deadline",
+            "startDate"
+          ],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/client-card"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/client-card/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/client-card/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "card",
+        "crm"
       ]
     },
     {
@@ -371,14 +561,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/confidential-folder.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/confidential-folder.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click + keyboard",
+          "animation": "CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/confidential-folder"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/confidential-folder/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/confidential-folder/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "folder",
+        "letter"
       ]
     },
     {
@@ -404,14 +611,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/corner-video.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/corner-video.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer)",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/corner-video"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/corner-video/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/corner-video/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "video",
+        "player"
       ]
     },
     {
@@ -435,14 +659,33 @@
         "dependencies": [
           "motion"
         ],
-        "copiedPath": "resources/uselayouts/default/example/coverflow-drag.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/coverflow-drag.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag",
+          "animation": "motion (framer), springs, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/coverflow-drag"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/coverflow-drag/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/coverflow-drag/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "carousel",
+        "coverflow",
+        "slider",
+        "drag"
       ]
     },
     {
@@ -468,14 +711,32 @@
           "@hugeicons/react",
           "@hugeicons/core-free-icons"
         ],
-        "copiedPath": "resources/uselayouts/default/example/create-menu.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/create-menu.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/create-menu"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/create-menu/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/create-menu/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "menu",
+        "create"
       ]
     },
     {
@@ -503,14 +764,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/curve-drawer.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/curve-drawer.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag",
+          "animation": "CSS transitions",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/curve-drawer"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/curve-drawer/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/curve-drawer/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "drawer",
+        "sidebar"
       ]
     },
     {
@@ -538,14 +816,33 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/day-picker.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/day-picker.tsx",
+        "category": "Input",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/day-picker"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/day-picker/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/day-picker/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "input",
+        "date",
+        "calendar",
+        "picker",
+        "input"
       ]
     },
     {
@@ -574,14 +871,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/delete-button.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/delete-button.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), shared layout, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/delete-button"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/delete-button/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/delete-button/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "delete",
+        "confirm"
       ]
     },
     {
@@ -609,14 +924,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/discover-button.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/discover-button.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click + text/form input",
+          "animation": "motion (framer), springs, shared layout",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/discover-button"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/discover-button/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/discover-button/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "discover"
       ]
     },
     {
@@ -642,14 +974,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/discrete-tabs.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/discrete-tabs.tsx",
+        "category": "Navigation",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/discrete-tabs"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/discrete-tabs/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/discrete-tabs/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "navigation",
+        "tabs",
+        "nav"
       ]
     },
     {
@@ -677,14 +1026,39 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/drawer-buttons.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/drawer-buttons.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "passive (autoplay)",
+          "animation": "motion (framer), CSS keyframes, CSS 3D",
+          "requiredProps": [
+            "children",
+            "className",
+            "open",
+            "side",
+            "transitionDuration"
+          ],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/drawer-buttons"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/drawer-buttons/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/drawer-buttons/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "drawer",
+        "cart",
+        "payment"
       ]
     },
     {
@@ -706,14 +1080,38 @@
           }
         ],
         "dependencies": [],
-        "copiedPath": "resources/uselayouts/default/example/dynamic-grid-gallery.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/dynamic-grid-gallery.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover",
+          "animation": "CSS transitions",
+          "requiredProps": [],
+          "optionalProps": [
+            "items",
+            "gap",
+            "expandFactor",
+            "rounded",
+            "className"
+          ],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/dynamic-grid-gallery"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/dynamic-grid-gallery/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/dynamic-grid-gallery/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "gallery",
+        "grid",
+        "photos"
       ]
     },
     {
@@ -745,14 +1143,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/dynamic-toolbar.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/dynamic-toolbar.tsx",
+        "category": "Navigation",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/dynamic-toolbar"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/dynamic-toolbar/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/dynamic-toolbar/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "navigation",
+        "toolbar",
+        "nav"
       ]
     },
     {
@@ -776,14 +1191,37 @@
         "dependencies": [
           "motion"
         ],
-        "copiedPath": "resources/uselayouts/default/example/editorial-deck.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/editorial-deck.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag + click",
+          "animation": "motion (framer), springs",
+          "requiredProps": [],
+          "optionalProps": [
+            "cards",
+            "title",
+            "subtitle",
+            "className"
+          ],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/editorial-deck"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/editorial-deck/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/editorial-deck/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "cards",
+        "deck",
+        "swipe"
       ]
     },
     {
@@ -811,14 +1249,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/empty-testimonial.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/empty-testimonial.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/empty-testimonial"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/empty-testimonial/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/empty-testimonial/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "testimonial",
+        "empty"
       ]
     },
     {
@@ -846,14 +1301,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/expandable-gallery.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/expandable-gallery.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/expandable-gallery"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/expandable-gallery/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/expandable-gallery/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "gallery",
+        "photos"
       ]
     },
     {
@@ -881,14 +1353,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/feature-carousel.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/feature-carousel.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/feature-carousel"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/feature-carousel/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/feature-carousel/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "carousel",
+        "slider"
       ]
     },
     {
@@ -916,14 +1405,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/filter-interaction.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/filter-interaction.tsx",
+        "category": "List",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, shared layout",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native list scene: stacked text rows with staggered rise-in",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/filter-interaction"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/filter-interaction/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/filter-interaction/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "list",
+        "list",
+        "filter"
       ]
     },
     {
@@ -949,14 +1455,36 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/fluid-expanding-grid.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/fluid-expanding-grid.tsx",
+        "category": "Layout",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, shared layout",
+          "requiredProps": [
+            "className"
+          ],
+          "optionalProps": [
+            "items",
+            "id"
+          ],
+          "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/fluid-expanding-grid"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/fluid-expanding-grid/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/fluid-expanding-grid/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "layout",
+        "grid",
+        "layout"
       ]
     },
     {
@@ -982,14 +1510,30 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/focus-testimonials.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/focus-testimonials.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/focus-testimonials"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/focus-testimonials/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/focus-testimonials/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "testimonial"
       ]
     },
     {
@@ -1017,14 +1561,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/folder-interaction.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/folder-interaction.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/folder-interaction"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/folder-interaction/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/folder-interaction/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "folder",
+        "files"
       ]
     },
     {
@@ -1050,14 +1611,38 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/get-in-touch.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/get-in-touch.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover",
+          "animation": "motion (framer), springs",
+          "requiredProps": [
+            "href",
+            "className"
+          ],
+          "optionalProps": [
+            "imageSrc",
+            "defaultText",
+            "hoverText"
+          ],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/get-in-touch"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/get-in-touch/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/get-in-touch/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "contact"
       ]
     },
     {
@@ -1083,14 +1668,45 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/holographic-referral-card.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/holographic-referral-card.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover",
+          "animation": "motion (framer), springs, CSS 3D",
+          "requiredProps": [
+            "secondLogoHref",
+            "secondLogoAriaLabel",
+            "className"
+          ],
+          "optionalProps": [
+            "image",
+            "imageAlt",
+            "title",
+            "description",
+            "logo",
+            "logoAlt",
+            "secondLogo",
+            "secondLogoAlt",
+            "ariaLabel"
+          ],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/holographic-referral-card"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/holographic-referral-card/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/holographic-referral-card/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "card",
+        "referral"
       ]
     },
     {
@@ -1112,14 +1728,59 @@
           }
         ],
         "dependencies": [],
-        "copiedPath": "resources/uselayouts/default/example/gooey-navbar.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/gooey-navbar.tsx",
+        "category": "Navigation",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "canvas",
+          "requiredProps": [
+            "activeIndex",
+            "onSelect",
+            "0",
+            "0)\"",
+            "255",
+            "255",
+            "0.8)\"",
+            "255",
+            "255)\""
+          ],
+          "optionalProps": [
+            "items",
+            "defaultActiveIndex",
+            "pillColor",
+            "textColor",
+            "hoverTextColor",
+            "fontSize",
+            "paddingX",
+            "paddingY",
+            "cornerRadius",
+            "gap",
+            "neighborPush",
+            "anchorEdge",
+            "neckRatio",
+            "stiffness",
+            "damping",
+            "mass",
+            "className"
+          ],
+          "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/gooey-navbar"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/gooey-navbar/poster-a23f8deef0.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/gooey-navbar/video-32facfe716.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "navigation",
+        "nav",
+        "navbar"
       ]
     },
     {
@@ -1145,14 +1806,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/infinite-grid.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/infinite-grid.tsx",
+        "category": "Layout",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "CSS keyframes",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/infinite-grid"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/infinite-grid/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/infinite-grid/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "layout",
+        "canvas",
+        "grid",
+        "drag"
       ]
     },
     {
@@ -1180,14 +1859,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/inline-edit.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/inline-edit.tsx",
+        "category": "Input",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click + text/form input",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/inline-edit"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/inline-edit/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/inline-edit/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "input",
+        "input",
+        "edit"
       ]
     },
     {
@@ -1215,14 +1911,37 @@
         "dependencies": [
           "motion"
         ],
-        "copiedPath": "resources/uselayouts/default/example/liquid-index.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/liquid-index.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs, enter/exit presence, canvas",
+          "requiredProps": [
+            "colors",
+            "seed"
+          ],
+          "optionalProps": [
+            "speed",
+            "paused"
+          ],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/liquid-index"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/liquid-index/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/liquid-index/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "list",
+        "index"
       ]
     },
     {
@@ -1250,14 +1969,33 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/magnified-bento.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/magnified-bento.tsx",
+        "category": "Layout",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag",
+          "animation": "motion (framer)",
+          "requiredProps": [],
+          "optionalProps": [
+            "size"
+          ],
+          "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/magnified-bento"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/magnified-bento/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/magnified-bento/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "layout",
+        "bento",
+        "magnify"
       ]
     },
     {
@@ -1285,14 +2023,33 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/morphing-input.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/morphing-input.tsx",
+        "category": "Input",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click + text/form input",
+          "animation": "motion (framer), springs, enter/exit presence",
+          "requiredProps": [
+            "text"
+          ],
+          "optionalProps": [],
+          "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/morphing-input"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/morphing-input/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/morphing-input/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "input",
+        "input",
+        "search"
       ]
     },
     {
@@ -1325,14 +2082,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/multi-step-form.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/multi-step-form.tsx",
+        "category": "Input",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click + keyboard",
+          "animation": "motion (framer), springs, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/multi-step-form"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/multi-step-form/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/multi-step-form/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "input",
+        "form",
+        "input"
       ]
     },
     {
@@ -1356,14 +2130,33 @@
         "dependencies": [
           "lucide-react"
         ],
-        "copiedPath": "resources/uselayouts/default/example/overlapping-slider.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/overlapping-slider.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag + click",
+          "animation": "CSS transitions",
+          "requiredProps": [
+            "card"
+          ],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/overlapping-slider"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/overlapping-slider/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/overlapping-slider/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "carousel",
+        "slider"
       ]
     },
     {
@@ -1390,14 +2183,31 @@
           "react",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/perspective-text-scroll.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/perspective-text-scroll.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "passive (autoplay)",
+          "animation": "CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/perspective-text-scroll"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/perspective-text-scroll/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/perspective-text-scroll/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "text",
+        "scroll"
       ]
     },
     {
@@ -1424,14 +2234,33 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/photo-albums.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/photo-albums.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs, shared layout",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/photo-albums"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/photo-albums/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/photo-albums/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "gallery",
+        "album",
+        "photos",
+        "stack"
       ]
     },
     {
@@ -1457,14 +2286,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/paper-shred-button.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/paper-shred-button.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer)",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/paper-shred-button"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/paper-shred-button/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/paper-shred-button/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "delete",
+        "shred"
       ]
     },
     {
@@ -1490,14 +2337,33 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/polaroid-drag.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/polaroid-drag.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag + hover + click",
+          "animation": "motion (framer), springs, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/polaroid-drag"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/polaroid-drag/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/polaroid-drag/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "photos",
+        "polaroid",
+        "drag",
+        "stack"
       ]
     },
     {
@@ -1522,14 +2388,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/polaroid-stack.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/polaroid-stack.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "passive (autoplay)",
+          "animation": "CSS transitions",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/polaroid-stack"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/polaroid-stack/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/polaroid-stack/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "photos",
+        "polaroid",
+        "stack"
       ]
     },
     {
@@ -1556,14 +2440,31 @@
           "react",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/pop-tilt-cards.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/pop-tilt-cards.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/pop-tilt-cards"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/pop-tilt-cards/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/pop-tilt-cards/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "cards",
+        "tilt"
       ]
     },
     {
@@ -1593,14 +2494,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/pricing-card.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/pricing-card.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/pricing-card"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/pricing-card/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/pricing-card/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "card",
+        "pricing"
       ]
     },
     {
@@ -1630,14 +2548,42 @@
           "@base-ui/react",
           "lucide-react"
         ],
-        "copiedPath": "resources/uselayouts/default/example/prompt-box.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/prompt-box.tsx",
+        "category": "Input",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click + keyboard + text/form input",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [
+            "onSubmit",
+            "placeholder",
+            "settings",
+            "defaultSettings",
+            "onSettingsChange"
+          ],
+          "optionalProps": [
+            "menuActions",
+            "plusMenuItems",
+            "settingGroups"
+          ],
+          "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/prompt-box"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/prompt-box/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/prompt-box/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "input",
+        "input",
+        "prompt",
+        "ai"
       ]
     },
     {
@@ -1663,14 +2609,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/rolling-card-stack.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/rolling-card-stack.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag + hover + click",
+          "animation": "motion (framer), springs, shared layout",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/rolling-card-stack"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/rolling-card-stack/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/rolling-card-stack/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "cards",
+        "stack"
       ]
     },
     {
@@ -1698,14 +2661,33 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/save-button.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/save-button.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/save-button"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/save-button/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/save-button/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "save",
+        "status",
+        "loading"
       ]
     },
     {
@@ -1729,14 +2711,35 @@
         "dependencies": [
           "motion"
         ],
-        "copiedPath": "resources/uselayouts/default/example/scan-document.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/scan-document.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), enter/exit presence, CSS 3D",
+          "requiredProps": [
+            "transition",
+            "z"
+          ],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/scan-document"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/scan-document/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/scan-document/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "scan",
+        "document"
       ]
     },
     {
@@ -1760,14 +2763,38 @@
         "dependencies": [
           "motion"
         ],
-        "copiedPath": "resources/uselayouts/default/example/scroll-split-cards.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/scroll-split-cards.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "scroll",
+          "animation": "motion (framer), CSS 3D",
+          "requiredProps": [
+            "containerRef"
+          ],
+          "optionalProps": [
+            "items",
+            "imageSrc",
+            "className"
+          ],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/scroll-split-cards"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/scroll-split-cards/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/scroll-split-cards/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "cards",
+        "scroll",
+        "split"
       ]
     },
     {
@@ -1793,14 +2820,44 @@
           "motion",
           "react"
         ],
-        "copiedPath": "resources/uselayouts/default/example/scroll-stack-deck.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/scroll-stack-deck.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "scroll",
+          "animation": "motion (framer), springs, CSS 3D",
+          "requiredProps": [
+            "clear systems",
+            "and product stories that hold up under a slow scroll.\"",
+            "container"
+          ],
+          "optionalProps": [
+            "projects",
+            "title",
+            "subtitle",
+            "scrollIndicatorText",
+            "className",
+            "showFooter",
+            "enableLenis"
+          ],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/scroll-stack-deck"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/scroll-stack-deck/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/scroll-stack-deck/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "cards",
+        "stack",
+        "scroll"
       ]
     },
     {
@@ -1827,14 +2884,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/set-timer.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/set-timer.tsx",
+        "category": "Input",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click + text/form input",
+          "animation": "motion (framer), springs, enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/set-timer"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/set-timer/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/set-timer/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "input",
+        "timer",
+        "input"
       ]
     },
     {
@@ -1862,14 +2936,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/shake-testimonial-card.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/shake-testimonial-card.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click",
+          "animation": "motion (framer), springs, enter/exit presence, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/shake-testimonial-card"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/shake-testimonial-card/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/shake-testimonial-card/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "card",
+        "testimonial"
       ]
     },
     {
@@ -1905,14 +2996,38 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/slide-subscribe.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/slide-subscribe.tsx",
+        "category": "Input",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag + click",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence, CSS keyframes",
+          "requiredProps": [
+            "className",
+            "children",
+            "onUnlock"
+          ],
+          "optionalProps": [
+            "handleWidth"
+          ],
+          "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/slide-subscribe"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/slide-subscribe/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/slide-subscribe/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "input",
+        "subscribe",
+        "slider",
+        "input"
       ]
     },
     {
@@ -1940,14 +3055,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/smooth-dropdown.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/smooth-dropdown.tsx",
+        "category": "Navigation",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs, shared layout",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/smooth-dropdown"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/smooth-dropdown/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/smooth-dropdown/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "navigation",
+        "dropdown",
+        "menu",
+        "nav"
       ]
     },
     {
@@ -1975,14 +3108,32 @@
           "react",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/stack-scroll-reveal.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/stack-scroll-reveal.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "scroll",
+          "animation": "motion (framer), CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/stack-scroll-reveal"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/stack-scroll-reveal/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/stack-scroll-reveal/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "cards",
+        "stack",
+        "scroll"
       ]
     },
     {
@@ -2010,14 +3161,34 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/stacked-list.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/stacked-list.tsx",
+        "category": "List",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click + text/form input",
+          "animation": "motion (framer), springs, shared layout, enter/exit presence",
+          "requiredProps": [
+            "type",
+            "label"
+          ],
+          "optionalProps": [],
+          "cupricEquivalent": "Native list scene: stacked text rows with staggered rise-in",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/stacked-list"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/stacked-list/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/stacked-list/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "list",
+        "list",
+        "stack"
       ]
     },
     {
@@ -2043,14 +3214,38 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/stacked-outline-text.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/stacked-outline-text.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "drag + keyboard",
+          "animation": "motion (framer), springs",
+          "requiredProps": [
+            "displayText",
+            "layerIndex",
+            "stackCount",
+            "shadowOpacity",
+            "shadowX",
+            "shadowY"
+          ],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/stacked-outline-text"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/stacked-outline-text/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/stacked-outline-text/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "text",
+        "drag"
       ]
     },
     {
@@ -2072,14 +3267,33 @@
           }
         ],
         "dependencies": [],
-        "copiedPath": "resources/uselayouts/default/example/theme-toggle.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/theme-toggle.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "text/form input",
+          "animation": "CSS transitions",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/theme-toggle"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/theme-toggle/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/theme-toggle/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "theme",
+        "toggle",
+        "dark"
       ]
     },
     {
@@ -2103,14 +3317,31 @@
         "dependencies": [
           "motion"
         ],
-        "copiedPath": "resources/uselayouts/default/example/tactile-button.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/tactile-button.tsx",
+        "category": "Button",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), springs",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/tactile-button"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/tactile-button/poster-445352537e.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/tactile-button/video-afb6c148d5.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "button",
+        "button",
+        "press"
       ]
     },
     {
@@ -2138,14 +3369,31 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/vertical-tabs.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/vertical-tabs.tsx",
+        "category": "Navigation",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "hover + click",
+          "animation": "motion (framer), enter/exit presence",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/vertical-tabs"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/vertical-tabs/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/vertical-tabs/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "navigation",
+        "tabs",
+        "nav"
       ]
     },
     {
@@ -2172,14 +3420,32 @@
           "clsx",
           "tailwind-merge"
         ],
-        "copiedPath": "resources/uselayouts/default/example/wheel-carousel.tsx",
+        "copiedPath": "resources/uselayouts/registry/default/example/wheel-carousel.tsx",
+        "category": "Display",
+        "referenceOnly": false,
+        "attribution": "uselayouts by Urvish Mali: MIT License, Copyright (c) 2025 Urvish Mali. Keep resources/uselayouts/LICENSE with any copy.",
+        "audit": {
+          "interaction": "click + keyboard",
+          "animation": "motion (framer), CSS keyframes, CSS 3D",
+          "requiredProps": [],
+          "optionalProps": [],
+          "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+          "previewable": true,
+          "deterministicExport": true,
+          "insertable": true,
+          "docsUrl": "https://uselayouts.com/docs/components/wheel-carousel"
+        },
         "posterUrl": "https://cdn.uselayouts.com/components/wheel-carousel/poster.avif",
         "videoUrl": "https://cdn.uselayouts.com/components/wheel-carousel/video.mp4"
       },
       "tags": [
         "component",
         "uselayouts",
-        "micro-interaction"
+        "micro-interaction",
+        "display",
+        "carousel",
+        "wheel",
+        "slider"
       ]
     }
   ]

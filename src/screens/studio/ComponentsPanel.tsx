@@ -6,14 +6,14 @@
  * and the recorder captures the component's real animation. Rows are also
  * draggable onto the stage, and double-click adds immediately.
  */
-import { useDeferredValue, useMemo, useState, type DragEvent } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState, type DragEvent } from 'react'
 import { Archive, Loader2, MousePointerClick, Plus, Search, Trash2 } from 'lucide-react'
 import { Button } from '../../components/Button'
 import { DemoFrame } from '../../lab/DemoFrame'
 import { availableSlugs } from '../../lab/demos'
 import { cx } from '../../lib/utils'
 import type { StudioOverlayClip } from '../../types/project'
-import { clampRecordSec, COMPONENT_CATEGORIES, COMPONENTS, DEFAULT_RECORD_SEC, HEAVY_RECORD_SEC, MAX_RECORD_SEC, type ComponentEntry } from '../../lib/studio/components'
+import { clampRecordSec, COMPONENT_CATEGORIES, COMPONENTS, HEAVY_RECORD_SEC, MAX_RECORD_SEC, preferredRecordSec, RECORD_SEC_EVENT, rememberRecordSec, type ComponentEntry } from '../../lib/studio/components'
 import { writeDragPayload } from '../../lib/studio/resourceDrop'
 
 const ALL = 'all'
@@ -38,8 +38,14 @@ export function ComponentsPanel({
   const [category, setCategory] = useState<string>(ALL)
   const [selected, setSelected] = useState<ComponentEntry | null>(null)
   // What the user typed; parsed on use so half-typed values are not clobbered.
-  const [recordText, setRecordText] = useState(String(DEFAULT_RECORD_SEC))
+  const [recordText, setRecordText] = useState(() => String(preferredRecordSec()))
   const recordSec = clampRecordSec(recordText)
+  // A length chosen elsewhere (inspector re-record) shows up here too.
+  useEffect(() => {
+    const sync = (e: Event) => setRecordText(String((e as CustomEvent<number>).detail))
+    window.addEventListener(RECORD_SEC_EVENT, sync)
+    return () => window.removeEventListener(RECORD_SEC_EVENT, sync)
+  }, [])
   const [interact, setInteract] = useState(true)
   const deferred = useDeferredValue(query.trim().toLowerCase())
 
@@ -54,7 +60,10 @@ export function ComponentsPanel({
     [category, deferred, pool],
   )
 
-  const add = (entry: ComponentEntry) => onAdd(entry.slug, { recordSec, interact })
+  const add = (entry: ComponentEntry) => {
+    rememberRecordSec(recordSec)
+    onAdd(entry.slug, { recordSec, interact })
+  }
 
   return (
     <div className="flex min-h-0 flex-col gap-3">
@@ -97,14 +106,14 @@ export function ComponentsPanel({
                 <span>s</span>
               </label>
               <label className="flex items-center gap-1.5 text-xs text-muted" title="Hover, move over and press its controls while recording, so interactive components show their motion">
-                <input type="checkbox" checked={interact} onChange={(e) => setInteract(e.target.checked)} className="accent-[var(--color-accent,#C8F542)]" />
+                <input type="checkbox" checked={interact} onChange={(e) => setInteract(e.target.checked)} className="accent-accent" />
                 <MousePointerClick size={12} /> Act it out
               </label>
               <Button size="sm" variant="primary" className="ml-auto" onClick={() => add(selected)} aria-label={`Add ${selected.name} to the timeline`}>
                 <Plus size={13} /> Add at playhead
               </Button>
               {onRecordToShelf && (
-                <Button size="sm" variant="outline" onClick={() => onRecordToShelf(selected.slug, { recordSec, interact })} title="Record it now and place it later, as many times as you like" aria-label={`Record ${selected.name} to the shelf`}>
+                <Button size="sm" variant="outline" onClick={() => { rememberRecordSec(recordSec); onRecordToShelf(selected.slug, { recordSec, interact }) }} title="Record it now and place it later, as many times as you like" aria-label={`Record ${selected.name} to the shelf`}>
                   <Archive size={13} /> Record only
                 </Button>
               )}
@@ -140,7 +149,7 @@ export function ComponentsPanel({
                       {busy ? 'Recording…' : failed ? `Not recorded: ${item.component?.error ?? 'error'}` : `${item.component?.recordSec ?? item.durationSec}s · ${item.frames?.length ?? 1} frames`}
                     </div>
                   </div>
-                  <Button size="sm" variant="primary" disabled={busy || failed} onClick={() => onPlaceShelf?.(item.id)} aria-label={`Place ${item.name} at the playhead`}>
+                  <Button size="sm" variant="primary" disabled={busy || failed} title={(busy || failed) ? 'Still recording, or the recording failed' : undefined} onClick={() => onPlaceShelf?.(item.id)} aria-label={`Place ${item.name} at the playhead`}>
                     <Plus size={12} /> Place
                   </Button>
                   <button type="button" onClick={() => onRemoveShelf?.(item.id)} className="flex h-6 w-6 items-center justify-center rounded-md text-muted hover:text-danger" aria-label={`Remove ${item.name} from the shelf`}>

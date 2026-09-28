@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Copy, Download, Gauge, Image as ImageIcon, Layers, Mic, Palette, Repeat2, Search, Share2 } from 'lucide-react'
 import type { StudioAspect, StudioClip, StudioDoc } from '../../types/project'
 import { Button } from '../../components/Button'
+import { PLATFORM_PRESETS, checkPreset, studioToSrt } from '../../lib/studio/editTools'
 import { applyBrandKit, buildVariants, reframeForAspect, socialMetadata, speedRamp, SPEED_RAMPS, type BrandKit, type SpeedRampId } from '../../lib/studio/creativeTools'
 import { simpleIconSlug, simpleIconUrl } from '../../lib/simpleIcons'
-import { synthesizeVoiceover } from '../../lib/voice'
+import { synthesizeVoiceover, type VoiceoverLanguage } from '../../lib/voice'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { uid, copyText } from '../../lib/utils'
 import { captureStill } from '../../lib/studio/export'
@@ -45,10 +46,12 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
     useProjectStore.setState((s) => ({ projects: s.projects.map((p) => (p.id === project.id ? { ...p, brandKit: next, updatedAt: new Date().toISOString() } : p)) }))
   }
   const [ramp, setRamp] = useState<SpeedRampId>('hero-moment')
+  const [presetId, setPresetId] = useState('reels')
   const [logoQuery, setLogoQuery] = useState('')
   const [logoBusy, setLogoBusy] = useState(false)
   const [script, setScript] = useState('')
   const [rate, setRate] = useState(0)
+  const [ttsLang, setTtsLang] = useState<VoiceoverLanguage>('auto')
   const [ttsBusy, setTtsBusy] = useState(false)
   const [variantCount, setVariantCount] = useState(3)
   const [aspect, setAspect] = useState<StudioAspect>(doc.aspect === '9:16' ? '16:9' : '9:16')
@@ -143,7 +146,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
           <input className={inputCx} placeholder="e.g. Stripe, GitHub, Figma" value={logoQuery} onChange={(e) => setLogoQuery(e.target.value)} aria-label="Brand name" />
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <Button size="sm" variant="outline" disabled={logoBusy || !logoQuery.trim()} onClick={async () => {
+          <Button size="sm" variant="outline" disabled={logoBusy || !logoQuery.trim()} title={(logoBusy || !logoQuery.trim()) ? 'Type a brand name first — or wait' : undefined} onClick={async () => {
             const dataUrl = await fetchLogo()
             if (!dataUrl) return
             const track = Math.max(0, ...doc.clips.map((c) => c.track)) + 1
@@ -151,27 +154,32 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
             onCommit({ ...doc, clips: [...doc.clips, clip], trackCount: Math.max(doc.trackCount, track + 1) }, `Add ${logoQuery.trim()} logo`)
             setMsg(`${logoQuery.trim()} logo added at the playhead (Simple Icons, CC0).`)
           }}>{logoBusy ? 'Fetching…' : 'Add at playhead'}</Button>
-          <Button size="sm" variant="outline" disabled={logoBusy || !logoQuery.trim()} onClick={async () => { const d = await fetchLogo(); if (d) { saveKit({ ...kit, logoDataUrl: d }); setMsg('Saved as your Brand Kit logo.') } }}>Use as my logo</Button>
+          <Button size="sm" variant="outline" disabled={logoBusy || !logoQuery.trim()} title={(logoBusy || !logoQuery.trim()) ? 'Type a brand name first — or wait' : undefined} onClick={async () => { const d = await fetchLogo(); if (d) { saveKit({ ...kit, logoDataUrl: d }); setMsg('Saved as your Brand Kit logo.') } }}>Use as my logo</Button>
         </div>
       </Block>
 
       <Block icon={Mic} title="AI voiceover (offline)">
         <textarea className={`${inputCx} min-h-20`} placeholder="Write the narration. Your computer’s built-in voice reads it — no internet, no API key." value={script} onChange={(e) => setScript(e.target.value)} aria-label="Voiceover script" maxLength={5000} />
+        <label className="flex items-center gap-2 text-xs text-muted">Language
+          <select className={inputCx} value={ttsLang} onChange={(e) => setTtsLang(e.target.value as VoiceoverLanguage)} aria-label="Voiceover language">
+            <option value="auto">Auto (Devanagari → Hindi)</option><option value="en">English</option><option value="hi">Hindi (हिन्दी)</option>
+          </select>
+        </label>
         <label className="flex items-center gap-2 text-xs text-muted">Pace
           <input type="range" min={-6} max={6} value={rate} onChange={(e) => setRate(Number(e.target.value))} className="flex-1" aria-label="Voiceover pace" />
           <span className="w-8 text-right font-mono tabular-nums">{rate > 0 ? `+${rate}` : rate}</span>
         </label>
-        <Button size="sm" variant="primary" disabled={ttsBusy || !script.trim()} onClick={async () => {
+        <Button size="sm" variant="primary" disabled={ttsBusy || !script.trim()} title={(ttsBusy || !script.trim()) ? 'Write a script first — or wait for the voice' : undefined} onClick={async () => {
           if (!onImportFiles) { setMsg('Voiceover import is not available here.'); return }
           setTtsBusy(true)
           try {
-            const { file, engine } = await synthesizeVoiceover(script, { rate })
+            const { file, engine, language } = await synthesizeVoiceover(script, { rate, language: ttsLang })
             const dt = new DataTransfer(); dt.items.add(file)
             onImportFiles(dt.files)
-            setMsg(`Voiceover generated with ${engine} and added at the playhead as an audio clip.`)
+            setMsg(`${language === 'hi' ? 'Hindi' : 'English'} voiceover generated offline with ${engine} and added at the playhead as an audio clip.`)
           } catch (err) { setMsg(err instanceof Error ? err.message : String(err)) } finally { setTtsBusy(false) }
         }}>{ttsBusy ? 'Speaking…' : 'Generate voiceover'}</Button>
-        <p className="text-[11px] text-muted">Windows Speech · macOS voices · eSpeak NG on Linux. Tip: “Auto-captions” can then caption it.</p>
+        <p className="text-[11px] text-muted">English and Hindi, fully offline: Piper (if you add a voice model), else Windows Speech, macOS voices or eSpeak NG. If a Hindi voice is missing, Cupric tells you how to add it and never reads Hindi with an English voice. Tip: “Auto-captions” can then caption it.</p>
       </Block>
 
       <Block icon={Layers} title="Batch variants">
@@ -194,6 +202,24 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
           <Button size="sm" variant="primary" onClick={() => { const still = captureStill(doc, time); if (still) { setThumbnail(still); setMsg('Thumbnail captured from the same deterministic renderer used by preview/export.') } else setMsg('Could not capture a thumbnail at this playhead.') }}><ImageIcon size={12} /> Capture thumbnail</Button>
         </div>
         {thumbnail && <div className="flex items-center gap-2 rounded-lg border border-line bg-panel-alt/50 p-2"><img src={thumbnail} alt="Generated video thumbnail" className="h-16 w-28 rounded object-cover" /><a href={thumbnail} download="cupric-thumbnail.png" className="cu-chip flex items-center gap-1 px-2 py-1 text-xs"><Download size={12} /> Download PNG</a></div>}
+      </Block>
+
+      <Block icon={Share2} title="Platform export preset">
+        <select className={inputCx} value={presetId} onChange={(e) => setPresetId(e.target.value)} aria-label="Platform">
+          {PLATFORM_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label} · {p.aspect}</option>)}
+        </select>
+        {(() => { const preset = PLATFORM_PRESETS.find((p) => p.id === presetId)!; const issues = checkPreset(doc, preset); return (
+          <>
+            <p className="text-[11px] text-muted">{preset.note} Up to {preset.maxSec >= 3600 ? 'hours' : `${preset.maxSec}s`}, {preset.fps} fps.</p>
+            {issues.length === 0 ? <p className="text-[11px] text-accent-text">Ready for {preset.label}.</p> : (
+              <ul className="list-disc pl-4 text-[11px]">{issues.map((i) => <li key={i.text} className={i.level === 'error' ? 'text-danger' : 'text-muted'}>{i.text}</li>)}</ul>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              <Button size="sm" variant="primary" disabled={doc.aspect === preset.aspect && doc.fps === preset.fps} title={(doc.aspect === preset.aspect && doc.fps === preset.fps) ? 'Already using this format' : undefined} onClick={() => { commitResult({ doc: { ...(doc.aspect === preset.aspect ? doc : reframeForAspect(doc, preset.aspect)), fps: preset.fps }, changed: true }, `Apply ${preset.label} preset`); setMsg(`Set to ${preset.aspect} at ${preset.fps} fps. Text was reframed into the new safe area. Undo reverts it.`) }}>Apply preset</Button>
+              <Button size="sm" variant="outline" onClick={() => { const r = studioToSrt(doc); if (!r.cues) { setMsg('No text clips to turn into captions yet.'); return } const url = URL.createObjectURL(new Blob([r.srt], { type: 'application/x-subrip' })); const a = document.createElement('a'); a.href = url; a.download = `${(project?.name || 'captions').replace(/[^\w-]+/g, '-')}.srt`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); setMsg(`Saved ${r.cues} caption cue(s) as SRT${r.skipped ? `. Skipped ${r.skipped} placeholder line(s)` : ''}.`) }}><Download size={12} /> Captions (.srt)</Button>
+            </div>
+          </>
+        ) })()}
       </Block>
 
       <Block icon={Repeat2} title="Repurpose to another size">

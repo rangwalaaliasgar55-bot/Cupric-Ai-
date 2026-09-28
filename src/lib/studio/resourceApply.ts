@@ -31,6 +31,7 @@ import { STUDIO_BACKGROUNDS } from './backgrounds'
 import { MAX_TRACKS, defaultGlassClip, defaultStickerClip, defaultTextClip, docDuration, placeClip, trackIsFree } from './doc'
 import { motionPatch, type DirectionStyle } from './motionDirector'
 import { resourceToStudio } from './resourceDrop'
+import { addLoader } from './motionKit'
 import {
   LOOKS,
   SAMPLE_COPY,
@@ -40,7 +41,7 @@ import {
   transitionFor,
   type Archetype,
 } from './resourceLook'
-import { findComponent, withComponent } from './components'
+import { findComponent, preferredRecordSec, withComponent } from './components'
 import { PHONE_DESIGNS } from './phone'
 import { buildStoryboard, directText, frameRatio, panelSize, placeLayers, plateBehind, templateSlots, type TemplateFillData } from './storyboard'
 import { TRANSITIONS } from './transitions'
@@ -392,6 +393,16 @@ export function applyResource(doc: StudioDoc, item: ApplyItem, ctx: ApplyContext
     }
 
     case 'component': {
+      if (item.data?.referenceOnly === true) {
+        return { ok: false, reason: String(item.data.refusal || `“${item.name}” is reference-only: its source cannot be adapted safely. Open the source for attribution and reference.`) }
+      }
+      if (item.data?.nativeAction === 'loader') {
+        const presetId = String(item.data.loaderPreset || '')
+        const r = addLoader(doc, presetId, atSec)
+        if (!r.changed || !r.clipId) return { ok: false, reason: r.reason ?? `The loader preset “${presetId}” is not registered.` }
+        const clip = r.doc.clips.find((c) => c.id === r.clipId)!
+        return { ok: true, type: 'doc', doc: r.doc, focusId: clip.id, focusSec: visibleMoment(clip), message: `“${item.name}” added as a native loader clip. Edit its lines, timing, colours and easing in the inspector; preview and export match.` }
+      }
       if (item.data?.nativeAction === 'phoneDesign') {
         const designId = String(item.data.design || 'iphone-duo')
         const design = PHONE_DESIGNS.find((candidate) => candidate.id === designId)
@@ -422,7 +433,7 @@ export function applyResource(doc: StudioDoc, item: ApplyItem, ctx: ApplyContext
       const external = Boolean(item.source || item.data?.source || item.data?.provider)
       if (!external && findComponent(item.id) && (ctx.hasLabDemo?.(item.id) ?? true)) {
         // The real component, recorded with its real animation by the Studio.
-        const added = withComponent(doc, item.id, { startSec: atSec, recordSec: 4, durationSec: 4 })
+        const added = withComponent(doc, item.id, { startSec: atSec, recordSec: preferredRecordSec(), durationSec: preferredRecordSec() })
         const clip = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
         return {
           ok: true,

@@ -215,11 +215,11 @@ export function ReviewRoom() {
                 {stream && <Badge tone="neutral">local preview</Badge>}
               </div>
               <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2 rounded-full border border-line bg-panel/85 p-2 backdrop-blur">
-                <Button size="sm" variant={micOff ? 'danger' : 'outline'} onClick={() => setMicOff((value) => !value)} disabled={!stream}>
+                <Button size="sm" variant={micOff ? 'danger' : 'outline'} onClick={() => setMicOff((value) => !value)} disabled={!stream} title={(!stream) ? 'Join the room first' : undefined}>
                   {micOff ? <MicOff size={14} /> : <Mic size={14} />}
                   {micOff ? 'Muted' : 'Mic'}
                 </Button>
-                <Button size="sm" variant={cameraOff ? 'danger' : 'outline'} onClick={() => setCameraOff((value) => !value)} disabled={!stream}>
+                <Button size="sm" variant={cameraOff ? 'danger' : 'outline'} onClick={() => setCameraOff((value) => !value)} disabled={!stream} title={(!stream) ? 'Join the room first' : undefined}>
                   {cameraOff ? <CameraOff size={14} /> : <Camera size={14} />}
                   {cameraOff ? 'Hidden' : 'Camera'}
                 </Button>
@@ -269,7 +269,7 @@ export function ReviewRoom() {
               <Button variant="outline" onClick={startPreview}>
                 <RefreshCw size={14} /> Check devices
               </Button>
-              <Button variant="primary" disabled={!token.trim() || !roomName.trim()} onClick={connectTwilio}>
+              <Button variant="primary" disabled={!token.trim() || !roomName.trim()} title={(!token.trim() || !roomName.trim()) ? 'Enter a room name and token first' : undefined} onClick={connectTwilio}>
                 <Phone size={14} /> Connect
               </Button>
             </div>

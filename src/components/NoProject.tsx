@@ -5,17 +5,21 @@ import { useProjectStore } from '../state/useProjectStore'
 
 /** Shared guard for the six project-scoped screens. */
 export function NoProject() {
+  const createProject = useProjectStore((s) => s.createProject)
+  const hasProjects = useProjectStore((s) => s.projects.length > 0)
   const setView = useProjectStore((s) => s.setView)
   return (
     <div className="flex h-full items-center justify-center p-8">
       <EmptyState
         icon={FolderOpen}
         title="No project open"
-        hint="Pick a project on Home — or start a new one. Every desk operates on the active project."
+        hint={hasProjects ? 'Every desk works on the active project. Open one on Home to continue.' : 'Every desk works on the active project. Start one — it opens right here.'}
         action={
-          <Button variant="primary" size="sm" onClick={() => setView('home')}>
-            Go to Home
-          </Button>
+          hasProjects ? (
+            <Button variant="primary" size="sm" onClick={() => setView('home')}>Open a project on Home</Button>
+          ) : (
+            <Button variant="primary" size="sm" onClick={() => createProject()}>New project</Button>
+          )
         }
         className="max-w-md"
       />

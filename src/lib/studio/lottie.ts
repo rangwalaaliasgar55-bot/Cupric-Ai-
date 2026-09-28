@@ -10,7 +10,21 @@
  * Each sticker renders into its own offscreen canvas; the frame renderer just
  * draws that canvas. Nothing touches the DOM the user can see.
  */
-import lottie, { type AnimationItem } from 'lottie-web'
+import type { AnimationItem } from 'lottie-web'
+
+/**
+ * lottie-web (~300 kB) is loaded on demand so it is not in the first-paint
+ * bundle. Export awaits `preloadLottie()` before drawing any frame, so export
+ * output is unchanged; the Studio preloads it on mount.
+ */
+type LottieModule = typeof import('lottie-web').default
+let lottie: LottieModule | null = null
+let lottieLoading: Promise<void> | null = null
+export function preloadLottie(): Promise<void> {
+  if (lottie) return Promise.resolve()
+  if (!lottieLoading) lottieLoading = import('lottie-web').then((m) => { lottie = (m as unknown as { default?: LottieModule }).default ?? (m as unknown as LottieModule) })
+  return lottieLoading
+}
 import type { StudioStickerClip } from '../../types/project'
 
 /** Built-ins, bundled at build time — a sticker must work with no network. */
@@ -100,6 +114,11 @@ function ensure(clip: StudioStickerClip): Entry | null {
     return null
   }
 
+  if (!lottie) {
+    // Not loaded yet: draw nothing this frame (never cache as failed).
+    void preloadLottie()
+    return null
+  }
   try {
     const anim = lottie.loadAnimation<'canvas'>({
       renderer: 'canvas',

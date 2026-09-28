@@ -17,7 +17,7 @@
  * Reduced motion is honoured in the fallback: it holds at the resting value
  * rather than animating.
  */
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 /** Seconds elapsed, supplied by whoever is driving. */
 export type ProgressContextValue = { seconds: number } | null
@@ -137,4 +137,106 @@ function usePrefersReducedMotion(): boolean {
     return () => query.removeEventListener('change', onChange)
   }, [])
   return reduced
+}
+
+/**
+ * Seconds from the driving clock, or null when nothing is driving. Unlike
+ * `useDrivenSeconds` it never starts a loop of its own, so a component can
+ * keep its original self-running code for the Lab and switch to a pure
+ * function of time only when captured.
+ */
+export function useDriverSeconds(): number | null {
+  const driver = useContext(ProgressContext)
+  return driver === null ? null : driver.seconds
+}
+
+/** Deterministic PRNG (mulberry32) for captured motion: same seed → same sequence. */
+export function seededRandom(seed: number): () => number {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = a
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+/**
+ * Replay a fixed-step simulation from its initial state up to `seconds`.
+ * The result depends only on `seconds`, never on how the capture got there
+ * (forward, backward, or a single still), which is what makes physics-style
+ * components deterministic under capture.
+ */
+export function replaySim<S>(init: () => S, step: (s: S, dt: number, t: number) => void, seconds: number, dt = 1 / 60): S {
+  const s = init()
+  const n = Math.max(0, Math.min(60 * 60 * 10, Math.round(seconds / dt)))
+  for (let i = 0; i < n; i++) step(s, dt, i * dt)
+  return s
+}
+
+/** Fixed wall-clock origin used when a captured component shows a time of day (Mon 22 Jun 2026, 09:41). */
+export const DRIVEN_EPOCH_MS = Date.UTC(2026, 5, 22, 9, 41, 0)
+
+export type FrameClock = {
+  /** True while a capture is driving the clock. */
+  readonly driven: boolean
+  /** Milliseconds: the driving clock while captured, performance.now() otherwise. */
+  now(): number
+  /** requestAnimationFrame that, while captured, fires on the driving clock in fixed 1/60 s steps. */
+  raf(cb: (now: number) => void): number
+  caf(id: number): void
+  /** Math.random while live; a seeded sequence (same every mount) while captured. */
+  random(): number
+}
+
+/**
+ * Drop-in clock for components with their own animation loop (physics,
+ * pointer-driven sims). Live, it is exactly `performance.now` +
+ * `requestAnimationFrame` + `Math.random`, so the Lab is unchanged. Captured,
+ * callbacks queue up and are run in fixed 1/60 s steps up to the driving
+ * clock's time on every change, randomness is seeded, and `now()` reads the
+ * driving clock — so a capture no longer depends on how fast frames were
+ * grabbed.
+ */
+export function useFrameClock(seed = 1): FrameClock {
+  const driver = useContext(ProgressContext)
+  const drivenMs = driver === null ? null : driver.seconds * 1000
+  const state = useRef<{ vt: number | null; queue: Map<number, (now: number) => void>; next: number; rand: () => number; drivenMs: number | null } | null>(null)
+  if (!state.current) state.current = { vt: null, queue: new Map(), next: 1, rand: seededRandom(seed), drivenMs }
+  state.current.drivenMs = drivenMs
+  const clock = useRef<FrameClock | null>(null)
+  if (!clock.current) {
+    const s = state.current
+    clock.current = {
+      get driven() { return s.drivenMs !== null },
+      now: () => (s.drivenMs !== null ? (s.vt ?? s.drivenMs) : performance.now()),
+      raf: (cb) => {
+        if (s.drivenMs === null) return requestAnimationFrame(cb)
+        const id = s.next++
+        s.queue.set(id, cb)
+        return id
+      },
+      caf: (id) => {
+        if (s.queue.delete(id)) return
+        cancelAnimationFrame(id)
+      },
+      random: () => (s.drivenMs !== null ? s.rand() : Math.random()),
+    }
+  }
+  useLayoutEffect(() => {
+    const s = state.current!
+    if (drivenMs === null) { s.vt = null; s.queue.clear(); return }
+    if (s.vt === null || drivenMs < s.vt) { s.vt = drivenMs; return }
+    const STEP = 1000 / 60
+    let guard = 0
+    while (s.vt < drivenMs - 1e-6 && guard++ < 36000) {
+      s.vt = Math.min(drivenMs, s.vt + STEP)
+      if (!s.queue.size) { s.vt = drivenMs; break }
+      const due = [...s.queue.values()]
+      s.queue.clear()
+      for (const cb of due) cb(s.vt)
+    }
+  }, [drivenMs])
+  return clock.current
 }

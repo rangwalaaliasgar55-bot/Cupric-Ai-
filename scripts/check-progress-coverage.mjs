@@ -21,7 +21,14 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dir = path.join(root, 'src/lab/components')
 
 /** Components already converted. Removing one from here is a regression. */
-const RETROFITTED = ['word-rotator', 'pixel-loader', 'marquee']
+const RETROFITTED = [
+  'word-rotator', 'pixel-loader', 'marquee',
+  // Converted in the determinism pass: clocks, timers and physics loops now
+  // read the shared clock (useDriverSeconds / useFrameClock) when captured.
+  'balance-scale', 'call-widget', 'dynamic-island', 'footer-signature', 'greeting', 'ink-well',
+  'logo-orbit', 'mini-clock', 'select-menu', 'spoiler-text', 'storage-meter', 'store-hours',
+  'text-scramble', 'typewriter', 'typing-seismograph', 'voice-orb',
+]
 
 /** A self-restarting rAF loop, not the one-shot "commit layout" trick. */
 const SELF_RAF = /requestAnimationFrame\s*\(\s*(step|tick|loop|frame|draw|animate|render)\b/
@@ -38,7 +45,7 @@ const driven = []
 for (const file of files) {
   const id = file.replace(/\.tsx$/, '')
   const source = await readFile(path.join(dir, file), 'utf8')
-  const usesDriver = /useProgress|useDrivenSeconds|useStep|useIsDriven/.test(source)
+  const usesDriver = /useProgress|useDrivenSeconds|useDriverSeconds|useFrameClock|useStep|useIsDriven/.test(source)
   const hasOwnClock =
     (SELF_RAF.test(source) || INTERVAL.test(source) || INFINITE_WAAPI.test(source)) && !NOT_A_CLOCK.test(source)
 
@@ -56,6 +63,14 @@ console.log(`\n  still running their own clock (${selfDriven.length}):`)
 for (const id of selfDriven) console.log(`    · ${id}`)
 console.log('\n  A component in the second list still works everywhere it is used today.')
 console.log('  It simply cannot be guaranteed to look the same in two captures of the same moment.')
+
+// Driven files must not keep an unseeded RNG in their capture path.
+const unseeded = []
+for (const id of driven) {
+  const source = await readFile(path.join(dir, `${id}.tsx`), 'utf8')
+  if (/Math\.random\(\)/.test(source) && !/useFrameClock|seededRandom|seededNoise/.test(source)) unseeded.push(id)
+}
+if (unseeded.length) console.log(`\n  note: driven but still calling Math.random outside a seeded clock: ${unseeded.join(', ')}`)
 
 const regressed = RETROFITTED.filter((id) => !driven.includes(id))
 if (regressed.length) {

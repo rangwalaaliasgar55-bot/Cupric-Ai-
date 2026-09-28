@@ -24,6 +24,8 @@ import { backgroundById } from './backgrounds'
 import { clipProgress, clipsAt } from './doc'
 import { drawCursor, drawShape, has3D, project3D } from './renderExtras'
 import { cursorAt } from './cursor'
+import { drawLoader } from './loaders'
+import { drawKit, normaliseKit } from './homeKit'
 import { paintGlass, paintGlassLens } from './glass'
 import { getMedia, overlayImage, proxyMode } from './media'
 import { applyPixelGrade, chromaKey } from './color'
@@ -193,7 +195,18 @@ function sourceSize(source: CanvasImageSource): [number, number] {
 
 /* ——— text ——— */
 
+/** Line-wrap results keyed by font + width + text. Wrapping is pure, so caching can't change a frame. */
+const WRAP_CACHE = new Map<string, string[]>()
 function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const key = `${ctx.font}|${Math.round(maxWidth * 100)}|${text}`
+  const hit = WRAP_CACHE.get(key)
+  if (hit) return hit
+  const lines = wrapLinesUncached(ctx, text, maxWidth)
+  if (WRAP_CACHE.size > 800) WRAP_CACHE.clear()
+  WRAP_CACHE.set(key, lines)
+  return lines
+}
+function wrapLinesUncached(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const out: string[] = []
   for (const paragraph of text.split('\n')) {
     let line = ''
@@ -281,12 +294,46 @@ function hexToRgb(color: string): [number, number, number] | null {
 }
 
 /** WCAG relative luminance of an sRGB colour, 0–1. */
+const LINEAR = (() => {
+  const t = new Float64Array(256)
+  for (let v = 0; v < 256; v++) { const c = v / 255; t[v] = c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }
+  return t
+})()
+const linear = (v: number) => (Number.isInteger(v) && v >= 0 && v < 256 ? LINEAR[v] : (() => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })())
 export function relativeLuminance(r: number, g: number, b: number): number {
-  const ch = (v: number) => {
-    const c = v / 255
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+}
+
+/**
+ * One small luminance snapshot of the frame, shared by every auto-legibility
+ * text clip until something that isn't text is drawn. Replaces one full-size
+ * getImageData (a GPU readback stall) per text clip per frame with at most a
+ * tiny readback per background change. Same code path in preview and export.
+ */
+const LUMA_W = 120
+let lumaFrame: CanvasRenderingContext2D | null = null
+let lumaValid = false
+let lumaSnap: { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D; data: Uint8ClampedArray | null; w: number; h: number } | null = null
+function lumaInvalidate() { lumaValid = false }
+function lumaSnapshot(frame: CanvasRenderingContext2D) {
+  if (typeof document === 'undefined') return null
+  if (!lumaSnap) {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d', { willReadFrequently: true } as CanvasRenderingContext2DSettings) as CanvasRenderingContext2D | null
+    if (!ctx) return null
+    lumaSnap = { canvas, ctx, data: null, w: 0, h: 0 }
   }
-  return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
+  if (lumaValid && lumaSnap.data) return lumaSnap
+  const src = frame.canvas
+  const w = LUMA_W, h = Math.max(2, Math.round((LUMA_W * (src.height || 1)) / (src.width || 1)))
+  if (lumaSnap.canvas.width !== w || lumaSnap.canvas.height !== h) { lumaSnap.canvas.width = w; lumaSnap.canvas.height = h }
+  try {
+    lumaSnap.ctx.clearRect(0, 0, w, h)
+    lumaSnap.ctx.drawImage(src as CanvasImageSource, 0, 0, w, h)
+    lumaSnap.data = lumaSnap.ctx.getImageData(0, 0, w, h).data
+  } catch { return null }
+  lumaSnap.w = w; lumaSnap.h = h; lumaValid = true
+  return lumaSnap
 }
 
 export function contrastRatio(a: number, b: number): number {
@@ -308,8 +355,29 @@ export function legibilityVerdict(textLum: number, bgMean: number, bgSpread: num
   return textLum > 0.4 ? 'dark' : 'light'
 }
 
+function sampleBuffer(data: Uint8ClampedArray, bw: number, bh: number, x: number, y: number, rw: number, rh: number): { mean: number; spread: number } | null {
+  const x0 = Math.max(0, Math.floor(x)), y0 = Math.max(0, Math.floor(y))
+  const x1 = Math.min(bw, Math.ceil(x + rw)), y1 = Math.min(bh, Math.ceil(y + rh))
+  if (data.length < bw * bh * 4) return null
+  const step = Math.max(1, Math.floor(Math.sqrt(((x1 - x0) * (y1 - y0)) / 240)))
+  let sum = 0, sumSq = 0, n = 0
+  for (let yy = y0; yy < y1; yy += step) for (let xx = x0; xx < x1; xx += step) {
+    const i = (yy * bw + xx) * 4
+    if (data[i + 3] === 0) continue
+    const l = relativeLuminance(data[i], data[i + 1], data[i + 2])
+    sum += l; sumSq += l * l; n++
+  }
+  if (!n) return null
+  const mean = sum / n
+  return { mean, spread: Math.sqrt(Math.max(0, sumSq / n - mean * mean)) }
+}
+
 function sampleRegionLuminance(ctx: CanvasRenderingContext2D, x: number, y: number, rw: number, rh: number, w: number, h: number): { mean: number; spread: number } | null {
   if (typeof ctx.getImageData !== 'function' || !ctx.canvas) return null
+  if (ctx === lumaFrame) {
+    const snap = lumaSnapshot(ctx)
+    if (snap?.data) return sampleBuffer(snap.data, snap.w, snap.h, (x / w) * snap.w, (y / h) * snap.h, (rw / w) * snap.w, (rh / h) * snap.h)
+  }
   const kx = (ctx.canvas.width || w) / w
   const ky = (ctx.canvas.height || h) / h
   const sx = Math.max(0, Math.floor(x * kx))
@@ -529,7 +597,7 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
           const wx = cursor + ctx.measureText(words[i]).width / 2
           ctx.translate(wx, y + st.dy * fontPx)
           ctx.scale(st.scale, st.scale)
-          ctx.fillStyle = isHighlight ? '#C8F542' : clip.color
+          ctx.fillStyle = isHighlight ? (clip.emphasisColor || '#C8F542') : clip.color
           ctx.textAlign = 'center'
           if (preset.stroke) ctx.strokeText(words[i], 0, 0)
           ctx.fillText(words[i], 0, 0)
@@ -555,7 +623,7 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
         if (visible) {
           const isHighlight =
             clip.highlightWord && words[i].toLowerCase().replace(/[^a-z0-9]/g, '') === clip.highlightWord.toLowerCase()
-          ctx.fillStyle = isHighlight ? '#C8F542' : clip.color
+          ctx.fillStyle = isHighlight ? (clip.emphasisColor || '#C8F542') : clip.color
           if (preset.stroke) ctx.strokeText(words[i], cursor, y)
           ctx.fillText(words[i], cursor, y)
         }
@@ -772,6 +840,8 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
     // "Scale" means whatever size means for this kind of clip.
     if (clip.kind === 'overlay' || clip.kind === 'sticker' || clip.kind === 'cursor') (next as { scale?: number; size?: number }).scale = clip.kind === 'cursor' ? undefined : clip.scale * values.scale
     else if (clip.kind === 'shape') (next as unknown as { w: number }).w = clip.w * values.scale
+    else if (clip.kind === 'loader') (next as unknown as { size: number }).size = clip.size * values.scale
+    else if (clip.kind === 'kit') (next as unknown as { w: number }).w = clip.w * values.scale
     else if (clip.kind === 'video' || clip.kind === 'image') next.scale = (clip.scale ?? 1) * values.scale
     else if (clip.kind === 'text') next.fontSizePct = clip.fontSizePct * values.scale
     else if (clip.kind === 'glass') {
@@ -790,7 +860,7 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
 
 /** Where a clip pivots. Positioned clips turn about themselves, full-frame ones about the frame. */
 function clipCentre(clip: StudioClip, w: number, h: number): { cx: number; cy: number } {
-  if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'shape' || clip.kind === 'cursor') {
+  if (clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'loader' || clip.kind === 'kit') {
     return { cx: clip.x * w, cy: clip.y * h }
   }
   if (clip.kind === 'video' || clip.kind === 'image') {
@@ -997,6 +1067,15 @@ function drawClipContent(
     drawCursor(ctx, clip, t, width, height)
     return
   }
+  if (clip.kind === 'loader') {
+    drawLoader(ctx, clip, t, width, height)
+    return
+  }
+  if (clip.kind === 'kit') {
+    // Photo slots resolve through the same media registry as footage clips.
+    drawKit(ctx, normaliseKit(clip), t, width, height, (m) => sources.media({ kind: 'image', mediaId: m.mediaId, fileName: m.fileName, id: `${clip.id}:${m.mediaId}` } as unknown as StudioMediaClip))
+    return
+  }
   if (clip.kind === 'background') {
     const bg = backgroundById(clip.backgroundId)
     bg.paint(ctx, width, height, bg.local ? Math.max(0, t - clip.startSec) : t)
@@ -1061,7 +1140,7 @@ function drawClipContent(
       ctx.font = `600 ${Math.round(height * 0.028)}px 'Inter Variable', Inter, system-ui, sans-serif`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillText(`Relink “${clip.fileName}”`, targetW / 2, targetH / 2)
+      ctx.fillText(clip.mediaId ? `Relink “${clip.fileName}”` : 'Add your media here', targetW / 2, targetH / 2)
     }
     ctx.restore()
   } else if (clip.kind === 'text') {
@@ -1171,6 +1250,8 @@ export function drawStudioFrame(
 ) {
   ctx.save()
   ctx.clearRect(0, 0, width, height)
+  lumaFrame = ctx
+  lumaInvalidate()
 
   // 1. Document background, then any background clip active right now.
   // A custom background overrides the preset, and is deliberately checked
@@ -1216,6 +1297,7 @@ export function drawStudioFrame(
           ctx.restore()
         }
       }
+      lumaInvalidate()
       continue
     }
     // Keyframes are resolved once, up front, so everything below — transitions,
@@ -1286,10 +1368,13 @@ export function drawStudioFrame(
     ctx.globalCompositeOperation = 'source-over'
     paintTransitionGlass(ctx, clip, t, width, height)
     ctx.restore()
+    // Text over text doesn't change the backdrop a scrim decision reads.
+    if (clip.kind !== 'text') lumaInvalidate()
   }
 
   ctx.filter = 'none'
   ctx.restore()
+  lumaFrame = null
 }
 
 /** Canvas-drawable element for a media clip, or null. Audio is never drawable. */
@@ -1348,7 +1433,30 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
 /** Phone screen painter: cover-fit, or a top→bottom scroll for tall screenshots. */
 function phoneMedia(ctx: CanvasRenderingContext2D, source: CanvasImageSource | null): DrawMedia {
   return (x, y, w, h, scroll) => {
-    if (!source) return
+    if (!source) {
+      // Empty screen slot: a clear, deterministic "your media goes here" panel
+      // instead of a black hole, identical in preview and export.
+      const g = ctx.createLinearGradient(x, y, x + w, y + h)
+      g.addColorStop(0, '#1A1D24'); g.addColorStop(1, '#0E1014')
+      ctx.save()
+      ctx.fillStyle = g
+      ctx.fillRect(x, y, w, h)
+      ctx.strokeStyle = 'rgba(200,245,66,0.55)'
+      ctx.setLineDash([Math.max(4, w * 0.03), Math.max(3, w * 0.02)])
+      ctx.lineWidth = Math.max(1, w * 0.008)
+      ctx.strokeRect(x + w * 0.08, y + h * 0.08, w * 0.84, h * 0.84)
+      ctx.setLineDash([])
+      ctx.fillStyle = 'rgba(244,241,234,0.78)'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.font = `600 ${Math.max(9, Math.round(w * 0.075))}px 'Inter Variable', Inter, system-ui, sans-serif`
+      ctx.fillText('Add your media', x + w / 2, y + h / 2 - w * 0.05)
+      ctx.fillStyle = 'rgba(244,241,234,0.45)'
+      ctx.font = `500 ${Math.max(8, Math.round(w * 0.05))}px 'Inter Variable', Inter, system-ui, sans-serif`
+      ctx.fillText('screen · product · campaign', x + w / 2, y + h / 2 + w * 0.06)
+      ctx.restore()
+      return
+    }
     const [sw, sh] = sourceSize(source)
     if (!sw || !sh) return
     if (scroll !== null && sh / sw > h / w) {

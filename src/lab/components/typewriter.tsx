@@ -1,6 +1,8 @@
+import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
+import { useDriverSeconds } from "@/lib/progress";
 
 // Per-character typing delay: a base plus up to this much jitter, which lands
 // around 8 to 14 keys a second, the pace of someone who knows the word.
@@ -42,6 +44,9 @@ const CSS = `
   from { opacity: 0; filter: blur(2px); }
 }
 .typewriter-letter { animation: typewriter-ink 140ms cubic-bezier(0.23, 1, 0.32, 1); }
+[data-driven] .typewriter-caret { animation: none; opacity: var(--tw-caret, 1); }
+[data-driven] .typewriter-letter { animation: none; }
+[data-driven] .typewriter-selection { transition: none; scale: var(--tw-sel, 0) 1; }
 @media (prefers-reduced-motion: reduce) {
   .typewriter-selection { transition: none; }
   .typewriter-letter { animation: none; }
@@ -57,6 +62,38 @@ function jitter(word: number, char: number) {
   return wave * 0.7 + (n - Math.floor(n)) * 0.3;
 }
 
+/**
+ * The same typing script as the live loop, as a pure function of time, for
+ * captures: which word, how many letters, and whether it is selected.
+ */
+export function typewriterAt(words: string[], ms: number): { word: number; length: number; typing: boolean; selection: number } {
+  if (!words.length) return { word: 0, length: 0, typing: false, selection: 0 };
+  let t = Math.max(0, ms);
+  let word = 0;
+  // Starts on the finished first word, held.
+  if (t < HOLD || words.length < 2) return { word: 0, length: words[0].length, typing: false, selection: 0 };
+  t -= HOLD;
+  for (let guard = 0; guard < 10000; guard++) {
+    // Selected: the sweep runs 220ms, then holds until the first key.
+    if (t < SELECTED_FOR) return { word, length: words[word].length, typing: false, selection: Math.min(1, t / 220) };
+    t -= SELECTED_FOR;
+    word = (word + 1) % words.length;
+    const target = words[word];
+    // First key lands straight away, then each next key after its delay.
+    let length = 0;
+    for (;;) {
+      if (length < target.length) length++;
+      if (length === target.length) break;
+      const d = TYPE_BASE + jitter(word, length) * TYPE_JITTER;
+      if (t < d) return { word, length, typing: true, selection: 0 };
+      t -= d;
+    }
+    if (t < HOLD) return { word, length, typing: false, selection: 0 };
+    t -= HOLD;
+  }
+  return { word: 0, length: words[0].length, typing: false, selection: 0 };
+}
+
 export function Typewriter({
   prefix,
   words,
@@ -70,10 +107,12 @@ export function Typewriter({
   const rootRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [swapIndex, setSwapIndex] = useState(0);
+  const driven = useDriverSeconds();
+  const at = driven !== null ? typewriterAt(words, driven * 1000) : null;
 
   // Typing writes straight to the DOM, so a keystroke never re-renders React.
   useEffect(() => {
-    if (reduceMotion) return;
+    if (reduceMotion || driven !== null) return;
     const root = rootRef.current;
     const text = textRef.current;
     if (!root || !text || words.length === 0) return;
@@ -128,16 +167,23 @@ export function Typewriter({
       text.textContent = words[0] ?? "";
       root.dataset.selecting = "false";
     };
-  }, [reduceMotion, words]);
+  }, [reduceMotion, words, driven !== null]);
 
   useEffect(() => {
-    if (!reduceMotion || words.length < 2) return;
+    if (!reduceMotion || words.length < 2 || driven !== null) return;
     const id = setInterval(
       () => setSwapIndex((i) => (i + 1) % words.length),
       SWAP_EVERY,
     );
     return () => clearInterval(id);
-  }, [reduceMotion, words.length]);
+  }, [reduceMotion, words.length, driven !== null]);
+  const shownSwap = driven !== null ? Math.floor((driven * 1000) / SWAP_EVERY) % Math.max(1, words.length) : swapIndex;
+  // Blink: 1.06s cycle, solid 0–45%, fading out to 55%, off to 95%, back in.
+  const caret = (() => {
+    if (!at || at.typing) return 1;
+    const p = ((driven! % 1.06) / 1.06);
+    return p < 0.45 ? 1 : p < 0.55 ? 1 - (p - 0.45) / 0.1 : p < 0.95 ? 0 : (p - 0.95) / 0.05;
+  })();
 
   const longest = words.reduce((a, b) => (b.length > a.length ? b : a), "");
   const sentence = `${prefix} ${new Intl.ListFormat("en", {
@@ -159,8 +205,10 @@ export function Typewriter({
       <span
         ref={rootRef}
         aria-hidden
-        data-typing="false"
-        data-selecting="false"
+        data-typing={at ? String(at.typing) : "false"}
+        data-selecting={at ? String(at.selection > 0) : "false"}
+        data-driven={at ? "" : undefined}
+        style={at ? ({ "--tw-caret": caret, "--tw-sel": at.selection } as CSSProperties) : undefined}
         className="col-start-1 row-start-1 text-left"
       >
         {prefix}{" "}
@@ -173,7 +221,7 @@ export function Typewriter({
                 // so a gentle crossfade reads as ambient, not as a response.
                 className={cn(
                   "col-start-1 row-start-1 transition-[opacity] duration-500 ease-in-out",
-                  i !== swapIndex && "opacity-0",
+                  i !== shownSwap && "opacity-0",
                 )}
               >
                 {w}
@@ -188,7 +236,7 @@ export function Typewriter({
                   line box a browser paints. */}
               <span className="typewriter-selection absolute -inset-x-px -inset-y-[0.06em] rounded-[3px] bg-foreground/15 dark:bg-foreground/25" />
               <span ref={textRef} className="relative">
-                {words[0]}
+                {at ? words[at.word]?.slice(0, at.length) : words[0]}
               </span>
             </span>
             <Caret />

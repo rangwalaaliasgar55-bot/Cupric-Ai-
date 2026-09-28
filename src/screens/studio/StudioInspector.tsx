@@ -28,16 +28,19 @@ import type {
 } from '../../types/project'
 import { Button } from '../../components/Button'
 import { ClipProFields } from './ClipProFields'
+import { KeyframeGraph } from './KeyframeGraph'
 import { CurveEditor } from './CurveEditor'
 import { FontStudio, useUserFonts } from './FontStudio'
 import { FramecnFields, CursorFields, RichTextFields, ShapeFields, ThreeDFields } from './InspectorExtras'
+import { LoaderFields } from './LoaderFields'
+import { KitFields } from './KitFields'
 import { STUDIO_BACKGROUNDS } from '../../lib/studio/backgrounds'
 import { TEXT_ANIMATIONS, TRANSITIONS, transitionInfo } from '../../lib/studio/transitions'
 import { GLASS_PRESETS } from '../../lib/glass'
 import { STICKERS } from '../../lib/studio/lottie'
 import { hasMedia, registerFile } from '../../lib/studio/media'
 
-import { clampRecordSec, findComponent, MAX_RECORD_SEC } from '../../lib/studio/components'
+import { clampRecordSec, findComponent, MAX_RECORD_SEC, rememberRecordSec } from '../../lib/studio/components'
 import { applyResource } from '../../lib/studio/resourceApply'
 import { cx } from '../../lib/utils'
 import { CHANNEL_PRESETS, matchingPreset, presetLabel, presetWarnings } from '../../lib/studio/formats'
@@ -339,7 +342,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
                 title={bg.name}
               >
                 <span
-                  className="flex h-full w-full items-end px-2 pb-1 text-xs font-medium text-[#F4F1EA] [text-shadow:0_1px_2px_rgb(0_0_0/0.8)]"
+                  className="flex h-full w-full items-end px-2 pb-1 text-xs font-medium text-stage-text [text-shadow:0_1px_2px_rgb(0_0_0/0.8)]"
                   // Preview uses the same CSS the Library copies out.
                   ref={(node) => {
                     if (node) node.setAttribute('style', `${bg.css};display:flex;height:100%;width:100%`)
@@ -385,6 +388,8 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
       {clip.kind === 'overlay' && (clip as StudioOverlayClip).component?.slug?.startsWith('fc-') && <FramecnFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
       {clip.kind === 'shape' && <ShapeFields clip={clip} onPatch={onPatch} />}
       {clip.kind === 'cursor' && <CursorFields clip={clip} doc={doc} onPatch={onPatch} />}
+      {clip.kind === 'loader' && <LoaderFields clip={clip} onPatch={onPatch} />}
+      {clip.kind === 'kit' && <KitFields clip={clip} doc={doc} onPatch={onPatch} />}
       {(clip.kind === 'video' || clip.kind === 'image') && (
         <MediaFields clip={clip as StudioMediaClip} onPatch={onPatch} />
       )}
@@ -493,7 +498,7 @@ function KeyframeFields({
   const keys = clip.keyframes ?? []
   const local = Math.round((time - clip.startSec) * 100) / 100
   const withinClip = local >= 0 && local <= clip.durationSec + 0.001
-  const positioned = clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image'
+  const positioned = clip.kind === 'kit' || clip.kind === 'loader' || clip.kind === 'shape' || clip.kind === 'cursor' || clip.kind === 'text' || clip.kind === 'overlay' || clip.kind === 'glass' || clip.kind === 'sticker' || clip.kind === 'video' || clip.kind === 'image'
 
   const currentScale =
     clip.kind === 'overlay' || clip.kind === 'sticker' ? 1 : clip.kind === 'text' ? 1 : clip.kind === 'glass' ? 1 : 1
@@ -520,7 +525,7 @@ function KeyframeFields({
       active={keys.length > 0}
     >
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" onClick={record} disabled={!withinClip}>
+        <Button size="sm" variant="outline" onClick={record} disabled={!withinClip} title={(!withinClip) ? 'Move the playhead inside this clip' : undefined}>
           <Plus size={13} /> Record at {Math.max(0, local).toFixed(2)}s
         </Button>
         {keys.length > 0 && (
@@ -530,6 +535,7 @@ function KeyframeFields({
         )}
       </div>
       {!withinClip && <p className="text-xs text-muted/80">Move the playhead over this clip to record a keyframe.</p>}
+      <KeyframeGraph clip={clip} localTime={local} onPatch={onPatch} />
 
       {keys.length === 1 && (
         <p className="text-xs text-muted/80">
@@ -789,7 +795,7 @@ function MaskFields({ clip, onPatch, aspect }: { clip: StudioClip; onPatch: (p: 
             <>
               <p className="text-[11px] text-muted">Put the box around the subject at the clip's first frame, then track. The mask follows it through the clip.</p>
               <div className="flex flex-wrap items-center gap-1.5">
-                <Button size="sm" variant="outline" disabled={!canTrack || tracking !== null} onClick={runTrack}>
+                <Button size="sm" variant="outline" disabled={!canTrack || tracking !== null} title={(!canTrack || tracking !== null) ? 'Tracking needs a video clip — or wait for the current track' : undefined} onClick={runTrack}>
                   {tracking !== null ? `Tracking… ${tracking}%` : mask.track?.length ? 'Track again' : 'Track subject'}
                 </Button>
                 {mask.track?.length ? <Button size="sm" variant="ghost" onClick={() => { onPatch({ mask: { ...mask, track: null } }); setTrackMsg('Tracking removed — the mask is static again.') }}>Clear tracking</Button> : null}
@@ -1063,8 +1069,10 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
 
   async function relink(file: File | undefined) {
     if (!file) return
-    const handle = await registerFile(file, clip.mediaId)
+    const handle = await registerFile(file, clip.mediaId || undefined)
     onPatch({
+      // An empty slot gets its first media id; a video fills an image slot as video.
+      ...(!clip.mediaId ? { mediaId: handle.id, ...(handle.kind === 'video' || handle.kind === 'image' ? { kind: handle.kind } : {}) } : {}),
       fileName: handle.fileName,
       localPath: handle.localPath,
       sourceDurationSec: handle.kind === 'video' ? handle.durationSec : 0,
@@ -1074,11 +1082,20 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
 
   return (
     <div className="space-y-4 border-t border-line pt-4">
-      <p className="truncate font-mono text-xs text-muted" title={clip.localPath ?? clip.fileName}>
-        {clip.fileName}
-      </p>
+      {clip.mediaId ? (
+        <p className="truncate font-mono text-xs text-muted" title={clip.localPath ?? clip.fileName}>
+          {clip.fileName}
+        </p>
+      ) : (
+        <div className="space-y-2 rounded-lg border border-accent/40 bg-accent/5 p-2.5">
+          <p className="text-xs leading-relaxed text-muted">Empty media slot — {clip.fileName.toLowerCase()}. Everything else on this layer (frame, fold, position, scale, motion) is already editable.</p>
+          <Button size="sm" variant="outline" onClick={() => relinkRef.current?.click()}>
+            <Link2 size={13} /> Add media
+          </Button>
+        </div>
+      )}
 
-      {!linked && (
+      {!linked && !!clip.mediaId && (
         <div className="space-y-2 rounded-lg border border-danger/40 bg-danger/5 p-2.5">
           <p className="text-xs leading-relaxed text-muted">
             This clip lost its file handle — browsers cannot keep one across reloads. Pick{' '}
@@ -1087,15 +1104,9 @@ function MediaFields({ clip, onPatch }: { clip: StudioMediaClip; onPatch: (p: Pa
           <Button size="sm" variant="outline" onClick={() => relinkRef.current?.click()}>
             <Link2 size={13} /> Relink file
           </Button>
-          <input
-            ref={relinkRef}
-            type="file"
-            accept="video/*,image/*,.heic,.heif"
-            className="hidden"
-            onChange={(e) => void relink(e.target.files?.[0])}
-          />
         </div>
       )}
+      <input ref={relinkRef} type="file" accept="video/*,image/*,.heic,.heif" className="hidden" onChange={(e) => void relink(e.target.files?.[0])} />
 
       {clip.kind === 'video' && (
         <>
@@ -1283,15 +1294,20 @@ function GlassFields({ clip, onPatch }: { clip: StudioGlassClip; onPatch: (p: Pa
 
 function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlayClip; onPatch: (p: Partial<StudioClip>) => void; doc: StudioDoc; onPatchDoc: (patch: Partial<StudioDoc>) => void }) {
   const meta = clip.component
-  const entry = findComponent(meta?.slug)
+  const generated = meta?.generated?.source === 'agent-generated' ? meta.generated : null
+  // Agent-written animations get the same re-record controls (badged below).
+  const entry = findComponent(meta?.slug) ?? (generated && meta ? { slug: meta.slug, name: generated.name, description: `Agent-generated ${generated.kind}`, category: 'motion' as const } : null)
   const busy = meta?.status === 'pending' || meta?.status === 'recording'
   const rerecord = (patch: Partial<NonNullable<StudioOverlayClip['component']>>) => {
     if (!meta) return
-    onPatch({ component: { ...meta, ...patch, status: 'pending', error: undefined } } as Partial<StudioClip>)
+    // A clip still at its old recording length follows the new one; a clip the
+    // user trimmed/extended keeps its length (the loop toggle covers longer).
+    const follows = patch.recordSec !== undefined && Math.abs(clip.durationSec - meta.recordSec) < 0.01
+    onPatch({ ...(follows ? { durationSec: patch.recordSec } : {}), component: { ...meta, ...patch, status: 'pending', error: undefined } } as Partial<StudioClip>)
   }
   /** Swap the recording for native layers you can type into (text, glass). */
   const rebuild = () => {
-    if (!entry) return
+    if (!entry || generated) return
     const without = { ...doc, clips: doc.clips.filter((c) => c.id !== clip.id) }
     const result = applyResource(without, { kind: 'block', id: entry.slug, name: entry.name, description: entry.description, data: { category: entry.category } }, { atSec: clip.startSec })
     if (result.ok && result.type === 'doc') onPatchDoc({ clips: result.doc.clips, trackCount: result.doc.trackCount })
@@ -1302,7 +1318,7 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
         <div className="space-y-3 rounded-lg border border-line bg-panel-alt p-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-text">UI component · {entry.name}</p>
+              <p className="text-xs font-semibold text-text">{generated ? 'Agent-generated' : 'UI component'} · {entry.name}</p>
               <p className="mt-0.5 text-[11px] text-muted">
                 {busy
                   ? 'Recording its real animation…'
@@ -1328,7 +1344,10 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
                 defaultValue={meta.recordSec}
                 onBlur={(e) => {
                   const next = clampRecordSec(e.target.value, meta.recordSec)
-                  if (next !== meta.recordSec) rerecord({ recordSec: next })
+                  if (next !== meta.recordSec) {
+                    rememberRecordSec(next)
+                    rerecord({ recordSec: next })
+                  }
                   else e.target.value = String(meta.recordSec)
                 }}
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
@@ -1345,12 +1364,18 @@ function OverlayFields({ clip, onPatch, doc, onPatchDoc }: { clip: StudioOverlay
               </select>
             </Field>
           </div>
+          {generated && (
+            <label className="flex items-center gap-2 text-xs text-muted" title="Records the animation's reduced-motion path: only opacity changes, nothing moves or flashes">
+              <input type="checkbox" checked={Boolean(generated.calm)} disabled={busy} onChange={(e) => rerecord({ generated: { ...generated, calm: e.target.checked } })} aria-label="Calm version (reduced motion)" />
+              Calm version (reduced motion) — fades only, no movement or flashing
+            </label>
+          )}
           <label className="flex items-center gap-2 text-xs text-muted">
             <input type="checkbox" checked={clip.loop !== false} onChange={(e) => onPatch({ loop: e.target.checked } as Partial<StudioClip>)} />
             Loop the animation when the clip is longer
           </label>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" onClick={() => rerecord({})} disabled={busy}>
+            <Button size="sm" variant="outline" onClick={() => rerecord({})} disabled={busy} title={(busy) ? 'Recording…' : undefined}>
               <RefreshCw size={12} /> Record again
             </Button>
             <Button size="sm" variant="ghost" onClick={rebuild} disabled={busy} title="Replace the recording with native text and glass layers you can type into">

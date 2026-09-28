@@ -30,7 +30,7 @@ export default function HomeHero() {
             <textarea id="prompt" rows={2} value={prompt} onChange={(e) => setPrompt(e.target.value)} className="w-full resize-none bg-transparent px-3 py-2 text-sm text-white outline-none placeholder:text-zinc-600" placeholder="Describe the video you want…" />
             <div className="flex items-center justify-between gap-2 px-1 pb-1">
               <div className="flex flex-wrap gap-1.5">{EXAMPLES.slice(1).map((ex) => <button type="button" key={ex} onClick={() => { setPrompt(ex); run(ex); }} className="rounded-full bg-white/5 px-2.5 py-1 text-[11px] text-zinc-400 hover:bg-white/10 hover:text-white">{ex.split(" ").slice(0, 4).join(" ")}…</button>)}</div>
-              <button type="submit" disabled={busy} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-black hover:bg-zinc-200 disabled:opacity-60"><Wand2 size={13} />{busy ? "Composing…" : "Generate"}</button>
+              <button type="submit" disabled={busy} title={(busy) ? 'Composing — wait for the current draft' : undefined} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-white px-3.5 py-2 text-xs font-semibold text-black hover:bg-zinc-200 disabled:opacity-60"><Wand2 size={13} />{busy ? "Composing…" : "Generate"}</button>
             </div>
           </form>
           {rec && <ul className="mt-4 space-y-1 text-xs text-zinc-500">{rec.reasoning.map((r) => <li key={r}>— {r}</li>)}</ul>}

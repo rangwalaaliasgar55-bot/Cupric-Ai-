@@ -140,7 +140,7 @@ export function ClipProFields({ doc, clip, onPatch, onPatchDoc }: Props) {
           <Button
             size="sm"
             variant="outline"
-            disabled={variants?.busy}
+            disabled={variants?.busy} title={(variants?.busy) ? 'Generating variants…' : undefined}
             onClick={async () => {
               setVariants({ list: [], busy: true })
               const r = await requestTextVariants((clip as StudioTextClip).text)
@@ -342,7 +342,7 @@ function ProxyBox({ mediaId }: { mediaId: string }) {
         <div className="h-1.5 overflow-hidden rounded bg-panel-alt"><div className="h-full bg-accent transition-[width]" style={{ width: `${Math.round(s.pct * 100)}%` }} /></div>
       )}
       <div className="flex gap-1.5">
-        {s.state !== 'ready' && s.state !== 'making' && <Button size="sm" variant="outline" disabled={!h} onClick={() => void makeProxy(mediaId)}>Make proxy</Button>}
+        {s.state !== 'ready' && s.state !== 'making' && <Button size="sm" variant="outline" disabled={!h} title={(!h) ? 'Source file not available on disk' : undefined} onClick={() => void makeProxy(mediaId)}>Make proxy</Button>}
         {s.state === 'ready' && <Button size="sm" variant="outline" onClick={() => void removeProxy(mediaId)}>Remove proxy</Button>}
       </div>
       <Row label="For new imports">

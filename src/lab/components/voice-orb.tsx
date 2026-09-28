@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { usePreviewPlay } from "@/lab/preview-play";
 import { cn } from "@/lib/cn";
+import { useFrameClock } from "@/lib/progress";
 
 export type OrbState = "idle" | "listening" | "thinking" | "speaking";
 
@@ -69,6 +70,8 @@ export function VoiceOrb({
   paused?: boolean;
   className?: string;
 }) {
+  // Captured: loops run on the driving clock in fixed steps, randomness is seeded.
+  const frameClock = useFrameClock(902);
   const reduceMotion = useReducedMotion();
   const rootRef = useRef<HTMLDivElement>(null);
   const blobRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -87,7 +90,7 @@ export function VoiceOrb({
     if (!root || paused) return;
     let frame = 0;
     let visible = true;
-    let last = performance.now();
+    let last = frameClock.now();
     let t = 0;
     // Each blob's angle advances a little every frame. Computing it as
     // time x speed instead would make any change of speed rescale all the
@@ -119,9 +122,9 @@ export function VoiceOrb({
       if (s === "speaking") {
         syllable -= dt;
         if (syllable <= 0) {
-          const pause = Math.random() < 0.14;
-          syllable = pause ? 0.3 + Math.random() * 0.3 : 0.16 + Math.random() * 0.18;
-          target = pause ? 0.05 : 0.35 + Math.random() * 0.5;
+          const pause = frameClock.random() < 0.14;
+          syllable = pause ? 0.3 + frameClock.random() * 0.3 : 0.16 + frameClock.random() * 0.18;
+          target = pause ? 0.05 : 0.35 + frameClock.random() * 0.5;
         }
         return target;
       }
@@ -167,21 +170,21 @@ export function VoiceOrb({
         ring.style.opacity = (0.35 + level * 0.5 - i * 0.12).toFixed(3);
       });
 
-      frame = visible ? requestAnimationFrame(step) : 0;
+      frame = visible ? frameClock.raf(step) : 0;
     };
 
     // Sleeps offscreen, so a page full of other things never pays for it.
     const io = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting;
       if (visible && !frame) {
-        last = performance.now();
-        frame = requestAnimationFrame(step);
+        last = frameClock.now();
+        frame = frameClock.raf(step);
       }
     });
     io.observe(root);
-    frame = requestAnimationFrame(step);
+    frame = frameClock.raf(step);
     return () => {
-      cancelAnimationFrame(frame);
+      frameClock.caf(frame);
       io.disconnect();
     };
   }, [paused, reduceMotion, size]);

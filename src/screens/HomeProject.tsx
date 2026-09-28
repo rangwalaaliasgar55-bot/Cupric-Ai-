@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
 import { Copy, Plus, Trash2 } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
@@ -7,6 +8,7 @@ import { EmptyState } from '../components/EmptyState'
 import { IconButton } from '../components/IconButton'
 import type { Project } from '../types/project'
 import { useProjectStore } from '../state/useProjectStore'
+import { GettingStarted } from './GettingStarted'
 import { cx, gradientFor, initials, relTime } from '../lib/utils'
 
 export function HomeProject() {
@@ -45,6 +47,8 @@ export function HomeProject() {
           </Button>
         </div>
 
+        {projects.length > 0 && <GettingStarted project={[...projects].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null} />}
+
         {projects.length === 0 ? (
           <div className="mt-8">
             <EmptyState
@@ -61,7 +65,10 @@ export function HomeProject() {
           </div>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {projects.map((p) => (
+            <AnimatePresence initial={true} mode="popLayout">
+            {projects.map((p, i) => (
+              <motion.div key={p.id} layout initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.14 } }}
+                transition={{ duration: 0.28, ease: [0.23, 1, 0.32, 1], delay: Math.min(i, 8) * 0.04 }}>
               <ProjectCard
                 key={p.id}
                 project={p}
@@ -75,7 +82,9 @@ export function HomeProject() {
                   pushToast('info', `Deleted “${p.name}”`)
                 }}
               />
+              </motion.div>
             ))}
+            </AnimatePresence>
             <button
               type="button"
               onClick={create}

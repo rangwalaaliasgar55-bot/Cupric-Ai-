@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
+import { useFrameClock } from "@/lib/progress";
 
 export type Weight = 1 | 2 | 3;
 export type Reason = { id: string; text: string; weight: Weight };
@@ -89,6 +90,8 @@ function pack(items: Reason[]) {
 }
 
 function Scale({ ledger }: { ledger: Ledger }) {
+  // Captured: loops run on the driving clock in fixed steps, randomness is seeded.
+  const frameClock = useFrameClock(1275);
   const reduceMotion = useReducedMotion();
   const gid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const beamRef = useRef<SVGGElement>(null);
@@ -135,7 +138,7 @@ function Scale({ ledger }: { ledger: Ledger }) {
   const run = () => {
     const s = sim.current;
     if (s.frame) return;
-    let last = performance.now();
+    let last = frameClock.now();
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 1 / 30);
       last = now;
@@ -160,9 +163,9 @@ function Scale({ ledger }: { ledger: Ledger }) {
         s.frame = 0;
         return;
       }
-      s.frame = requestAnimationFrame(tick);
+      s.frame = frameClock.raf(tick);
     };
-    s.frame = requestAnimationFrame(tick);
+    s.frame = frameClock.raf(tick);
   };
 
   const retarget = () => {
@@ -176,7 +179,7 @@ function Scale({ ledger }: { ledger: Ledger }) {
       );
     s.target = tiltFor(weigh(current.pros), weigh(current.cons));
     if (reduceMotion) {
-      cancelAnimationFrame(s.frame);
+      frameClock.caf(s.frame);
       Object.assign(s, {
         angle: s.target,
         vel: 0,
@@ -199,7 +202,7 @@ function Scale({ ledger }: { ledger: Ledger }) {
 
   useEffect(() => {
     const s = sim.current;
-    return () => cancelAnimationFrame(s.frame);
+    return () => frameClock.caf(s.frame);
   }, []);
 
   const land = (side: Side, item: Reason) => {

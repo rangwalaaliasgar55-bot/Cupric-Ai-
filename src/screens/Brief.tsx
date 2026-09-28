@@ -160,14 +160,14 @@ export function Brief() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-lg font-bold">Brief</h1>
             <div className="flex items-center gap-2 text-[10px] text-muted" aria-label="AI provider status">
-              {([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1"><span className={cx('h-2 w-2 rounded-full', aiStatus.statusDots?.[key] === 'ok' ? 'bg-accent' : aiStatus.statusDots?.[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label}</span>)}
+              <span className="flex items-center gap-1" title="Built-in Cupric AI engine: rundowns, plans, edits and checks, fully offline"><span className="h-2 w-2 rounded-full bg-accent" />Cupric AI</span>{([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local model']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1"><span className={cx('h-2 w-2 rounded-full', aiStatus.statusDots?.[key] === 'ok' ? 'bg-accent' : aiStatus.statusDots?.[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label}</span>)}
               {aiStatus.mode === 'auto' && <span className="rounded-full border border-line px-1.5 py-0.5">Auto · {aiStatus.pick?.label || 'discovering…'}</span>}
             </div>
           </div>
           <p className="text-sm text-muted">
             Describe the video you want. Cupric AI drafts an instant offline rundown, then polishes it in the background when a model is available.
           </p>
-          {aiStatus.setupRequired && <p className="mt-2 text-xs text-muted">No live provider found — offline template is ready. Open AI settings for Zen, Ollama, or the template setup card.</p>}
+          {aiStatus.setupRequired && <p className="mt-2 text-xs text-muted">offline brain — the deterministic planner is active; live AI resumes automatically when you are online.</p>}
         </div>
 
         <div ref={scrollRef} className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
@@ -222,7 +222,7 @@ export function Brief() {
             <Button
               type="submit"
               variant="primary"
-              disabled={!input.trim() || busy}
+              disabled={!input.trim() || busy} title={(!input.trim() || busy) ? 'Type a message first — or wait for the reply' : undefined}
               aria-label="Generate rundown"
               className="h-10 w-10 p-0"
             >
@@ -233,7 +233,7 @@ export function Brief() {
             <div className="text-xs text-muted">
               Press <Kbd>⌘</Kbd> <Kbd>↵</Kbd> to send
             </div>
-            <Button size="sm" variant="primary" disabled={busy || (!input.trim() && !locked && !canLock)} onClick={createVideoNow}>
+            <Button size="sm" variant="primary" disabled={busy || (!input.trim() && !locked && !canLock)} title={(busy || (!input.trim() && !locked && !canLock)) ? 'Describe the video first — or wait for the reply' : undefined} onClick={createVideoNow}>
               <Video size={14} />
               Create video file
             </Button>
@@ -254,7 +254,7 @@ export function Brief() {
               Locked
             </Badge>
           ) : (
-            <Button size="sm" variant={canLock ? 'primary' : 'outline'} disabled={!canLock} onClick={lock}>
+            <Button size="sm" variant={canLock ? 'primary' : 'outline'} disabled={!canLock} title={(!canLock) ? 'Fill every rundown field before locking' : undefined} onClick={lock}>
               <Lock size={13} />
               Lock rundown
             </Button>

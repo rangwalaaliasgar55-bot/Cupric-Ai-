@@ -20,7 +20,7 @@ import { STUDIO_BACKGROUNDS } from './backgrounds'
 import { defaultGlassClip, defaultTextClip, nextFreeStart } from './doc'
 import { TEXT_ANIMATIONS, TRANSITIONS } from './transitions'
 import { planTemplateFill, templateSlots, type TemplateFillData } from './templateFill'
-import { findComponent, withComponent } from './components'
+import { findComponent, preferredRecordSec, withComponent } from './components'
 
 /** Custom MIME so a drag from the Library can never be confused with a file. */
 export const RESOURCE_MIME = 'application/x-cupric-resource'
@@ -47,6 +47,8 @@ export type ResourceDisposition = 'clip' | 'scene' | 'lab' | 'template' | 'rende
  * drop on the stage) produces — see resourceApply.ts, which implements it.
  */
 export function resourceDisposition(kind: string, item?: { source?: string; data?: Record<string, unknown> }): ResourceDisposition {
+  if (item?.data?.referenceOnly === true) return 'reference'
+  if (item?.data?.nativeAction === 'loader') return 'clip'
   if (kind === 'component') return item && (item.source || item.data?.source || item.data?.provider) ? 'scene' : 'lab'
   if (kind === 'saas-template') return 'template'
   if (['glass', 'background', 'animation', 'effect', 'transition'].includes(kind)) return 'clip'
@@ -228,7 +230,7 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
       // The real component, recorded with its real animation by the Studio's
       // recorder (ComponentRecorderHost) — never a dead placeholder.
       if (!findComponent(payload.id)) return { ok: false, reason: `“${payload.name}” is not a built-in component.` }
-      const added = withComponent(doc, payload.id, { startSec: atSec, recordSec: 4, durationSec: 4 })
+      const added = withComponent(doc, payload.id, { startSec: atSec, recordSec: preferredRecordSec(), durationSec: preferredRecordSec() })
       return { ok: true, docPatch: { clips: added.doc.clips, trackCount: added.doc.trackCount }, message: `“${payload.name}” added — recording its real animation.` }
     }
 

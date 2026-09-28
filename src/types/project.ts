@@ -156,6 +156,8 @@ export type Project = {
   /** In-app editor document. Optional on projects created before 0.3.0. */
   studio?: StudioDoc
   brandKit: { colors: string[]; font: string; logoDataUrl: string | null }
+  /** Autonomous production session (lib/production). Normalised on read. */
+  production?: unknown
 }
 
 export type LibraryItem =
@@ -387,6 +389,8 @@ type StudioClipCommon = {
   mask?: StudioMask | null
   /** Property animation, sorted by `at`. Absent means the clip is static. */
   keyframes?: StudioKeyframe[] | null
+  /** Clips sharing a groupId move together. Absent means ungrouped. */
+  groupId?: string
   /** 2.6 — absent means normal. */
   blendMode?: StudioBlendMode
   /** 2.3 — absent means no LUT. */
@@ -495,6 +499,8 @@ export type StudioComponentMeta = {
   /** Props for props-driven components (framecn text, colours, sizes). Changing them re-records. */
   props?: Record<string, string | number | boolean>
   error?: string
+  /** JOB 4 — an animation the agent wrote; validated code travels with the clip (undo, re-record). */
+  generated?: { source: 'agent-generated'; name: string; kind: string; code: string; ease: string; /** Record the agent's reduced-motion (opacity-only) path. */ calm?: boolean }
 }
 
 export type StudioOverlayClip = StudioClipCommon & {
@@ -601,6 +607,114 @@ export type StudioClip =
   | StudioSequenceClip
   | StudioShapeClip
   | StudioCursorClip
+  | StudioLoaderClip
+  | StudioKitClip
+
+/**
+ * Home_X video kit (lib/studio/homeKit.ts): nine native, parametric pieces
+ * drawn by the shared renderer. Every motion is a pure function of the clip's
+ * local time and `seed`, so preview and export match frame for frame.
+ */
+export type StudioKitKind = 'cursor-zoom' | 'pill-text' | 'stat-card' | 'rating-bars' | 'image-stack' | 'browser-mockup' | 'checkout-card' | 'block-row-3d' | 'kinetic-headline'
+
+/** One word of a kinetic headline: its own colour (accent id), weight and entrance delay. */
+export type StudioKitWord = {
+  text: string
+  /** KIT_ACCENTS id, or 'text' for the surface text colour. */
+  color?: string
+  weight?: 400 | 500 | 600 | 700 | 800
+  /** Seconds after the clip starts that this word enters. */
+  delay?: number
+  style?: 'plain' | 'keyword' | 'chip' | 'glow'
+}
+
+/** A user-supplied photo slot. `null` stays a visible "drop media here" slot. */
+export type StudioKitMedia = { mediaId: string; fileName: string } | null
+
+export type StudioKitClip = StudioClipCommon & {
+  kind: 'kit'
+  kit: StudioKitKind
+  /**
+   * Per-kind look: browser-mockup 'agent' | 'saas' | 'composer';
+   * pill-text 'inline' | 'checklist' | 'chips'; stat-card 'stat' | 'price';
+   * image-stack 'stack' | 'single' | 'landscape'. Unknown → the kind's default.
+   */
+  variant?: string
+  /** Centre (normalised) and width as a fraction of frame width. */
+  x: number
+  y: number
+  w: number
+  /** mulberry32 seed for layout jitter (image-stack rotation, float drift). */
+  seed: number
+  /** Opacity-only rendering (prefers-reduced-motion export). */
+  reducedMotion: boolean
+  /** Scrim behind text drawn over photos: null = auto (on when a photo is under text), 0–1 = manual strength. */
+  scrim: number | null
+  /** Surface theme of UI mockups. */
+  theme: 'light' | 'dark'
+  /** Accent token value (DESIGN.md video palette). */
+  accent: string
+  title?: string
+  subtitle?: string
+  eyebrow?: string
+  url?: string
+  items?: string[]
+  values?: number[]
+  media?: StudioKitMedia[]
+  /** Highlighted item (active chip, active stat card, active checklist line). */
+  active?: number
+  /** cursor-zoom: start point (normalised frame) and click moment (0–1 of the clip). */
+  fromX?: number
+  fromY?: number
+  clickAt?: number
+  /** kinetic-headline: per-word runs. Missing → derived from `title` ([keyword] {chip} *glow*). */
+  words?: StudioKitWord[]
+  /** block-row-3d: render with real Three.js when available (falls back to the 2.5D canvas draw). */
+  real3d?: boolean
+}
+
+export type StudioLoaderVariant = 'scan' | 'twinkle' | 'orbit' | 'pulse'
+export type StudioLoaderEase = 'ease-in-out' | 'ease' | 'ease-out' | 'ease-in' | 'linear' | 'soft'
+
+/**
+ * Transitions.dev loaders rebuilt natively (lib/studio/loaders.ts): "thinking
+ * states" (rotating status copy with a shimmer) and the 4×4 "matrix" dot
+ * loader. Every CSS timing is a prop; drawing is a pure function of time.
+ */
+export type StudioLoaderClip = StudioClipCommon & {
+  kind: 'loader'
+  loader: 'thinking' | 'matrix'
+  /** Library preset this clip came from (informational). */
+  presetId?: string
+  x: number
+  y: number
+  /** thinking: font height / frame height. matrix: cell side / frame height. */
+  size: number
+  states: string[]
+  holdMs: number
+  swapMs: number
+  gapMs: number
+  distancePx: number
+  blurPx: number
+  shimmerMs: number
+  shimmer: boolean
+  baseColor: string
+  highlightColor: string
+  activeColor: string
+  ease: StudioLoaderEase
+  variant: StudioLoaderVariant
+  rounded: boolean
+  cycleMs: number
+  /** Playback-rate multiplier on every timing. */
+  speed: number
+  loop: boolean
+  /** Export the reduced-motion (static) rendering. */
+  reducedMotion: boolean
+  /** Accessible name (matrix) — also used in captions/credits. */
+  label: string
+  /** Paint the app background under the loader (full-screen beat). */
+  backdrop: boolean
+}
 
 export type StudioShapeAnim = 'none' | 'draw-on' | 'pop' | 'grow' | 'spin-in' | 'pulse' | 'wiggle' | 'draw-then-fill'
 

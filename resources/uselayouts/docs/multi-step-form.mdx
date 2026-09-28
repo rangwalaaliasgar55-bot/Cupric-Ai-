@@ -1,0 +1,36 @@
+---
+title: Multi Step Form
+description: A project-setup wizard that steps through details, team, and extras with a height that follows the fields.
+---
+
+## Features
+
+- **Stepped card**: Title and description change per step; Next / Back sit in the footer.
+- **Measured height**: The card grows with the fields so you don’t get a jump cut.
+- **Direction-aware slide**: Forward and back animate opposite ways.
+- **Real form stack**: React Hook Form + Zod, date picker, tags, mood, and a toast on finish.
+- **Progress in the chrome**: You always know which step you’re on.
+
+## Usage
+
+This is a full wizard, not a single input. Replace `stepTitles` and the `content` switch with your fields. Give it a medium column (`max-w-xl`). Validation is already wired — hook submit to your API instead of the demo toast.
+
+```tsx
+import MultiStepForm from "@/components/multi-step-form";
+
+export default function Page() {
+  return (
+    <div className="max-w-xl mx-auto py-12">
+      <MultiStepForm />
+    </div>
+  );
+}
+```
+
+## Where to use
+
+- Create-project flows
+- Onboarding questionnaires
+- Request-a-quote forms
+- Hiring or application wizards
+- Settings that are too long for one screen

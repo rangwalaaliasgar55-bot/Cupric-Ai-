@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { usePreviewPlay } from "@/lab/preview-play";
 import { cn } from "@/lib/cn";
+import { useDriverSeconds } from "@/lib/progress";
 
 export type CallPhase = "incoming" | "active" | "declined" | "ended";
 
@@ -358,6 +359,15 @@ function PhoneIcon({ down = false }: { down?: boolean }) {
   );
 }
 
+/** Autoplay script as a pure function of time: answer, mute, unmute, hang up, ring again. */
+export function callScriptAt(t: number): { phase: CallPhase; muted: boolean; seconds: number } {
+  const loop = 5.8;
+  const c = ((t % loop) + loop) % loop;
+  if (c < 0.7) return { phase: "incoming", muted: false, seconds: 0 };
+  if (c < 4.4) return { phase: "active", muted: c >= 2.2 && c < 3.1, seconds: Math.floor(c - 0.7) };
+  return { phase: "ended", muted: false, seconds: Math.floor(4.4 - 0.7) };
+}
+
 export default function CallWidgetDemo() {
   const play = usePreviewPlay();
   const [phase, setPhase] = useState<CallPhase>("incoming");
@@ -366,10 +376,13 @@ export default function CallWidgetDemo() {
   const [sharing, setSharing] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const started = useRef(0);
+  // Captured: everything below is a pure function of the driving clock.
+  const driven = useDriverSeconds();
+  const drivenStart = useRef(0);
 
   // The call clock runs only while a call is live, and only a tick a second.
   useEffect(() => {
-    if (phase !== "active") return;
+    if (phase !== "active" || driven !== null) return;
     const id = setInterval(
       () => setSeconds(Math.floor((performance.now() - started.current) / 1000)),
       1000,
@@ -380,6 +393,7 @@ export default function CallWidgetDemo() {
   const change = (next: CallPhase) => {
     if (next === "active") {
       started.current = performance.now();
+      drivenStart.current = driven ?? 0;
       setSeconds(0);
       setMuted(false);
       setCameraOff(false);
@@ -394,7 +408,7 @@ export default function CallWidgetDemo() {
     changeRef.current = change;
   });
   useEffect(() => {
-    if (play !== true) return;
+    if (play !== true || driven !== null) return;
     const steps: [() => void, number][] = [
       [() => changeRef.current("active"), 700],
       [() => setMuted(true), 1500],
@@ -417,7 +431,17 @@ export default function CallWidgetDemo() {
       clearTimeout(timer);
       changeRef.current("incoming");
     };
-  }, [play]);
+  }, [play, driven]);
+
+  // The same autoplay script, read off the clock instead of timers.
+  const script = driven !== null && play === true ? callScriptAt(driven) : null;
+  const shownPhase = script ? script.phase : phase;
+  const shownMuted = script ? script.muted : muted;
+  const shownSeconds = script
+    ? script.seconds
+    : driven !== null && phase === "active"
+      ? Math.max(0, Math.floor(driven - drivenStart.current))
+      : seconds;
 
   return (
     // Centred in every phase; the widget grows evenly both ways as the
@@ -426,15 +450,15 @@ export default function CallWidgetDemo() {
       <CallWidget
         name="Maya Chen"
         avatar="/avatars/cara.svg"
-        phase={phase}
+        phase={shownPhase}
         onPhaseChange={change}
-        muted={muted}
+        muted={shownMuted}
         onMutedChange={setMuted}
         cameraOff={cameraOff}
         onCameraOffChange={setCameraOff}
         sharing={sharing}
         onSharingChange={setSharing}
-        seconds={seconds}
+        seconds={shownSeconds}
       />
     </div>
   );

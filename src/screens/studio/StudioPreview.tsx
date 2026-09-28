@@ -16,6 +16,7 @@ import { safeAreas } from '../../lib/studio/textTools'
 import { mixGainAt } from '../../lib/studio/audioMix'
 import { getMedia, previewVideoOf } from '../../lib/studio/media'
 import { PROXY_EVENT } from '../../lib/studio/proxy'
+import { loadBlockRow3d, needsBlockRow3d } from '../../lib/studio/blockRow3d'
 import { drawStudioFrame, keyframeValuesAt, measureTextBlock } from '../../lib/studio/renderer'
 import { docFontFamilies, ensureDocFonts, FONTS_CHANGED_EVENT } from '../../lib/studio/fonts'
 import { patchTransformKeyframe } from '../../lib/studio/keyframeEdit'
@@ -167,6 +168,16 @@ export function StudioPreview({
     return () => window.clearTimeout(retry)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc, time, playing, muted, width, height])
+
+  // Real-3D block rows load Three.js on demand; repaint when it lands (falls back to 2.5D otherwise).
+  const wants3d = needsBlockRow3d(doc.clips as Array<{ kind: string; kit?: string; real3d?: boolean }>)
+  useEffect(() => {
+    if (!wants3d) return
+    let live = true
+    void loadBlockRow3d().then(() => { if (live && !playingRef.current) syncAndDraw(timeRef.current, false) })
+    return () => { live = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wants3d])
 
   // Physics layers load their WASM engine on first use; repaint when it lands.
   useEffect(() => onPhysicsReady(() => { if (!playingRef.current) syncAndDraw(timeRef.current, false) }), [])
@@ -592,7 +603,7 @@ function DomPreview({ doc, time, problem, onRetry }: { doc: StudioDoc; time: num
       data-cupric-dom-preview
       aria-label="Studio preview (simplified)"
       className="relative h-full w-full overflow-hidden rounded-xl border border-line shadow-[0_12px_32px_rgb(0_0_0/0.36)]"
-      style={{ backgroundColor: '#0B0B10', containerType: 'size', ...styleFromCss(bg.css) }}
+      style={{ backgroundColor: 'var(--color-stage)', containerType: 'size', ...styleFromCss(bg.css) }}
     >
       {texts.map((clip) => (
         <div

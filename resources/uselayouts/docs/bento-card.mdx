@@ -1,0 +1,36 @@
+---
+title: Bento Card
+description: A single glass tile with tabs that swap dashboard previews inside the same card.
+---
+
+## Features
+
+- **Tabs in a tile**: Dashboard, Management, Threads, Resources — all inside one bento cell.
+- **Live-looking previews**: Mini charts, people lists, and thread rows so it feels like a real product, not a mock.
+- **Badge counts**: Unread-style numbers on tabs that actually have work waiting.
+- **Layout morph**: Header copy and body swap with a soft layout animation, not a hard cut.
+- **Glass chrome**: Blur, border, and a compact add/search toolbar so it reads as an app surface.
+
+## Usage
+
+This is a marketing snapshot of a product, not a real dashboard. Swap the tab labels and inner panels to match your app. Give it a centered stage around 420px wide — it wants to feel like one tile in a bento, not a full page.
+
+```tsx
+import BentoCard from "@/components/bento-card";
+
+export default function Page() {
+  return (
+    <div className="h-screen flex items-center justify-center">
+      <BentoCard />
+    </div>
+  );
+}
+```
+
+## Where to use
+
+- SaaS homepage “see the product” tiles
+- Feature grids next to other bento cells
+- Pricing pages that preview the workspace
+- Changelog or launch posts
+- Investor or waitlist landing pages

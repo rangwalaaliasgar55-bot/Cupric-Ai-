@@ -40,6 +40,38 @@ function fake({ listed = LIST, works = [] } = {}) {
   assert.equal(r.hardware, true)
   assert.deepEqual(r.tried, ['h264_nvenc', 'h264_qsv'])
 }
+// Modern args rejected but the conservative set opens → keep the GPU (legacy args).
+{
+  const calls = []
+  const run = async (args) => {
+    calls.push(args)
+    if (args.includes('-encoders')) return { stdout: LIST, stderr: '' }
+    const name = args[args.indexOf('-c:v') + 1]
+    if (name === 'h264_nvenc' && args.includes('p3')) throw Object.assign(new Error('x'), { stderr: 'Unable to parse option value "p3"\nError setting option preset' })
+    if (name === 'h264_nvenc') return { stdout: '', stderr: '' }
+    throw new Error('nope')
+  }
+  const r = await enc.detect(run, 'win32')
+  assert.equal(r.name, 'h264_nvenc')
+  assert.equal(r.legacy, true)
+  assert.match(r.errors.h264_nvenc, /p3|preset/)
+  assert.equal(enc.videoArgs('h264_nvenc', 'final')[3], 'slow', 'legacy NVENC args used after a compat probe')
+  await enc.detect(fake({ works: ['h264_nvenc'] }).run, 'win32')
+  assert.equal(enc.videoArgs('h264_nvenc', 'final')[3], 'p6', 'a clean detect resets legacy mode')
+}
+// Every failure is explained, not swallowed.
+{
+  const run = async (args) => {
+    if (args.includes('-encoders')) return { stdout: LIST, stderr: '' }
+    throw Object.assign(new Error('exit 1'), { stderr: '[h264_nvenc] Cannot load nvcuda.dll\nError while opening encoder' })
+  }
+  const r = await enc.detect(run, 'win32')
+  assert.equal(r.name, 'libx264')
+  assert.match(r.reason, /Cannot load nvcuda\.dll/)
+  assert.ok(Object.keys(r.errors).length === 3)
+}
+// Probe frames are large enough for hardware minimums.
+assert.ok(enc.probeArgs('h264_nvenc').some((a) => /s=640x360/.test(a)))
 // Nothing works → libx264, never a throw.
 {
   const r = await enc.detect(fake().run, 'win32')

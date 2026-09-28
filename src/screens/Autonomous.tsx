@@ -1,4 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ThinkingStates } from '../components/loaders/ThinkingStates'
+import { MatrixLoader } from '../components/loaders/MatrixLoader'
+import { ProductionPlanner } from './production/ProductionPlanner'
+import { rundownToDoc } from '../lib/production/fromRundown'
+import { studioOf } from '../lib/studio/doc'
+import { uid } from '../lib/utils'
+import type { AutomationJob } from '../types/project'
 import { dedupeMessages, humanError } from '../lib/humanError'
 import { Mic, MicOff, Volume2 } from 'lucide-react'
 import { Card } from '../components/Card'
@@ -31,6 +38,17 @@ export function Autonomous() {
   const start = useProjectStore(s => s.startAutomationJob)
   const cancel = useProjectStore(s => s.cancelAutomationJob)
   const resume = useProjectStore(s => s.resumeAutomationJob)
+  function openEditable(job: AutomationJob) {
+    const st = useProjectStore.getState()
+    const pid = job.projectId && st.projects.some((p) => p.id === job.projectId) ? job.projectId : st.activeProjectId
+    const project = st.projects.find((p) => p.id === pid)
+    if (!project || !job.rundown) { st.pushToast('error', 'Open the project this run belongs to first.'); return }
+    const r = rundownToDoc(studioOf(project), job.rundown, () => uid())
+    st.setActiveProject(project.id)
+    st.patchStudio(project.id, { clips: r.doc.clips, trackCount: r.doc.trackCount }, 'Auto run → editable timeline')
+    st.setView('studio')
+    st.pushToast('success', `Added ${r.clipIds.length} editable scene clip(s) with keyframed motion${r.placeholders ? `, ${r.placeholders} need copy` : ''}. Undo reverts it.`)
+  }
   const approve = useProjectStore(s => s.approveAutomationStep)
   const reject = useProjectStore(s => s.rejectAutomationStep)
   const pushToast = useProjectStore(s => s.pushToast)
@@ -180,6 +198,8 @@ export function Autonomous() {
           <p className="mt-2 text-sm text-muted">Cupric AI runs the creative pipeline while keeping review gates visible.</p>
         </div>
 
+        <ProductionPlanner />
+
         <Card className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <label className="text-sm font-medium">Project goal / brief</label>
@@ -199,7 +219,7 @@ export function Autonomous() {
           </div>
           <div className="mt-2 flex items-center gap-2 text-xs text-muted" aria-live="polite">
             <span className="flex h-3 items-end gap-px" aria-label={`Microphone level ${Math.round(micLevel * 100)} percent`}>{Array.from({ length: 12 }, (_, i) => <span key={i} className={i / 12 < micLevel ? 'w-1 rounded-t bg-accent' : 'w-1 rounded-t bg-line'} style={{ height: `${4 + (i % 4) * 2}px` }} />)}</span>
-            {transcribing ? <span className="text-accent-text">Transcribing offline…</span> : heard || (listening ? 'Listening…' : 'Mic idle — type the brief instead if voice is unavailable.')}
+            {transcribing ? <span className="inline-flex items-center gap-2 text-accent-text"><MatrixLoader variant="scan" tone="lime" size="inline" label="Transcribing offline" /><ThinkingStates states={['Transcribing offline…']} baseColor="var(--color-accent-text)" /></span> : heard || (listening ? 'Listening…' : 'Mic idle — type the brief instead if voice is unavailable.')}
           </div>
           <textarea
             value={brief}
@@ -253,7 +273,7 @@ export function Autonomous() {
             <div className="mt-1 text-muted">Deterministic frames · local asset fallback · preview/export parity</div>
           </div>
           <div className="mt-5 flex justify-end">
-            <Button onClick={() => startJob(brief)} disabled={!brief.trim()}>
+            <Button onClick={() => startJob(brief)} disabled={!brief.trim()} title={(!brief.trim()) ? 'Describe the video first' : undefined}>
               Start autonomous job
             </Button>
           </div>
@@ -281,8 +301,17 @@ export function Autonomous() {
                 {job.status === 'running' && <Button variant="outline" onClick={() => cancel(job.id)}>Cancel</Button>}
                 {(job.status === 'cancelled' || job.status === 'error') && <Button onClick={() => resume(job.id)}>Resume</Button>}
                 {job.outputPath && <Button variant="outline" onClick={() => openOutput(job.outputPath)}>Reveal MP4</Button>}
+                {job.rundown?.scenes?.length ? <Button variant="outline" onClick={() => openEditable(job)} title="Rebuild this run's scenes as editable Studio clips with Cupric AI keyframe motion (one undo step)">Edit in Studio</Button> : null}
               </div>
             </div>
+
+            {job.status === 'running' && (
+              <div className="mt-3 flex items-center gap-2 text-sm" data-testid="autonomous-status">
+                <MatrixLoader variant="orbit" tone="lime" label="Autonomous job running" />
+                {/* Only real steps: the running step, then its own message if it has one. */}
+                <ThinkingStates states={[currentStep?.label ?? job.steps.find((s) => s.status === 'running')?.label ?? 'Working', ...(job.steps.find((s) => s.status === 'running')?.message ? [String(job.steps.find((s) => s.status === 'running')?.message)] : [])]} holdMs={2600} />
+              </div>
+            )}
 
             {job.status === 'waiting-for-user' && currentStep && (
               <div className="mt-4 rounded-xl border border-accent/30 bg-accent/10 p-3">

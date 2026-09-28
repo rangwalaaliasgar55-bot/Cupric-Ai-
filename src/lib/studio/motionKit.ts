@@ -2,7 +2,8 @@
  * Motion kit — the agent/UI entry points for shapes and cursors.
  * Pure doc → doc; callers commit one labelled undo step.
  */
-import type { StudioClip, StudioCursorClip, StudioDoc, StudioShapeAnim, StudioShapeClip } from '../../types/project'
+import type { StudioClip, StudioCursorClip, StudioDoc, StudioLoaderClip, StudioShapeAnim, StudioShapeClip } from '../../types/project'
+import { makeLoaderClip } from './loaders'
 import { shapeById } from './shapes'
 import { cursorForTarget, cursorNeeded, type CursorVerdict } from './cursor'
 import { findComponent } from './components'
@@ -61,4 +62,13 @@ export function addCursorTo(doc: StudioDoc, targetId: string, opts: { force?: bo
   if (opts.style) cur.style = opts.style
   const clips = doc.clips.map((c) => (c.id === target.id && c.kind === 'overlay' && c.component && !c.component.interact ? { ...c, component: { ...c.component, interact: true, status: c.component.status === 'ready' ? 'pending' as const : c.component.status } } : c))
   return { doc: { ...doc, clips: [...clips, cur], trackCount: Math.max(doc.trackCount, cur.track + 1) }, changed: true, clipId: cur.id, verdict }
+}
+
+/** Add a Transitions.dev loader (thinking states / matrix dots) on a new top track. */
+export function addLoader(doc: StudioDoc, presetId: string, at: number, opts: Partial<StudioLoaderClip> = {}): KitResult {
+  const clip = makeLoaderClip(presetId, at, uid(), opts)
+  if (!clip) return { doc, changed: false, reason: `There is no loader preset called “${presetId}”.` }
+  const track = opts.track ?? Math.max(0, ...doc.clips.map((c) => c.track)) + 1
+  clip.track = track
+  return { doc: { ...doc, clips: [...doc.clips, clip], trackCount: Math.max(doc.trackCount, track + 1) }, changed: true, clipId: clip.id }
 }

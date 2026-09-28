@@ -66,6 +66,26 @@ export default defineConfig({
   // One source of truth for the version shown in the sidebar.
   define: { __APP_VERSION__: JSON.stringify(appVersion) },
   plugins: [react(), tailwindcss(), serveResources()],
+  build: {
+    // heic2any and rapier are already dynamic imports (loaded only on HEIC
+    // import / physics use); they are big because they embed WASM, so the
+    // warning threshold is set just above them rather than splitting further.
+    chunkSizeWarningLimit: 2200,
+    rollupOptions: {
+      output: {
+        // Split stable vendors out of the entry chunk so it stays cacheable
+        // and smaller; app code changes no longer invalidate them.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler|zustand)[\\/]/.test(id)) return 'vendor-react'
+          if (/[\\/]node_modules[\\/]three[\\/]/.test(id)) return 'vendor-three'
+          if (/[\\/]node_modules[\\/](motion|framer-motion|motion-dom|motion-utils)[\\/]/.test(id)) return 'vendor-motion'
+          if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return 'vendor-icons'
+          return undefined
+        },
+      },
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

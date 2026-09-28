@@ -400,17 +400,17 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
                 <p className="text-xs font-medium text-text">Beat sync</p>
                 <p className="text-xs text-muted">{music?.beats ? `${music.name}: ${music.beats.bpm} BPM, ${music.beats.times.length} beats (${beats.length} on the timeline).` : music ? `Analyse “${music.name}” to find its beats.` : 'Add a music clip first.'}</p>
                 <div className="mt-1.5 flex gap-1.5">
-                  <Button size="sm" variant="outline" disabled={!music || !!busy} onClick={() => music && run('beats', async () => {
+                  <Button size="sm" variant="outline" disabled={!music || !!busy} title={(!music || !!busy) ? 'Add a music clip first — or wait' : undefined} onClick={() => music && run('beats', async () => {
                     const r = await analyseBeats(music)
                     onCommit({ ...doc, clips: doc.clips.map((c) => (c.id === music.id ? { ...c, beats: r } as StudioAudioClip : c)) }, 'Analyse beats')
                     setMsg(`Found ${r.times.length} beats at ${r.bpm} BPM.`)
                   })}>{busy === 'beats' ? 'Analysing…' : 'Analyse beats'}</Button>
-                  <Button size="sm" variant="outline" disabled={!beats.length} onClick={() => {
+                  <Button size="sm" variant="outline" disabled={!beats.length} title={(!beats.length) ? 'Detect beats first' : undefined} onClick={() => {
                     const r = snapCutsToBeats(doc)
                     if (!r.moved) return setMsg(r.skipped[0] ?? 'Every main-track cut is already on a beat (or more than 0.3 s from one).')
                     propose(r.doc, `Snap ${r.moved} cuts to the beat`, r.skipped)
                   }}>Snap cuts to beats</Button>
-                  <Button size="sm" variant="outline" disabled={!beats.length} onClick={() => {
+                  <Button size="sm" variant="outline" disabled={!beats.length} title={(!beats.length) ? 'Detect beats first' : undefined} onClick={() => {
                     const markers = beats.map((at, i) => ({ id: `beat-${i}`, at: Math.round(at * 1000) / 1000, label: `Beat ${i + 1}`, color: 'info' as const }))
                     propose({ ...doc, markers: [...(doc.markers ?? []).filter((m) => !m.id.startsWith('beat-')), ...markers] }, 'Beat markers')
                   }}>Beats → markers</Button>
@@ -419,7 +419,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
               <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Tighten speech</p>
                 <p className="text-xs text-muted">{sel && (sel.kind === 'video' || sel.kind === 'audio') ? (sel.words?.length ? `Removes “um/uh” and pauses over 0.6 s from “${sel.name}”, using its ${sel.words.length} word timings.` : 'Run Auto-captions on this clip first — tightening needs its word timings.') : 'Select a transcribed video or audio clip.'}</p>
-                <Button size="sm" variant="outline" className="mt-1.5" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length} onClick={() => {
+                <Button size="sm" variant="outline" className="mt-1.5" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length) ? 'Select a video or audio clip with a transcript' : undefined} onClick={() => {
                   if (!sel) return
                   const r = tightenClip(doc, sel.id)
                   if (!r.cuts) return setMsg(r.reason ?? 'Nothing to tighten.')
@@ -429,7 +429,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
               <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Smart reframe</p>
                 <p className="text-xs text-muted">{sel?.kind === 'video' ? `Follows the subject (faces, then motion) so landscape footage works in ${doc.aspect}. A heuristic tracker — check the preview.` : 'Select a landscape video clip in a portrait or square edit.'}</p>
-                <Button size="sm" variant="outline" className="mt-1.5" disabled={sel?.kind !== 'video' || !!busy} onClick={() => sel?.kind === 'video' && run('reframe', async () => {
+                <Button size="sm" variant="outline" className="mt-1.5" disabled={sel?.kind !== 'video' || !!busy} title={(sel?.kind !== 'video' || !!busy) ? 'Select a video clip — or wait' : undefined} onClick={() => sel?.kind === 'video' && run('reframe', async () => {
                   const clip = sel as StudioMediaClip
                   const a = await analyseSubject(clip, (p) => setMsg(`Analysing frames… ${p}%`))
                   const r = reframePatch(clip, a.samples, aspectRatio(doc.aspect), a.srcW / Math.max(1, a.srcH))
@@ -516,7 +516,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
           return (
             <>
               <p className="text-xs text-muted">{src ? `Transcribes the selected ${src.kind} clip offline and times each caption to the words.` : 'Select a video or audio clip on the timeline first.'}</p>
-              <Button size="sm" variant="outline" disabled={!src || transcribing} onClick={async () => {
+              <Button size="sm" variant="outline" disabled={!src || transcribing} title={(!src || transcribing) ? 'Select media to transcribe — or wait' : undefined} onClick={async () => {
                 if (!src) return
                 setTranscribing(true)
                 setMsg(null)
@@ -579,7 +579,7 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
 
       <Section title="Import from link (licence checked)">
         <input className={inputCx} placeholder="https://…" value={link} onChange={(e) => { setLink(e.target.value); setVerdict(null) }} />
-        <Button size="sm" variant="outline" onClick={checkLink} disabled={!link.trim()}>Check licence</Button>
+        <Button size="sm" variant="outline" onClick={checkLink} disabled={!link.trim()} title={(!link.trim()) ? 'Paste a link first' : undefined}>Check licence</Button>
         {verdict && (
           <div className="space-y-1.5 rounded-md border border-line p-2 text-xs">
             <p className={verdict.status === 'blocked' ? 'font-semibold text-danger' : verdict.status === 'allowed' ? 'font-semibold text-accent' : 'font-semibold text-text'}>

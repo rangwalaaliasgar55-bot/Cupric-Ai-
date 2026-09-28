@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import { useReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/cn";
+import { useFrameClock } from "@/lib/progress";
 
 export type SelectOption = { value: string; label: string; detail?: string };
 
@@ -318,11 +319,13 @@ function Panel({
   children: React.ReactNode;
 }) {
   // A closing list stops taking input at once, so it never eats the next click.
+  // Captured: loops run on the driving clock in fixed steps, randomness is seeded.
+  const frameClock = useFrameClock(1122);
   const isPresent = useIsPresent();
   const panelRef = useRef<HTMLDivElement>(null);
   const frame = useRef(0);
 
-  useEffect(() => () => cancelAnimationFrame(frame.current), []);
+  useEffect(() => () => frameClock.caf(frame.current), []);
 
   // Edge fades and scroll buttons follow the scroll position through the
   // DOM directly, so scrolling never re-renders the list.
@@ -340,19 +343,19 @@ function Panel({
 
   const startScroll = (direction: 1 | -1, e: React.PointerEvent) => {
     if (e.pointerType === "touch") return;
-    cancelAnimationFrame(frame.current);
-    let last = performance.now();
+    frameClock.caf(frame.current);
+    let last = frameClock.now();
     const tick = (now: number) => {
       const el = scrollerRef.current;
       if (!el) return;
       el.scrollTop += (direction * SCROLL_SPEED * (now - last)) / 1000;
       last = now;
-      frame.current = requestAnimationFrame(tick);
+      frame.current = frameClock.raf(tick);
     };
-    frame.current = requestAnimationFrame(tick);
+    frame.current = frameClock.raf(tick);
   };
 
-  const stopScroll = () => cancelAnimationFrame(frame.current);
+  const stopScroll = () => frameClock.caf(frame.current);
 
   const hidden = reduceMotion
     ? { opacity: 0, transform: "scale(1)" }

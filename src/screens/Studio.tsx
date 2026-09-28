@@ -1,4 +1,8 @@
+import { agentSlug, animationIntent, describeRejections, forbiddenRequest } from '../lib/studio/agentCode'
+import { writeAgentAnimation } from '../lib/studio/agentWriter'
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react'
+import { ThinkingStates } from '../components/loaders/ThinkingStates'
+import { MatrixLoader } from '../components/loaders/MatrixLoader'
 import { StudioProPanel } from './studio/StudioProPanel'
 import { ClipContextMenu } from './studio/ClipContextMenu'
 import { applyClipAction, getClipboard, setClipboard, type ClipActionId } from '../lib/studio/clipActions'
@@ -11,6 +15,9 @@ import { addMarker, jumpMarker, rippleDelete, rollEdit, slideClip, slipClip, tri
 import { takeStudioFocus, visibleMomentOf } from '../lib/studio/focus'
 import {
   Boxes,
+  ChevronLeft,
+  ChevronRight,
+  Wand2,
   Component,
   Clapperboard,
   Download,
@@ -32,21 +39,29 @@ import {
   Shapes,
   SlidersHorizontal,
   MousePointerClick,
+  Loader as LoaderIcon,
   Square,
   Type as TypeIcon,
   Volume2,
   VolumeX,
   ZoomIn,
   ZoomOut,
+  LayoutTemplate,
 } from 'lucide-react'
 import { ShapePicker } from './studio/ShapePicker'
+import { LoaderPicker } from './studio/LoaderPicker'
+import { HomeVideoPanel } from './studio/HomeVideoPanel'
+import { preloadLottie } from '../lib/studio/lottie'
 import { fontChoicesForAgent } from '../lib/studio/fontStyles'
 import { userFontFamilies, userFontsReady } from '../lib/studio/userFonts'
-import { addCursorTo, addShape as addShapeKit } from '../lib/studio/motionKit'
+import { addCursorTo, addLoader, addShape as addShapeKit } from '../lib/studio/motionKit'
 import { Button } from '../components/Button'
 import { IconButton } from '../components/IconButton'
 import { NoProject } from '../components/NoProject'
 import { ProgressBar } from '../components/ProgressBar'
+import { EditToolsBar } from './studio/EditToolsBar'
+import { TextListPanel } from './studio/TextListPanel'
+import { moveWithGroup, toggleInSelection } from '../lib/studio/editTools'
 import { StudioInspector } from './studio/StudioInspector'
 import { StudioPreview } from './studio/StudioPreview'
 import { StudioNotices } from './studio/StudioNotices'
@@ -99,6 +114,8 @@ import {
   validateStudioEditPlan,
   type StudioEditPlan,
 } from '../lib/studio/editOps'
+import { blockRow3dError, loadBlockRow3d, needsBlockRow3d } from '../lib/studio/blockRow3d'
+import { backgroundPolishEnabled, backgroundPolishOffer, docSignature, POLISH_IDLE_MS, setBackgroundPolishEnabled, type PolishOffer } from '../lib/studio/backgroundPolish'
 
 const ZOOM_STEPS = [12, 20, 32, 48, 72, 110, 160]
 
@@ -123,7 +140,12 @@ export function Studio() {
   const [playing, setPlaying] = useState(false)
   const [muted, setMuted] = useState(false)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [multiIds, setMultiIds] = useState<Set<string>>(() => new Set())
   const [shapeOpen, setShapeOpen] = useState(false)
+  const [loaderOpen, setLoaderOpen] = useState(false)
+  const [homeOpen, setHomeOpen] = useState(false)
+  // Stickers render through lottie-web, which is code-split out of first paint.
+  useEffect(() => { void preloadLottie() }, [])
   useEffect(() => { void userFontsReady() }, [])
   const [zoom, setZoom] = useState(3)
   const [importing, setImporting] = useState(false)
@@ -166,6 +188,8 @@ export function Studio() {
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [clipMenuAt, setClipMenuAt] = useState<{ clipId: string; x: number; y: number } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const stripRef = useRef<HTMLDivElement>(null)
+  const setAskOpen = useProjectStore((st) => st.setAskOpen)
   const audioRef = useRef<HTMLInputElement>(null)
   const [dropActive, setDropActive] = useState(false)
   const cancelRef = useRef<{ cancelled: boolean } | null>(null)
@@ -541,6 +565,33 @@ export function Studio() {
     }
   }, [pushToast])
 
+  // V-2: background polish. After the timeline sits still, plan (never apply)
+  // a polish pass; the user previews it in the normal agent diff and accepts it
+  // as one undo step. A dismissed or accepted timeline is never re-offered.
+  const [polishOn, setPolishOn] = useState(() => backgroundPolishEnabled())
+  const [polishOffer, setPolishOffer] = useState<PolishOffer | null>(null)
+  const polishSeen = useRef<Set<string>>(new Set())
+  const polishSig = project ? docSignature(doc) : ''
+  useEffect(() => {
+    setPolishOffer((cur) => (cur && cur.signature !== polishSig ? null : cur))
+    if (!polishOn || !project || agentPlan || agentPlanning || polishSeen.current.has(polishSig)) return
+    let idle = 0
+    const timer = window.setTimeout(() => {
+      const run = () => {
+        const offer = backgroundPolishOffer(doc)
+        polishSeen.current.add(polishSig)
+        if (offer && offer.signature === polishSig) setPolishOffer(offer)
+      }
+      if ('requestIdleCallback' in window) idle = window.requestIdleCallback(run, { timeout: 2000 })
+      else run()
+    }, POLISH_IDLE_MS)
+    return () => {
+      window.clearTimeout(timer)
+      if (idle && 'cancelIdleCallback' in window) window.cancelIdleCallback(idle)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [polishSig, polishOn, agentPlan, agentPlanning])
+
   if (!project || !pid) return <NoProject />
 
   const projectId: string = pid
@@ -558,6 +609,21 @@ export function Studio() {
       setAgentPhase(phases[phaseIndex])
     }, 3500)
     try {
+      // JOB 4: explicit forbidden techniques are refused up front, quoting the rule.
+      const forbidden = forbiddenRequest(instruction)
+      if (forbidden) {
+        pushToast('info', describeRejections([forbidden]))
+        return
+      }
+      const intent = animationIntent(instruction)
+      if (intent) {
+        setAgentPhase('Writing and validating a new animation')
+        const written = await writeAgentAnimation(instruction, intent.durationSec)
+        if (!written.ok) { pushToast('info', written.message); return }
+        const draft = { summary: `New ${written.spec.name} (${written.spec.durationSec}s), written by the agent and validated${written.rounds ? ` after ${written.rounds} repair${written.rounds === 1 ? '' : 's'}` : ''}.`, ops: [{ type: 'addAnimation', ...written.spec, startSec: Math.round(time * 100) / 100 }], source: 'live' as const }
+        setAgentPlan(validateStudioEditPlan(draft, doc))
+        return
+      }
       const ipc = getIpc()
       let raw: unknown
       if (ipc) {
@@ -646,8 +712,18 @@ export function Studio() {
     try {
       // Validate again against the current timeline in case it changed while the plan was visible.
       const currentPlan = validateStudioEditPlan(agentPlan, doc)
-      const next = applyStudioEditPlan(doc, currentPlan.ops)
+      let next = applyStudioEditPlan(doc, currentPlan.ops)
+      // People who ask their OS for reduced motion get the calm (opacity-only) take by default; one click in the inspector switches it.
+      if (currentPlan.ops.some((op) => op.type === 'addAnimation') && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+        next = { ...next, clips: next.clips.map((c) => (c.kind === 'overlay' && c.component?.generated && !doc.clips.some((d) => d.id === c.id) ? { ...c, component: { ...c.component, generated: { ...c.component.generated, calm: true } } } : c)) }
+      }
       patchStudio(projectId, next)
+      // Accepted agent-written animations are also saved as files (best effort, silent).
+      for (const op of currentPlan.ops) {
+        if (op.type === 'addAnimation') void getIpc()?.invoke('agent:saveGenerated', { slug: agentSlug(op.name), name: op.name, code: op.code }).catch(() => undefined)
+      }
+      polishSeen.current.add(docSignature(next))
+      setPolishOffer(null)
       setTime(0)
       if (docDuration(next) > 0) window.setTimeout(() => setPlaying(true), 60)
       pushToast('success', `Applied ${currentPlan.ops.length} agent edit${currentPlan.ops.length === 1 ? '' : 's'} as one undo step. Playing the polished result from the start.`)
@@ -939,6 +1015,14 @@ export function Studio() {
     if (r.clipId) setSelectedId(r.clipId)
   }
 
+  function addLoaderAt(presetId: string) {
+    const r = addLoader(doc, presetId, Math.round(time * 100) / 100)
+    setLoaderOpen(false)
+    if (!r.changed) { pushToast('error', r.reason ?? 'Loader not added'); return }
+    patchStudio(projectId, { clips: r.doc.clips, trackCount: r.doc.trackCount }, 'Add loader')
+    if (r.clipId) setSelectedId(r.clipId)
+  }
+
   /** Cursor click on the selected clip — refuses with the reason when a pointer would be noise. */
   function addCursorClick(force = false) {
     if (!selectedId) { pushToast('info', 'Select the button, toggle or component the cursor should click.'); return }
@@ -1074,7 +1158,7 @@ export function Studio() {
 
   /** A UI component at the playhead; the recorder captures its real animation. */
   function addComponentAt(slug: string, opts: { recordSec: number; interact: boolean }) {
-    const added = withComponent(doc, slug, { startSec: time, recordSec: opts.recordSec, durationSec: Math.max(opts.recordSec, 3), interact: opts.interact })
+    const added = withComponent(doc, slug, { startSec: time, recordSec: opts.recordSec, durationSec: opts.recordSec, interact: opts.interact })
     const withMotion = { ...added.clip, ...motionPatch(added.clip, { entrance: 'rise-in', exit: 'fade-out', intensity: 0.8 }) } as StudioClip
     patchStudio(projectId, { trackCount: added.doc.trackCount, clips: added.doc.clips.map((c) => (c.id === withMotion.id ? withMotion : c)) })
     setSelectedId(withMotion.id)
@@ -1153,6 +1237,10 @@ export function Studio() {
       pushToast('info', 'A component is still recording its animation — export as soon as it lands on the timeline.')
       return 'failed'
     }
+    // Real-3D block rows: export waits for Three.js so it draws exactly what the preview shows.
+    if (needsBlockRow3d(target.clips as Array<{ kind: string; kit?: string; real3d?: boolean }>) && !(await loadBlockRow3d())) {
+      pushToast('info', `Real 3D is unavailable: ${blockRow3dError()}. Exporting the 2.5D block row instead.`)
+    }
     setPlaying(false)
     setExportPct(0)
     const signal = { cancelled: false }
@@ -1229,9 +1317,57 @@ export function Studio() {
       {/* Toolbar */}
       {/* One row at every width: the add-strip scrolls sideways instead of
           wrapping, so the preview never loses a whole row of height. */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-line bg-panel/50 px-6 py-2.5 shadow-[var(--shadow-sheen)] backdrop-blur-xl">
+      <div className="flex shrink-0 flex-wrap items-center gap-x-2 gap-y-2 border-b border-line bg-panel/50 px-6 py-2.5 shadow-[var(--shadow-sheen)] backdrop-blur-xl">
         <h1 className="mr-2 shrink-0 text-md font-semibold">Studio</h1>
-        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5 pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-28px),transparent)] [scrollbar-width:none] [&>button]:shrink-0"
+        {/* Row 1: panels are always visible (they used to hide past the fade). */}
+        <div className="flex shrink-0 items-center gap-1.5" role="group" aria-label="Studio panels">
+          <Button
+          size="sm"
+          variant={showResources ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowResources((shown) => !shown)
+            setShowComponents(false)
+            setShowPro(false)
+          }}
+          disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}
+        >
+            <Boxes size={13} /> Resources
+          </Button>
+          <Button
+          size="sm"
+          variant={showComponents ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowComponents((shown) => !shown)
+            setShowResources(false)
+            setShowPro(false)
+          }}
+          disabled={exporting}
+          title="Every UI component, recorded with its real animation"
+        >
+            <Component size={13} /> Components
+          </Button>
+          <Button
+          size="sm"
+          variant={showPro ? 'primary' : 'outline'}
+          onClick={() => {
+            setShowPro((shown) => !shown)
+            setShowResources(false)
+            setShowComponents(false)
+          }}
+          disabled={exporting}
+          title="Suggestions, build-from-assets, layouts, captions, markers, scopes, import from link"
+        >
+            <Sparkles size={13} /> Pro tools
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => setAskOpen(true)} title="Ask Cupric AI to edit this timeline: trims, captions, keyframes, transitions">
+            <Wand2 size={13} /> Cupric AI
+          </Button>
+        </div>
+        <div className="flex-1" />
+        {/* Row 2 (order-last, full width): the add-strip, scrollable with visible arrows. */}
+        <div className="order-last flex w-full min-w-0 basis-full items-center gap-1">
+        <IconButton label="Scroll tools left" onClick={() => stripRef.current?.scrollBy({ left: -240, behavior: 'smooth' })}><ChevronLeft size={15} /></IconButton>
+        <div ref={stripRef} className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto py-0.5 [scrollbar-width:thin] [&>*]:shrink-0"
           onWheel={(e) => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) e.currentTarget.scrollLeft += e.deltaY }}
         >
 
@@ -1246,7 +1382,7 @@ export function Studio() {
           className="hidden"
           onChange={(e) => void onFiles(e.target.files)}
         />
-        <Button size="sm" variant="outline" onClick={() => audioRef.current?.click()} disabled={importing || exporting}>
+        <Button size="sm" variant="outline" onClick={() => audioRef.current?.click()} disabled={importing || exporting} title={(importing || exporting) ? 'Wait for the import or export to finish' : undefined}>
           <Music size={13} /> Music
         </Button>
         <input
@@ -1257,26 +1393,45 @@ export function Studio() {
           className="hidden"
           onChange={(e) => void onFiles(e.target.files)}
         />
-        <Button size="sm" variant="outline" onClick={addText} disabled={exporting}>
+        <Button size="sm" variant="outline" onClick={addText} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}>
           <TypeIcon size={13} /> Text
         </Button>
-        <Button size="sm" variant="outline" onClick={addBackgroundClip} disabled={exporting}>
+        <Button size="sm" variant="outline" onClick={addBackgroundClip} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}>
           <ImageIcon size={13} /> Background
         </Button>
         <Button size="sm" variant="outline" onClick={addAdjustmentLayer} disabled={exporting} title="Non-destructive colour grade for clips below this layer">
           <SlidersHorizontal size={13} /> Adjustment
         </Button>
-        <Button size="sm" variant="outline" onClick={() => addGlassClip('panel')} disabled={exporting}>
+        <Button size="sm" variant="outline" onClick={() => addGlassClip('panel')} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}>
           <Sparkles size={13} /> Glass
         </Button>
-        <Button size="sm" variant="outline" onClick={addSticker} disabled={exporting}>
+        <Button size="sm" variant="outline" onClick={addSticker} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined}>
           <Sticker size={13} /> Sticker
         </Button>
         <div className="relative">
-          <Button size="sm" variant="outline" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} aria-expanded={shapeOpen}>
+          <Button size="sm" variant="outline" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} title={(exporting) ? 'Wait for the export to finish' : undefined} aria-expanded={shapeOpen}>
             <Shapes size={13} /> Shape
           </Button>
           {shapeOpen && <ShapePicker onPick={addShapeAt} onClose={() => setShapeOpen(false)} />}
+        </div>
+        <div className="relative">
+          <Button size="sm" variant="outline" onClick={() => setLoaderOpen((v) => !v)} disabled={exporting} aria-expanded={loaderOpen} title="Thinking states and matrix dot loaders (Transitions.dev), editable and export-exact">
+            <LoaderIcon size={13} /> Loader
+          </Button>
+          {loaderOpen && <LoaderPicker onPick={addLoaderAt} onClose={() => setLoaderOpen(false)} />}
+        </div>
+        <div className="relative">
+          <Button size="sm" variant="outline" onClick={() => setHomeOpen((v) => !v)} disabled={exporting} aria-expanded={homeOpen} title="Six Home_X video styles built from native clips — offline and export-exact">
+            <LayoutTemplate size={13} /> Styles
+          </Button>
+          {homeOpen && (
+            <HomeVideoPanel
+              doc={doc}
+              project={project ?? null}
+              onApply={(next, label) => patchStudio(projectId, { clips: next.clips, trackCount: next.trackCount }, label)}
+              onClose={() => setHomeOpen(false)}
+            />
+          )}
         </div>
         <Button size="sm" variant="outline" onClick={(e) => addCursorClick(e.shiftKey)} disabled={exporting} title="Animated cursor that clicks the selected clip — only added where an interaction needs showing">
           <MousePointerClick size={13} /> Cursor
@@ -1290,44 +1445,6 @@ export function Studio() {
         >
           <Scissors size={13} /> Split
         </Button>
-        <Button
-          size="sm"
-          variant={showResources ? 'primary' : 'outline'}
-          onClick={() => {
-            setShowResources((shown) => !shown)
-            setShowComponents(false)
-            setShowPro(false)
-          }}
-          disabled={exporting}
-        >
-          <Boxes size={13} /> Resources
-        </Button>
-        <Button
-          size="sm"
-          variant={showComponents ? 'primary' : 'outline'}
-          onClick={() => {
-            setShowComponents((shown) => !shown)
-            setShowResources(false)
-            setShowPro(false)
-          }}
-          disabled={exporting}
-          title="Every UI component, recorded with its real animation"
-        >
-          <Component size={13} /> Components
-        </Button>
-        <Button
-          size="sm"
-          variant={showPro ? 'primary' : 'outline'}
-          onClick={() => {
-            setShowPro((shown) => !shown)
-            setShowResources(false)
-            setShowComponents(false)
-          }}
-          disabled={exporting}
-          title="Suggestions, build-from-assets, layouts, captions, markers, scopes, import from link"
-        >
-          <Sparkles size={13} /> Pro tools
-        </Button>
 
         <Button
           size="sm"
@@ -1339,6 +1456,8 @@ export function Studio() {
           {listening ? <Mic size={13} /> : <MicOff size={13} />} {listening ? 'Listening' : voiceSupported ? 'Voice' : 'Voice setup'}
         </Button>
 
+        </div>
+        <IconButton label="Scroll tools right" onClick={() => stripRef.current?.scrollBy({ left: 240, behavior: 'smooth' })}><ChevronRight size={15} /></IconButton>
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5">
@@ -1362,7 +1481,7 @@ export function Studio() {
             {issues.length === 0 ? <CheckCircle2 size={13} /> : <AlertTriangle size={13} />}
             {issues.length === 0 ? 'Checks' : `${issues.length} check${issues.length === 1 ? '' : 's'}`}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => void runExport(false)} disabled={exporting || duration <= 0}>
+          <Button size="sm" variant="outline" onClick={() => void runExport(false)} disabled={exporting || duration <= 0} title={(exporting || duration <= 0) ? 'Add clips first — or wait for the export' : undefined}>
             {exporting ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
             {exporting ? 'Recording…' : 'Export WebM'}
           </Button>
@@ -1400,6 +1519,8 @@ export function Studio() {
           )}
         </div>
       </div>
+      <EditToolsBar doc={doc} selectedId={selectedId} multiIds={multiIds} onClearMulti={() => setMultiIds(new Set())} onCommit={(next, label) => patchStudio(projectId, { clips: next.clips, trackCount: next.trackCount, markers: next.markers }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
+      <TextListPanel doc={doc} brandKit={project?.brandKit} selectedId={selectedId} onSelect={(id, at) => { setSelectedId(id); setMultiIds(new Set()); setTime(at) }} onCommit={(next, label) => patchStudio(projectId, { clips: resolveOverlaps(next).clips }, label)} onNote={(kind, msg) => pushToast(kind, msg)} />
 
       <form
         className="flex shrink-0 items-center gap-2 border-b border-line bg-panel-alt/50 px-6 py-2"
@@ -1436,16 +1557,31 @@ export function Studio() {
         >
           Auto effects
         </Button>
-        <Button size="sm" type="submit" disabled={!agentInstruction.trim() || agentPlanning || exporting}>
+        <Button size="sm" type="submit" disabled={!agentInstruction.trim() || agentPlanning || exporting} title={(!agentInstruction.trim() || agentPlanning || exporting) ? 'Type an instruction first — or wait for the current plan' : undefined}>
           {agentPlanning ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
           {agentPlanning ? 'Planning…' : 'Preview edit'}
         </Button>
       </form>
       {agentPlanning && (
         <div className="flex shrink-0 items-center gap-3 border-b border-line bg-accent/5 px-6 py-2 text-xs text-muted" role="status" aria-live="polite">
-          <Loader2 size={13} className="animate-spin text-accent-text" />
-          <span className="text-text">{agentPhase}</span>
+          <MatrixLoader variant="orbit" tone="lime" label="Planning the edit" />
+          <ThinkingStates states={[agentPhase || 'Planning the edit']} baseColor="var(--color-text)" />
           <span>· Live AI has at most 10 seconds, then Cupric instantly switches to its local editor.</span>
+        </div>
+      )}
+
+      {polishOffer && !agentPlan && (
+        <div role="status" className="flex shrink-0 flex-wrap items-center gap-3 border-b border-line bg-accent/5 px-6 py-2 text-xs">
+          <Sparkles size={13} className="text-accent-text" />
+          <span className="min-w-0 flex-1 text-text">Background polish ready: {polishOffer.plan.ops.length} edit{polishOffer.plan.ops.length === 1 ? '' : 's'} planned locally while you paused. Nothing changes until you accept.</span>
+          <Button size="sm" variant="primary" onClick={() => { setAgentPlan(polishOffer.plan); setPolishOffer(null) }}>Preview</Button>
+          <Button size="sm" variant="ghost" onClick={() => setPolishOffer(null)}>Dismiss</Button>
+          <Button size="sm" variant="ghost" onClick={() => { setBackgroundPolishEnabled(false); setPolishOn(false); setPolishOffer(null) }} title="Stop offering background polish passes (turn back on from the agent bar)">Turn off</Button>
+        </div>
+      )}
+      {!polishOn && (
+        <div className="flex shrink-0 justify-end px-6 py-1">
+          <Button size="sm" variant="ghost" onClick={() => { setBackgroundPolishEnabled(true); setPolishOn(true) }}>Turn background polish on</Button>
         </div>
       )}
 
@@ -1478,7 +1614,7 @@ export function Studio() {
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={!agentRevision.trim() || agentPlanning}
+                    disabled={!agentRevision.trim() || agentPlanning} title={(!agentRevision.trim() || agentPlanning) ? 'Type what to change first — or wait for the current plan' : undefined}
                     onClick={() => void planAgentEdit(`Revise this automatic edit. ${agentRevision.trim()}. Keep every other useful choice and return a complete corrected plan.`)}
                   >
                     Revise
@@ -1572,6 +1708,7 @@ export function Studio() {
 
       {exporting && (
         <div className="flex shrink-0 items-center gap-3 border-b border-line bg-panel px-6 py-2">
+          <MatrixLoader variant="scan" label={`Exporting, ${Math.round(exportPct ?? 0)} percent`} />
           <ProgressBar pct={exportPct ?? 0} className="flex-1" />
           <span className="font-mono text-xs text-muted tabular-nums">{Math.round(exportPct ?? 0)}%</span>
           <span className="text-xs text-muted">
@@ -1800,12 +1937,14 @@ export function Studio() {
               pps={pps}
               duration={duration}
               selectedId={selectedId}
-              onSelect={setSelectedId}
+              onSelect={(id) => { setSelectedId(id); setMultiIds(new Set()) }}
+              multiIds={multiIds}
+              onToggleMulti={(id) => setMultiIds((cur) => toggleInSelection(cur, selectedId, id))}
               onSeek={(t) => {
                 setPlaying(false)
                 seek(t)
               }}
-              onPatchClip={(id, patch) => updateStudioClip(projectId, id, patch)}
+              onPatchClip={(id, patch) => { const grouped = moveWithGroup(doc, id, patch); if (grouped) patchStudio(projectId, { clips: grouped.clips, trackCount: grouped.trackCount }, 'Move group'); else updateStudioClip(projectId, id, patch) }}
               onReorderTrack={(from, to) => reorderStudioTracks(projectId, from, to)}
               onSettleClip={(id) => settleStudioClip(projectId, id)}
               onDropAt={onTimelineDrop}

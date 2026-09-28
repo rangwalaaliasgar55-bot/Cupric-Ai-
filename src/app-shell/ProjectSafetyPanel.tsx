@@ -130,7 +130,7 @@ export function ProjectSafetyPanel() {
                 </div>
                 <button
                   type="button"
-                  disabled={!v.valid}
+                  disabled={!v.valid} title={(!v.valid) ? 'This version is damaged and cannot be restored' : undefined}
                   onClick={() => void restore(v)}
                   className="flex shrink-0 items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-[11px] hover:border-accent/60 hover:text-text disabled:opacity-40"
                   aria-label={`Restore the version from ${when(v.at)}`}

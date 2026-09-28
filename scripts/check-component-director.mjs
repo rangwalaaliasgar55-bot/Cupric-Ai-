@@ -9,7 +9,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const tmp = path.join(root, '.component-director-check.mjs')
 await build({ bundle: true, outfile: tmp, format: 'esm', platform: 'node', logLevel: 'error', jsx: 'automatic', loader: { '.tsx': 'tsx', '.css': 'empty', '.svg': 'dataurl', '.png': 'dataurl', '.jpg': 'dataurl' },
-  stdin: { contents: "export * from './src/lib/studio/componentDirector'; export { applyStudioEditPlan, validateStudioEditPlan } from './src/lib/studio/editOps'; export { suggestEdits } from './src/lib/studio/suggestions'; export { findComponent } from './src/lib/studio/components'", resolveDir: root, loader: 'ts' } })
+  stdin: { contents: "export * from './src/lib/studio/componentDirector'; export { applyStudioEditPlan, validateStudioEditPlan } from './src/lib/studio/editOps'; export { suggestEdits } from './src/lib/studio/suggestions'; export { findComponent, clampRecordSec, preferredRecordSec, rememberRecordSec, DEFAULT_RECORD_SEC, HEAVY_RECORD_SEC } from './src/lib/studio/components'; export { resampleShots, fitShotTimes } from './src/lib/studio/componentRecorder'", resolveDir: root, loader: 'ts' } })
 const m = await import(`${pathToFileURL(tmp).href}?t=${Date.now()}`)
 await rm(tmp, { force: true })
 let n = 0
@@ -60,4 +60,44 @@ const validated = m.validateStudioEditPlan({ summary: 's', ops }, doc)
 ok(validated.ops.length === ops.length, 'the plan passes the agent validator')
 ok(m.suggestEdits(doc).some((s) => s.id === 'smart-components'), 'surfaced as an auto-edit suggestion (preview → accept)')
 ok(m.directComponents({ ...doc, clips: [video] }).length === 0, 'no text → no components')
+
+// One shared record length across every route (panel, inspector, drop, Apply, Lab).
+ok(m.clampRecordSec('1s') === 1 && m.clampRecordSec('0.5') === 0.5 && m.clampRecordSec('999') === 120 && m.clampRecordSec('') === 4, 'clampRecordSec parses "1s", clamps 0.5–120, falls back to 4')
+ok(typeof localStorage === 'undefined' && m.preferredRecordSec() === m.DEFAULT_RECORD_SEC, 'no DOM → preferredRecordSec() falls back to 4')
+m.rememberRecordSec(1) // no DOM → must be a silent-safe no-op, not a throw
+const store = new Map()
+globalThis.localStorage = { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)) }
+m.rememberRecordSec('1s')
+ok(m.preferredRecordSec() === 1, 'a remembered length round-trips')
+m.rememberRecordSec(0.2)
+ok(m.preferredRecordSec() === 0.5, 'remembered lengths are clamped')
+store.set('cupric.component.recordSec', 'junk')
+ok(m.preferredRecordSec() === 4, 'corrupt storage falls back to the default')
+delete globalThis.localStorage
+{
+  const fs = await import('node:fs')
+  for (const f of ['src/lib/studio/resourceDrop.ts', 'src/lib/studio/resourceApply.ts', 'src/screens/Lab.tsx']) {
+    const src = fs.readFileSync(path.join(root, f), 'utf8')
+    ok(!/recordSec:\s*4\b/.test(src) && /preferredRecordSec\(\)/.test(src), `${f} honours the remembered record length (no hardcoded 4)`)
+  }
+}
+// Animation fits the duration: short recordings still move, never a still.
+for (const [dur, fps] of [[0.5, 12], [1, 12], [2, 6], [0.5, 24]]) {
+  const shots = [{ t: 0, url: 'rest' }, { t: dur * 0.35, url: 'pressed' }, { t: dur * 0.7, url: 'settled' }]
+  const frames = m.resampleShots(shots, dur, fps)
+  ok(frames.length === Math.round(dur * fps) && new Set(frames).size >= 2, `${dur}s @ ${fps}fps keeps ≥2 distinct frames`)
+}
+// Slow capture (each shot slower than the whole recording): shots overrun the
+// end, get compressed into the chosen length, and the result still moves.
+{
+  const slow = [{ t: 0, url: 'rest' }, { t: 1.4, url: 'pressed' }, { t: 2.9, url: 'settled' }]
+  m.fitShotTimes(slow, 1)
+  ok(slow.every((s) => s.t <= 1) && slow[2].t > 0.99, 'overrun shot times are fitted into the chosen duration')
+  const frames = m.resampleShots(slow, 1, 12)
+  ok(frames.length === 12 && frames[0] === 'rest' && frames[11] === 'settled' && frames.includes('pressed'), '1 s on a slow machine: rest → pressed → settled, not a still')
+  const fast = [{ t: 0, url: 'a' }, { t: 0.5, url: 'b' }]
+  m.fitShotTimes(fast, 1)
+  ok(fast[1].t === 0.5, 'shots within the duration keep their real times')
+}
+ok(m.HEAVY_RECORD_SEC === 30, 'heavy-recording warning threshold unchanged')
 console.log(`component director check passed — ${n} assertions`)

@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { ThinkingStates } from './loaders/ThinkingStates'
+import { MatrixLoader } from './loaders/MatrixLoader'
 import { Download, ExternalLink, Loader2, Search, ShieldCheck } from 'lucide-react'
 import { Badge } from './Badge'
 import { Button } from './Button'
@@ -106,15 +108,21 @@ export function StockBrowser() {
         <input className="cu-input min-w-[220px] flex-1" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={provider === 'picsum' ? 'Seed or mood-board label' : 'Search stock'} aria-label="Stock search" />
         <select className="cu-input w-28" value={kind} onChange={(event) => setKind(event.target.value as Kind)} disabled={provider === 'openverse' || provider === 'picsum'} aria-label="Stock type"><option value="image">Images</option><option value="video">Video</option></select>
         <select className="cu-input w-32" value={orientation} onChange={(event) => setOrientation(event.target.value)} aria-label="Stock orientation"><option value="all">All shapes</option><option value="horizontal">Horizontal</option><option value="vertical">Vertical</option></select>
-        <Button variant="primary" type="submit" disabled={busy}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />} Search</Button>
+        <Button variant="primary" type="submit" disabled={busy} title={(busy) ? 'Searching…' : undefined}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Search size={13} />} Search</Button>
       </form>
+      {busy && results.length === 0 && (
+        <div className="flex items-center gap-2 rounded-md border border-line bg-panel-alt/40 px-2.5 py-2 text-xs" data-testid="stock-searching">
+          <MatrixLoader variant="twinkle" label="Searching stock" />
+          <ThinkingStates states={[`Searching ${PROVIDERS.find((item) => item.id === provider)?.label ?? 'stock'}${query.trim() ? ` for “${query.trim()}”` : ''}`]} />
+        </div>
+      )}
       {keyRequired && <p className="rounded-md border border-line bg-panel-alt/50 px-2.5 py-2 text-xs text-muted">{provider === 'pixabay' ? 'Pixabay' : 'Pexels'} is locked until you add your own key in Settings → Stock or configure the owner proxy. Keyless Openverse and Picsum are ready now.</p>}
       {message && <p className="rounded-md border border-danger/30 bg-danger/5 px-2.5 py-2 text-xs text-muted" role="status">{message}</p>}
       {observedQuota && <p className="rounded-md border border-line bg-panel-alt/40 px-2.5 py-2 text-[10px] text-muted" role="status">Live provider quota: {observedQuota.remaining ?? 'unknown'} remaining of {observedQuota.limit ?? 'unknown'}{observedQuota.reset ? ` · resets ${observedQuota.reset}` : ''}</p>}
       {results.length > 0 && <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {results.map((item) => <div key={`${item.provider}-${item.id}`} className="overflow-hidden rounded-lg border border-line bg-panel-alt/50">
           <a href={item.pageUrl} target="_blank" rel="noreferrer" title="Open source page"><img src={item.previewUrl} alt={item.title} className="h-24 w-full object-cover" loading="lazy" /></a>
-          <div className="space-y-1.5 p-2"><p className="line-clamp-2 text-[11px] text-text">{item.title}</p><p className="line-clamp-2 text-[10px] text-muted">{item.attribution}</p><Button size="sm" className="w-full" variant="outline" disabled={downloading === item.id || item.placeholderOnly && !project} onClick={() => void download(item)}>{downloading === item.id ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />} {item.placeholderOnly ? 'Add placeholder' : 'Download'}</Button></div>
+          <div className="space-y-1.5 p-2"><p className="line-clamp-2 text-[11px] text-text">{item.title}</p><p className="line-clamp-2 text-[10px] text-muted">{item.attribution}</p><Button size="sm" className="w-full" variant="outline" disabled={downloading === item.id || item.placeholderOnly && !project} title={(downloading === item.id || item.placeholderOnly && !project) ? 'Downloading, or open a project to use this placeholder' : undefined} onClick={() => void download(item)}>{downloading === item.id ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />} {item.placeholderOnly ? 'Add placeholder' : 'Download'}</Button></div>
         </div>)}
       </div>}
       <p className="flex items-center gap-1 text-[10px] text-muted"><ExternalLink size={10} /> Videos are available from Pixabay/Pexels when configured. Openverse results are license-filtered and credited; Picsum is draft-only.</p>
