@@ -1,5 +1,5 @@
 import { useEffect, type ReactElement } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { recoveryInfo } from '../lib/projectHistory'
 import { AskPanel } from './AskPanel'
 import { CommandPalette } from './CommandPalette'
@@ -61,6 +61,7 @@ export function AppLayout() {
   }, [pushToast])
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className="relative flex h-full overflow-hidden text-text">
       {/* The backdrop is a sibling behind the chrome, not a parent background,
           so panels can be translucent over it. */}
@@ -98,5 +99,6 @@ export function AppLayout() {
       <Toasts />
       <GlobalErrorCards />
     </div>
+    </MotionConfig>
   )
 }

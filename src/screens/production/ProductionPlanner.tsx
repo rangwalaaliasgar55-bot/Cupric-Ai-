@@ -20,6 +20,9 @@ import { studioOf } from '../../lib/studio/doc'
 import { LOADER_PRESETS } from '../../lib/studio/loaders'
 import { uid } from '../../lib/utils'
 import { FORMAT_STARTERS, applyStarter } from '../../lib/production/starters'
+import { nextAction } from '../../lib/production/nextAction'
+import { ActivityTimeline } from '../../lab/components/activity-timeline'
+import { AnimatePresence, motion } from 'motion/react'
 import {
   INTAKE_QUESTIONS, buildBrief, buildPlan, detectLanguage, normaliseSession, openQuestions, planToDoc, polishEdit, research, runToApproval, autoFinish, reviewEdit, reviewScore,
   type OpusIndex, type ResourceCandidate,
@@ -144,6 +147,31 @@ export function ProductionPlanner() {
         </div>
         {session.checkpoints.length > 0 && <Badge tone="neutral">Checkpoint: {session.checkpoints[session.checkpoints.length - 1].label}</Badge>}
       </div>
+
+      {(() => {
+        const na = nextAction(session)
+        const run = () => {
+          if (na.id === 'run-all') runAll()
+          else if (na.id === 'research') runResearch()
+          else if (na.id === 'plan') makePlan()
+          else if (na.id === 'finish') finish(false)
+          else if (na.id === 'fix') polish()
+        }
+        return (
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div key={na.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+              className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3" data-testid="agent-next-step">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-accent-text">Cupric AI · next step</p>
+                <p className="text-sm font-medium text-text">{na.title}</p>
+                <p className="text-xs text-muted">{na.why}</p>
+              </div>
+              {na.runnable && <Button variant="primary" size="sm" disabled={!catalogue} onClick={run}>Do it</Button>}
+              {na.id === 'approve' && <Button size="sm" onClick={() => setViewStage('preview')}>Open preview</Button>}
+            </motion.div>
+          </AnimatePresence>
+        )
+      })()}
 
       <nav className="mt-4 flex flex-wrap gap-1" aria-label="Production stages">
         {PRODUCTION_STAGES.map((s, i) => (
@@ -347,6 +375,15 @@ export function ProductionPlanner() {
           </div>
         )}
       </div>
+      {session.checkpoints.length > 0 && (
+        <details className="mt-4 border-t border-line pt-3">
+          <summary className="cursor-pointer text-xs text-muted hover:text-text">Agent activity ({session.checkpoints.length} checkpoints, each one undoable)</summary>
+          <ActivityTimeline className="mt-2" label="Agent activity" now={Date.now()} events={[...session.checkpoints].reverse().slice(0, 12).map((c, i) => ({
+            id: `${c.at}-${i}`, kind: c.stage === 'build' || c.stage === 'review' ? 'deploy' as const : c.label.startsWith('Edit') ? 'comment' as const : 'commit' as const,
+            actor: c.label.startsWith('Cupric AI') ? 'Cupric AI' : 'You', action: c.label.replace(/^Cupric AI:\s*/, ''), target: STAGE_LABEL[c.stage], detail: '', at: Date.parse(c.at) || 0,
+          }))} />
+        </details>
+      )}
     </Card>
   )
 }

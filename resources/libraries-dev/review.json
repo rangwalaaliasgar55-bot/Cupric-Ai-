@@ -494,19 +494,6 @@
       "status": "suggested"
     },
     {
-      "file": "src/app-shell/TopBar.tsx",
-      "line": 50,
-      "target": "Image placeholder",
-      "existingComponent": "<span className={cx('h-1.5 w-1.5 rounded-full', saving ? 'bg-accent motion-safe:animate-pulse' : 'bg-muted/50')} />",
-      "suggestedLibrary": "Image",
-      "package": "img-fx",
-      "variant": "ImageGeneration preset 'sweep-gradient', strength 0.5",
-      "why": "Images that are generated or lazy-loaded get Image placeholders.",
-      "risks": "Higher: WebGL context per instance, so avoid it in long lists. Every metal element on a page shares one colour.",
-      "license": "MIT",
-      "status": "suggested"
-    },
-    {
       "file": "src/components/StockBrowser.tsx",
       "line": 20,
       "target": "Image placeholder",
@@ -690,9 +677,9 @@
     }
   ],
   "counts": {
-    "findings": 45,
+    "findings": 44,
     "applied": 1,
-    "files": 27
+    "files": 26
   },
   "footer": "Run `libraries apply` on any line to install it."
 }
