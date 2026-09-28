@@ -1,4 +1,5 @@
 import type { StudioClip, StudioKeyframe } from '../../types/project'
+import { clampPlacement } from './stageBounds'
 import { clamp } from '../utils'
 
 export type KeyframeTransformPatch = Pick<StudioKeyframe, 'x' | 'y' | 'scale' | 'rotation' | 'opacity'>
@@ -51,7 +52,10 @@ export function patchTransformKeyframe(
     keys.sort((a, b) => a.at - b.at)
     index = nearestKeyframeIndex(keys, local, toleranceSec)
   }
-  keys[index] = { ...keys[index], ...patch }
+  // JOB 7 — a keyframe is a placement, so it obeys the same stage bounds as a
+  // drop or an agent op. Dragging a value off the stage now stops at the edge
+  // instead of animating the resource out of the frame.
+  keys[index] = clampPlacement({ ...keys[index], ...patch })
   return { keyframes: keys }
 }
 

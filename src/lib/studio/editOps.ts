@@ -1,4 +1,5 @@
 import { agentSlug, readAgentAnimation } from './agentCode'
+import { clampClipPlacement } from './stageBounds'
 import type { StudioKitKind, StudioOverlayClip, StudioShapeAnim, StudioBlendMode, StudioClip, StudioDevice, StudioDoc, StudioKeyframe, StudioTextAnim, StudioTransition, StudioAspect } from '../../types/project'
 import { VIDEO_FONT_FAMILIES } from './videoFonts'
 import { isUserFont } from './userFonts'
@@ -647,8 +648,21 @@ export function applyStudioEditPlan(doc: StudioDoc, ops: StudioEditOp[]): Studio
       }
     }
   }
-  // Whatever the plan did, never leave two clips fighting for one track slot.
-  return resolveOverlaps(next)
+  // Whatever the plan did, never leave two clips fighting for one track slot —
+  // and JOB 7: never leave one outside the stage either. Both invariants are
+  // enforced at the single exit, so no future op can forget them.
+  return onStageDoc(resolveOverlaps(next))
+}
+
+/** Clamp every clip's placement (and its keyframes) into the stage. */
+function onStageDoc(doc: StudioDoc): StudioDoc {
+  let changed = false
+  const clips = doc.clips.map((clip) => {
+    const c = clampClipPlacement(clip as StudioClip & { x?: number; y?: number; scale?: number })
+    if (c !== clip) changed = true
+    return c as StudioClip
+  })
+  return changed ? { ...doc, clips } : doc
 }
 
 function applyStyle(doc: StudioDoc, preset: Extract<StudioEditOp, { type: 'applyStylePreset' }>['preset']): StudioDoc {

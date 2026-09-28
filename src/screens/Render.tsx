@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { MatrixLoader } from '../components/loaders/MatrixLoader'
 import { Download, FolderOpen, Rocket, Square, RectangleHorizontal, RectangleVertical, X } from 'lucide-react'
 import { Badge } from '../components/Badge'
@@ -13,6 +13,8 @@ import { getIpc } from '../lib/bridge'
 import { pauseRender, resumeRender } from '../lib/render'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { cx, fmtDur, relTime } from '../lib/utils'
+import { outsideSafeArea, overflowMessage } from '../lib/studio/stageBounds'
+import { studioOf } from '../lib/studio/doc'
 
 const PRESETS = [
   { id: 'yt', label: 'YouTube 1080p', aspect: '16:9' as const, fps: 30 as const, quality: 'final' as const },
@@ -43,6 +45,24 @@ export function Render() {
 
   const jobs = [...project.renderJobs].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
   const total = project.timeline.reduce((acc, c) => acc + c.durationSec, 0)
+  /**
+   * Clips whose anchor falls outside the title-safe area for the aspect the
+   * user is about to render. Never blocks the render — it is a layout note.
+   */
+  const overflows = useMemo(() => {
+    if (!project) return []
+    const clips = studioOf(project).clips
+    const out: Array<{ id: string; message: string }> = []
+    for (const clip of clips) {
+      const p = clip as { id: string; name?: string; x?: number; y?: number }
+      if (p.x === undefined && p.y === undefined) continue
+      const where = outsideSafeArea(p, aspect)
+      if (!where) continue
+      out.push({ id: p.id, message: overflowMessage(p.name || 'Untitled clip', where, aspect) })
+    }
+    return out
+  }, [project, aspect])
+
   const canRender = project.timeline.length > 0 || Boolean(project.brief.lockedRundown)
 
   function applyPreset(id: string) {
@@ -151,6 +171,18 @@ export function Render() {
           <div className="rounded-lg bg-panel-alt px-3 py-2.5 text-xs tabular-nums text-muted">
             Est. output: {fmtDur(total)} · {DIMS[aspect]} · {fps}fps · {quality}
           </div>
+
+          {/* JOB 7 — say it before the render, not after: which clips will sit
+              under the platform's own UI at this aspect. Advice, not a block. */}
+          {overflows.length > 0 && (
+            <div className="rounded-lg border border-info/40 bg-info/10 px-3 py-2.5 text-xs" role="status">
+              <p className="font-medium text-text">{overflows.length} clip{overflows.length === 1 ? '' : 's'} sit{overflows.length === 1 ? 's' : ''} outside the {aspect} safe area</p>
+              <ul className="mt-1 space-y-0.5 text-muted">
+                {overflows.slice(0, 4).map((o) => <li key={o.id}>{o.message}</li>)}
+              </ul>
+              {overflows.length > 4 && <p className="mt-0.5 text-muted">…and {overflows.length - 4} more.</p>}
+            </div>
+          )}
 
           <Button
             variant="primary"

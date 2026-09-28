@@ -19,6 +19,7 @@ import type {
   StudioTextClip,
   StudioTransition,
 } from '../../types/project'
+import { clampPlacement } from './stageBounds'
 import { glassPreset } from '../glass'
 import { backgroundById } from './backgrounds'
 import { clipProgress, orderedClips } from './doc'
@@ -903,7 +904,12 @@ function mix(a: number | undefined, b: number | undefined, p: number): number | 
  */
 function animatedClip(clip: StudioClip, t: number): StudioClip {
   const values = keyframeValuesAt(clip, t)
-  if (!values) return clip
+  // JOB 7 — the last line of defence against a resource leaving the stage.
+  // Writes are clamped too (drop, keyframe edit, agent op), but an older
+  // project or a hand-edited file can still carry x = 3.4, and it must not be
+  // drawable. This is the one resolve pass preview and export share, so a
+  // frame corrected here is corrected identically in the exported file.
+  if (!values) return onStage(clip)
   const next = { ...clip } as StudioClip & { x?: number; y?: number; scale?: number; fontSizePct?: number }
   if (values.x !== undefined && ('x' in clip || clip.kind === 'video' || clip.kind === 'image')) next.x = values.x
   if (values.y !== undefined && ('y' in clip || clip.kind === 'video' || clip.kind === 'image')) next.y = values.y
@@ -924,7 +930,18 @@ function animatedClip(clip: StudioClip, t: number): StudioClip {
       ;(next as unknown as { w: number; h: number }).h = clip.h * values.scale
     }
   }
-  return next
+  return onStage(next)
+}
+
+/**
+ * Clamp the resolved placement of one clip, without allocating when it is
+ * already legal — the renderer's identity caches (F-4) depend on that.
+ */
+function onStage<T extends StudioClip>(clip: T): T {
+  const p = clip as T & { x?: number; y?: number; scale?: number }
+  const c = clampPlacement({ ...(p.x !== undefined ? { x: p.x } : {}), ...(p.y !== undefined ? { y: p.y } : {}), ...(p.scale !== undefined ? { scale: p.scale } : {}) })
+  if (c.x === p.x && c.y === p.y && c.scale === p.scale) return clip
+  return { ...clip, ...c }
 }
 
 /* ——— rotation, grade and matte ———

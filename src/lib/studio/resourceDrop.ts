@@ -15,6 +15,7 @@
  */
 
 import type { StudioClip, StudioDoc, StudioKeyframe } from '../../types/project'
+import { clampClipPlacement } from './stageBounds'
 import { uid } from '../utils'
 import { STUDIO_BACKGROUNDS } from './backgrounds'
 import { defaultGlassClip, defaultTextClip, nextFreeStart } from './doc'
@@ -83,6 +84,19 @@ export function writeDragPayload(transfer: DataTransfer, payload: ResourceDragPa
  * so the caller never has to branch on the resource kind a second time.
  */
 export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, atSec: number): DropResult {
+  // JOB 7 — everything dropped lands on the stage. The inner builder is left
+  // alone; every shape it can return passes through one clamp here, so no drop
+  // path can forget it and no future drop path can either.
+  const result = dropResource(doc, payload, atSec)
+  if (!result.ok) return result
+  if ('clip' in result) return { ...result, clip: clampClipPlacement(result.clip as never) as StudioClip }
+  if ('docPatch' in result && result.docPatch.clips) {
+    return { ...result, docPatch: { ...result.docPatch, clips: result.docPatch.clips.map((c) => clampClipPlacement(c as never) as StudioClip) } }
+  }
+  return result
+}
+
+function dropResource(doc: StudioDoc, payload: ResourceDragPayload, atSec: number): DropResult {
   const topTrack = Math.max(0, Math.min(1, doc.trackCount - 1))
 
   switch (payload.kind) {
