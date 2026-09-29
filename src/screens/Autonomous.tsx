@@ -9,6 +9,7 @@ import type { AutomationJob } from '../types/project'
 import { dedupeMessages, humanError } from '../lib/humanError'
 import { Mic, MicOff, Volume2 } from 'lucide-react'
 import { Card } from '../components/Card'
+import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { ProgressBar } from '../components/ProgressBar'
 import { getIpc } from '../lib/bridge'
@@ -16,6 +17,9 @@ import { useProjectStore } from '../state/useProjectStore'
 import { isVoiceSupported, shouldAutoStartBrief, speak, stopSpeaking, VoiceListener } from '../lib/voice'
 import type { AutomationMode, VotingMode } from '../types/project'
 import { planWithRemotionCapabilities } from '../lib/remotionResources'
+import { DESIGN_DIRECTIONS, designAll } from '../lib/studio/design'
+import { reportFileName } from '../lib/automation/report'
+import { CheckCircle2, Download, FileText, Sparkles, Trophy } from 'lucide-react'
 
 /** Silence after a complete-sounding phrase before hands-free starts a job. */
 const AUTO_START_SETTLE_MS = 1800
@@ -23,6 +27,18 @@ const AUTO_START_SETTLE_MS = 1800
 function openOutput(outputPath?: string | null) {
   const ipc = getIpc()
   if (ipc && outputPath) void ipc.invoke('automation:openOutput', { outputPath })
+}
+
+/** Save an in-memory artefact (the review report) as a file. */
+function downloadText(fileName: string, text: string) {
+  const url = URL.createObjectURL(new Blob([text], { type: 'text/markdown;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
 
 async function openArenaForJob(jobId: string): Promise<{ copied: boolean }> {
@@ -44,10 +60,27 @@ export function Autonomous() {
     const project = st.projects.find((p) => p.id === pid)
     if (!project || !job.rundown) { st.pushToast('error', 'Open the project this run belongs to first.'); return }
     const r = rundownToDoc(studioOf(project), job.rundown, () => uid())
+    // The same design pass an autonomous run uses: per-scene stages, the
+    // suggested type system, contrast-checked ink and native accents.
+    const designed = designAll(r.doc, { brandColors: project.brandKit?.colors, aspect: job.aspect === '9:16' ? '9:16' : job.aspect === '1:1' ? '1:1' : '16:9' }, r.clipIds, () => uid())
     st.setActiveProject(project.id)
-    st.patchStudio(project.id, { clips: r.doc.clips, trackCount: r.doc.trackCount }, 'Auto run → editable timeline')
+    st.patchStudio(project.id, { clips: designed.doc.clips, trackCount: designed.doc.trackCount }, 'Auto run → editable timeline')
     st.setView('studio')
-    st.pushToast('success', `Added ${r.clipIds.length} editable scene clip(s) with keyframed motion${r.placeholders ? `, ${r.placeholders} need copy` : ''}. Undo reverts it.`)
+    st.pushToast('success', `Added ${r.clipIds.length} designed scene clip(s) — ${designed.report.direction.name} (${designed.report.score}/100), keyframed motion${r.placeholders ? `, ${r.placeholders} need copy` : ''}. Undo reverts it.`)
+  }
+  /**
+   * A desktop run can stop for reasons the app cannot fix from here — FFmpeg
+   * missing from the build, a capture window that would not open, a folder that
+   * moved. That must not be the end of the job: the same plan, design battle and
+   * Studio renderer run in this window, so the film still gets made and the
+   * timeline is still editable. The desktop path stays the fast one; this is the
+   * way out when it stops.
+   */
+  const finishLocally = (j: AutomationJob) => {
+    const st = useProjectStore.getState()
+    st.updateAutomationJob(j.id, { status: 'running', errorMessage: null, waitingMessage: null })
+    st.runAutomationLocally(j.id)
+    pushToast('info', 'Finishing this run in the app: Cupric re-plans from the same brief, runs the design battle and renders with the Studio renderer.')
   }
   const approve = useProjectStore(s => s.approveAutomationStep)
   const reject = useProjectStore(s => s.rejectAutomationStep)
@@ -59,6 +92,7 @@ export function Autonomous() {
   const [fps, setFps] = useState<30|60>(30)
   const [targetDuration, setTargetDuration] = useState<30 | 50 | 180>(30)
   const [quality, setQuality] = useState<'draft'|'final'>('draft')
+  const [designDirection, setDesignDirection] = useState<NonNullable<AutomationJob['designDirection']>>('auto')
   const [footageFolder, setFootageFolder] = useState<string | null>(null)
   const [outputFolder, setOutputFolder] = useState<string | null>(null)
   const pickFolder = async (setter: (v: string | null) => void) => {
@@ -73,8 +107,8 @@ export function Autonomous() {
   const [handsFree, setHandsFree] = useState(true)
   const [speakBack, setSpeakBack] = useState(true)
   const listenerRef = useRef<VoiceListener | null>(null)
-  const settingsRef = useRef({ aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack })
-  settingsRef.current = { aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack }
+  const settingsRef = useRef({ aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack, designDirection })
+  settingsRef.current = { aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack, designDirection }
 
   const job = jobs[0]
   const currentStep = job?.steps.find(step => step.id === job.currentStepId) || job?.steps.find(step => step.status === 'waiting-for-user') || null
@@ -185,6 +219,7 @@ export function Autonomous() {
       quality: cfg.quality,
       mode: cfg.mode,
       votingMode: cfg.vote,
+      designDirection: cfg.designDirection,
     })
     if (cfg.speakBack) speak(`Starting. ${finalBrief.slice(0, 90)}. I will tell you when the render is done.`, { interrupt: true })
   }
@@ -259,6 +294,12 @@ export function Autonomous() {
                 <option value="guided">Guided</option><option value="auto-draft">Auto Draft</option><option value="auto-final">Auto Final</option>
               </select>
             </label>
+            <label className="text-xs text-muted">Design
+              <select value={designDirection} onChange={e => setDesignDirection(e.target.value as NonNullable<AutomationJob['designDirection']>)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text" title="Cupric designs the plan in three directions and keeps the best, or pin the one you want.">
+                <option value="auto">Auto — best of {DESIGN_DIRECTIONS.length} directions</option>
+                {DESIGN_DIRECTIONS.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </label>
             <label className="text-xs text-muted">Voting
               <select value={vote} onChange={e => setVote(e.target.value as VotingMode)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text">
                 <option value="local-scoring">AI candidate battle, scored locally (no public vote)</option>
@@ -271,6 +312,9 @@ export function Autonomous() {
             <div className="mt-1 text-muted">Template <span className="text-text">{capabilityPlan.template}</span> · Font <span className="text-text">{capabilityPlan.font}</span> · {capabilityPlan.render.fps}fps</div>
             <div className="mt-1 text-muted">Skills: {capabilityPlan.skills.join(' · ')}</div>
             <div className="mt-1 text-muted">Deterministic frames · local asset fallback · preview/export parity</div>
+            <div className="mt-1 text-muted">
+              Candidate battle: {DESIGN_DIRECTIONS.map((d) => d.name).join(' · ')} — each is designed and scored on this machine.
+            </div>
           </div>
           <div className="mt-5 flex justify-end">
             <Button onClick={() => startJob(brief)} disabled={!brief.trim()} title={(!brief.trim()) ? 'Describe the video first' : undefined}>
@@ -283,7 +327,11 @@ export function Autonomous() {
           <Card className="p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="font-medium">{job.status === 'done' ? 'Production complete' : 'Production timeline'}</h2>
+                <h2 className="flex items-center gap-2 font-medium">
+                  {job.status === 'done' ? 'Production complete' : 'Production timeline'}
+                  {typeof job.designScore === 'number' && <Badge tone="accent">design {job.designScore}/100</Badge>}
+                  {job.renderEngine === 'studio-canvas' && <Badge tone="info">studio renderer · preview parity</Badge>}
+                </h2>
                 <p className="text-xs text-muted">
                   {job.votingMode === 'manual-arena'
                     ? 'Manual Arena is a required review gate; Cupric never automates public voting.'
@@ -300,10 +348,88 @@ export function Autonomous() {
               <div className="flex flex-wrap justify-end gap-2">
                 {job.status === 'running' && <Button variant="outline" onClick={() => cancel(job.id)}>Cancel</Button>}
                 {(job.status === 'cancelled' || job.status === 'error') && <Button onClick={() => resume(job.id)}>Resume</Button>}
+                {job.status === 'error' && !job.outputPath && (
+                  <Button variant="outline" onClick={() => finishLocally(job)} title="Plan, design and render this job in the app instead of the desktop pipeline — the result lands in Studio as editable clips plus a rendered preview.">
+                    Finish in Studio
+                  </Button>
+                )}
                 {job.outputPath && <Button variant="outline" onClick={() => openOutput(job.outputPath)}>Reveal MP4</Button>}
                 {job.rundown?.scenes?.length ? <Button variant="outline" onClick={() => openEditable(job)} title="Rebuild this run's scenes as editable Studio clips with Cupric AI keyframe motion (one undo step)">Edit in Studio</Button> : null}
               </div>
             </div>
+
+            {!!job.candidateBattle?.length && (
+              <div className="mt-4 rounded-xl border border-line bg-bg/40 p-3" data-testid="candidate-battle">
+                <div className="flex items-center gap-2 text-xs font-semibold text-text">
+                  <Trophy size={13} className="text-accent-text" /> Candidate battle — {job.candidateBattle.length} directions, scored locally (no public vote)
+                </div>
+                <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                  {job.candidateBattle.map((c, i) => (
+                    <div key={c.id} className={i === 0 ? 'rounded-lg border border-accent/40 bg-accent/5 p-2.5' : 'rounded-lg border border-line bg-panel-alt/30 p-2.5'}>
+                      <div className="flex items-center justify-between gap-2 text-xs">
+                        <span className="truncate font-medium text-text">{i === 0 ? '★ ' : ''}{c.name}</span>
+                        <span className="shrink-0 tabular-nums text-muted">{c.score}/100</span>
+                      </div>
+                      <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-line">
+                        <div className={i === 0 ? 'h-full rounded-full bg-accent' : 'h-full rounded-full bg-muted/50'} style={{ width: `${Math.max(3, c.score)}%` }} />
+                      </div>
+                      <ul className="mt-1.5 space-y-0.5 text-[11px] leading-snug text-muted">
+                        {c.reasons.slice(0, 2).map((r) => <li key={r} className="truncate" title={r}>· {r}</li>)}
+                      </ul>
+                      <div className="mt-1 text-[10px] text-muted">design {c.designScore}/100</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!!job.designStoryboard?.length && (
+              <div className="mt-4 rounded-xl border border-line bg-bg/40 p-3" data-testid="design-storyboard">
+                <div className="flex items-center gap-2 text-xs font-semibold text-text">
+                  <Sparkles size={13} className="text-accent-text" /> Designed scenes — stage, face and accent per scene, all ordinary editable clips
+                </div>
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                  {job.designStoryboard.map((scene) => (
+                    <div key={scene.index} className="min-w-[136px] shrink-0 rounded-lg border border-line bg-panel-alt/30 p-2 text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full border border-white/20" style={{ background: scene.accent }} title={`Accent ${scene.accent}`} />
+                        <span className="truncate font-medium capitalize text-text">{scene.role}</span>
+                        <span className="ml-auto shrink-0 tabular-nums text-muted">{scene.from.toFixed(1)}–{scene.to.toFixed(1)}s</span>
+                      </div>
+                      <div className="mt-1 truncate text-muted" title={`${scene.stage} · ${scene.layout} layout`}>{scene.stage} · {scene.layout}</div>
+                      <div className="truncate text-muted" title={scene.headlineFont}>{scene.headlineFont}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {job.outputUrl && (
+              <div className="mt-4 rounded-xl border border-line bg-bg/40 p-3" data-testid="run-output">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-text">
+                  <CheckCircle2 size={13} className="text-accent-text" /> Rendered with the Studio renderer — what you watched is what was recorded
+                  <Button size="sm" variant="outline" className="ml-auto" onClick={() => { const a = document.createElement('a'); a.href = job.outputUrl!; a.download = job.outputPath?.split('/').pop() ?? 'cupric-run.webm'; a.click() }}>
+                    <Download size={12} /> Download
+                  </Button>
+                  {job.reviewReport && (
+                    <Button size="sm" variant="outline" onClick={() => downloadText(reportFileName(job), job.reviewReport!)}>
+                      <FileText size={12} /> Report
+                    </Button>
+                  )}
+                </div>
+                <video src={job.outputUrl} controls playsInline className="mt-2 max-h-72 w-full rounded-lg border border-line bg-black" />
+              </div>
+            )}
+
+            {job.reviewReport && !job.outputUrl && (
+              <details className="mt-4 rounded-xl border border-line bg-bg/40 p-3 text-xs text-muted">
+                <summary className="cursor-pointer select-none font-semibold text-text">Review report</summary>
+                <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap font-sans text-[11px] leading-relaxed">{job.reviewReport}</pre>
+                <Button size="sm" variant="outline" className="mt-2" onClick={() => downloadText(reportFileName(job), job.reviewReport!)}>
+                  <Download size={12} /> Save report
+                </Button>
+              </details>
+            )}
 
             {job.status === 'running' && (
               <div className="mt-3 flex items-center gap-2 text-sm" data-testid="autonomous-status">

@@ -10,6 +10,7 @@ import { copyDiagnosticReport } from '../lib/diagnostics'
 import { humanError } from '../lib/humanError'
 import { useProjectStore } from '../state/useProjectStore'
 import { getIpc } from '../lib/bridge'
+import { clearTranscriptCache, transcriptCacheStats } from '../lib/studio/transcriptStore'
 
 function when(iso: string): string {
   const d = new Date(iso)
@@ -30,6 +31,7 @@ export function ProjectSafetyPanel() {
   const [open, setOpen] = useState(false)
   const [reportText, setReportText] = useState<string | null>(null)
   const [hwEncoding, setHwEncoding] = useState<'auto' | 'off' | null>(null)
+  const [transcripts, setTranscripts] = useState(() => transcriptCacheStats())
 
   useEffect(() => {
     const ipc = getIpc()
@@ -141,6 +143,28 @@ export function ProjectSafetyPanel() {
             ))}
           </ul>
         )}
+      </div>
+
+      <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
+        <div className="flex items-center justify-between gap-3">
+          <span>Transcriptions kept</span>
+          <button
+            type="button"
+            disabled={!transcripts.files}
+            title={!transcripts.files ? 'Nothing is stored yet' : 'The next caption run transcribes again'}
+            onClick={() => {
+              clearTranscriptCache()
+              setTranscripts({ files: 0, hits: 0 })
+              pushToast('success', 'Stored transcriptions cleared — the next caption run will transcribe the audio again.')
+            }}
+            className="shrink-0 text-muted underline underline-offset-2 hover:text-text disabled:opacity-40"
+          >Clear</button>
+        </div>
+        <div className="mt-1 text-muted/70">
+          {transcripts.files
+            ? `${transcripts.files} file(s) kept, reused ${transcripts.hits} time(s) — transcribing a clip once is enough, so a second caption run does not pay for the engine again.`
+            : 'A clip’s transcription is stored here after auto-captions, so a second run on the same file reuses it instead of aligning the audio again.'}
+        </div>
       </div>
 
       <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">

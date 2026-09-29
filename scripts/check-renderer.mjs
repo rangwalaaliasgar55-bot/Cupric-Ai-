@@ -21,6 +21,8 @@ const tmp = path.join(root, '.renderer-check.mjs')
 
 function makeCtx(width, height) {
   const calls = []
+  /** Every word actually painted, with the ink it was painted in. */
+  const painted = []
   let depth = 0
   let maxDepth = 0
   const gradient = { addColorStop() {} }
@@ -68,12 +70,14 @@ function makeCtx(width, height) {
   ]) {
     ctx[name] = (...args) => {
       calls.push(name)
-      void args
+      if (name === 'fillText') painted.push({ text: String(args[0]), fillStyle: String(ctx.fillStyle) })
+      else void args
     }
   }
   return {
     ctx,
     calls,
+    painted,
     get depth() {
       return depth
     },
@@ -575,6 +579,49 @@ if (mod.parseVoiceCommand('add text hello world')?.text !== 'hello world') failu
   if (moved.clips.find((c) => c.id === 'lower')?.track !== 2) failures.push('tracks: lower layer was not raised')
   if (moved.clips.find((c) => c.id === 'upper')?.track !== 0) failures.push('tracks: upper layer was not lowered')
   if (moved.clips.some((c) => c.startSec !== doc.clips.find((old) => old.id === c.id)?.startSec)) failures.push('tracks: reorder changed clip timing')
+}
+
+// Captions that carry real word timings reveal on the voice; without them the
+// animation spreads the words as before. This is the difference between a
+// caption that lands on a word and one that guesses.
+{
+  const paint = (clip, t) => {
+    const probe = makeCtx(1080, 1920)
+    const doc = { ...mod.emptyStudioDoc(), clips: [clip] }
+    mod.drawStudioFrame(probe.ctx, doc, t, 1080, 1920, { media: () => null, overlay: () => null })
+    return probe.painted
+  }
+  const base = { ...mod.defaultTextClip(0, 0), id: 'cap', name: 'Caption', text: 'one two three', durationSec: 2, captionStyle: 'hormozi' }
+  const timed = { ...base, anim: 'word-reveal', wordDelaysMs: [0, 900, 1800], emphasisColor: '#FF00AA' }
+
+  checks += 4
+  if (paint(timed, 0.2).length !== 1) failures.push('captions: a word appeared before it was spoken')
+  if (paint(timed, 1.0).length !== 2) failures.push(`captions: the second word did not land on its spoken time (${paint(timed, 1.0).length} painted)`)
+  if (paint(timed, 1.9).length !== 3) failures.push('captions: the last word never appeared')
+  // Karaoke: the word being spoken right now is tinted, so the caption reads as speech.
+  const karaoke = paint(timed, 1.0)
+  if (karaoke[karaoke.length - 1].fillStyle !== '#FF00AA') {
+    failures.push(`captions: the current word was not tinted (${karaoke[karaoke.length - 1]?.fillStyle})`)
+  }
+
+  const guessed = { ...base, anim: 'word-reveal' }
+  checks += 2
+  if (paint(guessed, 0.2).length !== 1 || paint(guessed, 1.9).length !== 3) {
+    failures.push('captions: an untimed word-reveal caption no longer spreads its words')
+  }
+  // A caption with no timings is painted in one pass — one call, whole line —
+  // which is exactly why it cannot follow a voice.
+  const plain = paint(base, 0.2)
+  if (plain.length !== 1 || plain[0].text !== 'ONE TWO THREE') {
+    failures.push(`captions: an untimed caption should paint its whole line in one pass (${JSON.stringify(plain.map((p) => p.text))})`)
+  }
+
+  // Timings that disagree with the text cannot silently drop a word: the
+  // renderer only ever hides words a delay has not reached.
+  const short = { ...timed, wordDelaysMs: [0] }
+  const paintedShort = paint(short, 1.0)
+  checks += 1
+  if (paintedShort.length > 3 || paintedShort.length < 1) failures.push('captions: a short delay list broke the reveal')
 }
 
 if (failures.length) {

@@ -210,10 +210,13 @@ export function tightenClip(doc: StudioDoc, clipId: string, opts: { maxPauseSec?
   const clip = doc.clips.find((c) => c.id === clipId) as StudioMediaClip | StudioAudioClip | undefined
   if (!clip || (clip.kind !== 'video' && clip.kind !== 'audio')) return { doc, removedSec: 0, cuts: 0, reason: 'Select a video or audio clip.' }
   if (clip.locked) return { doc, removedSec: 0, cuts: 0, reason: 'That clip is locked.' }
-  if (!clip.words?.length) return { doc, removedSec: 0, cuts: 0, reason: 'Transcribe this clip first (Auto-captions) so its word timings are known.' }
+  // Explicit cuts need no transcript: a probe can measure where the silence is.
+  if (!clip.words?.length && !opts.cuts?.length) {
+    return { doc, removedSec: 0, cuts: 0, reason: 'Transcribe this clip first (Auto-captions) so its word timings are known — or let Cupric measure its silence instead.' }
+  }
   const speed = clip.kind === 'video' && clip.speed > 0 ? clip.speed : 1
   const range: [number, number] = [clip.trimInSec, clip.trimInSec + clip.durationSec * speed]
-  const cuts = opts.cuts ? [...opts.cuts].sort((a, b) => a[0] - b[0]) : speechCuts(clip.words, range, opts)
+  const cuts = opts.cuts ? [...opts.cuts].sort((a, b) => a[0] - b[0]) : speechCuts(clip.words ?? [], range, opts)
   if (!cuts.length) return { doc, removedSec: 0, cuts: 0, reason: opts.cuts ? 'No words selected to cut.' : 'No fillers or long pauses found.' }
   // Keep ranges = complement of cuts.
   const keeps: Array<[number, number]> = []

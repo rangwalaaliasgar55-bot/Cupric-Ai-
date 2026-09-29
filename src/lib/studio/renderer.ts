@@ -34,6 +34,7 @@ import { compareDivider, deviceGeometry } from './layouts'
 import { drawDuoPhone, drawPhone, type DrawMedia } from './phone'
 import { kineticWord } from './textTools'
 import { hasRichMarkup, parseRich, RICH_DEFAULTS, type RichStyle, type RichWord } from './richText'
+import { captionPreset, clampToSafeArea, layoutRich, SAFE_MARGIN } from './textLayout'
 import type { StudioBlendMode, StudioDevice } from '../../types/project'
 
 export type FrameSources = {
@@ -224,45 +225,12 @@ function wrapLinesUncached(ctx: CanvasRenderingContext2D, text: string, maxWidth
   return out.length ? out : ['']
 }
 
-function captionPreset(style: StudioTextClip['captionStyle']) {
-  if (style === 'hormozi') return { uppercase: true, stroke: 6, shadow: 18, boxed: false }
-  if (style === 'minimal') return { uppercase: false, stroke: 0, shadow: 0, boxed: true }
-  if (style === 'standard') return { uppercase: false, stroke: 3, shadow: 10, boxed: false }
-  return { uppercase: false, stroke: 0, shadow: 0, boxed: false }
-}
-
-
-/** Fraction of the frame kept clear of text on every edge. */
-export const SAFE_MARGIN = 0.05
-
-/**
- * Pull a text block back inside the title-safe area.
- *
- * Returns the block's anchor point, honouring the clip's alignment (the anchor
- * is the left/centre/right of the box, so each case clamps a different edge).
- * If the block is simply wider than the safe area it stays centred instead of
- * being shoved to one side.
+/*
+ * Caption presets, the title-safe margin and the safe-area clamp live in
+ * `textLayout.ts`, which the gates read too: the renderer must not be the only
+ * place that knows where a text block ends up.
  */
-export function clampToSafeArea(
-  x: number,
-  y: number,
-  blockW: number,
-  blockH: number,
-  align: 'left' | 'center' | 'right',
-  w: number,
-  h: number,
-): { x: number; y: number } {
-  const mx = w * SAFE_MARGIN
-  const my = h * SAFE_MARGIN
-  const left = align === 'left' ? x : align === 'right' ? x - blockW : x - blockW / 2
-  let nextLeft = left
-  if (blockW >= w - mx * 2) nextLeft = (w - blockW) / 2
-  else nextLeft = Math.min(Math.max(left, mx), w - mx - blockW)
-  const dx = nextLeft - left
-  const top = y - blockH / 2
-  const nextTop = blockH >= h - my * 2 ? (h - blockH) / 2 : Math.min(Math.max(top, my), h - my - blockH)
-  return { x: x + dx, y: nextTop + blockH / 2 }
-}
+export { SAFE_MARGIN, clampToSafeArea } from './textLayout'
 
 /**
  * The laid-out size of a text clip as a fraction of the frame, measured with
@@ -606,7 +574,7 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
         cursor += widths[i]
       }
       ctx.textAlign = prevAlign
-    } else if (clip.anim === 'word-reveal' || clip.highlightWord) {
+    } else if (clip.anim === 'word-reveal' || clip.highlightWord || clip.wordDelaysMs?.length) {
       const words = line.split(' ')
       const widths = words.map((word) => ctx.measureText(`${word} `).width)
       const lineWidth = widths.reduce((a, b) => a + b, 0) - (widths.length ? ctx.measureText(' ').width : 0)
@@ -614,7 +582,7 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
       const prevAlign = ctx.textAlign
       ctx.textAlign = 'left'
       const totalWords = raw.split(/\s+/).filter(Boolean).length || 1
-      const shownWords = clip.anim === 'word-reveal' ? Math.ceil(clamp01(progress / 0.55) * totalWords) : totalWords
+      const shownWords = revealedWords(clip, totalWords, progress)
       let seen = lines.slice(0, index).join(' ').split(/\s+/).filter(Boolean).length
 
       for (let i = 0; i < words.length; i++) {
@@ -623,7 +591,10 @@ function drawTextClip(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
         if (visible) {
           const isHighlight =
             clip.highlightWord && words[i].toLowerCase().replace(/[^a-z0-9]/g, '') === clip.highlightWord.toLowerCase()
-          ctx.fillStyle = isHighlight ? (clip.emphasisColor || '#C8F542') : clip.color
+          // Karaoke: with real timings the word being spoken right now is tinted,
+          // so the caption reads as speech rather than as a block of text.
+          const isCurrent = Boolean(clip.wordDelaysMs?.length) && seen === shownWords
+          ctx.fillStyle = isHighlight || isCurrent ? (clip.emphasisColor || '#C8F542') : clip.color
           if (preset.stroke) ctx.strokeText(words[i], cursor, y)
           ctx.fillText(words[i], cursor, y)
         }
@@ -1521,6 +1492,25 @@ function drawInDevice(
 }
 
 /**
+ * How many words of a block are visible right now.
+ *
+ * With real word timings (`wordDelaysMs`, written from a transcript) the reveal
+ * lands on the voice: word n appears when it was actually spoken. Without them,
+ * `word-reveal` spreads the words evenly across the block as before. Every other
+ * animation shows the whole block.
+ */
+function revealedWords(clip: StudioTextClip, total: number, progress: number): number {
+  const delays = clip.wordDelaysMs
+  if (delays?.length) {
+    const elapsedMs = clamp01(progress) * clip.durationSec * 1000
+    let shown = 0
+    while (shown < delays.length && shown < total && delays[shown] <= elapsedMs) shown += 1
+    return shown
+  }
+  return clip.anim === 'word-reveal' ? Math.ceil(clamp01(progress / 0.55) * total) : total
+}
+
+/**
  * Rich caption: per-word fonts/colours/boxes from markup (richText.ts), wrapped
  * and aligned as one block, animated per word. Pure function of progress.
  */
@@ -1535,35 +1525,13 @@ function drawRichText(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
   const accent = clip.accentColor || RICH_DEFAULTS.accentColor
   const words = parseRich(preset.uppercase ? clip.text.toUpperCase() : clip.text)
   if (!words.length) return
-  const fontFor = (s: RichStyle) => {
-    const px = base * (s.big ? 1.5 : 1) * (s.em ? 1.12 : 1)
-    const weight = s.em ? 400 : s.big ? Math.max(800, clip.weight) : clip.weight
-    const fam = s.em ? emFont : family
-    return { px, css: `${s.em ? 'italic ' : ''}${weight} ${px}px '${fam}', ${s.em ? "'Playfair Display Variable', Georgia, serif" : 'Inter, system-ui, sans-serif'}` }
-  }
-  // Layout: wrap into lines, respecting explicit line breaks.
-  type Placed = { word: RichWord; px: number; css: string; width: number; x: number; line: number }
-  const maxWidth = w * 0.86
-  const placed: Placed[] = []
-  ctx.save()
-  ctx.font = fontFor({ em: false, box: false, accent: false, big: false }).css
-  const space = ctx.measureText(' ').width
-  let line = 0, lineW = 0, srcLine = 0
-  for (const word of words) {
-    const f = fontFor(word.style)
-    ctx.font = f.css
-    const width = ctx.measureText(word.text).width
-    if (word.line !== srcLine) { line++; lineW = 0; srcLine = word.line }
-    else if (lineW > 0 && lineW + space + width > maxWidth) { line++; lineW = 0 }
-    const x = lineW > 0 ? lineW + space : 0
-    placed.push({ word, px: f.px, css: f.css, width, x, line })
-    lineW = x + width
-  }
-  const lines = line + 1
-  const lineWidths = Array.from({ length: lines }, (_, i) => placed.filter((p) => p.line === i).reduce((m, p) => Math.max(m, p.x + p.width), 0))
-  const lineHeights = Array.from({ length: lines }, (_, i) => Math.max(base, ...placed.filter((p) => p.line === i).map((p) => p.px)) * 1.08)
-  const totalH = lineHeights.reduce((a, b) => a + b, 0)
-  const widest = Math.max(...lineWidths)
+  // Layout comes from `textLayout.ts`: the same numbers the contrast and
+  // safe-zone gates measure against, so a gate can never judge a box the
+  // renderer did not paint.
+  const laid = layoutRich(ctx, clip, w, h)
+  const placed = laid.placed
+  const { lines, lineWidths, lineHeights, widest, totalH, space } = laid
+  void space
   const inP = clamp01(progress / 0.22)
   let alpha = 1, offsetY = 0, scale = 1
   if (clip.anim === 'fade-up' || clip.anim === 'glass-rise') { alpha = easeOut(inP); offsetY = (1 - easeOut(inP)) * base * 0.5 }
@@ -1577,7 +1545,7 @@ function drawRichText(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
   ctx.textBaseline = 'middle'
   ctx.textAlign = 'left'
   const total = placed.length
-  const shown = clip.anim === 'word-reveal' ? Math.ceil(clamp01(progress / 0.55) * total) : total
+  const shown = revealedWords(clip, total, progress)
   let top = -totalH / 2
   const lineTop: number[] = []
   for (let i = 0; i < lines; i++) { lineTop.push(top); top += lineHeights[i] }

@@ -1,3 +1,239 @@
+## Also shipped: what has already been tried on this footage, and the FFmpeg assembly half
+
+Two more items from the audit's open-edit list — #8 and #10.
+
+- **Creative log** (`src/lib/studio/creativeLog.ts`, upstream `commands/creative-log.ts`) — the history of
+  *what was tried on a piece of footage and why it was rejected*, kept beside the footage instead of in a
+  chat that gets compacted. Rejections accumulate and each one needs a reason (a list without reasons
+  cannot tell a later pass what to avoid); the last accepted look replaces the previous one. The history
+  renders as prompt-ready prose, is copied from the panel in one click, and reaches two live paths: a
+  rejected *design direction* is skipped by the next battle (`designAll({ avoid })`, with the skipped
+  names printed and a fallback that says when every direction has been rejected), and the brief is
+  attached to the model prompt for text that sits over that footage
+  (`aiText.requestTextVariants(text, brief)`). The store is `localStorage` with a corrupt entry preserved
+  (`.corrupt.N`) before the first write rather than overwritten. `scripts/check-creative-log.mjs` — 93
+  assertions.
+- **FFmpeg assembly** (`electron/assembly.cjs`, upstream `concat-chapters` + `mix-audio` + `mux-audio` +
+  `apply-edl`) — the four commands the desktop export was missing, written as text so every decision can
+  be asserted before it runs: joining gated renders by stream copy with each part's shape probed first,
+  a soundtrack built from `voice`/`music`/`sfx`/`ambience` pieces with the bed ducked by the narration bus
+  itself, delivery loudness decided from a one-pass measurement (a linear gain only when it reaches the
+  target inside the true-peak ceiling, loudnorm's dynamic mode when it cannot, otherwise nothing with a
+  stated reason), and an EDL assembled with every edge snapped up to its source's frame grid and every
+  join crossfaded. Two of the four are wired into the app's own paths: the rundown render's
+  `concatSegments` now probes the parts before copying — a shape mismatch used to be a silent `-c copy`
+  glitch, and now it re-encodes onto one parameter set and reports which part disagreed — and the Studio
+  MP4 export measures the recording before choosing a correction and says which one ran in the export
+  toast. `scripts/check-assembly.mjs` runs 144 pure assertions always and, when a modern FFmpeg is
+  present, executes the real argv and reads the files back with ffprobe (183 assertions; it prints its
+  evidence and skips that half with a named reason when no FFmpeg is found or the build is too old).
+  `mix-audio` and `apply-edl` are ported and verified against real files but **no UI surface calls them
+  yet** — the intended call site for `apply-edl` is a cut-only "assemble the timeline's kept ranges"
+  export, which needs its own consent step.
+
+## Also shipped: readiness, and captions placed where the picture is empty
+
+Two more pieces from the audit's open-edit list, both user-visible.
+
+- **Readiness** (`src/lib/readiness.ts` + `readinessFacts.ts` + `app-shell/ReadinessPanel.tsx`, adapted
+  from upstream's `readiness` command) — the app degrades quietly by design, so "no offline recogniser
+  found" and "a WebM draft instead of an MP4" were easy to mistake for the app being broken. The panel
+  reports every capability with the remedy beside it, marks the optional ones, is read-only and makes no
+  network calls, and diagnoses *present but not runnable* differently from *absent* (a binary that
+  exists but will not start needs a different fix than installing it). It lives in the settings drawer
+  with a Re-check button, and it adds the two checks upstream has no equivalent of: clips whose file is
+  not loaded, and an edit with nothing on the timeline.
+- **Caption placement** (`src/lib/studio/placement.ts`, adapted from upstream's `measure-placement`) —
+  measures the footage under each caption (motion between two instants, detail in the middle frame,
+  Cb/Cr skin as the fallback), builds the subject and head boxes, divides the safe zone into bands and
+  moves each caption that is sitting over the face into the calmest band, in one undo step. It refuses
+  to move anything when no subject was found and says so; a caption that still overlaps the subject in
+  every band is reported with its coverage rather than hidden. Reachable from Pro → Auto-edit → *Place
+  captions clear of the subject*.
+
+`scripts/check-readiness.mjs` (52 assertions) and `scripts/check-placement.mjs` (69) are wired into
+`build` and `verify`. Both measurement cores are pure — `measurePlacement` takes three luma grids, so
+the arithmetic is tested on synthetic frames and only the decoding is unverified here.
+
+## Also shipped: a fix that proves itself, and a transcription that is paid for once
+
+- **`gateRunner.verifyAppliedFixes`** (upstream `wcag/verify-applied.ts`) — "Fix all" now re-renders the
+  document it just patched, runs the whole chain over it, and reports what actually happened: which
+  proposed fixes the finding cleared, which did not hold, and whether the fix introduced an error that
+  was not there before. A fix is scored analytically, so without this a patch that missed its target
+  still read as an improvement. The Studio toast says which case it is, and the recheck's own failure is
+  reported rather than claimed as a pass. `check-gates.mjs` 147 → 166 assertions.
+- **`studio/transcriptStore.ts`** (upstream `prep/transcript-cache.ts`) — one transcription per file
+  (path/size/duration/language), so the second caption run on a clip is free instead of another minutes-
+  long alignment. A clip that already carries word timings gets a `drift` report when the new alignment
+  disagrees (words differ, or the clip had none) rather than having its words quietly replaced; the panel
+  offers **Re-transcribe** to ignore the cache, says when a stored transcript was reused, and Settings →
+  *Transcriptions kept* shows the count and how often the cache saved a run. `check-auto-captions.mjs`
+  48 → 82 assertions. Found and fixed a real bug while testing: the entry being written could be the one
+  its own write evicted.
+
+## Also shipped: a gate for *when* things are drawn, and a fix that proves its own scope
+
+Three items from the reference audit's "still copyable from open-edit" list, all pure and all tested:
+
+- **`gates.timingGate`** (upstream: `commands/expect-windows.ts`) — the chain gained a `timing` stage
+  (lint → timing → safe zones → contrast → deliver). Every other gate judged *what* is drawn, so a
+  caption that arrives a second late, holds after its last word, lists fewer delays than words (the
+  trailing words never appear), reveals out of order, or is still up when the next one lands passed all
+  of them. Errors carry a one-click fix (extend the block to fit its last word); warnings carry the
+  numbers. `scripts/check-gates.mjs` 124 → 147 assertions.
+- **`gateRunner.auditTimes`** (upstream: `pipeline/scripts/cut-frames.ts`) — the audit now samples the
+  moments things change: clip starts and ends and every timed block's first and last reveal, with the
+  remaining room filled by an even sweep. The upstream argument is kept in the function: a run that
+  sampled on an even grid called its deliverable clean while the defect lived only at the cuts.
+- **`studio/scopedEdit.ts`** (upstream: `commands/scoped-edit.ts`) — `diffStudioDoc(before, after,
+  {allow})` names every change and flags the ones nobody asked for. Studio's "Fix all" now allows exactly
+  the clips its own gate report named, and says so in the toast (or warns when the fix drifted). Covered
+  by `scripts/check-scoped-edit.mjs` (34 assertions), wired into `build` and `verify`.
+
+## Also shipped: break a montage apart at its own cuts
+
+`src/lib/studio/shots.ts` — shot/scene detection with no model and no network: the clip's own frames
+are sampled at 4 fps into a 64 px-wide canvas, the mean-absolute luma difference between consecutive
+samples is thresholded adaptively (`max(0.06, median + 5 × MAD)`, with a strong-change fallback so an
+obviously cut montage never reports "no cuts"), a spike must beat both neighbours, and two changes
+closer than `minShotSec` collapse to the stronger one. `decompose.ts` grew two modes on top of it:
+
+- `shots` — split where the picture changes, removing nothing (`breakAtPoints`), so a finished edit
+  arrives as its own cuts and the timeline still plays back exactly as before.
+- `auto` — the import path: close the pauses the voice left empty (word timings first, else the
+  measured waveform) **and** split the result at the shot cuts, skipping the ones that fell inside
+  removed silence instead of inventing empty pieces, and saying so in the notes.
+
+Reachable from the timeline right-click menu (**Break at scene changes (the picture)**) and from
+Studio → Pro → Auto-edit → *Break into clips* (*Shots + pauses* / *Scene changes*). Frame sampling
+needs a decodable video, so `scripts/check-decompose.mjs` (now 96 assertions) covers the pure half —
+`frameDifference`, `median`, `shotCutTimes`, `remapSourceTime` — plus the whole assembly with the
+shots handed in, and `docs/SMOKE_WORD_TIMED_CAPTIONS.md` scenario E is the packaged-desktop check.
+
+## Also shipped: break an imported video into editable clips
+
+`src/lib/studio/decompose.ts` — one clip → many ordinary clips. Three ways in,
+all on existing machinery: measured pauses (`studio/speechProbe.ts` → `probeCuts`,
+no transcript or model needed), pauses in the words (`autoEdit.speechCuts` with
+`fillers: false`, so nothing spoken is deleted), or even pieces for footage with
+no speech. `breakAtCuts` either closes the silence up (a real edit, `tightenClip`)
+or splits at the pause boundaries keeping the original timing, so each pause
+becomes a clip you can delete. Word timings stay on every piece in source
+seconds, so captions and word-timed components keep working without
+re-transcribing, and captions can be generated *before* the cut so the existing
+remap carries them onto the new timeline. Reachable from Studio → Pro →
+Auto-edit → *Break into clips* (preview → accept, one undo) and from the timeline
+right-click menu. `scripts/check-decompose.mjs` (96 assertions, including the scene-change modes below) runs in
+`build` and `verify`; `docs/SMOKE_WORD_TIMED_CAPTIONS.md` scenario D is the manual check.
+
+## Latest: captions that follow the voice, cuts measured from the waveform, and gates that read pixels
+
+The open-edit port (`veedstudio/open-edit`, Apache-2.0 — see
+`THIRD_PARTY_NOTICES.md`) landed as four pieces, each wired into a real path in
+Cupric rather than parked beside it.
+
+### Speech layer (`src/lib/speech/`)
+- `transcript.ts` — every Whisper family output (WhisperX/openai-whisper/mlx
+  `segments[].words`, whisper-timestamped `text`, OpenAI verbose_json `words`,
+  whisper.cpp ms offsets) maps to ONE shape. Untimed words are interpolated
+  across their neighbours, words are grouped into beats (provider segments, else
+  pauses), and **words in === words out** is enforced: a mapper that drops a word
+  throws. A segment whose alignment failed but which still has text keeps it now
+  (that sentence used to vanish).
+- `probe.ts` — the measured silence detector: floor = 10th percentile of 10 ms
+  windows, threshold = min(floor+12, floor+35% of the range), gaps ≥ 250 ms, and
+  `speechFound: false` when the whole clip is one flat level.
+- `edl.ts` — frame snapping (ceil, so a cut never clips the last frame), the cut
+  planner from a probe (padding for room tone, minimum cut/keep), transcript
+  retiming onto the cut timeline, and `cutsFromRanges` for the flip back.
+- `captions.ts` — assigns spoken words to caption clips by overlap, wraps them
+  (never dropping a word), and reports orphans and out-of-sync windows.
+
+### Captions on the voice
+- `StudioTextClip.wordDelaysMs` (clip-relative ms) is the new contract; the
+  renderer reveals word n when it was *spoken*, and tints the word being said
+  (karaoke) instead of spreading words evenly across the block.
+- `captionsFromTranscript` breaks captions at real spoken pauses (0.35 s), not
+  only at punctuation, and carries the delays. Phrase-timed engines (Windows
+  Speech) get an even split rather than three identical delays.
+
+### Cut on measured silence
+- Studio → Pro → Auto-edit → **Tighten by silence**: decodes the clip, probes it,
+  and hands the measured gaps to the same cut machinery the word path uses — so
+  a clip that was never transcribed can still be tightened.
+
+### Delivery gates (`src/lib/studio/gates.ts`, `gateRunner.ts`)
+- WCAG 2.2 contrast measured on the actual rendered pixels (ring sampling around
+  each text block, sliding one-second windows, one bad second fails the block),
+  platform safe zones, and the delivery numbers when the encoder has them — one
+  chain that stops at the first error and names it, with a two-correction budget.
+- Studio → **Checks** → *Run delivery checks* renders the edit at audit size and
+  reports findings with a measured one-click fix, plus **Fix all** as one undo
+  step.
+- `scripts/check-speech.mjs` (101 assertions) and `scripts/check-gates.mjs`
+  (124) run headless in `npm run build`; `check-renderer` proves the caption
+  reveal on the paint calls; `check-auto-captions` proves the delays.
+
+### Still open (see `UPGRADE_PLAN.md`)
+- Fast export (WebCodecs/FFmpeg) so the gates can run on a file rather than a
+  canvas; Playwright CI lane; design goldens; Piper voiceover in the agent.
+
+## Latest: autonomous runs, the design engine, and fonts that load
+
+An autonomous job no longer needs the desktop app to finish, and the app no
+longer paints a fallback face while claiming a font was applied.
+
+### Autonomous agent — one pipeline, both environments
+- `src/lib/automation/{plan,run,report}.ts`: the eight desktop steps run *in the
+  app* — offline deterministic planner (`planLocally` over the Opus catalogue +
+  UI resources) → locked rundown → three-direction design battle → timeline →
+  render on the shared Studio renderer → machine-checked review report.
+- The web build used to stop at step one ("desktop only"). It now produces the
+  same artefacts: a rendered preview, editable Studio clips, the battle and the
+  report. `runAutomationLocally` in the store owns the state; cancel, resume and
+  the guided review gate all work with no Electron.
+- Desktop keeps its own FFmpeg pipeline, but `automation:start` now normalises
+  the rundown the renderer planned and starts from it instead of a placeholder.
+  A desktop run that fails can be finished in-app with **Finish in Studio**.
+- New in the UI: the candidate battle with scores and reasons, the scene-by-scene
+  storyboard (stage, face, accent, timing), the rendered video with a download,
+  and the full review report.
+- Media already in the project is assigned to planned shots by file name, so a
+  run designs *around your footage* instead of planning placeholders (`reused`
+  counts the clips that made it in; the step log says so).
+
+### Design engine (`src/lib/studio/design.ts`)
+- `DESIGN_DIRECTIONS` = typography-led / composition-led / atmosphere-led. Each
+  designs the same plan: per-scene stage, contrast-checked ink, safe areas,
+  eyebrow/headline/support hierarchy, one accent per scene, real transitions.
+- `designAll` runs all three, scores them (`designScore`), and commits the
+  winner — wired into the autonomous run, `ProductionPlanner` and a new Studio
+  panel ("Design engine"). The user can pin one direction instead of the battle.
+- The score rewards contrast, safe-area compliance, hierarchy, stage/accent
+  variety and legible sizes, and reports the reasons to the UI.
+
+### Fonts (the "suggested fonts don't work" bug)
+- `ensureFont` actually loads bundled and user faces (`document.fonts.load` +
+  `check`) before anything claims a font was applied; the emphasis face is
+  planned and loaded with the headline face; `Noto Sans Devanagari` and `Hind`
+  are recognised as bundled; a failed download is retried the moment a font file
+  is added; a face that cannot load raises `FONT_MISSING_EVENT`, which App.tsx
+  turns into a toast with the Fontshare link.
+- Exports verify every face first and warn (toast) instead of baking the
+  fallback into the file.
+- Checks: `check:framecn-fonts` (728 assertions) covers the new rules;
+  `check:automation` (73 assertions) covers planning, media binding, the battle,
+  the pinned direction, the full eight-step run with an injected render, the
+  guided gate, cancel, report truth and the UI/store wiring.
+
+### Still to eyeball in a real browser
+- The local render step needs `MediaRecorder`; in the sandbox it is stubbed. On
+  a real machine, run an Auto Draft job on a short brief and watch the preview
+  appear in the job card.
+- Fontshare zips: add one with "Add fonts" and confirm the family appears in the
+  text inspector without a reload (the failure cache is cleared on import).
+
 ## Latest: framecn, fonts, cursor v2
 - `check:framecn-fonts` has 721 assertions, and every framecn component is server-rendered in the check.
 - Not verified in a real browser. Eyeball these:

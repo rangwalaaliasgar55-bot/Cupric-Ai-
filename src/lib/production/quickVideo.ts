@@ -11,7 +11,8 @@
  * mulberry32, never an unseeded RNG or the clock, so the same settings always
  * build the same timeline, and preview and export use the same doc.
  */
-import type { StudioAspect, StudioAudioClip, StudioCaptionStyle, StudioClip, StudioDoc, StudioMediaClip, StudioTextClip } from '../../types/project'
+import type { StudioAspect, StudioAudioClip, StudioCaptionStyle, StudioClip, StudioDoc, StudioMediaClip, StudioTextClip, StudioTimingSource } from '../../types/project'
+import { planCaptionLines } from '../studio/textTools'
 
 export const QUICK_VIDEO_SOURCE = { name: 'MoneyPrinterTurbo', url: 'https://github.com/harry0703/MoneyPrinterTurbo', license: 'MIT', attribution: 'MIT © 2024 Harry (harry0703)' } as const
 
@@ -48,6 +49,13 @@ export type QuickVideoSettings = {
   subtitleColor: string
   subtitleSizePct: number
   subtitleMaxChars: number
+  /**
+   * When the offline voiceover is generated, transcribe it back to get real
+   * word times for the subtitles (desktop only; one extra offline Whisper pass).
+   * Off, or in the browser build, the subtitles are timed from the script's own
+   * estimate — and every caption clip says so (`timingSource: 'even'`).
+   */
+  wordTimings: boolean
   variants: number
   seed: number
 }
@@ -57,7 +65,7 @@ export const DEFAULT_QUICK_SETTINGS: QuickVideoSettings = {
   aspect: '9:16', fit: 'cover', concat: 'random', clipMaxSec: 4, matchScriptOrder: false, termCount: 5,
   provider: 'openverse', mediaKind: 'image', voice: 'tts', voiceRate: 0, voiceVolume: 1, bgmVolume: 0.2,
   subtitles: true, subtitlePosition: 'bottom', subtitleCustomY: 0.7, subtitleStyle: 'standard', subtitleColor: '#FFFFFF', subtitleSizePct: 6, subtitleMaxChars: 32,
-  variants: 1, seed: 1,
+  wordTimings: true, variants: 1, seed: 1,
 }
 
 export const ASPECT_PRESETS: Array<{ aspect: StudioAspect; label: string; size: string; use: string }> = [
@@ -94,6 +102,7 @@ export function sanitizeSettings(raw: unknown): QuickVideoSettings {
     subtitleStyle: pick(o.subtitleStyle, ['hormozi', 'standard', 'minimal'] as const, d.subtitleStyle),
     subtitleColor: typeof o.subtitleColor === 'string' && /^#[0-9a-f]{6}$/i.test(o.subtitleColor) ? o.subtitleColor : d.subtitleColor,
     subtitleSizePct: num(o.subtitleSizePct, d.subtitleSizePct, 3, 14), subtitleMaxChars: Math.round(num(o.subtitleMaxChars, d.subtitleMaxChars, 12, 60)),
+    wordTimings: typeof o.wordTimings === 'boolean' ? o.wordTimings : d.wordTimings,
     variants: Math.round(num(o.variants, d.variants, 1, 5)), seed: Math.round(num(o.seed, d.seed, 1, 2 ** 31 - 1)),
   }
 }
@@ -252,8 +261,30 @@ export function subtitleY(s: QuickVideoSettings): number {
 
 export type QuickAudio = { mediaId: string; fileName: string; localPath: string | null; durationSec: number }
 
+/** One spoken word on the timeline, in seconds (from a transcription of the voiceover). */
+export type QuickWord = { word: string; start: number; end: number }
+
+/**
+ * What the subtitles in a built doc are timed by — read from the clips, not from
+ * what the caller intended, so the run log and the task history can never claim
+ * more precision than the timeline actually has.
+ */
+export function captionTimingOf(doc: StudioDoc): { source: StudioTimingSource; exact: number; approximate: number; label: string } | null {
+  const subs = doc.clips.filter((c): c is StudioTextClip => c.kind === 'text' && /-sub-\d+$/.test(c.id))
+  if (!subs.length) return null
+  const exact = subs.filter((c) => c.timingSource === 'word').length
+  const approximate = subs.length - exact
+  const source: StudioTimingSource = subs.some((c) => c.timingSource === 'phrase') ? 'phrase' : exact ? 'word' : 'even'
+  const label = source === 'word'
+    ? `real word times (${exact} of ${subs.length} captions)`
+    : source === 'phrase'
+      ? 'phrase times from the voice engine — words inside a phrase are approximate'
+      : 'estimated from the script — no word timings'
+  return { source, exact, approximate, label }
+}
+
 /** Compose the editable Studio doc. Ids are derived from the seed so rebuilds are stable. */
-export function buildQuickDoc(base: StudioDoc, s: QuickVideoSettings, script: string, media: QuickMedia[], opts: { voice?: QuickAudio | null; music?: QuickAudio | null; seed?: number } = {}): StudioDoc {
+export function buildQuickDoc(base: StudioDoc, s: QuickVideoSettings, script: string, media: QuickMedia[], opts: { voice?: QuickAudio | null; music?: QuickAudio | null; seed?: number; words?: QuickWord[] | null } = {}): StudioDoc {
   const seed = opts.seed ?? s.seed
   const total = opts.voice?.durationSec ? r2(opts.voice.durationSec) : estimateNarrationSec(script, s.language, s.voiceRate)
   const clips: StudioClip[] = []
@@ -268,11 +299,22 @@ export function buildQuickDoc(base: StudioDoc, s: QuickVideoSettings, script: st
     clips.push(clip)
   })
   if (s.subtitles) {
-    timeSubtitles(splitSubtitles(script, s.subtitleMaxChars), total).forEach((line, i) => {
+    // Real word times (when the voiceover was transcribed) decide the caption
+    // boundaries and the per-word reveals; without them the script's own
+    // estimate is used and every clip is labelled `even` so nothing downstream
+    // can mistake it for a measurement.
+    const spoken = opts.words?.length ? opts.words.filter((w) => w.end > 0 && w.start < total + 0.5) : null
+    const lines: Array<{ text: string; startSec: number; durationSec: number; wordDelaysMs: number[] | null; timingSource: StudioTimingSource }> =
+      spoken?.length
+        ? planCaptionLines('', { startSec: 0, durationSec: total, maxWords: 4, maxChars: s.subtitleMaxChars, words: spoken })
+        : timeSubtitles(splitSubtitles(script, s.subtitleMaxChars), total).map((line) => ({ ...line, wordDelaysMs: null, timingSource: 'even' as const }))
+    lines.forEach((line, i) => {
       const clip: StudioTextClip = {
         id: id('sub', i), kind: 'text', track: 1, startSec: line.startSec, durationSec: Math.max(0.3, line.durationSec), name: `Sub · ${line.text.slice(0, 18)}`,
         transitionIn: 'none', transitionOut: 'none', opacity: 1, text: line.text, fontSizePct: s.subtitleSizePct, fontFamily: 'Inter Variable', color: s.subtitleColor,
-        weight: 800, align: 'center', x: 0.5, y: subtitleY(s), anim: 'none' as StudioTextClip['anim'], captionStyle: s.subtitleStyle, highlightWord: null,
+        weight: 800, align: 'center', x: 0.5, y: subtitleY(s), anim: (line.wordDelaysMs ? 'word-reveal' : 'none') as StudioTextClip['anim'], captionStyle: s.subtitleStyle, highlightWord: null,
+        timingSource: line.timingSource,
+        ...(line.wordDelaysMs ? { wordDelaysMs: line.wordDelaysMs } : {}),
       }
       clips.push(clip)
     })
@@ -306,7 +348,7 @@ export function parseHistory(raw: string | null): QuickTask[] {
  * saved as a scene (different seeded footage order) so "Export every scene"
  * renders them all with the same renderer.
  */
-export function buildQuickVariants(base: StudioDoc, s: QuickVideoSettings, script: string, media: QuickMedia[], opts: { voice?: QuickAudio | null; music?: QuickAudio | null } = {}): StudioDoc {
+export function buildQuickVariants(base: StudioDoc, s: QuickVideoSettings, script: string, media: QuickMedia[], opts: { voice?: QuickAudio | null; music?: QuickAudio | null; words?: QuickWord[] | null } = {}): StudioDoc {
   const seeds = variantSeeds(s.variants, s.seed)
   const { scenes: _drop, ...plain } = base
   const docs = seeds.map((seed) => buildQuickDoc(plain as StudioDoc, s, script, media, { ...opts, seed }))

@@ -18,6 +18,10 @@ import { componentOps, directComponents } from '../../lib/studio/componentDirect
 import { deleteScene, duplicateScene, loadScene, removeVariable, renameScene, saveScene, setVariable, updateScene, nestScene } from '../../lib/studio/scenes'
 import { variablesUsed } from '../../lib/studio/resolve'
 import { reframePatch, snapCutsToBeats, tightenClip, timelineBeats } from '../../lib/studio/autoEdit'
+import { tightenWithProbe } from '../../lib/studio/speechProbe'
+import { decomposeClip, type DecomposeMode } from '../../lib/studio/decompose'
+import { placeCaptions } from '../../lib/studio/placement'
+import { describeProbe } from '../../lib/speech/probe'
 import { analyseBeats, analyseSubject } from '../../lib/studio/autoEditAnalysis'
 import { aspectRatio } from '../../lib/studio/doc'
 import { DEFAULT_PHONE, PHONE_DESIGNS, PHONE_FRAME_COLORS, PHONE_MOTIONS, defaultApp } from '../../lib/studio/phone'
@@ -70,6 +74,29 @@ async function refsFrom(files: FileList | null): Promise<{ refs: MediaRef[]; err
 
 export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selectedId, onImportFiles }: Props) {
   const [transcribing, setTranscribing] = useState(false)
+  /** True once this panel served a clip's words from the transcript cache. */
+  const [cacheUsed, setCacheUsed] = useState(false)
+  const runTranscribe = async (refresh: boolean) => {
+    const src = doc.clips.find((c) => c.id === selectedId && (c.kind === 'video' || c.kind === 'audio')) as StudioMediaClip | StudioAudioClip | undefined
+    if (!src) return
+    setTranscribing(true)
+    setMsg(null)
+    try {
+      const r = await transcribeClip(src, 'en', { refresh })
+      setCacheUsed(Boolean(r.cached))
+      const { doc: next, captions } = captionsForClip(doc, src, r.words)
+      if (!captions.length) return setMsg('No speech was recognised in the used part of this clip.')
+      const notes = [r.timing === 'word' ? `Whisper · word-level timing (${r.words.length} words)` : `Windows Speech · phrase-level timing — words are spread across each phrase, so check fast speech`]
+      if (r.cached) notes.push('Reused the transcription already stored for this file — no second run.')
+      if (r.drift) notes.push(`This clip carried different words (${r.drift.words} of them changed): the new alignment produced the captions, and anything built from the old words was left alone.`)
+      propose(next, `${captions.length} auto-captions`, notes)
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err))
+    } finally {
+      setTranscribing(false)
+    }
+  }
+
   const [sceneName, setSceneName] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const [varName, setVarName] = useState('')
@@ -85,6 +112,10 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
   const [verdict, setVerdict] = useState<LinkVerdict | null>(null)
   const [rights, setRights] = useState(false)
   const [compare, setCompare] = useState<MediaRef[]>([])
+  const [breakMode, setBreakMode] = useState<DecomposeMode>('silence')
+  const [breakPieceSec, setBreakPieceSec] = useState(4)
+  const [breakKeepTiming, setBreakKeepTiming] = useState(false)
+  const [breakCaptions, setBreakCaptions] = useState(true)
 
   const propose = (next: StudioDoc, label: string, notes?: string[]) => {
     setPending({ doc: next, label, notes })
@@ -388,6 +419,8 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
         {(() => {
           const sel = doc.clips.find((c) => c.id === selectedId)
           const music = (sel?.kind === 'audio' ? sel : doc.clips.find((c) => c.kind === 'audio' && (c.role ?? 'music') === 'music')) as StudioAudioClip | undefined
+          // Word timings live on media clips only; narrow once so the JSX below stays readable.
+          const spoken = sel && (sel.kind === 'video' || sel.kind === 'audio') ? sel.words ?? null : null
           const beats = timelineBeats(doc)
           const run = async (label: string, fn: () => Promise<void>) => {
             setBusy(label)
@@ -418,13 +451,80 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
               </div>
               <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Tighten speech</p>
-                <p className="text-xs text-muted">{sel && (sel.kind === 'video' || sel.kind === 'audio') ? (sel.words?.length ? `Removes “um/uh” and pauses over 0.6 s from “${sel.name}”, using its ${sel.words.length} word timings.` : 'Run Auto-captions on this clip first — tightening needs its word timings.') : 'Select a transcribed video or audio clip.'}</p>
-                <Button size="sm" variant="outline" className="mt-1.5" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length) ? 'Select a video or audio clip with a transcript' : undefined} onClick={() => {
-                  if (!sel) return
-                  const r = tightenClip(doc, sel.id)
-                  if (!r.cuts) return setMsg(r.reason ?? 'Nothing to tighten.')
-                  propose(r.doc, `Tighten speech (−${r.removedSec.toFixed(1)} s)`, [`${r.cuts} cuts; captions and overlays after the clip move with the words.`])
-                }}>Tighten</Button>
+                <p className="text-xs text-muted">{sel && (sel.kind === 'video' || sel.kind === 'audio') ? (sel.words?.length ? `Removes “um/uh” and pauses over 0.6 s from “${sel.name}”, using its ${sel.words.length} word timings.` : `Measures “${sel.name}” itself — the pause finder reads the waveform, so no transcript is needed.`) : 'Select a transcribed video or audio clip.'}</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="outline" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length) ? 'Select a video or audio clip with a transcript' : undefined} onClick={() => {
+                    if (!sel) return
+                    const r = tightenClip(doc, sel.id)
+                    if (!r.cuts) return setMsg(r.reason ?? 'Nothing to tighten.')
+                    propose(r.doc, `Tighten speech (−${r.removedSec.toFixed(1)} s)`, [`${r.cuts} cuts; captions and overlays after the clip move with the words.`])
+                  }}>Tighten by words</Button>
+                  <Button size="sm" variant="outline" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy) ? 'Select a video or audio clip — or wait' : undefined} onClick={() => sel && run('probe', async () => {
+                    const r = await tightenWithProbe(doc, sel.id)
+                    if (r.probe) setMsg(`${describeProbe(r.probe)} Kept ${r.cuts ? r.cuts : 'no'} cut${r.cuts === 1 ? '' : 's'}${r.cuts ? `, ${r.removedSec.toFixed(1)} s shorter` : ''}.`)
+                    if (!r.cuts) return
+                    propose(r.doc, `Tighten by measured silence (−${r.removedSec.toFixed(1)} s)`, [`${r.cuts} cuts measured from the waveform; every clip after it moves with the audio.`])
+                  })}>{busy === 'probe' ? 'Measuring…' : 'Tighten by silence'}</Button>
+                </div>
+              </div>
+              <div className="cu-section p-2.5">
+                <p className="text-xs font-medium text-text">Break into clips</p>
+                <p className="text-xs text-muted">
+                  {sel && (sel.kind === 'video' || sel.kind === 'audio')
+                    ? `Turns “${sel.name}” into separate clips you can move, retime, delete or caption — ${spoken?.length ? `${spoken.length} word timings available` : 'no transcript needed for the silence and even splits'}.`
+                    : 'Import a video, then break it apart: every phrase and every pause becomes an ordinary Studio clip.'}
+                </p>
+                <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                  <label className="text-[11px] text-muted">Break at
+                    <select className={inputCx} value={breakMode} onChange={(e) => setBreakMode(e.target.value as DecomposeMode)} aria-label="Break mode">
+                      <option value="auto">Shots + pauses (best for an imported video)</option>
+                      <option value="silence">Measured pauses (waveform)</option>
+                      <option value="words">Pauses in the words (needs a transcript)</option>
+                      <option value="shots">Scene changes (the picture alone)</option>
+                      <option value="even">Even pieces (no speech needed)</option>
+                    </select>
+                  </label>
+                  {breakMode === 'even'
+                    ? <label className="text-[11px] text-muted">Piece length · {breakPieceSec}s
+                        <input type="range" min={1} max={20} value={breakPieceSec} onChange={(e) => setBreakPieceSec(Number(e.target.value))} className="w-full" />
+                      </label>
+                    : breakMode === 'shots'
+                      ? <p className="pb-1 text-[11px] text-muted">Nothing is removed: the clip is only cut where the picture changes, so the sequence still plays back exactly as it does now.</p>
+                      : <label className="flex items-end gap-2 pb-1 text-[11px] text-muted">
+                          <input type="checkbox" checked={breakKeepTiming} onChange={(e) => setBreakKeepTiming(e.target.checked)} />
+                          Keep the original timing (pauses stay as their own clips)
+                        </label>}
+                </div>
+                <label className="mt-1 flex items-center gap-2 text-[11px] text-muted">
+                  <input type="checkbox" checked={breakCaptions} disabled={!spoken?.length} title={!spoken?.length ? 'Transcribe the clip first (Auto-captions) to caption the pieces' : undefined} onChange={(e) => setBreakCaptions(e.target.checked)} />
+                  Caption the pieces from the clip’s word timings (word-timed, labelled in the inspector)
+                </label>
+                {(breakMode === 'shots' || breakMode === 'auto') && (
+                  <p className="mt-1 text-[11px] text-muted">Reads the clip’s own frames (four per second of footage) — this runs on the desktop app, where the file is, and a long clip takes a while.</p>
+                )}
+                <Button size="sm" variant="primary" className="mt-1.5" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy) ? 'Select a video or audio clip — or wait' : undefined} onClick={() => sel && run('break', async () => {
+                  const r = await decomposeClip(doc, sel.id, {
+                    mode: breakMode,
+                    pieceSec: breakPieceSec,
+                    keepTiming: breakMode === 'even' ? false : breakKeepTiming,
+                    caption: breakCaptions && spoken?.length ? {} : null,
+                    onProgress: breakMode === 'shots' || breakMode === 'auto' ? (pct, label) => setMsg(`${label} ${pct}%`) : undefined,
+                  })
+                  if (r.reason) return setMsg(r.reason)
+                  const notes = [...r.notes]
+                  if (r.captions) notes.push(`${r.captions} word-timed caption clips added on the top track.`)
+                  setMsg(null)
+                  propose(r.doc, `Break into ${r.pieces} clips`, notes)
+                })}>{busy === 'break' ? 'Breaking apart…' : breakMode === 'auto' || breakMode === 'shots' ? 'Take the video apart' : 'Break into clips'}</Button>
+              </div>
+              <div className="cu-section p-2.5">
+                <p className="text-xs font-medium text-text">Place captions clear of the subject</p>
+                <p className="text-xs text-muted">Measures the footage under each caption (motion, detail and skin on three frames) and moves the ones sitting over the speaker&apos;s face into the calmest band. Frames are read from the clip’s own file, so this runs on the desktop app.</p>
+                <Button size="sm" variant="outline" className="mt-1.5" disabled={!!busy} title={busy ? 'Working — or wait' : undefined} onClick={() => run('place', async () => {
+                  const r = await placeCaptions(doc, { onProgress: (pct, label) => setMsg(`${label} ${pct}%`) })
+                  if (r.outcome.moved.length) return propose(r.outcome.doc, `Place ${r.outcome.moved.length} caption(s) clear of the subject`, r.outcome.notes)
+                  setMsg(r.outcome.notes.join(' ') || 'Nothing needed moving.')
+                })}>{busy === 'place' ? 'Measuring…' : 'Place captions'}</Button>
               </div>
               <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Smart reframe</p>
@@ -516,21 +616,9 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
           return (
             <>
               <p className="text-xs text-muted">{src ? `Transcribes the selected ${src.kind} clip offline and times each caption to the words.` : 'Select a video or audio clip on the timeline first.'}</p>
-              <Button size="sm" variant="outline" disabled={!src || transcribing} title={(!src || transcribing) ? 'Select media to transcribe — or wait' : undefined} onClick={async () => {
-                if (!src) return
-                setTranscribing(true)
-                setMsg(null)
-                try {
-                  const r = await transcribeClip(src)
-                  const { doc: next, captions } = captionsForClip(doc, src, r.words)
-                  if (!captions.length) return setMsg('No speech was recognised in the used part of this clip.')
-                  propose(next, `${captions.length} auto-captions`, [r.timing === 'word' ? `Whisper · word-level timing (${r.words.length} words)` : `Windows Speech · phrase-level timing — words are spread across each phrase, so check fast speech`])
-                } catch (err) {
-                  setMsg(err instanceof Error ? err.message : String(err))
-                } finally {
-                  setTranscribing(false)
-                }
-              }}>{transcribing ? 'Transcribing…' : 'Transcribe & caption'}</Button>
+              <Button size="sm" variant="outline" disabled={!src || transcribing} title={(!src || transcribing) ? 'Select media to transcribe — or wait' : undefined} onClick={() => void runTranscribe(false)}>{transcribing ? 'Transcribing…' : 'Transcribe & caption'}</Button>
+              <Button size="sm" variant="ghost" disabled={!src || transcribing || !cacheUsed} title={!cacheUsed ? 'A cached transcription was not used for this clip yet' : 'Ignore the stored transcription and align the audio again'} onClick={() => void runTranscribe(true)}>Re-transcribe</Button>
+              {cacheUsed && <p className="text-[11px] text-muted">The transcription stored for this file was reused — the offline engine did not run a second time. <span className="text-text">Re-transcribe</span> ignores the cache.</p>}
             </>
           )
         })()}

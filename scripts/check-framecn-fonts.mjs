@@ -39,6 +39,7 @@ const entry = [
   "export * as comps from './src/lib/studio/components'",
   "export * as uf from './src/lib/studio/userFonts'",
   "export * as fs from './src/lib/studio/fontStyles'",
+  "export * as fnt from './src/lib/studio/fonts'",
   "export * as cur from './src/lib/studio/cursor'",
   "export * as ops from './src/lib/studio/editOps'",
   "export * as docm from './src/lib/studio/doc'",
@@ -121,6 +122,16 @@ ok(read('src/screens/studio/StudioInspector.tsx').includes('<FramecnFields') && 
   const doc = { aspect: '16:9', fps: 30, backgroundId: 'bg', trackCount: 2, clips: [{ ...m.docm.defaultTextClip(0, 1), id: 't' }] }
   assert.throws(() => m.ops.validateStudioEditPlan({ summary: 's', ops: [{ type: 'patchClip', clipId: 't', patch: { fontFamily: 'Satoshi' } }] }, doc), /Fontshare font the user has not added/); n++
   ok(read('src/screens/studio/StudioInspector.tsx').includes('<FontStudio') && read('src/screens/studio/FontStudio.tsx').includes('Suggested looks'), 'suggestions in the text inspector')
+
+  /* fonts that must be loaded before canvas ink is committed */
+  ok(m.fnt.isBundledFont('Noto Sans Devanagari') && m.fnt.isBundledFont('Hind') && m.fnt.fontKind('Noto Sans Devanagari') === 'bundled', 'the two Devanagari families ship in the bundle')
+  ok(m.fnt.fontKind('Satoshi') === 'remote' && m.fnt.fontKind('Geist Variable') === 'bundled', 'font kind: bundled vs remote')
+  const plan = m.fnt.docFontPlan({ clips: [{ kind: 'text', fontFamily: 'Geist Variable', emphasisFont: 'Instrument Serif', weight: 800 }] })
+  ok(plan.length === 2 && plan.every((f) => f.weights.includes(800)), 'the emphasis face is planned (and loaded) with the headline face')
+  ok(m.fnt.docFontPlan({ clips: [{ kind: 'text', fontFamily: 'Inter Variable', hidden: true }] }).length === 0, 'hidden clips need no faces')
+  ok(read('src/lib/studio/export.ts').includes('onWarning') && read('src/lib/studio/export.ts').includes('ensureDocFonts'), 'export verifies every face and warns instead of baking the fallback')
+  ok(read('src/screens/Studio.tsx').includes('onWarning') && read('src/App.tsx').includes('FONT_MISSING_EVENT'), 'a font that cannot load reaches the user as a toast')
+  ok(read('src/lib/studio/fonts.ts').includes('USER_FONTS_EVENT') && read('src/lib/studio/fonts.ts').includes('failedAt'), 'a failed download is not cached forever — adding the file retries at once')
   ok(read('electron/main.cjs').includes('STUDIO CONTEXT.fonts') && read('src/screens/Studio.tsx').includes('fonts: fontChoicesForAgent('), 'agent prompt + context include fonts')
 }
 

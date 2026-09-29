@@ -7,6 +7,7 @@ import { StudioProPanel } from './studio/StudioProPanel'
 import { ClipContextMenu } from './studio/ClipContextMenu'
 import { applyClipAction, getClipboard, setClipboard, type ClipActionId } from '../lib/studio/clipActions'
 import { makeProxy } from '../lib/studio/proxy'
+import { decomposeClip } from '../lib/studio/decompose'
 import { emitDiff, emitStudio } from '../lib/studio/studioEvents'
 import { createStudioApi } from '../lib/studio/studioApi'
 import { unfilledPlaceholders } from '../lib/studio/layouts'
@@ -47,6 +48,7 @@ import {
   ZoomIn,
   ZoomOut,
   LayoutTemplate,
+  ShieldCheck,
 } from 'lucide-react'
 import { ShapePicker } from './studio/ShapePicker'
 import { LoaderPicker } from './studio/LoaderPicker'
@@ -94,6 +96,9 @@ import { readDragPayload } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio, exportStudioInBackground } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
+import { applyAuditFixes, describeAudit, runStudioAudit, verifyAppliedFixes } from '../lib/studio/gateRunner'
+import { allowListOfReport, diffStudioDoc } from '../lib/studio/scopedEdit'
+import type { GateReport } from '../lib/studio/gates'
 import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
@@ -169,6 +174,10 @@ export function Studio() {
   }
   const [showVoiceHelp, setShowVoiceHelp] = useState(false)
   const [showChecks, setShowChecks] = useState(false)
+  // The last delivery audit, with the document it judged — a stale pass is worse
+  // than no pass, so the panel says when the edit has moved on since.
+  const [audit, setAudit] = useState<{ report: GateReport; doc: StudioDoc } | null>(null)
+  const [auditing, setAuditing] = useState(false)
   const [showSafeAreas, setShowSafeAreas] = useState(true)
   const [keyframeRecord, setKeyframeRecord] = useState(false)
   const [showResources, setShowResources] = useState(false)
@@ -187,6 +196,8 @@ export function Studio() {
   const [timelineH, setTimelineH] = useState<number | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [clipMenuAt, setClipMenuAt] = useState<{ clipId: string; x: number; y: number } | null>(null)
+  /** One decomposition at a time: measuring the waveform is not instant. */
+  const breakBusyRef = useRef(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const stripRef = useRef<HTMLDivElement>(null)
   const setAskOpen = useProjectStore((st) => st.setAskOpen)
@@ -202,8 +213,73 @@ export function Studio() {
   // Recomputed from the document, never stored: a stale warning is worse than
   // no warning.
   const issues = useMemo(() => lintStudioDoc(doc, { hasMedia }), [doc])
+  const auditFindings = useMemo(() => audit?.report.findings ?? [], [audit])
   const pid = project?.id ?? null
   const selected = useMemo(() => doc.clips.find((c) => c.id === selectedId) ?? null, [doc.clips, selectedId])
+  const runAudit = useCallback(() => {
+    if (auditing || duration <= 0) return
+    setAuditing(true)
+    setShowChecks(true)
+    // Yield a frame first, so the button shows its state before rendering blocks.
+    requestAnimationFrame(() => {
+      try {
+        const { report } = runStudioAudit(doc, { hasMedia, fps: 4, maxFrames: 18 })
+        setAudit({ report, doc })
+        if (report.ok) {
+          cueDone()
+          pushToast('success', describeAudit(report))
+        } else {
+          cueProblem()
+          pushToast('error', report.summary)
+        }
+      } catch (err) {
+        rlog.warn('studio', 'delivery audit failed', err)
+        pushToast('error', humanError(err))
+      } finally {
+        setAuditing(false)
+      }
+    })
+  }, [auditing, doc, duration, pushToast])
+
+  const applyAudit = useCallback(() => {
+    if (!pid || !audit) return
+    const { doc: fixed, applied } = applyAuditFixes(doc, audit.report)
+    if (!applied) return
+    // Prove the fix touched only the blocks the report named (`scopedEdit`): a
+    // "Fix all" that quietly moved a caption nobody flagged is a defect, and the
+    // report's own clip ids are the allow-list for exactly this reason.
+    const scope = diffStudioDoc(doc, fixed, { allow: allowListOfReport(audit.report) })
+    patchStudio(pid, { clips: fixed.clips, trackCount: fixed.trackCount }, 'Fix delivery checks')
+    setAudit(null)
+    if (!scope.ok) {
+      cueProblem()
+      rlog.warn('studio', 'scoped edit drifted', scope.summary)
+      pushToast('error', `The fix also changed something it was not asked to — ${scope.unexpected[0].label}. Undo reverts all of it.`)
+      return
+    }
+    // …and prove the fix actually fixed it: re-render the patched document and
+    // run the same chain. A fix is scored analytically, so without this a patch
+    // that missed its target would still be reported as an improvement.
+    try {
+      const check = verifyAppliedFixes(audit.report, fixed, { hasMedia, fps: 4, maxFrames: 18 })
+      if (check.ok) {
+        cueDone()
+        pushToast('success', `Applied ${applied} measured fix${applied === 1 ? '' : 'es'} — one undo step, and ${scope.summary}. ${check.summary}`)
+        return
+      }
+      cueProblem()
+      rlog.warn('studio', 'applied fix did not hold', check.summary)
+      const what = check.unresolved[0]
+      pushToast('error', `${check.summary}${what ? ` Still failing: “${what.message}”` : ''} The fix is applied — Undo reverts it.`)
+    } catch (err) {
+      // The fix is applied and the scope is proven; only the recheck failed, so
+      // say exactly that instead of claiming a verification that did not run.
+      cueDone()
+      rlog.warn('studio', 'could not re-check the applied fix', err)
+      pushToast('success', `Applied ${applied} measured fix${applied === 1 ? '' : 'es'} — one undo step, and ${scope.summary}. The result could not be re-checked: ${humanError(err)}`)
+    }
+  }, [audit, doc, patchStudio, pid, pushToast])
+
   const runClipAction = useCallback((clipId: string | null, action: ClipActionId) => {
     if (!pid) return
     const r = applyClipAction(doc, clipId, action, { time, clipboard: getClipboard() })
@@ -1263,7 +1339,10 @@ export function Studio() {
         const previewUrl = await getIpc()!.invoke('render:preview', farm.outputPath) as string
         setLastExport({ url: previewUrl, fileName: `${fileName}.${asMp4 ? 'mp4' : 'webm'}` })
         if (!asMp4) await getIpc()!.invoke('render:copyToDownloads', farm.outputPath)
-        pushToast('success', `Saved ${farm.outputPath.split(/[\\/]/).pop()} (${Math.round(farm.bytes / 1024)} KB)`)
+        // Say which loudness correction actually ran: the desktop export measures the
+        // recording first, and a linear pass and a dynamic one are different results.
+        const level = farm.loudness && farm.loudness.mode !== 'none' ? ` \u2014 ${farm.loudness.note}` : ''
+        pushToast('success', `Saved ${farm.outputPath.split(/[\\/]/).pop()} (${Math.round(farm.bytes / 1024)} KB)${level}`)
         cueDone()
         return 'done'
       }
@@ -1272,6 +1351,7 @@ export function Studio() {
         scale: 1,
         onProgress: setExportPct,
         signal,
+        onWarning: (message) => pushToast('error', message, { sticky: true }),
       })
       if (result.cancelled) {
         pushToast('info', 'Export cancelled')
@@ -1280,7 +1360,8 @@ export function Studio() {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
         const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal)
         setLastExport({ url: result.url, fileName: result.fileName })
-        pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)`)
+        const level = mp4.loudness && mp4.loudness.mode !== 'none' ? ` \u2014 ${mp4.loudness.note}` : ''
+        pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)${level}`)
         cueDone()
       } else {
         setLastExport({ url: result.url, fileName: result.fileName })
@@ -1665,6 +1746,65 @@ export function Studio() {
 
       {showChecks && (
         <div className="shrink-0 space-y-2 border-b border-line bg-panel px-6 py-3">
+          {/* Delivery audit: the document's own frames, measured. The list below
+              is the cheap structural lint; this is the one that reads pixels. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="outline" onClick={runAudit} disabled={auditing || duration <= 0} title="Render a few frames and measure contrast, safe areas and delivery on them">
+              {auditing ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+              {auditing ? 'Checking frames…' : 'Run delivery checks'}
+            </Button>
+            <span className="text-xs text-muted">
+              Renders the edit at audit size and measures what the viewer actually sees — contrast where the text sits, platform safe areas, and the delivery numbers when it has them.
+            </span>
+          </div>
+          {audit && (
+            <div className="space-y-2 rounded-md border border-line bg-panel-alt px-3 py-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className={cx('h-1.5 w-1.5 rounded-full', audit.report.ok ? 'bg-[rgb(120_200_120)]' : 'bg-[rgb(226_75_74)]')} />
+                <span className="text-text">{describeAudit(audit.report)}</span>
+                {audit.doc !== doc && <span className="text-muted">· the edit changed since — run it again</span>}
+                {auditFindings.some((f) => f.clipId && f.fix) && (
+                  <button type="button" className="text-accent-text underline underline-offset-2" onClick={applyAudit}>
+                    Fix all ({auditFindings.filter((f) => f.clipId && f.fix).length})
+                  </button>
+                )}
+              </div>
+              {auditFindings.map((finding, index) => (
+                <div key={`${finding.gate}:${finding.id}:${finding.clipId ?? ''}:${index}`} className="flex items-start gap-3 text-xs">
+                  <span
+                    className={cx(
+                      'mt-1 h-1.5 w-1.5 shrink-0 rounded-full',
+                      finding.severity === 'error' ? 'bg-[rgb(226_75_74)]' : 'bg-[rgb(255_196_92)]',
+                    )}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-text">
+                      <span className="font-mono text-muted">{finding.gate}</span> · {finding.message}
+                    </p>
+                    {finding.hint && <p className="text-muted/80">{finding.hint}</p>}
+                  </div>
+                  {finding.clipId && (
+                    <button
+                      type="button"
+                      className="shrink-0 text-accent-text underline underline-offset-2"
+                      onClick={() => setSelectedId(finding.clipId ?? null)}
+                    >
+                      Show me
+                    </button>
+                  )}
+                  {finding.fix && finding.clipId && (
+                    <button
+                      type="button"
+                      className="shrink-0 text-accent-text underline underline-offset-2"
+                      onClick={() => updateStudioClip(pid as string, finding.clipId as string, finding.fix!.patch)}
+                    >
+                      {finding.fix.label}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           {issues.length === 0 ? (
             <p className="text-xs text-muted">
               Nothing to flag. Text is inside the safe area, every clip has its media, and the timeline has no holes.
@@ -1959,7 +2099,43 @@ export function Studio() {
                 hasClipboard={!!getClipboard()}
                 extra={(() => {
                   const c = doc.clips.find((x) => x.id === clipMenuAt.clipId)
-                  return c?.kind === 'video' ? [{ id: 'proxy', label: 'Make preview proxy', run: () => void makeProxy((c as StudioMediaClip).mediaId).then((st) => st.error && pushToast('info', st.error)) }] : []
+                  if (!c || (c.kind !== 'video' && c.kind !== 'audio')) return []
+                  const items: Array<{ id: string; label: string; run: () => void }> = [{
+                    id: 'break-into-clips',
+                    label: 'Break into clips (measured pauses)',
+                    run: () => {
+                      if (breakBusyRef.current) return
+                      breakBusyRef.current = true
+                      pushToast('info', `Measuring “${c.name}” — breaking it at the pauses it finds…`)
+                      void decomposeClip(doc, c.id, { mode: 'silence' })
+                        .then((r) => {
+                          if (r.reason) { pushToast('info', r.reason); return }
+                          patchStudio(pid, { clips: r.doc.clips, trackCount: r.doc.trackCount }, `Break into ${r.pieces} clips`)
+                          pushToast('success', `${r.pieces} clips from “${c.name}”${r.removedSec ? `, ${r.removedSec.toFixed(1)} s of silence closed` : ''} — one Undo reverts it.`)
+                        })
+                        .catch((err) => pushToast('error', humanError(err, 'Break into clips')))
+                        .finally(() => { breakBusyRef.current = false })
+                    },
+                  }]
+                  if (c.kind === 'video') items.push({
+                    id: 'break-at-shots',
+                    label: 'Break at scene changes (the picture)',
+                    run: () => {
+                      if (breakBusyRef.current) return
+                      breakBusyRef.current = true
+                      pushToast('info', `Sampling “${c.name}” to find where the picture changes…`)
+                      void decomposeClip(doc, c.id, { mode: 'shots' })
+                        .then((r) => {
+                          if (r.reason) { pushToast('info', r.reason); return }
+                          patchStudio(pid, { clips: r.doc.clips, trackCount: r.doc.trackCount }, `Split at ${r.pieces - 1} scene changes`)
+                          pushToast('success', `${r.pieces} clips from “${c.name}” at its own cuts — nothing re-timed, one Undo reverts it.`)
+                        })
+                        .catch((err) => pushToast('error', humanError(err, 'Break at scene changes')))
+                        .finally(() => { breakBusyRef.current = false })
+                    },
+                  })
+                  if (c.kind === 'video') items.push({ id: 'proxy', label: 'Make preview proxy', run: () => void makeProxy((c as StudioMediaClip).mediaId).then((st) => st.error && pushToast('info', st.error)) })
+                  return items
                 })()}
                 onAction={(action) => runClipAction(clipMenuAt.clipId, action)}
                 onClose={() => setClipMenuAt(null)}

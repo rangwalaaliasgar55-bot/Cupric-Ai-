@@ -9,7 +9,7 @@
  * - Manual approval is the only gate. Nothing is auto-approved.
  */
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, AlertTriangle, XCircle, ExternalLink } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, XCircle, ExternalLink, Sparkles } from 'lucide-react'
 import { Card } from '../../components/Card'
 import { Button } from '../../components/Button'
 import { Badge } from '../../components/Badge'
@@ -30,6 +30,7 @@ import {
   type OpusIndex, type ResourceCandidate,
 } from '../../lib/production/engine'
 import { PRODUCTION_STAGES, type Confidence, type ProductionIntake, type ProductionSession, type ProductionStage } from '../../lib/production/types'
+import { designAll, type DesignReport } from '../../lib/studio/design'
 
 const STAGE_LABEL: Record<ProductionStage, string> = { intake: 'Intake', brief: 'Brief', research: 'Research', plan: 'Plan', preview: 'Preview', build: 'Build', review: 'Review', export: 'Export' }
 const CONF_TONE: Record<Confidence, 'accent' | 'info' | 'danger'> = { high: 'accent', medium: 'info', low: 'danger' }
@@ -67,6 +68,9 @@ export function ProductionPlanner() {
   const setAskOpen = useProjectStore((s) => s.setAskOpen)
   const [polishNotes, setPolishNotes] = useState<{ fixes: string[]; leftForYou: string[] } | null>(null)
   const [snapBeats, setSnapBeats] = useState(true)
+  // The design engine: three directions of the approved plan, scored, best wins.
+  const [autoDesign, setAutoDesign] = useState(true)
+  const [design, setDesign] = useState<{ report: DesignReport; battle: Array<{ name: string; score: number }> } | null>(null)
   const { data: catalogue, error } = useCatalogue()
   const session = useMemo(() => normaliseSession(project?.production), [project?.production])
   const [view, setViewStage] = useState<ProductionStage>(session.stage)
@@ -96,14 +100,23 @@ export function ProductionPlanner() {
     if (!session.brief || !session.research || !catalogue) return
     save({ ...session, plan: buildPlan(catalogue.index, session.brief, session.research), approved: false, stage: 'plan' }, 'Generate production plan')
   }
+  /** One design pass over the build: stage per scene, type system, accents, safe areas. */
+  function designBuilt(doc: Parameters<typeof reviewEdit>[0], brief: Parameters<typeof reviewEdit>[1], clipIds: string[]) {
+    if (!autoDesign) return { doc, report: null as DesignReport | null }
+    const result = designAll(doc, { brandColors: brief.brandColors, tone: brief.tone, aspect: brief.aspect, referenceStyle: brief.referenceStyle, language: brief.language }, clipIds, () => uid())
+    setDesign({ report: result.report, battle: result.battle })
+    return { doc: result.doc, report: result.report }
+  }
+
   function build(replace: boolean) {
     if (!session.plan || !session.brief || !session.approved) return
     const doc = studioOf(project)
     try {
       const r = planToDoc(doc, session.plan, session.brief, { makeId: () => uid(), replace, replaceApproved: session.replaceApproved })
-      const review = reviewEdit(r.doc, session.brief, session.plan, r.clipIds)
-      save({ ...session, builtClipIds: r.clipIds, review, stage: 'review' }, replace ? 'Build production (replace timeline)' : 'Build production (append)', r.doc)
-      pushToast('success', `Built ${r.clipIds.length} editable clips${r.reused ? ` · ${r.reused} use your imported media` : ''}${r.placeholders ? ` · ${r.placeholders} placeholder(s) to replace` : ''}. Undo reverts the whole build.`)
+      const designed = designBuilt(r.doc, session.brief, r.clipIds)
+      const review = reviewEdit(designed.doc, session.brief, session.plan, r.clipIds)
+      save({ ...session, builtClipIds: r.clipIds, review, stage: 'review' }, replace ? 'Build production (replace timeline)' : 'Build production (append)', designed.doc)
+      pushToast('success', `Built ${r.clipIds.length} editable clips${r.reused ? ` · ${r.reused} use your imported media` : ''}${r.placeholders ? ` · ${r.placeholders} placeholder(s) to replace` : ''}${designed.report ? ` · designed (${designed.report.direction.name}, ${designed.report.score}/100)` : ''}. Undo reverts the whole build.`)
     } catch (e) {
       pushToast('error', e instanceof Error ? e.message : String(e))
     }
@@ -118,7 +131,8 @@ export function ProductionPlanner() {
     if (!session.plan || !session.brief || !session.approved) return
     try {
       const r = autoFinish(studioOf(project), session.plan, session.brief, { makeId: () => uid(), replace, replaceApproved: session.replaceApproved, snapToBeats: snapBeats })
-      save({ ...session, builtClipIds: r.clipIds, review: r.review, stage: 'review' }, 'Cupric AI: build + polish', r.doc)
+      const designed = designBuilt(r.doc, session.brief, r.clipIds)
+      save({ ...session, builtClipIds: r.clipIds, review: reviewEdit(designed.doc, session.brief, session.plan, r.clipIds), stage: 'review' }, 'Cupric AI: build + polish + design', designed.doc)
       setPolishNotes({ fixes: [...r.rounds.map((x) => `Round ${x.round}: score ${x.score}. ${x.fixes.join(' ')}`), ...(r.beatNote ? [r.beatNote] : [])], leftForYou: r.leftForYou })
       pushToast('success', `Built and polished in ${r.rounds.length - 1} round(s). Final score ${r.rounds[r.rounds.length - 1].score}/100. One undo reverts it all.`)
     } catch (e) {
@@ -338,6 +352,9 @@ export function ProductionPlanner() {
               <Button onClick={() => finish(false)} disabled={!session.approved} title="Build, then review and polish until the score stops improving (max 3 rounds)">Build + Cupric AI polish</Button>
               <Button variant="outline" onClick={() => build(false)} disabled={!session.approved} title={(!session.approved) ? 'Approve the plan first (manual approval is required)' : undefined}>Build only</Button>
               <label className="flex items-center gap-1.5 text-xs text-muted"><input type="checkbox" checked={snapBeats} onChange={(e) => setSnapBeats(e.target.checked)} />Cut on music beats</label>
+              <label className="flex items-center gap-1.5 text-xs text-muted" title="Designs three directions of this plan (type-led, composition-led, atmosphere-led), scores them on this machine and builds the winner: a stage per scene, contrast-checked type, native accents and safe areas.">
+                <input type="checkbox" checked={autoDesign} onChange={(e) => setAutoDesign(e.target.checked)} />Cupric design engine
+              </label>
               <label className="flex items-center gap-2 text-xs text-muted">
                 <input type="checkbox" checked={session.replaceApproved} disabled={!session.approved} onChange={(e) => save({ ...session, replaceApproved: e.target.checked }, 'Approve timeline replacement')} />
                 Allow replacing my current timeline
@@ -345,6 +362,21 @@ export function ProductionPlanner() {
               <Button variant="danger" onClick={() => build(true)} disabled={!session.approved || !session.replaceApproved} title={(!session.approved || !session.replaceApproved) ? 'Approve the plan and tick “replace timeline” first' : undefined}>Build (replace)</Button>
             </div>
           </>
+        )}
+
+        {design && (view === 'review' || view === 'build') && (
+          <div className="rounded-lg border border-accent/25 bg-accent/5 p-3 text-xs">
+            <div className="flex flex-wrap items-center gap-2 font-medium text-text">
+              <Sparkles size={12} className="text-accent-text" /> Design engine — {design.battle.length} directions scored, “{design.report.direction.name}” built ({design.report.score}/100)
+            </div>
+            <div className="mt-1 flex flex-wrap gap-3 text-muted">
+              {design.battle.map((b) => <span key={b.name}>{b.name} {b.score}/100</span>)}
+            </div>
+            <ul className="mt-1 list-disc pl-4 text-muted">
+              {design.report.notes.map((note) => <li key={note}>{note}</li>)}
+              <li>{design.report.scenes.length} scene(s) designed with safe areas, contrast-checked ink and native accents — all still editable clips.</li>
+            </ul>
+          </div>
         )}
 
         {view === 'review' && session.review && (

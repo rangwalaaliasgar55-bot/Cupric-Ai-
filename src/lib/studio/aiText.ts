@@ -9,10 +9,15 @@ import { localTextVariants, parseVariantReply } from './textTools'
 
 export type VariantResult = { variants: string[]; source: 'model' | 'local'; note?: string }
 
-const PROMPT = (text: string) =>
-  `Rewrite this on-screen video text 4 different ways (punchy, friendly, formal, shorter). Keep the meaning; do not add claims, numbers or testimonials that are not in the original. Max 10 words each. One per line, no numbering.\n\nText: "${text}"`
+const PROMPT = (text: string, brief = '') =>
+  `Rewrite this on-screen video text 4 different ways (punchy, friendly, formal, shorter). Keep the meaning; do not add claims, numbers or testimonials that are not in the original. Max 10 words each. One per line, no numbering.\n\nText: "${text}"` +
+  // The creative log's history for the footage this text sits over. Attached only when there is
+  // one: a first round carries no ceremony, and the model is never told about an empty list.
+  (brief.trim()
+    ? `\n\nThe text sits over footage with a history. Treat it as a constraint, not as material to reuse:\n${brief.trim()}`
+    : '')
 
-export async function requestTextVariants(text: string): Promise<VariantResult> {
+export async function requestTextVariants(text: string, brief = ''): Promise<VariantResult> {
   const clean = text.trim()
   if (!clean) return { variants: [], source: 'local', note: 'Type some text first.' }
   const local = (note: string): VariantResult => ({ variants: localTextVariants(clean).map((v) => v.text), source: 'local', note })
@@ -20,10 +25,10 @@ export async function requestTextVariants(text: string): Promise<VariantResult> 
     const api = getIpc()
     let reply = ''
     if (api) {
-      const r = await api.invoke('gemini:chat', { text: PROMPT(clean), ctx: { projectName: null, view: 'studio' }, history: [], images: [] })
+      const r = await api.invoke('gemini:chat', { text: PROMPT(clean, brief), ctx: { projectName: null, view: 'studio' }, history: [], images: [] })
       reply = typeof r === 'string' ? r : r && typeof r === 'object' && 'text' in r ? String((r as { text: unknown }).text ?? '') : ''
     } else if (isOpenCodeConfigured()) {
-      reply = await openCodeChat([{ role: 'user', content: PROMPT(clean) }])
+      reply = await openCodeChat([{ role: 'user', content: PROMPT(clean, brief) }])
     } else {
       return local('No live model connected — these are rule-based rewrites of your own words.')
     }

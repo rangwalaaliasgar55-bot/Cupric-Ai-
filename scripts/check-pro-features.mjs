@@ -308,8 +308,11 @@ ok(read('src/screens/studio/StudioInspector.tsx').includes('<ClipProFields') && 
 ok(read('src/screens/studio/StudioTimeline.tsx').includes('doc.markers') && read('src/screens/studio/StudioTimeline.tsx').includes('onDropAt('), 'timeline draws markers and accepts drops')
 ok(read('src/lib/studio/export.ts').includes('mixGainAt(doc, clip') && read('src/screens/studio/StudioPreview.tsx').includes('mixGainAt(doc, audio'), 'preview and export use the same ducking gain')
 const main = read('electron/main.cjs')
+const assembly = read('electron/assembly.cjs')
 ok(/AI_BACKOFF_MS = \[1000, 4000\]/.test(main) && main.includes('askWithBackoff()'), '1.8: 1 s / 4 s backoff on transient AI errors')
-ok(main.includes('encoders.loudnormArgs(payload?.loudnessTarget)'), 'MP4 export applies the loudness target')
+ok(assembly.includes('function loudnessPlan(') && main.includes('assembly.loudnormMeasureArgs(source, target)') && main.includes('assembly.loudnessPlan({'),
+  '2.4/assembly: the MP4 export measures the recording first and applies the loudness decision, not a fixed dynamic filter')
+ok(/loudness: \{ mode: loudness\.mode, note: loudness\.note, why: loudness\.why \}/.test(main), 'and reports which correction ran, so the toast can say it')
 for (const op of ['rippleDelete', 'productMotion', 'setDucking', 'addTestimonialGrid', 'addCaptions']) ok(main.includes(`"type":"${op}"`), `agent prompt documents ${op}`)
 const renderer = read('src/lib/studio/renderer.ts')
 ok(!/Math\.random|Date\.now|performance\.now/.test(renderer + read('src/lib/studio/layouts.ts') + read('src/lib/studio/color.ts') + read('src/lib/studio/textTools.ts') + read('src/lib/studio/curves.ts') + read('src/lib/studio/audioMix.ts')), 'renderer purity: no clock or randomness in the new motion/colour/audio code')

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Copy, Download, Gauge, Image as ImageIcon, Layers, Mic, Palette, Repeat2, Search, Share2 } from 'lucide-react'
 import type { StudioAspect, StudioClip, StudioDoc } from '../../types/project'
 import { Button } from '../../components/Button'
@@ -9,6 +9,17 @@ import { synthesizeVoiceover, type VoiceoverLanguage } from '../../lib/voice'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { uid, copyText } from '../../lib/utils'
 import { captureStill } from '../../lib/studio/export'
+import { DESIGN_DIRECTIONS, designAll, type DesignDirectionId } from '../../lib/studio/design'
+import {
+  avoidedDirections,
+  creativeBrief,
+  footageKeyFor,
+  logEntry,
+  readCreativeLog,
+  recordAcceptance,
+  recordRejection,
+} from '../../lib/studio/creativeLog'
+import { Sparkles } from 'lucide-react'
 
 type Props = {
   doc: StudioDoc
@@ -38,6 +49,65 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
   const project = useActiveProject()
   const [msg, setMsg] = useState<string | null>(null)
   const selected = doc.clips.find((c) => c.id === selectedId) ?? null
+  const [lookWhat, setLookWhat] = useState('')
+  const [lookWhy, setLookWhy] = useState('')
+  const [logMsg, setLogMsg] = useState<string | null>(null)
+  const [logVersion, setLogVersion] = useState(0)
+  /**
+   * The design history for the footage in play: the selected clip's picture, else the first
+   * video in the edit. Read per render from the log (one small localStorage read) and bumped
+   * by `logVersion` after a write, so the panel never shows a stale list.
+   */
+  const footageKey = footageKeyFor(doc, selected ? selected.startSec : 0, selected ? selected.durationSec : 0)
+  const entry = useMemo(() => (footageKey ? logEntry(readCreativeLog().log, footageKey) : null), [footageKey, logVersion])
+  const footageBrief = creativeBrief(entry)
+  /** Record the typed look against this footage. Both directions need a reason, as upstream. */
+  function recordLook(kind: 'rejected' | 'accepted') {
+    if (!footageKey) { setMsg('Import some footage first — the history is kept per source clip.'); return }
+    const directionId = DESIGN_DIRECTIONS.find((d) => d.name === lookWhat.trim() || d.id === lookWhat.trim())?.id
+    const input = { what: lookWhat, why: lookWhy, ...(directionId ? { directionId } : {}) }
+    const result = kind === 'rejected' ? recordRejection(footageKey, input) : recordAcceptance(footageKey, input)
+    setLogMsg(result.message)
+    if (result.ok) { setLookWhy(''); setLogVersion((v) => v + 1) }
+  }
+
+  /**
+   * Design engine entry point. `direction` null = run every direction and keep
+   * the highest-scoring one; that is the same battle the autonomous run uses.
+   * Scenes = the selected clips when a selection exists, the whole edit otherwise.
+   */
+  function runDesign(direction: DesignDirectionId | null) {
+    const ids = selected ? [selected.id] : doc.clips.map((c) => c.id)
+    if (!ids.length) { setDesignMsg('This edit is empty — add clips first.'); return }
+    const brief = {
+      brandColors: kit.colors,
+      aspect: doc.aspect,
+      tone: (doc.fps >= 60 ? 'high' : 'medium') as 'high' | 'medium' | 'calm',
+      referenceStyle: '',
+    }
+    const makeId = () => uid()
+    const avoided = avoidedDirections(logEntry(readCreativeLog().log, footageKey ?? ''))
+    if (direction) {
+      const named = DESIGN_DIRECTIONS.find((d) => d.id === direction)
+      const result = designAll(doc, brief, ids, makeId, { only: direction })
+      setDesignMsg(`Applied “${named?.name}”: ${result.report.scenes.length} scene(s), score ${result.report.score}/100. ${result.report.notes[0] ?? ''}`)
+      // The look's own stated reason, pre-filled so recording the acceptance is one click —
+      // still editable, and still not recorded until the user says so.
+      setLookWhat(named?.name ?? '')
+      setLookWhy(named?.why ?? '')
+      commitResult({ doc: result.doc, changed: result.doc !== doc, reason: 'That direction changed nothing.' }, `Design engine → ${named?.name ?? direction}`)
+      return
+    }
+    const battle = designAll(doc, brief, ids, makeId, { avoid: avoided })
+    const skipNote = battle.skipped.length
+      ? ` Skipped ${battle.skipped.map((s) => s.name).join(', ')} — rejected on this footage before.`
+      : ''
+    setDesignMsg(`Scored ${battle.battle.length} directions here: ${battle.battle.map((b) => `${b.name} ${b.score}`).join(' · ')}. Built “${battle.report.direction.name}” (${battle.report.score}/100).${skipNote}${battle.skippedNote ? ` ${battle.skippedNote}` : ''}`)
+    setLookWhat(battle.report.direction.name)
+    setLookWhy(battle.report.direction.why)
+    commitResult({ doc: battle.doc, changed: battle.doc !== doc, reason: 'Nothing to redesign yet.' }, `Design engine → ${battle.report.direction.name}`)
+  }
+
 
   /* Brand Kit lives on the project so every edit and the autonomous pipeline share it. */
   const kit: BrandKit = project?.brandKit ?? { colors: ['#0B0B10', '#C8F542', '#F4F1EA'], font: 'Inter Variable', logoDataUrl: null }
@@ -56,6 +126,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
   const [variantCount, setVariantCount] = useState(3)
   const [aspect, setAspect] = useState<StudioAspect>(doc.aspect === '9:16' ? '16:9' : '9:16')
   const [thumbnail, setThumbnail] = useState<string | null>(null)
+  const [designMsg, setDesignMsg] = useState<string | null>(null)
   const social = socialMetadata(doc, project?.name || 'Untitled video')
 
   const commitResult = (r: { doc: StudioDoc; changed: boolean; reason?: string; notes?: string[] }, label: string) => {
@@ -104,6 +175,45 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
             </div>
           </>
         )}
+      </Block>
+
+      <Block icon={Sparkles} title="Design engine (stages, type, accents)">
+        <p className="text-[11px] leading-relaxed text-muted">
+          Redesigns the selected scenes (or the whole edit) the way a motion designer would: a different stage per scene,
+          one typographic system taken from the font suggestions, contrast-checked ink, native accent shapes and safe-area
+          placement. It only ever edits cups it created or that you selected — and it is one undo step.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          <Button size="sm" variant="primary" onClick={() => runDesign(null)}>Auto (best of {DESIGN_DIRECTIONS.length})</Button>
+          {DESIGN_DIRECTIONS.map((d) => (
+            <Button key={d.id} size="sm" variant="outline" title={d.why} onClick={() => runDesign(d.id)}>{d.name.replace('-led', '')}</Button>
+          ))}
+        </div>
+        {designMsg && <p className="rounded-md bg-accent/10 px-2 py-1.5 text-[11px] text-text">{designMsg}</p>}
+        <div className="space-y-1.5 rounded-md border border-line px-2 py-2">
+          <p className="text-[11px] leading-relaxed text-muted">
+            {entry?.rejected.length || entry?.accepted
+              ? `This footage has a history: ${entry.rejected.length} rejected look(s)${entry.accepted ? `, accepted “${entry.accepted.what}”` : ''}. A rejected direction is not scored again here, and a rewrite over this footage is told what not to land on.`
+              : 'Nothing recorded on this footage yet. Recording a look here keeps it out of the next round — the design engine stops scoring a direction you rejected, and text rewrites over this clip are told what not to land on.'}
+          </p>
+          <input className={inputCx} aria-label="Look tried on this footage" placeholder="What was tried (e.g. Composition-led)" value={lookWhat} onChange={(e) => setLookWhat(e.target.value)} />
+          <input className={inputCx} aria-label="Why it landed or was rejected" placeholder="Why (required)" value={lookWhy} onChange={(e) => setLookWhy(e.target.value)} />
+          <div className="flex flex-wrap gap-1.5">
+            <Button size="sm" variant="outline" title="Record this look as rejected on this footage (needs a reason)" onClick={() => recordLook('rejected')}>Rejected</Button>
+            <Button size="sm" variant="outline" title="Record this look as the accepted bar for this footage (needs a reason)" onClick={() => recordLook('accepted')}>This one landed</Button>
+            {footageBrief ? (
+              <Button
+                size="sm"
+                variant="outline"
+                title="Copy the history as prose — paste it into any brief for this footage"
+                onClick={() => { void copyText(footageBrief); setLogMsg('Brief copied — the accepted look is named as the bar, and the rejections as things not to land on again.') }}
+              >
+                Copy brief
+              </Button>
+            ) : null}
+          </div>
+          {logMsg && <p role="status" className="text-[11px] text-muted">{logMsg}</p>}
+        </div>
       </Block>
 
       <Block icon={Palette} title="Brand Kit">

@@ -16,6 +16,7 @@ import { cx } from '../lib/utils'
 import { getIpc } from '../lib/bridge'
 import { humanError } from '../lib/humanError'
 import { ProjectSafetyPanel } from './ProjectSafetyPanel'
+import { ReadinessPanel } from './ReadinessPanel'
 import { ThinkingOrb } from 'thinking-orbs'
 import { ThinkingStates } from '../components/loaders/ThinkingStates'
 import { useReducedMotion } from '../lib/use-reduced-motion'
@@ -703,6 +704,7 @@ export function AskPanel() {
                 <div className="mt-1 text-xs text-muted/70">Checks at launch and every four hours. Downloaded releases install on quit, or immediately with the button above.</div>
                 {updateStatus && <div className="mt-1 font-mono text-[11px] text-muted/70">{updateStatus}</div>}
               </div>
+              <ReadinessPanel />
               <ProjectSafetyPanel />
             </div>
           )}

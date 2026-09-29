@@ -28,6 +28,7 @@ import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
 import { MAX_TRACKS, emptyStudioDoc, normaliseClip, placeClip, reorderTracks, settleClip, splitClipAt, studioOf } from '../lib/studio/doc'
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
+import { cancelLocalRun, durationFromBrief, planLocalRundown, runAutonomousJob, RUN_STEP_LABELS } from '../lib/automation/run'
 import { setSoundEnabled } from '../lib/sound'
 
 export type Toast = {
@@ -172,11 +173,13 @@ type AppState = {
   undo: () => void
   redo: () => void
 
-  startAutomationJob: (input: { brief: string; footageFolder?: string | null; outputFolder?: string | null; aspect: AutomationJob['aspect']; fps: AutomationJob['fps']; quality: AutomationJob['quality']; mode: AutomationMode; votingMode: VotingMode }) => void
+  startAutomationJob: (input: { brief: string; footageFolder?: string | null; outputFolder?: string | null; aspect: AutomationJob['aspect']; fps: AutomationJob['fps']; quality: AutomationJob['quality']; mode: AutomationMode; votingMode: VotingMode; designDirection?: AutomationJob['designDirection'] }) => void
   updateAutomationJob: (jobId: string, patch: Partial<AutomationJob>) => void
   updateAutomationStep: (jobId: string, stepId: string, patch: Partial<AutomationStep>) => void
   cancelAutomationJob: (jobId: string) => void
   resumeAutomationJob: (jobId: string) => void
+  /** Run the local (browser / no-Electron) pipeline for a job. */
+  runAutomationLocally: (jobId: string) => void
   approveAutomationStep: (jobId: string, stepId: string) => void
   rejectAutomationStep: (jobId: string, stepId: string) => void
 
@@ -252,6 +255,12 @@ const HISTORY_LIMIT = 80
 
 /** Drags fire dozens of updates a second; they should be one undo step. */
 const COALESCE_MS = 700
+
+/** The active project's brand kit, for planning runs that use its colours. */
+function projectBrandKit(state: { projects: Project[]; activeProjectId: string | null }): { colors?: string[]; fonts?: string[] } {
+  const project = state.projects.find((p) => p.id === state.activeProjectId) ?? state.projects[0]
+  return { colors: project?.brandKit?.colors, fonts: project?.brandKit?.font ? [project.brandKit.font] : [] }
+}
 
 /** Sequential single-track layout: startSec is always the cumulative sum. */
 function relayout(clips: TimelineClip[]): TimelineClip[] {
@@ -354,7 +363,7 @@ export const useProjectStore = create<AppState>()(
         startAutomationJob: (input) => {
           const projectId = get().activeProjectId || get().createProject()
           const id = uid()
-          const labels = ['Create project', 'Generate AI rundown', 'Lock rundown', 'Generate candidates', 'Ingest footage', 'Build timeline', 'Render MP4', 'Review report']
+          const labels = RUN_STEP_LABELS
           const steps = labels.map((label, i) => ({ id: `${id}-step-${i}`, label, status: i === 0 ? 'running' as const : 'queued' as const, progressPct: 0 }))
           const job: AutomationJob = {
             ...input,
@@ -372,40 +381,103 @@ export const useProjectStore = create<AppState>()(
           set((s) => ({ automationJobs: [job, ...s.automationJobs], view: 'auto' }))
           const ipc = getIpc()
           if (ipc) {
-            void ipc.invoke('automation:start', job)
+            // Desktop: hand the main process a *planned* rundown instead of
+            // letting it start from its 12-second placeholder. The plan is the
+            // same deterministic one the web build uses, so both paths agree on
+            // the film; the pipeline's own steps then polish it as before.
+            void planLocalRundown({ brief: input.brief, aspect: input.aspect, fps: input.fps, quality: input.quality, durationSec: durationFromBrief(input.brief) }, projectBrandKit(get()))
+              .catch(() => null)
+              .then((rundown) => ipc.invoke('automation:start', rundown ? { ...job, rundown, warnings: [] } : job))
               .then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
               .catch((err: Error) => get().updateAutomationJob(id, { status: 'error', errorMessage: err?.message || 'Automation failed' }))
           } else {
-            // No Electron: the pipeline needs the filesystem, FFmpeg and the
-            // model bridge, so say so instead of animating a fake success.
-            get().updateAutomationJob(id, {
-              status: 'error',
-              currentStepId: null,
-              errorMessage:
-                'Autonomous runs need the desktop app (filesystem + FFmpeg). In the browser, build the video by hand in Studio or use Brief → Arena.',
-            })
-            get().pushToast('info', 'Autonomous runs are desktop-only — Studio works right here in the browser.')
+            // No Electron: run the same eight steps here, on the shared Studio
+            // renderer, instead of refusing the job. This is what makes an
+            // autonomous run work in the web build too.
+            get().runAutomationLocally(id)
           }
+        },
+        runAutomationLocally: (jobId) => {
+          const job = get().automationJobs.find((j) => j.id === jobId)
+          if (!job) return
+          const pid = job.projectId
+          const patchJob = (patch: Partial<AutomationJob>) => get().updateAutomationJob(jobId, patch)
+          void runAutonomousJob(job, {
+            patch: patchJob,
+            step: (index, patch) => {
+              const stepId = `${jobId}-step-${index}`
+              get().updateAutomationStep(jobId, stepId, patch)
+              set((s) => ({ automationJobs: s.automationJobs.map((j) => (j.id === jobId ? { ...j, currentStepId: stepId, updatedAt: nowIso() } : j)) }))
+            },
+            warn: (message) => {
+              const current = get().automationJobs.find((j) => j.id === jobId)
+              const warnings = current?.warnings ?? []
+              if (!warnings.includes(message)) patchJob({ warnings: [...warnings, message] })
+            },
+            commit: (doc, label) => {
+              // The project's own clips are never thrown away: an empty Studio
+              // timeline is replaced, a used one gets the run appended after it.
+              const project = get().projects.find((p) => p.id === pid)
+              const existing = studioOf(project)
+              if (!existing.clips.length) {
+                get().patchStudio(pid, { clips: doc.clips, trackCount: doc.trackCount, aspect: doc.aspect, fps: doc.fps as StudioDoc['fps'], backgroundId: doc.backgroundId }, label)
+                return
+              }
+              const offset = existing.clips.reduce((m, c) => Math.max(m, c.startSec + c.durationSec), 0)
+              const base = Math.max(...existing.clips.map((c) => c.track)) + 1
+              const clips = doc.clips.map((c) => ({ ...c, startSec: Math.round((c.startSec + offset) * 100) / 100, track: Math.min(23, c.track + base) }))
+              get().patchStudio(pid, { clips: [...existing.clips, ...clips], trackCount: Math.min(24, Math.max(existing.trackCount, doc.trackCount + base)) }, label)
+            },
+            cancelled: () => get().automationJobs.find((j) => j.id === jobId)?.status === 'cancelled',
+            projectMediaCount: () => studioOf(get().projects.find((p) => p.id === pid)).clips.filter((c) => c.kind === 'video' || c.kind === 'image').length,
+            projectMedia: () => studioOf(get().projects.find((p) => p.id === pid)).clips.filter((c) => c.kind === 'video' || c.kind === 'image'),
+          })
+            .then((result) => {
+              if (!result) return
+              get().pushToast('success', `Autonomous run finished — ${result.winner.name} won the battle at ${result.winner.score}/100, design ${result.design.score}/100.`, {
+                action: { label: 'Open Studio', run: () => useProjectStore.getState().setView('studio') },
+              })
+            })
+            .catch((error: Error) => {
+              if (/cancelled/i.test(error?.message ?? '')) return
+              patchJob({ status: 'error', currentStepId: null, errorMessage: error?.message || 'The autonomous run stopped.' })
+              get().pushToast('error', `Autonomous run stopped: ${error?.message || 'unknown error'}`)
+            })
         },
         updateAutomationJob: (jobId, patch) => set((s) => ({ automationJobs: s.automationJobs.map((j) => j.id === jobId ? { ...j, ...patch, updatedAt: nowIso() } : j) })),
         updateAutomationStep: (jobId, stepId, patch) => set((s) => ({ automationJobs: s.automationJobs.map((j) => j.id === jobId ? { ...j, steps: j.steps.map((x) => x.id === stepId ? { ...x, ...patch } : x), updatedAt: nowIso() } : j) })),
         cancelAutomationJob: (jobId) => {
+          // Stop the local run first: it is the one holding a recorder.
+          cancelLocalRun(jobId)
           const ipc = getIpc()
           if (ipc) void ipc.invoke('automation:cancel', { jobId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
-          get().updateAutomationJob(jobId, { status: 'cancelled' })
+          get().updateAutomationJob(jobId, { status: 'cancelled', waitingMessage: null })
         },
         resumeAutomationJob: (jobId) => {
           const ipc = getIpc()
           if (ipc) void ipc.invoke('automation:resume', { jobId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
-          get().updateAutomationJob(jobId, { status: 'running' })
+          get().updateAutomationJob(jobId, { status: 'running', errorMessage: null, waitingMessage: null })
+          if (!ipc) get().runAutomationLocally(jobId)
         },
         approveAutomationStep: (jobId, stepId) => {
           const ipc = getIpc()
           if (ipc) void ipc.invoke('automation:approveStep', { jobId, stepId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
+          else {
+            // Local guided run: the gate the user just cleared is done, and the
+            // pipeline continues from the next step with the same artefacts.
+            get().updateAutomationStep(jobId, stepId, { status: 'done', progressPct: 100, message: 'Approved by you' })
+            get().updateAutomationJob(jobId, { status: 'running', waitingMessage: null, manualVoteApproved: true })
+            get().runAutomationLocally(jobId)
+          }
         },
         rejectAutomationStep: (jobId, stepId) => {
+          cancelLocalRun(jobId)
           const ipc = getIpc()
           if (ipc) void ipc.invoke('automation:rejectStep', { jobId, stepId }).then((remoteJob: AutomationJob | null) => { if (remoteJob?.id) get().updateAutomationJob(remoteJob.id, remoteJob) })
+          else {
+            get().updateAutomationStep(jobId, stepId, { status: 'cancelled', message: 'Rejected by you' })
+            get().updateAutomationJob(jobId, { status: 'cancelled', currentStepId: null, waitingMessage: null })
+          }
         },
 
         setView: (view) => set({ view }),

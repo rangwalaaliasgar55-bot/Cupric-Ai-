@@ -222,7 +222,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1375,
+      "line": 1376,
       "target": "Waiting state",
       "existingComponent": "{importing ? <Loader2 size={13} className=\"animate-spin\" /> : <Plus size={13} />} Import",
       "suggestedLibrary": "Thinking orbs",
@@ -264,6 +264,19 @@
       "line": 144,
       "target": "Waiting state",
       "existingComponent": "{item.dataUrl ? <img src={item.dataUrl} alt=\"\" className=\"h-full w-full object-contain\" /> : busy ? <Loader2 size={12} c",
+      "suggestedLibrary": "Thinking orbs",
+      "package": "thinking-orbs",
+      "variant": "state from the activity (composing / searching / weaving), size 20 inline",
+      "why": "An AI wait of 2 s or more gets an orb next to its label (skill decision rule).",
+      "risks": "Low: a 2D canvas or CSS layer. Check it pauses when hidden.",
+      "license": "MIT",
+      "status": "suggested"
+    },
+    {
+      "file": "src/screens/studio/FontStudio.tsx",
+      "line": 99,
+      "target": "Waiting state",
+      "existingComponent": "{status === 'loading' ? <Loader2 size={10} className=\"animate-spin\" /> : status === 'ready' ? <Check size={10} /> : <Ale",
       "suggestedLibrary": "Thinking orbs",
       "package": "thinking-orbs",
       "variant": "state from the activity (composing / searching / weaving), size 20 inline",
@@ -403,6 +416,19 @@
       "status": "suggested"
     },
     {
+      "file": "src/screens/studio/FontStudio.tsx",
+      "line": 268,
+      "target": "Search input (loads after submit)",
+      "existingComponent": "<input value={query} onChange={(e) => setQuery(e.target.value)} placeholder=\"Search 21 Fontshare families…\" className=\"w",
+      "suggestedLibrary": "Border beam",
+      "package": "border-beam",
+      "variant": "line beam, active from submit until results",
+      "why": "An input that loads after you submit gets a line beam.",
+      "risks": "Low: a 2D canvas or CSS layer. Check it pauses when hidden.",
+      "license": "MIT",
+      "status": "suggested"
+    },
+    {
       "file": "src/screens/studio/LoaderPicker.tsx",
       "line": 12,
       "target": "Search input (loads after submit)",
@@ -430,7 +456,7 @@
     },
     {
       "file": "src/screens/Autonomous.tsx",
-      "line": 71,
+      "line": 105,
       "target": "Mic button",
       "existingComponent": "const [transcribing, setTranscribing] = useState(false)",
       "suggestedLibrary": "Voice",
@@ -573,7 +599,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1643,
+      "line": 1644,
       "target": "Image placeholder",
       "existingComponent": "<span className={cx('h-2 w-2 shrink-0 rounded-full', listening ? 'animate-pulse bg-accent' : 'bg-muted')} />",
       "suggestedLibrary": "Image",
@@ -638,7 +664,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1412,
+      "line": 1413,
       "target": "Plus menu / segmented control",
       "existingComponent": "<Button size=\"sm\" variant=\"outline\" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} title={(exporting) ? 'W",
       "suggestedLibrary": "Gooey",
@@ -690,9 +716,9 @@
     }
   ],
   "counts": {
-    "findings": 45,
+    "findings": 47,
     "applied": 1,
-    "files": 27
+    "files": 28
   },
   "footer": "Run `libraries apply` on any line to install it."
 }

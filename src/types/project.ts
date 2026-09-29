@@ -65,6 +65,24 @@ export type AutomationJob = {
     hasAudio?: boolean
   } | null
   arenaOpenedAt?: string | null
+  /**
+   * Autonomous runs produce real artefacts. These optional fields carry the
+   * ones the desktop pipeline keeps on disk (a report, a manifest) and the ones
+   * only a browser can hold (an object URL for the recorded file).
+   */
+  outputUrl?: string | null
+  /** Full review report (markdown) when the run happened in the renderer. */
+  reviewReport?: string | null
+  /** Deterministic design self-assessment of the winning direction (0–100). */
+  designScore?: number
+  /** Which renderer produced the file — 'studio-canvas' means preview parity. */
+  renderEngine?: 'studio-canvas' | 'html-capture' | 'ffmpeg'
+  /** The scored candidate battle, so the UI can show why one direction won. */
+  candidateBattle?: Array<{ id: string; name: string; score: number; designScore: number; reasons: string[] }>
+  /** 'auto' (or unset) runs the three-direction battle; a id pins one look. */
+  designDirection?: 'auto' | 'typography' | 'composition' | 'atmosphere'
+  /** What the winning design actually did, scene by scene. */
+  designStoryboard?: Array<{ index: number; role: string; stage: string; layout: string; headlineFont: string; accent: string; from: number; to: number }>
 }
 
 export type View =
@@ -409,6 +427,20 @@ type StudioClipCommon = {
 /** A transcribed word in SOURCE-file seconds (survives trims and splits). */
 export type StudioWord = { word: string; start: number; end: number }
 
+/**
+ * Where a caption's per-word timings came from.
+ *
+ *   word   — real per-word times from a transcription (Whisper family).
+ *   phrase — the engine timed phrases, not words, so the words inside a phrase
+ *            are spread evenly across it. Approximate, and labelled as such.
+ *   even   — no transcription at all: the words are spread evenly across the
+ *            caption's own window. Approximate, and labelled as such.
+ *
+ * Captions are never silently approximate: `textTools.captionDelaysWithSource`
+ * decides this from the data, not from a provider's promise.
+ */
+export type StudioTimingSource = 'word' | 'phrase' | 'even'
+
 export type StudioMediaClip = StudioClipCommon & {
   kind: 'video' | 'image'
   /** Transcript words with timing (auto-captions); drives speech tightening. */
@@ -459,6 +491,12 @@ export type StudioTextClip = StudioClipCommon & {
   /** Rich markup colours: *emphasis* (serif italic), ==highlight box==, {accent}, ^big^. */
   emphasisColor?: string
   emphasisFont?: string
+  /**
+   * Paint *emphasis* words italic. Default true (the creator-caption look).
+   * False when the emphasis face has no true italic cut, so the renderer does
+   * not produce a synthetic slant — the word is carried by colour and weight.
+   */
+  emphasisItalic?: boolean
   boxColor?: string
   accentColor?: string
   /** Soft glow behind the glyphs (0–1), like creator hook titles. */
@@ -470,6 +508,24 @@ export type StudioTextClip = StudioClipCommon & {
   legibility?: 'auto' | 'on' | 'off'
   /** Scrim opacity 0–1 (default 0.55). */
   scrimStrength?: number
+  /**
+   * Per-word reveal delays in milliseconds FROM THE CLIP'S START, in reading
+   * order — the real spoken times of the words in this line, so a caption lands
+   * on the voice instead of spreading its words evenly across the block.
+   *
+   * Relative rather than absolute on purpose: a caption that is dragged, split
+   * or retimed keeps its sync, where an absolute timeline time would be
+   * invalidated by the move. Written by `studio/textTools.ts`
+   * (`captionsFromTranscript` / `planCaptionLines`) from a transcript, and by the
+   * Quick Video pipeline when it has real word times.
+   */
+  wordDelaysMs?: number[] | null
+  /**
+   * What those delays are based on (see `StudioTimingSource`). Absent on clips
+   * nobody timed and on saves written before this field existed — the inspector
+   * treats absent as "unknown", not as "real".
+   */
+  timingSource?: StudioTimingSource | null
 }
 
 export type StudioBackgroundClip = StudioClipCommon & {
