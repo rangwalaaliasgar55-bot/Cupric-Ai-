@@ -23,6 +23,7 @@ import { emptyStudioDoc } from '../studio/doc'
 import { designScenes, directionById, DESIGN_DIRECTIONS, type DesignDirectionId, type DesignReport } from '../studio/design'
 import { directProduction, planToDoc, polishEdit, reviewEdit, reviewScore } from '../production/engine'
 import { loadCatalogue, planLocally, type AutonomyBrief, type LocalPlan } from './plan'
+import { lockSummary, validateRundown } from './lock'
 import { buildReport, type RunArtefacts } from './report'
 
 export type CandidateResult = { id: DesignDirectionId; name: string; score: number; reasons: string[]; design: DesignReport }
@@ -191,11 +192,22 @@ export async function runAutonomousJob(
     }
 
     // — 2. lock ———————————————————————————————————————————————————
+    // The same contract the desktop lock enforces (electron/automation-steps.cjs,
+    // mirrored in ./lock and kept in step by src/tests/automation-lock-parity).
+    // A rundown that cannot be rendered stops the run here rather than at export.
     if (!stepDone(2)) {
-      hooks.step(2, { status: 'running', progressPct: 60, message: 'Locking the rundown for review and render' })
+      hooks.step(2, { status: 'running', progressPct: 60, message: 'Checking the rundown against the render contract' })
       guard()
+      const verdict = validateRundown(rundown, { aspect: job.aspect, fps: job.fps })
+      if (!verdict.ok) {
+        const reason = `The rundown did not pass the render contract, so the run stopped before building scenes: ${verdict.issues.join('; ')}`
+        warn(reason)
+        hooks.step(2, { status: 'error', progressPct: 100, message: reason })
+        hooks.patch({ status: 'error', errorMessage: reason, rundown, warnings })
+        return null
+      }
       hooks.patch({ rundown, warnings })
-      hooks.step(2, { status: 'done', progressPct: 100, message: `Locked: ${rundown.title}` })
+      hooks.step(2, { status: 'done', progressPct: 100, message: lockSummary(rundown, { aspect: job.aspect, fps: job.fps }) })
     }
 
     // — 3. the candidate battle ———————————————————————————————————

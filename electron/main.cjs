@@ -22,6 +22,10 @@ const { migrateSettings } = require('./settings-migration.cjs')
 // It owns every HTTP call to an AI provider and every failure classification;
 // this file keeps routing, cooldowns and the deterministic template fallback.
 const aiProviders = require('./ai-providers.cjs')
+// The eight pipeline steps as pure functions (phase 1.2). The step *order* is
+// declared once, in the module, and referenced by name here.
+const automationSteps = require('./automation-steps.cjs')
+const AUTOMATION_STEP = Object.fromEntries(automationSteps.STEP_DEFINITIONS.map((definition, index) => [definition.id, index]))
 const aiProviderConfig = require('./ai-provider-config.cjs')
 const voiceEngines = require('./voice-engines.cjs')
 const { ADVANCED_VIDEO_PLAYBOOK_PROMPT } = require('./opus-playbook.cjs')
@@ -1699,7 +1703,12 @@ async function openArenaBuilderForPrompt(prompt, extra = {}) {
   return { url, copied }
 }
 
-async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, warnings, state) {
+/**
+ * Render the plan. Every segment's kind, source, order, duration and captions
+ * come from `plan` (step 5) — the renderer no longer decides the edit for
+ * itself, which is what made the old timeline-plan.json unverifiable.
+ */
+async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, warnings, state, plan = null) {
   ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
   if (!ffmpegPath) throw new Error('FFmpeg is unavailable in this build, so Cupric AI cannot render MP4. Set CUPRIC_FFMPEG_PATH or install a build with ffmpeg-static unpacked.')
   const outDir = path.join(userDataPath('renders'), job.id)
@@ -1708,32 +1717,43 @@ async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, 
   ensureDir(workDir); ensureDir(outDir)
   const target = targetSizeForAspect(job.aspect, rundown.size)
   const segments = []
-  const arenaDuration = Math.min(MAX_RENDER_DURATION_SEC, Math.max(1, Number(rundown.durationSec) || 12))
-  segments.push(await renderArenaSegment(state, {
-    sourceType: 'arena',
-    arenaPath: winnerPath,
-    htmlPath: winnerPath,
-    durationSec: arenaDuration,
-    captions: rundown.scenes.map(s => ({ start: Math.max(0, Number(s.from) || 0), end: Math.min(arenaDuration, Number(s.to) || arenaDuration), text: s.copy })).filter(c => c.end > c.start),
-    captionStyle: 'standard',
-  }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} }))
-  if (footageMeta) {
+  const plannedSegments = Array.isArray(plan?.segments) && plan.segments.length
+    ? plan.segments
+    : automationSteps.buildTimelinePlan({ rundown, winnerPath, footage: footageMeta, aspect: job.aspect, fps: job.fps, quality: job.quality }).segments
+  for (const [index, planned] of plannedSegments.entries()) {
+    if (planned.kind === 'generated') {
+      segments.push(await renderArenaSegment(state, {
+        sourceType: 'arena',
+        arenaPath: planned.source,
+        htmlPath: planned.source,
+        durationSec: Math.min(MAX_RENDER_DURATION_SEC, Math.max(1, planned.durationSec)),
+        captions: (planned.captions || []).map((caption) => ({ start: caption.start, end: caption.end, text: caption.text })).filter((caption) => caption.end > caption.start),
+        captionStyle: 'standard',
+      }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: index, onUnits: () => {} }))
+      continue
+    }
+    // Footage: the intake's silence analysis and captions only apply to the file
+    // they were measured on; a different planned clip is rendered as supplied.
+    const sameFile = Boolean(footageMeta?.source && path.resolve(String(footageMeta.source)) === path.resolve(String(planned.source)))
     const footageSegments = await renderFootageSegments(state, {
       sourceType: 'footage',
-      videoPath: footageMeta.source,
-      durationSec: Math.min(120, footageMeta.durationSec),
-      silenceRanges: footageMeta.silenceRanges,
-      captions: footageMeta.captions,
-      applySilenceCuts: true,
-      captionStyle: footageMeta.captionStyle,
-      crop: footageMeta.crop,
-    }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} })
+      videoPath: planned.source,
+      durationSec: Math.min(120, Math.max(0.5, planned.durationSec)),
+      silenceRanges: sameFile ? footageMeta.silenceRanges : undefined,
+      captions: sameFile ? footageMeta.captions : undefined,
+      applySilenceCuts: Boolean(sameFile),
+      captionStyle: sameFile ? footageMeta.captionStyle : undefined,
+      crop: sameFile ? footageMeta.crop : undefined,
+    }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: index, onUnits: () => {} })
     segments.push(...footageSegments)
   }
   if (!segments.length) throw new Error('No renderable media was produced')
-  const timeline = segments.map((s, i) => ({ id: `clip-${i + 1}`, startSec: segments.slice(0, i).reduce((n, x) => n + x.duration, 0), durationSec: s.duration, source: s.path }))
-  writeJson(path.join(root, 'timeline.json'), timeline)
-  writeJson(path.join(root, 'editing-plan.json'), { schema_version: '1.0', project: { target_duration_s: rundown.durationSec, aspect_ratio: job.aspect, fps: job.fps }, sections: [{ role: 'autonomous-edit', clips: timeline.map((clip, i) => ({ id: clip.id, source_file: clip.source, in_s: 0, out_s: clip.durationSec, purpose: i === 0 ? 'generated motion creative' : 'supporting footage edit', transition_in: i === 0 ? 'hard_cut' : 'dissolve', captions: [] })) }], captions: { enabled: true, mode: 'phrase', auto_from_transcript: true } })
+  if (plan) {
+    // The delivered segments are the plan, or the run failed loudly above. This
+    // records the mapping so the review report can compare plan against output.
+    const delivered = segments.reduce((sum, segment) => sum + (Number(segment.duration) || 0), 0)
+    job = patchAutomation(job.id, { renderedSegments: segments.length, renderedDurationSec: Math.round(delivered * 100) / 100 }) || job
+  }
   const outputPath = path.join(outDir, `${safeFileName(rundown.title, 'cupric-ai')}.mp4`)
   await concatSegments(state, segments, outputPath, { workDir })
   fs.rmSync(workDir, { recursive: true, force: true })
@@ -1756,44 +1776,58 @@ async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, 
  * a model's HTML score proves visual quality. A failed gate gets one bounded
  * render retry; it never loops forever or fabricates a pass.
  */
-async function evaluateAutomationRender(outputPath, job, rundown) {
-  const checks = []
-  const add = (id, ok, detail, fatal = false) => checks.push({ id, ok: Boolean(ok), detail, fatal })
+/**
+ * Probe the delivered file (this function's job) and hand the numbers to the
+ * mechanical gate in automation-steps.cjs, where the rules are unit-tested and
+ * cannot be softened by a retry.
+ */
+async function evaluateAutomationRender(outputPath, job, rundown, plan = null) {
   const exists = Boolean(outputPath && fs.existsSync(outputPath))
   const bytes = exists ? fs.statSync(outputPath).size : 0
-  add('file-exists', exists, exists ? 'MP4 exists at the delivered path' : 'MP4 is missing', true)
-  add('file-size', bytes > 4096, `${bytes} bytes`, true)
-  if (!exists || bytes <= 4096) return { valid: false, retryable: true, score: 0, checks }
-
-  try {
-    const probe = await probeMedia(outputPath)
-    const video = probe.streams.find((stream) => stream.codec_type === 'video')
-    const target = targetSizeForAspect(job.aspect, rundown.size)
-    const duration = Number(probe.durationSec) || 0
-    add('video-stream', Boolean(video), video ? `${video.codec_name || 'video'} stream present` : 'no video stream', true)
-    add('target-size', Boolean(video && Number(video.width) === target.width && Number(video.height) === target.height), video ? `${video.width}×${video.height}; expected ${target.width}×${target.height}` : 'unknown dimensions', true)
-    add('even-dimensions', Boolean(video && Number(video.width) % 2 === 0 && Number(video.height) % 2 === 0), video ? `${video.width}×${video.height} are encoder-safe` : 'unknown dimensions', true)
-    const expectedDuration = Math.max(0.5, Number(rundown.durationSec) || 1)
-    add('duration', duration >= expectedDuration * 0.85, `${duration.toFixed(2)}s; expected at least ${expectedDuration.toFixed(2)}s`, false)
-    add('audio-stream', Boolean(probe.hasAudio), probe.hasAudio ? 'audio stream present' : 'silent render (allowed, but review it)', false)
-    const fpsText = String(video?.avg_frame_rate || video?.r_frame_rate || '')
-    const [num, den] = fpsText.split('/').map(Number)
-    const actualFps = den ? num / den : Number(fpsText)
-    add('frame-rate', !actualFps || Math.abs(actualFps - Number(job.fps)) <= 0.5, fpsText ? `${actualFps.toFixed(2)} fps; expected ${job.fps}` : 'frame rate unavailable', false)
-    const fatalFailed = checks.filter((check) => check.fatal && !check.ok)
-    const passed = checks.filter((check) => check.ok).length
-    return {
-      valid: fatalFailed.length === 0,
-      retryable: fatalFailed.length > 0,
-      score: Math.round((passed / checks.length) * 100),
-      checks,
-      durationSec: duration,
-      size: video ? [video.width, video.height] : null,
-      hasAudio: Boolean(probe.hasAudio),
+  const target = targetSizeForAspect(job.aspect, rundown.size)
+  const probe = { exists, bytes, durationSec: 0, width: 0, height: 0, videoCodec: '', audioCodec: '', playable: false, fps: 0 }
+  const extra = []
+  if (exists && bytes > 4096) {
+    try {
+      const media = await probeMedia(outputPath)
+      const video = media.streams.find((stream) => stream.codec_type === 'video')
+      const audio = media.streams.find((stream) => stream.codec_type === 'audio')
+      const fpsText = String(video?.avg_frame_rate || video?.r_frame_rate || '')
+      const [num, den] = fpsText.split('/').map(Number)
+      Object.assign(probe, {
+        durationSec: Number(media.durationSec) || 0,
+        width: Number(video?.width) || 0,
+        height: Number(video?.height) || 0,
+        videoCodec: String(video?.codec_name || ''),
+        audioCodec: String(audio?.codec_name || (media.hasAudio ? 'audio' : '')),
+        fps: den ? num / den : Number(fpsText) || 0,
+        playable: true,
+      })
+      extra.push({ id: 'even-dimensions', ok: probe.width % 2 === 0 && probe.height % 2 === 0, detail: `${probe.width}×${probe.height} are encoder-safe`, fatal: true })
+      extra.push({ id: 'target-size', ok: probe.width === target.width && probe.height === target.height, detail: `${probe.width}×${probe.height}; expected ${target.width}×${target.height}`, fatal: true })
+      extra.push({ id: 'frame-rate', ok: !probe.fps || Math.abs(probe.fps - Number(job.fps)) <= 0.5, detail: `${probe.fps.toFixed(2)} fps; expected ${job.fps}`, fatal: false })
+      extra.push({ id: 'audio-stream', ok: Boolean(probe.audioCodec), detail: probe.audioCodec ? `${probe.audioCodec} stream present` : 'silent render (allowed, but review it)', fatal: false })
+    } catch (error) {
+      probe.playable = false
+      logLine('render-probe-failed', error?.message || String(error), { outputPath })
+      extra.push({ id: 'ffprobe', ok: false, detail: `Could not inspect the delivered MP4: ${error?.message || String(error)}`, fatal: true })
     }
-  } catch (error) {
-    add('ffprobe', false, `Could not inspect the delivered MP4: ${error?.message || String(error)}`, true)
-    return { valid: false, retryable: false, score: 0, checks }
+  }
+  const gate = automationSteps.evaluateMechanicalRender(probe, job, rundown, plan)
+  const checks = [...gate.checks, ...extra]
+  const fatalFailed = checks.filter((check) => check.fatal && !check.ok)
+  const passed = checks.filter((check) => check.ok).length
+  return {
+    valid: fatalFailed.length === 0,
+    // One bounded retry only for the failures a second attempt can plausibly
+    // fix (missing/tiny/unreadable output); a wrong size or length is a fix.
+    retryable: gate.retryable || checks.some((check) => check.fatal && !check.ok && ['ffprobe'].includes(check.id)),
+    score: Math.round((passed / checks.length) * 100),
+    checks,
+    failures: fatalFailed.map((check) => `${check.id}: ${check.detail}`),
+    durationSec: probe.durationSec,
+    size: probe.width ? [probe.width, probe.height] : null,
+    hasAudio: Boolean(probe.audioCodec),
   }
 }
 
@@ -1825,12 +1859,15 @@ function writeAutomationReview(job, root, rundown, rawWarnings) {
   const generationGuide = generationGuideFor(job, rundown)
   const sequenceMd = generationGuide.sequence.map(s => `- ${s.index}. ${s.from}-${s.to}s **${s.type}** — "${s.copy}"; motion: ${s.motion}`).join('\n')
   const sourcesMd = generationGuide.sources.map(s => `- ${s.id} (${s.type}): ${s.description}`).join('\n')
-  writeJson(reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, outputPath: job.outputPath || null, footageUsed: Boolean(job.footageMeta), generationGuide, renderEvaluation: job.renderEvaluation || null, warnings })
+  writeJson(reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, rundownLock: job.rundownLock || null, timelinePlan: job.timelinePlan || null, outputPath: job.outputPath || null, footageUsed: Boolean(job.footageMeta), generationGuide, renderEvaluation: job.renderEvaluation || null, warnings })
   const evaluation = job.renderEvaluation
   const qaMd = evaluation
     ? `## Delivered render QA\n\nScore: ${evaluation.score ?? 0}/100 · ${evaluation.valid ? 'PASS' : 'REVIEW REQUIRED'}\n\n${(evaluation.checks || []).map((check) => `- ${check.ok ? 'PASS' : 'FAIL'} ${check.id}: ${check.detail}`).join('\n') || '- No checks recorded.'}`
     : '## Delivered render QA\n\n- Not available yet.'
-  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath || 'Not rendered yet'}\n\n## Sources\n${sourcesMd}\n\n## Generation sequence\n${sequenceMd}\n\n## How the video is generated\n${generationGuide.generationSteps.map(step => `- ${step}`).join('\n')}\n\n${qaMd}\n\nWarnings:\n${warnings.length ? warnings.map(w => `- ${w}`).join('\n') : '- None'}\n`, 'utf8')
+  const planMd = job.timelinePlan
+    ? `## Edit plan\n\nLocked rundown ${job.rundownLock?.hash || 'unhashed'} (${job.rundownLock?.sceneCount ?? '?'} scenes). ${job.timelinePlan.segments.length} planned segments totalling ${job.timelinePlan.totalDurationSec}s; delivered ${job.renderedSegments ?? '?'} segments totalling ${job.renderedDurationSec ?? '?'}s.\n\n${job.timelinePlan.segments.map((segment, index) => `${index + 1}. ${segment.kind} · ${segment.durationSec}s · ${segment.source} · ${segment.purpose}`).join('\n')}`
+    : '## Edit plan\n\n- Not available.'
+  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath || 'Not rendered yet'}\n\n${planMd}\n\n## Sources\n${sourcesMd}\n\n## Generation sequence\n${sequenceMd}\n\n## How the video is generated\n${generationGuide.generationSteps.map(step => `- ${step}`).join('\n')}\n\n${qaMd}\n\nWarnings:\n${warnings.length ? warnings.map(w => `- ${w}`).join('\n') : '- None'}\n`, 'utf8')
   return reviewReportPath
 }
 async function runAutomationPipeline(jobId) {
@@ -1844,25 +1881,25 @@ async function runAutomationPipeline(jobId) {
     const root = automationRoot(job.id)
     ensureDir(root)
 
-    stepIndex = 0
-    if (automationStep(job, 0)?.status !== 'done') {
-      startAutomationStep(job.id, 0, 'Project workspace created')
+    stepIndex = AUTOMATION_STEP.workspace
+    if (automationStep(job, stepIndex)?.status !== 'done') {
+      startAutomationStep(job.id, stepIndex, 'Creating the job workspace and asset folders')
       ensureDir(path.join(root, 'assets'))
-      job = finishAutomationStep(job.id, 0, 'Project workspace ready') || job
+      job = finishAutomationStep(job.id, stepIndex, `Workspace ready at ${root}`) || job
     }
 
-    stepIndex = 1
+    stepIndex = AUTOMATION_STEP.rundown
     job = ensureAutomationActive(job.id, state)
     let rundown = job.rundown || null
     if (!rundown) {
-      startAutomationStep(job.id, 1, 'Drafting instant offline rundown')
+      startAutomationStep(job.id, stepIndex, 'Drafting the instant offline rundown')
       // Build the deterministic first pass immediately. A live polish can
       // replace it later, but neither the job nor the timeline waits on AI.
       rundown = fallbackRundownForJob(job)
       writeJson(path.join(root, 'rundown.json'), rundown)
       job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json'), warnings }) || job
       sendAutomation('automation:progress', job)
-      job = finishAutomationStep(job.id, 1, 'Instant rundown ready; live polish queued') || job
+      job = finishAutomationStep(job.id, stepIndex, 'Instant rundown ready; live polish queued') || job
       const capabilityContext = job.remotionPlan
         ? `\n\nREMOTION CAPABILITY PLAN (follow this deterministic plan): template=${job.remotionPlan.template}; font=${job.remotionPlan.font}; skills=${(job.remotionPlan.skills || []).join(', ')}; no remote assets; preview and export must match.`
         : ''
@@ -1879,22 +1916,35 @@ async function runAutomationPipeline(jobId) {
         .catch((err) => logLine('interactive-rundown-fallback', err?.message || String(err), { jobId: job.id }))
     }
 
-    stepIndex = 2
+    stepIndex = AUTOMATION_STEP.lock
     job = ensureAutomationActive(job.id, state)
-    if (automationStep(job, 2)?.status !== 'done') {
-      startAutomationStep(job.id, 2, 'Locking the generated rundown for review and render')
+    if (automationStep(job, stepIndex)?.status !== 'done') {
+      startAutomationStep(job.id, stepIndex, 'Validating the rundown against the render contract')
+      // Step 2 used to rewrite rundown.json and move on, which meant a rundown
+      // with gaps or the wrong frame size was "locked" and only failed later,
+      // inside a render. It now has to pass the contract, and the lock is a
+      // content hash the review report can verify.
+      const locked = automationSteps.lockRundown(rundown, { aspect: job.aspect, fps: job.fps })
+      if (!locked.ok) {
+        throw new Error(`The rundown did not pass the render contract, so it was not locked: ${locked.issues.join('; ')}`)
+      }
+      if (job.rundownLock && !automationSteps.lockMatches(job.rundownLock, rundown)) {
+        warnings.push('The rundown changed after it was locked; the new content was re-validated and re-locked.')
+        logLine('automation-relock', 'rundown content changed after lock', { jobId: job.id, previousHash: job.rundownLock.hash })
+      }
       writeJson(path.join(root, 'rundown.json'), rundown)
-      job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json') }) || job
+      writeJson(path.join(root, 'rundown.lock.json'), locked.lock)
+      job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json'), rundownLock: locked.lock, warnings }) || job
       sendAutomation('automation:progress', job)
-      job = finishAutomationStep(job.id, 2, 'Rundown locked') || job
+      job = finishAutomationStep(job.id, stepIndex, `Rundown locked · ${locked.lock.sceneCount} scenes · ${locked.lock.durationSec}s · ${locked.lock.hash}`) || job
     }
 
-    stepIndex = 3
+    stepIndex = AUTOMATION_STEP.candidates
     job = ensureAutomationActive(job.id, state)
     if (!job.winnerPath || !Array.isArray(job.candidates)) {
       startAutomationStep(
         job.id,
-        3,
+        stepIndex,
         job.votingMode === 'manual-arena'
           ? 'Generating AI review candidates before the manual Arena gate'
           : `Generating ${CANDIDATE_COUNT} AI candidates and scoring them against the render contract`,
@@ -1917,63 +1967,84 @@ async function runAutomationPipeline(jobId) {
       const gateWarnings = warnings.includes(message) ? warnings : warnings.concat(message)
       job.reviewReportPath = writeAutomationReview({ ...job, outputPath: null }, root, rundown, gateWarnings)
       patchAutomation(job.id, { reviewReportPath: job.reviewReportPath, warnings: gateWarnings })
-      waitAutomationStep(job.id, 3, message)
+      waitAutomationStep(job.id, stepIndex, message)
       return
     }
-    job = finishAutomationStep(job.id, 3, job.votingMode === 'manual-arena' ? 'Manual gate approved' : 'Winner selected from the AI candidate battle') || job
+    job = finishAutomationStep(job.id, stepIndex, job.votingMode === 'manual-arena' ? 'Manual gate approved' : 'Winner selected from the AI candidate battle') || job
     if (job.votingMode === 'manual-arena') {
       logLine('automation-gate-resumed', 'Manual Arena approval advanced to footage/timeline stages', { jobId: job.id, nextStep: 4 })
     }
 
-    stepIndex = 4
+    stepIndex = AUTOMATION_STEP.footage
     job = ensureAutomationActive(job.id, state)
     let footageMeta = job.footageMeta || null
-    if (automationStep(job, 4)?.status !== 'done') {
-      startAutomationStep(job.id, 4, job.footageFolder ? 'Analyzing footage folder' : 'No footage folder supplied; using generated creative')
+    if (automationStep(job, stepIndex)?.status !== 'done') {
+      startAutomationStep(job.id, stepIndex, job.footageFolder ? 'Analyzing the footage folder' : 'No footage folder supplied; using the generated creative')
       footageMeta = await ingestAutomationFootage(job, root, warnings, state)
       job = patchAutomation(job.id, { footageMeta, warnings }) || job
-      job = finishAutomationStep(job.id, 4, footageMeta ? 'Footage analyzed' : 'Footage skipped') || job
+      job = finishAutomationStep(job.id, stepIndex, footageMeta ? `Footage analyzed · ${Math.round(Number(footageMeta.durationSec) || 0)}s` : 'No footage supplied — the film is type-led') || job
     }
 
-    stepIndex = 5
+    stepIndex = AUTOMATION_STEP.timeline
     job = ensureAutomationActive(job.id, state)
-    if (automationStep(job, 5)?.status !== 'done') {
-      startAutomationStep(job.id, 5, 'Building timeline and edit plan')
-      writeJson(path.join(root, 'timeline-plan.json'), { winnerPath: job.winnerPath, footage: footageMeta, aspect: job.aspect, fps: job.fps, quality: job.quality })
-      job = finishAutomationStep(job.id, 5, 'Timeline built') || job
+    let timelinePlan = job.timelinePlan || null
+    if (automationStep(job, stepIndex)?.status !== 'done' || !timelinePlan) {
+      startAutomationStep(job.id, stepIndex, 'Building the edit plan from the locked rundown and the footage')
+      // Step 5 used to write a five-key stub that nothing read; the real
+      // timeline was invented later inside the render. The plan is now built,
+      // validated and written here, and the render follows it (step 6).
+      timelinePlan = automationSteps.buildTimelinePlan({
+        rundown,
+        winnerPath: job.winnerPath,
+        footage: footageMeta?.clips?.length ? footageMeta : footageMeta?.source ? { ...footageMeta, clips: [{ path: footageMeta.source, durationSec: footageMeta.durationSec }] } : null,
+        aspect: job.aspect,
+        fps: job.fps,
+        quality: job.quality,
+      })
+      const planCheck = automationSteps.validateTimelinePlan(timelinePlan)
+      if (!planCheck.ok) {
+        throw new Error(`The timeline plan is not renderable, so nothing was rendered: ${planCheck.issues.join('; ')}`)
+      }
+      const artifacts = automationSteps.timelineArtifacts(timelinePlan)
+      writeJson(path.join(root, 'timeline-plan.json'), timelinePlan)
+      writeJson(path.join(root, 'timeline.json'), artifacts.timeline)
+      writeJson(path.join(root, 'editing-plan.json'), artifacts.editingPlan)
+      job = patchAutomation(job.id, { timelinePlan, timelinePath: path.join(root, 'timeline.json'), editingPlanPath: path.join(root, 'editing-plan.json') }) || job
+      sendAutomation('automation:progress', job)
+      job = finishAutomationStep(job.id, stepIndex, `Edit plan ready · ${timelinePlan.segments.length} segment${timelinePlan.segments.length === 1 ? '' : 's'} · ${timelinePlan.totalDurationSec}s · ${timelinePlan.captions.windows.length} caption windows`) || job
     }
 
-    stepIndex = 6
+    stepIndex = AUTOMATION_STEP.render
     job = ensureAutomationActive(job.id, state)
     if (!job.outputPath) {
-      startAutomationStep(job.id, 6, 'Rendering MP4')
-      const outputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state)
+      startAutomationStep(job.id, stepIndex, `Rendering ${timelinePlan.segments.length} planned segment${timelinePlan.segments.length === 1 ? '' : 's'} to MP4`)
+      const outputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state, timelinePlan)
       job = patchAutomation(job.id, { outputPath, warnings }) || job
       sendAutomation('automation:progress', job)
-      job = finishAutomationStep(job.id, 6, 'MP4 rendered') || job
+      job = finishAutomationStep(job.id, stepIndex, `MP4 rendered · ${job.renderedSegments || timelinePlan.segments.length} segments · ${job.renderedDurationSec || timelinePlan.totalDurationSec}s`) || job
     } else {
-      job = finishAutomationStep(job.id, 6, 'MP4 already rendered') || job
+      job = finishAutomationStep(job.id, stepIndex, 'MP4 already rendered') || job
     }
 
-    stepIndex = 7
+    stepIndex = AUTOMATION_STEP.review
     job = ensureAutomationActive(job.id, state)
-    if (automationStep(job, 7)?.status !== 'done') {
-      startAutomationStep(job.id, 7, 'Evaluating the delivered MP4 and checking whether one bounded retry is needed')
+    if (automationStep(job, stepIndex)?.status !== 'done') {
+      startAutomationStep(job.id, stepIndex, 'Probing the delivered MP4 against the mechanical gate')
       let renderEvaluation = job.renderEvaluation || null
       if (!renderEvaluation) {
-        renderEvaluation = await evaluateAutomationRender(job.outputPath, job, rundown)
+        renderEvaluation = await evaluateAutomationRender(job.outputPath, job, rundown, timelinePlan)
         if (!renderEvaluation.valid && renderEvaluation.retryable) {
-          warnings.push('The delivered MP4 failed a mechanical render gate; Cupric performed one bounded re-render before reporting the result.')
-          const retryOutputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state)
+          warnings.push(`The delivered MP4 failed the mechanical render gate (${renderEvaluation.failures.join('; ')}); Cupric performed one bounded re-render before reporting the result.`)
+          const retryOutputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state, timelinePlan)
           job = patchAutomation(job.id, { outputPath: retryOutputPath }) || job
-          renderEvaluation = await evaluateAutomationRender(retryOutputPath, job, rundown)
+          renderEvaluation = await evaluateAutomationRender(retryOutputPath, job, rundown, timelinePlan)
         }
         if (!renderEvaluation.valid) warnings.push('Delivered MP4 needs review: the mechanical render gate did not pass all required checks. No quality pass was fabricated.')
         job = patchAutomation(job.id, { renderEvaluation, warnings }) || job
       }
       const reviewReportPath = writeAutomationReview(job, root, rundown, warnings)
       job = patchAutomation(job.id, { reviewReportPath, warnings }) || job
-      job = finishAutomationStep(job.id, 7, renderEvaluation.valid ? 'Render QA passed; review report ready' : 'Review report ready with QA warnings') || job
+      job = finishAutomationStep(job.id, stepIndex, renderEvaluation.valid ? `Render QA passed (${renderEvaluation.score ?? 0}/100); review report ready` : `Review report ready with QA warnings (${renderEvaluation.score ?? 0}/100)`) || job
     }
 
     const done = patchAutomation(job.id, { status: 'done', currentStepId: null, waitingMessage: null, warnings })
