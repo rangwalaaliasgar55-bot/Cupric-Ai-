@@ -195,6 +195,22 @@ Each item: impact → effort → dependencies → risks → acceptance criteria.
 
 ---
 
+## C-bis. Shipped after the audit: breaking a clip into editable pieces (Studio)
+
+The audit's "workflow cohesion" finding was about the *contract*; this was the missing *capability*
+on the Studio side, and it reuses the ported cut machinery instead of adding any: `src/lib/studio/decompose.ts`
+turns one imported video/audio clip into ordinary clips three ways — measured pauses (`speechProbe.probeClip`
+→ `probeCuts`, no transcript, no model), pauses in the words (`autoEdit.speechCuts` with
+`fillers: false`, so nothing spoken is deleted), or even pieces for footage with no speech — and either
+closes the silence up (`tightenClip`, a real edit) or keeps the original timing and splits at the pause
+boundaries. Word timings stay in source seconds on every piece, so captions and word-timed components
+keep working without re-transcribing, and the captions can be generated *before* the cut so the existing
+remap carries them. Reachable from Pro → Auto-edit → *Break into clips* (preview → accept) and from the
+timeline right-click menu (one undo). Covered by `scripts/check-decompose.mjs` (53 assertions) in the
+`build` and `verify` chains, and by scenario D of `docs/SMOKE_WORD_TIMED_CAPTIONS.md`.
+This is backlog item 5's practical half; the remaining half is re-deriving timings when a *user* cut
+(not a probe) moves them.
+
 ## D. Architecture plan
 
 Goal: keep the Studio core and the automation engine exactly where they are, and give them **one

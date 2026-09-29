@@ -1,4 +1,4 @@
-# Packaged-desktop smoke scenario — word-timed captions (v0.13.0+, Windows)
+# Packaged-desktop smoke scenario — word-timed captions and breaking a video apart
 
 **Why this file exists.** The headless checks (`scripts/check-auto-captions.mjs`) prove the
 timing contract with synthetic transcripts, but they cannot prove that a *packaged* app
@@ -66,6 +66,31 @@ and knows what a failure looks like.
 1. From Scenario B, open **Studio → Pro → Auto-captions from the clip's audio** on the voice clip.
 2. Expected: status text reports the engine and the timing precision; new caption clips carry
    `Word timing: real word times…`; the previous estimated captions can be deleted with one undo.
+
+## Scenario D — import a finished video and take it apart
+
+1. Studio → import a video that has speech in it (Import media / drag onto the timeline).
+2. Right-click the clip on the timeline → **Break into clips (measured pauses)**.
+3. Expected: an info toast says Cupric is measuring; then a success toast names the piece count and
+   the seconds of silence closed, and says one Undo reverts it.
+4. Expected on the timeline: the clip is now several clips named `Name · 1/N` …, butted together,
+   each selectable, trimmable, deletable and movable on its own; an overlay that sat after the cuts
+   moved left with the audio; a music bed that spanned the clip is shorter by the same amount.
+5. Pro panel → **Break into clips** exposes the other two modes: *Pauses in the words* (needs a
+   transcript — run Auto-captions first) and *Even pieces* (for B-roll; nothing is removed and the
+   timeline plays back identically), plus **Keep the original timing**, which splits at the pause
+   boundaries instead of closing them, so each silence becomes a clip you can delete.
+6. With a transcript present, tick "Caption the pieces…" and confirm the caption clips are created
+   *before* the cut and land on the same words afterwards (inspector: `Word timing: real word times…`).
+
+**Failure signatures**
+
+- `Cupric cannot read this clip's audio` → the file is missing/relinked, or the browser build cannot
+  decode this container; relink it or use the even split.
+- `No speech in this clip` → the level never rises 6 dB above its floor (music, B-roll, dead audio):
+  the even split is the honest tool for that.
+- `No pause in this clip reaches 0.45 s` → lower the word-pause threshold is not exposed yet; use the
+  even split or trim by hand.
 
 ## What this scenario does **not** cover
 

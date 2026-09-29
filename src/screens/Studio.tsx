@@ -7,6 +7,7 @@ import { StudioProPanel } from './studio/StudioProPanel'
 import { ClipContextMenu } from './studio/ClipContextMenu'
 import { applyClipAction, getClipboard, setClipboard, type ClipActionId } from '../lib/studio/clipActions'
 import { makeProxy } from '../lib/studio/proxy'
+import { decomposeClip } from '../lib/studio/decompose'
 import { emitDiff, emitStudio } from '../lib/studio/studioEvents'
 import { createStudioApi } from '../lib/studio/studioApi'
 import { unfilledPlaceholders } from '../lib/studio/layouts'
@@ -194,6 +195,8 @@ export function Studio() {
   const [timelineH, setTimelineH] = useState<number | null>(null)
   const [showShortcuts, setShowShortcuts] = useState(false)
   const [clipMenuAt, setClipMenuAt] = useState<{ clipId: string; x: number; y: number } | null>(null)
+  /** One decomposition at a time: measuring the waveform is not instant. */
+  const breakBusyRef = useRef(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const stripRef = useRef<HTMLDivElement>(null)
   const setAskOpen = useProjectStore((st) => st.setAskOpen)
@@ -2062,7 +2065,26 @@ export function Studio() {
                 hasClipboard={!!getClipboard()}
                 extra={(() => {
                   const c = doc.clips.find((x) => x.id === clipMenuAt.clipId)
-                  return c?.kind === 'video' ? [{ id: 'proxy', label: 'Make preview proxy', run: () => void makeProxy((c as StudioMediaClip).mediaId).then((st) => st.error && pushToast('info', st.error)) }] : []
+                  if (!c || (c.kind !== 'video' && c.kind !== 'audio')) return []
+                  const items: Array<{ id: string; label: string; run: () => void }> = [{
+                    id: 'break-into-clips',
+                    label: 'Break into clips (measured pauses)',
+                    run: () => {
+                      if (breakBusyRef.current) return
+                      breakBusyRef.current = true
+                      pushToast('info', `Measuring “${c.name}” — breaking it at the pauses it finds…`)
+                      void decomposeClip(doc, c.id, { mode: 'silence' })
+                        .then((r) => {
+                          if (r.reason) { pushToast('info', r.reason); return }
+                          patchStudio(pid, { clips: r.doc.clips, trackCount: r.doc.trackCount }, `Break into ${r.pieces} clips`)
+                          pushToast('success', `${r.pieces} clips from “${c.name}”${r.removedSec ? `, ${r.removedSec.toFixed(1)} s of silence closed` : ''} — one Undo reverts it.`)
+                        })
+                        .catch((err) => pushToast('error', humanError(err, 'Break into clips')))
+                        .finally(() => { breakBusyRef.current = false })
+                    },
+                  }]
+                  if (c.kind === 'video') items.push({ id: 'proxy', label: 'Make preview proxy', run: () => void makeProxy((c as StudioMediaClip).mediaId).then((st) => st.error && pushToast('info', st.error)) })
+                  return items
                 })()}
                 onAction={(action) => runClipAction(clipMenuAt.clipId, action)}
                 onClose={() => setClipMenuAt(null)}

@@ -19,6 +19,7 @@ import { deleteScene, duplicateScene, loadScene, removeVariable, renameScene, sa
 import { variablesUsed } from '../../lib/studio/resolve'
 import { reframePatch, snapCutsToBeats, tightenClip, timelineBeats } from '../../lib/studio/autoEdit'
 import { tightenWithProbe } from '../../lib/studio/speechProbe'
+import { decomposeClip, type DecomposeMode } from '../../lib/studio/decompose'
 import { describeProbe } from '../../lib/speech/probe'
 import { analyseBeats, analyseSubject } from '../../lib/studio/autoEditAnalysis'
 import { aspectRatio } from '../../lib/studio/doc'
@@ -87,6 +88,10 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
   const [verdict, setVerdict] = useState<LinkVerdict | null>(null)
   const [rights, setRights] = useState(false)
   const [compare, setCompare] = useState<MediaRef[]>([])
+  const [breakMode, setBreakMode] = useState<DecomposeMode>('silence')
+  const [breakPieceSec, setBreakPieceSec] = useState(4)
+  const [breakKeepTiming, setBreakKeepTiming] = useState(false)
+  const [breakCaptions, setBreakCaptions] = useState(true)
 
   const propose = (next: StudioDoc, label: string, notes?: string[]) => {
     setPending({ doc: next, label, notes })
@@ -390,6 +395,8 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
         {(() => {
           const sel = doc.clips.find((c) => c.id === selectedId)
           const music = (sel?.kind === 'audio' ? sel : doc.clips.find((c) => c.kind === 'audio' && (c.role ?? 'music') === 'music')) as StudioAudioClip | undefined
+          // Word timings live on media clips only; narrow once so the JSX below stays readable.
+          const spoken = sel && (sel.kind === 'video' || sel.kind === 'audio') ? sel.words ?? null : null
           const beats = timelineBeats(doc)
           const run = async (label: string, fn: () => Promise<void>) => {
             setBusy(label)
@@ -435,6 +442,48 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
                     propose(r.doc, `Tighten by measured silence (−${r.removedSec.toFixed(1)} s)`, [`${r.cuts} cuts measured from the waveform; every clip after it moves with the audio.`])
                   })}>{busy === 'probe' ? 'Measuring…' : 'Tighten by silence'}</Button>
                 </div>
+              </div>
+              <div className="cu-section p-2.5">
+                <p className="text-xs font-medium text-text">Break into clips</p>
+                <p className="text-xs text-muted">
+                  {sel && (sel.kind === 'video' || sel.kind === 'audio')
+                    ? `Turns “${sel.name}” into separate clips you can move, retime, delete or caption — ${spoken?.length ? `${spoken.length} word timings available` : 'no transcript needed for the silence and even splits'}.`
+                    : 'Import a video, then break it apart: every phrase and every pause becomes an ordinary Studio clip.'}
+                </p>
+                <div className="mt-1.5 grid grid-cols-2 gap-1.5">
+                  <label className="text-[11px] text-muted">Break at
+                    <select className={inputCx} value={breakMode} onChange={(e) => setBreakMode(e.target.value as DecomposeMode)} aria-label="Break mode">
+                      <option value="silence">Measured pauses (waveform)</option>
+                      <option value="words">Pauses in the words (needs a transcript)</option>
+                      <option value="even">Even pieces (no speech needed)</option>
+                    </select>
+                  </label>
+                  {breakMode === 'even'
+                    ? <label className="text-[11px] text-muted">Piece length · {breakPieceSec}s
+                        <input type="range" min={1} max={20} value={breakPieceSec} onChange={(e) => setBreakPieceSec(Number(e.target.value))} className="w-full" />
+                      </label>
+                    : <label className="flex items-end gap-2 pb-1 text-[11px] text-muted">
+                        <input type="checkbox" checked={breakKeepTiming} onChange={(e) => setBreakKeepTiming(e.target.checked)} />
+                        Keep the original timing (pauses stay as their own clips)
+                      </label>}
+                </div>
+                <label className="mt-1 flex items-center gap-2 text-[11px] text-muted">
+                  <input type="checkbox" checked={breakCaptions} disabled={!spoken?.length} title={!spoken?.length ? 'Transcribe the clip first (Auto-captions) to caption the pieces' : undefined} onChange={(e) => setBreakCaptions(e.target.checked)} />
+                  Caption the pieces from the clip’s word timings (word-timed, labelled in the inspector)
+                </label>
+                <Button size="sm" variant="primary" className="mt-1.5" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy) ? 'Select a video or audio clip — or wait' : undefined} onClick={() => sel && run('break', async () => {
+                  const r = await decomposeClip(doc, sel.id, {
+                    mode: breakMode,
+                    pieceSec: breakPieceSec,
+                    keepTiming: breakMode === 'even' ? false : breakKeepTiming,
+                    caption: breakCaptions && spoken?.length ? {} : null,
+                  })
+                  if (r.reason) return setMsg(r.reason)
+                  const notes = [...r.notes]
+                  if (r.captions) notes.push(`${r.captions} word-timed caption clips added on the top track.`)
+                  setMsg(null)
+                  propose(r.doc, `Break into ${r.pieces} clips`, notes)
+                })}>{busy === 'break' ? 'Breaking apart…' : 'Break into clips'}</Button>
               </div>
               <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Smart reframe</p>

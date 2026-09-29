@@ -1,3 +1,19 @@
+## Also shipped: break an imported video into editable clips
+
+`src/lib/studio/decompose.ts` — one clip → many ordinary clips. Three ways in,
+all on existing machinery: measured pauses (`studio/speechProbe.ts` → `probeCuts`,
+no transcript or model needed), pauses in the words (`autoEdit.speechCuts` with
+`fillers: false`, so nothing spoken is deleted), or even pieces for footage with
+no speech. `breakAtCuts` either closes the silence up (a real edit, `tightenClip`)
+or splits at the pause boundaries keeping the original timing, so each pause
+becomes a clip you can delete. Word timings stay on every piece in source
+seconds, so captions and word-timed components keep working without
+re-transcribing, and captions can be generated *before* the cut so the existing
+remap carries them onto the new timeline. Reachable from Studio → Pro →
+Auto-edit → *Break into clips* (preview → accept, one undo) and from the timeline
+right-click menu. `scripts/check-decompose.mjs` (53 assertions) runs in `build`
+and `verify`; `docs/SMOKE_WORD_TIMED_CAPTIONS.md` scenario D is the manual check.
+
 ## Latest: captions that follow the voice, cuts measured from the waveform, and gates that read pixels
 
 The open-edit port (`veedstudio/open-edit`, Apache-2.0 — see
