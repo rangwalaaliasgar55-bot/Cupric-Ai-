@@ -19,6 +19,7 @@ const invokeChannels = new Set([
   'state:load',
   'state:clear',
   'state:recoveryInfo', 'state:listVersions', 'state:snapshotNow', 'state:restoreVersion',
+  'app:info',
   'diag:report',
   'log:write',
   'voice:status', 'voice:tts', 'voice:transcribe', 'voice:transcribeMedia',

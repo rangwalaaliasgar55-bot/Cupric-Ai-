@@ -1162,6 +1162,34 @@ ipcMain.handle('diag:report', (_event, payload) => {
     homeDir: os.homedir(),
   })
 })
+/**
+ * What the running app actually is: version, packaging, platform, runtime.
+ *
+ * The version comes from `app.getVersion()` (the packaged `package.json`), never
+ * from a literal, so Settings, the diagnostics report and the release tag can
+ * only disagree if the build itself is wrong. Phase 0 finding D4 was the README
+ * advertising a version four releases old; the renderer had no way to see the
+ * real one at all, which is part of how that drifted.
+ */
+ipcMain.handle('app:info', () => {
+  try {
+    return {
+      ok: true,
+      version: app.getVersion(),
+      packaged: app.isPackaged,
+      platform: process.platform,
+      arch: process.arch,
+      electron: process.versions.electron,
+      chrome: process.versions.chrome,
+      node: process.versions.node,
+      updateFeedOverride: updateFeedOverride() ? 'CUPRIC_UPDATE_FEED' : null,
+    }
+  } catch (err) {
+    const message = err?.message || String(err)
+    logLine('app-info-failed', message)
+    return { ok: false, code: 'APP_INFO_FAILED', message: `Could not read the app version (${message}).` }
+  }
+})
 ipcMain.handle('state:listVersions', () => projectHistory.listVersions(app.getPath('userData')))
 ipcMain.handle('state:snapshotNow', () => {
   try {
@@ -4845,18 +4873,61 @@ ipcMain.handle('render:copyToDownloads', async (_event, outputPath) => {
 // Updater
 // ---------------------------------------------------------------------------
 
+/**
+ * The update feed override, for verifying a real version-to-version update.
+ *
+ * electron-updater reads `resources/app-update.yml`, which points at this
+ * repository's releases — correct for users and useless for a test, because a
+ * test must serve a fake newer release from localhost. `CUPRIC_UPDATE_FEED`
+ * exists for `scripts/check-update-path.mjs`; it is logged loudly when set so a
+ * user's report can never leave it a mystery.
+ */
+function updateFeedOverride() {
+  const url = process.env.CUPRIC_UPDATE_FEED
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      logLine('updater-feed-rejected', `CUPRIC_UPDATE_FEED must be http(s); ignoring ${url}`)
+      return null
+    }
+    return parsed.origin
+  } catch (err) {
+    logLine('updater-feed-rejected', `CUPRIC_UPDATE_FEED is not a URL; ignoring ${url}`, err?.message)
+    return null
+  }
+}
+
 function wireUpdater() {
   if (!autoUpdater) return
   autoUpdater.autoDownload = true
+  const override = updateFeedOverride()
+  if (override) {
+    autoUpdater.setFeedURL({ provider: 'generic', url: override })
+    logLine('updater-feed-override', `Update feed overridden for this session: ${override}`)
+  }
   autoUpdater.on('checking-for-update', () => mainWindow?.webContents.send('updater:status', { status: 'checking' }))
-  autoUpdater.on('update-available', (info) => mainWindow?.webContents.send('updater:status', { status: 'available', version: info?.version }))
-  autoUpdater.on('update-not-available', () => mainWindow?.webContents.send('updater:status', { status: 'current' }))
+  autoUpdater.on('update-available', (info) => {
+    logLine('updater-available', `Update available: ${info?.version}`, { current: app.getVersion() })
+    mainWindow?.webContents.send('updater:status', { status: 'available', version: info?.version })
+  })
+  autoUpdater.on('update-not-available', () => {
+    logLine('updater-current', `No update available; ${app.getVersion()} is the newest release`)
+    mainWindow?.webContents.send('updater:status', { status: 'current' })
+  })
   autoUpdater.on('error', (err) => {
     logLine('updater-error', err?.message || String(err))
     mainWindow?.webContents.send('updater:status', { status: 'error', message: err?.message || String(err) })
   })
   autoUpdater.on('update-downloaded', (info) => {
     updateDownloaded = true
+    // Logged because this is the moment the update becomes installable, and the
+    // only evidence a headless test (or a user's report) has that a download
+    // really finished rather than being announced.
+    logLine('updater-downloaded', `Update ${info?.version} downloaded; it installs on quit`, {
+      current: app.getVersion(),
+      file: info?.downloadedFile ? path.basename(String(info.downloadedFile)) : null,
+    })
     mainWindow?.webContents.send('updater:status', { status: 'downloaded', version: info?.version })
   })
 }

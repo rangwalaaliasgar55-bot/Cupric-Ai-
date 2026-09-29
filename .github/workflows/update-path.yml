@@ -1,0 +1,118 @@
+name: Verify the update path (version to version)
+
+# Phase 4: an updater can only be verified by updating something. This workflow
+# builds two real releases — the tag you name as the "from" version and the tag
+# you name as the "to" version — and runs scripts/check-update-path.mjs, which
+# installs the old build, serves the new one over HTTP, launches the installed
+# app against that feed, waits for the update to download, closes the app, and
+# requires Windows to report the new version on the installed executable
+# afterwards.
+#
+# It is manual and not part of the release gate on purpose: it packages two
+# complete builds (about fifteen minutes) and it exercises a signed updater
+# best when it runs against signed releases. Run it before a release that
+# changes packaging, the feed, or electron-updater.
+#
+# UNVERIFIED as of the commit that added it: this workflow has never run on a
+# Windows runner (the container it was written in cannot run Electron or an
+# installer). The first run is the verification — the checks name what failed.
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_tag:
+        description: 'Version to install first (for example, v0.13.0)'
+        required: true
+        type: string
+      to_tag:
+        description: 'Version the app must update itself to (for example, v0.14.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  update-path:
+    name: Install ${{ inputs.from_tag }}, update to ${{ inputs.to_tag }}
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      ELECTRON_BUILDER_PUBLISH: never
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Each build is checked out into its own worktree so package.json, dist/
+      # and electron/ cannot leak between them — which also means each worktree
+      # needs its own `npm ci` (a worktree has no node_modules). The check script
+      # itself needs nothing but Node.
+      - name: Build ${{ inputs.from_tag }}
+        shell: pwsh
+        run: |
+          git worktree add ../cupric-from ${{ inputs.from_tag }}
+          Push-Location ../cupric-from
+          npm ci
+          npm run build
+          npx electron-builder --win --publish never
+          Pop-Location
+          Copy-Item ../cupric-from/release -Destination ./release-from -Recurse
+          Get-ChildItem ./release-from | Format-Table Name, Length
+
+      - name: Build ${{ inputs.to_tag }}
+        shell: pwsh
+        run: |
+          git worktree add ../cupric-to ${{ inputs.to_tag }}
+          Push-Location ../cupric-to
+          npm ci
+          npm run build
+          npx electron-builder --win --publish never
+          Pop-Location
+          Copy-Item ../cupric-to/release -Destination ./release-to -Recurse
+          Get-ChildItem ./release-to | Format-Table Name, Length
+
+      # The two builds must be different versions, or the test proves nothing.
+      - name: Confirm the two feeds differ
+        shell: pwsh
+        run: |
+          $from = (Get-Content ./release-from/latest.yml | Select-String '^version:').ToString().Split(':')[1].Trim()
+          $to = (Get-Content ./release-to/latest.yml | Select-String '^version:').ToString().Split(':')[1].Trim()
+          if ($from -eq $to) { throw "Both builds are $from — the update path cannot be tested against the same version." }
+          Write-Host "from $from → to $to"
+
+      - name: Install the old build, update it, and verify the result
+        shell: pwsh
+        run: |
+          $setup = (Get-ChildItem -Path ./release-from -Filter 'Cupric-AI-Setup-*.exe' -File).FullName
+          if (-not $setup) { throw 'No setup installer in release-from.' }
+          node scripts/check-update-path.mjs --from $setup --to ./release-to
+
+      - name: Upload both release directories for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-path-${{ inputs.from_tag }}-to-${{ inputs.to_tag }}
+          if-no-files-found: warn
+          path: |
+            release-from/latest.yml
+            release-to/latest.yml
+
+      - name: Show the filesystem state of the runner if the test failed
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host '--- installed app directories ---'
+          Get-ChildItem 'C:\cupric-*' -ErrorAction SilentlyContinue | Format-Table FullName, Length
+          Write-Host '--- update cache ---'
+          Get-ChildItem "$env:LOCALAPPDATA\Cupric AI-updater" -Recurse -ErrorAction SilentlyContinue | Format-Table FullName, Length
+          Write-Host '--- the app log from the update run (throwaway userData dir) ---'
+          Get-ChildItem "$env:TEMP\cupric-update-path-data-*" -Recurse -Filter '*.log' -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName; Get-Content $_.FullName -Tail 80 }
