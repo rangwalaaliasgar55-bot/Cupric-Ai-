@@ -16,8 +16,19 @@ Ordered by impact ÷ effort. The first six are what I would do next.
 > the Studio Pro panel, and a delivery gate chain (contrast/safe zones/delivery)
 > surfaced as **Run delivery checks** with one-click fixes. Ported from
 > veedstudio/open-edit (Apache-2.0, see `THIRD_PARTY_NOTICES.md`).
+> **Added since:** the gates grew a `timing` stage — a caption that arrives late,
+> holds past its last word, lists fewer delays than words, or shares screen time
+> with the next one used to pass every check, because every other gate judged
+> *what* is drawn and none judged *when* (`gates.timingGate`, ported from
+> open-edit's `expect-windows`). The audit also samples the moments things change
+> (clip edges, word reveals) instead of only an even sweep, and Studio's
+> **Fix all** now proves its own scope with a document diff (`studio/scopedEdit.ts`,
+> ported from `scoped-edit`), so a fix that quietly moved something it was not
+> asked to says so.
 > Still to do here: music ducking automation, Piper voiceover in the agent,
-> and the fast export path the gates will eventually measure. (this week)
+> the fast export path the gates will eventually measure, and re-running the
+> gates on the patched document to confirm a fix cleared its finding (the other
+> half of `verify-applied`). (this week)
 
 ### 1. Frame-accurate, much faster export — WebCodecs instead of real-time MediaRecorder · S–M · ★★★
 

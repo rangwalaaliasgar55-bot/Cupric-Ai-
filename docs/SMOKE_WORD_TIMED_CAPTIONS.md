@@ -140,6 +140,37 @@ and knows what a failure looks like.
 - Every piece points at the same source file, so a relink (media panel) fixes them all at once; deleting
   a piece never deletes the file.
 
+## Scenario F — a caption drawn at the wrong time, and a fix that proves its scope
+
+1. Studio → run Auto-captions on a clip with speech, so some caption clips carry word timings
+   (inspector shows *Word timing: real word times*).
+2. Select a caption on the timeline and drag its right edge left until the block ends **before** its last
+   word would be revealed (the inspector's `wordDelaysMs` shows the delays; the last is the one to beat).
+3. Click **Checks** (the delivery audit button).
+4. Expected: the chain stops at the **timing** gate and names the block: *"…ends at 1.2s but its last word
+   is revealed at 1.8s, so that word is never seen."* The panel offers **Hold to fit the last word**.
+5. Press **Fix all**. Expected toast: *"Applied 1 measured fix — one undo step, and 1 change(s), 1 allowed."*
+   — the second half is `scopedEdit` proving the fix touched only the blocks the report named. Undo
+   reverts the whole fix.
+6. Expected after the fix: re-running **Checks** no longer reports a timing finding for that block, and
+   playing the timeline shows the last word appear.
+7. Also try: shorten a caption's text but leave its `wordDelaysMs` long (or paste a timing list from a
+   partial transcript). Expected: *"has 3 word timing(s) for 4 word(s): the last 1 never appear"* — an
+   error, because the renderer stops revealing at the end of the list.
+8. Two captions that overlap on the same track are reported as a warning the timing gate can also fix
+   (*Trim to …*) when trimming stays safe (at least 0.35 s, and not before the block's own last reveal).
+
+**Failure signatures**
+
+- `timing:missing-delays` (error) → the timing list is shorter than the text: re-run auto-captions, or
+  shorten the text to what was transcribed. This one has no mechanical fix on purpose — deciding which
+  words to drop is an editorial decision.
+- `timing:late-reveal` (warning) → the block sits on screen for more than 1.2 s before its first word.
+  No fix is offered: leading in before a caption is a style choice, and the warning is the whole point.
+- A toast that says *"The fix also changed something it was not asked to"* → the audit button's own fix
+  drifted outside the clips its report named. That is reported rather than hidden; **Undo** reverts all
+  of it in one step.
+
 ## What this scenario does **not** cover
 
 - macOS/Linux: no packaged build or release workflow exists for them (see

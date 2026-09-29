@@ -46,28 +46,56 @@ export function auditSize(aspect: StudioAspect, shortSide = AUDIT_SHORT_SIDE): [
   return ratio >= 1 ? [even(shortSide * ratio), even(shortSide)] : [even(shortSide), even(shortSide / ratio)]
 }
 
+/** Even stride over a sorted list, keeping the first and the last. */
+function evenStride(list: number[], count: number): number[] {
+  if (list.length <= count) return [...list]
+  const stride = list.length / count
+  return Array.from({ length: count }, (_, i) => list[Math.min(list.length - 1, Math.floor(i * stride))])
+}
+
 /**
- * The times to look at: the midpoint of every text block (where the block is
- * fully composed) plus an even sweep of the timeline for everything else.
- * Deduplicated and sorted, so the report's second numbers mean something.
+ * The times to look at.
+ *
+ * The edit points come first, and this is deliberate — upstream's
+ * `cut-frames.ts` earned it: a run that sampled its deliverable on an even grid
+ * (1.2, 3.8, 9.5, 15.0, 21.5 s) called the composite clean while its defect
+ * lived only at the cuts (1.83, 5.29, 8.58, 10.75 s), where the previous shot
+ * showed through for a few frames. Evenly spaced frames are the wrong frames.
+ *
+ * So the audit keeps: the start and end of every clip, the midpoint of every
+ * text block, and every timed block's first and last reveal — the moments where
+ * something changes — and then fills whatever room is left with an even sweep,
+ * so a fault in the quiet middle of a long shot still has a chance of being seen.
+ * Deduplicated, sorted, and capped.
  */
 export function auditTimes(doc: StudioDoc, opts: { fps?: number; maxFrames?: number } = {}): number[] {
   const duration = docDuration(doc)
   if (duration <= 0) return []
   const fps = Math.max(1, opts.fps ?? DEFAULT_AUDIT_FPS)
   const cap = Math.max(2, opts.maxFrames ?? AUDIT_MAX_FRAMES)
-  const times = new Set<number>()
-  for (let t = 0; t < duration; t += 1 / fps) times.add(Math.round(t * 1000) / 1000)
+  const at = (t: number) => Math.round(Math.min(duration, Math.max(0, t)) * 1000) / 1000
+
+  const priority = new Set<number>([0, at(duration)])
   for (const clip of doc.clips) {
+    priority.add(at(clip.startSec))
+    priority.add(at(clip.startSec + clip.durationSec))
     if (clip.kind !== 'text') continue
-    const mid = clip.startSec + clip.durationSec / 2
-    if (mid <= duration) times.add(Math.round(mid * 1000) / 1000)
+    priority.add(at(clip.startSec + clip.durationSec / 2))
+    const delays = (clip.wordDelaysMs ?? []).filter((d) => Number.isFinite(d))
+    if (delays.length) {
+      priority.add(at(clip.startSec + Math.min(...delays) / 1000))
+      priority.add(at(clip.startSec + Math.max(...delays) / 1000))
+    }
   }
-  const sorted = [...times].sort((a, b) => a - b)
-  if (sorted.length <= cap) return sorted
-  // Even stride, keeping the first and last: a shorter audit, not a different one.
-  const stride = sorted.length / cap
-  return Array.from({ length: cap }, (_, i) => sorted[Math.min(sorted.length - 1, Math.floor(i * stride))])
+  const wanted = [...priority].sort((a, b) => a - b)
+  if (wanted.length >= cap) return evenStride(wanted, cap)
+
+  const chosen = new Set<number>(wanted)
+  const room = cap - chosen.size
+  const sweep: number[] = []
+  for (let t = 0; t < duration; t += 1 / fps) sweep.push(at(t))
+  for (const t of (sweep.length <= room ? sweep : evenStride(sweep, room))) chosen.add(t)
+  return [...chosen].sort((a, b) => a - b)
 }
 
 export type AuditFrames = Array<{
@@ -144,5 +172,6 @@ export function describeAudit(report: GateReport): string {
   const bits = [report.summary]
   if (worst !== null) bits.push(`worst contrast ${worst}:1`)
   if (report.contrast.sampled) bits.push(`${report.contrast.sampled} text sample(s) over ${report.ran.length} gate(s)`)
+  if (report.timing?.blocks) bits.push(`${report.timing.blocks} timed block(s) judged for when they appear`)
   return bits.join(' · ')
 }

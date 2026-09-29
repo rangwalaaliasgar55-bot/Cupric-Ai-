@@ -97,6 +97,7 @@ import { canExportMp4, convertToMp4, exportStudio, exportStudioInBackground } fr
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
 import { applyAuditFixes, describeAudit, runStudioAudit } from '../lib/studio/gateRunner'
+import { allowListOfReport, diffStudioDoc } from '../lib/studio/scopedEdit'
 import type { GateReport } from '../lib/studio/gates'
 import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
@@ -244,10 +245,20 @@ export function Studio() {
     if (!pid || !audit) return
     const { doc: fixed, applied } = applyAuditFixes(doc, audit.report)
     if (!applied) return
+    // Prove the fix touched only the blocks the report named (`scopedEdit`): a
+    // "Fix all" that quietly moved a caption nobody flagged is a defect, and the
+    // report's own clip ids are the allow-list for exactly this reason.
+    const scope = diffStudioDoc(doc, fixed, { allow: allowListOfReport(audit.report) })
     patchStudio(pid, { clips: fixed.clips, trackCount: fixed.trackCount }, 'Fix delivery checks')
     setAudit(null)
-    cueDone()
-    pushToast('success', `Applied ${applied} measured fix${applied === 1 ? '' : 'es'} — one undo step.`)
+    if (scope.ok) {
+      cueDone()
+      pushToast('success', `Applied ${applied} measured fix${applied === 1 ? '' : 'es'} — one undo step, and ${scope.summary}.`)
+      return
+    }
+    cueProblem()
+    rlog.warn('studio', 'scoped edit drifted', scope.summary)
+    pushToast('error', `The fix also changed something it was not asked to — ${scope.unexpected[0].label}. Undo reverts all of it.`)
   }, [audit, doc, patchStudio, pid, pushToast])
 
   const runClipAction = useCallback((clipId: string | null, action: ClipActionId) => {
@@ -1735,8 +1746,8 @@ export function Studio() {
                   </button>
                 )}
               </div>
-              {auditFindings.map((finding) => (
-                <div key={`${finding.gate}:${finding.id}`} className="flex items-start gap-3 text-xs">
+              {auditFindings.map((finding, index) => (
+                <div key={`${finding.gate}:${finding.id}:${finding.clipId ?? ''}:${index}`} className="flex items-start gap-3 text-xs">
                   <span
                     className={cx(
                       'mt-1 h-1.5 w-1.5 shrink-0 rounded-full',

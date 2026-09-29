@@ -13,7 +13,9 @@
  *   verdict    sliding-window policy: one bad second fails the element
  *   fixes      recolor and scrim, and which one is least visible
  *   textLayout the box a clip occupies, which the gates measure
- *   runGates   lint → safezones → contrast → deliver, stopping at the first error
+ *   timing     when things are drawn: reveals past the end, short delay lists,
+ *              out-of-order delays, long holds, late reveals, overlapping blocks
+ *   runGates   lint → timing → safezones → contrast → deliver, stopping at the first error
  */
 import assert from 'node:assert/strict'
 import { rmSync } from 'node:fs'
@@ -298,7 +300,7 @@ function fillFrame(width, height, rgb, alpha = 255) {
   const pass = m.g.runGates({ doc: good, frames: framesWith(good, white) })
   eq(pass.ok, true, 'a clean composition passes the chain')
   eq(pass.stoppedAt, null, 'and nothing stopped it')
-  eq(pass.ran.map((r) => r.gate).join(','), 'lint,safezones,contrast,deliver', 'every gate ran, in order')
+  eq(pass.ran.map((r) => r.gate).join(','), 'lint,timing,safezones,contrast,deliver', 'every gate ran, in order')
   eq(pass.contrast.elements.length, 1, 'the contrast gate judged the one text block')
   ok(pass.summary.includes('Passed'), 'the summary says so in words')
 
@@ -423,6 +425,73 @@ function fillFrame(width, height, rgb, alpha = 255) {
   eq(blind.frames.length, 0, 'no canvas, no frames')
   eq(blind.report.contrast.sampled, 0, 'and no contrast samples, so nothing is claimed')
   globalThis.document = saved
+}
+
+/* ── 8. timing: the gate for what is drawn at the wrong time ──────── */
+{
+  const width = 1080
+  const height = 1920
+  const ctx = stubCtx()
+  const makeTimed = (over = {}) => {
+    const doc = m.doc.emptyStudioDoc()
+    doc.clips = [{ ...m.doc.defaultTextClip(0, 0), id: 'cap', name: 'Caption', text: 'one two three', durationSec: 2, color: '#000000', wordDelaysMs: [0, 400, 800], ...over }]
+    return doc
+  }
+  const frameFor = (doc, t = 0) => [{ tSec: t, width, height, rgba: fillFrame(width, height, [255, 255, 255]), boxes: [m.tl.textBox(ctx, doc.clips[0], width, height)] }]
+
+  const clean = makeTimed()
+  eq(m.g.timingGate(clean).length, 0, 'a caption whose words fit inside it raises nothing')
+  const cleanReport = m.g.runGates({ doc: clean, frames: frameFor(clean) })
+  ok(cleanReport.ran.some((r) => r.gate === 'timing' && r.ok), 'the chain runs the timing gate')
+  eq(cleanReport.timing.blocks, 1, 'and reports how many timed blocks it judged')
+  eq(cleanReport.timing.passes, true, 'with the verdict in the report')
+
+  // A word revealed after the block ends is never seen: an error, with a fix.
+  const past = makeTimed({ durationSec: 0.5, wordDelaysMs: [0, 200, 900] })
+  const pastFindings = m.g.timingGate(past)
+  const reveal = pastFindings.find((f) => f.id === 'timing:reveal-past-end')
+  ok(reveal && reveal.severity === 'error', 'a word revealed after the block ends is an error')
+  ok(/never seen/.test(reveal.message), 'and the message says what the viewer loses')
+  ok(pastFindings.every((f) => f.clipId === 'cap'), 'the finding names the block to change')
+  const patched = m.g.applyGateFixes(past, pastFindings)
+  ok(patched.applied >= 1, 'the fix applies as a document edit')
+  eq(m.g.timingGate(patched.doc).some((f) => f.id === 'timing:reveal-past-end'), false, 'and clears the error it proposed')
+
+  // Fewer delays than words: the renderer stops revealing at the list's end.
+  const missing = m.g.timingGate(makeTimed({ text: 'one two three four', wordDelaysMs: [0, 200, 400] })).find((f) => f.id === 'timing:missing-delays')
+  ok(missing && missing.severity === 'error', 'a short delay list is an error: the trailing words never appear')
+  eq(missing.detail.words, 4, 'the finding carries the word count it compared against')
+  ok(m.g.timingGate(makeTimed({ wordDelaysMs: [0, 700, 300] })).some((f) => f.id === 'timing:delay-order'), 'out-of-order delays are reported')
+
+  const held = m.g.timingGate(makeTimed({ durationSec: 8, wordDelaysMs: [0, 200, 400] })).find((f) => f.id === 'timing:hold')
+  ok(held && held.severity === 'warning' && held.fix, 'a long hold is a warning with a trim')
+  const late = m.g.timingGate(makeTimed({ durationSec: 6, wordDelaysMs: [3000, 3400, 3800] })).find((f) => f.id === 'timing:late-reveal')
+  ok(late, 'a block that sits up for three seconds before its first word is reported')
+  eq(late.fix, undefined, 'and it proposes no fix: shortening a lead-in is a decision')
+
+  // Two blocks on one track sharing screen time.
+  const clash = m.doc.emptyStudioDoc()
+  clash.clips = [
+    { ...m.doc.defaultTextClip(0, 0), id: 'a', name: 'First', text: 'hello', durationSec: 3, color: '#000000', wordDelaysMs: [0, 300] },
+    { ...m.doc.defaultTextClip(2, 0), id: 'b', name: 'Second', text: 'world', durationSec: 2, color: '#000000' },
+  ]
+  const overlap = m.g.timingGate(clash).find((f) => f.id === 'timing:overlap')
+  ok(overlap && overlap.clipId === 'a', 'overlapping blocks are reported against the earlier one')
+  eq(overlap.detail.other, 'Second', 'and name the block it clashes with')
+  const trimmed = m.g.applyGateFixes(clash, m.g.timingGate(clash))
+  eq(trimmed.doc.clips.find((c) => c.id === 'a').durationSec, 2, 'the fix trims the earlier block to where the later one starts')
+
+  // An untimed block is left to the other gates, and the gate can be skipped.
+  eq(m.g.timingGate(makeTimed({ wordDelaysMs: null })).length, 0, 'a block with no word timings is not judged here')
+  eq(m.g.runGates({ doc: makeTimed(), frames: frameFor(makeTimed()), skip: ['timing'] }).ran.some((r) => r.gate === 'timing'), false, 'and it can be skipped like any other gate')
+
+  // The audit looks at the moments things change — clip edges and word reveals —
+  // because a fault that only exists at a seam survives an even sweep.
+  const timedDoc = makeTimed({ durationSec: 4, wordDelaysMs: [0, 2500] })
+  const times = m.gr.auditTimes(timedDoc, { fps: 1, maxFrames: 24 })
+  ok(times.includes(0), 'the audit keeps the start of the edit')
+  ok(times.includes(2.5), 'it looks at the moment a word is revealed')
+  ok(times.includes(4), 'and at the clip’s own end, where a fault has nowhere to hide')
 }
 
 console.log(`gates check passed — ${n} assertions`)

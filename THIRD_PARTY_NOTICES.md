@@ -27,9 +27,14 @@ model and runtime):
 | `cli/src/commands/check-delivery.ts` | `src/lib/studio/gates.ts` | delivery findings and loudness targets: `DeliveryFindings`, `LOUDNESS_TARGET` and the sampled-frame contrast policy. There is no separate `src/lib/speech/delivery.ts`; an earlier revision of this table named a file that was never created. |
 | `cli/src/safe-zone.ts` | `src/lib/studio/safeZone.ts` | the platform-safe area, one definition, used by the design engine and the gate. |
 | `cli/src/wcag/policy.ts`, `windows.ts`, `treat.ts` | `src/lib/studio/gates.ts` | WCAG 2.2 thresholds (AA/AAA, large-text rule), the sliding one-second window policy, and the analytic evaluation of a fix against already-sampled background colours. Cupric samples its own rendered frames instead of the engine's statistics file. |
+| `cli/src/commands/expect-windows.ts` | `src/lib/studio/gates.ts` (`timingGate`) | the gate for *when* something is drawn: a reveal past the block's end, fewer delays than words, out-of-order delays, a long hold, a late reveal, two blocks sharing screen time. Upstream derives the same assertions from a manifest's `verify.expect` block; Cupric reads them from the clip's own word timings. |
+| `cli/src/commands/scoped-edit.ts` | `src/lib/studio/scopedEdit.ts` | proving an edit changed only what it was asked to: a diff of two document revisions with an allow-list, because both revisions are valid and only the diff shows the 40 ms a caption was not supposed to move. Cupric's Studio "Fix all" allows exactly the clips its gate report named. |
+| `pipeline/scripts/cut-frames.ts` | `src/lib/studio/gateRunner.ts` (`auditTimes`) | sampling frames at the moments things change — clip edges and word reveals — instead of an even sweep. Upstream's argument (a defect at a cut survives a uniform grid) is quoted in the function. |
 
 Modifications are described in each file's header. Cupric's version is a
-derivative work under the same licence.
+derivative work under the same licence. The ported behaviour is covered by
+`scripts/check-gates.mjs` (including the timing gate), `scripts/check-speech.mjs`
+and `scripts/check-scoped-edit.mjs`.
 
 Built on the ported pieces, but Cupric's own code (not taken from open-edit):
 `src/lib/studio/textTools.ts` `planCaptionLines` / `captionDelaysWithSource` —

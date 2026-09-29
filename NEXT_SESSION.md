@@ -1,3 +1,22 @@
+## Also shipped: a gate for *when* things are drawn, and a fix that proves its own scope
+
+Three items from the reference audit's "still copyable from open-edit" list, all pure and all tested:
+
+- **`gates.timingGate`** (upstream: `commands/expect-windows.ts`) — the chain gained a `timing` stage
+  (lint → timing → safe zones → contrast → deliver). Every other gate judged *what* is drawn, so a
+  caption that arrives a second late, holds after its last word, lists fewer delays than words (the
+  trailing words never appear), reveals out of order, or is still up when the next one lands passed all
+  of them. Errors carry a one-click fix (extend the block to fit its last word); warnings carry the
+  numbers. `scripts/check-gates.mjs` 124 → 147 assertions.
+- **`gateRunner.auditTimes`** (upstream: `pipeline/scripts/cut-frames.ts`) — the audit now samples the
+  moments things change: clip starts and ends and every timed block's first and last reveal, with the
+  remaining room filled by an even sweep. The upstream argument is kept in the function: a run that
+  sampled on an even grid called its deliverable clean while the defect lived only at the cuts.
+- **`studio/scopedEdit.ts`** (upstream: `commands/scoped-edit.ts`) — `diffStudioDoc(before, after,
+  {allow})` names every change and flags the ones nobody asked for. Studio's "Fix all" now allows exactly
+  the clips its own gate report named, and says so in the toast (or warns when the fix drifted). Covered
+  by `scripts/check-scoped-edit.mjs` (34 assertions), wired into `build` and `verify`.
+
 ## Also shipped: break a montage apart at its own cuts
 
 `src/lib/studio/shots.ts` — shot/scene detection with no model and no network: the clip's own frames

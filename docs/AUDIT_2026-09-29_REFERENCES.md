@@ -466,6 +466,16 @@ Before copying more, it is worth being exact about what of the port is *reachabl
 
 ### Still worth taking, ranked (all Apache-2.0 code unless noted)
 
+**Shipped since this list was written** (same day, commit range after `42f34a8`): **#1** —
+`src/lib/studio/scopedEdit.ts` + `scripts/check-scoped-edit.mjs` (34 assertions), wired into Studio's
+"Fix all" so the fix proves its own scope; **#2** — `gateRunner.auditTimes` now keeps clip edges and word
+reveals and fills the rest with an even sweep (the `cut-frames` argument is quoted in the function);
+**#4** — `gates.timingGate`, a new `timing` stage in the chain (lint → timing → safe zones → contrast →
+deliver), covered by `check-gates.mjs` (147 assertions, was 124). **#3 is half done**: the fix's *scope*
+is now proven by diff, but nothing re-runs the gates on the patched document yet, so the report can still
+say a finding is fixed when it is not — that is the remaining half.
+
+
 | # | Upstream | What it actually is | Cupric gap it closes | Verdict |
 |---|---|---|---|---|
 | 1 | `cli/src/commands/scoped-edit.ts` | Static proof that an edit changed **only** what it was asked to: diff two documents, allow-list the intended targets, fail on anything else. Their corpus calls this the largest 100 %-decidable defect class. | Every Cupric edit path (`patchStudio`, `applyAuditFixes`, autonomy stages, `agentCode`) replaces whole documents and nothing compares baseline vs candidate, so an edit that moves 40 ms of a caption nobody asked about is invisible. Pure over two docs → headless-testable. | **ADAPT** (best value/effort left) |

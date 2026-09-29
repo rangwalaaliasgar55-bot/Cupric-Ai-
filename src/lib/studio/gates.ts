@@ -414,9 +414,163 @@ export function recommendFix(samples: ElementSample[], level: Level = 'AA'): Fix
   return options[0]
 }
 
+/* ─────────────── timing: what is drawn, and when ─────────────── */
+
+/**
+ * The gate upstream calls `expect-windows` (open-edit's
+ * `cli/src/commands/expect-windows.ts`, Apache-2.0 — see THIRD_PARTY_NOTICES.md).
+ *
+ * Every other gate in this file judges **what** is drawn, so a caption that
+ * arrives a second late, holds long after its last word, or is still on screen
+ * when the next one lands passes all of them. Those are the corrections a viewer
+ * actually notices, and they are decidable from the document alone — no frames,
+ * no engine statistics — so this gate costs nothing to run.
+ *
+ * The rules, each with the numbers behind it:
+ *
+ *   reveal-past-end  a word revealed after the block ends never appears
+ *   missing-delays   fewer delays than words: the trailing words never appear
+ *   delay-order      delays that go backwards hold words back
+ *   hold             a timed block outliving its last word by more than maxHold
+ *   late-reveal      a timed block sitting up this long before its first word
+ *   overlap          two text blocks on one track sharing screen time
+ */
+export const TIMING_DEFAULTS = {
+  /** A block may sit up this long before its first word before it counts as late. */
+  maxLeadSec: 1.2,
+  /** How long a timed block may outlive its own last word. */
+  maxHoldSec: 3,
+  /** Two blocks on one track may butt-join, but not share more than this. */
+  minOverlapSec: 0.05,
+}
+
+export interface TimingOptions {
+  maxLeadSec?: number
+  maxHoldSec?: number
+  minOverlapSec?: number
+}
+
+const round3 = (n: number) => Math.round(n * 1000) / 1000
+const wordCountOf = (text: string) => text.split(/\s+/).filter(Boolean).length
+
+/** Text blocks per track, in time order. A hidden block is not on screen. */
+function textByTrack(doc: StudioDoc): StudioTextClip[][] {
+  const byTrack = new Map<number, StudioTextClip[]>()
+  for (const clip of doc.clips) {
+    if (clip.kind !== 'text' || clip.hidden) continue
+    const list = byTrack.get(clip.track) ?? []
+    list.push(clip)
+    byTrack.set(clip.track, list)
+  }
+  for (const list of byTrack.values()) list.sort((a, b) => a.startSec - b.startSec)
+  return [...byTrack.values()]
+}
+
+export function timingGate(doc: StudioDoc, opts: TimingOptions = {}): GateFinding[] {
+  const cfg = { ...TIMING_DEFAULTS, ...opts }
+  const findings: GateFinding[] = []
+  const frameSec = 1 / (doc.fps > 0 ? doc.fps : 30)
+
+  for (const clip of doc.clips) {
+    if (clip.kind !== 'text' || clip.hidden) continue
+    const delays = (clip.wordDelaysMs ?? []).filter((d) => Number.isFinite(d))
+    if (!delays.length) continue
+    const words = wordCountOf(clip.text)
+    const first = Math.min(...delays)
+    const last = Math.max(...delays)
+
+    if (words > delays.length) {
+      findings.push({
+        gate: 'timing',
+        id: 'timing:missing-delays',
+        severity: 'error',
+        clipId: clip.id,
+        message: `\u201C${clip.name}\u201D has ${delays.length} word timing(s) for ${words} word(s): the last ${words - delays.length} never appear.`,
+        hint: 'The reveal is indexed by word, so a short list stops early \u2014 re-time the block (auto-captions) or shorten its text.',
+        detail: { words, delays: delays.length },
+      })
+    }
+    for (let i = 1; i < delays.length; i += 1) {
+      if (delays[i] < delays[i - 1]) {
+        findings.push({
+          gate: 'timing',
+          id: 'timing:delay-order',
+          severity: 'warning',
+          clipId: clip.id,
+          message: `\u201C${clip.name}\u201D reveals its words out of order (${delays[i - 1]} ms then ${delays[i]} ms), so a later word can appear before an earlier one.`,
+          hint: 'Delays are read in order; re-time the block from its transcript.',
+          detail: { index: i, before: delays[i - 1], after: delays[i] },
+        })
+        break
+      }
+    }
+
+    const lastSec = last / 1000
+    if (lastSec > clip.durationSec - frameSec) {
+      findings.push({
+        gate: 'timing',
+        id: 'timing:reveal-past-end',
+        severity: 'error',
+        clipId: clip.id,
+        message: `\u201C${clip.name}\u201D ends at ${round3(clip.durationSec)}s but its last word is revealed at ${round3(lastSec)}s, so that word is never seen.`,
+        hint: 'Extend the block to fit its last word, or re-time it.',
+        fix: { label: 'Hold to fit the last word', patch: { durationSec: round3(lastSec + 0.3) } },
+        detail: { endSec: round3(clip.durationSec), lastRevealSec: round3(lastSec) },
+      })
+    } else if (clip.durationSec - lastSec > cfg.maxHoldSec) {
+      findings.push({
+        gate: 'timing',
+        id: 'timing:hold',
+        severity: 'warning',
+        clipId: clip.id,
+        message: `\u201C${clip.name}\u201D stays up for ${round3(clip.durationSec - lastSec)}s after its last word.`,
+        hint: 'A long hold reads as a stuck caption; cut it back or let the next block carry the time.',
+        fix: { label: `Trim to ${round3(lastSec + 0.9)}s`, patch: { durationSec: round3(lastSec + 0.9) } },
+        detail: { holdSec: round3(clip.durationSec - lastSec) },
+      })
+    }
+    if (first / 1000 > cfg.maxLeadSec) {
+      findings.push({
+        gate: 'timing',
+        id: 'timing:late-reveal',
+        severity: 'warning',
+        clipId: clip.id,
+        message: `\u201C${clip.name}\u201D is on screen for ${round3(first / 1000)}s before its first word appears.`,
+        hint: 'Start the block with its first word, or keep the lead-in deliberately.',
+        detail: { leadSec: round3(first / 1000) },
+      })
+    }
+  }
+
+  for (const list of textByTrack(doc)) {
+    for (let i = 0; i + 1 < list.length; i += 1) {
+      const a = list[i]
+      const b = list[i + 1]
+      const overlap = a.startSec + a.durationSec - b.startSec
+      if (overlap <= cfg.minOverlapSec) continue
+      const last = Math.max(0, ...(a.wordDelaysMs ?? []).filter((d) => Number.isFinite(d)))
+      const trimmed = b.startSec - a.startSec
+      const safe = trimmed >= 0.35 && last / 1000 <= trimmed - frameSec
+      findings.push({
+        gate: 'timing',
+        id: 'timing:overlap',
+        severity: 'warning',
+        clipId: a.id,
+        message: `\u201C${a.name}\u201D and \u201C${b.name}\u201D are both on screen for ${round3(overlap)}s.`,
+        hint: safe
+          ? 'Trim the earlier block to where the later one starts, or move one of them.'
+          : 'Two captions at once is a decision, not a default \u2014 move or shorten one.',
+        ...(safe ? { fix: { label: `Trim to ${round3(trimmed)}s`, patch: { durationSec: round3(trimmed) } } } : {}),
+        detail: { overlapSec: round3(overlap), other: b.name },
+      })
+    }
+  }
+  return findings
+}
+
 /* ─────────────── the gates ─────────────── */
 
-export type GateName = 'lint' | 'safezones' | 'contrast' | 'deliver'
+export type GateName = 'lint' | 'timing' | 'safezones' | 'contrast' | 'deliver'
 
 export interface GateFinding {
   gate: GateName
@@ -440,6 +594,8 @@ export interface GateReport {
   ran: Array<{ gate: GateName; ok: boolean; findings: number; ms: number }>
   contrast: { elements: ElementVerdict[]; sampled: number; passes: boolean }
   safeZones: { aspect: string; zone: Zone; checked: number; passes: boolean }
+  /** Timing: how many timed blocks were judged and whether they all held. */
+  timing: { blocks: number; passes: boolean }
   summary: string
 }
 
@@ -659,8 +815,8 @@ function deliveryGate(delivery: DeliveryFindings | undefined): GateFinding[] {
 }
 
 /**
- * Run the chain: lint → safe zones → contrast → deliver. Stops at the first
- * gate with an error and names it; warnings ride along in the report.
+ * Run the chain: lint → timing → safe zones → contrast → deliver. Stops at the
+ * first gate with an error and names it; warnings ride along in the report.
  */
 export function runGates(input: GateInput): GateReport {
   const level = input.level ?? 'AA'
@@ -669,6 +825,7 @@ export function runGates(input: GateInput): GateReport {
   const ran: GateReport['ran'] = []
   let stoppedAt: GateName | null = null
   let contrast: GateReport['contrast'] = { elements: [], sampled: 0, passes: true }
+  let timing: GateReport['timing'] = { blocks: 0, passes: true }
   let safeZones: GateReport['safeZones'] = { aspect: input.doc.aspect, zone: safeZoneFor(input.doc.aspect), checked: 0, passes: true }
   const started = Date.now()
 
@@ -696,6 +853,13 @@ export function runGates(input: GateInput): GateReport {
     ...(issue.clipId ? { clipId: issue.clipId } : {}),
   })))
 
+  step('timing', () => {
+    const produced = timingGate(input.doc)
+    const blocks = input.doc.clips.filter((c) => c.kind === 'text' && !c.hidden && (c.wordDelaysMs?.length ?? 0) > 0).length
+    timing = { blocks, passes: produced.length === 0 }
+    return produced
+  })
+
   step('safezones', () => {
     const result = safeZoneGate(input.doc, input.frames)
     safeZones = { aspect: input.doc.aspect, zone: result.zone, checked: result.checked, passes: result.findings.length === 0 }
@@ -716,7 +880,7 @@ export function runGates(input: GateInput): GateReport {
     : findings.length
       ? `Passed every gate with ${findings.length} warning(s).`
       : 'Passed every gate.'
-  return { ok: errors.length === 0, stoppedAt, findings, ran, contrast, safeZones, summary }
+  return { ok: errors.length === 0, stoppedAt, findings, ran, contrast, safeZones, timing, summary }
 }
 
 /* ─────────────── the correction ledger ─────────────── */
