@@ -11,17 +11,17 @@
  * isn't" behaviour this app is trying to avoid.
  */
 
-import { registrySources } from './sources'
+import { exportSources } from './sources'
 import { ensureDocFonts } from './fonts'
 import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { getIpc, isDesktop } from '../bridge'
 import { resolveForOutput } from './resolve'
-import { clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
+import { clipEnd, docDuration, frameTimeFor, sizeForAspect, sourceTimeFor } from './doc'
 import { mixGainAt } from './audioMix'
 import { getMedia, overlayImage } from './media'
-import { preloadLottie, stickerFrame } from './lottie'
+import { preloadLottie } from './lottie'
 import { ensurePhysicsFor } from './physics'
-import { drawableElement, drawStudioFrame, type FrameSources } from './renderer'
+import { drawStudioFrame, type FrameSources } from './renderer'
 
 export type ExportOptions = {
   fileName?: string
@@ -159,12 +159,8 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
     if (event.data && event.data.size) chunks.push(event.data)
   }
 
-  const sources: FrameSources = {
-    media: (clip) => drawableElement(clip.mediaId),
-    // Same resolver as the preview, so animated Lab captures export animated.
-    overlay: registrySources.overlay,
-    sticker: (clip, localSec) => stickerFrame(clip, localSec),
-  }
+  // Full-resolution media; the same overlay/sticker resolvers the preview uses.
+  const sources: FrameSources = exportSources()
 
   // Reset every audio clip to its trim-in as well, so a music bed that was
   // auditioned mid-track does not start from wherever it was left.
@@ -238,7 +234,7 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
         }
       }
 
-      drawStudioFrame(ctx, doc, Math.min(elapsed, duration), width, height, sources)
+      drawStudioFrame(ctx, doc, frameTimeFor(doc, elapsed), width, height, sources)
       options.onProgress?.(Math.min(99, (elapsed / duration) * 100))
 
       if (elapsed >= duration) {
@@ -430,12 +426,7 @@ export function captureStill(editDoc: StudioDoc, t: number, maxWidth = 640): str
   canvas.height = Math.round(fullH * scale)
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
-  drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, {
-    media: (clip) => drawableElement(clip.mediaId),
-    // Same resolver as the preview, so animated Lab captures export animated.
-    overlay: registrySources.overlay,
-    sticker: (clip, localSec) => stickerFrame(clip, localSec),
-  })
+  drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, exportSources())
   try {
     return canvas.toDataURL('image/jpeg', 0.7)
   } catch {

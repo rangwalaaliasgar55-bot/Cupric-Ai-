@@ -36,4 +36,23 @@ export const registrySources: FrameSources = {
   sticker: (clip, localSec) => stickerFrame(clip, localSec),
 }
 
+/**
+ * Export convenience: media resolved at full resolution.
+ *
+ * The preview deliberately shows the *proxy* (`quality: 'preview'`, see
+ * `registrySources`), because decoding 4K sources on every scrub is unusable;
+ * the export reads the original file so the delivered picture is not the
+ * proxy. That is the only intended difference between the two source sets —
+ * `overlay` and `sticker` are the SAME functions, so an animated Lab capture
+ * or a Lottie sticker cannot look different in the file than it did on screen.
+ * `scripts/check-preview-parity.mjs` asserts both halves of that claim.
+ */
+export function exportSources(): FrameSources {
+  return {
+    media: (clip) => drawableElement(clip.mediaId),
+    overlay: registrySources.overlay,
+    sticker: registrySources.sticker,
+  }
+}
+
 export { getMedia }

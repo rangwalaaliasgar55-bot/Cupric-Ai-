@@ -11,7 +11,7 @@ import type {
   StudioTextClip,
 } from '../../types/project'
 import { resolveForOutput } from '../../lib/studio/resolve'
-import { clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
+import { clipEnd, frameTimeFor, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
 import { safeAreas } from '../../lib/studio/textTools'
 import { mixGainAt } from '../../lib/studio/audioMix'
 import { getMedia, previewVideoOf } from '../../lib/studio/media'
@@ -152,7 +152,10 @@ export function StudioPreview({
     }
 
     try {
-      drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, registrySources)
+      // The same frame time the exporter draws (`frameTimeFor`): a playhead left
+      // past the end of a shortened doc shows the last frame the file will
+      // contain, never a frame the export cannot produce.
+      drawStudioFrame(ctx, doc, frameTimeFor(doc, t), canvas.width, canvas.height, registrySources)
     } catch (err) {
       failCanvas(`The canvas renderer failed: ${err instanceof Error ? err.message : String(err)}`, err)
     }

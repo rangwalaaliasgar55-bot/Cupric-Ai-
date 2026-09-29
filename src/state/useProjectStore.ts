@@ -284,12 +284,22 @@ export const useProjectStore = create<AppState>()(
        */
       const updateProject = (id: string, fn: (p: Project) => Project, label = 'Edit') =>
         set((s) => {
+          const current = s.projects.find((p) => p.id === id)
+          if (!current) return s
+          const next = fn(current)
+          // A mutation that changed nothing is not an edit (2.31 audit): a
+          // redraw that returns the same object — settle on an already settled
+          // clip, a drag that snaps back, deleting an id that is not there —
+          // must not add a history entry, or Undo appears to do nothing once
+          // and swallows a real edit. Returning the same object is the
+          // contract the studio helpers already use (`settleClip` does it).
+          if (next === current) return s
           const snapshot: HistoryEntry = { projects: s.projects, label, at: Date.now() }
           const top = s.past[s.past.length - 1]
           const coalesce = Boolean(top && top.label === label && snapshot.at - top.at < COALESCE_MS)
           const past = coalesce ? s.past : [...s.past, snapshot].slice(-HISTORY_LIMIT)
           return {
-            projects: s.projects.map((p) => (p.id === id ? { ...fn(p), updatedAt: nowIso() } : p)),
+            projects: s.projects.map((p) => (p.id === id ? { ...next, updatedAt: nowIso() } : p)),
             past,
             // Any new edit abandons the redo branch, as in every editor.
             future: [],
@@ -608,10 +618,10 @@ export const useProjectStore = create<AppState>()(
             return { ...p, timeline: relayout(next) }
           }, 'Add clip'),
         removeTimelineClip: (pid, clipId) =>
-          updateProject(pid, (p) => ({
-            ...p,
-            timeline: relayout(p.timeline.filter((c) => c.id !== clipId)),
-          }), 'Remove clip'),
+          updateProject(pid, (p) => {
+            const kept = p.timeline.filter((c) => c.id !== clipId)
+            return kept.length === p.timeline.length ? p : { ...p, timeline: relayout(kept) }
+          }, 'Remove clip'),
         moveTimelineClip: (pid, from, to) =>
           updateProject(pid, (p) => {
             const arr = [...p.timeline]
@@ -621,14 +631,17 @@ export const useProjectStore = create<AppState>()(
             return { ...p, timeline: relayout(arr) }
           }, 'Move clip'),
         setClipDuration: (pid, clipId, dur) =>
-          updateProject(pid, (p) => ({
-            ...p,
-            timeline: relayout(
-              p.timeline.map((c) =>
-                c.id === clipId ? { ...c, durationSec: round1(clamp(dur, 0.5, 600)) } : c,
-              ),
-            ),
-          }), 'Change duration'),
+          updateProject(pid, (p) => {
+            const next = round1(clamp(dur, 0.5, 600))
+            const clip = p.timeline.find((c) => c.id === clipId)
+            // An unknown id, or a resize that snaps back to the same length, is
+            // not an edit (2.31 audit): the drag must not leave an undo entry.
+            if (!clip || clip.durationSec === next) return p
+            return {
+              ...p,
+              timeline: relayout(p.timeline.map((c) => (c.id === clipId ? { ...c, durationSec: next } : c))),
+            }
+          }, 'Change duration'),
 
         updateRenderJob: (pid, jobId, patch) =>
           updateProject(pid, (p) => ({
@@ -678,6 +691,7 @@ export const useProjectStore = create<AppState>()(
         updateStudioClip: (pid, clipId, patch) =>
           updateProject(pid, (p) => {
             const doc = studioOf(p)
+            if (!doc.clips.some((c) => c.id === clipId)) return p
             // Dragging a clip above the top layer creates a new layer.
             const trackCount = typeof patch.track === 'number' ? Math.min(MAX_TRACKS, Math.max(doc.trackCount, Math.round(patch.track) + 1)) : doc.trackCount
             return {
@@ -695,7 +709,9 @@ export const useProjectStore = create<AppState>()(
         removeStudioClip: (pid, clipId) =>
           updateProject(pid, (p) => {
             const doc = studioOf(p)
-            return { ...p, studio: { ...doc, clips: doc.clips.filter((c) => c.id !== clipId) } }
+            const clips = doc.clips.filter((c) => c.id !== clipId)
+            // Deleting an id that is not there is not an edit (2.31 audit).
+            return clips.length === doc.clips.length ? p : { ...p, studio: { ...doc, clips } }
           }, 'Delete clip'),
 
         splitStudioClip: (pid, clipId, atSec) =>
