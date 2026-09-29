@@ -1,3 +1,36 @@
+## Also shipped: what has already been tried on this footage, and the FFmpeg assembly half
+
+Two more items from the audit's open-edit list — #8 and #10.
+
+- **Creative log** (`src/lib/studio/creativeLog.ts`, upstream `commands/creative-log.ts`) — the history of
+  *what was tried on a piece of footage and why it was rejected*, kept beside the footage instead of in a
+  chat that gets compacted. Rejections accumulate and each one needs a reason (a list without reasons
+  cannot tell a later pass what to avoid); the last accepted look replaces the previous one. The history
+  renders as prompt-ready prose, is copied from the panel in one click, and reaches two live paths: a
+  rejected *design direction* is skipped by the next battle (`designAll({ avoid })`, with the skipped
+  names printed and a fallback that says when every direction has been rejected), and the brief is
+  attached to the model prompt for text that sits over that footage
+  (`aiText.requestTextVariants(text, brief)`). The store is `localStorage` with a corrupt entry preserved
+  (`.corrupt.N`) before the first write rather than overwritten. `scripts/check-creative-log.mjs` — 93
+  assertions.
+- **FFmpeg assembly** (`electron/assembly.cjs`, upstream `concat-chapters` + `mix-audio` + `mux-audio` +
+  `apply-edl`) — the four commands the desktop export was missing, written as text so every decision can
+  be asserted before it runs: joining gated renders by stream copy with each part's shape probed first,
+  a soundtrack built from `voice`/`music`/`sfx`/`ambience` pieces with the bed ducked by the narration bus
+  itself, delivery loudness decided from a one-pass measurement (a linear gain only when it reaches the
+  target inside the true-peak ceiling, loudnorm's dynamic mode when it cannot, otherwise nothing with a
+  stated reason), and an EDL assembled with every edge snapped up to its source's frame grid and every
+  join crossfaded. Two of the four are wired into the app's own paths: the rundown render's
+  `concatSegments` now probes the parts before copying — a shape mismatch used to be a silent `-c copy`
+  glitch, and now it re-encodes onto one parameter set and reports which part disagreed — and the Studio
+  MP4 export measures the recording before choosing a correction and says which one ran in the export
+  toast. `scripts/check-assembly.mjs` runs 144 pure assertions always and, when a modern FFmpeg is
+  present, executes the real argv and reads the files back with ffprobe (183 assertions; it prints its
+  evidence and skips that half with a named reason when no FFmpeg is found or the build is too old).
+  `mix-audio` and `apply-edl` are ported and verified against real files but **no UI surface calls them
+  yet** — the intended call site for `apply-edl` is a cut-only "assemble the timeline's kept ranges"
+  export, which needs its own consent step.
+
 ## Also shipped: readiness, and captions placed where the picture is empty
 
 Two more pieces from the audit's open-edit list, both user-visible.

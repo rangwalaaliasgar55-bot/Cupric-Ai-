@@ -260,6 +260,46 @@ and knows what a failure looks like.
 - `measurePlacement`'s arithmetic is covered by `scripts/check-placement.mjs` on synthetic frames; the
   frame decoding around it is only exercised here, in the packaged app.
 
+## Scenario I — what the export did to the level, and a join that had to re-encode
+
+Two desktop-FFmpeg behaviours that only exist in the packaged app (the browser export is a WebM draft
+and never goes through either path). Run this on a real machine, not in CI.
+
+1. Build an edit whose levels are uneven (a quiet narration over a loud music bed is ideal), set
+   **Studio → Delivery loudness** to −14 LUFS, and export to MP4.
+2. The export measures the recording first (a second, audio-only pass) and then applies *one* of three
+   corrections. The success toast ends with the sentence that names it:
+   - `audio normalised to -14 LUFS (linear gain from a measurement)` — the good case: one gain for the
+     whole file, nothing pumps;
+   - `audio normalised dynamically …` — the measurement said a single gain would break the true-peak
+     ceiling or push the loudness range past 11 LU, so loudnorm's per-window normaliser ran instead;
+   - no suffix at all — no target was set, so nothing was touched.
+3. Check the delivered file with an external tool: integrated loudness within ~1 LU of the target and
+   true peak at or under −1 dBTP (`ffmpeg -i out.mp4 -af loudnorm=print_format=json -f null -`).
+4. To see the join guard: render a rundown in two qualities so the parts genuinely differ (or force the
+   hardware-encoder fallback by disabling it mid-run), then watch for `render-concat` in the diagnostics
+   log. A part that disagrees on codec, canvas, frame rate, audio codec, sample rate or channels makes the
+   join **re-encode onto one set of parameters** and says which part disagreed and how, instead of
+   stream-copying a file that plays for one part and then glitches.
+
+**Failure signatures**
+
+- `audio left at its own level — the measurement reported no measurable loudness (a silent track).` →
+  the recording has no audio. Add narration or music, or turn the target off; nothing was applied.
+- `audio corrected dynamically — the measurement pass could not run: …` → the extra pass failed (a
+  missing binary, a truncated recording). The export still completed and named the reason.
+- `segment 3 does not match segment 1 — canvas 1080x1920 vs 720x1280` in the log → the reel was
+  re-encoded rather than joined by copy. That is the fix working, not an error.
+
+**Honest limits**
+
+- The measured/dynamic decision, the three note sentences and the whole argv are covered against a real
+  FFmpeg by `scripts/check-assembly.mjs`; the toast and the diagnostics line are only visible in the app.
+- The soundtrack mixer (`assembly.mixGraph`) and the EDL assembler (`assembly.buildEdlGraph`) are ported
+  and exercised against real files by that check, but **no UI surface calls them yet**: the intended call
+  site for the EDL path is a cut-only "assemble the timeline's kept ranges" export, which needs its own
+  consent step.
+
 ## What this scenario does **not** cover
 
 - macOS/Linux: no packaged build or release workflow exists for them (see

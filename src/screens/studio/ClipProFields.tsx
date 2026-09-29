@@ -24,6 +24,7 @@ import { autoGrade, computeScopes, neutralWheels, parseCube } from '../../lib/st
 import { LOGO_REVEALS, PRODUCT_PRESETS, logoRevealKeyframes, withProductPreset, type LogoReveal, type ProductPreset } from '../../lib/studio/layouts'
 import { TEXT_PRESETS, applyTextPreset } from '../../lib/studio/textTools'
 import { requestTextVariants } from '../../lib/studio/aiText'
+import { briefForClip } from '../../lib/studio/creativeLog'
 import { DEFAULT_DUCKING } from '../../lib/studio/audioMix'
 import { getMedia, proxyMode, registerFile, setProxyMode, type ProxyMode } from '../../lib/studio/media'
 import { PROXY_EVENT, makeProxy, proxyStatus, removeProxy } from '../../lib/studio/proxy'
@@ -143,7 +144,9 @@ export function ClipProFields({ doc, clip, onPatch, onPatchDoc }: Props) {
             disabled={variants?.busy} title={(variants?.busy) ? 'Generating variants…' : undefined}
             onClick={async () => {
               setVariants({ list: [], busy: true })
-              const r = await requestTextVariants((clip as StudioTextClip).text)
+              // The history for the footage this text sits over: a rewrite is asked not to land
+              // on the looks already rejected there (creative log, ported from open-edit).
+              const r = await requestTextVariants((clip as StudioTextClip).text, briefForClip(doc, clip))
               setVariants({ list: r.variants, note: r.note, busy: false })
             }}
           >

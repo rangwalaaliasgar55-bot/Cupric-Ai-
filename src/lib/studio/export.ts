@@ -287,7 +287,7 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
 export async function exportStudioInBackground(
   doc: StudioDoc,
   options: { fileName?: string; fps: number; loudnessTarget?: number | null; format: 'webm' | 'mp4'; onProgress?: (pct: number) => void; signal?: { cancelled: boolean } },
-): Promise<{ outputPath: string; bytes: number; format: 'webm' | 'mp4' }> {
+): Promise<{ outputPath: string; bytes: number; format: 'webm' | 'mp4'; loudness?: LoudnessReport | null }> {
   const ipc = getIpc()
   if (!isDesktop() || !ipc) throw new Error('Background Studio export needs the desktop app.')
   if (doc.clips.some((c) => c.kind === 'sticker')) await preloadLottie()
@@ -301,7 +301,7 @@ export async function exportStudioInBackground(
   const [fullW, fullH] = sizeForAspect(doc.aspect, doc.resolution)
   const width = Math.round((fullW * scale) / 2) * 2
   const height = Math.round((fullH * scale) / 2) * 2
-  const result: { outputPath: string; bytes: number } = await new Promise((resolve, reject) => {
+  const result: { outputPath: string; bytes: number; loudness?: LoudnessReport | null } = await new Promise((resolve, reject) => {
     let jobId = ''
     let settled = false
     const cleanups: Array<() => void> = []
@@ -323,9 +323,9 @@ export async function exportStudioInBackground(
       if (!jobId || event?.jobId !== jobId) return
       options.onProgress?.(Math.max(0, Math.min(100, Number(event.pct) || 0)))
     }))
-    cleanups.push(ipc.on('render:done', (event: { jobId?: string; outputPath?: string; bytes?: number }) => {
+    cleanups.push(ipc.on('render:done', (event: { jobId?: string; outputPath?: string; bytes?: number; loudness?: LoudnessReport | null }) => {
       if (!jobId || event?.jobId !== jobId || !event.outputPath) return
-      finish(() => resolve({ outputPath: event.outputPath!, bytes: Number(event.bytes) || 0 }))
+      finish(() => resolve({ outputPath: event.outputPath!, bytes: Number(event.bytes) || 0, loudness: event.loudness ?? null }))
     }))
     cleanups.push(ipc.on('render:error', (event: { jobId?: string; error?: string }) => {
       if (!jobId || event?.jobId !== jobId) return
@@ -351,6 +351,15 @@ export async function exportStudioInBackground(
 }
 
 /**
+ * What the desktop export actually did to the audio level, measured in the main process.
+ * `mode` is which correction ran — `measured` is a linear gain from a measurement pass,
+ * `dynamic` is loudnorm's per-window normaliser (it pumps on speech), `none` is nothing —
+ * and `note` is the sentence the export toast shows, so the file's level is never claimed
+ * without saying how it was reached.
+ */
+export type LoudnessReport = { mode: 'measured' | 'dynamic' | 'none'; note: string; why?: string }
+
+/**
  * Desktop only: hand the recorded blob to FFmpeg in the main process and get a
  * real H.264 MP4 back. Kept for API callers that already have a recording;
  * the regular Studio route uses exportStudioInBackground instead.
@@ -361,11 +370,11 @@ export async function convertToMp4(
   fps: number,
   loudnessTarget: number | null = null,
   signal?: { cancelled: boolean },
-): Promise<{ outputPath: string; bytes: number }> {
+): Promise<{ outputPath: string; bytes: number; loudness?: LoudnessReport | null }> {
   const ipc = getIpc()
   if (!isDesktop() || !ipc) throw new Error('MP4 conversion needs the desktop app (FFmpeg runs in the main process).')
   const buffer = await blob.arrayBuffer()
-  const result: { outputPath: string; bytes: number } = await new Promise((resolve, reject) => {
+  const result: { outputPath: string; bytes: number; loudness?: LoudnessReport | null } = await new Promise((resolve, reject) => {
     let jobId = ''
     let settled = false
     const cleanups: Array<() => void> = []
@@ -383,9 +392,9 @@ export async function convertToMp4(
       }, 120)
       cleanups.push(() => { if (cancelPoll !== null) window.clearInterval(cancelPoll) })
     }
-    cleanups.push(ipc.on('render:done', (event: { jobId?: string; outputPath?: string; bytes?: number }) => {
+    cleanups.push(ipc.on('render:done', (event: { jobId?: string; outputPath?: string; bytes?: number; loudness?: LoudnessReport | null }) => {
       if (!jobId || event?.jobId !== jobId || !event.outputPath) return
-      finish(() => resolve({ outputPath: event.outputPath!, bytes: Number(event.bytes) || 0 }))
+      finish(() => resolve({ outputPath: event.outputPath!, bytes: Number(event.bytes) || 0, loudness: event.loudness ?? null }))
     }))
     cleanups.push(ipc.on('render:error', (event: { jobId?: string; error?: string }) => {
       if (!jobId || event?.jobId !== jobId) return

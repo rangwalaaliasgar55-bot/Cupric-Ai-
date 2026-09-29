@@ -40,6 +40,8 @@ Every capability has a fallback, and each one must name itself:
 | Speech cuts | transcript (`speechCuts`) | measured waveform (`probeClip`/`probeCuts`); if neither, refuse with the reason |
 | Shot cuts | frame sampling | refuse with "the picture changes too little", never split at random |
 | AI | configured provider | local model (free) or template mode — `template` is **not** "AI configured" |
+| Loudness | measured linear gain (`loudness.mode: 'measured'`) | loudnorm's dynamic normaliser (`'dynamic'`, named as different processing) or nothing with the reason (`'none'`) |
+| Joining renders | stream copy, with every part's shape probed first | re-encode onto one parameter set, naming the part that disagreed (`concat.reasons`) |
 
 A failure returns the document **unchanged** plus a readable reason. Never a half-applied edit, never a
 silent no-op.

@@ -12,6 +12,9 @@ const resourceContext = require('./resource-context.cjs')
 const projectHistory = require('./project-history.cjs')
 const diagnostics = require('./diagnostics.cjs')
 const encoders = require('./encoders.cjs')
+// The FFmpeg assembly plans: joining renders, mixing soundtracks, muxing at delivery
+// loudness, assembling an EDL. Pure — the argv it returns is what runs here (assembly.cjs).
+const assembly = require('./assembly.cjs')
 const proxies = require('./proxies.cjs')
 const tts = require('./tts.cjs')
 const { migrateSettings } = require('./settings-migration.cjs')
@@ -3424,6 +3427,13 @@ async function executeStudioMp4Job(state, payload) {
 
   const fps = Number(payload?.fps) > 0 ? Math.round(Number(payload.fps)) : 30
   const crf = String(Math.max(14, Math.min(32, Number(payload?.crf) || 18)))
+  // Loudness is a decision with a stated reason, taken from a one-pass measurement of the
+  // recording (assembly.cjs, ported from open-edit's mux-audio): a linear gain when that
+  // reaches the target inside the true-peak ceiling, loudnorm's dynamic normaliser when it
+  // does not (which pumps on speech, and is named as the different thing it is), or nothing.
+  // The report says which one ran; a line that claims -14 LUFS after a fallback is a lie the
+  // file cannot be checked against.
+  const loudness = await planExportLoudness(state, source, payload?.loudnessTarget)
   const buildArgs = (videoArgs) => [
     '-y',
     '-hide_banner',
@@ -3433,8 +3443,11 @@ async function executeStudioMp4Job(state, payload) {
     ...videoArgs,
     '-r', String(fps),
     '-movflags', '+faststart',
-    ...encoders.loudnormArgs(payload?.loudnessTarget),
+    ...(loudness.filter ? ['-af', loudness.filter] : []),
+    // 48 kHz on every path: loudnorm works at 192 kHz and would otherwise hand the encoder
+    // 96 kHz, so an export with a target and one without would differ in rate.
     '-c:a', 'aac',
+    '-ar', '48000',
     '-b:a', '192k',
     outputPath,
   ]
@@ -3459,7 +3472,31 @@ async function executeStudioMp4Job(state, payload) {
   await fsp.rm(source, { force: true })
   const { size } = await fsp.stat(outputPath)
   if (payload?.reveal !== false) shell.showItemInFolder(outputPath)
-  return { outputPath, bytes: size }
+  return { outputPath, bytes: size, loudness: { mode: loudness.mode, note: loudness.note, why: loudness.why } }
+}
+
+/**
+ * Which loudness correction the export should apply, measured rather than assumed. The
+ * measurement pass decodes audio only (`-vn -f null -`), so it costs a fraction of the
+ * encode; a pass that cannot run at all falls back to the dynamic filter and says so
+ * instead of failing an export over a level decision.
+ */
+async function planExportLoudness(state, source, requestedLufs) {
+  const target = assembly.targetFromLufs(requestedLufs)
+  if (!target) return assembly.loudnessPlan({ normalise: false, target: assembly.DELIVERY_TARGET })
+  if (!ffmpegPath) return assembly.loudnessPlan({ target, measureError: 'FFmpeg is unavailable' })
+  try {
+    const measured = await runProcess(state, ffmpegPath, assembly.loudnormMeasureArgs(source, target))
+    const summary = assembly.parseLoudnormSummary(measured.stderr)
+    // A non-zero exit still prints the input dump, so ffmpeg's own failure message is the
+    // only trustworthy thing on stderr in that case — and a track that reports every key
+    // with -inf in some of them is silent, not unmeasurable-but-fixable.
+    if (!summary) return assembly.loudnessPlan({ target, measured: null })
+    const numbers = assembly.measurementFromSummary(summary)
+    return numbers ? assembly.loudnessPlan({ target, measured: numbers }) : assembly.silencePlan(target)
+  } catch (err) {
+    return assembly.loudnessPlan({ target, measureError: err?.message || String(err) })
+  }
 }
 
 async function executeStudioBackgroundJob(state, payload) {
@@ -4071,18 +4108,45 @@ async function concatSegments(state, segments, outputPath, ctx) {
   await ensureNotCancelled(state)
   if (segments.length === 1) {
     await fsp.copyFile(segments[0].path, outputPath)
-    return
+    return { mode: 'single', reasons: [] }
   }
   const listPath = path.join(ctx.workDir, 'concat.txt')
-  const body = segments.map((segment) => `file '${String(segment.path).replace(/'/g, "'\\''")}'`).join(os.EOL)
-  fs.writeFileSync(listPath, body, 'utf8')
-  // Segments are stream-copied when they all came from one encoder. If a
-  // hardware encoder failed part-way (see runEncode), the segments differ,
-  // so they are re-encoded together instead of risking a broken file.
-  const codec = state?.encoderSwitched
-    ? [...encoders.videoArgs(state.codec === 'av1' ? encoders.AV1_SOFTWARE : encoders.SOFTWARE, 'final', state.codec === 'av1' ? 'av1' : 'h264'), '-c:a', 'aac', '-ar', '48000', '-ac', '2']
-    : ['-c', 'copy']
-  await runProcess(state, ffmpegPath, ['-y', '-hide_banner', '-f', 'concat', '-safe', '0', '-i', listPath, ...codec, '-movflags', '+faststart', outputPath])
+  fs.writeFileSync(listPath, assembly.concatList(segments.map((segment) => segment.path)), 'utf8')
+  // The stream-copy branch requires every part to share codec parameters. That requirement
+  // is now CHECKED rather than assumed: a mismatch used to produce a file that plays for one
+  // part and then glitches, which nobody sees until the whole thing is watched. A part that
+  // disagrees is re-encoded onto one set of parameters instead, and why is reported.
+  let shapes = null
+  let probeError = ''
+  if (ffprobePath) {
+    try {
+      shapes = []
+      for (const segment of segments) {
+        const probed = await runProcess(state, ffprobePath, assembly.probeShapeArgs(segment.path))
+        shapes.push(assembly.shapeFromProbeJson(JSON.parse(probed.stdout || '{}')))
+      }
+    } catch (err) {
+      shapes = null
+      probeError = err?.message || String(err)
+    }
+  } else {
+    probeError = 'ffprobe is unavailable, so the parts were not compared'
+  }
+  const plan = assembly.planConcat({ shapes, encoderSwitched: Boolean(state?.encoderSwitched) })
+  logLine('render-concat', `concat ${plan.mode} across ${segments.length} part(s)`, {
+    ...(plan.reasons.length ? { reasons: plan.reasons } : {}),
+    ...(plan.unverified ? { unverified: plan.unverified } : {}),
+    ...(probeError ? { probeError } : {}),
+  })
+  // Segments are stream-copied when they all came from one encoder with one shape. If a
+  // hardware encoder failed part-way (see runEncode) or a part disagrees on shape, they are
+  // re-encoded together instead of risking a broken file.
+  const reencodeArgs = [
+    ...encoders.videoArgs(state?.codec === 'av1' ? encoders.AV1_SOFTWARE : encoders.SOFTWARE, 'final', state?.codec === 'av1' ? 'av1' : 'h264'),
+    '-c:a', 'aac', '-ar', '48000', '-ac', '2',
+  ]
+  await runProcess(state, ffmpegPath, assembly.concatArgs({ mode: plan.mode, listPath, outPath: outputPath, reencodeArgs }))
+  return { mode: plan.mode, reasons: plan.reasons, ...(plan.unverified ? { unverified: plan.unverified } : {}), ...(probeError ? { probeError } : {}) }
 }
 
 async function executeRenderJob(event, job, queuedState = null) {
@@ -4231,7 +4295,7 @@ async function pumpRenderQueue() {
             ? await executeStudioBackgroundJob(state, state.payload)
             : await executeRenderJob(state.event, state.job, state)
         if (state.kind === 'studio-mp4' || state.kind === 'studio-background') {
-          sendRenderEvent(state.sender, 'render:done', { jobId: state.id, outputPath: result?.outputPath || null, bytes: result?.bytes || null })
+          sendRenderEvent(state.sender, 'render:done', { jobId: state.id, outputPath: result?.outputPath || null, bytes: result?.bytes || null, loudness: result?.loudness || null })
         }
         sendRenderQueueStatus(state, 'done', 100, { outputPath: result?.outputPath || null })
       } catch (err) {

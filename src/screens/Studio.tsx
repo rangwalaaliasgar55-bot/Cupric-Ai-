@@ -1339,7 +1339,10 @@ export function Studio() {
         const previewUrl = await getIpc()!.invoke('render:preview', farm.outputPath) as string
         setLastExport({ url: previewUrl, fileName: `${fileName}.${asMp4 ? 'mp4' : 'webm'}` })
         if (!asMp4) await getIpc()!.invoke('render:copyToDownloads', farm.outputPath)
-        pushToast('success', `Saved ${farm.outputPath.split(/[\\/]/).pop()} (${Math.round(farm.bytes / 1024)} KB)`)
+        // Say which loudness correction actually ran: the desktop export measures the
+        // recording first, and a linear pass and a dynamic one are different results.
+        const level = farm.loudness && farm.loudness.mode !== 'none' ? ` \u2014 ${farm.loudness.note}` : ''
+        pushToast('success', `Saved ${farm.outputPath.split(/[\\/]/).pop()} (${Math.round(farm.bytes / 1024)} KB)${level}`)
         cueDone()
         return 'done'
       }
@@ -1357,7 +1360,8 @@ export function Studio() {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
         const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal)
         setLastExport({ url: result.url, fileName: result.fileName })
-        pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)`)
+        const level = mp4.loudness && mp4.loudness.mode !== 'none' ? ` \u2014 ${mp4.loudness.note}` : ''
+        pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)${level}`)
         cueDone()
       } else {
         setLastExport({ url: result.url, fileName: result.fileName })

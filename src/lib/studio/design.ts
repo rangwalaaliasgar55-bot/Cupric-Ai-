@@ -415,11 +415,28 @@ export function designAll(
   brief: DesignBrief,
   clipIds: string[],
   makeId: (n: number) => string,
-  opts: { only?: DesignDirectionId } = {},
-): { doc: StudioDoc; report: DesignReport; battle: Array<{ id: DesignDirectionId; name: string; score: number; reasons: string[] }> } {
+  opts: { only?: DesignDirectionId; avoid?: DesignDirectionId[] } = {},
+): {
+  doc: StudioDoc
+  report: DesignReport
+  battle: Array<{ id: DesignDirectionId; name: string; score: number; reasons: string[] }>
+  /** Directions the caller asked to skip because this footage rejected them (creative log). */
+  skipped: Array<{ id: DesignDirectionId; name: string }>
+  /** Set when the skip list would have emptied the battle and was ignored. */
+  skippedNote?: string
+} {
   let best: { doc: StudioDoc; report: DesignReport } | null = null
   const battle: Array<{ id: DesignDirectionId; name: string; score: number; reasons: string[] }> = []
-  const pool = opts.only ? DESIGN_DIRECTIONS.filter((d) => d.id === opts.only) : DESIGN_DIRECTIONS
+  const pool0 = opts.only ? DESIGN_DIRECTIONS.filter((d) => d.id === opts.only) : DESIGN_DIRECTIONS
+  // A rejected direction is not a direction to run again — that is the whole point of keeping
+  // the log. An explicit `only` wins: the user asked for that one, so it runs.
+  const avoid = opts.only ? [] : [...new Set(opts.avoid ?? [])]
+  const kept = pool0.filter((d) => !avoid.includes(d.id))
+  const skipped = pool0.filter((d) => avoid.includes(d.id)).map((d) => ({ id: d.id, name: d.name }))
+  const pool = kept.length ? kept : pool0
+  const skippedNote = kept.length || !skipped.length
+    ? undefined
+    : `Every direction has been rejected on this footage, so the battle ran all ${pool0.length} again — clear a rejection in the history below to stop that.`
   for (const direction of pool) {
     const result = designScenes(doc, brief, clipIds, { direction, makeId, seed: direction.lookOrder[0] })
     battle.push({
@@ -434,7 +451,15 @@ export function designAll(
     if (!best || result.report.score > best.report.score) best = { doc: result.doc, report: result.report }
   }
   battle.sort((a, b) => b.score - a.score)
-  return { doc: best!.doc, report: best!.report, battle }
+  // Nothing is reported as skipped when the skip list was ignored — the note explains why the
+  // battle ran everything instead.
+  return {
+    doc: best!.doc,
+    report: best!.report,
+    battle,
+    skipped: kept.length ? skipped : [],
+    ...(skippedNote ? { skippedNote } : {}),
+  }
 }
 
 /**

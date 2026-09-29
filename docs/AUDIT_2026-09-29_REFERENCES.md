@@ -481,8 +481,27 @@ remedy, the *present-but-not-runnable* case diagnosed separately), and `src/lib/
 (measure the footage under a caption and move it clear of the face, one undo step). **#12 is written:**
 `AGENTS.md` now states Cupric's own contract — the gate chain that stops at the first failure, the \u2264 2
 correction budget, re-measure what a fix achieved, prove the scope of an edit, name every degraded path,
-and the test/provenance/product rules. Remaining from the list: #6 (queue ledger — no spend surface
-yet), #8 (creative log), #10 (the FFmpeg assembly half), #13 (the shadow solver).
+and the test/provenance/product rules. **#8 and #10 are done as well.** #8 —
+`src/lib/studio/creativeLog.ts` keeps, per piece of footage, every look that was tried and rejected with
+its reason plus the last one that landed, renders the history as prompt-ready prose, preserves a corrupt
+store instead of overwriting it, and feeds two live paths: a rejected direction is skipped by the next
+design battle (`designAll({ avoid })`, reported as `skipped`) and the brief is attached to the model
+prompt for text over that footage (`aiText.requestTextVariants`). Covered by
+`scripts/check-creative-log.mjs` (93 assertions). #10 — `electron/assembly.cjs` ports the four FFmpeg
+commands as text: the shape precheck and argv for `concat-chapters`, the `mix-audio` filtergraph with
+roles and sidechain ducking padded to the film's length, `mux-audio`'s one-pass loudness decision
+(linear gain only when it reaches the target inside the true-peak ceiling, loudnorm's dynamic normaliser
+when it does not, otherwise nothing with a stated reason) and `apply-edl`'s EDL contract, frame snapping
+and crossfaded single-encode assembly. Two of the four are wired into the app's own FFmpeg paths: the
+rundown render's `concatSegments` now probes every part before copying (a mismatch used to be a silent
+`-c copy` glitch, now it re-encodes onto one parameter set and says which part disagreed) and the Studio
+MP4 export measures the recording before choosing a correction, reporting `{mode, note, why}` into the
+export toast. `mix-audio` and `apply-edl` are ported and exercised against real FFmpeg files by
+`scripts/check-assembly.mjs` (183 assertions when a modern FFmpeg is present, 144 plus an explicit skip
+note when it is not) but **no UI surface calls them yet** — the intended call site for `apply-edl` is a
+cut-only "assemble the timeline's kept ranges" export, which needs its own consent step; that is the
+honest state, not a claim of a shipped feature. Remaining from the list: #6 (queue ledger — no spend
+surface yet), #11 (the utilities half), #13 (the shadow solver, and the WCAG *recommend* mode).
 
 
 | # | Upstream | What it actually is | Cupric gap it closes | Verdict |
