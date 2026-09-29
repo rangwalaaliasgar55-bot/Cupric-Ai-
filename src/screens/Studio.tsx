@@ -1272,6 +1272,7 @@ export function Studio() {
         scale: 1,
         onProgress: setExportPct,
         signal,
+        onWarning: (message) => pushToast('error', message, { sticky: true }),
       })
       if (result.cancelled) {
         pushToast('info', 'Export cancelled')

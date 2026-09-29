@@ -65,6 +65,20 @@ export type AutomationJob = {
     hasAudio?: boolean
   } | null
   arenaOpenedAt?: string | null
+  /**
+   * Autonomous runs produce real artefacts. These optional fields carry the
+   * ones the desktop pipeline keeps on disk (a report, a manifest) and the ones
+   * only a browser can hold (an object URL for the recorded file).
+   */
+  outputUrl?: string | null
+  /** Full review report (markdown) when the run happened in the renderer. */
+  reviewReport?: string | null
+  /** Deterministic design self-assessment of the winning direction (0–100). */
+  designScore?: number
+  /** Which renderer produced the file — 'studio-canvas' means preview parity. */
+  renderEngine?: 'studio-canvas' | 'html-capture' | 'ffmpeg'
+  /** The scored candidate battle, so the UI can show why one direction won. */
+  candidateBattle?: Array<{ id: string; name: string; score: number; designScore: number; reasons: string[] }>
 }
 
 export type View =
@@ -459,6 +473,12 @@ export type StudioTextClip = StudioClipCommon & {
   /** Rich markup colours: *emphasis* (serif italic), ==highlight box==, {accent}, ^big^. */
   emphasisColor?: string
   emphasisFont?: string
+  /**
+   * Paint *emphasis* words italic. Default true (the creator-caption look).
+   * False when the emphasis face has no true italic cut, so the renderer does
+   * not produce a synthetic slant — the word is carried by colour and weight.
+   */
+  emphasisItalic?: boolean
   boxColor?: string
   accentColor?: string
   /** Soft glow behind the glyphs (0–1), like creator hook titles. */

@@ -1849,7 +1849,21 @@ ipcMain.handle('automation:list', () => automationJobs())
 ipcMain.handle('automation:get', (_e, p) => automationJobs().find(j => j.id === p?.jobId) || null)
 ipcMain.handle('automation:start', async (_e, job) => {
   const existing = automationJobs().filter(j => j.id !== job.id)
-  const normalized = { ...job, status: 'running', errorMessage: null, waitingMessage: null, warnings: [], updatedAt: new Date().toISOString() }
+  // The renderer plans the rundown locally (offline, deterministic, no model
+  // wait) and hands it over, so the desktop pipeline starts from a real plan
+  // instead of regenerating a placeholder. It still goes through the same
+  // normaliser every rundown does — the render QA gate compares against these
+  // numbers, so the contract is enforced here rather than hoped for.
+  const rundown = job?.rundown ? normalizeRundown(job.rundown, job.brief) : null
+  const normalized = {
+    ...job,
+    ...(rundown ? { rundown } : {}),
+    status: 'running',
+    errorMessage: null,
+    waitingMessage: null,
+    warnings: [],
+    updatedAt: new Date().toISOString(),
+  }
   saveAutomationJobs([normalized, ...existing])
   setTimeout(() => { void runAutomationPipeline(job.id) }, 0)
   return normalized

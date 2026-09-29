@@ -9,6 +9,8 @@ import { synthesizeVoiceover, type VoiceoverLanguage } from '../../lib/voice'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { uid, copyText } from '../../lib/utils'
 import { captureStill } from '../../lib/studio/export'
+import { DESIGN_DIRECTIONS, designAll, type DesignDirectionId } from '../../lib/studio/design'
+import { Sparkles } from 'lucide-react'
 
 type Props = {
   doc: StudioDoc
@@ -39,6 +41,33 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
   const [msg, setMsg] = useState<string | null>(null)
   const selected = doc.clips.find((c) => c.id === selectedId) ?? null
 
+  /**
+   * Design engine entry point. `direction` null = run every direction and keep
+   * the highest-scoring one; that is the same battle the autonomous run uses.
+   * Scenes = the selected clips when a selection exists, the whole edit otherwise.
+   */
+  function runDesign(direction: DesignDirectionId | null) {
+    const ids = selected ? [selected.id] : doc.clips.map((c) => c.id)
+    if (!ids.length) { setDesignMsg('This edit is empty — add clips first.'); return }
+    const brief = {
+      brandColors: kit.colors,
+      aspect: doc.aspect,
+      tone: (doc.fps >= 60 ? 'high' : 'medium') as 'high' | 'medium' | 'calm',
+      referenceStyle: '',
+    }
+    const makeId = () => uid()
+    if (direction) {
+      const named = DESIGN_DIRECTIONS.find((d) => d.id === direction)
+      const result = designAll(doc, brief, ids, makeId, { only: direction })
+      setDesignMsg(`Applied “${named?.name}”: ${result.report.scenes.length} scene(s), score ${result.report.score}/100. ${result.report.notes[0] ?? ''}`)
+      commitResult({ doc: result.doc, changed: result.doc !== doc, reason: 'That direction changed nothing.' }, `Design engine → ${named?.name ?? direction}`)
+      return
+    }
+    const battle = designAll(doc, brief, ids, makeId)
+    setDesignMsg(`Scored ${battle.battle.length} directions here: ${battle.battle.map((b) => `${b.name} ${b.score}`).join(' · ')}. Built “${battle.report.direction.name}” (${battle.report.score}/100).`)
+    commitResult({ doc: battle.doc, changed: battle.doc !== doc, reason: 'Nothing to redesign yet.' }, `Design engine → ${battle.report.direction.name}`)
+  }
+
   /* Brand Kit lives on the project so every edit and the autonomous pipeline share it. */
   const kit: BrandKit = project?.brandKit ?? { colors: ['#0B0B10', '#C8F542', '#F4F1EA'], font: 'Inter Variable', logoDataUrl: null }
   const saveKit = (next: BrandKit) => {
@@ -56,6 +85,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
   const [variantCount, setVariantCount] = useState(3)
   const [aspect, setAspect] = useState<StudioAspect>(doc.aspect === '9:16' ? '16:9' : '9:16')
   const [thumbnail, setThumbnail] = useState<string | null>(null)
+  const [designMsg, setDesignMsg] = useState<string | null>(null)
   const social = socialMetadata(doc, project?.name || 'Untitled video')
 
   const commitResult = (r: { doc: StudioDoc; changed: boolean; reason?: string; notes?: string[] }, label: string) => {
@@ -104,6 +134,21 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
             </div>
           </>
         )}
+      </Block>
+
+      <Block icon={Sparkles} title="Design engine (stages, type, accents)">
+        <p className="text-[11px] leading-relaxed text-muted">
+          Redesigns the selected scenes (or the whole edit) the way a motion designer would: a different stage per scene,
+          one typographic system taken from the font suggestions, contrast-checked ink, native accent shapes and safe-area
+          placement. It only ever edits cups it created or that you selected — and it is one undo step.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          <Button size="sm" variant="primary" onClick={() => runDesign(null)}>Auto (best of {DESIGN_DIRECTIONS.length})</Button>
+          {DESIGN_DIRECTIONS.map((d) => (
+            <Button key={d.id} size="sm" variant="outline" title={d.why} onClick={() => runDesign(d.id)}>{d.name.replace('-led', '')}</Button>
+          ))}
+        </div>
+        {designMsg && <p className="rounded-md bg-accent/10 px-2 py-1.5 text-[11px] text-text">{designMsg}</p>}
       </Block>
 
       <Block icon={Palette} title="Brand Kit">

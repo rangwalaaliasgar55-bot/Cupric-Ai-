@@ -7,6 +7,8 @@ import { transitionSoft } from './lib/motion'
 import { useProjectStore } from './state/useProjectStore'
 import { studioOf } from './lib/studio/doc'
 import { rundownToStudioClips } from './lib/studio/importHtml'
+import { FONT_MISSING_EVENT } from './lib/studio/fonts'
+import { fontshareFont, fontshareUrl } from './lib/studio/fontStyles'
 
 export default function App() {
   const theme = useProjectStore((s) => s.theme)
@@ -113,6 +115,31 @@ export default function App() {
       (c) => ipc.on(c, apply),
     )
     return () => unsubs.forEach((off: any) => off?.())
+  }, [])
+
+  /**
+   * A font that cannot be made ready is a design problem the user can fix, not
+   * something to paint over. Say it once per family — canvas text has already
+   * fallen back by the time this fires — and put the way out in the toast:
+   * the Fontshare page when the family is free there, the Studio font shelf
+   * otherwise.
+   */
+  useEffect(() => {
+    const onMissing = (event: Event) => {
+      const family = (event as CustomEvent<{ family?: string }>).detail?.family?.trim()
+      if (!family) return
+      const catalog = fontshareFont(family)
+      const store = useProjectStore.getState()
+      store.pushToast('error', `“${family}” is not loading, so ${family} text is drawing in the fallback face. Download the family and add it in Studio → Text → Fonts (it is embedded in your exports from then on).`, {
+        id: `font-missing-${family.toLowerCase()}`,
+        sticky: true,
+        action: catalog
+          ? { label: `Get ${family} free`, run: () => window.open(fontshareUrl(catalog.slug), '_blank', 'noopener') }
+          : { label: 'Open Studio', run: () => store.setView('studio') },
+      })
+    }
+    window.addEventListener(FONT_MISSING_EVENT, onMissing)
+    return () => window.removeEventListener(FONT_MISSING_EVENT, onMissing)
   }, [])
 
   // ⌘K / Ctrl+K toggles the Ask panel

@@ -383,7 +383,7 @@ export function StudioInspector({ doc, time, clip, onPatch, onDelete, onDuplicat
 
       {/* What the clip IS comes first — its words, media or look — then timing,
           motion and finishing. The text box used to sit below the fold. */}
-      {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
+      {clip.kind === 'text' && <TextFields clip={clip as StudioTextClip} doc={doc} onPatch={onPatch} />}
       {clip.kind === 'text' && <RichTextFields clip={clip as StudioTextClip} onPatch={onPatch} />}
       {clip.kind === 'overlay' && (clip as StudioOverlayClip).component?.slug?.startsWith('fc-') && <FramecnFields clip={clip as StudioOverlayClip} onPatch={onPatch} />}
       {clip.kind === 'shape' && <ShapeFields clip={clip} onPatch={onPatch} />}
@@ -900,7 +900,7 @@ function StickerFields({ clip, onPatch }: { clip: StudioStickerClip; onPatch: (p
   )
 }
 
-function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Partial<StudioClip>) => void }) {
+function TextFields({ clip, doc, onPatch }: { clip: StudioTextClip; doc: StudioDoc; onPatch: (p: Partial<StudioClip>) => void }) {
   const userFonts = useUserFonts()
   const textRef = useRef<HTMLTextAreaElement>(null)
   // A freshly added text clip is ready to type into straight away.
@@ -945,7 +945,7 @@ function TextFields({ clip, onPatch }: { clip: StudioTextClip; onPatch: (p: Part
           )}
         </select>
       </Field>
-      <FontStudio clip={clip} onPatch={onPatch} />
+      <FontStudio clip={clip} doc={doc} onPatch={onPatch} />
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Animation">

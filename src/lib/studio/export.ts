@@ -29,6 +29,12 @@ export type ExportOptions = {
   scale?: number
   onProgress?: (pct: number) => void
   signal?: { cancelled: boolean }
+  /**
+   * Something the user should know about the file they are about to get — used
+   * for fonts that could not be loaded, so the fallback face is never a silent
+   * surprise in the exported video.
+   */
+  onWarning?: (message: string) => void
 }
 
 export type ExportResult = {
@@ -88,9 +94,15 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
   if (duration <= 0) throw new Error('Nothing to export — the timeline is empty.')
   if (typeof MediaRecorder === 'undefined') throw new Error('This browser cannot record video (MediaRecorder missing).')
 
-  // Fonts chosen from Resources are downloaded on demand; wait for them so the
-  // export never bakes the fallback face into the video.
-  await ensureDocFonts(doc).catch(() => [])
+  // Every font the edit uses is verified before a single frame is drawn. A face
+  // that is not ready means the canvas paints the fallback — which is exactly
+  // the bug this reports instead of baking into the file.
+  const missingFonts = await ensureDocFonts(doc).catch(() => [])
+  if (missingFonts.length) {
+    options.onWarning?.(
+      `${missingFonts.length} font${missingFonts.length === 1 ? '' : 's'} could not be loaded (${missingFonts.slice(0, 3).join(', ')}), so the export uses the fallback face for them. Add the font files in Studio → Fonts, or pick a bundled family, and export again.`,
+    )
+  }
   // Physics layers must never be baked as the loading placeholder.
   await ensurePhysicsFor(doc)
   await document.fonts?.ready.catch(() => undefined)

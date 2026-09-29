@@ -1539,7 +1539,10 @@ function drawRichText(ctx: CanvasRenderingContext2D, clip: StudioTextClip, t: nu
     const px = base * (s.big ? 1.5 : 1) * (s.em ? 1.12 : 1)
     const weight = s.em ? 400 : s.big ? Math.max(800, clip.weight) : clip.weight
     const fam = s.em ? emFont : family
-    return { px, css: `${s.em ? 'italic ' : ''}${weight} ${px}px '${fam}', ${s.em ? "'Playfair Display Variable', Georgia, serif" : 'Inter, system-ui, sans-serif'}` }
+    // Only slant when the emphasis face really has an italic cut: a synthetic
+    // slant of an upright font is what makes a suggested pairing look wrong.
+    const slant = s.em && clip.emphasisItalic !== false
+    return { px, css: `${slant ? 'italic ' : ''}${weight} ${px}px '${fam}', ${slant ? "'Playfair Display Variable', Georgia, serif" : 'Inter, system-ui, sans-serif'}` }
   }
   // Layout: wrap into lines, respecting explicit line breaks.
   type Placed = { word: RichWord; px: number; css: string; width: number; x: number; line: number }

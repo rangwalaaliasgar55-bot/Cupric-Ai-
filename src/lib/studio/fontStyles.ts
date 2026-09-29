@@ -154,6 +154,133 @@ export function suggestTextLooks(text: string, opts: { brandColors?: string[]; a
   return looks.slice(0, 9)
 }
 
+/* ─────────────── applying a look ─────────────── */
+
+/**
+ * Fonts with a real italic cut. Emphasis markup (*word*) is painted italic, and
+ * a synthetic slant of a font that has none is what makes a suggested look
+ * look wrong on screen. When the ideal emphasis face has no italic, the look
+ * falls back to the accent colour and a heavier weight instead.
+ */
+const ITALIC_FAMILIES = new Set([
+  'instrument serif', 'playfair display', 'playfair display variable', 'fraunces', 'fraunces variable',
+  'dm serif display', 'zodiak', 'sentient', 'boska', 'author', 'bespoke serif', 'gambetta',
+  'montserrat', 'montserrat variable', 'satoshi', 'general sans', 'switzer', 'supreme', 'ranade',
+  'inter', 'inter variable', 'geist', 'geist variable', 'poppins', 'dm sans', 'dm sans variable',
+  'manrope', 'manrope variable', 'outfit', 'outfit variable', 'plus jakarta sans', 'plus jakarta sans variable',
+  'bricolage grotesque', 'bricolage grotesque variable', 'space grotesk', 'space grotesk variable',
+  'syne', 'syne variable', 'unbounded', 'unbounded variable', 'noto sans devanagari',
+])
+
+export function hasItalic(family: string): boolean {
+  return ITALIC_FAMILIES.has(family.trim().toLowerCase())
+}
+
+/** The bundle's closest stand-in for a family the user has not added yet. */
+const STAND_IN: Record<string, string[]> = {
+  satoshi: ['Geist Variable', 'Inter Variable', 'Plus Jakarta Sans Variable'],
+  'clash display': ['Bricolage Grotesque Variable', 'Outfit Variable', 'Archivo Black'],
+  'clash grotesk': ['Space Grotesk Variable', 'Geist Variable'],
+  'general sans': ['Inter Variable', 'Manrope Variable'],
+  'cabinet grotesk': ['Bricolage Grotesque Variable', 'Montserrat Variable'],
+  switzer: ['Inter Variable', 'DM Sans Variable'],
+  supreme: ['Poppins', 'DM Sans Variable'],
+  chillax: ['Poppins', 'Outfit Variable'],
+  ranade: ['Manrope Variable', 'DM Sans Variable'],
+  panchang: ['Unbounded Variable', 'Archivo Black'],
+  excon: ['JetBrains Mono Variable', 'Bebas Neue'],
+  stardom: ['Syne Variable', 'Playfair Display Variable'],
+  tanker: ['Anton', 'Archivo Black'],
+  zodiak: ['Playfair Display Variable', 'DM Serif Display'],
+  sentient: ['Fraunces Variable', 'Instrument Serif'],
+  boska: ['Playfair Display Variable', 'DM Serif Display'],
+  author: ['DM Serif Display', 'Fraunces Variable'],
+  'bespoke serif': ['Fraunces Variable', 'Playfair Display Variable'],
+  gambetta: ['Fraunces Variable', 'Playfair Display Variable'],
+  telma: ['Poppins', 'Outfit Variable'],
+  kihim: ['Syne Variable', 'Unbounded Variable'],
+}
+
+const nearest = (family: string, available: (f: string) => boolean): string | null => {
+  const key = family.trim().toLowerCase()
+  const chain = STAND_IN[key] ?? []
+  return chain.find(available) ?? null
+}
+
+export type AppliedLook = {
+  /** What to write onto the clip. Always uses fonts that are usable now. */
+  patch: TextLook['patch'] & { emphasisItalic: boolean }
+  /** True when the ideal font was swapped for the closest one that is ready. */
+  degraded: boolean
+  /** One line for the user, or null when nothing needed explaining. */
+  note: string | null
+  /** Font the look wanted for the headline, when it is not the one applied. */
+  wanted: string | null
+  /** Link to get the wanted font (Fontshare) — only when it is a real family. */
+  downloadUrl: string | null
+}
+
+/**
+ * Turn a suggestion into a patch that will *visibly* work right now.
+ *
+ * A suggestion whose ideal font is missing used to be a dead end ("needs X —
+ * download it first"), which reads as "the suggestions are broken". Instead the
+ * closest ready family is applied, the swap is stated in `note`, and the
+ * Fontshare link to the real thing is carried along — so one click changes the
+ * design, and the upgrade path is one more click.
+ */
+export function applyLook(look: TextLook, opts: { available: (family: string) => boolean }): AppliedLook {
+  const wantedHead = look.patch.fontFamily
+  const wantedEmph = look.patch.emphasisFont
+  const head = opts.available(wantedHead) ? wantedHead : nearest(wantedHead, opts.available) ?? fallbackHead(opts.available)
+  const emphWantedAvailable = opts.available(wantedEmph)
+  const emph = emphWantedAvailable ? wantedEmph : nearest(wantedEmph, opts.available) ?? (hasItalic(head) ? head : 'Instrument Serif')
+  const italic = hasItalic(emph)
+  const swapped = head !== wantedHead || emph !== wantedEmph
+  const fontshare = look.needs ?? (!opts.available(wantedHead) && fontshareFont(wantedHead) ? { family: wantedHead, url: fontshareUrl(fontshareFont(wantedHead)!.slug) } : null)
+  const parts: string[] = []
+  if (head !== wantedHead) parts.push(`${wantedHead} isn’t on this machine yet, so ${head} is standing in`)
+  if (emph !== wantedEmph) parts.push(`emphasis uses ${emph}`)
+  if (!italic && emph === wantedEmph) parts.push(`${emph} has no true italic, so the word is coloured and weighted instead`)
+  return {
+    patch: {
+      ...look.patch,
+      fontFamily: head,
+      emphasisFont: emph,
+      weight: /Serif|Zodiak|Sentient|Author|Fraunces|Playfair|Boska|Instrument/.test(head) ? 600 : look.patch.weight,
+      emphasisItalic: italic,
+    },
+    degraded: swapped,
+    note: parts.length ? `${parts.join('. ')}.` : null,
+    wanted: swapped ? wantedHead : null,
+    downloadUrl: swapped && fontshare ? fontshare.url : null,
+  }
+}
+
+function fallbackHead(available: (f: string) => boolean): string {
+  return ['Geist Variable', 'Inter Variable', 'Montserrat Variable', 'Poppins', 'DM Sans Variable'].find(available) ?? 'Inter Variable'
+}
+
+/**
+ * Preview a look without applying it: the fonts a chip should draw with, the
+ * stand-in it would use, and whether the ideal family is missing.
+ */
+export function lookPreview(look: TextLook, opts: { available: (family: string) => boolean }): {
+  head: string
+  emphasis: string
+  /** The ideal headline font is not ready → the chip should say so. */
+  swapped: boolean
+  /** That ideal font is on Fontshare, so it can be fetched by the user. */
+  fontshareUrl: string | null
+} {
+  const head = opts.available(look.patch.fontFamily) ? look.patch.fontFamily : null
+  const emph = opts.available(look.patch.emphasisFont) ? look.patch.emphasisFont : null
+  const odd = [look.patch.fontFamily, look.patch.emphasisFont].find((f) => !opts.available(f))
+  const fs = odd ? fontshareFont(odd) : null
+  const fallback = applyLook(look, opts)
+  return { head: head ?? fallback.patch.fontFamily, emphasis: emph ?? fallback.patch.emphasisFont, swapped: fallback.degraded, fontshareUrl: fs ? fontshareUrl(fs.slug) : null }
+}
+
 /** Everything the agent may choose from: bundled + user fonts (with roles). */
 export function fontChoicesForAgent(userFamilies: string[]): Array<{ family: string; role: string; bestFor: string; source: 'bundled' | 'yours' }> {
   return [
