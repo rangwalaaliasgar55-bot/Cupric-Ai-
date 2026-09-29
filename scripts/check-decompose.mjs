@@ -2,12 +2,14 @@
 /**
  * Break a clip into editable pieces — "import a finished video and take it
  * apart". Covers the pure half (`breakAtCuts`: close the pauses up, or split at
- * their boundaries keeping the original timing), the three modes of
- * `decomposeClip` (measured silence / pauses in the words / even pieces), the
- * word coverage across the pieces, the caption hand-off, the speed mapping and
- * the honest failure paths. The waveform probe itself needs real audio, so the
- * measured-silence mode is only checked for its graceful failure here; the
- * packaged-desktop scenario covers the rest.
+ * their boundaries keeping the original timing), the modes of `decomposeClip`
+ * (measured silence / pauses in the words / even pieces / scene changes / the
+ * shots-and-pauses import path), the shot detector's pure half
+ * (`frameDifference`, `shotCutTimes`, `remapSourceTime`), the word coverage
+ * across the pieces, the caption hand-off, the speed mapping and the honest
+ * failure paths. The waveform probe needs real audio and the shot detector needs
+ * a decodable video, so both measured paths are only checked for their graceful
+ * failure here; the packaged-desktop scenario covers the rest.
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -20,7 +22,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const out = path.join(root, '.check-decompose.mjs')
 await build({
   bundle: true, outfile: out, format: 'esm', platform: 'node', logLevel: 'error',
-  stdin: { contents: "export * from './src/lib/studio/decompose'\nexport * as ac from './src/lib/studio/autoCaptions'\nexport * as doc from './src/lib/studio/doc'", resolveDir: root, loader: 'ts' },
+  stdin: { contents: "export * from './src/lib/studio/decompose'\nexport * as ac from './src/lib/studio/autoCaptions'\nexport * as doc from './src/lib/studio/doc'\nexport * as shots from './src/lib/studio/shots'", resolveDir: root, loader: 'ts' },
 })
 const m = await import(pathToFileURL(out).href)
 await rm(out, { force: true })
@@ -167,6 +169,109 @@ ok(m.stripPieceSuffix('Plain name') === 'Plain name', 'a name with no suffix is 
   const studio = read('src/screens/Studio.tsx')
   ok(studio.includes('break-into-clips') && studio.includes('Break into clips (measured pauses)'), 'the timeline right-click menu offers it too')
   ok(/one Undo reverts it/.test(studio), 'the quick action says the result is one undo step')
+}
+
+/* ——— shot detection (studio/shots.ts) ——— */
+{
+  const black = new Uint8ClampedArray([0, 0, 0, 255, 0, 0, 0, 255])
+  const white = new Uint8ClampedArray([255, 255, 255, 255, 255, 255, 255, 255])
+  const half = new Uint8ClampedArray([255, 255, 255, 255, 0, 0, 0, 255])
+  near(m.shots.frameDifference(black, black), 0, 1e-9, 'identical frames differ by nothing')
+  near(m.shots.frameDifference(black, white), 1, 1e-9, 'a black-to-white change is 1')
+  near(m.shots.frameDifference(black, half), 0.5, 1e-9, 'a half-frame change is 0.5')
+  ok(m.shots.frameDifference(new Uint8ClampedArray(0), black) === 0, 'an empty buffer cannot report a change')
+  near(m.shots.median([3, 1, 2]), 2, 1e-9, 'median of an odd list')
+  near(m.shots.median([4, 1, 3, 2]), 2.5, 1e-9, 'median of an even list')
+  ok(m.shots.median([]) === 0, 'median of nothing is 0, not NaN')
+
+  const montage = []
+  for (let i = 0; i <= 80; i += 1) montage.push({ t: i * 0.25, diff: 0.01 })
+  montage.find((f) => Math.abs(f.t - 5) < 1e-9).diff = 0.4
+  montage.find((f) => Math.abs(f.t - 10) < 1e-9).diff = 0.35
+  montage.find((f) => Math.abs(f.t - 10.25) < 1e-9).diff = 0.05
+  const cuts = m.shots.shotCutTimes(montage)
+  ok(JSON.stringify(cuts) === '[5,10]', `a montage yields its two cuts (${JSON.stringify(cuts)})`)
+  const plusOne = m.shots.shotCutTimes([...montage, { t: 15, diff: 0.5 }])
+  ok(plusOne[plusOne.length - 1] === 15, 'a later cut is found too')
+
+  // Two spikes closer than one shot: the stronger one wins, at its own time.
+  const close = [{ t: 0, diff: 0.01 }, { t: 1, diff: 0.3 }, { t: 1.2, diff: 0.6 }, { t: 2, diff: 0.01 }]
+  ok(JSON.stringify(m.shots.shotCutTimes(close)) === '[1.2]', 'two changes inside one shot collapse to the stronger')
+  // A locked-off shot with sensor noise must not produce cuts.
+  const noise = Array.from({ length: 40 }, (_, i) => ({ t: i * 0.25, diff: i % 3 === 0 ? 0.02 : i % 3 === 1 ? 0.012 : 0.016 }))
+  ok(m.shots.shotCutTimes(noise).length === 0, 'sensor noise is not a cut')
+  // A handheld shot has a high, noisy baseline: the adaptive threshold absorbs it.
+  const handheld = Array.from({ length: 40 }, (_, i) => ({ t: i * 0.25, diff: i === 20 ? 0.09 : 0.05 + (i % 5) * 0.008 }))
+  ok(m.shots.shotCutTimes(handheld).length === 0, 'a moving camera is not a montage')
+  // A fast cross-fade reads as at most one cut, never a cascade of them.
+  const fade = [{ t: 0, diff: 0.01 }, { t: 0.25, diff: 0.22 }, { t: 0.5, diff: 0.22 }, { t: 0.75, diff: 0.01 }]
+  ok(m.shots.shotCutTimes(fade).length === 1, 'a short fade is one boundary, not two')
+  ok(m.shots.shotCutTimes([]).length === 0 && m.shots.shotCutTimes([{ t: 0, diff: 0.9 }]).length === 0, 'too few samples means no cuts')
+
+  // remapSourceTime: where a boundary landed before the cuts were made.
+  const v = { startSec: 4, durationSec: 6, trimInSec: 2, speed: 1 }
+  near(m.shots.remapSourceTime(2, v, [[3, 4]]), 4, 1e-9, 'a time before any cut is unchanged')
+  near(m.shots.remapSourceTime(3.5, v, [[3, 4]]), 5, 1e-9, 'a time inside a removed range lands on its start')
+  near(m.shots.remapSourceTime(5, v, [[3, 4]]), 6, 1e-9, 'a time after the cut moves left by what was removed')
+  near(m.shots.remapSourceTime(0, v, []), 4, 1e-9, 'a source time before the trim-in clamps to the clip’s first frame')
+  near(m.shots.remapSourceTime(30, v, []), 10, 1e-9, 'and one past the end clamps to its last')
+  near(m.shots.remapSourceTime(4, { startSec: 0, durationSec: 2, trimInSec: 0, speed: 2 }, [[1, 2]]), 1.5, 1e-9, 'speed divides the result, as it does everywhere else')
+}
+
+/* ——— decide: scene changes, and the import path ——— */
+{
+  // Shots only: nothing is removed, the sequence is unchanged.
+  const r = await m.decomposeClip(clone(), 'v', { mode: 'shots', shots: [3, 6] })
+  ok(!r.reason && r.pieces === 3, `two shot cuts → three clips (${r.reason ?? r.pieces})`)
+  ok(r.removedSec === 0, 'shots alone remove nothing')
+  const pieces = r.doc.clips.filter((c) => c.mediaId === 'm-video').sort((a, b) => a.startSec - b.startSec)
+  ok(pieces.map((p) => p.name).join(' | ') === 'Interview take 2 · 1/3 | Interview take 2 · 2/3 | Interview take 2 · 3/3', 'shot pieces are named in order')
+  near(pieces[2].startSec + pieces[2].durationSec, 10, 0.01, 'the sequence still spans the same time')
+  ok(pieces.every((p) => p.words?.length), 'word timings ride along on every shot piece')
+  ok(r.notes.some((x) => /shot boundar/.test(x)), 'the note says the split came from the picture')
+
+  // No cuts found: say so instead of splitting at random.
+  const none = await m.decomposeClip(clone(), 'v', { mode: 'shots', shots: [] })
+  ok(!none.pieces || none.pieces === 1, 'no shot cuts → nothing is split')
+  ok(/picture changes too little|No cue lands/i.test(none.reason ?? ''), `and the reason names the picture (${none.reason})`)
+
+  // The import path: close the pauses AND split at the shot cuts that survive.
+  const auto = await m.decomposeClip(clone(), 'v', { mode: 'auto', shots: [2.3, 8] })
+  ok(!auto.reason, `auto mode breaks the clip (${auto.reason ?? ''})`)
+  ok(auto.pieces === 4, `3 spoken pieces + 1 shot split inside a kept range (${auto.pieces})`)
+  near(auto.removedSec, 7.1, 0.01, 'the measured pauses were closed')
+  ok(auto.notes.some((x) => /Closed 3 pauses/.test(x)), 'the note says the pauses came from the word timings')
+  ok(auto.notes.some((x) => /of 2 shot cuts landed inside removed silence/.test(x)), 'the shot inside removed silence is reported, not faked into an empty piece')
+  const autos = auto.doc.clips.filter((c) => c.mediaId === 'm-video').sort((a, b) => a.startSec - b.startSec)
+  ok(autos.every((p, i) => i === 0 || Math.abs(p.startSec - (autos[i - 1].startSec + autos[i - 1].durationSec)) < 0.002), 'the import pieces tile the new timeline')
+  const seen = autos.flatMap((p) => m.ac.wordsToTimeline(p.words ?? [], p)).map((w) => w.word)
+  ok(seen.length === words.length, `auto mode keeps every word (${seen.length}/${words.length})`)
+
+  // With the original timing kept, a shot inside a pause still splits there.
+  const kept = await m.decomposeClip(clone(), 'v', { mode: 'auto', shots: [3.5], keepTiming: true })
+  ok(!kept.reason && kept.pieces === 7, `kept timing: 6 pause-boundary clips + 1 shot split (${kept.pieces})`)
+  ok(kept.removedSec === 0, 'kept timing removes nothing')
+  const keptPieces = kept.doc.clips.filter((c) => c.mediaId === 'm-video').sort((a, b) => a.startSec - b.startSec)
+  near(keptPieces[0].startSec, 0, 1e-9, 'and still starts at the clip’s own time')
+  near(keptPieces[keptPieces.length - 1].startSec + keptPieces[keptPieces.length - 1].durationSec, 10, 0.01, 'and still ends at the clip’s own time')
+
+  // Progress is reported while the frames are sampled.
+  const seenProgress = []
+  await m.decomposeClip(clone(), 'v', { mode: 'shots', shots: [3], onProgress: (pct, label) => seenProgress.push([pct, label]) })
+  ok(seenProgress.length === 0, 'pre-measured shots need no sampling (the caller already paid for it)')
+
+  // An audio clip cannot be shot-detected: it has no picture to look at.
+  const audioOnly = { ...clone(), clips: [{ ...video, kind: 'audio', role: 'voice' }] }
+  const r2 = await m.decomposeClip(audioOnly, 'v', { mode: 'shots' })
+  ok(/picture/i.test(r2.reason ?? ''), `audio is refused for shot mode with a reason about the picture (${r2.reason})`)
+}
+
+/* ——— UI wiring ——— */
+{
+  const panel = read('src/screens/studio/StudioProPanel.tsx')
+  ok(/Scene changes/.test(panel) && /Shots \+ pauses/.test(panel), 'the Pro panel offers both shot-based modes')
+  const studio = read('src/screens/Studio.tsx')
+  ok(/scene changes/i.test(studio) && studio.includes('break-at-shots'), 'the timeline menu offers breaking at scene changes')
 }
 
 console.log(`decompose check passed — ${n} assertions`)

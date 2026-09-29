@@ -206,10 +206,33 @@ closes the silence up (`tightenClip`, a real edit) or keeps the original timing 
 boundaries. Word timings stay in source seconds on every piece, so captions and word-timed components
 keep working without re-transcribing, and the captions can be generated *before* the cut so the existing
 remap carries them. Reachable from Pro → Auto-edit → *Break into clips* (preview → accept) and from the
-timeline right-click menu (one undo). Covered by `scripts/check-decompose.mjs` (53 assertions) in the
-`build` and `verify` chains, and by scenario D of `docs/SMOKE_WORD_TIMED_CAPTIONS.md`.
-This is backlog item 5's practical half; the remaining half is re-deriving timings when a *user* cut
-(not a probe) moves them.
+timeline right-click menu (one undo). Covered by `scripts/check-decompose.mjs` (96 assertions after
+the scene-change modes below) in the `build` and `verify` chains, and by scenario D of
+`docs/SMOKE_WORD_TIMED_CAPTIONS.md`. This is backlog item 5's practical half; the remaining half is
+re-deriving timings when a *user* cut (not a probe or a shot) moves them.
+
+## C-ter. Shipped after the audit: the shots
+
+Scenario D above covered speech. A montage has no speech to break on, so the second half of "import a
+video and take it apart" is the picture itself: `src/lib/studio/shots.ts` samples the clip's own frames
+(four per second, 64 px wide, no model and no network) and thresholds the mean-absolute luma difference
+between consecutive samples adaptively (`max(0.06, median + 5 × MAD)`, with a strong-change fallback so an
+obviously cut montage never reports "no cuts"; a spike must beat both neighbours, and changes closer
+than `minShotSec` collapse to the stronger one). `decompose.ts` gained two modes that consume it:
+
+- `shots` — `breakAtPoints` cuts the clip where the picture changes and removes **nothing**, so an
+  imported edit arrives as its own shots and the timeline still plays back identically.
+- `auto` — the import path: close the pauses the voice left empty (word timings first, else the measured
+  waveform via `probeClip`/`probeCuts`), then split the *result* at the shot cuts, mapping the survivors
+  through `remapSourceTime` and reporting the ones that fell inside removed silence instead of creating
+  empty pieces.
+
+Both are reachable from Pro → Auto-edit → *Break into clips* (*Shots + pauses*, *Scene changes*) and from
+the timeline right-click menu (**Break at scene changes (the picture)**). Frame sampling needs a
+decodable video, so `scripts/check-decompose.mjs` (now 96 assertions) covers the pure half —
+`frameDifference`, `median`, `shotCutTimes`, `remapSourceTime` — and the whole assembly with the shots
+handed in; `docs/SMOKE_WORD_TIMED_CAPTIONS.md` scenario E is the packaged-desktop check. Still open from
+backlog item 5: a *user* cut (not a probe or a shot) does not re-derive word timings.
 
 ## D. Architecture plan
 

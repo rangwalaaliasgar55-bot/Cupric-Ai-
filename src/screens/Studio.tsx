@@ -2083,6 +2083,23 @@ export function Studio() {
                         .finally(() => { breakBusyRef.current = false })
                     },
                   }]
+                  if (c.kind === 'video') items.push({
+                    id: 'break-at-shots',
+                    label: 'Break at scene changes (the picture)',
+                    run: () => {
+                      if (breakBusyRef.current) return
+                      breakBusyRef.current = true
+                      pushToast('info', `Sampling “${c.name}” to find where the picture changes…`)
+                      void decomposeClip(doc, c.id, { mode: 'shots' })
+                        .then((r) => {
+                          if (r.reason) { pushToast('info', r.reason); return }
+                          patchStudio(pid, { clips: r.doc.clips, trackCount: r.doc.trackCount }, `Split at ${r.pieces - 1} scene changes`)
+                          pushToast('success', `${r.pieces} clips from “${c.name}” at its own cuts — nothing re-timed, one Undo reverts it.`)
+                        })
+                        .catch((err) => pushToast('error', humanError(err, 'Break at scene changes')))
+                        .finally(() => { breakBusyRef.current = false })
+                    },
+                  })
                   if (c.kind === 'video') items.push({ id: 'proxy', label: 'Make preview proxy', run: () => void makeProxy((c as StudioMediaClip).mediaId).then((st) => st.error && pushToast('info', st.error)) })
                   return items
                 })()}

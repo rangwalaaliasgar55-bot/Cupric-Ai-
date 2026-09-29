@@ -453,8 +453,10 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
                 <div className="mt-1.5 grid grid-cols-2 gap-1.5">
                   <label className="text-[11px] text-muted">Break at
                     <select className={inputCx} value={breakMode} onChange={(e) => setBreakMode(e.target.value as DecomposeMode)} aria-label="Break mode">
+                      <option value="auto">Shots + pauses (best for an imported video)</option>
                       <option value="silence">Measured pauses (waveform)</option>
                       <option value="words">Pauses in the words (needs a transcript)</option>
+                      <option value="shots">Scene changes (the picture alone)</option>
                       <option value="even">Even pieces (no speech needed)</option>
                     </select>
                   </label>
@@ -462,28 +464,34 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
                     ? <label className="text-[11px] text-muted">Piece length · {breakPieceSec}s
                         <input type="range" min={1} max={20} value={breakPieceSec} onChange={(e) => setBreakPieceSec(Number(e.target.value))} className="w-full" />
                       </label>
-                    : <label className="flex items-end gap-2 pb-1 text-[11px] text-muted">
-                        <input type="checkbox" checked={breakKeepTiming} onChange={(e) => setBreakKeepTiming(e.target.checked)} />
-                        Keep the original timing (pauses stay as their own clips)
-                      </label>}
+                    : breakMode === 'shots'
+                      ? <p className="pb-1 text-[11px] text-muted">Nothing is removed: the clip is only cut where the picture changes, so the sequence still plays back exactly as it does now.</p>
+                      : <label className="flex items-end gap-2 pb-1 text-[11px] text-muted">
+                          <input type="checkbox" checked={breakKeepTiming} onChange={(e) => setBreakKeepTiming(e.target.checked)} />
+                          Keep the original timing (pauses stay as their own clips)
+                        </label>}
                 </div>
                 <label className="mt-1 flex items-center gap-2 text-[11px] text-muted">
                   <input type="checkbox" checked={breakCaptions} disabled={!spoken?.length} title={!spoken?.length ? 'Transcribe the clip first (Auto-captions) to caption the pieces' : undefined} onChange={(e) => setBreakCaptions(e.target.checked)} />
                   Caption the pieces from the clip’s word timings (word-timed, labelled in the inspector)
                 </label>
+                {(breakMode === 'shots' || breakMode === 'auto') && (
+                  <p className="mt-1 text-[11px] text-muted">Reads the clip’s own frames (four per second of footage) — this runs on the desktop app, where the file is, and a long clip takes a while.</p>
+                )}
                 <Button size="sm" variant="primary" className="mt-1.5" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy) ? 'Select a video or audio clip — or wait' : undefined} onClick={() => sel && run('break', async () => {
                   const r = await decomposeClip(doc, sel.id, {
                     mode: breakMode,
                     pieceSec: breakPieceSec,
                     keepTiming: breakMode === 'even' ? false : breakKeepTiming,
                     caption: breakCaptions && spoken?.length ? {} : null,
+                    onProgress: breakMode === 'shots' || breakMode === 'auto' ? (pct, label) => setMsg(`${label} ${pct}%`) : undefined,
                   })
                   if (r.reason) return setMsg(r.reason)
                   const notes = [...r.notes]
                   if (r.captions) notes.push(`${r.captions} word-timed caption clips added on the top track.`)
                   setMsg(null)
                   propose(r.doc, `Break into ${r.pieces} clips`, notes)
-                })}>{busy === 'break' ? 'Breaking apart…' : 'Break into clips'}</Button>
+                })}>{busy === 'break' ? 'Breaking apart…' : breakMode === 'auto' || breakMode === 'shots' ? 'Take the video apart' : 'Break into clips'}</Button>
               </div>
               <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Smart reframe</p>

@@ -92,6 +92,49 @@ and knows what a failure looks like.
 - `No pause in this clip reaches 0.45 s` → lower the word-pause threshold is not exposed yet; use the
   even split or trim by hand.
 
+## Scenario E — take a montage apart at its own cuts
+
+1. Studio → import an edited video whose picture changes at its cuts (a montage, a screen
+   recording with hard cuts, anything without useful speech).
+2. Right-click the clip → **Break at scene changes (the picture)**.
+3. Expected: an info toast says Cupric is sampling the clip's frames; then a success toast names
+   the number of scene changes found and says nothing was re-timed and one Undo reverts it.
+4. Expected on the timeline: the clip is cut where the picture changes, every piece selectable/movable/
+   deletable on its own, and the total length **unchanged** (nothing was removed). An overlay that
+   crossed a cut is now split with it — check its text still reads correctly.
+5. Pro panel → **Break into clips** → *Break at* → **Shots + pauses (best for an imported video)** →
+   **Take the video apart**: the same run closes what the voice left empty *and* splits the result at
+   the shot cuts, so the video arrives as phrases and shots. The notes under the button say how many
+   pauses were closed, how many shot cuts landed inside removed silence (they leave no extra piece),
+   and that the word timings stay on the pieces.
+6. With *Scene changes (the picture alone)* selected, the panel says nothing is removed; with *Shots +
+   pauses* the "Keep the original timing" checkbox is available and keeps the sequence identical to the
+   import while still cutting every pause into its own clip.
+
+**Failure signatures**
+
+- `The video file is not loaded — relink it first.` → the media handle is gone (the project was copied
+  to another machine, or the file moved): relink it in the media panel and retry.
+- `Looking for shots means looking at the picture — select a video clip, or use the silence or even
+  split for audio.` → an audio clip was selected while *Break at* was on a shot mode.
+- `The picture changes too little from frame to frame to find a cut — nothing was split.` → a locked-off
+  single shot (or a very slow pan), so there is nothing to break on: use the silence/even split.
+- `Every boundary this clip has sits at its edges or inside the removed silence — nothing was split.`
+  → the import path found boundaries, but removing the pauses already brought the kept ranges together:
+  turn on "Keep the original timing" to split at the pause boundaries instead.
+- A long clip takes a while: the shot detector reads four frames per second of footage through the
+  browser decoder. The panel shows `Sampling frames to find the cuts… NN%` while it runs, and the
+  toast is informational.
+
+**Honest limits** (verified in this repository, not measured on real footage here)
+
+- The detector is a mean-luma difference between sampled frames (`frameDifference`), thresholded
+  adaptively (`median + 5 × MAD`, floor 0.06). It finds hard cuts; a long dissolve or a flash frame can
+  be missed or can over-report, and sampling at 4 fps can place a cut up to one sample (0.25 s) late.
+- `scripts/check-decompose.mjs` covers the pure half (differences, threshold, minimum shot length,
+  remapping after a cut) and the assembly around it; the frame sampling itself needs a decodable video
+  and is only exercised by this scenario in the packaged app.
+
 ## What this scenario does **not** cover
 
 - macOS/Linux: no packaged build or release workflow exists for them (see

@@ -17,6 +17,10 @@
  *            (`clip.words`, written by auto-captions).
  *   even     chop into fixed-length pieces, for footage with no speech at all
  *            (music, B-roll, screen recordings).
+ *   shots    split where the picture changes (studio/shots.ts), for a montage
+ *            cut to music: the cuts the edit already has, kept as the cuts.
+ *   auto     the import path: split at the shots AND close up the measured
+ *            pauses, so a finished video arrives as phrases and shots.
  *
  * `keepTiming` decides what happens to the removed silence: by default the
  * pieces close up (a real edit — the video gets shorter), and with
@@ -32,8 +36,9 @@ import { captionsForClip } from './autoCaptions'
 import { speechCuts, tightenClip } from './autoEdit'
 import { splitClipAt } from './doc'
 import { probeClip, probeCuts } from './speechProbe'
+import { analyseShots, median, remapSourceTime } from './shots'
 
-export type DecomposeMode = 'silence' | 'words' | 'even'
+export type DecomposeMode = 'silence' | 'words' | 'even' | 'shots' | 'auto'
 
 export interface DecomposeOptions {
   mode?: DecomposeMode
@@ -47,6 +52,16 @@ export interface DecomposeOptions {
   rename?: boolean
   /** Add word-timed captions for the clip before splitting, when it has word timings. */
   caption?: { maxWords?: number } | null
+  /**
+   * `shots`/`auto`: the shot boundaries to use, in SOURCE seconds. Omit to sample
+   * the clip's frames (`analyseShots`); tests and callers that already measured
+   * pass their own, so the assembly can be covered headlessly.
+   */
+  shots?: number[]
+  /** `shots`/`auto`: detector settings (samples per second, minimum shot length). */
+  shotOpts?: { fps?: number; minShotSec?: number; sensitivity?: number; width?: number }
+  /** `shots`/`auto`: progress while the frames are sampled, for a status line. */
+  onProgress?: (pct: number, label: string) => void
 }
 
 export interface DecomposeResult {
@@ -109,6 +124,23 @@ function piecesOf(doc: StudioDoc, before: Set<string>, clip: StudioMediaClip | S
     .sort((a, b) => a.startSec - b.startSec)
 }
 
+/** Split whichever clip of this track/media pair contains each timeline time, latest first. */
+function splitAtTimesWhere(doc: StudioDoc, clip: StudioMediaClip | StudioAudioClip, times: number[]): { doc: StudioDoc; splits: number } {
+  let next = doc
+  let splits = 0
+  const ordered = [...new Set(times.map((t) => Math.round(t * 1000) / 1000))].sort((a, b) => b - a)
+  for (const t of ordered) {
+    const target = next.clips.find((c) => c.track === clip.track && c.kind === clip.kind && (c as StudioMediaClip).mediaId === (clip as StudioMediaClip).mediaId
+      && t - c.startSec > MIN_PIECE_SEC && c.startSec + c.durationSec - t > MIN_PIECE_SEC)
+    if (!target) continue
+    const halves = splitClipAt(target, t)
+    if (!halves) continue
+    next = { ...next, clips: next.clips.flatMap((c) => (c.id === target.id ? halves : [c])) }
+    splits += 1
+  }
+  return { doc: next, splits }
+}
+
 function renamePieces(doc: StudioDoc, pieces: StudioClip[]): StudioDoc {
   if (pieces.length < 2) return doc
   const byId = new Map(pieces.map((p, i) => [p.id, pieceName(p.name, i, pieces.length)]))
@@ -150,8 +182,30 @@ export function breakAtCuts(
 }
 
 /**
- * Break one clip apart. Async only because measuring the waveform is; every
- * branch returns a new doc that the caller commits as ONE undo step.
+ * Break one clip at timeline times, removing nothing: the same video, cut into
+ * selectable pieces where the picture changes.
+ */
+export function breakAtPoints(
+  doc: StudioDoc,
+  clipId: string,
+  times: number[],
+  opts: { rename?: boolean } = {},
+): { doc: StudioDoc; pieces: number; reason?: string } {
+  const clip = doc.clips.find((c) => c.id === clipId) as StudioMediaClip | StudioAudioClip | undefined
+  if (!clip || (clip.kind !== 'video' && clip.kind !== 'audio')) return { doc, pieces: 1, reason: 'Select a video or audio clip to break apart.' }
+  const inside = times.filter((t) => t - clip.startSec > MIN_PIECE_SEC && clip.startSec + clip.durationSec - t > MIN_PIECE_SEC)
+  if (!inside.length) return { doc, pieces: 1, reason: 'No cue lands inside this clip.' }
+  const before = new Set(doc.clips.map((c) => c.id))
+  const split = splitAtTimes(doc, clipId, inside)
+  const pieces = piecesOf(split.doc, before, clip)
+  if (pieces.length < 2) return { doc, pieces: 1, reason: 'Those boundaries sit at the clip’s edges — trim it instead.' }
+  return { doc: opts.rename === false ? split.doc : renamePieces(split.doc, pieces), pieces: pieces.length }
+}
+
+/**
+ * Break one clip apart. Async only because measuring the waveform (and, for the
+ * shot modes, sampling frames) is; every branch returns a new doc that the
+ * caller commits as ONE undo step.
  */
 export async function decomposeClip(doc: StudioDoc, clipId: string, opts: DecomposeOptions = {}): Promise<DecomposeResult> {
   const mode = opts.mode ?? 'silence'
@@ -180,6 +234,77 @@ export async function decomposeClip(doc: StudioDoc, clipId: string, opts: Decomp
     if (pieces.length < 2) return fail(working, mode, `That clip is shorter than ${(pieceSec / 2).toFixed(1)} s — there is nothing to chop.`)
     notes.push(`Chopped into ${pieces.length} pieces of about ${(target.durationSec / pieces.length).toFixed(1)} s; the timeline still plays back exactly as before.`)
     return { doc: opts.rename === false ? split.doc : renamePieces(split.doc, pieces), mode, pieces: pieces.length, removedSec: 0, cuts: 0, captions, notes }
+  }
+
+  if (mode === 'shots' || mode === 'auto') {
+    const before = new Set(working.clips.map((c) => c.id))
+    const videoTarget = target.kind === 'video' ? (target as StudioMediaClip) : null
+    let shots = opts.shots
+    if (!shots) {
+      if (!videoTarget) return fail(working, mode, 'Looking for shots means looking at the picture — select a video clip, or use the silence or even split for audio.')
+      try {
+        const measured = await analyseShots(videoTarget, (pct) => opts.onProgress?.(pct, 'Sampling frames to find the cuts…'), opts.shotOpts)
+        shots = measured.shots
+        notes.push(`Compared ${measured.samples.length} sampled frames (median change ${median(measured.samples.map((f) => f.diff)).toFixed(3)}); ${shots.length} of them looked like cuts.`)
+      } catch (err) {
+        return fail(working, mode, err instanceof Error ? err.message : String(err))
+      }
+    }
+
+    if (mode === 'shots') {
+      if (!shots.length) return fail(working, mode, 'The picture changes too little from frame to frame to find a cut — nothing was split. Use the silence or even split instead.')
+      const broken = breakAtPoints(working, clipId, shots.map((t) => (videoTarget ? timelineTime(videoTarget, t) : t)), { rename: opts.rename })
+      if (broken.reason) return fail(working, mode, broken.reason)
+      notes.push(`Split at ${broken.pieces - 1} shot boundar${broken.pieces === 2 ? 'y' : 'ies'} — nothing was removed, so the timeline still plays back exactly as before.`)
+      return { doc: broken.doc, mode, pieces: broken.pieces, removedSec: 0, cuts: shots.length, captions, notes }
+    }
+
+    // `auto` — the import path: close what the voice left empty, then split the
+    // result at the shot cuts that survived (one inside removed silence has
+    // nowhere to land and is skipped rather than creating an empty piece).
+    const range: [number, number] = [target.trimInSec, target.trimInSec + target.durationSec * (target.kind === 'video' && target.speed > 0 ? target.speed : 1)]
+    let cuts: Array<[number, number]> = []
+    if (target.words?.length) {
+      cuts = speechCuts(target.words, range, { maxPauseSec: opts.maxPauseSec ?? 0.45, fillers: false })
+      if (cuts.length) notes.push(`Closed ${cuts.length} pause${cuts.length === 1 ? '' : 's'} found in the word timings.`)
+    }
+    if (!cuts.length && (target.kind === 'video' || target.kind === 'audio')) {
+      const measured = await probeClip(target)
+      if (!measured) notes.push('This clip’s audio could not be read, so no pause was closed — only the picture was split.')
+      else if (!measured.probe.speechFound) notes.push('No speech in this clip, so no pause was closed — only the picture was split.')
+      else {
+        cuts = probeCuts(measured)
+        notes.push(cuts.length
+          ? `Closed ${cuts.length} pause${cuts.length === 1 ? '' : 's'} measured in the waveform (floor ${measured.probe.floor.toFixed(1)} dB).`
+          : 'No pause in this clip is long enough to close safely.')
+      }
+    }
+
+    let next = working
+    let removedSec = 0
+    if (cuts.length) {
+      const tightened = breakAtCuts(working, clipId, cuts, { keepTiming: opts.keepTiming, rename: false })
+      if (tightened.reason) return fail(working, mode, tightened.reason)
+      next = tightened.doc
+      removedSec = tightened.removedSec
+    }
+    const mapped = videoTarget && shots.length
+      ? shots.map((t) => (opts.keepTiming ? timelineTime(videoTarget, t) : remapSourceTime(t, videoTarget, cuts)))
+      : []
+    const split = splitAtTimesWhere(next, target, mapped)
+    const pieces = piecesOf(split.doc, before, target)
+    if (pieces.length < 2) {
+      return fail(working, mode, shots.length || cuts.length
+        ? 'Every boundary this clip has sits at its edges or inside the removed silence — nothing was split.'
+        : 'Nothing to break on: no shot change and no pause worth closing.')
+    }
+    if (shots.length > split.splits) {
+      const lost = shots.length - split.splits
+      notes.push(`${lost} of ${shots.length} shot cut${shots.length === 1 ? '' : 's'} landed inside removed silence or on a piece edge, so ${lost === 1 ? 'it' : 'they'} left no extra piece.`)
+    }
+    notes.push(`Arrived as ${pieces.length} clips${removedSec ? `, ${removedSec.toFixed(1)} s of silence closed up` : ''}. Each one is an ordinary clip: retime, move, delete or caption it on its own.`)
+    if (target.words?.length) notes.push('Word timings stay on the pieces (source seconds), so captions and word-timed components keep working.')
+    return { doc: opts.rename === false ? split.doc : renamePieces(split.doc, pieces), mode, pieces: pieces.length, removedSec, cuts: cuts.length + split.splits, captions, notes }
   }
 
   const range: [number, number] = [target.trimInSec, target.trimInSec + target.durationSec * (target.kind === 'video' && target.speed > 0 ? target.speed : 1)]

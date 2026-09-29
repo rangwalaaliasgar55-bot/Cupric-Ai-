@@ -1,3 +1,23 @@
+## Also shipped: break a montage apart at its own cuts
+
+`src/lib/studio/shots.ts` — shot/scene detection with no model and no network: the clip's own frames
+are sampled at 4 fps into a 64 px-wide canvas, the mean-absolute luma difference between consecutive
+samples is thresholded adaptively (`max(0.06, median + 5 × MAD)`, with a strong-change fallback so an
+obviously cut montage never reports "no cuts"), a spike must beat both neighbours, and two changes
+closer than `minShotSec` collapse to the stronger one. `decompose.ts` grew two modes on top of it:
+
+- `shots` — split where the picture changes, removing nothing (`breakAtPoints`), so a finished edit
+  arrives as its own cuts and the timeline still plays back exactly as before.
+- `auto` — the import path: close the pauses the voice left empty (word timings first, else the
+  measured waveform) **and** split the result at the shot cuts, skipping the ones that fell inside
+  removed silence instead of inventing empty pieces, and saying so in the notes.
+
+Reachable from the timeline right-click menu (**Break at scene changes (the picture)**) and from
+Studio → Pro → Auto-edit → *Break into clips* (*Shots + pauses* / *Scene changes*). Frame sampling
+needs a decodable video, so `scripts/check-decompose.mjs` (now 96 assertions) covers the pure half —
+`frameDifference`, `median`, `shotCutTimes`, `remapSourceTime` — plus the whole assembly with the
+shots handed in, and `docs/SMOKE_WORD_TIMED_CAPTIONS.md` scenario E is the packaged-desktop check.
+
 ## Also shipped: break an imported video into editable clips
 
 `src/lib/studio/decompose.ts` — one clip → many ordinary clips. Three ways in,
@@ -11,8 +31,8 @@ seconds, so captions and word-timed components keep working without
 re-transcribing, and captions can be generated *before* the cut so the existing
 remap carries them onto the new timeline. Reachable from Studio → Pro →
 Auto-edit → *Break into clips* (preview → accept, one undo) and from the timeline
-right-click menu. `scripts/check-decompose.mjs` (53 assertions) runs in `build`
-and `verify`; `docs/SMOKE_WORD_TIMED_CAPTIONS.md` scenario D is the manual check.
+right-click menu. `scripts/check-decompose.mjs` (96 assertions, including the scene-change modes below) runs in
+`build` and `verify`; `docs/SMOKE_WORD_TIMED_CAPTIONS.md` scenario D is the manual check.
 
 ## Latest: captions that follow the voice, cuts measured from the waveform, and gates that read pixels
 
