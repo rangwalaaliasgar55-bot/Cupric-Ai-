@@ -1,5 +1,11 @@
 name: PR checks (Windows)
 
+# REQUIRED CHECK. This workflow is the merge gate: `Build and test on Windows`
+# (the job below) must be listed under Settings → Branches → Branch protection
+# rules for `main` as a required status check, or a red build can still be
+# merged. `docs/PHASE2_TESTING.md` §3 gives the exact `gh api` call; the GitHub
+# token used to write this repo does not have admin rights to set it.
+#
 # Phase 0 audit finding D2: the only workflow was `Release Windows installer`,
 # which runs on tags. Nothing ran on pull requests, so a red build could be
 # merged and the first signal arrived at release time (v0.13.0 needed three
@@ -12,6 +18,12 @@ name: PR checks (Windows)
 on:
   pull_request:
   workflow_dispatch:
+
+# Two pushes in a minute should not fight over a runner; the older run is
+# cancelled, and the branch protection check follows the newest.
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -66,3 +78,27 @@ jobs:
         env:
           CUPRIC_BOOT_EXE: ${{ github.workspace }}\release\win-unpacked\Cupric AI.exe
         run: npm run check:boot -- --no-build
+
+      # Phase 2: the E2E suite drives the real app — launch, every view, a real
+      # import, a real FFmpeg render — and verifies the exported file with
+      # ffprobe. It launches Electron itself, so it runs on this runner and
+      # nowhere else; a missing Electron binary is a FAILURE, not a skip.
+      #
+      # The suite is not in `npm run build` because `npm run build` must work
+      # without an Electron binary (sandboxes, containers, a laptop mid-install).
+      # It is in this workflow, and this workflow is the required check.
+      - name: End-to-end suite (real app, real FFmpeg)
+        env:
+          CUPRIC_E2E: '1'
+        run: npm run test:e2e
+
+      - name: Keep the E2E trace and screenshots when it failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failure-${{ github.run_id }}
+          if-no-files-found: ignore
+          retention-days: 7
+          path: |
+            test-results/**
+            playwright-report/**

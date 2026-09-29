@@ -56,6 +56,10 @@ export function Sidebar() {
             <div key={item.view} className="group relative flex w-full">
               <button
                 type="button"
+                // `data-nav` is the stable handle the Windows E2E suite clicks
+                // (tests/e2e/*.spec.ts). Labels change with the copy; this does
+                // not, and it is inert for users.
+                data-nav={item.view}
                 aria-label={item.label}
                 aria-current={isActive ? 'page' : undefined}
                 disabled={!!reason}

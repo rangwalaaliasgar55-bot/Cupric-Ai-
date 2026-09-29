@@ -625,7 +625,7 @@
     },
     {
       "file": "src/app-shell/Sidebar.tsx",
-      "line": 76,
+      "line": 80,
       "target": "Plus menu / segmented control",
       "existingComponent": "layoutId=\"rail-active\"",
       "suggestedLibrary": "Gooey",

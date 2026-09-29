@@ -33,6 +33,12 @@ on:
 permissions:
   contents: write
 
+# A tag pushed twice, or a manual re-run while the first is still packaging,
+# must not produce two publishes for the same release.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   build-and-publish:
     name: Build and publish Windows installer
@@ -73,6 +79,31 @@ jobs:
       - name: Check the tag against the version and the changelog
         shell: pwsh
         run: npm run check:version-sync -- --tag ${{ inputs.tag || github.ref_name }}
+
+      # "One release per verified green build." The tagged commit must not have
+      # a red CI run against it. A commit with no runs at all is reported rather
+      # than blocked: a squash-merged main commit legitimately has none (the PR
+      # check ran on the merge ref), and this workflow's own steps are the
+      # verification for that case.
+      - name: Refuse to release a commit whose checks failed
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $sha = '${{ github.sha }}'
+          $repo = '${{ github.repository }}'
+          $json = gh api "repos/$repo/commits/$sha/check-runs" 2>$null | ConvertFrom-Json
+          if (-not $json -or -not $json.check_runs) {
+            Write-Host "No CI check runs are recorded for $sha (typical for a squash-merged commit). This workflow's own checks are the verification for this release."
+            exit 0
+          }
+          $bad = @($json.check_runs | Where-Object { $_.conclusion -in @('failure','cancelled','timed_out','action_required','startup_failure') })
+          if ($bad.Count -gt 0) {
+            foreach ($run in $bad) { Write-Host "::error::$($run.name) finished $($run.conclusion): $($run.html_url)" }
+            throw "$($bad.Count) check run(s) against $sha did not pass; a release must be cut from a verified green build."
+          }
+          $passing = @($json.check_runs | Where-Object { $_.conclusion -eq 'success' }).Count
+          Write-Host "$passing check run(s) against $sha are green; releasing."
 
       # `npm run build` is a 65-step && chain. Run it through the reporting
       # runner so a failure names the step that broke (v0.12.0 and v0.13.0 both
