@@ -105,7 +105,7 @@
   "findings": [
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 766,
+      "line": 770,
       "target": "Existing placement",
       "existingComponent": "<ThinkingOrb state=\"composing\" size={20} theme={theme === 'light' ? 'light' : 'dark'} paused={reducedMotion} aria-label=",
       "suggestedLibrary": "Thinking orbs",
@@ -115,6 +115,19 @@
       "risks": "Low: a 2D canvas or CSS layer. Check it pauses when hidden.",
       "license": "MIT",
       "status": "applied"
+    },
+    {
+      "file": "src/app-shell/ProviderSettings.tsx",
+      "line": 167,
+      "target": "Waiting state",
+      "existingComponent": "return <div className=\"flex items-center gap-2 p-3 text-xs text-muted\"><Loader2 size={13} className=\"animate-spin\" /> Re",
+      "suggestedLibrary": "Thinking orbs",
+      "package": "thinking-orbs",
+      "variant": "state from the activity (composing / searching / weaving), size 20 inline",
+      "why": "An AI wait of 2 s or more gets an orb next to its label (skill decision rule).",
+      "risks": "Low: a 2D canvas or CSS layer. Check it pauses when hidden.",
+      "license": "MIT",
+      "status": "suggested"
     },
     {
       "file": "src/components/editor/Editor.tsx",
@@ -287,7 +300,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 580,
+      "line": 584,
       "target": "Search input (loads after submit)",
       "existingComponent": "placeholder=\"Search free models…\"",
       "suggestedLibrary": "Border beam",
@@ -300,7 +313,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 847,
+      "line": 851,
       "target": "Chat input",
       "existingComponent": "placeholder=\"Ask anything, or paste an image…\"",
       "suggestedLibrary": "Border beam",
@@ -716,9 +729,9 @@
     }
   ],
   "counts": {
-    "findings": 47,
+    "findings": 48,
     "applied": 1,
-    "files": 28
+    "files": 29
   },
   "footer": "Run `libraries apply` on any line to install it."
 }

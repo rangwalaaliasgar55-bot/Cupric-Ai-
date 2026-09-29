@@ -16,6 +16,7 @@ import { cx } from '../lib/utils'
 import { getIpc } from '../lib/bridge'
 import { humanError } from '../lib/humanError'
 import { ProjectSafetyPanel } from './ProjectSafetyPanel'
+import { ProviderSettings } from './ProviderSettings'
 import { ReadinessPanel } from './ReadinessPanel'
 import { ThinkingOrb } from 'thinking-orbs'
 import { ThinkingStates } from '../components/loaders/ThinkingStates'
@@ -91,7 +92,7 @@ export function AskPanel() {
   const [msgs, setMsgs] = useState<ChatMsg[]>([
     {
       role: 'ai',
-      text: "Hey — I'm Cupric AI. Ask me anything — I use a local model if one is running, otherwise the built-in free brain. No setup needed; your own keys are optional.",
+      text: "Hey — I'm Cupric AI. Ask me anything. I use the provider you set in Settings, or a local model if one is running. With neither, I answer from the offline planner and say so.",
     },
   ])
   const [input, setInput] = useState('')
@@ -494,6 +495,9 @@ export function AskPanel() {
 
           {showSettings && (
             <div className="max-h-[62%] shrink-0 space-y-3 overflow-y-auto overscroll-contain border-b border-line bg-panel-alt p-3">
+              {/* Phase 1.1: the real provider layer, with real tests and typed errors. */}
+              <ProviderSettings onChanged={refreshDiscovery} />
+              <div className="border-t border-line pt-2 text-xs font-medium text-muted">Legacy OpenCode-style endpoint (optional)</div>
               <form
                 className="space-y-2"
                 onSubmit={(e) => {
@@ -524,7 +528,7 @@ export function AskPanel() {
                 {aiMode === 'auto' && (
                   <div className="rounded-lg border border-accent/25 bg-accent/5 p-2 text-xs">
                     <div className="flex items-center justify-between gap-2"><span className="font-semibold text-text">Auto-using: {autoPick?.label || 'discovering…'}</span><button type="button" onClick={() => void refreshDiscovery()} className="text-accent-text underline">Change / refresh</button></div>
-                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric uses a local model if one is running, else the built-in free brain, then any keys you added.'}</div>
+                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric uses the provider you configured, else a local model server it can see, else the offline planner — and it names which one answered.'}</div>
                   </div>
                 )}
                 <FreeModels />

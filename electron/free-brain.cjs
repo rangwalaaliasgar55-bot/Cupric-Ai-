@@ -1,39 +1,30 @@
 /**
  * Zero-setup brain (JOB 1) + free-model aggregator (JOB 2).
  *
- * RULE ZERO: the user never configures anything. On a fresh install the first
- * AI action answers through, in order (first working wins):
+ * The brain answers through, in order (first working wins):
  *   1. a local model server that happens to be running (no key, $0);
- *   2. a built-in KEYLESS free cloud endpoint (two, so one covers the other);
- *   3. models from keys the user *optionally* added (never required);
- *   4. the deterministic offline template (callers already have it).
- * The router then gives cheap "draft" work to local/keyless models and
- * "strong" work (execute/repair) to the best reachable model.
+ *   2. models from keys the user configured (OpenAI, Anthropic, Gemini, Zen,
+ *      OpenRouter, Groq…) — the user supplies their own and owns the terms;
+ *   3. the deterministic offline template (callers already have it).
+ *
+ * PHASE 0 AUDIT (docs/AUDIT_PHASE0.md §A4, §B1): step 2a used to be a built-in
+ * KEYLESS third-party endpoint (Pollinations) whose anonymous tier injected
+ * sponsor/ad blocks into replies and whose availability and terms were outside
+ * our control. Every reply had to be regex-cleaned by `stripSponsored()` before
+ * the app could use it, and when it was rate-limited the failure surfaced as an
+ * opaque "free brain busy" notice. Both are gone:
+ *   - KEYLESS_ENDPOINTS is empty, so no third-party service is used by default;
+ *   - a provider's text is never rewritten here — if an answer needs filtering,
+ *     that is a provider choice and a content-moderation decision, not a regex.
+ * A fresh install with no key and no local model now reports exactly that
+ * (AI_ERROR.NO_PROVIDER / NO_KEY_CONFIGURED with the fix named) and keeps
+ * working through the deterministic planner.
  *
  * Pure and dependency-free: `fetchImpl` and `now` are injectable, so the Node
- * checks exercise every path with mocked endpoints. Nothing here reads or
- * logs a key; user keys arrive as opaque route objects from main.cjs.
+ * checks exercise every path with mocked endpoints. Nothing here reads or logs
+ * a key; user keys arrive as opaque route objects from main.cjs.
  */
-
-/**
- * Built-in keyless endpoint (re-verified 2026-09-28 from primary sources).
- *
- * - Pollinations legacy text API: text.pollinations.ai/models lists
- *   `openai-fast` with tier "anonymous"; POST https://text.pollinations.ai/openai
- *   is OpenAI-compatible; anonymous ≈ one request per 15 s. It is the legacy
- *   path (new integrations are pointed at keyed gen.pollinations.ai) and
- *   anonymous replies may carry an ad block, so: requests are spaced/queued
- *   rather than failing, ad blocks are stripped, JSON is validated by callers,
- *   and a 401/402/403/410 switches the endpoint off for a day automatically
- *   (the brain then falls through to local → user keys → offline template).
- *
- * Deliberately NOT built in: LLM7.io. Its Terms (updated 9 Aug 2026, §3A)
- * forbid embedding the service in another product without written approval
- * and §2 excludes production use — shipping it would put every user in breach.
- */
-const KEYLESS_ENDPOINTS = [
-  { id: 'pollinations', label: 'Free built-in brain', baseUrl: 'https://text.pollinations.ai/openai', chatUrl: 'https://text.pollinations.ai/openai', modelsUrl: 'https://text.pollinations.ai/models', apiKey: '', draftModel: 'openai-fast', strongModel: 'openai-fast', minIntervalMs: 15_500 },
-]
+const KEYLESS_ENDPOINTS = []
 
 /** Local servers, probed in this exact order (OpenCode → Ollama → LM Studio → llama.cpp/other). */
 const LOCAL_PROBE_ORDER = [
@@ -46,7 +37,7 @@ const LOCAL_PROBE_ORDER = [
 const PROBE_TIMEOUT_MS = 900
 const BACKOFF_MS = [1000, 4000]
 const FIXED_SEED = 7
-const BUSY_NOTICE = 'free brain busy, retrying'
+const BUSY_NOTICE = 'free endpoint busy, retrying'
 const OFFLINE_NOTICE = 'offline brain'
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -108,19 +99,10 @@ function planRoutes({ task = 'draft', locals = [], userRoutes = [], keyless = KE
 }
 
 /**
- * Anonymous Pollinations replies may carry an ad/sponsor block. Remove any
- * trailing block introduced by a rule or a sponsor/ad/support heading, and any
- * single line that is clearly promotional (redirect links, 🌸 Ad markers).
+ * 401/402/403/410 from a keyless endpoint = keyless use is no longer offered there.
+ * (No keyless endpoint ships today; the predicate stays because a caller may
+ * still configure one explicitly, and the checks cover it.)
  */
-const AD_LINE = /pollinations\.ai\/(?:redirect|referral|ads?)\b|🌸\s*\**\s*(?:ad|sponsor)|^\s*\**\s*(?:ad|sponsored?|advertisement|support pollinations(?:\.ai)?)\s*\**\s*[:：]/i
-function stripSponsored(text) {
-  let out = String(text || '')
-  out = out.replace(/\n+\s*(?:-{3,}|\*{3,}|_{3,})\s*\n[\s\S]*?(?:sponsor|advert|\bad\b|support pollinations|pollinations\.ai\/redirect|🌸)[\s\S]*$/i, '')
-  out = out.split('\n').filter((line) => !AD_LINE.test(line)).join('\n')
-  return out.trim()
-}
-
-/** 401/402/403/410 from a keyless endpoint = keyless use is no longer offered there. */
 const keylessRevoked = (status) => status === 401 || status === 402 || status === 403 || status === 410
 
 const retryable = (status, message) => status === 429 || status === 503 || status === 502 || /rate.?limit|too many|overload|temporar/i.test(message || '')
@@ -164,9 +146,11 @@ async function chatOnce(route, messages, { json = false, temperature = 0.2, time
   const data = await res.json()
   const content = data?.choices?.[0]?.message?.content ?? data?.choices?.[0]?.text ?? ''
   const text = Array.isArray(content) ? content.map((p) => p?.text || '').join('') : String(content || '')
-  const clean = route.kind === 'keyless' ? stripSponsored(text) : text
-  if (!clean.trim()) { const err = new Error(`${route.label} returned an empty reply`); err.status = 0; throw err }
-  return clean
+  // Phase 0 §A4: this used to run `stripSponsored()` over keyless replies.
+  // The provider's text is returned exactly as received; a reply we cannot use
+  // is an error the user sees, not something silently rewritten here.
+  if (!text.trim()) { const err = new Error(`${route.label} returned an empty reply`); err.status = 0; throw err }
+  return text
 }
 
 /**
@@ -306,6 +290,6 @@ function fallbackModel(catalogue, dead) {
 
 module.exports = {
   KEYLESS_ENDPOINTS, LOCAL_PROBE_ORDER, BUSY_NOTICE, OFFLINE_NOTICE, FIXED_SEED, BACKOFF_MS,
-  probeLocals, modelQuality, keylessRevoked, planRoutes, stripSponsored, createCooldowns, chatOnce, completeViaRoutes,
+  probeLocals, modelQuality, keylessRevoked, planRoutes, createCooldowns, chatOnce, completeViaRoutes,
   MODEL_CACHE_TTL_MS, WEEK_MS, MODEL_CAP, costBadge, aggregateModels, mergeCatalogue, retireModel, isStale, fallbackModel,
 }

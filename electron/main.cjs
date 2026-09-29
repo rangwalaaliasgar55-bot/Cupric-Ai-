@@ -18,6 +18,11 @@ const assembly = require('./assembly.cjs')
 const proxies = require('./proxies.cjs')
 const tts = require('./tts.cjs')
 const { migrateSettings } = require('./settings-migration.cjs')
+// The provider layer (Phase 1.1): one interface, real adapters, typed errors.
+// It owns every HTTP call to an AI provider and every failure classification;
+// this file keeps routing, cooldowns and the deterministic template fallback.
+const aiProviders = require('./ai-providers.cjs')
+const aiProviderConfig = require('./ai-provider-config.cjs')
 const voiceEngines = require('./voice-engines.cjs')
 const { ADVANCED_VIDEO_PLAYBOOK_PROMPT } = require('./opus-playbook.cjs')
 const { createStockService } = require('./stock.cjs')
@@ -87,7 +92,9 @@ const ZEN_BASE_URL = 'https://opencode.ai/zen/v1'
 const AI_DISCOVERY_TIMEOUT_MS = 1500
 const AI_DISCOVERY_CACHE_MS = 30_000
 const freeBrain = require('./free-brain.cjs')
-const AI_MODES = new Set(['auto', 'gemini', 'zen', 'openrouter', 'ollama', 'lmstudio', 'template'])
+// 'none' = nothing configured and nothing discovered. It is a real state with a
+// real fix (open Settings), not a silent fallback to a third-party service.
+const AI_MODES = new Set(['auto', 'gemini', 'zen', 'openrouter', 'ollama', 'lmstudio', 'template', 'none'])
 // Discovery uses freeBrain.LOCAL_PROBE_ORDER (4096 → 11434 → 1234 → 8080).
 
 const renderJobs = new Map()
@@ -278,11 +285,17 @@ function writeSettings(next) {
 }
 
 function geminiApiKey() {
-  return String(readSettings().geminiApiKey || process.env.GEMINI_API_KEY || '').trim()
+  return aiProviderConfig.resolveKey(readSettings(), 'gemini').key
 }
 
 function geminiModel() {
-  return String(readSettings().geminiModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL).trim() || DEFAULT_GEMINI_MODEL
+  const settings = readSettings()
+  return String(settings.geminiModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL).trim() || DEFAULT_GEMINI_MODEL
+}
+
+/** The configured provider (Phase 1.1). Settings + environment only, never inferred. */
+function configuredProvider() {
+  return aiProviderConfig.providerConfig(readSettings())
 }
 
 function stripJsonComments(text) {
@@ -633,17 +646,22 @@ async function autoDiscover(options = {}) {
       return { pick: picked, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
     }
 
-    // Built-in keyless free cloud: no key, no signup. A short silent reachability
-    // check only decides the label; routing still hops between both endpoints.
-    for (const endpoint of freeBrain.KEYLESS_ENDPOINTS) {
-      const reachable = await fetch(endpoint.modelsUrl, { signal: AbortSignal.timeout(AI_DISCOVERY_TIMEOUT_MS * 2) }).then((r) => r.ok).catch(() => false)
-      if (reachable) {
-        const picked = { kind: 'keyless', provider: 'keyless', baseUrl: endpoint.baseUrl, model: endpoint.draftModel, label: `${endpoint.label} · built in`, reason: 'Built-in free brain — no key or setup needed. A local model or your own key is used automatically when present.', source: 'builtin' }
-        return { pick: picked, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
-      }
+    // Nothing configured and nothing running locally. This used to be answered by
+    // a built-in third-party keyless endpoint (Pollinations) whose replies had to
+    // be ad-stripped; that route is gone (Phase 0 §A4/§B1). Report the state
+    // honestly with the exact fix instead of quietly using someone else's service.
+    const none = {
+      kind: 'none',
+      provider: 'none',
+      baseUrl: '',
+      model: '',
+      label: 'No AI provider configured',
+      reason: `No local model is running and no API key is saved. Add a key (OpenAI, Anthropic or Gemini) or start Ollama/LM Studio in Settings — until then this runs the deterministic planner, which needs no AI.`,
+      source: 'none',
+      fix: 'settings',
     }
+    return { pick: none, local, configured, setupRequired: true, checkedAt: new Date().toISOString() }
 
-    const offline = { kind: 'template', provider: 'template', baseUrl: '', model: '', label: 'offline brain', reason: 'No network and no local model — the deterministic planner keeps everything working. Live AI resumes automatically when you are back online.', source: 'builtin' }
     return { pick: offline, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
   })().then((result) => {
     const current = readSettings()
@@ -664,9 +682,10 @@ async function autoDiscover(options = {}) {
     aiStatusCache = {
       at: Date.now(),
       dots: {
-        gemini: geminiApiKey() ? 'unknown' : 'unknown',
+        gemini: geminiApiKey() ? 'configured' : 'missing',
         zen: result.pick?.kind === 'zen' ? 'ok' : 'unknown',
-        local: result.local?.length ? 'ok' : 'unknown',
+        local: result.local?.length ? 'ok' : 'missing',
+        configured: result.pick?.kind === 'none' ? 'missing' : 'ok',
       },
     }
     try { mainWindow?.webContents.send('ai:discovery', { ...publicDiscovery(result), statusDots: aiStatusCache.dots }) } catch {}
@@ -679,12 +698,15 @@ function aiSettings() {
   const settings = readSettings()
   const mode = configuredAiMode(settings)
   const pick = mode === 'auto' && settings.autoPick ? settings.autoPick : null
-  const baseFromPick = (pick?.kind === 'keyless' ? '' : pick?.baseUrl) || settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || ''
-  const modelFromPick = (pick?.kind === 'keyless' ? '' : pick?.model) || settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || ''
+  const baseFromPick = pick?.baseUrl || settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || ''
+  const modelFromPick = pick?.model || settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || ''
   const openCodeBaseUrl = String(baseFromPick || (mode === 'openrouter' ? 'https://openrouter.ai/api/v1' : mode === 'zen' ? ZEN_BASE_URL : '')).trim()
   const openCodeModel = String(modelFromPick || (mode === 'zen' ? ZEN_FREE_MODELS[0] : mode === 'openrouter' ? 'qwen/qwen3-235b-a22b:free' : '')).trim()
   const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || resolveOpenCodeApiKey(openCodeBaseUrl, openCodeModel) || (mode === 'zen' ? openCodeAuthSecrets()[0] : '') || '').trim()
-  const provider = mode === 'auto' && pick?.kind === 'keyless' ? 'keyless' : mode === 'gemini' ? 'gemini' : mode === 'template' || pick?.kind === 'template' || (mode === 'auto' && !pick) ? 'template' : mode === 'auto' && pick?.kind === 'gemini' ? 'gemini' : 'opencode'
+  // 'none' is a real, explainable state: no key saved and no local server found.
+  // Callers surface it with the fix (Settings) instead of falling back to a
+  // third-party service the user never chose.
+  const provider = mode === 'none' || (mode === 'auto' && pick?.kind === 'none') ? 'none' : mode === 'gemini' ? 'gemini' : mode === 'template' || pick?.kind === 'template' || (mode === 'auto' && !pick) ? 'template' : mode === 'auto' && pick?.kind === 'gemini' ? 'gemini' : 'opencode'
   return { mode, pick, provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
 }
 
@@ -702,15 +724,20 @@ function publicSettings() {
   const ai = aiSettings()
   const login = app.getLoginItemSettings ? app.getLoginItemSettings() : { openAtLogin: false }
   const pick = settings.autoPick || ai.pick || null
-  const needsKey = ai.mode === 'gemini' || ai.mode === 'zen' || ai.mode === 'openrouter'
+  const provider = aiProviderConfig.providerSummary(settings)
+  const needsKey = ai.mode === 'gemini' || ai.mode === 'zen' || ai.mode === 'openrouter' || provider.kind === 'none'
   return {
-    hasKey: ai.provider === 'template' ? true : ai.provider === 'opencode' ? hasOpenCodeAccess() : Boolean(geminiApiKey()),
+    // Phase 1.1: the honest provider report Settings renders. `aiProvider`
+    // stays the legacy string the current UI keys off; `provider` is the new
+    // object (label, model, keySource, typed error, fix).
+    aiProvider: ai.provider,
+    provider,
+    hasKey: provider.kind === 'none' ? false : ai.provider === 'template' ? true : provider.hasKey || (ai.provider === 'opencode' ? hasOpenCodeAccess() : Boolean(geminiApiKey())),
     hasGeminiKey: Boolean(geminiApiKey()),
     hasOpenCodeKey: hasOpenCodeAccess(),
-    aiProvider: ai.provider,
     aiMode: ai.mode,
     autoPick: pick,
-    setupRequired: Boolean(ai.mode === 'auto' && settings.autoPick?.kind === 'template'),
+    setupRequired: Boolean((ai.mode === 'auto' && settings.autoPick?.kind === 'template') || provider.kind === 'none'),
     fallbackOrder: Array.isArray(settings.fallbackOrder) ? settings.fallbackOrder : ['gemini', 'zen', 'ollama', 'lmstudio', 'template'],
     geminiModel: geminiModel(),
     openCodeBaseUrl: ai.openCodeBaseUrl,
@@ -759,6 +786,36 @@ function applySettingsPatch(patch) {
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiProvider')) {
     settings.aiProvider = patch.aiProvider === 'opencode' ? 'opencode' : 'gemini'
     if (!settings.aiMode) settings.aiMode = patch.aiProvider === 'opencode' ? 'openrouter' : 'gemini'
+  }
+  // Phase 1.1 provider selection. `aiKind` is an explicit user choice and
+  // `aiKind: ''` clears it back to detection; keys and models are stored per
+  // provider so switching back and forth never loses what was typed.
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiKind')) {
+    const kind = String(patch.aiKind || '').trim().toLowerCase()
+    if (aiProviderConfig.KNOWN_KINDS.includes(kind)) settings.aiKind = kind
+    else delete settings.aiKind
+    // Choosing a provider by hand ends the auto-pick, so discovery cannot
+    // silently override the choice on the next launch.
+    if (kind) {
+      delete settings.autoPick
+      if (settings.aiMode === 'auto' || !AI_MODES.has(String(settings.aiMode || ''))) settings.aiMode = kind === 'local' ? 'ollama' : kind
+    }
+  }
+  for (const [setting, value] of Object.entries({
+    openaiApiKey: patch?.openaiApiKey,
+    anthropicApiKey: patch?.anthropicApiKey,
+    openaiModel: patch?.openaiModel,
+    anthropicModel: patch?.anthropicModel,
+    geminiBaseUrl: patch?.geminiBaseUrl,
+    openaiBaseUrl: patch?.openaiBaseUrl,
+    anthropicBaseUrl: patch?.anthropicBaseUrl,
+    localBaseUrl: patch?.localBaseUrl,
+    localModel: patch?.localModel,
+  })) {
+    if (!Object.prototype.hasOwnProperty.call(patch || {}, setting)) continue
+    const text = String(value ?? '').trim()
+    if (text) settings[setting] = text
+    else delete settings[setting]
   }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'geminiModel')) {
     const v = String(patch.geminiModel || '').trim()
@@ -822,6 +879,92 @@ ipcMain.handle('settings:get', async () => {
   return publicSettings()
 })
 ipcMain.handle('settings:hasKey', () => publicSettings().hasKey)
+
+/* ——— Phase 1.1: provider surface (state, real test, real model list) ——— */
+
+ipcMain.handle('ai:providerState', () => {
+  const summary = aiProviderConfig.providerSummary(readSettings())
+  return { ...summary, localPresets: aiProviderConfig.LOCAL_PRESETS }
+})
+
+/**
+ * A real, minimal completion against the configured provider through the
+ * provider layer. `ok:false` carries the typed code and the fix, so the UI can
+ * say what is wrong instead of "connection failed".
+ */
+ipcMain.handle('ai:testProvider', async (_event, payload = {}) => {
+  const settings = readSettings()
+  const base = aiProviderConfig.providerConfig(settings)
+  const overrideKind = String(payload?.kind || '').trim()
+  const config = overrideKind && aiProviderConfig.KNOWN_KINDS.includes(overrideKind)
+    ? aiProviderConfig.providerConfig({ ...settings, aiKind: overrideKind, ...(payload?.baseUrl ? { [`${overrideKind}BaseUrl`]: String(payload.baseUrl) } : {}), ...(payload?.model ? { [`${overrideKind}Model`]: String(payload.model) } : {}), ...(payload?.apiKey ? { [`${overrideKind === 'gemini' ? 'gemini' : overrideKind}ApiKey`]: String(payload.apiKey) } : {}) })
+    : base
+  if (config.error) return { ok: false, code: config.error.code, message: config.error.message, fix: config.fix || null, label: config.label || 'Cupric AI' }
+  const started = Date.now()
+  const result = await aiProviders.generate(config, {
+    system: 'You are a connection test. Reply with the single word: ready',
+    messages: [{ role: 'user', content: 'Say ready.' }],
+    maxTokens: 16,
+    temperature: 0,
+    timeoutMs: 20_000,
+  })
+  const tookMs = Date.now() - started
+  if (!result.ok) {
+    logLine('ai-test-failed', result.error.message, { code: result.error.code, provider: config.provider })
+    return { ok: false, code: result.error.code, message: result.error.message, fix: result.error.action, label: config.label, tookMs, attempts: result.error.attempts }
+  }
+  logLine('ai-test-ok', `${config.label} answered in ${tookMs}ms`, { model: result.model, attempts: result.attempts })
+  return { ok: true, label: config.label, model: result.model, text: result.text.trim().slice(0, 120), tookMs, attempts: result.attempts }
+})
+
+/**
+ * The provider's own model list (OpenAI-compatible `/models`, Anthropic
+ * `/v1/models`, Gemini `/v1beta/models`). Rows come from the endpoint; when it
+ * is unreachable the caller is told why, and nothing is invented.
+ */
+ipcMain.handle('ai:listModels', async (_event, payload = {}) => {
+  const settings = readSettings()
+  const kind = String(payload?.kind || '').trim()
+  const config = aiProviderConfig.providerConfig(
+    kind && aiProviderConfig.KNOWN_KINDS.includes(kind)
+      ? { ...settings, aiKind: kind, ...(payload?.baseUrl ? { [`${kind}BaseUrl`]: String(payload.baseUrl) } : {}), ...(payload?.apiKey ? { [`${kind}ApiKey`]: String(payload.apiKey) } : {}) }
+      : settings,
+  )
+  if (config.error) return { ok: false, code: config.error.code, message: config.error.message, fix: config.fix || null, models: [] }
+  const request = aiProviderConfig.listModelsRequest(config)
+  if (!request) return { ok: false, code: 'BAD_REQUEST', message: `${config.label}: no model list endpoint for this provider.`, models: [] }
+  try {
+    const response = await fetch(request.url, { headers: request.init.headers, signal: AbortSignal.timeout(15_000) })
+    if (!response.ok) {
+      const detail = (await response.text().catch(() => '')).slice(0, 200)
+      const error = aiProviders.makeError(aiProviders.classifyStatus(response.status, detail), { provider: config.label, status: response.status, detail })
+      logLine('ai-list-models-failed', error.message, { provider: config.provider, status: response.status })
+      return { ok: false, code: error.code, message: error.message, fix: error.action, models: [] }
+    }
+    const models = aiProviderConfig.parseModels(config.provider, await response.json())
+    logLine('ai-list-models', `${config.label}: ${models.length} models`, { provider: config.provider })
+    return { ok: true, provider: config.provider, label: config.label, models, current: config.model }
+  } catch (error) {
+    const typed = aiProviders.classifyError(error)
+    logLine('ai-list-models-failed', typed.message, { provider: config.provider })
+    return { ok: false, code: typed.code, message: typed.message, fix: typed.action, models: [] }
+  }
+})
+
+/** Local model servers that are actually running right now, with their models. */
+ipcMain.handle('ai:detectLocal', async () => {
+  const locals = await freeBrain.probeLocals({ timeoutMs: 2000 }).catch((error) => {
+    logLine('ai-detect-local-failed', error?.message || String(error))
+    return []
+  })
+  brainLocalsCache = { at: Date.now(), locals }
+  return {
+    ok: locals.length > 0,
+    servers: locals.map((l) => ({ kind: l.kind, label: l.label, baseUrl: l.baseUrl, models: l.models })),
+    presets: aiProviderConfig.LOCAL_PRESETS,
+    message: locals.length ? `${locals.length} local model server${locals.length === 1 ? '' : 's'} running.` : 'No local model server answered on the usual ports (4096, 11434, 1234, 8080).',
+  }
+})
 ipcMain.handle('settings:set', async (_event, patch) => {
   const result = applySettingsPatch(patch || {})
   if (configuredAiMode(readSettings()) === 'auto') await autoDiscover({ force: true })
@@ -2438,7 +2581,7 @@ const brainCooldowns = freeBrain.createCooldowns()
 let brainLocalsCache = { at: 0, locals: [] }
 
 function routeKey(route) {
-  if (route.provider === 'keyless') return `${route.brain.chatUrl}|${route.brain.model}`
+  if (route.provider === 'provider') return `${route.config.provider}|${route.config.baseUrl}|${route.config.model}`
   if (route.provider === 'gemini') return `gemini|${geminiModel()}`
   const cfg = { ...aiSettings(), ...(route.override || {}) }
   return `${normalizedBaseUrl(cfg.openCodeBaseUrl)}|${cfg.openCodeModel}`
@@ -2457,11 +2600,17 @@ async function brainLocals() {
 }
 
 /**
- * JOB 1 route order. draft: local → keyless → user keys; strong (lock, repair,
- * agent-ops): user keys (best first) → local → keyless. First working wins;
- * the deterministic template stays the callers' final fallback.
+ * Route order. The provider the user configured comes first (Phase 1.1); then,
+ * by task: draft prefers a local server before a paid key, strong work (lock,
+ * repair, agent-ops) prefers the configured key before a local server. First
+ * working route wins; the deterministic planner stays the caller's final
+ * fallback, and no third-party service is ever used implicitly.
  */
 async function brainRoutes(task = 'draft') {
+  const provider = configuredProvider()
+  const primary = !provider.error && provider.source !== 'legacy-opencode'
+    ? [{ provider: 'provider', label: provider.label, config: provider }]
+    : []
   const existing = await aiRoutes(task).catch(() => [])
   const isLocalRoute = (r) => r.provider === 'opencode' && isLocalModelBase(r.override?.openCodeBaseUrl || aiSettings().openCodeBaseUrl)
   const locals = await brainLocals()
@@ -2470,16 +2619,14 @@ async function brainRoutes(task = 'draft') {
     ...existing.filter(isLocalRoute),
   ]
   const userRoutes = existing.filter((r) => !isLocalRoute(r))
-  const keyless = freeBrain.planRoutes({ task, keyless: freeBrain.KEYLESS_ENDPOINTS }).filter((r) => r.kind === 'keyless')
-    .map((brain) => ({ provider: 'keyless', label: brain.label, brain }))
   const strong = task !== 'draft' && task !== 'classify'
-  const ordered = strong ? [...userRoutes, ...localRoutes, ...keyless] : [...localRoutes, ...keyless, ...userRoutes]
+  const ordered = strong ? [...primary, ...userRoutes, ...localRoutes] : [...primary, ...localRoutes, ...userRoutes]
   const seen = new Set()
   return ordered.filter((r) => { const k = routeKey(r); if (seen.has(k) || brainCooldowns.cooling(k)) return false; seen.add(k); return true })
 }
 
 function noteRetiredModel(route) {
-  const model = route.provider === 'keyless' ? route.brain.model : route.provider === 'gemini' ? geminiModel() : (route.override?.openCodeModel || aiSettings().openCodeModel)
+  const model = route.provider === 'provider' ? route.config.model : route.provider === 'gemini' ? geminiModel() : (route.override?.openCodeModel || aiSettings().openCodeModel)
   brainCooldowns.set(routeKey(route), 24 * 3600_000, 'retired')
   const cat = readModelCatalogue()
   writeModelCatalogue(freeBrain.retireModel(cat, null, model))
@@ -2493,13 +2640,9 @@ function modelCatalogueFile() { return userDataPath('ai-cache', 'models.json') }
 function readModelCatalogue() { return readJson(modelCatalogueFile(), { fetchedAt: 0, models: [], knownIds: [] }) }
 function writeModelCatalogue(cat) { try { writeJson(modelCatalogueFile(), cat) } catch {} }
 
-/** Sources: keyless defaults + locals + OpenCode imports; keyed providers only when a key exists. */
+/** Sources: local servers + OpenCode imports + keyed providers the user configured. */
 async function modelSources() {
-  const sources = freeBrain.KEYLESS_ENDPOINTS.map((k) => ({
-    id: k.id, kind: 'keyless', url: k.modelsUrl,
-    parse: (data) => (Array.isArray(data) ? data : data?.data || [])
-      .filter((m) => k.id !== 'pollinations' || !m.tier || m.tier === 'anonymous'),
-  }))
+  const sources = []
   for (const l of await brainLocals()) sources.push({ id: l.kind, kind: 'local', url: `${l.baseUrl}/models` })
   const settings = readSettings()
   const orKey = String(process.env.OPENROUTER_API_KEY || (/openrouter\.ai/i.test(settings.openCodeBaseUrl || '') ? settings.openCodeApiKey : '') || '').trim()
@@ -2567,8 +2710,18 @@ async function completeWithFallback({ system, user, json = false, temperature = 
   if (task === 'agent-ops') json = true
   const routes = await brainRoutes(task)
   if (!routes.length) {
-    const error = new Error('No live AI provider is configured and no local model server (Ollama, LM Studio, OpenCode) is running')
-    error.code = 'NO_PROVIDER'
+    // Say which provider is missing and what fixes it. A chosen-but-unkeyed
+    // provider reports that specifically instead of a generic "nothing is
+    // configured": the user already made a choice and needs to know it is
+    // incomplete, not that nothing exists.
+    const configured = configuredProvider()
+    const error = new Error(
+      configured.error
+        ? `${configured.error.message}${configured.fix ? ` ${configured.fix}` : ''}`
+        : 'No live AI provider is configured and no local model server (Ollama, LM Studio, llama.cpp, OpenCode Desktop) is running. Open Settings → AI to add a key or start a local server.',
+    )
+    error.code = configured.error ? configured.error.code : 'NO_PROVIDER'
+    error.fix = configured.fix || null
     throw error
   }
   const deadline = Date.now() + deadlineMs
@@ -2579,20 +2732,25 @@ async function completeWithFallback({ system, user, json = false, temperature = 
     try {
       const ask = async (extraInstruction = '') => {
         const userText = extraInstruction ? `${user}\n\n${extraInstruction}` : user
-        if (route.provider === 'keyless') {
-          // Built-in keyless free endpoint: spacing per endpoint, low temp, fixed seed.
-          const key = `${route.brain.chatUrl}|${route.brain.model}`
-          // Queue behind other requests to the same free endpoint (≈1 per 15 s)
-          // instead of bursting into its rate limit.
-          const wait = brainCooldowns.reserve(key, route.brain.minIntervalMs)
-          if (wait > deadline - Date.now() - 2500) throw new Error('429 free brain queue is longer than this request can wait')
-          if (wait) await delay(wait)
-          const text = await freeBrain.chatOnce(route.brain, [
-            { role: 'system', content: system },
-            ...history.map((h) => ({ role: h.role === 'ai' ? 'assistant' : 'user', content: h.text })),
-            { role: 'user', content: userText },
-          ], { json, temperature: Math.min(temperature, 0.3), timeoutMs: Math.max(2000, deadline - Date.now()) })
-          return { text, model: route.brain.model }
+        if (route.provider === 'provider') {
+          // Phase 1.1: the user's chosen provider, through the provider layer.
+          // A failure arrives typed (code + fix) and is thrown as-is so the UI
+          // can show the real reason instead of a joined string of guesses.
+          const result = await aiProviders.generate(route.config, {
+            system,
+            messages: [...history.map((h) => ({ role: h.role === 'ai' ? 'assistant' : 'user', content: h.text })), { role: 'user', content: userText }],
+            json,
+            temperature,
+            images,
+            timeoutMs: Math.max(2000, deadline - Date.now()),
+          }, { backoffMs: [] })
+          if (!result.ok) {
+            const error = new Error(result.error.message)
+            error.code = result.error.code
+            error.aiAction = result.error.action
+            throw error
+          }
+          return { text: result.text, model: result.model }
         }
         if (route.provider === 'gemini') {
           const historyText = history.length ? `Conversation so far:\n${history.map((h) => `${h.role === 'ai' ? 'Assistant' : 'User'}: ${h.text}`).join('\n')}\n\n` : ''
@@ -2618,13 +2776,18 @@ async function completeWithFallback({ system, user, json = false, temperature = 
       // limits) get the same route again after 1 s, then 4 s, while the
       // deadline allows. A quota exhaustion moves straight to the next route
       // (retrying it only burns the remaining quota and the user's time).
+      //
+      // Retries have exactly one owner per call path: a 'provider' route is
+      // already retried inside the provider layer (which then reports the
+      // attempt count), so re-backing-off here would multiply requests. Every
+      // other route has no retry policy of its own and is retried here.
       const askWithBackoff = async (extra = '') => {
+        const backoff = route.provider === 'provider' ? [] : AI_BACKOFF_MS
         for (let attempt = 0; ; attempt += 1) {
           try {
             return await ask(extra)
           } catch (err) {
-            const wait = AI_BACKOFF_MS[attempt]
-            if (route.provider === 'keyless' && retryableAiError(err)) sendAiNotice(freeBrain.BUSY_NOTICE, 'inline')
+            const wait = backoff[attempt]
             if (wait === undefined || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
             logLine('ai-backoff', `${route.label}: retry in ${wait}ms`, { error: (err?.message || String(err)).slice(0, 200) })
             await delay(wait)
@@ -2658,7 +2821,6 @@ async function completeWithFallback({ system, user, json = false, temperature = 
         const cfg = aiSettings()
         aiCooldowns.set(`opencode:${cfg.openCodeBaseUrl}|${cfg.openCodeModel}`, { until: Date.now() + quotaCooldownMs(err), reason: 'quota' })
       }
-      if (route.provider === 'keyless' && /\((401|402|403|410)\)/.test(err?.message || '')) brainCooldowns.set(routeKey(route), 24 * 3600_000, 'keyless-revoked')
       // Dead model (404 / model_not_found): grey it out, fall through silently.
       if (/\b404\b|model_not_found|model not found|does not exist/i.test(err?.message || '')) noteRetiredModel(route)
     }
@@ -2902,22 +3064,32 @@ const STUDIO_PLAN_DEADLINE_MS = 25_000
 async function liveAiChat(text, ctx, extra = {}) {
   const images = Array.isArray(extra.images) ? extra.images.filter((image) => image && typeof image.data === 'string' && image.data.length < 12_000_000).slice(0, 4) : []
   const history = Array.isArray(extra.history) ? extra.history.slice(-8).map((h) => ({ role: h?.role === 'ai' ? 'ai' : 'user', text: String(h?.text || '').slice(0, 4000) })) : []
-  const reply = await completeWithFallback({
-    system: "You are Cupric AI's desktop creative copilot: a senior video editor and motion designer. Be concise, practical and specific. Help with video creation, keyframe animation, typography, transitions, rendering, resources, prompts and edits. When images are attached, look at them carefully and refer to what is actually in them.",
-    user: `Context: ${JSON.stringify(ctx || {})}\nUser: ${text}`,
-    images,
-    history,
-    temperature: 0.6,
-    deadlineMs: 60_000,
-  })
-  return reply.text
+  try {
+    const reply = await completeWithFallback({
+      system: "You are Cupric AI's desktop creative copilot: a senior video editor and motion designer. Be concise, practical and specific. Help with video creation, keyframe animation, typography, transitions, rendering, resources, prompts and edits. When images are attached, look at them carefully and refer to what is actually in them.",
+      user: `Context: ${JSON.stringify(ctx || {})}\nUser: ${text}`,
+      images,
+      history,
+      temperature: 0.6,
+      deadlineMs: 60_000,
+    })
+    return reply.text
+  } catch (err) {
+    // IPC flattens a thrown error to its message, so the typed code and the fix
+    // travel inside the sentence the renderer will show.
+    const message = err?.message || String(err)
+    const error = new Error(err?.fix ? `${message} ${err.fix}` : message)
+    error.code = err?.code || ''
+    throw error
+  }
 }
 
 async function handleGeminiAsk(payload) {
   try {
     const prompt = String(payload?.prompt || '').trim()
   const context = payload?.rundownContext || {}
-  const providerLabel = aiSettings().provider === 'opencode' ? 'your OpenCode model' : aiSettings().provider === 'gemini' ? 'Gemini' : 'the free built-in brain'
+  const configured = configuredProvider()
+  const providerLabel = configured.error ? 'your chosen provider' : configured.label
   const cacheKey = rundownCacheKey(prompt, context)
   const cached = rundownCache.get(cacheKey) || readRundownCache()[cacheKey]?.rundown
   if (cached) {
@@ -2930,9 +3102,9 @@ async function handleGeminiAsk(payload) {
   const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
   const instant = fallbackRundownForJob({ brief: prompt, aspect, fps: context.fps === 60 ? 60 : 30 })
   const requestId = String(payload?.requestId || uid('rundown'))
-  // Zero setup: the keyless free brain is always a route, so polish unless the
-  // user explicitly chose the offline template.
-  const shouldPolish = configuredAiMode() !== 'template'
+  // Polish only when a provider can actually answer: the honest 'none' state and
+  // the explicit offline template skip the queue instead of pretending to try.
+  const shouldPolish = configuredAiMode() !== 'template' && aiSettings().provider !== 'none'
   if (shouldPolish) {
     rundownQueue.push({ requestId, prompt, history: payload?.history || [], context, cacheKey, projectId: payload?.projectId || null })
     void pumpRundownQueue()
@@ -2944,7 +3116,7 @@ async function handleGeminiAsk(payload) {
     requestId,
     text: shouldPolish
       ? `Cupric AI drafted this rundown instantly. It's asking ${providerLabel} to refine it in the background, and the timeline is usable now.`
-      : 'Cupric AI drafted this rundown offline. The timeline is fully editable now. Connecting Gemini, Zen or a local model lets Cupric AI refine it further.',
+      : 'Cupric AI drafted this rundown offline. The timeline is fully editable now. Add an OpenAI, Anthropic or Gemini key in Settings (or start Ollama / LM Studio) to refine it with a live model.',
     rundownPatch: instant,
     }
   } catch (err) {
@@ -2952,7 +3124,7 @@ async function handleGeminiAsk(payload) {
     const context = payload?.rundownContext || {}
     const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
     const rundownPatch = fallbackRundownForJob({ brief: String(payload?.prompt || ''), aspect, fps: context.fps === 60 ? 60 : 30 })
-    logLine('interactive-rundown-fallback', fallbackReason, { provider: aiSettings().provider })
+    logLine('interactive-rundown-fallback', fallbackReason, { provider: configuredProvider().kind })
     return { source: 'local', fallbackReason: 'Live AI was unavailable; the offline template is ready.', text: 'Live AI was unavailable, so Cupric built an editable offline template instead.', rundownPatch }
   }
 }

@@ -38,9 +38,9 @@ function localServer(raw: string): string | null {
 
 const RULES: Rule[] = [
   {
-    match: /No live AI provider is configured|NO_PROVIDER/i,
+    match: /No AI provider is configured|No live AI provider is configured|NO_PROVIDER/i,
     say: () =>
-      'No AI model is set up yet, so Cupric used its built-in motion engine. For live AI, add a free Gemini key, an OpenRouter key, or start Ollama / LM Studio — Settings finds them automatically.',
+      'No AI model is set up yet, so Cupric used its built-in motion engine. For live AI, open Settings → AI and add an OpenAI, Anthropic or Gemini key, or start a local model server (Ollama, LM Studio) — Cupric detects those on its own.',
   },
   {
     match: /ran out of time before any provider answered|Studio auto edit timed out|timed out after/i,

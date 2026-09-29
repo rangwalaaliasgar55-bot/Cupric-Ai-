@@ -7,6 +7,7 @@ const invokeChannels = new Set([
   'settings:autoLaunch',
   'ai:autoDiscover',
   'ai:freeModels',
+  'ai:providerState', 'ai:testProvider', 'ai:listModels', 'ai:detectLocal',
   'agent:generateAnimation',
   'agent:saveGenerated',
   'ai:ackNewModels',
