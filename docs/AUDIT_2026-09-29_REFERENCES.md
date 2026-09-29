@@ -475,9 +475,14 @@ deliver), covered by `check-gates.mjs` (147 assertions, was 124). **#3 is done t
 re-renders the patched document, runs the same chain over it and reports the findings that cleared, the
 ones that did not, and any error the fix introduced — Studio's "Fix all" now says which. **#5 is done**
 as well: `studio/transcriptStore.ts` keeps one transcription per file and reports a disagreement with the
-words a clip already carries as `drift` instead of applying it in silence. Remaining from the list:
-#6–#13 (queue ledger, readiness, creative log, placement metrics, the FFmpeg assembly half, the agent
-contract text, the shadow solver).
+words a clip already carries as `drift` instead of applying it in silence. **#7 and #9 are done too:**
+`src/lib/readiness.ts` + `app-shell/ReadinessPanel.tsx` (what is present vs missing, each miss with its
+remedy, the *present-but-not-runnable* case diagnosed separately), and `src/lib/studio/placement.ts`
+(measure the footage under a caption and move it clear of the face, one undo step). **#12 is written:**
+`AGENTS.md` now states Cupric's own contract — the gate chain that stops at the first failure, the \u2264 2
+correction budget, re-measure what a fix achieved, prove the scope of an edit, name every degraded path,
+and the test/provenance/product rules. Remaining from the list: #6 (queue ledger — no spend surface
+yet), #8 (creative log), #10 (the FFmpeg assembly half), #13 (the shadow solver).
 
 
 | # | Upstream | What it actually is | Cupric gap it closes | Verdict |

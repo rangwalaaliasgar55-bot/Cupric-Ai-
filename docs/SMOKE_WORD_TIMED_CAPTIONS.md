@@ -206,6 +206,60 @@ and knows what a failure looks like.
 - Undo after *Fix all* reverts every patch from that press **and** the step is one history entry — if the
   toast counted fixes, one Undo removes exactly that many.
 
+## Scenario H — readiness, and captions placed clear of the face
+
+**Readiness**
+
+1. Ask panel → settings (the drawer with Project safety) → **What this machine can do**.
+2. Expected: one row per capability (the desktop app, MP4 export, captions, offline voiceover, writing,
+   stock search, every clip's file, something to render) with a green tick, an amber dot for a blocking
+   miss, or a hollow circle for an optional one — and a **remedy** sentence on every miss.
+3. Expected on a machine with no Whisper: the captions row is *optional*, the detail says the fallback is
+   typing or pasting a transcript, and the remedy names `npm run whisper:fetch` and the `<userData>/whisper`
+   folder. A render is still offered: the summary says "Ready to render · N optional".
+4. Expected in the **browser build**: the first row is blocking and says exports are WebM drafts with no
+   offline engine — and there is no Piper row at all, because a capability the platform cannot have is
+   not reported as missing.
+5. Expected with a relinked project: the "Every clip's file" row turns blocking and counts the clips;
+   deleting the clips or relinking clears it.
+6. Press **Re-check** after installing FFmpeg: the row changes without reopening the drawer. Nothing in
+   this panel writes, installs or reaches the network.
+
+**Caption placement**
+
+7. Studio → import footage of a person (or anything with a clear subject) → add captions (Auto-captions)
+   → with the captions sitting in the middle of the frame over the face.
+8. Pro → Auto-edit → **Place captions clear of the subject** → *Place captions*.
+9. Expected: the button shows `Measuring under “…” NN%` while it samples three frames per caption, then a
+   preview naming how many blocks moved and why ("Moved: band-3 crosses the motion, and band-6 does
+   not"). Accepting is **one undo step** for every caption it moved.
+10. Expected on the timeline: the moved captions sit lower (or higher, if the subject is at the bottom of
+    the frame) and are still inside the safe zone.
+11. Expected when the measurement finds nobody (a locked-off shot of a room, a screen recording): nothing
+    moves and the message says *"No subject was found in this clip's frames, so the caption keeps its
+    place"* — a busy background is not a person.
+12. Expected when a caption's calmest band still overlaps the subject: the notes say how many blocks and
+    the coverage percentage ("worst 42% covered — check those by eye"), and the blocks still move.
+
+**Failure signatures**
+
+- `No video under this caption — place it where there is footage to measure.` → the caption sits over an
+  image, a background or a gap: move it over footage, or place it by hand.
+- `That clip's video file is not loaded — relink it first.` → the media handle is gone (project copied to
+  another machine, file moved). The readiness panel's "Every clip's file" row says the same thing.
+- `N caption(s) could not be measured: "…” — …` → the rest were placed and this one kept its position;
+  the reason is the file's own.
+- Nothing happens on the browser build for the shot/frame measurements, and the button says the frames
+  are read from the file — that is the desktop-only path, not a failure.
+
+**Honest limits**
+
+- Both measurements are heuristics over three sampled frames, stated as such in the code: a long
+  dissolve or a fast cut inside the sampled window can hide the subject, and a terracotta wall passes the
+  skin test (which is why motion is asked first, and why "no subject found" leaves the caption alone).
+- `measurePlacement`'s arithmetic is covered by `scripts/check-placement.mjs` on synthetic frames; the
+  frame decoding around it is only exercised here, in the packaged app.
+
 ## What this scenario does **not** cover
 
 - macOS/Linux: no packaged build or release workflow exists for them (see

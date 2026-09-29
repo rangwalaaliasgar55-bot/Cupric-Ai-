@@ -20,6 +20,7 @@ import { variablesUsed } from '../../lib/studio/resolve'
 import { reframePatch, snapCutsToBeats, tightenClip, timelineBeats } from '../../lib/studio/autoEdit'
 import { tightenWithProbe } from '../../lib/studio/speechProbe'
 import { decomposeClip, type DecomposeMode } from '../../lib/studio/decompose'
+import { placeCaptions } from '../../lib/studio/placement'
 import { describeProbe } from '../../lib/speech/probe'
 import { analyseBeats, analyseSubject } from '../../lib/studio/autoEditAnalysis'
 import { aspectRatio } from '../../lib/studio/doc'
@@ -515,6 +516,15 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
                   setMsg(null)
                   propose(r.doc, `Break into ${r.pieces} clips`, notes)
                 })}>{busy === 'break' ? 'Breaking apart…' : breakMode === 'auto' || breakMode === 'shots' ? 'Take the video apart' : 'Break into clips'}</Button>
+              </div>
+              <div className="cu-section p-2.5">
+                <p className="text-xs font-medium text-text">Place captions clear of the subject</p>
+                <p className="text-xs text-muted">Measures the footage under each caption (motion, detail and skin on three frames) and moves the ones sitting over the speaker&apos;s face into the calmest band. Frames are read from the clip’s own file, so this runs on the desktop app.</p>
+                <Button size="sm" variant="outline" className="mt-1.5" disabled={!!busy} title={busy ? 'Working — or wait' : undefined} onClick={() => run('place', async () => {
+                  const r = await placeCaptions(doc, { onProgress: (pct, label) => setMsg(`${label} ${pct}%`) })
+                  if (r.outcome.moved.length) return propose(r.outcome.doc, `Place ${r.outcome.moved.length} caption(s) clear of the subject`, r.outcome.notes)
+                  setMsg(r.outcome.notes.join(' ') || 'Nothing needed moving.')
+                })}>{busy === 'place' ? 'Measuring…' : 'Place captions'}</Button>
               </div>
               <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Smart reframe</p>

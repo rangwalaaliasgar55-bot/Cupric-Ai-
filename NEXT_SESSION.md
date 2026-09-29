@@ -1,3 +1,27 @@
+## Also shipped: readiness, and captions placed where the picture is empty
+
+Two more pieces from the audit's open-edit list, both user-visible.
+
+- **Readiness** (`src/lib/readiness.ts` + `readinessFacts.ts` + `app-shell/ReadinessPanel.tsx`, adapted
+  from upstream's `readiness` command) — the app degrades quietly by design, so "no offline recogniser
+  found" and "a WebM draft instead of an MP4" were easy to mistake for the app being broken. The panel
+  reports every capability with the remedy beside it, marks the optional ones, is read-only and makes no
+  network calls, and diagnoses *present but not runnable* differently from *absent* (a binary that
+  exists but will not start needs a different fix than installing it). It lives in the settings drawer
+  with a Re-check button, and it adds the two checks upstream has no equivalent of: clips whose file is
+  not loaded, and an edit with nothing on the timeline.
+- **Caption placement** (`src/lib/studio/placement.ts`, adapted from upstream's `measure-placement`) —
+  measures the footage under each caption (motion between two instants, detail in the middle frame,
+  Cb/Cr skin as the fallback), builds the subject and head boxes, divides the safe zone into bands and
+  moves each caption that is sitting over the face into the calmest band, in one undo step. It refuses
+  to move anything when no subject was found and says so; a caption that still overlaps the subject in
+  every band is reported with its coverage rather than hidden. Reachable from Pro → Auto-edit → *Place
+  captions clear of the subject*.
+
+`scripts/check-readiness.mjs` (52 assertions) and `scripts/check-placement.mjs` (69) are wired into
+`build` and `verify`. Both measurement cores are pure — `measurePlacement` takes three luma grids, so
+the arithmetic is tested on synthetic frames and only the decoding is unverified here.
+
 ## Also shipped: a fix that proves itself, and a transcription that is paid for once
 
 - **`gateRunner.verifyAppliedFixes`** (upstream `wcag/verify-applied.ts`) — "Fix all" now re-renders the

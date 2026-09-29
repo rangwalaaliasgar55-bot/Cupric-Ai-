@@ -28,6 +28,8 @@ model and runtime):
 | `cli/src/safe-zone.ts` | `src/lib/studio/safeZone.ts` | the platform-safe area, one definition, used by the design engine and the gate. |
 | `cli/src/wcag/policy.ts`, `windows.ts`, `treat.ts` | `src/lib/studio/gates.ts` | WCAG 2.2 thresholds (AA/AAA, large-text rule), the sliding one-second window policy, and the analytic evaluation of a fix against already-sampled background colours. Cupric samples its own rendered frames instead of the engine's statistics file. |
 | `cli/src/commands/expect-windows.ts` | `src/lib/studio/gates.ts` (`timingGate`) | the gate for *when* something is drawn: a reveal past the block's end, fewer delays than words, out-of-order delays, a long hold, a late reveal, two blocks sharing screen time. Upstream derives the same assertions from a manifest's `verify.expect` block; Cupric reads them from the clip's own word timings. |
+| `cli/src/commands/readiness.ts` | `src/lib/readiness.ts`, `src/lib/readinessFacts.ts`, `src/app-shell/ReadinessPanel.tsx` | what is present versus missing, each miss with its remedy, the optional ones marked, read-only and no network. Cupric reads its own facts (`media:status`, `voice:status`, `settings:get`, `stock:keyStatus`) and adds the two project checks upstream has no equivalent of: clips whose file is not loaded, and an edit with nothing on the timeline. |
+| `cli/src/commands/measure-placement.ts` | `src/lib/studio/placement.ts` | where the picture is empty: motion between two instants, detail in the middle frame and Cb/Cr skin as the fallback; the subject and head boxes; the safe-zone bands; and the calmest one. Upstream leaves the placement decision to the author and prints the numbers; Cupric adds `decidePlacement`/`planCaptionPlacement` so the decision can be applied as one undo step — and refuses to move anything when no subject was found, saying so. |
 | `cli/src/prep/transcript-cache.ts` | `src/lib/studio/transcriptStore.ts` | one transcription per source file, and a guard so a fresh alignment never silently replaces the words a clip already carries (upstream protects a retimed transcript from being overwritten). Cupric keeps word timings in source seconds, so the check is a word-by-word comparison with a time tolerance, reported as `drift` instead of applied. |
 | `cli/src/commands/scoped-edit.ts` | `src/lib/studio/scopedEdit.ts` | proving an edit changed only what it was asked to: a diff of two document revisions with an allow-list, because both revisions are valid and only the diff shows the 40 ms a caption was not supposed to move. Cupric's Studio "Fix all" allows exactly the clips its gate report named. |
 | `cli/src/wcag/verify-applied.ts` | `src/lib/studio/gateRunner.ts` (`verifyAppliedFixes`) | re-measuring the document a fix produced, because a fix is scored analytically and a patch that missed its target would still be reported as an improvement. Upstream's promotion gate is structural (the block exists, the rules target measured text); Cupric re-runs the whole chain over the patched document and reports the findings that cleared, the ones that did not, and any error the fix introduced. |
@@ -36,7 +38,8 @@ model and runtime):
 Modifications are described in each file's header. Cupric's version is a
 derivative work under the same licence. The ported behaviour is covered by
 `scripts/check-gates.mjs` (including the timing gate), `scripts/check-speech.mjs`
-and `scripts/check-scoped-edit.mjs`.
+`scripts/check-scoped-edit.mjs`, `scripts/check-readiness.mjs` and
+`scripts/check-placement.mjs`.
 
 Built on the ported pieces, but Cupric's own code (not taken from open-edit):
 `src/lib/studio/textTools.ts` `planCaptionLines` / `captionDelaysWithSource` —
