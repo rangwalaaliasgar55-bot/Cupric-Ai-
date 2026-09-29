@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*'
+    # One-time branch trigger for v0.15.0: the integration can push this
+    # branch but cannot dispatch workflows or push tags.
+    branches:
+      - 'arena/01a0ed9c-cupric-ai'
+    paths:
+      - '.github/workflows/release-windows.yml'
   workflow_dispatch:
     inputs:
       tag:
@@ -22,6 +28,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     env:
+      RELEASE_TAG: ${{ inputs.tag || (github.ref_type == 'branch' && 'v0.15.0') || github.ref_name }}
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       # Prevent electron-builder from publishing before this job has verified
       # the generated artifacts and attached them to the intended release.
@@ -73,7 +80,7 @@ jobs:
       - name: Preserve release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Cupric-AI-Windows-${{ inputs.tag || github.ref_name }}
+          name: Cupric-AI-Windows-${{ env.RELEASE_TAG }}
           if-no-files-found: error
           path: |
             release/Cupric-AI-Setup-*.exe
@@ -90,7 +97,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: pwsh
         run: |
-          $tag = "${{ inputs.tag || github.ref_name }}"
+          $tag = "${{ env.RELEASE_TAG }}"
           $repo = "${{ github.repository }}"
           gh release view $tag --repo $repo --json tagName 2>$null
           if ($LASTEXITCODE -ne 0) {
