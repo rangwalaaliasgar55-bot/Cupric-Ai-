@@ -423,6 +423,90 @@ the transcription error and still builds labelled-estimate captions.
 
 ---
 
+## F-bis. What is still copyable from open-edit (asked 2026-09-29)
+
+Read against the clone at `/tmp/open-edit` (commit on `main`), not from its README.
+
+**Licence position.** `LICENSE` is Apache-2.0, `NOTICE` is "open-edit — Copyright 2026 VEED LIMITED …
+Licensed under the Apache License, Version 2.0". Apache-2.0 permits copying, modification and
+redistribution provided the licence and notice are kept, changes are stated, and no endorsement is
+implied. The NOTICE also excludes three things by name: the renderer binary `veed-engine-cli`
+(downloaded at setup from `veedstudio/weave-renderer-public-releases`, **PolyForm Shield 1.0.0** —
+"any use except building a product that competes with VEED"), the two OFL fonts embedded in their login
+page, and transcription, which runs "against the VEED service, which requires a VEED account and
+credits". Cupric already keeps `resources/open-edit/LICENSE` + `NOTICE` verbatim.
+
+### Already taken — do not port again
+The eight rows in `THIRD_PARTY_NOTICES.md` (whisper mapper, transcript types, `synth-word-timings`,
+`speech-probe`, `edl.ts`, `retime-transcript`, `check-delivery`, `safe-zone`, `wcag/{policy,windows,treat}`)
+plus everything built on them — word-timed captions with provenance, the Studio audit panel
+(`gateRunner.runStudioAudit` → `gates.runGates` → `gateRunner.applyAuditFixes`), decompose, shot
+detection. The port's UI half is wired, not parked: `src/screens/Studio.tsx:225` runs the audit on the
+document's own rendered frames.
+
+### Wired vs idle — checked while answering this
+
+Before copying more, it is worth being exact about what of the port is *reachable in the product*:
+
+- **Live:** `speech/probe.ts` + `speech/edl.ts` (`rangesFromProbe`/`cutsFromRanges`) → `studio/speechProbe.ts`
+  → the Pro panel's "Tighten by silence" and `decompose.ts`'s measured-pause mode; `speech/transcript.ts`'s
+  `evenSplitDelays` → `studio/textTools.ts` (the caption planner Quick Video and auto-captions share);
+  `studio/gates.ts` + `gateRunner.ts` → Studio's audit panel (`Studio.tsx:225`).
+- **Ported, tested, but currently idle in the app:** `speech/transcript.ts`'s mapper half
+  (`mapWhisperTranscript`, `groupWordsIntoChunks`, `synthWordTimings`, `transcriptToJson`) — the live
+  path instead parses Whisper output in `electron/voice-engines.cjs` (`parseWhisperWords`) into
+  `autoCaptions.TimedWord[]` — and all of `speech/captions.ts` (`assignCaptions`, `wrapCaptionWords`,
+  `beatWindows`, `captionPatches`), whose job is re-timing caption clips that are *already on the
+  timeline*. Both are covered by `scripts/check-speech.mjs`.
+- **Consequence, stated plainly:** there are two word-timing representations in the repository
+  (`Transcript`/`BeatTiming` from the port, `TimedWord[]` in the live path). That is a real cost, not a
+  feature: either the mapper becomes the one entry point for provider output (recommended — the live
+  parser is the narrower of the two), or the idle files should be labelled reference implementations so
+  the next reader does not assume they run.
+
+### Still worth taking, ranked (all Apache-2.0 code unless noted)
+
+| # | Upstream | What it actually is | Cupric gap it closes | Verdict |
+|---|---|---|---|---|
+| 1 | `cli/src/commands/scoped-edit.ts` | Static proof that an edit changed **only** what it was asked to: diff two documents, allow-list the intended targets, fail on anything else. Their corpus calls this the largest 100 %-decidable defect class. | Every Cupric edit path (`patchStudio`, `applyAuditFixes`, autonomy stages, `agentCode`) replaces whole documents and nothing compares baseline vs candidate, so an edit that moves 40 ms of a caption nobody asked about is invisible. Pure over two docs → headless-testable. | **ADAPT** (best value/effort left) |
+| 2 | `pipeline/scripts/cut-frames.ts` | Sample frames **at the cuts**, not on a uniform grid — their run passed a uniform 1.2/3.8/9.5 s sample while the defect lived only at 1.83/5.29/8.58 s. | `gateRunner.auditTimes` samples uniformly at `fps` plus text midpoints, so a fault that exists only at a cut is missed — and `studio/shots.ts` now knows where the cuts are. | **ADAPT** (small, pairs with the shots work) |
+| 3 | `cli/src/wcag/verify-applied.ts`, `verdicts.ts`, `wcag-choice.ts` | Structural post-apply check: the proof that the fix which was **scored** is the fix that **landed** (it exists, every rule targets measured text, no fewer/more rules than scored). | `applyAuditFixes` runs once and nothing re-audits the result; a "Fix all" that silently missed a clip looks identical to one that worked. | **ADAPT** |
+| 4 | `cli/src/commands/expect-windows.ts` | Derive "this element must be visible from t1 to t2" assertions from the document itself, so "drawn at the wrong time" becomes a gate failure. Their `timing-offset` class is 30 recorded corrections. | Cupric's gates judge **what** is drawn, never **when**: a caption that arrives late, or stays up into the next one, passes every check today. | **ADAPT** (new gate class) |
+| 5 | `cli/src/prep/transcript-cache.ts` | One transcript per source, plus a guard that a *retimed* transcript is never silently overwritten by a fresh alignment. | Cupric re-runs Whisper per action and persists no transcript (`speech/transcript.ts`'s `transcriptToJson` has no callers), so the next caption run can silently restore drift a retime removed. | **ADAPT** |
+| 6 | `cli/src/providers/queue-ledger.ts` | "Never pay twice": jobs keyed by a hash of the *request*, the id written down before the first poll, recovering a real double charge. | Cupric has no cost estimate and no ledger (backlog item 4); a retried model/TTS step is not deduplicated. | **PATTERN** (Cupric has no generation queue) |
+| 7 | `cli/src/commands/readiness.ts`, `session-start.ts`, `init.ts` | Read-only "what is present vs blocking for this run", and an advisory session note for an agent harness. | Nothing in Cupric tells the user what a run still needs (media relinked / key / ffmpeg / Whisper model); `npm run verify` is the dev-side analogue only. | **ADAPT** |
+| 8 | `cli/src/commands/creative-log.ts` | A per-**source-video** log of what was tried, rejected and why, kept outside the model's context so three rounds stop converging. | Cupric's design engine pins a direction per project but keeps no rejection history on the footage. | **ADAPT** (small) |
+| 9 | `cli/src/commands/measure-placement.ts` | Real glyph metrics for placement decisions instead of an estimate. | `textLayout` documents its text box as an estimate, and the safe-zone gate inherits that error. | **ADAPT** (renderer already measures) |
+| 10 | `cli/src/commands/concat-chapters.ts`, `mix-audio.ts`, `mux-audio.ts`, `apply-edl.ts` | The FFmpeg assembly half: crossfaded joins (a butt join clicks), a multi-piece soundtrack with music ducked by the narration itself, one `loudnorm` per chapter with a stated reason to skip, and an `apply-edl` that reports the edit it performed. | Cupric's desktop export is a single MediaRecorder→FFmpeg path with `loudnorm`; chapter-long parity and joined-edit parity are unverified. | **ADAPT later** (after exported-file verification) |
+| 11 | `cli/src/seeded-random.ts`, `json-file.ts`, `sheet.ts` | Trivial pure utilities: deterministic RNG, atomic JSON write, contact-sheet geometry. | Cupric's `buildQuickVariants` is id-seeded but there is no shared seeded RNG; contact sheets do not exist. | **COPY** (cite) if used |
+| 12 | `.claude/skills/open-edit/*.md`, `docs/FLOW.md`, `docs/recipe-format.md` | The **contract text** an agent follows: one gate chain that stops at the first failure and names it, a budget of two mechanical corrections per gate, "mechanical verification only", a spend gate that quotes the cost before paid work. | Cupric has no `AGENTS.md` and no skills directory, so its own agent surface has no written contract to follow. | **PATTERN** (write Cupric's own, don't copy the engine syntax) |
+| 13 | `cli/src/wcag/recommend.ts` | Solver for the *minimal* soft-shadow recipe that clears a ratio against the pixels actually behind the text. | Cupric offers solid plates and outlines; a shadow rung would be new. | **ADAPT only if** shadows are offered |
+
+### Never (outside the Apache-2.0 grant, or useless without it)
+
+- The engine binary and everything that only exists to drive it: `install-engine.ts`,
+  `engine-release.ts`, `engine-path.ts`, `veed/**`, `refs/html/**` (`template.wv` targets their engine),
+  `generate.ts`, `generate-set.ts`, `generate-recipe.ts`, `sample-style.ts`, `sample-presenter.ts`,
+  `brand.ts`, `background-removal.ts`, `lipsync.ts`, `lint.ts` (template lint).
+- The VEED service paths: `login.ts`, `token.ts`, `providers/fal.ts`, `providers/assets.ts`, and their
+  transcription command (`cli/src/commands/transcribe.ts`) — cloud transcription on credits. Cupric stays
+  on local Whisper; the *contract* is already ported.
+- Their brand and media: `docs/logo/**`, example renders, and the OFL fonts embedded in their login page
+  (Inter, STIX Two Text — both available from their own upstreams if ever wanted).
+- Do not copy the `.wv`/recipe syntax into Cupric. Cupric's equivalent surface already exists
+  (`studio/design.ts`, `generatedPackage.ts`, `importHtml.ts`, `agentCode.ts`); adding a second
+  authoring format is the "another preset" trap, not an upgrade.
+
+### Obligations if we take anything above
+
+1. Keep `resources/open-edit/LICENSE` and `NOTICE` verbatim.
+2. Add upstream→Cupric rows to `THIRD_PARTY_NOTICES.md`, and say in each new file's header what was
+   changed.
+3. Cupric's version is a derivative work under Apache-2.0 — do not relicense it, and keep the patent
+   grant intact.
+4. No VEED marks, names or endorsement claims anywhere in the product or docs, and the PolyForm binary
+   must never be bundled or downloaded by Cupric.
+
 ## Appendix — verification log for this audit
 
 | Command | Result |
