@@ -166,11 +166,25 @@ Legend: **Fully working** = real implementation + real verification available; *
 
 ### C1. Blocking / decision-required licences
 
+> **Phase 5 outcome (resolved in this phase — see `docs/PHASE1_LICENSING.md` for the
+> decisions, the file-by-file changes and what is still UNVERIFIED).** The two
+> commercial-use restrictions in this table were *removed from the build*, not
+> carried: `@paper-design/shaders-react` was replaced by an original shader kit
+> (`src/lib/shaders/*`, `src/lab/framecn/shader-kit.tsx`) and Remotion was replaced
+> by an original preview player (`src/components/MotionCompositionPlayer.tsx`).
+> Both are gone from `package.json` and `package-lock.json`; `src/tests/shaders.test.ts`
+> and `scripts/check-licences.mjs` fail if either comes back. The FFmpeg GPL and the
+> bundled libheif LGPL obligations are now written into `THIRD_PARTY_NOTICES.md`;
+> the FFmpeg licence text and the libheif licence text are **not yet inside a
+> packaged installer**, so those two remain open (Phase 4 packaging / product
+> decision). The `resources/` per-directory sweep is still pending.
+
+
 | Component | Where | Licence | Assessment |
 |---|---|---|---|
-| `@paper-design/shaders-react` | production dependency; used by vendored shaders `src/lab/framecn/shader-*` | **PolyForm Shield 1.0.0** (verified: `node_modules/@paper-design/shaders-react/LICENSE`) | **Conflicts with the "professional/commercial product" goal as written.** PolyForm Shield forbids using the software to provide a product that competes with the licensor, and restricts distribution/modification. An explicit written decision (or replacement with original shaders) is required before shipping commercially. |
-| `remotion`, `@remotion/player` | production dependency; used by `src/components/MotionCompositionPlayer.tsx` (Arena Desk preview), `src/lib/sources.ts` | **Remotion License** (verified text in `node_modules/remotion/LICENSE.md`) | Free for individuals and for-profit organisations with **≤3 employees**; a **paid company licence is required** for larger for-profit organisations. Since the product targets commercial shipping, this must be budgeted or replaced. |
-| `ffmpeg-static` / `ffprobe-static` (shipped in the installer via `asarUnpack`) | `package.json`, `electron/main.cjs:64-76` | GPLv3-class builds (the npm-reachable `@ffmpeg-installer` build used for the audit is `--enable-gpl`; FFmpeg static builds are GPL) | Shipping GPL binaries inside a proprietary installer is a distribution decision that must be documented (licence text, source offer, no static linking into the app — it is invoked as a separate process). Needs an explicit decision in Phase 5. |
+| `@paper-design/shaders-react` | production dependency; used by vendored shaders `src/lab/framecn/shader-*` | **PolyForm Shield 1.0.0** (verified: `node_modules/@paper-design/shaders-react/LICENSE`) | **RESOLVED (removed).** Replaced by original CPU shaders; the 18 `fc-shader-*` components keep their names and props. Dependency and lockfile entry deleted, import ban enforced by `scripts/check-licences.mjs` and `src/tests/shaders.test.ts`. |
+| `remotion`, `@remotion/player` | production dependency; used by `src/components/MotionCompositionPlayer.tsx` (Arena Desk preview), `src/lib/sources.ts` | **Remotion License** (verified text in `node_modules/remotion/LICENSE.md`) | **RESOLVED (removed).** The one usage was an 85-line preview; it is now Cupric code with real transport controls, and both packages are out of `package.json`/`package-lock.json`. The Remotion-derived resource *catalogue* (metadata with attribution) stays, and `src/lib/sources.ts` no longer claims the app ships the runtime. |
+| `ffmpeg-static` / `ffprobe-static` (shipped in the installer via `asarUnpack`) | `package.json`, `electron/main.cjs:64-76` | GPLv3-class builds (the npm-reachable `@ffmpeg-installer` build used for the audit is `--enable-gpl`; FFmpeg static builds are GPL) | Shipping GPL binaries inside a proprietary installer is a distribution decision that must be documented (licence text, source offer, no static linking into the app — it is invoked as a separate process). **Decision recorded (Phase 5, Decision 4):** ship the FFmpeg licence text and the corresponding-source offer with the installer; FFmpeg is only ever spawned, never linked. The text is recorded in `THIRD_PARTY_NOTICES.md`; **not yet verified inside a packaged build** (Phase 4). |
 | `resources/packs/react-bits.json`, `resources/VENDOR.md:54` | catalog data | MIT **+ Commons Clause** (upstream React Bits) | Correctly handled: only metadata/links are shipped, no upstream source. Keep the rule enforced by a check. |
 | Kdenlive (`resources/kdenlive/NOTES.md`) | reference notes | GPL-2.0+ | Ideas/mapping only, no code copied — as documented. |
 
@@ -181,9 +195,9 @@ Legend: **Fully working** = real implementation + real verification available; *
 
 ### C3. Everything else (no conflict found)
 
-MIT/Apache-2.0/ISC/BSD as usual: `three`, `motion`, `zustand`, `zod`, `lucide-react` (ISC), `lottie-web`, `jszip` (MIT *or* GPL-3.0 — the MIT arm is used), `adm-zip`, `canvas-confetti` (ISC), `simple-icons` (CC0), `@dimforge/rapier3d-compat` (Apache-2.0), `drizzle-orm` (Apache-2.0), `pg` (MIT), `video.js` (Apache-2.0), `twilio-video` (BSD-3), `@google/generative-ai` (Apache-2.0), `thinking-orbs` (MIT), `heic2any` (package declares MIT; `NEXT_SESSION.md:357` claims the bundled libheif is LGPL-3.0 — **verify the wasm's provenance before shipping**).
+MIT/Apache-2.0/ISC/BSD as usual: `three`, `motion`, `zustand`, `zod`, `lucide-react` (ISC), `lottie-web`, `jszip` (MIT *or* GPL-3.0 — the MIT arm is used), `adm-zip`, `canvas-confetti` (ISC), `simple-icons` (CC0), `@dimforge/rapier3d-compat` (Apache-2.0), `drizzle-orm` (Apache-2.0), `pg` (MIT), `video.js` (Apache-2.0), `twilio-video` (BSD-3), `@google/generative-ai` (Apache-2.0), `thinking-orbs` (MIT), `heic2any` — **CONFIRMED (Phase 5):** the package is MIT but the bundle contains a libheif compile (`libheif=zr` in `node_modules/heic2any/dist/heic2any.js`), and upstream libheif is **LGPL-3.0-or-later**. The obligation is now recorded in `THIRD_PARTY_NOTICES.md` and asserted by `scripts/check-licences.mjs`; the licence text is not yet in a packaged installer and no legal review has happened — see `docs/PHASE1_LICENSING.md` Decision 3 for the two clean resolutions.
 * Fonts: only SIL OFL families are bundled (Fontsource); Fontshare faces are linked, not shipped. Consistent with the notices.
-* `resources/` contains vendored reference material with upstream licence files beside it (`panelui`, `uselayouts`, `framecn`, `opus55`). Spot-checked `framecn`/`opus55` licences present. A full per-directory sweep of the ~25 resource directories is still pending (Phase 5 remainder).
+* `resources/` contains vendored reference material with upstream licence files beside it (`panelui`, `uselayouts`, `framecn`, `opus55`). Spot-checked `framecn`/`opus55` licences present. A full per-directory sweep of the ~25 resource directories is **still pending** — Phase 5 enforced the pack-level `license-review` rule (137 items counted by `scripts/check-licences.mjs`) and the dependency allow-list, but did not walk each vendored directory.
 
 ---
 

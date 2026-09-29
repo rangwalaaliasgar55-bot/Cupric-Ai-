@@ -50,7 +50,7 @@
       "name": "Sources",
       "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
       "itemCount": 77,
-      "bytes": 51077
+      "bytes": 51147
     },
     {
       "id": "templates",

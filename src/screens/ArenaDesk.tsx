@@ -148,7 +148,7 @@ export function ArenaDesk() {
               <div className="text-xs font-semibold uppercase tracking-wider text-muted">Remotion preview</div>
               <p className="mt-1 text-xs text-muted">A live React/Remotion composition generated from the locked rundown.</p>
             </div>
-            <Badge tone="info">@remotion/player</Badge>
+            <Badge tone="info">Cupric motion stage</Badge>
           </div>
           <MotionCompositionPlayer rundown={locked} />
         </Card>

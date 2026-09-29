@@ -931,7 +931,7 @@ export const SOURCES: SourceEntry[] = [
     kind: 'templates',
     use: 'video',
     description:
-      'Free Remotion video templates meant to be copied into an existing React + Remotion app — directly minable, since Cupric already ships @remotion/player.',
+      'Free Remotion video templates — reference structure only. Cupric does not ship or depend on the Remotion runtime (see docs/PHASE1_LICENSING.md), so these are mined as ideas and layout metadata, not as embeddable packages.',
     promptCue: 'Remotion pattern: every animation is interpolate(frame, …) — a pure function of the frame, like __seek(t).',
     intake: 'copy',
     license: 'MIT',
