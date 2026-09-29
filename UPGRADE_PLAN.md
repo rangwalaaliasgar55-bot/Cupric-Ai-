@@ -9,7 +9,15 @@ Ordered by impact ÷ effort. The first six are what I would do next.
 
 ---
 
-## Do first (this week)
+## Do first
+
+> **Status (this pass):** the speech/audio item is done in its first half —
+> word-timed captions wired to the renderer, a measured-silence cutter wired to
+> the Studio Pro panel, and a delivery gate chain (contrast/safe zones/delivery)
+> surfaced as **Run delivery checks** with one-click fixes. Ported from
+> veedstudio/open-edit (Apache-2.0, see `THIRD_PARTY_NOTICES.md`).
+> Still to do here: music ducking automation, Piper voiceover in the agent,
+> and the fast export path the gates will eventually measure. (this week)
 
 ### 1. Frame-accurate, much faster export — WebCodecs instead of real-time MediaRecorder · S–M · ★★★
 

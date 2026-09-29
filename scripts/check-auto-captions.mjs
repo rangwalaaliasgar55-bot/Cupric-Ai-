@@ -58,7 +58,7 @@ if (ffmpeg && existsSync(ffmpeg)) {
 }
 
 const tmp = path.join(root, '.auto-captions-check.mjs')
-await build({ bundle: true, outfile: tmp, format: 'esm', platform: 'node', logLevel: 'error', stdin: { contents: "export * from './src/lib/studio/autoCaptions'", resolveDir: root, loader: 'ts' } })
+await build({ bundle: true, outfile: tmp, format: 'esm', platform: 'node', logLevel: 'error', stdin: { contents: "export * from './src/lib/studio/autoCaptions'\nexport * as tt from './src/lib/studio/textTools'", resolveDir: root, loader: 'ts' } })
 const ac = await import(`${pathToFileURL(tmp).href}?t=${Date.now()}`)
 await rm(tmp, { force: true })
 // Clip at 10s on the timeline, trimmed 0.5s into the source, played at 2x for 0.5s → source 0.5..1.5
@@ -71,6 +71,43 @@ const doc = { trackCount: 2, clips: [clip] }
 const { doc: next, captions } = ac.captionsForClip(doc, { ...clip, durationSec: 20, speed: 1, trimInSec: 0 }, words, 2)
 ok(captions.length === 2 && captions[0].startSec === 10.32 && captions[0].text.startsWith('Launch day') && captions[1].text.startsWith('is here.'), `captions follow word timing (${captions.map((c) => c.startSec + ':' + c.text).join(' | ')})`)
 ok(next.trackCount === 3 && captions.every((c) => c.track === 2) && next.clips.length === 3, 'captions land on a new top track')
+
+// Word-level reveals: the caption carries when each of ITS words was spoken, so
+// `word-reveal` and the karaoke tint follow the voice instead of a steady clock.
+assert.deepEqual(captions[0].wordDelaysMs, [0, 290], 'caption 1 carries its words\' own spoken times'); n += 1
+assert.deepEqual(captions[1].wordDelaysMs, [0, 700], 'caption 2 too, relative to its own start'); n += 1
+ok(captions.every((c) => c.anim === 'word-reveal'), 'timed captions reveal word by word')
+ok(captions.every((c) => c.durationSec >= 0.3 && c.durationSec <= 3), 'each caption covers just its own words')
+ok(captions[0].durationSec === 0.58 && captions[1].durationSec === 1.5, `caption windows follow the speech (${captions.map((c) => c.durationSec).join(',')})`)
+
+// A breath ends a caption: a spoken pause splits the line even with no
+// punctuation and room for more words.
+{
+  const spoken = [
+    { word: 'this', start: 0, end: 0.3 }, { word: 'is', start: 0.32, end: 0.5 }, { word: 'one', start: 0.52, end: 0.8 },
+    { word: 'thought', start: 1.5, end: 1.9 }, { word: 'entirely', start: 1.92, end: 2.4 },
+  ]
+  const split = ac.tt.captionsFromTranscript('', { startSec: 0, durationSec: 3, track: 1, maxWords: 8, words: spoken })
+  ok(split.length === 2, `a 0.7s pause splits the caption (${split.map((c) => c.text).join(' | ')})`)
+  assert.deepEqual(split[1].wordDelaysMs, [0, 420], 'the second caption keeps its own word times'); n += 1
+}
+
+// Phrase-timed engines stamp every word with the phrase start. Drawing that
+// faithfully is a caption that appears all at once mid-phrase, so the reveal
+// falls back to an even split across the same window.
+{
+  const phrase = [
+    { word: 'hello', start: 1, end: 2 }, { word: 'big', start: 1, end: 2 }, { word: 'world', start: 1, end: 2 },
+  ]
+  const untimed = ac.tt.captionsFromTranscript('', { startSec: 0, durationSec: 3, track: 1, maxWords: 8, words: phrase })
+  assert.deepEqual(untimed[0].wordDelaysMs, [0, 333, 667], 'a phrase-only engine gets an even split, not three identical delays'); n += 1
+}
+
+// The paste-a-transcript path has no timings to follow, so it must not pretend.
+{
+  const pasted = ac.tt.captionsFromTranscript('One two three. Four five.', { startSec: 0, durationSec: 4, track: 1, maxWords: 4 })
+  ok(pasted.length === 2 && pasted.every((c) => c.wordDelaysMs === undefined), 'pasted text makes captions with no invented word timings')
+}
 
 const read = (p) => readFileSync(path.join(root, p), 'utf8')
 ok(read('electron/main.cjs').includes("ipcMain.handle('voice:transcribeMedia'") && read('electron/preload.cjs').includes("'voice:transcribeMedia'"), 'IPC wired')

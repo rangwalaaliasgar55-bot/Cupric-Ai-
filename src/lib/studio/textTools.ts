@@ -4,6 +4,7 @@
  */
 
 import type { StudioAspect, StudioTextClip } from '../../types/project'
+import { evenSplitDelays } from '../speech/transcript'
 import { defaultTextClip } from './doc'
 
 /* ——— presets ——— */
@@ -49,18 +50,57 @@ export function safeAreas(aspect: StudioAspect): Array<{ id: string; label: stri
  * length so long words stay up longer. `words` lets real word timestamps
  * (from Whisper) override the estimate.
  */
+/**
+ * A pause long enough to end a caption. A breath is where a reader's eye wants a
+ * break, and the maximum word count is only a fallback for a pauseless monologue.
+ */
+export const CAPTION_PAUSE_SEC = 0.35
+
+/**
+ * Per-word reveal delays (ms from the caption's own start) for one caption.
+ *
+ * Real spoken times when the engine gave them and they agree with the text — and
+ * an even split within the caption's own window when it did not. Phrase-timed
+ * engines (Windows Speech) stamp every word of a phrase with the phrase's start,
+ * which is the same delay repeated; that is a worse reveal than an even split,
+ * so it is treated as "no timings" rather than drawn faithfully.
+ */
+export function captionDelays(
+  words: Array<{ start: number; end: number }>,
+  startSec: number,
+  durationSec: number,
+  tokenCount: number,
+): number[] {
+  if (tokenCount <= 0) return []
+  if (tokenCount === 1) return [0]
+  if (words.length === tokenCount) {
+    const delays = words.map((w) => Math.max(0, Math.round((w.start - startSec) * 1000)))
+    const monotonic = delays.every((d, i) => i === 0 || d >= delays[i - 1])
+    const advances = delays[delays.length - 1] > 0
+    if (monotonic && advances) return delays
+  }
+  // Slot = window / wordCount, so the last word lands one slot before the
+  // caption closes and the block never ends on a word that has not appeared.
+  return evenSplitDelays(0, Math.max(0.3, durationSec), new Array(Math.max(1, tokenCount)).fill('x')).map((w) => w.delayMs)
+}
+
 export function captionsFromTranscript(
   transcript: string,
   opts: { startSec: number; durationSec: number; track: number; maxWords?: number; words?: Array<{ word: string; start: number; end: number }> },
 ): StudioTextClip[] {
   const maxWords = Math.max(1, opts.maxWords ?? 4)
-  const tokens = opts.words?.length ? opts.words.map((w) => w.word.trim()).filter(Boolean) : transcript.split(/\s+/).filter(Boolean)
+  const timed = opts.words?.length ? opts.words : null
+  const tokens = timed ? timed.map((w) => w.word.trim()).filter(Boolean) : transcript.split(/\s+/).filter(Boolean)
   if (!tokens.length) return []
   const chunks: string[][] = []
   let cur: string[] = []
-  for (const tok of tokens) {
+  for (let i = 0; i < tokens.length; i++) {
+    const tok = tokens[i]
     cur.push(tok)
-    if (cur.length >= maxWords || /[.!?,;:]$/.test(tok)) { chunks.push(cur); cur = [] }
+    // A spoken pause ends the caption wherever it falls; punctuation and the
+    // word cap only matter when the speaker never paused.
+    const pause = timed && i + 1 < tokens.length ? timed[i + 1].start - timed[i].end : 0
+    if (pause >= CAPTION_PAUSE_SEC || cur.length >= maxWords || /[.!?,;:]$/.test(tok)) { chunks.push(cur); cur = [] }
   }
   if (cur.length) chunks.push(cur)
   const weight = (w: string) => Math.max(1, w.replace(/[^a-z0-9]/gi, '').length / 3)
@@ -70,9 +110,12 @@ export function captionsFromTranscript(
   return chunks.map((chunk, i) => {
     let start = cursor
     let dur: number
-    if (opts.words?.length) {
-      start = opts.startSec + opts.words[wi].start
-      dur = Math.max(0.3, opts.words[wi + chunk.length - 1].end - opts.words[wi].start)
+    let delays: number[] | null = null
+    if (timed) {
+      const mine = timed.slice(wi, wi + chunk.length)
+      start = opts.startSec + mine[0].start
+      dur = Math.max(0.3, mine[mine.length - 1].end - mine[0].start)
+      delays = captionDelays(mine, mine[0].start, dur, chunk.length)
     } else {
       dur = (chunk.reduce((a, w) => a + weight(w), 0) / total) * opts.durationSec
     }
@@ -85,6 +128,9 @@ export function captionsFromTranscript(
       name: `Caption ${i + 1}`,
       text: chunk.join(' '),
       durationSec: Math.max(0.3, Math.round(dur * 100) / 100),
+      // The words land on the voice, so `word-reveal` and the karaoke tint
+      // follow what was actually said instead of spreading evenly.
+      ...(delays ? { anim: 'word-reveal' as const, wordDelaysMs: delays } : {}),
       ...TEXT_PRESETS.find((p) => p.id === 'caption')!.patch,
     }
   })

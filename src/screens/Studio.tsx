@@ -47,6 +47,7 @@ import {
   ZoomIn,
   ZoomOut,
   LayoutTemplate,
+  ShieldCheck,
 } from 'lucide-react'
 import { ShapePicker } from './studio/ShapePicker'
 import { LoaderPicker } from './studio/LoaderPicker'
@@ -94,6 +95,8 @@ import { readDragPayload } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio, exportStudioInBackground } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
+import { applyAuditFixes, describeAudit, runStudioAudit } from '../lib/studio/gateRunner'
+import type { GateReport } from '../lib/studio/gates'
 import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
 import { humanError } from '../lib/humanError'
@@ -169,6 +172,10 @@ export function Studio() {
   }
   const [showVoiceHelp, setShowVoiceHelp] = useState(false)
   const [showChecks, setShowChecks] = useState(false)
+  // The last delivery audit, with the document it judged — a stale pass is worse
+  // than no pass, so the panel says when the edit has moved on since.
+  const [audit, setAudit] = useState<{ report: GateReport; doc: StudioDoc } | null>(null)
+  const [auditing, setAuditing] = useState(false)
   const [showSafeAreas, setShowSafeAreas] = useState(true)
   const [keyframeRecord, setKeyframeRecord] = useState(false)
   const [showResources, setShowResources] = useState(false)
@@ -202,8 +209,44 @@ export function Studio() {
   // Recomputed from the document, never stored: a stale warning is worse than
   // no warning.
   const issues = useMemo(() => lintStudioDoc(doc, { hasMedia }), [doc])
+  const auditFindings = useMemo(() => audit?.report.findings ?? [], [audit])
   const pid = project?.id ?? null
   const selected = useMemo(() => doc.clips.find((c) => c.id === selectedId) ?? null, [doc.clips, selectedId])
+  const runAudit = useCallback(() => {
+    if (auditing || duration <= 0) return
+    setAuditing(true)
+    setShowChecks(true)
+    // Yield a frame first, so the button shows its state before rendering blocks.
+    requestAnimationFrame(() => {
+      try {
+        const { report } = runStudioAudit(doc, { hasMedia, fps: 4, maxFrames: 18 })
+        setAudit({ report, doc })
+        if (report.ok) {
+          cueDone()
+          pushToast('success', describeAudit(report))
+        } else {
+          cueProblem()
+          pushToast('error', report.summary)
+        }
+      } catch (err) {
+        rlog.warn('studio', 'delivery audit failed', err)
+        pushToast('error', humanError(err))
+      } finally {
+        setAuditing(false)
+      }
+    })
+  }, [auditing, doc, duration, pushToast])
+
+  const applyAudit = useCallback(() => {
+    if (!pid || !audit) return
+    const { doc: fixed, applied } = applyAuditFixes(doc, audit.report)
+    if (!applied) return
+    patchStudio(pid, { clips: fixed.clips, trackCount: fixed.trackCount }, 'Fix delivery checks')
+    setAudit(null)
+    cueDone()
+    pushToast('success', `Applied ${applied} measured fix${applied === 1 ? '' : 'es'} — one undo step.`)
+  }, [audit, doc, patchStudio, pid, pushToast])
+
   const runClipAction = useCallback((clipId: string | null, action: ClipActionId) => {
     if (!pid) return
     const r = applyClipAction(doc, clipId, action, { time, clipboard: getClipboard() })
@@ -1666,6 +1709,65 @@ export function Studio() {
 
       {showChecks && (
         <div className="shrink-0 space-y-2 border-b border-line bg-panel px-6 py-3">
+          {/* Delivery audit: the document's own frames, measured. The list below
+              is the cheap structural lint; this is the one that reads pixels. */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="outline" onClick={runAudit} disabled={auditing || duration <= 0} title="Render a few frames and measure contrast, safe areas and delivery on them">
+              {auditing ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+              {auditing ? 'Checking frames…' : 'Run delivery checks'}
+            </Button>
+            <span className="text-xs text-muted">
+              Renders the edit at audit size and measures what the viewer actually sees — contrast where the text sits, platform safe areas, and the delivery numbers when it has them.
+            </span>
+          </div>
+          {audit && (
+            <div className="space-y-2 rounded-md border border-line bg-panel-alt px-3 py-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className={cx('h-1.5 w-1.5 rounded-full', audit.report.ok ? 'bg-[rgb(120_200_120)]' : 'bg-[rgb(226_75_74)]')} />
+                <span className="text-text">{describeAudit(audit.report)}</span>
+                {audit.doc !== doc && <span className="text-muted">· the edit changed since — run it again</span>}
+                {auditFindings.some((f) => f.clipId && f.fix) && (
+                  <button type="button" className="text-accent-text underline underline-offset-2" onClick={applyAudit}>
+                    Fix all ({auditFindings.filter((f) => f.clipId && f.fix).length})
+                  </button>
+                )}
+              </div>
+              {auditFindings.map((finding) => (
+                <div key={`${finding.gate}:${finding.id}`} className="flex items-start gap-3 text-xs">
+                  <span
+                    className={cx(
+                      'mt-1 h-1.5 w-1.5 shrink-0 rounded-full',
+                      finding.severity === 'error' ? 'bg-[rgb(226_75_74)]' : 'bg-[rgb(255_196_92)]',
+                    )}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-text">
+                      <span className="font-mono text-muted">{finding.gate}</span> · {finding.message}
+                    </p>
+                    {finding.hint && <p className="text-muted/80">{finding.hint}</p>}
+                  </div>
+                  {finding.clipId && (
+                    <button
+                      type="button"
+                      className="shrink-0 text-accent-text underline underline-offset-2"
+                      onClick={() => setSelectedId(finding.clipId ?? null)}
+                    >
+                      Show me
+                    </button>
+                  )}
+                  {finding.fix && finding.clipId && (
+                    <button
+                      type="button"
+                      className="shrink-0 text-accent-text underline underline-offset-2"
+                      onClick={() => updateStudioClip(pid as string, finding.clipId as string, finding.fix!.patch)}
+                    >
+                      {finding.fix.label}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
           {issues.length === 0 ? (
             <p className="text-xs text-muted">
               Nothing to flag. Text is inside the safe area, every clip has its media, and the timeline has no holes.

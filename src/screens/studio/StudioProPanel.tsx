@@ -18,6 +18,8 @@ import { componentOps, directComponents } from '../../lib/studio/componentDirect
 import { deleteScene, duplicateScene, loadScene, removeVariable, renameScene, saveScene, setVariable, updateScene, nestScene } from '../../lib/studio/scenes'
 import { variablesUsed } from '../../lib/studio/resolve'
 import { reframePatch, snapCutsToBeats, tightenClip, timelineBeats } from '../../lib/studio/autoEdit'
+import { tightenWithProbe } from '../../lib/studio/speechProbe'
+import { describeProbe } from '../../lib/speech/probe'
 import { analyseBeats, analyseSubject } from '../../lib/studio/autoEditAnalysis'
 import { aspectRatio } from '../../lib/studio/doc'
 import { DEFAULT_PHONE, PHONE_DESIGNS, PHONE_FRAME_COLORS, PHONE_MOTIONS, defaultApp } from '../../lib/studio/phone'
@@ -418,13 +420,21 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
               </div>
               <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Tighten speech</p>
-                <p className="text-xs text-muted">{sel && (sel.kind === 'video' || sel.kind === 'audio') ? (sel.words?.length ? `Removes “um/uh” and pauses over 0.6 s from “${sel.name}”, using its ${sel.words.length} word timings.` : 'Run Auto-captions on this clip first — tightening needs its word timings.') : 'Select a transcribed video or audio clip.'}</p>
-                <Button size="sm" variant="outline" className="mt-1.5" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length) ? 'Select a video or audio clip with a transcript' : undefined} onClick={() => {
-                  if (!sel) return
-                  const r = tightenClip(doc, sel.id)
-                  if (!r.cuts) return setMsg(r.reason ?? 'Nothing to tighten.')
-                  propose(r.doc, `Tighten speech (−${r.removedSec.toFixed(1)} s)`, [`${r.cuts} cuts; captions and overlays after the clip move with the words.`])
-                }}>Tighten</Button>
+                <p className="text-xs text-muted">{sel && (sel.kind === 'video' || sel.kind === 'audio') ? (sel.words?.length ? `Removes “um/uh” and pauses over 0.6 s from “${sel.name}”, using its ${sel.words.length} word timings.` : `Measures “${sel.name}” itself — the pause finder reads the waveform, so no transcript is needed.`) : 'Select a transcribed video or audio clip.'}</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="outline" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !sel.words?.length) ? 'Select a video or audio clip with a transcript' : undefined} onClick={() => {
+                    if (!sel) return
+                    const r = tightenClip(doc, sel.id)
+                    if (!r.cuts) return setMsg(r.reason ?? 'Nothing to tighten.')
+                    propose(r.doc, `Tighten speech (−${r.removedSec.toFixed(1)} s)`, [`${r.cuts} cuts; captions and overlays after the clip move with the words.`])
+                  }}>Tighten by words</Button>
+                  <Button size="sm" variant="outline" disabled={!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy} title={(!sel || !(sel.kind === 'video' || sel.kind === 'audio') || !!busy) ? 'Select a video or audio clip — or wait' : undefined} onClick={() => sel && run('probe', async () => {
+                    const r = await tightenWithProbe(doc, sel.id)
+                    if (r.probe) setMsg(`${describeProbe(r.probe)} Kept ${r.cuts ? r.cuts : 'no'} cut${r.cuts === 1 ? '' : 's'}${r.cuts ? `, ${r.removedSec.toFixed(1)} s shorter` : ''}.`)
+                    if (!r.cuts) return
+                    propose(r.doc, `Tighten by measured silence (−${r.removedSec.toFixed(1)} s)`, [`${r.cuts} cuts measured from the waveform; every clip after it moves with the audio.`])
+                  })}>{busy === 'probe' ? 'Measuring…' : 'Tighten by silence'}</Button>
+                </div>
               </div>
               <div className="cu-section p-2.5">
                 <p className="text-xs font-medium text-text">Smart reframe</p>

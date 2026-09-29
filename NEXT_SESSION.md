@@ -1,3 +1,55 @@
+## Latest: captions that follow the voice, cuts measured from the waveform, and gates that read pixels
+
+The open-edit port (`veedstudio/open-edit`, Apache-2.0 — see
+`THIRD_PARTY_NOTICES.md`) landed as four pieces, each wired into a real path in
+Cupric rather than parked beside it.
+
+### Speech layer (`src/lib/speech/`)
+- `transcript.ts` — every Whisper family output (WhisperX/openai-whisper/mlx
+  `segments[].words`, whisper-timestamped `text`, OpenAI verbose_json `words`,
+  whisper.cpp ms offsets) maps to ONE shape. Untimed words are interpolated
+  across their neighbours, words are grouped into beats (provider segments, else
+  pauses), and **words in === words out** is enforced: a mapper that drops a word
+  throws. A segment whose alignment failed but which still has text keeps it now
+  (that sentence used to vanish).
+- `probe.ts` — the measured silence detector: floor = 10th percentile of 10 ms
+  windows, threshold = min(floor+12, floor+35% of the range), gaps ≥ 250 ms, and
+  `speechFound: false` when the whole clip is one flat level.
+- `edl.ts` — frame snapping (ceil, so a cut never clips the last frame), the cut
+  planner from a probe (padding for room tone, minimum cut/keep), transcript
+  retiming onto the cut timeline, and `cutsFromRanges` for the flip back.
+- `captions.ts` — assigns spoken words to caption clips by overlap, wraps them
+  (never dropping a word), and reports orphans and out-of-sync windows.
+
+### Captions on the voice
+- `StudioTextClip.wordDelaysMs` (clip-relative ms) is the new contract; the
+  renderer reveals word n when it was *spoken*, and tints the word being said
+  (karaoke) instead of spreading words evenly across the block.
+- `captionsFromTranscript` breaks captions at real spoken pauses (0.35 s), not
+  only at punctuation, and carries the delays. Phrase-timed engines (Windows
+  Speech) get an even split rather than three identical delays.
+
+### Cut on measured silence
+- Studio → Pro → Auto-edit → **Tighten by silence**: decodes the clip, probes it,
+  and hands the measured gaps to the same cut machinery the word path uses — so
+  a clip that was never transcribed can still be tightened.
+
+### Delivery gates (`src/lib/studio/gates.ts`, `gateRunner.ts`)
+- WCAG 2.2 contrast measured on the actual rendered pixels (ring sampling around
+  each text block, sliding one-second windows, one bad second fails the block),
+  platform safe zones, and the delivery numbers when the encoder has them — one
+  chain that stops at the first error and names it, with a two-correction budget.
+- Studio → **Checks** → *Run delivery checks* renders the edit at audit size and
+  reports findings with a measured one-click fix, plus **Fix all** as one undo
+  step.
+- `scripts/check-speech.mjs` (101 assertions) and `scripts/check-gates.mjs`
+  (124) run headless in `npm run build`; `check-renderer` proves the caption
+  reveal on the paint calls; `check-auto-captions` proves the delays.
+
+### Still open (see `UPGRADE_PLAN.md`)
+- Fast export (WebCodecs/FFmpeg) so the gates can run on a file rather than a
+  canvas; Playwright CI lane; design goldens; Piper voiceover in the agent.
+
 ## Latest: autonomous runs, the design engine, and fonts that load
 
 An autonomous job no longer needs the desktop app to finish, and the app no

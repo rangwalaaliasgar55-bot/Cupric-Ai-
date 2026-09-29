@@ -494,6 +494,16 @@ export type StudioTextClip = StudioClipCommon & {
   legibility?: 'auto' | 'on' | 'off'
   /** Scrim opacity 0–1 (default 0.55). */
   scrimStrength?: number
+  /**
+   * Per-word reveal delays in milliseconds FROM THE CLIP'S START, in reading
+   * order — the real spoken times of the words in this line, so a caption lands
+   * on the voice instead of spreading its words evenly across the block.
+   *
+   * Relative rather than absolute on purpose: a caption that is dragged, split
+   * or retimed keeps its sync, where an absolute timeline time would be
+   * invalidated by the move. Written by `speech/captions.ts` from a transcript.
+   */
+  wordDelaysMs?: number[] | null
 }
 
 export type StudioBackgroundClip = StudioClipCommon & {
