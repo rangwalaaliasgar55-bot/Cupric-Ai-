@@ -16,7 +16,7 @@
 
 import type { StudioAspect, StudioDoc, StudioTextClip } from '../../types/project'
 import { docDuration } from './doc'
-import { applyGateFixes, DEFAULT_AUDIT_FPS, runGates, type DeliveryFindings, type GateName, type GateReport, type Level } from './gates'
+import { applyGateFixes, DEFAULT_AUDIT_FPS, runGates, type DeliveryFindings, type GateFinding, type GateName, type GateReport, type Level } from './gates'
 import { drawableElement, drawStudioFrame } from './renderer'
 import { textBox } from './textLayout'
 
@@ -162,6 +162,72 @@ export function runStudioAudit(doc: StudioDoc, opts: AuditOptions & { canvas?: H
  */
 export function applyAuditFixes(doc: StudioDoc, report: GateReport): { doc: StudioDoc; applied: number } {
   return applyGateFixes(doc, report.findings)
+}
+
+/**
+ * Did the fix actually fix it?
+ *
+ * Adapted from open-edit's `cli/src/wcag/verify-applied.ts` (Apache-2.0 — see
+ * THIRD_PARTY_NOTICES.md), whose argument is the reason this exists: a fix is
+ * *scored* analytically against the samples that were already taken, so a patch
+ * that targeted the wrong element, wrote the wrong value, or never landed would
+ * still be reported as an improvement. The proof has to come from re-measuring,
+ * not from the fix's own arithmetic.
+ *
+ * So after "Fix all" this renders the patched document again, runs the same
+ * chain over it, and compares the two reports:
+ *
+ *   cleared     a proposed fix whose finding is gone — the fix did what it said
+ *   unresolved  a proposed fix whose finding is still there — it did not
+ *   appeared    an error that was NOT in the first report — the fix broke
+ *               something else, which is exactly what nobody checks
+ *
+ * A finding is matched by gate + id + clip, so two blocks with the same problem
+ * cannot stand in for each other.
+ */
+export interface FixVerification {
+  before: GateReport
+  after: GateReport
+  /** How many fixes the previous report proposed. */
+  proposed: number
+  cleared: GateFinding[]
+  unresolved: GateFinding[]
+  appeared: GateFinding[]
+  ok: boolean
+  summary: string
+}
+
+const findingKey = (f: GateFinding) => `${f.gate}:${f.id}:${f.clipId ?? ''}`
+
+/** The findings a report proposed a one-click fix for — the ones `applyAuditFixes` patches. */
+export function proposedFixes(report: GateReport): GateFinding[] {
+  return report.findings.filter((f) => Boolean(f.fix && f.clipId))
+}
+
+/**
+ * Re-run the chain on the document a fix produced and say what it achieved.
+ * Costs one more render pass, which is why the caller asks for it when a fix is
+ * applied rather than on every audit.
+ */
+export function verifyAppliedFixes(
+  before: GateReport,
+  fixed: StudioDoc,
+  opts: AuditOptions & { canvas?: HTMLCanvasElement } = {},
+): FixVerification {
+  const { report: after } = runStudioAudit(fixed, opts)
+  const afterKeys = new Set(after.findings.map(findingKey))
+  const beforeKeys = new Set(before.findings.map(findingKey))
+  const proposed = proposedFixes(before)
+  const cleared = proposed.filter((f) => !afterKeys.has(findingKey(f)))
+  const unresolved = proposed.filter((f) => afterKeys.has(findingKey(f)))
+  const appeared = after.findings.filter((f) => f.severity === 'error' && !beforeKeys.has(findingKey(f)))
+  const ok = unresolved.length === 0 && appeared.length === 0
+  const summary = !proposed.length
+    ? 'No fix was proposed, so there was nothing to verify.'
+    : ok
+      ? `Re-checked the result: ${cleared.length}/${proposed.length} proposed fix(es) held${appeared.length ? '' : ' and no new error appeared'}.`
+      : `Re-checked the result: ${cleared.length}/${proposed.length} proposed fix(es) held${unresolved.length ? `, ${unresolved.length} did not` : ''}${appeared.length ? `, and ${appeared.length} new error appeared` : ''}.`
+  return { before, after, proposed: proposed.length, cleared, unresolved, appeared, ok, summary }
 }
 
 /** One line for the UI: what the audit found, in the language of the gates. */

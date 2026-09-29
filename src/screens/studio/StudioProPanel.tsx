@@ -73,6 +73,29 @@ async function refsFrom(files: FileList | null): Promise<{ refs: MediaRef[]; err
 
 export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selectedId, onImportFiles }: Props) {
   const [transcribing, setTranscribing] = useState(false)
+  /** True once this panel served a clip's words from the transcript cache. */
+  const [cacheUsed, setCacheUsed] = useState(false)
+  const runTranscribe = async (refresh: boolean) => {
+    const src = doc.clips.find((c) => c.id === selectedId && (c.kind === 'video' || c.kind === 'audio')) as StudioMediaClip | StudioAudioClip | undefined
+    if (!src) return
+    setTranscribing(true)
+    setMsg(null)
+    try {
+      const r = await transcribeClip(src, 'en', { refresh })
+      setCacheUsed(Boolean(r.cached))
+      const { doc: next, captions } = captionsForClip(doc, src, r.words)
+      if (!captions.length) return setMsg('No speech was recognised in the used part of this clip.')
+      const notes = [r.timing === 'word' ? `Whisper · word-level timing (${r.words.length} words)` : `Windows Speech · phrase-level timing — words are spread across each phrase, so check fast speech`]
+      if (r.cached) notes.push('Reused the transcription already stored for this file — no second run.')
+      if (r.drift) notes.push(`This clip carried different words (${r.drift.words} of them changed): the new alignment produced the captions, and anything built from the old words was left alone.`)
+      propose(next, `${captions.length} auto-captions`, notes)
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : String(err))
+    } finally {
+      setTranscribing(false)
+    }
+  }
+
   const [sceneName, setSceneName] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
   const [varName, setVarName] = useState('')
@@ -583,21 +606,9 @@ export function StudioProPanel({ doc, time, onPreview, onCommit, onSeek, selecte
           return (
             <>
               <p className="text-xs text-muted">{src ? `Transcribes the selected ${src.kind} clip offline and times each caption to the words.` : 'Select a video or audio clip on the timeline first.'}</p>
-              <Button size="sm" variant="outline" disabled={!src || transcribing} title={(!src || transcribing) ? 'Select media to transcribe — or wait' : undefined} onClick={async () => {
-                if (!src) return
-                setTranscribing(true)
-                setMsg(null)
-                try {
-                  const r = await transcribeClip(src)
-                  const { doc: next, captions } = captionsForClip(doc, src, r.words)
-                  if (!captions.length) return setMsg('No speech was recognised in the used part of this clip.')
-                  propose(next, `${captions.length} auto-captions`, [r.timing === 'word' ? `Whisper · word-level timing (${r.words.length} words)` : `Windows Speech · phrase-level timing — words are spread across each phrase, so check fast speech`])
-                } catch (err) {
-                  setMsg(err instanceof Error ? err.message : String(err))
-                } finally {
-                  setTranscribing(false)
-                }
-              }}>{transcribing ? 'Transcribing…' : 'Transcribe & caption'}</Button>
+              <Button size="sm" variant="outline" disabled={!src || transcribing} title={(!src || transcribing) ? 'Select media to transcribe — or wait' : undefined} onClick={() => void runTranscribe(false)}>{transcribing ? 'Transcribing…' : 'Transcribe & caption'}</Button>
+              <Button size="sm" variant="ghost" disabled={!src || transcribing || !cacheUsed} title={!cacheUsed ? 'A cached transcription was not used for this clip yet' : 'Ignore the stored transcription and align the audio again'} onClick={() => void runTranscribe(true)}>Re-transcribe</Button>
+              {cacheUsed && <p className="text-[11px] text-muted">The transcription stored for this file was reused — the offline engine did not run a second time. <span className="text-text">Re-transcribe</span> ignores the cache.</p>}
             </>
           )
         })()}

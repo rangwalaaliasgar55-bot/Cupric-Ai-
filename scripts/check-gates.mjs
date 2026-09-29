@@ -18,7 +18,7 @@
  *   runGates   lint → timing → safezones → contrast → deliver, stopping at the first error
  */
 import assert from 'node:assert/strict'
-import { rmSync } from 'node:fs'
+import { readFileSync, rmSync } from 'node:fs'
 import path from 'node:path'
 import { build } from 'esbuild'
 
@@ -492,6 +492,65 @@ function fillFrame(width, height, rgb, alpha = 255) {
   ok(times.includes(0), 'the audit keeps the start of the edit')
   ok(times.includes(2.5), 'it looks at the moment a word is revealed')
   ok(times.includes(4), 'and at the clip’s own end, where a fault has nowhere to hide')
+}
+
+/* ── 9. the fix proves itself: re-measure, do not trust the arithmetic ─ */
+{
+  const width = 1080
+  const height = 1920
+  const ctx = stubCtx()
+  const canvas = auditCanvas(540, 960)
+  const makeDoc = (over = {}) => {
+    const doc = m.doc.emptyStudioDoc()
+    doc.clips = [{ ...m.doc.defaultTextClip(0, 0), id: 'cap', name: 'Caption', text: 'STOP SCROLLING', fontSizePct: 6, color: '#FFFFFF', ...over }]
+    return doc
+  }
+  const opts = { canvas, fps: 1, maxFrames: 8, hasMedia: () => true }
+
+  // White ink on the stub's white frame: the chain stops at contrast, with a fix.
+  const bad = makeDoc()
+  const first = m.gr.runStudioAudit(bad, opts).report
+  eq(first.ok, false, 'the first audit fails')
+  const proposed = m.gr.proposedFixes(first)
+  ok(proposed.length >= 1, 'and it proposes at least one fix')
+  ok(proposed.every((f) => f.clipId && f.fix), 'every proposed fix names a clip and a patch')
+
+  const { doc: fixed } = m.gr.applyAuditFixes(bad, first)
+  const check = m.gr.verifyAppliedFixes(first, fixed, opts)
+  eq(check.proposed, proposed.length, 'the verification counts the same proposals')
+  eq(check.unresolved.length, 0, 'the fix holds: nothing it proposed is still failing')
+  eq(check.appeared.length, 0, 'and it introduced no new error')
+  ok(check.ok, 'so the verification passes')
+  ok(/held/.test(check.summary), `and the summary says so in words (${check.summary})`)
+  eq(check.cleared.length, proposed.length, 'and counts each cleared finding')
+  eq(check.after.ok, true, 'the second report is clean')
+
+  // A patch that does not actually fix anything must NOT be reported as an
+  // improvement — that is the whole point (upstream's `after` describes the
+  // treatments, and says nothing about what landed).
+  const pretend = {
+    ...first,
+    findings: first.findings.map((f) => (f.fix ? { ...f, fix: { ...f.fix, patch: { color: '#FFFFFE' } } } : f)),
+  }
+  const { doc: barely } = m.gr.applyAuditFixes(bad, pretend)
+  const honest = m.gr.verifyAppliedFixes(pretend, barely, opts)
+  ok(!honest.ok, 'a fix that does not clear its finding is not called a success')
+  ok(honest.unresolved.length >= 1, 'the finding it failed to clear is named')
+  ok(/did not/.test(honest.summary), `and the summary says how many did not (${honest.summary})`)
+  ok(honest.unresolved[0].clipId === 'cap', 'against the clip that is still failing')
+
+  // A report with no fix proposals has nothing to verify, and says that.
+  const clean = m.gr.runStudioAudit(makeDoc({ color: '#000000' }), opts).report
+  const none = m.gr.verifyAppliedFixes(clean, makeDoc({ color: '#000000' }), opts)
+  eq(none.proposed, 0, 'a clean report proposes nothing')
+  ok(/nothing to verify/.test(none.summary), 'and the verification says there was nothing to check')
+
+  // Studio asks for this after every "Fix all", and reports honestly when the
+  // recheck itself cannot run.
+  const studio = readFileSync(path.join(root, 'src/screens/Studio.tsx'), 'utf8')
+  ok(/verifyAppliedFixes\(audit\.report, fixed/.test(studio), 'Studio re-measures the document it just patched')
+  ok(/could not be re-checked/.test(studio), 'and admits it when the recheck could not run, instead of claiming a pass')
+  ok(/did not hold/.test(studio), 'the log line names the case where an applied fix did not hold')
 }
 
 console.log(`gates check passed — ${n} assertions`)

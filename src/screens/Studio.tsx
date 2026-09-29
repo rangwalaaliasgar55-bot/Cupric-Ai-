@@ -96,7 +96,7 @@ import { readDragPayload } from '../lib/studio/resourceDrop'
 import { canExportMp4, convertToMp4, exportStudio, exportStudioInBackground } from '../lib/studio/export'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
 import { lintStudioDoc } from '../lib/studio/lint'
-import { applyAuditFixes, describeAudit, runStudioAudit } from '../lib/studio/gateRunner'
+import { applyAuditFixes, describeAudit, runStudioAudit, verifyAppliedFixes } from '../lib/studio/gateRunner'
 import { allowListOfReport, diffStudioDoc } from '../lib/studio/scopedEdit'
 import type { GateReport } from '../lib/studio/gates'
 import { cueDone, cueProblem } from '../lib/sound'
@@ -251,14 +251,33 @@ export function Studio() {
     const scope = diffStudioDoc(doc, fixed, { allow: allowListOfReport(audit.report) })
     patchStudio(pid, { clips: fixed.clips, trackCount: fixed.trackCount }, 'Fix delivery checks')
     setAudit(null)
-    if (scope.ok) {
-      cueDone()
-      pushToast('success', `Applied ${applied} measured fix${applied === 1 ? '' : 'es'} — one undo step, and ${scope.summary}.`)
+    if (!scope.ok) {
+      cueProblem()
+      rlog.warn('studio', 'scoped edit drifted', scope.summary)
+      pushToast('error', `The fix also changed something it was not asked to — ${scope.unexpected[0].label}. Undo reverts all of it.`)
       return
     }
-    cueProblem()
-    rlog.warn('studio', 'scoped edit drifted', scope.summary)
-    pushToast('error', `The fix also changed something it was not asked to — ${scope.unexpected[0].label}. Undo reverts all of it.`)
+    // …and prove the fix actually fixed it: re-render the patched document and
+    // run the same chain. A fix is scored analytically, so without this a patch
+    // that missed its target would still be reported as an improvement.
+    try {
+      const check = verifyAppliedFixes(audit.report, fixed, { hasMedia, fps: 4, maxFrames: 18 })
+      if (check.ok) {
+        cueDone()
+        pushToast('success', `Applied ${applied} measured fix${applied === 1 ? '' : 'es'} — one undo step, and ${scope.summary}. ${check.summary}`)
+        return
+      }
+      cueProblem()
+      rlog.warn('studio', 'applied fix did not hold', check.summary)
+      const what = check.unresolved[0]
+      pushToast('error', `${check.summary}${what ? ` Still failing: “${what.message}”` : ''} The fix is applied — Undo reverts it.`)
+    } catch (err) {
+      // The fix is applied and the scope is proven; only the recheck failed, so
+      // say exactly that instead of claiming a verification that did not run.
+      cueDone()
+      rlog.warn('studio', 'could not re-check the applied fix', err)
+      pushToast('success', `Applied ${applied} measured fix${applied === 1 ? '' : 'es'} — one undo step, and ${scope.summary}. The result could not be re-checked: ${humanError(err)}`)
+    }
   }, [audit, doc, patchStudio, pid, pushToast])
 
   const runClipAction = useCallback((clipId: string | null, action: ClipActionId) => {

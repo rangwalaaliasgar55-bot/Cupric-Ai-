@@ -171,6 +171,41 @@ and knows what a failure looks like.
   drifted outside the clips its report named. That is reported rather than hidden; **Undo** reverts all
   of it in one step.
 
+## Scenario G — an applied fix is re-measured, and transcription is paid for once
+
+**Fix all, verified**
+
+1. Studio → **Checks** on an edit with at least one failing text block (white ink over a light frame is
+   the quickest way to make one).
+2. Press **Fix all**. Expected: the fixes apply as one undo step, and the toast ends with
+   *"Re-checked the result: N/N proposed fix(es) held and no new error appeared."* — that sentence comes
+   from rendering the patched document again and running the same gate chain over it, not from the
+   fix's own arithmetic.
+3. Expected if a fix does not hold: an error toast naming how many did not and quoting the finding that
+   is still failing; the change stays applied (Undo reverts it).
+4. Expected if the recheck itself cannot run: the fixes are still reported as applied, and the toast
+   says the result could not be re-checked — it never claims a verification that did not happen.
+
+**Transcription, cached**
+
+5. Select a clip with speech → **Transcribe & caption** (desktop app). Expected: captions appear with a
+   note naming the engine and the timing quality.
+6. Run the same action again on the same clip. Expected: the transcription is served from the store —
+   no second Whisper run — and a note says so, plus a **Re-transcribe** button that ignores the cache.
+7. Settings → **Transcriptions kept** shows how many files are stored and how often they were reused;
+   **Clear** forgets them (the next run transcribes again). Nothing else changes.
+8. A clip that already carries word timings from an earlier run: caption it again with **Re-transcribe**.
+   If the new alignment disagrees with the old words, the note says how many changed — the caption is
+   built from the new words, and nothing that was built from the old ones is silently rewritten.
+
+**Failure signatures**
+
+- `Auto-captions from audio need the desktop app…` → the browser build has no offline engine. The cache
+  is read before the engine is needed, so a **previously transcribed** file still captions instantly in
+  the browser; a file that was never transcribed still shows this.
+- Undo after *Fix all* reverts every patch from that press **and** the step is one history entry — if the
+  toast counted fixes, one Undo removes exactly that many.
+
 ## What this scenario does **not** cover
 
 - macOS/Linux: no packaged build or release workflow exists for them (see

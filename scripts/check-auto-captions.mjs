@@ -20,6 +20,8 @@ const require = createRequire(import.meta.url)
 const ve = require(path.join(root, 'electron/voice-engines.cjs'))
 let n = 0
 const ok = (c, m) => { assert.ok(c, m); n += 1 }
+const eq = (a, b, m) => { assert.equal(a, b, m); n += 1 }
+const pass = (v, m) => { assert.equal(v, null, m); n += 1 }
 
 const args = ve.whisperWordArgs({ model: '/m.bin', wavPath: '/a.wav', outBase: '/o', lang: 'hi-IN' })
 ok(args.includes('-oj') && args.includes('-sow') && args[args.indexOf('-ml') + 1] === '1' && args[args.indexOf('-l') + 1] === 'hi', 'whisper word args')
@@ -58,7 +60,7 @@ if (ffmpeg && existsSync(ffmpeg)) {
 }
 
 const tmp = path.join(root, '.auto-captions-check.mjs')
-await build({ bundle: true, outfile: tmp, format: 'esm', platform: 'node', logLevel: 'error', stdin: { contents: "export * from './src/lib/studio/autoCaptions'\nexport * as tt from './src/lib/studio/textTools'\nexport * as qv from './src/lib/production/quickVideo'", resolveDir: root, loader: 'ts' } })
+await build({ bundle: true, outfile: tmp, format: 'esm', platform: 'node', logLevel: 'error', stdin: { contents: "export * from './src/lib/studio/autoCaptions'\nexport * as tt from './src/lib/studio/textTools'\nexport * as qv from './src/lib/production/quickVideo'\nexport * as store from './src/lib/studio/transcriptStore'", resolveDir: root, loader: 'ts' } })
 const ac = await import(`${pathToFileURL(tmp).href}?t=${Date.now()}`)
 await rm(tmp, { force: true })
 // Clip at 10s on the timeline, trimmed 0.5s into the source, played at 2x for 0.5s → source 0.5..1.5
@@ -179,6 +181,96 @@ ok(read('src/screens/studio/StudioProPanel.tsx').includes('phrase-level timing')
   ok(panel.includes('transcribeMediaPath') && panel.includes('words') && panel.includes('captionTimingOf'), 'Quick Video transcribes its voiceover and passes the words into the build')
   ok(panel.includes('Real word timings') && /estimated from the script/.test(panel), 'the panel says which timing it used instead of implying precision')
   ok(read('src/screens/studio/StudioInspector.tsx').includes('Word timing:'), 'Studio shows where a caption’s timing came from')
+}
+
+/* ── 6. the transcript cache: pay once, and never quietly replace words ── */
+{
+  // A real (tiny) localStorage, so the store's own persistence is exercised as
+  // well as the in-memory fallback it uses when storage is blocked.
+  const backing = new Map()
+  globalThis.localStorage = {
+    getItem: (k) => (backing.has(k) ? backing.get(k) : null),
+    setItem: (k, v) => void backing.set(k, String(v)),
+    removeItem: (k) => void backing.delete(k),
+    clear: () => backing.clear(),
+    key: (i) => [...backing.keys()][i] ?? null,
+    get length() { return backing.size },
+  }
+  // The store module was bundled and imported before this stub existed, but it
+  // reads storage at call time, which is exactly what makes this work.
+
+  const fileA = { fileName: 'talk.mp4', localPath: '/vids/talk.mp4', bytes: 1_000_000, durationSec: 61.004 }
+  const fileB = { fileName: 'talk.mp4', localPath: '/other/talk.mp4', bytes: 1_000_000, durationSec: 61.004 }
+  const keyA = ac.store.transcriptKeyOf(fileA, 'en')
+  ok(keyA === ac.store.transcriptKeyOf({ ...fileA }, 'en'), 'the same file and language is the same key')
+  ok(keyA !== ac.store.transcriptKeyOf(fileA, 'hi'), 'a different language is a different transcription')
+  ok(keyA !== ac.store.transcriptKeyOf(fileB, 'en'), 'the same name in another folder is another file')
+  ok(ac.store.transcriptKeyOf({ fileName: 'x.mp4' }, 'en').includes('x.mp4'), 'a file with no path falls back to its name')
+
+  const wordsA = [{ word: 'Launch', start: 0.32, end: 0.61 }, { word: 'day', start: 0.61, end: 0.9 }]
+  ok(ac.store.wordsAgree(wordsA, wordsA.map((w) => ({ ...w }))), 'identical words agree')
+  ok(ac.store.wordsAgree(wordsA, [{ ...wordsA[0], start: 0.4 }, wordsA[1]]), 'a tenth of a second of jitter is the same alignment, not a change')
+  ok(!ac.store.wordsAgree(wordsA, [{ ...wordsA[0], word: 'Lunch' }, wordsA[1]]), 'a different word is a different alignment')
+  ok(!ac.store.wordsAgree(wordsA, [wordsA[0]]), 'a missing word is a different alignment')
+  ok(ac.store.transcriptDrift(wordsA, [{ ...wordsA[0], word: 'Lunch' }, wordsA[1]]).words === 1, 'drift counts the words that changed')
+
+  ok(!ac.store.hasTranscript(keyA), 'nothing is stored for a file nobody has transcribed')
+  ac.store.writeTranscript(keyA, { words: wordsA, engine: 'whisper', timing: 'word' })
+  ok(ac.store.hasTranscript(keyA), 'writing stores it')
+  eq(ac.store.transcriptCacheStats().files, 1, 'and the cache reports one file')
+  const first = ac.store.readTranscript(keyA)
+  ok(first.hits === 1, 'reading counts the reuse')
+  eq(ac.store.readTranscript(keyA).hits, 2, 'and counts again')
+  eq(ac.store.transcriptCacheStats().hits, 2, 'so the stats say how often transcription was avoided')
+  pass(ac.store.readTranscript('nope'), 'a key nobody stored reads as null')
+
+  // Past the limit the oldest entry goes, so a caption cache never becomes an archive.
+  for (let i = 0; i < ac.store.TRANSCRIPT_CACHE_LIMIT + 5; i += 1) {
+    ac.store.writeTranscript(`en|filler-${i}|0|0`, { words: [], engine: 'whisper', timing: 'word', savedAt: Date.now() - 1_000_000 + i })
+  }
+  eq(ac.store.transcriptCacheStats().files, ac.store.TRANSCRIPT_CACHE_LIMIT, 'the cache keeps its limit')
+  ok(!ac.store.hasTranscript('en|filler-0|0|0'), 'and the oldest transcription is the one dropped')
+  ok(ac.store.hasTranscript(keyA), 'while the one in use stays')
+  // A transcript written with an older timestamp than everything already stored
+  // must still survive its own write: the entry being written is never evicted.
+  ac.store.writeTranscript(keyA, { words: wordsA, engine: 'whisper', timing: 'word', savedAt: 1 })
+  ok(ac.store.hasTranscript(keyA), 'the entry being written is not the one dropped')
+  ac.store.writeTranscript(keyA, { words: wordsA, engine: 'whisper', timing: 'word' })
+  ac.store.forgetTranscript(keyA)
+  ok(!ac.store.hasTranscript(keyA), 'forgetting a file removes just that entry')
+
+  // The point of the cache: a second caption run on the same clip does NOT run
+  // the engine again. Without IPC (`transcribeMediaPath` throws off-desktop) the
+  // only way this can resolve is from the cache.
+  ac.store.writeTranscript(ac.store.transcriptKeyOf({ fileName: 'clip', localPath: null, bytes: 0, durationSec: 0 }, 'en'), { words: wordsA, engine: 'whisper', timing: 'word' })
+  const bare = { id: 'v1', kind: 'video', mediaId: 'not-registered', startSec: 0, durationSec: 5, trimInSec: 0, speed: 1, track: 0 }
+  const hit = await ac.transcribeClip(bare)
+  ok(hit.cached === true, 'a known file skips the engine entirely')
+  eq(hit.words.length, 2, 'and comes back with the same words')
+  eq(hit.timing, 'word', 'with the timing quality it was made with')
+  ok(!hit.drift, 'nothing drifted: this clip carried no earlier words')
+
+  // A clip that already carries different words: the new alignment is reported,
+  // not applied in silence (upstream's retimed-transcript guard).
+  const drift = await ac.transcribeClip({ ...bare, words: [{ word: 'Lunch', start: 0.32, end: 0.61 }] })
+  ok(drift.drift && drift.drift.changed, 'a clip whose words disagree gets a drift report')
+  eq(drift.drift.words, 2, 'counting the words that changed: one renamed, and one the clip never had')
+  eq(drift.drift.previous[0].word, 'Lunch', 'and carrying the words the clip already had')
+
+  // Refresh ignores the cache — and then there is no engine, so it must fail
+  // loudly rather than pretend to have re-aligned anything.
+  let failed = null
+  try { await ac.transcribeClip(bare, 'en', { refresh: true }) } catch (err) { failed = err }
+  ok(failed && /desktop app/.test(String(failed.message ?? failed)), `refresh bypasses the cache and says the engine is missing (${failed?.message})`)
+
+  // The panel offers both buttons and explains which one it used.
+  const panel = read('src/screens/studio/StudioProPanel.tsx')
+  ok(/runTranscribe\(false\)/.test(panel) && /runTranscribe\(true\)/.test(panel), 'the panel has "Transcribe & caption" and a "Re-transcribe" that ignores the cache')
+  ok(/transcriptCacheStats|reused|Reused the transcription already stored/.test(panel), 'and says when a stored transcription was reused')
+  ok(/carried different words/.test(panel), 'and reports a drift between the clip\'s words and the new alignment')
+  const safety = read('src/app-shell/ProjectSafetyPanel.tsx')
+  ok(/transcriptCacheStats/.test(safety) && /clearTranscriptCache/.test(safety), 'settings show how many transcriptions are kept, and can clear them')
+  ok(/reused \$\{transcripts\.hits\}/.test(safety), 'and say how often the cache saved a transcription')
 }
 
 console.log(`auto-captions check passed — ${n} assertions`)

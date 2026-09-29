@@ -10,6 +10,7 @@ import { getIpc } from '../bridge'
 import type { StudioAudioClip, StudioDoc, StudioMediaClip, StudioTextClip } from '../../types/project'
 import { getMedia } from './media'
 import { captionsFromTranscript } from './textTools'
+import { readTranscript, transcriptDrift, transcriptKeyOf, writeTranscript } from './transcriptStore'
 
 export type TimedWord = { word: string; start: number; end: number }
 export type Transcription = { engine: 'whisper' | 'windows'; timing: 'word' | 'phrase'; words: TimedWord[] }
@@ -47,7 +48,62 @@ export async function transcribeMediaPath(path: string, lang = 'en'): Promise<Tr
   return (await ipc.invoke('voice:transcribeMedia', { path, lang })) as Transcription
 }
 
-export async function transcribeClip(clip: StudioMediaClip | StudioAudioClip, lang = 'en'): Promise<Transcription> {
-  const path = getMedia(clip.mediaId)?.localPath ?? (clip as { localPath?: string | null }).localPath ?? ''
-  return transcribeMediaPath(path, lang)
+export interface TranscribeClipResult extends Transcription {
+  /** Served from the cache: the offline engine was not run again. */
+  cached?: boolean
+  /**
+   * The clip already carried word timings and the new ones disagree with them.
+   * Nothing was overwritten — the caller decides, because captions already on
+   * the timeline were built from the earlier words.
+   */
+  drift?: { changed: boolean; words: number; previous: TimedWord[] }
+}
+
+/**
+ * Transcribe the clip's own audio, reusing the last transcription of the same
+ * file when there is one (`studio/transcriptStore.ts`).
+ *
+ * The cache is not a micro-optimisation: transcription is minutes of work per
+ * long clip, and a re-run is a second alignment that can disagree with the first
+ * (Whisper is not byte-identical across runs). So a hit is returned with
+ * `cached: true`, and a disagreement with the words the clip already has comes
+ * back as `drift` rather than being applied quietly.
+ */
+export async function transcribeClip(
+  clip: StudioMediaClip | StudioAudioClip,
+  lang = 'en',
+  opts: { refresh?: boolean } = {},
+): Promise<TranscribeClipResult> {
+  const handle = getMedia(clip.mediaId)
+  const path = handle?.localPath ?? (clip as { localPath?: string | null }).localPath ?? ''
+  const base = path.split(/[\\/]/).pop() ?? ''
+  const file = {
+    // An unregistered handle and an empty path leave no name at all: 'clip' is
+    // the honest placeholder, and it keeps the cache key stable.
+    fileName: handle?.fileName ?? (base || 'clip'),
+    localPath: handle?.localPath ?? null,
+    bytes: handle?.bytes,
+    durationSec: handle?.durationSec,
+  }
+  const key = transcriptKeyOf(file, lang)
+  // Plain `TimedWord`s: the clip's own words are the same shape plus provenance,
+  // and the drift report should not carry `source` into a transcript result.
+  const previous: TimedWord[] | null = clip.words?.length
+    ? clip.words.map((w) => ({ word: w.word, start: w.start, end: w.end }))
+    : null
+
+  const driftOf = (next: TimedWord[]) => {
+    if (!previous) return {}
+    const drift = transcriptDrift(previous, next)
+    return drift.changed ? { drift: { ...drift, previous } } : {}
+  }
+
+  if (!opts.refresh) {
+    const hit = readTranscript(key)
+    if (hit) return { words: hit.words, engine: hit.engine, timing: hit.timing, cached: true, ...driftOf(hit.words) }
+  }
+
+  const fresh = await transcribeMediaPath(path, lang)
+  writeTranscript(key, { words: fresh.words, engine: fresh.engine, timing: fresh.timing })
+  return { ...fresh, ...driftOf(fresh.words) }
 }

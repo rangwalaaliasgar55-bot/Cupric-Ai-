@@ -471,9 +471,13 @@ Before copying more, it is worth being exact about what of the port is *reachabl
 "Fix all" so the fix proves its own scope; **#2** — `gateRunner.auditTimes` now keeps clip edges and word
 reveals and fills the rest with an even sweep (the `cut-frames` argument is quoted in the function);
 **#4** — `gates.timingGate`, a new `timing` stage in the chain (lint → timing → safe zones → contrast →
-deliver), covered by `check-gates.mjs` (147 assertions, was 124). **#3 is half done**: the fix's *scope*
-is now proven by diff, but nothing re-runs the gates on the patched document yet, so the report can still
-say a finding is fixed when it is not — that is the remaining half.
+deliver), covered by `check-gates.mjs` (147 assertions, was 124). **#3 is done too**: `gateRunner.verifyAppliedFixes`
+re-renders the patched document, runs the same chain over it and reports the findings that cleared, the
+ones that did not, and any error the fix introduced — Studio's "Fix all" now says which. **#5 is done**
+as well: `studio/transcriptStore.ts` keeps one transcription per file and reports a disagreement with the
+words a clip already carries as `drift` instead of applying it in silence. Remaining from the list:
+#6–#13 (queue ledger, readiness, creative log, placement metrics, the FFmpeg assembly half, the agent
+contract text, the shadow solver).
 
 
 | # | Upstream | What it actually is | Cupric gap it closes | Verdict |

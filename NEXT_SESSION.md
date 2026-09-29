@@ -1,3 +1,20 @@
+## Also shipped: a fix that proves itself, and a transcription that is paid for once
+
+- **`gateRunner.verifyAppliedFixes`** (upstream `wcag/verify-applied.ts`) — "Fix all" now re-renders the
+  document it just patched, runs the whole chain over it, and reports what actually happened: which
+  proposed fixes the finding cleared, which did not hold, and whether the fix introduced an error that
+  was not there before. A fix is scored analytically, so without this a patch that missed its target
+  still read as an improvement. The Studio toast says which case it is, and the recheck's own failure is
+  reported rather than claimed as a pass. `check-gates.mjs` 147 → 166 assertions.
+- **`studio/transcriptStore.ts`** (upstream `prep/transcript-cache.ts`) — one transcription per file
+  (path/size/duration/language), so the second caption run on a clip is free instead of another minutes-
+  long alignment. A clip that already carries word timings gets a `drift` report when the new alignment
+  disagrees (words differ, or the clip had none) rather than having its words quietly replaced; the panel
+  offers **Re-transcribe** to ignore the cache, says when a stored transcript was reused, and Settings →
+  *Transcriptions kept* shows the count and how often the cache saved a run. `check-auto-captions.mjs`
+  48 → 82 assertions. Found and fixed a real bug while testing: the entry being written could be the one
+  its own write evicted.
+
 ## Also shipped: a gate for *when* things are drawn, and a fix that proves its own scope
 
 Three items from the reference audit's "still copyable from open-edit" list, all pure and all tested:
