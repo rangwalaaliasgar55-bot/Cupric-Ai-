@@ -25,6 +25,9 @@ const aiProviders = require('./ai-providers.cjs')
 // The eight pipeline steps as pure functions (phase 1.2). The step *order* is
 // declared once, in the module, and referenced by name here.
 const automationSteps = require('./automation-steps.cjs')
+// Export preflight + post-render verification (phase 1.6): named failures with
+// a stated fix, and a real ffprobe read-back before the UI hears "done".
+const renderPreflight = require('./render-preflight.cjs')
 const AUTOMATION_STEP = Object.fromEntries(automationSteps.STEP_DEFINITIONS.map((definition, index) => [definition.id, index]))
 const aiProviderConfig = require('./ai-provider-config.cjs')
 const voiceEngines = require('./voice-engines.cjs')
@@ -1716,6 +1719,19 @@ async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, 
   fs.rmSync(workDir, { recursive: true, force: true })
   ensureDir(workDir); ensureDir(outDir)
   const target = targetSizeForAspect(job.aspect, rundown.size)
+  // Same preflight as every other export: a full disk or a missing encoder is
+  // reported before the first frame is captured, not after.
+  await runExportPreflight({
+    outputPath: job.outputPath || path.join(outDir, 'render.mp4'),
+    dir: outDir,
+    durationSec: Number(rundown.durationSec) || (plan ? plan.totalDurationSec : 0),
+    fps: Number(rundown.fps) || 30,
+    size: target,
+    quality: job.quality === 'final' ? 'final' : 'draft',
+    container: 'mp4',
+    codec: 'h264',
+    state,
+  })
   const segments = []
   const plannedSegments = Array.isArray(plan?.segments) && plan.segments.length
     ? plan.segments
@@ -3552,6 +3568,120 @@ function runProcessBuffer(jobState, bin, args, options = {}) {
   })
 }
 
+/**
+ * `ffmpeg -encoders`, read once per app run.
+ *
+ * Cached because the answer cannot change while the app is open, and spawning
+ * ffmpeg for every export would add a second to each one. A failure to read the
+ * list is reported and treated as "unknown" rather than as "no encoder": the
+ * encode itself is the authority.
+ */
+let encoderListCache = null
+async function availableEncoders(state = null) {
+  if (encoderListCache) return encoderListCache
+  const status = mediaToolStatus()
+  if (!status.ffmpeg) return null
+  try {
+    const out = await runProcess(state, status.ffmpeg, ['-hide_banner', '-encoders'])
+    encoderListCache = renderPreflight.parseEncoders(`${out.stdout || ''}${out.stderr || ''}`)
+    return encoderListCache
+  } catch (err) {
+    logLine('render-encoders', 'the FFmpeg encoder list could not be read', { error: err?.message || String(err) })
+    return null
+  }
+}
+
+/**
+ * Read the finished file back before anyone is told the export succeeded.
+ *
+ * A "Render complete" message over a file that will not play is the worst thing
+ * this app can produce, so the probe is part of the export, not an optional
+ * extra: `verifyExport` names what is wrong (no picture, no sound, wrong length,
+ * wrong size, unreadable) and the caller turns that into the user-facing error.
+ */
+async function verifyRenderOutput({ outputPath, expectedDurationSec = null, size = null, needsVideo = true, needsAudio = false, toleranceSec = 0.75 }) {
+  let sizeBytes = null
+  try {
+    sizeBytes = fs.statSync(outputPath).size
+  } catch (err) {
+    logLine('render-verify', 'the finished file could not be measured', { error: err?.message || String(err), outputPath })
+  }
+  let probe = null
+  if (sizeBytes === null || sizeBytes > 0) {
+    try {
+      probe = await probeMedia(outputPath)
+    } catch (err) {
+      logLine('render-verify', 'ffprobe could not read the finished file', { error: err?.message || String(err), outputPath })
+    }
+  }
+  const verdict = renderPreflight.verifyExport(probe, {
+    durationSec: expectedDurationSec,
+    toleranceSec,
+    width: Array.isArray(size) ? size[0] : null,
+    height: Array.isArray(size) ? size[1] : null,
+    needsVideo,
+    needsAudio,
+    sizeBytes,
+  })
+  logLine('render-verify', verdict.ok ? 'the finished file passed verification' : 'the finished file failed verification', {
+    outputPath,
+    checks: verdict.checks,
+    ...(verdict.ok ? {} : { failures: verdict.failures.map((f) => f.code) }),
+  })
+  return verdict
+}
+
+/** Everything knowable before the first frame is encoded. */
+async function runExportPreflight({ outputPath, dir, durationSec, fps, size, quality = 'balanced', container = 'mp4', codec = 'h264', state = null }) {
+  const status = mediaToolStatus()
+  const preflight = renderPreflight.buildPreflight({
+    outputPath,
+    dir,
+    durationSec,
+    fps,
+    size,
+    quality,
+    container,
+    codec,
+    ffmpegPath: status.ffmpeg,
+    ffprobePath: status.ffprobe,
+    encoders: await availableEncoders(state),
+    statfs: (target) => fs.statfsSync(target),
+    platform: process.platform,
+  })
+  logLine('render-preflight', preflight.ok ? 'passed' : 'refused the export', {
+    outputPath,
+    checks: preflight.checks,
+    estimate: preflight.estimate?.note,
+    ...(preflight.ok ? {} : { failures: preflight.failures.map((f) => f.code) }),
+  })
+  if (!preflight.ok) throw renderPreflight.failureError(preflight.failures)
+  return preflight
+}
+
+/**
+ * Whether the timeline's sources really carry audio.
+ *
+ * Measured, not assumed: each distinct source file is probed (bounded, so a
+ * 40-clip timeline does not add 40 probes) and the answer decides whether a
+ * silent delivered file is a failure or simply what the timeline was.
+ */
+async function sourcesHaveAudio(sources) {
+  const answers = new Map()
+  for (const source of (Array.isArray(sources) ? sources : []).slice(0, 12)) {
+    const mediaPath = mediaPathFromSource(source)
+    if (!mediaPath || answers.has(mediaPath)) continue
+    try {
+      const probe = await probeMedia(mediaPath)
+      answers.set(mediaPath, probe.hasAudio || probe.streams.some((stream) => stream.codec_type === 'audio'))
+    } catch (err) {
+      logLine('render-preflight', 'a source could not be probed for its audio track', { error: err?.message || String(err), mediaPath })
+    }
+  }
+  const known = [...answers.values()]
+  return known.length > 0 && known.some(Boolean)
+}
+
 async function probeMedia(filePath) {
   assertMediaTools()
   const result = await runProcess(null, ffprobePath, ['-v', 'error', '-print_format', 'json', '-show_streams', '-show_format', filePath])
@@ -3668,6 +3798,29 @@ async function executeStudioMp4Job(state, payload) {
 
   await fsp.writeFile(source, Buffer.from(bytes))
 
+  // Measure the recording that arrived, so the preflight can size the disk need
+  // and the finished MP4 can be checked against the real length and the real
+  // track list instead of against assumptions.
+  let recordingProbe = null
+  try {
+    recordingProbe = await probeMedia(source)
+  } catch (err) {
+    logLine('studio-export', 'the uploaded recording could not be probed', { error: err?.message || String(err) })
+  }
+  const videoStream = recordingProbe?.streams?.find((stream) => stream.codec_type === 'video')
+  const size = videoStream?.width && videoStream?.height ? [Number(videoStream.width), Number(videoStream.height)] : null
+  await runExportPreflight({
+    outputPath,
+    dir: outDir,
+    durationSec: recordingProbe?.durationSec || 30,
+    fps: Number(payload?.fps) > 0 ? Math.round(Number(payload.fps)) : 30,
+    size,
+    quality: 'final',
+    container: 'mp4',
+    codec: payload?.codec === 'av1' ? 'av1' : 'h264',
+    state,
+  })
+
   const fps = Number(payload?.fps) > 0 ? Math.round(Number(payload.fps)) : 30
   const crf = String(Math.max(14, Math.min(32, Number(payload?.crf) || 18)))
   // Loudness is a decision with a stated reason, taken from a one-pass measurement of the
@@ -3709,13 +3862,32 @@ async function executeStudioMp4Job(state, payload) {
 
   if (!fs.existsSync(outputPath)) {
     await fsp.rm(source, { force: true })
-    throw new Error('FFmpeg reported success but produced no file.')
+    throw renderPreflight.failureError([
+      renderPreflight.makeFailure(
+        renderPreflight.RENDER_FAILURES.NO_OUTPUT_FILE,
+        'FFmpeg reported success but produced no file.',
+        'Export again; if it repeats, check that the drive has free space and that the recording is not empty.',
+      ),
+    ])
   }
 
+  // The MP4 is read back with ffprobe before the UI is told it is ready: length
+  // against the recording, picture track present, sound present when the Studio
+  // mix had any. A broken file is kept on disk and named, never announced.
+  const verdict = await verifyRenderOutput({
+    outputPath,
+    expectedDurationSec: recordingProbe?.durationSec || null,
+    size: null,
+    needsVideo: true,
+    // Measured from the recording that was just converted: if the captured WebM
+    // carries sound, the MP4 must as well.
+    needsAudio: Boolean(recordingProbe?.streams?.some((stream) => stream.codec_type === 'audio')),
+  })
   await fsp.rm(source, { force: true })
-  const { size } = await fsp.stat(outputPath)
+  if (!verdict.ok) throw renderPreflight.failureError(verdict.failures)
+  const { size: outputBytes } = await fsp.stat(outputPath)
   if (payload?.reveal !== false) shell.showItemInFolder(outputPath)
-  return { outputPath, bytes: size, loudness: { mode: loudness.mode, note: loudness.note, why: loudness.why } }
+  return { outputPath, bytes: outputBytes, loudness: { mode: loudness.mode, note: loudness.note, why: loudness.why } }
 }
 
 /**
@@ -4416,6 +4588,19 @@ async function executeRenderJob(event, job, queuedState = null) {
   ensureDir(workDir)
   ensureDir(outDir)
 
+  // Refuse before encoding: name rules, a writable folder, free disk space and a
+  // real encoder in this FFmpeg build — each failure named, with its own fix.
+  await runExportPreflight({
+    outputPath,
+    dir: outDir,
+    durationSec: nominalDuration,
+    fps,
+    size: target,
+    quality,
+    container: 'mp4',
+    codec: 'h264',
+  })
+
   const state = queuedState || { id, cancelled: false, paused: false, processes: new Set(), windows: new Set(), resumeWaiters: [], sender }
   state.id = id
   state.sender = sender
@@ -4472,6 +4657,16 @@ async function executeRenderJob(event, job, queuedState = null) {
     if (segments.length === 0) throw new Error('No renderable timeline segments were produced')
     sendRenderEvent(sender, 'render:progress', { jobId: id, pct: 96 })
     await concatSegments(state, segments, outputPath, { workDir })
+    // Real read-back of the delivered file. The UI only hears "done" once the
+    // file has been proved playable and the right length.
+    const verdict = await verifyRenderOutput({
+      outputPath,
+      expectedDurationSec: nominalDuration,
+      size: target,
+      needsVideo: true,
+      needsAudio: await sourcesHaveAudio(usableSources),
+    })
+    if (!verdict.ok) throw renderPreflight.failureError(verdict.failures)
     sendRenderEvent(sender, 'render:progress', { jobId: id, pct: 100 })
     sendRenderEvent(sender, 'render:done', { jobId: id, outputPath })
     fs.rmSync(workDir, { recursive: true, force: true })
