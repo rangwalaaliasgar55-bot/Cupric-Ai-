@@ -430,6 +430,7 @@ export const useProjectStore = create<AppState>()(
             },
             cancelled: () => get().automationJobs.find((j) => j.id === jobId)?.status === 'cancelled',
             projectMediaCount: () => studioOf(get().projects.find((p) => p.id === pid)).clips.filter((c) => c.kind === 'video' || c.kind === 'image').length,
+            projectMedia: () => studioOf(get().projects.find((p) => p.id === pid)).clips.filter((c) => c.kind === 'video' || c.kind === 'image'),
           })
             .then((result) => {
               if (!result) return

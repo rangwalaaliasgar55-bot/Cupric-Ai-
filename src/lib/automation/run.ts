@@ -16,7 +16,7 @@
  *    report) and reports machine-checked facts, never a fabricated pass;
  *  - cancel is honoured at every await point, including inside the render.
  */
-import type { AutomationJob, AutomationStep, SceneRundown, StudioDoc } from '../../types/project'
+import type { AutomationJob, AutomationStep, SceneRundown, StudioClip, StudioDoc } from '../../types/project'
 import type { ExportResult, ExportOptions } from '../studio/export'
 import { uid } from '../utils'
 import { emptyStudioDoc } from '../studio/doc'
@@ -42,6 +42,12 @@ export type RunHooks = {
   brand?: { colors?: string[]; fonts?: string[] }
   /** Optional project media count, so the footage step can be honest. */
   projectMediaCount?: () => number
+  /**
+   * The project's media clips themselves, so the design can use the footage and
+   * photos the user actually imported (matched by file name) rather than
+   * planning placeholders for every shot.
+   */
+  projectMedia?: () => StudioClip[]
 }
 
 export type RunOutput = { fileName: string; url: string | null; bytes: number; mimeType: string; durationSec: number }
@@ -168,7 +174,16 @@ export async function runAutonomousJob(
     // — 1. rundown (instant, offline) ————————————————————————————
     hooks.step(1, { status: stepDone(1) ? 'done' : 'running', progressPct: 10, message: 'Drafting the rundown offline — no model required' })
     guard()
-    const plan = await deps.plan({ brief: job.brief, aspect: job.aspect, fps: job.fps, quality: job.quality, durationSec: durationFromBrief(job.brief) })
+    const mediaClips = hooks.projectMedia?.() ?? []
+    const mediaNames = mediaClips.map((c) => (c.kind === 'video' || c.kind === 'image' ? c.fileName : '')).filter((n): n is string => Boolean(n))
+    const plan = await deps.plan({
+      brief: job.brief,
+      aspect: job.aspect,
+      fps: job.fps,
+      quality: job.quality,
+      durationSec: durationFromBrief(job.brief),
+      mediaNames,
+    })
     const rundown = job.rundown ?? plan.rundown
     if (!stepDone(1)) {
       hooks.patch({ rundown, warnings })
@@ -200,7 +215,7 @@ export async function runAutonomousJob(
       for (let i = 0; i < pinned.length; i++) {
         guard()
         const direction = pinned[i]
-        const built = buildDirection(plan, direction.id, uid)
+        const built = buildDirection(plan, direction.id, uid, { media: mediaClips })
         const review = reviewEdit(built.doc, plan.brief, plan.plan, built.clipIds)
         const craft = reviewScore(review)
         candidates.push({
@@ -260,9 +275,13 @@ export async function runAutonomousJob(
     // — 5. timeline ———————————————————————————————————————————————
     hooks.step(5, { status: 'running', progressPct: 20, message: 'Building designed, editable scenes' })
     guard()
-    const built = buildDirection(plan, winner.id, uid)
+    const built = buildDirection(plan, winner.id, uid, { media: mediaClips })
     hooks.commit(built.doc, `Autonomous run → ${winner.name} scenes`)
-    hooks.step(5, { status: 'done', progressPct: 100, message: `${built.clipIds.length} clips · ${built.doc.trackCount} tracks · design ${built.design.score}/100 · ${built.placeholders} placeholder(s)` })
+    hooks.step(5, {
+      status: 'done',
+      progressPct: 100,
+      message: `${built.clipIds.length} clips · ${built.doc.trackCount} tracks · design ${built.design.score}/100 · ${built.reused ? `${built.reused} using your media · ` : ''}${built.placeholders} placeholder(s)`,
+    })
     if (built.placeholders) warn(`${built.placeholders} scene(s) are placeholders — the brief did not say what to show there, so they are labelled for you to fill rather than invented.`)
 
     const doc = built.doc
@@ -348,10 +367,13 @@ export function buildDirection(
   plan: LocalPlan,
   directionId: DesignDirectionId,
   makeId: () => string = uid,
-  opts: { seed?: number } = {},
-): { doc: StudioDoc; clipIds: string[]; placeholders: number; design: DesignReport } {
+  opts: { seed?: number; media?: StudioClip[] } = {},
+): { doc: StudioDoc; clipIds: string[]; placeholders: number; design: DesignReport; reused: number } {
   const direction = directionById(directionId)
-  const built = planToDoc(emptyStudioDoc(), plan.plan, plan.brief, { makeId, replace: true, replaceApproved: true, motion: false })
+  // The project's own media is the base document `planToDoc` matches shot
+  // asset names against — that is how a planned shot becomes a real clip.
+  const base: StudioDoc = { ...emptyStudioDoc(), clips: opts.media ?? [], trackCount: 1 }
+  const built = planToDoc(base, plan.plan, plan.brief, { makeId, replace: true, replaceApproved: true, motion: false })
   const moved = directProduction(built.doc, built.clipIds, plan.brief)
   const designed = designScenes(moved, {
     brandColors: plan.brief.brandColors,
@@ -361,7 +383,7 @@ export function buildDirection(
     language: plan.brief.language,
   }, built.clipIds, { direction, makeId, seed: opts.seed ?? direction.lookOrder[0] })
   const polished = polishEdit(designed.doc, plan.brief, plan.plan, built.clipIds)
-  return { doc: polished.doc, clipIds: built.clipIds, placeholders: built.placeholders, design: designed.report }
+  return { doc: polished.doc, clipIds: built.clipIds, placeholders: built.placeholders, design: designed.report, reused: built.reused }
 }
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'cupric-run'

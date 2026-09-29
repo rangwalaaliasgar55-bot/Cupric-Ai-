@@ -240,6 +240,23 @@ function harness(job) {
   ok(auto.candidates.length === 3, 'auto still runs the three-direction battle')
 }
 
+/* ── 7c. the project's own media is used, not replaced by placeholders ── */
+{
+  const media = [
+    { id: 'media-1', kind: 'video', track: 0, startSec: 0, durationSec: 6, name: 'founder-interview', transitionIn: 'none', transitionOut: 'none', opacity: 1, mediaId: 'm1', fileName: 'founder-interview.mp4', localPath: null, trimInSec: 0, sourceDurationSec: 6, speed: 1, volume: 1, fit: 'cover' },
+    { id: 'media-2', kind: 'image', track: 0, startSec: 6, durationSec: 4, name: 'product-shot', transitionIn: 'none', transitionOut: 'none', opacity: 1, mediaId: 'm2', fileName: 'product-shot.png', localPath: null, trimInSec: 0, sourceDurationSec: 4, speed: 1, volume: 1, fit: 'cover' },
+  ]
+  const withMedia = m.plan.planLocally({ brief: briefText, aspect: '9:16', fps: 30, quality: 'draft', durationSec: 20, mediaNames: ['founder-interview.mp4', 'product-shot.png'] }, catalogue)
+  ok(withMedia.plan.shots.some((shot) => shot.mediaName === 'founder-interview.mp4'), 'the planner binds the project’s media to shots')
+  ok(withMedia.intake.assets.includes('product-shot.png'), 'the intake lists the real assets')
+  const built = m.run.buildDirection(withMedia, 'typography', (() => { let k = 0; return () => `md${k++}` })(), { media })
+  const reused = built.doc.clips.filter((c) => c.kind === 'video' || c.kind === 'image').filter((c) => c.mediaId)
+  ok(reused.length >= 1 && built.reused >= 1, 'the designed edit actually uses the imported media')
+  ok(reused.every((c) => c.mediaId === 'm1' || c.mediaId === 'm2'), 'reused clips keep the project’s media handles')
+  const noMedia = m.run.buildDirection(withMedia, 'typography', (() => { let k = 0; return () => `nm${k++}` })())
+  ok(noMedia.reused === 0 && noMedia.placeholders >= 1, 'without media the same plan is honest about placeholders')
+}
+
 /* ── 8. wiring: the app actually runs this ─────────────────────────── */
 {
   const store = read('src/state/useProjectStore.ts')

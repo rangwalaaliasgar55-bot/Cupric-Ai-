@@ -26,6 +26,12 @@ export type AutonomyBrief = {
   fps: 30 | 60
   durationSec?: number
   quality: 'draft' | 'final'
+  /**
+   * File names of media already in the project. The planner assigns them to
+   * shots, so the design uses real footage/photos instead of honest
+   * placeholders. Empty means a type-led film.
+   */
+  mediaNames?: string[]
 }
 
 const ASPECT_WORD: Array<[RegExp, '16:9' | '9:16' | '1:1' | '4:5']> = [
@@ -36,7 +42,7 @@ const ASPECT_WORD: Array<[RegExp, '16:9' | '9:16' | '1:1' | '4:5']> = [
 ]
 
 /** The spoken or typed brief → the structured intake the engine expects. */
-export function intakeFromBrief(input: AutonomyBrief, brand?: { colors?: string[]; fonts?: string[] }): ProductionIntake {
+export function intakeFromBrief(input: AutonomyBrief, brand?: { colors?: string[]; fonts?: string[] }, mediaNames?: string[]): ProductionIntake {
   const text = input.brief.replace(/\s+/g, ' ').trim()
   const lower = text.toLowerCase()
   const duration = input.durationSec
@@ -54,7 +60,11 @@ export function intakeFromBrief(input: AutonomyBrief, brand?: { colors?: string[
     platform,
     durationSec: Math.max(8, Math.min(180, Math.round(duration))),
     aspect,
-    assets: /\b(my footage|our footage|raw clips?|b-?roll|photos?|screenshots?)\b/i.test(lower) ? 'Use the media already in this project' : 'None — type-led',
+    // Real media in the project wins over a guess from the words: the planner
+    // binds these names to shots, and `planToDoc` reuses the actual clips.
+    assets: (mediaNames ?? []).filter(Boolean).length
+      ? (mediaNames ?? []).filter(Boolean).join('\n')
+      : /\b(my footage|our footage|raw clips?|b-?roll|photos?|screenshots?)\b/i.test(lower) ? 'Use the media already in this project' : 'None — type-led',
     narration: /\b(voice ?over|narrat\w+|voiceover)\b/i.test(lower) ? 'voiceover' : /\bno (?:captions?|subtitles?)\b/i.test(lower) ? 'none' : 'captions',
     language: hindi ? (/[a-z]{3,}/i.test(text.replace(/[\u0900-\u097F]/g, '')) ? 'en+hi' : 'hi') : 'en',
     brandColors: (brand?.colors ?? []).join(', '),
@@ -101,7 +111,7 @@ export type LocalPlan = {
  * *improve* on this, never gate it.
  */
 export function planLocally(input: AutonomyBrief, catalogue: Catalogue, brand?: { colors?: string[]; fonts?: string[] }): LocalPlan {
-  const intake = intakeFromBrief(input, brand)
+  const intake = intakeFromBrief(input, brand, input.mediaNames)
   const brief = buildBrief(intake)
   const found = research(catalogue.index, brief, catalogue.resources)
   const plan = buildPlan(catalogue.index, brief, found)

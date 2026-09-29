@@ -18,6 +18,9 @@ longer paints a fallback face while claiming a font was applied.
 - New in the UI: the candidate battle with scores and reasons, the scene-by-scene
   storyboard (stage, face, accent, timing), the rendered video with a download,
   and the full review report.
+- Media already in the project is assigned to planned shots by file name, so a
+  run designs *around your footage* instead of planning placeholders (`reused`
+  counts the clips that made it in; the step log says so).
 
 ### Design engine (`src/lib/studio/design.ts`)
 - `DESIGN_DIRECTIONS` = typography-led / composition-led / atmosphere-led. Each
@@ -39,9 +42,9 @@ longer paints a fallback face while claiming a font was applied.
 - Exports verify every face first and warn (toast) instead of baking the
   fallback into the file.
 - Checks: `check:framecn-fonts` (728 assertions) covers the new rules;
-  `check:automation` (68 assertions) covers planning, the battle, the pinned
-  direction, the full eight-step run with an injected render, the guided gate,
-  cancel, report truth and the UI/store wiring.
+  `check:automation` (73 assertions) covers planning, media binding, the battle,
+  the pinned direction, the full eight-step run with an injected render, the
+  guided gate, cancel, report truth and the UI/store wiring.
 
 ### Still to eyeball in a real browser
 - The local render step needs `MediaRecorder`; in the sandbox it is stubbed. On
