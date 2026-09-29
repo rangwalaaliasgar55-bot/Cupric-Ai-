@@ -427,6 +427,20 @@ type StudioClipCommon = {
 /** A transcribed word in SOURCE-file seconds (survives trims and splits). */
 export type StudioWord = { word: string; start: number; end: number }
 
+/**
+ * Where a caption's per-word timings came from.
+ *
+ *   word   — real per-word times from a transcription (Whisper family).
+ *   phrase — the engine timed phrases, not words, so the words inside a phrase
+ *            are spread evenly across it. Approximate, and labelled as such.
+ *   even   — no transcription at all: the words are spread evenly across the
+ *            caption's own window. Approximate, and labelled as such.
+ *
+ * Captions are never silently approximate: `textTools.captionDelaysWithSource`
+ * decides this from the data, not from a provider's promise.
+ */
+export type StudioTimingSource = 'word' | 'phrase' | 'even'
+
 export type StudioMediaClip = StudioClipCommon & {
   kind: 'video' | 'image'
   /** Transcript words with timing (auto-captions); drives speech tightening. */
@@ -501,9 +515,17 @@ export type StudioTextClip = StudioClipCommon & {
    *
    * Relative rather than absolute on purpose: a caption that is dragged, split
    * or retimed keeps its sync, where an absolute timeline time would be
-   * invalidated by the move. Written by `speech/captions.ts` from a transcript.
+   * invalidated by the move. Written by `studio/textTools.ts`
+   * (`captionsFromTranscript` / `planCaptionLines`) from a transcript, and by the
+   * Quick Video pipeline when it has real word times.
    */
   wordDelaysMs?: number[] | null
+  /**
+   * What those delays are based on (see `StudioTimingSource`). Absent on clips
+   * nobody timed and on saves written before this field existed — the inspector
+   * treats absent as "unknown", not as "real".
+   */
+  timingSource?: StudioTimingSource | null
 }
 
 export type StudioBackgroundClip = StudioClipCommon & {

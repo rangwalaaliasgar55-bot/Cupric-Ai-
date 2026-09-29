@@ -3,7 +3,7 @@
  * Pure: no clock, no randomness — preview and export draw identical text.
  */
 
-import type { StudioAspect, StudioTextClip } from '../../types/project'
+import type { StudioAspect, StudioTextClip, StudioTimingSource } from '../../types/project'
 import { evenSplitDelays } from '../speech/transcript'
 import { defaultTextClip } from './doc'
 
@@ -65,72 +65,148 @@ export const CAPTION_PAUSE_SEC = 0.35
  * which is the same delay repeated; that is a worse reveal than an even split,
  * so it is treated as "no timings" rather than drawn faithfully.
  */
+/**
+ * Per-word reveal delays (ms from the caption's own start) for one caption, with
+ * the label that says how they were obtained.
+ *
+ * Real spoken times when the engine gave them and they agree with the text — and
+ * an even split within the caption's own window when it did not. Phrase-timed
+ * engines (Windows Speech) stamp every word of a phrase with the phrase's start,
+ * which is the same delay repeated; that is a worse reveal than an even split,
+ * so it is treated as "no timings" rather than drawn faithfully.
+ */
+export function captionDelaysWithSource(
+  words: Array<{ start: number; end: number }>,
+  startSec: number,
+  durationSec: number,
+  tokenCount: number,
+): { delays: number[]; source: StudioTimingSource } {
+  if (tokenCount <= 0) return { delays: [], source: 'even' }
+  if (tokenCount === 1) return { delays: [0], source: words.length === 1 ? 'word' : 'even' }
+  if (words.length === tokenCount) {
+    const delays = words.map((w) => Math.max(0, Math.round((w.start - startSec) * 1000)))
+    const monotonic = delays.every((d, i) => i === 0 || d >= delays[i - 1])
+    const advances = delays[delays.length - 1] > 0
+    if (monotonic && advances) {
+      // Repeated stamps are phrase-level timing: the words are real, the times
+      // inside the phrase are not, so say so instead of passing it off as exact.
+      const exact = new Set(delays).size === delays.length
+      return { delays, source: exact ? 'word' : 'phrase' }
+    }
+    const flat = delays.every((d) => d === delays[0])
+    return { delays: evenSplitDelays(0, Math.max(0.3, durationSec), new Array(tokenCount).fill('x')).map((w) => w.delayMs), source: flat ? 'phrase' : 'even' }
+  }
+  // Slot = window / wordCount, so the last word lands one slot before the
+  // caption closes and the block never ends on a word that has not appeared.
+  return { delays: evenSplitDelays(0, Math.max(0.3, durationSec), new Array(Math.max(1, tokenCount)).fill('x')).map((w) => w.delayMs), source: 'even' }
+}
+
+/** The delays alone, for callers that do not need the provenance. */
 export function captionDelays(
   words: Array<{ start: number; end: number }>,
   startSec: number,
   durationSec: number,
   tokenCount: number,
 ): number[] {
-  if (tokenCount <= 0) return []
-  if (tokenCount === 1) return [0]
-  if (words.length === tokenCount) {
-    const delays = words.map((w) => Math.max(0, Math.round((w.start - startSec) * 1000)))
-    const monotonic = delays.every((d, i) => i === 0 || d >= delays[i - 1])
-    const advances = delays[delays.length - 1] > 0
-    if (monotonic && advances) return delays
-  }
-  // Slot = window / wordCount, so the last word lands one slot before the
-  // caption closes and the block never ends on a word that has not appeared.
-  return evenSplitDelays(0, Math.max(0.3, durationSec), new Array(Math.max(1, tokenCount)).fill('x')).map((w) => w.delayMs)
+  return captionDelaysWithSource(words, startSec, durationSec, tokenCount).delays
 }
 
-export function captionsFromTranscript(
+/**
+ * Group a transcript (or a list of real word times) into caption lines and time
+ * them. This is the one place caption boundaries and per-word reveals are
+ * decided, so Studio's auto-captions and Quick Video's subtitles cannot drift
+ * apart: a pause, a punctuation mark, the word cap or the character budget ends
+ * a line, and the words inside the line keep their real times when the engine
+ * gave them.
+ *
+ * Word times are seconds on the caller's own timeline (the same timeline the
+ * captions land on); `startSec` is where that timeline begins for this call.
+ */
+export interface CaptionLinePlan {
+  text: string
+  startSec: number
+  durationSec: number
+  /** Reveal delays in ms from this line's own start; null when no times were given at all. */
+  wordDelaysMs: number[] | null
+  timingSource: StudioTimingSource
+  words: number
+}
+
+export function planCaptionLines(
   transcript: string,
-  opts: { startSec: number; durationSec: number; track: number; maxWords?: number; words?: Array<{ word: string; start: number; end: number }> },
-): StudioTextClip[] {
+  opts: { startSec: number; durationSec: number; maxWords?: number; maxChars?: number; pauseSec?: number; words?: Array<{ word: string; start: number; end: number }> | null },
+): CaptionLinePlan[] {
   const maxWords = Math.max(1, opts.maxWords ?? 4)
+  const maxChars = opts.maxChars && opts.maxChars > 0 ? Math.round(opts.maxChars) : null
+  const pauseSec = opts.pauseSec ?? CAPTION_PAUSE_SEC
   const timed = opts.words?.length ? opts.words : null
   const tokens = timed ? timed.map((w) => w.word.trim()).filter(Boolean) : transcript.split(/\s+/).filter(Boolean)
   if (!tokens.length) return []
   const chunks: string[][] = []
   let cur: string[] = []
+  let chars = 0
   for (let i = 0; i < tokens.length; i++) {
     const tok = tokens[i]
+    const width = tok.length + (cur.length ? 1 : 0)
+    // A character budget only splits when the caller asked for one; without it
+    // the word cap and the subject's punctuation decide, as before.
+    if (cur.length && maxChars && chars + width > maxChars) { chunks.push(cur); cur = []; chars = 0 }
     cur.push(tok)
+    chars += width
     // A spoken pause ends the caption wherever it falls; punctuation and the
     // word cap only matter when the speaker never paused.
     const pause = timed && i + 1 < tokens.length ? timed[i + 1].start - timed[i].end : 0
-    if (pause >= CAPTION_PAUSE_SEC || cur.length >= maxWords || /[.!?,;:]$/.test(tok)) { chunks.push(cur); cur = [] }
+    if (pause >= pauseSec || cur.length >= maxWords || /[.!?,;:]$/.test(tok)) { chunks.push(cur); cur = []; chars = 0 }
   }
   if (cur.length) chunks.push(cur)
   const weight = (w: string) => Math.max(1, w.replace(/[^a-z0-9]/gi, '').length / 3)
   const total = tokens.reduce((a, w) => a + weight(w), 0)
   let cursor = opts.startSec
   let wi = 0
-  return chunks.map((chunk, i) => {
+  return chunks.map((chunk) => {
     let start = cursor
     let dur: number
     let delays: number[] | null = null
+    let source: StudioTimingSource = 'even'
     if (timed) {
       const mine = timed.slice(wi, wi + chunk.length)
       start = opts.startSec + mine[0].start
       dur = Math.max(0.3, mine[mine.length - 1].end - mine[0].start)
-      delays = captionDelays(mine, mine[0].start, dur, chunk.length)
+      const calc = captionDelaysWithSource(mine, mine[0].start, dur, chunk.length)
+      delays = calc.delays
+      source = calc.source
     } else {
       dur = (chunk.reduce((a, w) => a + weight(w), 0) / total) * opts.durationSec
     }
     wi += chunk.length
     cursor = start + dur
-    const clip = defaultTextClip(Math.round(start * 100) / 100, opts.track)
+    return {
+      text: chunk.join(' '),
+      startSec: start,
+      durationSec: Math.max(0.3, Math.round(dur * 100) / 100),
+      wordDelaysMs: delays,
+      timingSource: source,
+      words: chunk.length,
+    }
+  })
+}
+
+export function captionsFromTranscript(
+  transcript: string,
+  opts: { startSec: number; durationSec: number; track: number; maxWords?: number; words?: Array<{ word: string; start: number; end: number }> },
+): StudioTextClip[] {
+  return planCaptionLines(transcript, { startSec: opts.startSec, durationSec: opts.durationSec, maxWords: opts.maxWords, words: opts.words }).map((plan, i) => {
+    const clip = defaultTextClip(Math.round(plan.startSec * 100) / 100, opts.track)
     return {
       ...clip,
       id: `cap-${i}-${clip.id}`,
       name: `Caption ${i + 1}`,
-      text: chunk.join(' '),
-      durationSec: Math.max(0.3, Math.round(dur * 100) / 100),
+      text: plan.text,
+      durationSec: plan.durationSec,
+      timingSource: plan.timingSource,
       // The words land on the voice, so `word-reveal` and the karaoke tint
       // follow what was actually said instead of spreading evenly.
-      ...(delays ? { anim: 'word-reveal' as const, wordDelaysMs: delays } : {}),
+      ...(plan.wordDelaysMs ? { anim: 'word-reveal' as const, wordDelaysMs: plan.wordDelaysMs } : {}),
       ...TEXT_PRESETS.find((p) => p.id === 'caption')!.patch,
     }
   })

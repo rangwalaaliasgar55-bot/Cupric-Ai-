@@ -24,12 +24,22 @@ model and runtime):
 | `cli/src/commands/speech-probe.ts` | `src/lib/speech/probe.ts` | measured noise floor, adaptive threshold, onset/decay and gap detection. Decoding now happens through WebAudio in the renderer and FFmpeg on the desktop, so the maths is the same on both. |
 | `cli/src/edl.ts` | `src/lib/speech/edl.ts` | edit decision list types, validation and the frame-grid snapping rule. |
 | `cli/src/commands/retime-transcript.ts` | `src/lib/speech/edl.ts` | moving word timings onto the timeline a cut produced, with the majority-overlap rule and dropped-word accounting. |
-| `cli/src/commands/check-delivery.ts` | `src/lib/speech/delivery.ts` | delivery reporting shape: container facts, picture-offset sampling and EBU R128 loudness parsing. |
+| `cli/src/commands/check-delivery.ts` | `src/lib/studio/gates.ts` | delivery findings and loudness targets: `DeliveryFindings`, `LOUDNESS_TARGET` and the sampled-frame contrast policy. There is no separate `src/lib/speech/delivery.ts`; an earlier revision of this table named a file that was never created. |
 | `cli/src/safe-zone.ts` | `src/lib/studio/safeZone.ts` | the platform-safe area, one definition, used by the design engine and the gate. |
 | `cli/src/wcag/policy.ts`, `windows.ts`, `treat.ts` | `src/lib/studio/gates.ts` | WCAG 2.2 thresholds (AA/AAA, large-text rule), the sliding one-second window policy, and the analytic evaluation of a fix against already-sampled background colours. Cupric samples its own rendered frames instead of the engine's statistics file. |
 
 Modifications are described in each file's header. Cupric's version is a
 derivative work under the same licence.
+
+Built on the ported pieces, but Cupric's own code (not taken from open-edit):
+`src/lib/studio/textTools.ts` `planCaptionLines` / `captionDelaysWithSource` —
+the single caption planner both Studio's auto-captions and the Quick Video
+pipeline use — and `StudioTimingSource` in `src/types/project.ts`, which records
+whether a caption's per-word delays are real word times (`word`), phrase-level
+stamps spread evenly (`phrase`) or estimates (`even`). Upstream's equivalent
+guarantee is that word delays come from `word-timings.json`; Cupric keeps the
+provenance with the clip so a caption that was never transcribed cannot claim
+precision it does not have.
 
 ## awesome-opus-5-5-videos (opus55 catalogue) — MIT
 

@@ -12,12 +12,13 @@ import { PipelineIcon, ShinyText, SpotlightCard, type PipelineStepState } from '
 import { getIpc } from '../../lib/bridge'
 import { registerFile, registerUrl } from '../../lib/studio/media'
 import { studioOf } from '../../lib/studio/doc'
+import { transcribeMediaPath } from '../../lib/studio/autoCaptions'
 import { synthesizeVoiceover } from '../../lib/voice'
 import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import {
-  ASPECT_PRESETS, DEFAULT_QUICK_SETTINGS, QUICK_VIDEO_SOURCE, buildQuickVariants, cleanScript, draftScript, estimateNarrationSec,
+  ASPECT_PRESETS, DEFAULT_QUICK_SETTINGS, QUICK_VIDEO_SOURCE, buildQuickVariants, captionTimingOf, cleanScript, draftScript, estimateNarrationSec,
   exportSettings, importSettings, parseHistory, pushTask, sanitizeSettings, scriptPrompt, searchTerms,
-  type QuickAudio, type QuickMedia, type QuickTask, type QuickVideoSettings,
+  type QuickAudio, type QuickMedia, type QuickTask, type QuickVideoSettings, type QuickWord,
 } from '../../lib/production/quickVideo'
 
 const STEPS = [
@@ -111,16 +112,38 @@ export function QuickVideoPanel() {
     return { media, credits }
   }
 
-  async function makeVoice(script: string): Promise<QuickAudio | null> {
-    if (s.voice === 'none') { mark('voice', 'skipped'); return null }
+  async function makeVoice(script: string): Promise<{ voice: QuickAudio | null; words: QuickWord[] | null }> {
+    if (s.voice === 'none') { mark('voice', 'skipped'); return { voice: null, words: null } }
     mark('voice', 'active')
     try {
       const { file, engine, language } = await synthesizeVoiceover(script, { rate: s.voiceRate, language: s.language })
       const h = await registerFile(file)
       mark('voice', 'done'); note(`${language === 'hi' ? 'Hindi' : 'English'} voiceover made offline with ${engine}.`)
-      return { mediaId: h.id, fileName: h.fileName, localPath: h.localPath, durationSec: h.durationSec || estimateNarrationSec(script, s.language, s.voiceRate) }
+      const voice = { mediaId: h.id, fileName: h.fileName, localPath: h.localPath, durationSec: h.durationSec || estimateNarrationSec(script, s.language, s.voiceRate) }
+      return { voice, words: await transcribeVoice(h.localPath, language) }
     } catch (err) {
       mark('voice', 'error'); note(`Voiceover skipped: ${err instanceof Error ? err.message : String(err)} Timing uses the reading estimate.`)
+      return { voice: null, words: null }
+    }
+  }
+
+  /**
+   * Real word times for the subtitles, from the voiceover we just made. This is
+   * the same transcription entry point Studio's auto-captions use, so both paths
+   * produce the same timings from the same audio. It never throws silently: a
+   * failure is named in the log and the captions are labelled as estimates.
+   */
+  async function transcribeVoice(localPath: string | null, language: 'en' | 'hi'): Promise<QuickWord[] | null> {
+    if (!s.wordTimings || !s.subtitles) return null
+    if (!getIpc()) { note('Real word timings need the desktop app (offline Whisper). Subtitles are estimated from the script.'); return null }
+    if (!localPath) { note('The voiceover has no file on disk, so its words cannot be timed. Subtitles are estimated from the script.'); return null }
+    try {
+      const { words, timing, engine } = await transcribeMediaPath(localPath, language)
+      if (!words?.length) { note(`${engine} returned no words; subtitles are estimated from the script.`); return null }
+      note(`Word timings from ${engine}${timing === 'phrase' ? ' (phrase-level — words inside a phrase are spread)' : ''}: ${words.length} words.`)
+      return words
+    } catch (err) {
+      note(`Word timings unavailable (${err instanceof Error ? err.message : String(err)}). Subtitles are estimated from the script — they are labelled that way in Studio.`)
       return null
     }
   }
@@ -142,17 +165,19 @@ export function QuickVideoPanel() {
       const list = terms.length ? terms : makeTerms(script)
       if (terms.length) mark('terms', 'done')
       const { media, credits } = await fetchFootage(list)
-      const voice = await makeVoice(script)
+      const { voice, words } = await makeVoice(script)
       mark('subtitles', s.subtitles ? 'done' : 'skipped')
       const bgm = await makeMusic()
       mark('compose', 'active')
       const base = studioOf(project)
-      const doc = buildQuickVariants(base, s, script, media, { voice, music: bgm })
+      const doc = buildQuickVariants(base, s, script, media, { voice, music: bgm, words })
       const merged = { ...doc, credits: [...(doc.credits ?? []), ...credits] }
       patchStudio(project.id, merged, `Quick video: ${s.topic.slice(0, 40) || 'custom script'}`)
       mark('compose', 'done')
+      const timing = captionTimingOf(merged)
+      note(timing ? `Subtitles: ${timing.label}.` : 'No subtitles in this build.')
       const dur = Math.max(0, ...merged.clips.map((c) => c.startSec + c.durationSec))
-      const task: QuickTask = { id: `qv-${history.length + 1}-${s.seed}`, at: new Date().toISOString(), topic: s.topic || 'Custom script', variants: s.variants, clips: merged.clips.length, durationSec: Math.round(dur * 10) / 10, status: 'done', note: `${media.length} footage · ${voice ? 'voice' : 'no voice'} · ${bgm ? 'music' : 'no music'}`, settings: s }
+      const task: QuickTask = { id: `qv-${history.length + 1}-${s.seed}`, at: new Date().toISOString(), topic: s.topic || 'Custom script', variants: s.variants, clips: merged.clips.length, durationSec: Math.round(dur * 10) / 10, status: 'done', note: `${media.length} footage · ${voice ? 'voice' : 'no voice'} · ${bgm ? 'music' : 'no music'}${timing ? ` · captions ${timing.source}` : ''}`, settings: s }
       const next = pushTask(history, task); setHistory(next); try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)) } catch { /* ignore */ }
       pushToast('success', `Timeline built (${merged.clips.length} clips${s.variants > 1 ? `, ${s.variants} variants saved as scenes` : ''}). Undo reverts it in one step.`)
     } catch (err) {
@@ -236,6 +261,21 @@ export function QuickVideoPanel() {
               <label className="text-[11px] text-muted">Size · {s.subtitleSizePct}%<input type="range" min={3} max={14} step={0.5} value={s.subtitleSizePct} onChange={(e) => set({ subtitleSizePct: Number(e.target.value) })} className="w-full" /></label>
               <label className="text-[11px] text-muted">Line length · {s.subtitleMaxChars}<input type="range" min={12} max={60} value={s.subtitleMaxChars} onChange={(e) => set({ subtitleMaxChars: Number(e.target.value) })} className="w-full" /></label>
             </div>
+            <label className="flex items-start gap-2 text-[11px] text-muted">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={s.wordTimings}
+                disabled={!s.subtitles || s.voice === 'none'}
+                title={(!s.subtitles || s.voice === 'none') ? 'Needs subtitles and a generated voiceover' : undefined}
+                onChange={(e) => set({ wordTimings: e.target.checked })}
+                aria-label="Real word timings"
+              />
+              <span>
+                Real word timings — transcribe the voiceover so each caption lands on the word that was spoken
+                {getIpc() ? ' (offline Whisper, one extra pass over the voiceover)' : ' (desktop only; this build estimates the timings from the script and labels them that way)'}
+              </span>
+            </label>
           </div>
         </div>
 

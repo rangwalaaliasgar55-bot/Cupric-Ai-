@@ -977,6 +977,26 @@ function TextFields({ clip, doc, onPatch }: { clip: StudioTextClip; doc: StudioD
         </Field>
       </div>
 
+      {/* Where this clip's per-word reveals come from. Estimated timing is not a
+          defect — hiding it would be, because the caption then looks measured. */}
+      {(clip.wordDelaysMs?.length || clip.timingSource) && (
+        <div className="rounded-lg border border-line bg-panel-alt/30 px-2 py-1.5 text-[11px] text-muted">
+          <span className="text-text">Word timing: </span>
+          {clip.timingSource === 'word'
+            ? `real word times from the transcript (${clip.wordDelaysMs?.length ?? 0} words)`
+            : clip.timingSource === 'phrase'
+              ? 'phrase times from the voice engine — words inside a phrase are approximate'
+              : clip.timingSource === 'even'
+                ? 'estimated across the clip — no transcription behind it'
+                : `${clip.wordDelaysMs?.length ?? 0} word delays, source unknown`}
+          {clip.timingSource !== 'word' && (
+            <span className="block text-[10px] opacity-80">
+              Auto-captions from the clip’s audio (Pro panel) replace an estimate with the words’ own times.
+            </span>
+          )}
+        </div>
+      )}
+
       <Slider
         label="Size"
         value={clip.fontSizePct}

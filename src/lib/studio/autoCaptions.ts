@@ -40,10 +40,14 @@ export function captionsForClip(doc: StudioDoc, clip: StudioMediaClip | StudioAu
   return { doc: { ...doc, trackCount: Math.min(24, Math.max(doc.trackCount, track + 1)), clips: [...clips, ...captions] }, captions }
 }
 
-export async function transcribeClip(clip: StudioMediaClip | StudioAudioClip, lang = 'en'): Promise<Transcription> {
+export async function transcribeMediaPath(path: string, lang = 'en'): Promise<Transcription> {
   const ipc = getIpc()
   if (!ipc) throw new Error('Auto-captions from audio need the desktop app (offline Whisper runs there). Paste a transcript below instead.')
-  const path = getMedia(clip.mediaId)?.localPath ?? (clip as { localPath?: string | null }).localPath
   if (!path) throw new Error('This clip has no file on disk (downloaded or packaged), so its audio cannot be read. Re-import it from disk.')
   return (await ipc.invoke('voice:transcribeMedia', { path, lang })) as Transcription
+}
+
+export async function transcribeClip(clip: StudioMediaClip | StudioAudioClip, lang = 'en'): Promise<Transcription> {
+  const path = getMedia(clip.mediaId)?.localPath ?? (clip as { localPath?: string | null }).localPath ?? ''
+  return transcribeMediaPath(path, lang)
 }
