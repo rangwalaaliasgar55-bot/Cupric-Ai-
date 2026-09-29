@@ -105,7 +105,7 @@
   "findings": [
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 764,
+      "line": 766,
       "target": "Existing placement",
       "existingComponent": "<ThinkingOrb state=\"composing\" size={20} theme={theme === 'light' ? 'light' : 'dark'} paused={reducedMotion} aria-label=",
       "suggestedLibrary": "Thinking orbs",
@@ -222,7 +222,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1376,
+      "line": 1456,
       "target": "Waiting state",
       "existingComponent": "{importing ? <Loader2 size={13} className=\"animate-spin\" /> : <Plus size={13} />} Import",
       "suggestedLibrary": "Thinking orbs",
@@ -235,7 +235,7 @@
     },
     {
       "file": "src/screens/studio/ClipProFields.tsx",
-      "line": 143,
+      "line": 144,
       "target": "Waiting state",
       "existingComponent": "disabled={variants?.busy} title={(variants?.busy) ? 'Generating variants…' : undefined}",
       "suggestedLibrary": "Thinking orbs",
@@ -287,7 +287,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 579,
+      "line": 580,
       "target": "Search input (loads after submit)",
       "existingComponent": "placeholder=\"Search free models…\"",
       "suggestedLibrary": "Border beam",
@@ -300,7 +300,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 845,
+      "line": 847,
       "target": "Chat input",
       "existingComponent": "placeholder=\"Ask anything, or paste an image…\"",
       "suggestedLibrary": "Border beam",
@@ -495,7 +495,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 28,
+      "line": 29,
       "target": "Mic button",
       "existingComponent": "MicOff,",
       "suggestedLibrary": "Voice",
@@ -508,7 +508,7 @@
     },
     {
       "file": "src/screens/studio/StudioProPanel.tsx",
-      "line": 72,
+      "line": 76,
       "target": "Mic button",
       "existingComponent": "const [transcribing, setTranscribing] = useState(false)",
       "suggestedLibrary": "Voice",
@@ -599,7 +599,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1644,
+      "line": 1724,
       "target": "Image placeholder",
       "existingComponent": "<span className={cx('h-2 w-2 shrink-0 rounded-full', listening ? 'animate-pulse bg-accent' : 'bg-muted')} />",
       "suggestedLibrary": "Image",
@@ -664,7 +664,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1413,
+      "line": 1493,
       "target": "Plus menu / segmented control",
       "existingComponent": "<Button size=\"sm\" variant=\"outline\" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} title={(exporting) ? 'W",
       "suggestedLibrary": "Gooey",

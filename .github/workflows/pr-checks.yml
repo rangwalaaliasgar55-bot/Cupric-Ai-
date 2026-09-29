@@ -1,0 +1,68 @@
+name: PR checks (Windows)
+
+# Phase 0 audit finding D2: the only workflow was `Release Windows installer`,
+# which runs on tags. Nothing ran on pull requests, so a red build could be
+# merged and the first signal arrived at release time (v0.13.0 needed three
+# fixes, v0.14.0 and v0.15.0 each needed one). This workflow runs the same
+# release chain on every pull request, on the only platform the product ships
+# on. It replaces the fake test path as well: before this, `vitest` was not a
+# dependency at all and the app aliased the `vitest` module to a shim whose
+# expect() matchers were empty functions, so a test could not fail.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Build and test on Windows
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      ELECTRON_BUILDER_PUBLISH: never
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      # `npm run build` is the real chain: pack builders, icon check, tsc,
+      # `npm run test` (real Vitest), ~60 behaviour checks and `vite build`.
+      # scripts/run-checks.mjs reads the chain from package.json and names the
+      # step that fails, so this stays one source of truth.
+      - name: Type-check, unit tests and release checks
+        run: node scripts/run-checks.mjs
+
+      # Package (no publish) so a PR cannot land that breaks the Windows build
+      # or the installer shape the release workflow asserts on.
+      - name: Package Windows installers (no publish)
+        run: npx electron-builder --win --publish never
+
+      - name: Verify installer artifacts
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe' -File
+          if ($setup.Count -ne 1) {
+            throw "Expected exactly one NSIS setup executable; found $($setup.Count)."
+          }
+          if ($setup[0].Length -lt 10MB) {
+            throw "The generated setup executable is unexpectedly small."
+          }
+          Get-ChildItem -Path release -File | Format-Table Name, Length
+
+      - name: Boot the packaged app on every view (empty and corrupt projects)
+        shell: pwsh
+        env:
+          CUPRIC_BOOT_EXE: ${{ github.workspace }}\release\win-unpacked\Cupric AI.exe
+        run: npm run check:boot -- --no-build
