@@ -24,6 +24,7 @@ import { BrainNotice } from './BrainNotice'
 import { GlobalErrorCards, RouteErrorBoundary } from './ErrorBoundary'
 import type { View } from '../types/project'
 import { ThinkingStates } from '../components/loaders/ThinkingStates'
+import { Onboarding, useOnboarding } from './Onboarding'
 
 // Heavy screens (Studio, Lab, Motion, Library…) are split into their own
 // chunks so first paint only pays for Home and the shell.
@@ -57,6 +58,15 @@ export function AppLayout() {
   // belt to that pair of braces.
   const screen: View = view in SCREENS ? view : 'home'
   const pushToast = useProjectStore((s) => s.pushToast)
+  const projectCount = useProjectStore((s) => s.projects.length)
+  // First run only, and never for an upgrade that already has work (see
+  // src/lib/onboarding.ts). `openOnboarding` reopens it from the palette.
+  const onboarding = useOnboarding({ projectsExist: projectCount > 0 })
+  useEffect(() => {
+    const open = () => onboarding.open()
+    window.addEventListener('cupric:onboarding', open)
+    return () => window.removeEventListener('cupric:onboarding', open)
+  }, [onboarding])
 
   // Crash recovery (2.26): say so when the last session ended badly or the
   // project file had to be restored from an autosave.
@@ -111,6 +121,7 @@ export function AppLayout() {
       <Toasts />
       <BrainNotice />
       <GlobalErrorCards />
+      <Onboarding visible={onboarding.visible} onDismiss={onboarding.dismiss} />
     </div>
     </MotionConfig>
   )

@@ -17,6 +17,7 @@ const encoders = require('./encoders.cjs')
 const assembly = require('./assembly.cjs')
 const proxies = require('./proxies.cjs')
 const tts = require('./tts.cjs')
+const voiceInstall = require('./voice-install.cjs')
 const { migrateSettings } = require('./settings-migration.cjs')
 // The provider layer (Phase 1.1): one interface, real adapters, typed errors.
 // It owns every HTTP call to an AI provider and every failure classification;
@@ -4075,6 +4076,88 @@ function piperDirs() {
   ].filter(Boolean)
 }
 ipcMain.handle('voice:tts', async (_event, payload) => tts.synthesize(payload, process.platform, { piperDirs: piperDirs() }))
+
+/**
+ * What each engine needs, and whether it is already here. Read-only: the UI
+ * shows this so a person can see why voiceover is unavailable before pressing
+ * anything. Paths are real, resolved the same way the engines themselves are.
+ */
+ipcMain.handle('voice:engines', async () => {
+  const piper = tts.piperSetup({ platform: process.platform, dirs: piperDirs() })
+  const whisper = whisperSetup()
+  return {
+    platform: process.platform,
+    supported: voiceInstall.supported(process.platform),
+    piperDir: userDataPath('piper'),
+    whisperDir: userDataPath('whisper'),
+    engines: [
+      {
+        id: 'piper',
+        label: 'Piper voice engine',
+        detail: piper ? `Found at ${path.dirname(piper.bin)}` : 'Not installed — offline voiceover needs it.',
+        installed: Boolean(piper),
+        sizeHint: 'about 22 MB',
+      },
+      {
+        id: 'piper-model-en',
+        label: 'English voice (lessac, medium)',
+        detail: piper?.models?.en ? 'Present.' : 'Not installed — Piper has no voice to speak with until this is here.',
+        installed: Boolean(piper?.models?.en),
+        sizeHint: 'about 63 MB',
+      },
+      {
+        id: 'whisper',
+        label: 'Whisper speech recognition',
+        detail: whisper ? `Model ${path.basename(whisper.model)}` : 'Not installed — transcription is unavailable until this is here.',
+        installed: Boolean(whisper),
+        sizeHint: 'about 57 MB + the engine',
+      },
+      {
+        id: 'voice-hi',
+        label: 'Windows Hindi voice',
+        detail: 'Windows installs system voices itself; Cupric opens the right Settings page instead of pretending to install one.',
+        installed: false,
+        manual: true,
+      },
+    ],
+  }
+})
+
+/**
+ * Install one engine, streaming real progress to whichever window asked.
+ *
+ * Cancellation is per-window: closing the window or asking again stops the
+ * transfer rather than leaving it running with nowhere to report to.
+ */
+const voiceInstalls = new Map()
+ipcMain.handle('voice:install', async (event, payload) => {
+  const id = String(payload?.id ?? '')
+  if (id === 'whisper') {
+    // whisper.cpp is a plain download into <userData>/whisper with a model in
+    // the same folder; the ids and destinations are the same ones
+    // scripts/fetch-whisper.mjs uses for the packaged build.
+    return { ok: false, id, stage: 'manual', error: 'Whisper is fetched with the packaged build (npm run whisper:fetch) or by dropping whisper-cli.exe and a ggml model into the whisper folder. An in-app fetch for it is not written yet — the button explains the folder instead of pretending to download.' }
+  }
+  const sender = event.sender
+  const controller = new AbortController()
+  voiceInstalls.set(sender.id, controller)
+  sender.once('destroyed', () => controller.abort())
+  try {
+    const result = await voiceInstall.install(id, {
+      dir: id === 'piper' || id === 'piper-model-en' ? userDataPath('piper') : userDataPath('whisper'),
+      platform: process.platform,
+      signal: controller.signal,
+      onProgress: (progress) => {
+        if (!sender.isDestroyed()) sender.send('voice:install:progress', progress)
+      },
+    })
+    if (result.ok) logLine('voice', `installed ${id} into ${result.dir}`)
+    else logLine('voice', `install ${id} failed at ${result.stage}: ${result.error}`)
+    return { id, ...result }
+  } finally {
+    voiceInstalls.delete(sender.id)
+  }
+})
 
 ipcMain.handle('voice:status', async () => {
   const whisper = whisperSetup()

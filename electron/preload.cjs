@@ -23,6 +23,7 @@ const invokeChannels = new Set([
   'diag:report',
   'log:write',
   'voice:status', 'voice:tts', 'voice:transcribe', 'voice:transcribeMedia',
+  'voice:engines', 'voice:install',
   'media:proxy', 'media:proxyDelete',
   'gemini:ask',
   'gemini:chat',
@@ -54,7 +55,7 @@ const invokeChannels = new Set([
   'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput', 'automation:openArena',
 ])
 
-const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'studio:backgroundExport', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress', 'ai:discovery', 'ai:rundownPolished', 'ai:notice', 'ai:models'])
+const eventChannels = new Set(['voice:install:progress', 'render:progress', 'render:done', 'render:error', 'studio:backgroundExport', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress', 'ai:discovery', 'ai:rundownPolished', 'ai:notice', 'ai:models'])
 
 function assertChannel(channel, allowed) {
   if (!allowed.has(channel)) throw new Error(`IPC channel is not exposed: ${channel}`)

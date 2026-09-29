@@ -1,11 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Camera, CameraOff, Copy, Mic, MicOff, Phone, PhoneOff, RefreshCw, Video } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { copyText } from '../lib/utils'
-import { humanError } from '../lib/humanError'
 import { getIpc } from '../lib/bridge'
+import { humanError } from '../lib/humanError'
+import { rlog } from '../lib/log'
+import { ErrorState, LoadingState } from '../components/ScreenStates'
 
 type RoomState = 'idle' | 'previewing' | 'connecting' | 'connected' | 'error'
 
@@ -57,6 +59,9 @@ export function ReviewRoom() {
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [state, setState] = useState<RoomState>('idle')
   const [error, setError] = useState<string | null>(null)
+  /** Loading the notes is its own state: it is the first thing this screen does. */
+  const [loadState, setLoadState] = useState<'loading' | 'error' | 'ready'>('loading')
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [roomName, setRoomName] = useState(roomFromUrl)
   const [token, setToken] = useState('')
   const [cameraOff, setCameraOff] = useState(false)
@@ -79,16 +84,51 @@ export function ReviewRoom() {
     videoRef.current.srcObject = stream
   }, [stream])
 
-  useEffect(() => {
-    let alive = true
+  /**
+   * Load the room's notes.
+   *
+   * Before this was a `useEffect` whose `.catch` set an empty list: a failed
+   * `review:list` was indistinguishable from a room with no notes, which is the
+   * exact failure mode Phase 3 forbids — an error nobody is told about. Now the
+   * failure is a state with a message and a retry that calls this same function.
+   */
+  const loadComments = useCallback(async (signal?: { alive: boolean }) => {
+    setLoadState('loading')
     const ipc = getIpc()
-    if (ipc) {
-      void ipc.invoke('review:list', { room: roomName }).then((value: ReviewComment[]) => { if (alive) setComments(Array.isArray(value) ? value : []) }).catch(() => { if (alive) setComments([]) })
-    } else {
-      try { setComments(JSON.parse(localStorage.getItem(`cupric.review.${roomName}`) || '[]')) } catch { setComments([]) }
+    if (!ipc) {
+      try {
+        const raw = JSON.parse(localStorage.getItem(`cupric.review.${roomName}`) || '[]')
+        if (signal && !signal.alive) return
+        setComments(Array.isArray(raw) ? raw : [])
+        setLoadState('ready')
+      } catch (err) {
+        if (signal && !signal.alive) return
+        // Unreadable stored notes are a real error: the room is not empty, its
+        // notes could not be read.
+        rlog.error('review', 'stored review notes could not be read', err)
+        setLoadError(humanError(err, 'This room’s saved review notes'))
+        setLoadState('error')
+      }
+      return
     }
-    return () => { alive = false }
+    try {
+      const value = (await ipc.invoke('review:list', { room: roomName })) as ReviewComment[]
+      if (signal && !signal.alive) return
+      setComments(Array.isArray(value) ? value : [])
+      setLoadState('ready')
+    } catch (err) {
+      if (signal && !signal.alive) return
+      rlog.error('review', 'review:list failed', err)
+      setLoadError(humanError(err, 'This review room’s notes'))
+      setLoadState('error')
+    }
   }, [roomName])
+
+  useEffect(() => {
+    const signal = { alive: true }
+    void loadComments(signal)
+    return () => { signal.alive = false }
+  }, [loadComments])
 
   function toggleComment(comment: ReviewComment) {
     const resolved = !comment.resolved
@@ -274,6 +314,17 @@ export function ReviewRoom() {
               </Button>
             </div>
             {error && <div className="rounded-lg border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">{error}</div>}
+
+            {loadState === 'loading' && <LoadingState label="Loading this room’s notes" />}
+            {loadState === 'error' && (
+              <ErrorState
+                title="The notes for this room could not be loaded"
+                message={loadError || 'The review notes could not be read.'}
+                onRetry={() => void loadComments()}
+                retryLabel="Load again"
+                nextStep="Your notes are still on the machine — nothing was deleted. Loading again is usually enough."
+              />
+            )}
           </Card>
 
           <Card className="space-y-3 p-4">

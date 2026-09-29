@@ -143,6 +143,19 @@
       "status": "suggested"
     },
     {
+      "file": "src/components/ScreenStates.tsx",
+      "line": 49,
+      "target": "Waiting state",
+      "existingComponent": "<Loader2 size={15} className=\"animate-spin text-accent-text motion-reduce:animate-none\" aria-hidden />",
+      "suggestedLibrary": "Thinking orbs",
+      "package": "thinking-orbs",
+      "variant": "state from the activity (composing / searching / weaving), size 20 inline",
+      "why": "An AI wait of 2 s or more gets an orb next to its label (skill decision rule).",
+      "risks": "Low: a 2D canvas or CSS layer. Check it pauses when hidden.",
+      "license": "MIT",
+      "status": "suggested"
+    },
+    {
       "file": "src/components/StockBrowser.tsx",
       "line": 111,
       "target": "Waiting state",
@@ -170,7 +183,7 @@
     },
     {
       "file": "src/screens/ArenaDesk.tsx",
-      "line": 249,
+      "line": 258,
       "target": "Waiting state",
       "existingComponent": "<Loader2 size={18} className=\"motion-safe:animate-spin text-accent-text\" />",
       "suggestedLibrary": "Thinking orbs",
@@ -196,7 +209,7 @@
     },
     {
       "file": "src/screens/FootageDesk.tsx",
-      "line": 401,
+      "line": 410,
       "target": "Waiting state",
       "existingComponent": "{sending ? <Loader2 size={13} className=\"animate-spin\" /> : <Clapperboard size={13} />}",
       "suggestedLibrary": "Thinking orbs",
@@ -495,7 +508,7 @@
     },
     {
       "file": "src/screens/ReviewRoom.tsx",
-      "line": 63,
+      "line": 68,
       "target": "Mic button",
       "existingComponent": "const [micOff, setMicOff] = useState(false)",
       "suggestedLibrary": "Voice",
@@ -542,6 +555,19 @@
       "variant": "BotAvatar size 32, state 'working' while the reply is pending",
       "why": "Bot/agent avatars get a BotAvatar driven by real status.",
       "risks": "Medium: a per-frame canvas/SVG filter. Keep it to one instance per area.",
+      "license": "MIT",
+      "status": "suggested"
+    },
+    {
+      "file": "src/components/ScreenStates.tsx",
+      "line": 59,
+      "target": "Image placeholder",
+      "existingComponent": "<div className=\"h-1 w-1/3 animate-pulse rounded bg-muted/60 motion-reduce:animate-none motion-reduce:w-full\" />",
+      "suggestedLibrary": "Image",
+      "package": "img-fx",
+      "variant": "ImageGeneration preset 'sweep-gradient', strength 0.5",
+      "why": "Images that are generated or lazy-loaded get Image placeholders.",
+      "risks": "Higher: WebGL context per instance, so avoid it in long lists. Every metal element on a page shares one colour.",
       "license": "MIT",
       "status": "suggested"
     },
@@ -690,7 +716,7 @@
     },
     {
       "file": "src/screens/ArenaDesk.tsx",
-      "line": 431,
+      "line": 440,
       "target": "Primary button",
       "existingComponent": "<Button size=\"sm\" variant=\"primary\" onClick={onRender} disabled={!asset.localPath} title={(!asset.localPath) ? 'Import t",
       "suggestedLibrary": "Liquid metal",
@@ -729,9 +755,9 @@
     }
   ],
   "counts": {
-    "findings": 48,
+    "findings": 50,
     "applied": 1,
-    "files": 29
+    "files": 30
   },
   "footer": "Run `libraries apply` on any line to install it."
 }
