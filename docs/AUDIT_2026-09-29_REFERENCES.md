@@ -231,8 +231,13 @@ Both are reachable from Pro → Auto-edit → *Break into clips* (*Shots + pause
 the timeline right-click menu (**Break at scene changes (the picture)**). Frame sampling needs a
 decodable video, so `scripts/check-decompose.mjs` (now 96 assertions) covers the pure half —
 `frameDifference`, `median`, `shotCutTimes`, `remapSourceTime` — and the whole assembly with the shots
-handed in; `docs/SMOKE_WORD_TIMED_CAPTIONS.md` scenario E is the packaged-desktop check. Still open from
-backlog item 5: a *user* cut (not a probe or a shot) does not re-derive word timings.
+handed in (98 assertions); `docs/SMOKE_WORD_TIMED_CAPTIONS.md` scenario E is the packaged-desktop check.
+Still open from backlog item 5: a *user* cut (not a probe or a shot) does not re-derive word timings.
+
+What "editable" does **not** include, and no amount of splitting will change: anything burned into the
+pixels (baked-in captions, logos, watermarks, a picture-in-picture) and audio that arrived mixed into a
+single stream. Breaking an imported file gives you its pieces, not its layers; removing a burned-in
+caption needs paint-out/inpainting, which Cupric does not have and this audit does not claim.
 
 ## D. Architecture plan
 

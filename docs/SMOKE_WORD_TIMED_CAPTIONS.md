@@ -134,6 +134,11 @@ and knows what a failure looks like.
 - `scripts/check-decompose.mjs` covers the pure half (differences, threshold, minimum shot length,
   remapping after a cut) and the assembly around it; the frame sampling itself needs a decodable video
   and is only exercised by this scenario in the packaged app.
+- Splitting makes the *pieces* editable, not the layers inside them: a caption, logo or watermark burned
+  into the imported pixels stays burned in, and audio that arrived mixed into one stream stays one
+  stream. Removing those needs paint-out or stems the import does not have.
+- Every piece points at the same source file, so a relink (media panel) fixes them all at once; deleting
+  a piece never deletes the file.
 
 ## What this scenario does **not** cover
 

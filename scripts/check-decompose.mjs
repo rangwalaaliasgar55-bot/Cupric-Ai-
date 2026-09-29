@@ -159,6 +159,12 @@ ok(m.stripPieceSuffix('Plain name') === 'Plain name', 'a name with no suffix is 
   const r4 = await m.decomposeClip(clone(), 'v', { mode: 'silence' })
   ok(/cannot read this clip’s audio|relink/i.test(r4.reason ?? ''), `unreadable audio is named, not faked (${r4.reason})`)
   ok((await m.decomposeClip(clone(), 'lower', { mode: 'silence' })).reason?.includes('video or audio'), 'a text clip is not breakable')
+  // A failure must hand back the document exactly as it arrived: no caption half
+  // added, no renamed piece, nothing for the caller to accidentally commit.
+  const before = JSON.stringify(clone())
+  const failed = await m.decomposeClip(clone(), 'v', { mode: 'silence', caption: {} })
+  ok(!!failed.reason && failed.pieces === 1 && failed.captions === 0, 'a failed break reports one piece and no captions')
+  ok(JSON.stringify(failed.doc) === before, 'and returns the document untouched')
 }
 
 /* ——— UI wiring ——— */
