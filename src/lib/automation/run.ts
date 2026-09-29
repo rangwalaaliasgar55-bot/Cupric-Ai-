@@ -116,6 +116,20 @@ export async function planLocalRundown(
   return (await deps.plan(input, brand)).rundown
 }
 
+/** The winning design, flattened for the UI (scenes are already ordered). */
+export function storyboardOf(design: DesignReport): NonNullable<AutomationJob['designStoryboard']> {
+  return design.scenes.map((scene) => ({
+    index: scene.index,
+    role: scene.role,
+    stage: scene.stage,
+    layout: scene.layout,
+    headlineFont: scene.headlineFont,
+    accent: scene.accent,
+    from: scene.from,
+    to: scene.to,
+  }))
+}
+
 /** Rough target duration from the brief ("exactly a 30-second video"). */
 export const durationFromBrief = (brief: string, fallback = 30): number => {
   const n = Number(/\b(\d{1,3})\s*(?:-|\s)?\s*(?:second|sec|s\b)/i.exec(brief)?.[1])
@@ -177,12 +191,15 @@ export async function runAutonomousJob(
       reasons: c.reasons,
       design: { direction: directionById(c.id as DesignDirectionId), scenes: [], notes: [], score: c.designScore },
     }))
+    const pinned = job.designDirection && job.designDirection !== 'auto'
+      ? DESIGN_DIRECTIONS.filter((d) => d.id === job.designDirection)
+      : DESIGN_DIRECTIONS
     if (!stepDone(3) || !candidates.length) {
       candidates = []
-      hooks.step(3, { status: 'running', progressPct: 5, message: `Designing ${DESIGN_DIRECTIONS.length} directions and scoring them locally` })
-      for (let i = 0; i < DESIGN_DIRECTIONS.length; i++) {
+      hooks.step(3, { status: 'running', progressPct: 5, message: pinned.length === 1 ? `Designing the ${pinned[0].name} direction you asked for` : `Designing ${pinned.length} directions and scoring them locally` })
+      for (let i = 0; i < pinned.length; i++) {
         guard()
-        const direction = DESIGN_DIRECTIONS[i]
+        const direction = pinned[i]
         const built = buildDirection(plan, direction.id, uid)
         const review = reviewEdit(built.doc, plan.brief, plan.plan, built.clipIds)
         const craft = reviewScore(review)
@@ -197,7 +214,7 @@ export async function runAutonomousJob(
           ],
           design: built.design,
         })
-        hooks.step(3, { progressPct: Math.round(((i + 1) / DESIGN_DIRECTIONS.length) * 95), message: `${direction.name}: craft ${craft}/100 · design ${built.design.score}/100` })
+        hooks.step(3, { progressPct: Math.round(((i + 1) / pinned.length) * 95), message: `${direction.name}: craft ${craft}/100 · design ${built.design.score}/100` })
         await sleep(0)
       }
       candidates.sort((a, b) => b.score - a.score)
@@ -205,8 +222,13 @@ export async function runAutonomousJob(
         warnings,
         candidates: candidates.map((c) => ({ file: c.id, score: c.score, reasons: c.reasons })),
         candidateBattle: candidates.map((c) => ({ id: c.id, name: c.name, score: c.score, designScore: c.design.score, reasons: c.reasons })),
+        designStoryboard: storyboardOf(candidates[0].design),
       })
-      hooks.step(3, { status: 'done', progressPct: 100, message: `Winner: ${candidates[0].name} (${candidates[0].score}/100)` })
+      hooks.step(3, {
+        status: 'done',
+        progressPct: 100,
+        message: pinned.length === 1 ? `${candidates[0].name} designed and scored (${candidates[0].score}/100)` : `Winner: ${candidates[0].name} (${candidates[0].score}/100)`,
+      })
     }
     // A guided run stops *once*, at the battle gate — the same manual-approval
     // rule the desktop pipeline uses. `manualVoteApproved` (or a step beyond the
@@ -307,6 +329,7 @@ export async function runAutonomousJob(
       // earlier progress patches.
       candidates: candidates.map((c) => ({ file: c.id, score: c.score, reasons: c.reasons })),
       candidateBattle: candidates.map((c) => ({ id: c.id, name: c.name, score: c.score, designScore: c.design.score, reasons: c.reasons })),
+      designStoryboard: storyboardOf(built.design),
       outputUrl: output?.url ?? job.outputUrl ?? null,
     })
     return { plan, rundown, candidates, winner, doc, review, reviewScorePct, design: built.design, placeholders: built.placeholders, leftForYou, output, warnings }

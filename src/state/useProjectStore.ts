@@ -173,7 +173,7 @@ type AppState = {
   undo: () => void
   redo: () => void
 
-  startAutomationJob: (input: { brief: string; footageFolder?: string | null; outputFolder?: string | null; aspect: AutomationJob['aspect']; fps: AutomationJob['fps']; quality: AutomationJob['quality']; mode: AutomationMode; votingMode: VotingMode }) => void
+  startAutomationJob: (input: { brief: string; footageFolder?: string | null; outputFolder?: string | null; aspect: AutomationJob['aspect']; fps: AutomationJob['fps']; quality: AutomationJob['quality']; mode: AutomationMode; votingMode: VotingMode; designDirection?: AutomationJob['designDirection'] }) => void
   updateAutomationJob: (jobId: string, patch: Partial<AutomationJob>) => void
   updateAutomationStep: (jobId: string, stepId: string, patch: Partial<AutomationStep>) => void
   cancelAutomationJob: (jobId: string) => void

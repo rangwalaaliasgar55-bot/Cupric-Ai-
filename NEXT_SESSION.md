@@ -1,3 +1,55 @@
+## Latest: autonomous runs, the design engine, and fonts that load
+
+An autonomous job no longer needs the desktop app to finish, and the app no
+longer paints a fallback face while claiming a font was applied.
+
+### Autonomous agent — one pipeline, both environments
+- `src/lib/automation/{plan,run,report}.ts`: the eight desktop steps run *in the
+  app* — offline deterministic planner (`planLocally` over the Opus catalogue +
+  UI resources) → locked rundown → three-direction design battle → timeline →
+  render on the shared Studio renderer → machine-checked review report.
+- The web build used to stop at step one ("desktop only"). It now produces the
+  same artefacts: a rendered preview, editable Studio clips, the battle and the
+  report. `runAutomationLocally` in the store owns the state; cancel, resume and
+  the guided review gate all work with no Electron.
+- Desktop keeps its own FFmpeg pipeline, but `automation:start` now normalises
+  the rundown the renderer planned and starts from it instead of a placeholder.
+  A desktop run that fails can be finished in-app with **Finish in Studio**.
+- New in the UI: the candidate battle with scores and reasons, the scene-by-scene
+  storyboard (stage, face, accent, timing), the rendered video with a download,
+  and the full review report.
+
+### Design engine (`src/lib/studio/design.ts`)
+- `DESIGN_DIRECTIONS` = typography-led / composition-led / atmosphere-led. Each
+  designs the same plan: per-scene stage, contrast-checked ink, safe areas,
+  eyebrow/headline/support hierarchy, one accent per scene, real transitions.
+- `designAll` runs all three, scores them (`designScore`), and commits the
+  winner — wired into the autonomous run, `ProductionPlanner` and a new Studio
+  panel ("Design engine"). The user can pin one direction instead of the battle.
+- The score rewards contrast, safe-area compliance, hierarchy, stage/accent
+  variety and legible sizes, and reports the reasons to the UI.
+
+### Fonts (the "suggested fonts don't work" bug)
+- `ensureFont` actually loads bundled and user faces (`document.fonts.load` +
+  `check`) before anything claims a font was applied; the emphasis face is
+  planned and loaded with the headline face; `Noto Sans Devanagari` and `Hind`
+  are recognised as bundled; a failed download is retried the moment a font file
+  is added; a face that cannot load raises `FONT_MISSING_EVENT`, which App.tsx
+  turns into a toast with the Fontshare link.
+- Exports verify every face first and warn (toast) instead of baking the
+  fallback into the file.
+- Checks: `check:framecn-fonts` (728 assertions) covers the new rules;
+  `check:automation` (68 assertions) covers planning, the battle, the pinned
+  direction, the full eight-step run with an injected render, the guided gate,
+  cancel, report truth and the UI/store wiring.
+
+### Still to eyeball in a real browser
+- The local render step needs `MediaRecorder`; in the sandbox it is stubbed. On
+  a real machine, run an Auto Draft job on a short brief and watch the preview
+  appear in the job card.
+- Fontshare zips: add one with "Add fonts" and confirm the family appears in the
+  text inspector without a reload (the failure cache is cleared on import).
+
 ## Latest: framecn, fonts, cursor v2
 - `check:framecn-fonts` has 721 assertions, and every framecn component is server-rendered in the check.
 - Not verified in a real browser. Eyeball these:

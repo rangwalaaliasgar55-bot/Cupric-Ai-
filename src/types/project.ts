@@ -79,6 +79,10 @@ export type AutomationJob = {
   renderEngine?: 'studio-canvas' | 'html-capture' | 'ffmpeg'
   /** The scored candidate battle, so the UI can show why one direction won. */
   candidateBattle?: Array<{ id: string; name: string; score: number; designScore: number; reasons: string[] }>
+  /** 'auto' (or unset) runs the three-direction battle; a id pins one look. */
+  designDirection?: 'auto' | 'typography' | 'composition' | 'atmosphere'
+  /** What the winning design actually did, scene by scene. */
+  designStoryboard?: Array<{ index: number; role: string; stage: string; layout: string; headlineFont: string; accent: string; from: number; to: number }>
 }
 
 export type View =

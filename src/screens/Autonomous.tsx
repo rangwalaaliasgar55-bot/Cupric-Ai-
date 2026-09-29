@@ -92,6 +92,7 @@ export function Autonomous() {
   const [fps, setFps] = useState<30|60>(30)
   const [targetDuration, setTargetDuration] = useState<30 | 50 | 180>(30)
   const [quality, setQuality] = useState<'draft'|'final'>('draft')
+  const [designDirection, setDesignDirection] = useState<NonNullable<AutomationJob['designDirection']>>('auto')
   const [footageFolder, setFootageFolder] = useState<string | null>(null)
   const [outputFolder, setOutputFolder] = useState<string | null>(null)
   const pickFolder = async (setter: (v: string | null) => void) => {
@@ -106,8 +107,8 @@ export function Autonomous() {
   const [handsFree, setHandsFree] = useState(true)
   const [speakBack, setSpeakBack] = useState(true)
   const listenerRef = useRef<VoiceListener | null>(null)
-  const settingsRef = useRef({ aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack })
-  settingsRef.current = { aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack }
+  const settingsRef = useRef({ aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack, designDirection })
+  settingsRef.current = { aspect, fps, targetDuration, quality, mode, vote, footageFolder, outputFolder, handsFree, speakBack, designDirection }
 
   const job = jobs[0]
   const currentStep = job?.steps.find(step => step.id === job.currentStepId) || job?.steps.find(step => step.status === 'waiting-for-user') || null
@@ -218,6 +219,7 @@ export function Autonomous() {
       quality: cfg.quality,
       mode: cfg.mode,
       votingMode: cfg.vote,
+      designDirection: cfg.designDirection,
     })
     if (cfg.speakBack) speak(`Starting. ${finalBrief.slice(0, 90)}. I will tell you when the render is done.`, { interrupt: true })
   }
@@ -290,6 +292,12 @@ export function Autonomous() {
             <label className="text-xs text-muted">Autonomy
               <select value={mode} onChange={e => setMode(e.target.value as AutomationMode)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text">
                 <option value="guided">Guided</option><option value="auto-draft">Auto Draft</option><option value="auto-final">Auto Final</option>
+              </select>
+            </label>
+            <label className="text-xs text-muted">Design
+              <select value={designDirection} onChange={e => setDesignDirection(e.target.value as NonNullable<AutomationJob['designDirection']>)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text" title="Cupric designs the plan in three directions and keeps the best, or pin the one you want.">
+                <option value="auto">Auto — best of {DESIGN_DIRECTIONS.length} directions</option>
+                {DESIGN_DIRECTIONS.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </label>
             <label className="text-xs text-muted">Voting
@@ -369,6 +377,27 @@ export function Autonomous() {
                         {c.reasons.slice(0, 2).map((r) => <li key={r} className="truncate" title={r}>· {r}</li>)}
                       </ul>
                       <div className="mt-1 text-[10px] text-muted">design {c.designScore}/100</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!!job.designStoryboard?.length && (
+              <div className="mt-4 rounded-xl border border-line bg-bg/40 p-3" data-testid="design-storyboard">
+                <div className="flex items-center gap-2 text-xs font-semibold text-text">
+                  <Sparkles size={13} className="text-accent-text" /> Designed scenes — stage, face and accent per scene, all ordinary editable clips
+                </div>
+                <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                  {job.designStoryboard.map((scene) => (
+                    <div key={scene.index} className="min-w-[136px] shrink-0 rounded-lg border border-line bg-panel-alt/30 p-2 text-[11px]">
+                      <div className="flex items-center gap-1.5">
+                        <span className="h-2.5 w-2.5 shrink-0 rounded-full border border-white/20" style={{ background: scene.accent }} title={`Accent ${scene.accent}`} />
+                        <span className="truncate font-medium capitalize text-text">{scene.role}</span>
+                        <span className="ml-auto shrink-0 tabular-nums text-muted">{scene.from.toFixed(1)}–{scene.to.toFixed(1)}s</span>
+                      </div>
+                      <div className="mt-1 truncate text-muted" title={`${scene.stage} · ${scene.layout} layout`}>{scene.stage} · {scene.layout}</div>
+                      <div className="truncate text-muted" title={scene.headlineFont}>{scene.headlineFont}</div>
                     </div>
                   ))}
                 </div>

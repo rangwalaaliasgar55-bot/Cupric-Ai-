@@ -229,6 +229,17 @@ function harness(job) {
   ok(!tiny.valid && tiny.retryable, 'a stub file fails fatally')
 }
 
+/* ── 7b. a pinned direction is honoured (a battle of one, labelled) ── */
+{
+  const h = harness(makeJob({ designDirection: 'composition' }))
+  const result = await m.run.runAutonomousJob(makeJob({ designDirection: 'composition' }), h.hooks, h.deps)
+  ok(result.candidates.length === 1 && result.candidates[0].id === 'composition', 'the direction the user pinned is the one designed')
+  ok(h.steps.some(([, patch]) => /composition/i.test(patch?.message ?? '')), 'the step log says which direction was designed')
+  ok(result.design.direction.id === 'composition' && result.doc.clips.length > 0, 'the pinned direction is what lands in Studio')
+  const auto = await m.run.runAutonomousJob(makeJob(), harness(makeJob()).hooks, harness(makeJob()).deps)
+  ok(auto.candidates.length === 3, 'auto still runs the three-direction battle')
+}
+
 /* ── 8. wiring: the app actually runs this ─────────────────────────── */
 {
   const store = read('src/state/useProjectStore.ts')
@@ -239,6 +250,19 @@ function harness(job) {
   ok(screen.includes('candidateBattle') || screen.includes('designScore'), 'the screen shows the battle/design results')
   const types = read('src/types/project.ts')
   ok(/outputUrl\?:/.test(types) && /reviewReport\?:/.test(types), 'the job carries the local artefacts')
+  ok(/designStoryboard\?:/.test(types) && screen.includes('design-storyboard'), 'the winning design is shown scene by scene')
+  ok(screen.includes('Finish in Studio') && screen.includes('runAutomationLocally'), 'a desktop run that stops can be finished in the app')
+  ok(read('electron/main.cjs').includes('normalizeRundown(job.rundown, job.brief)'), 'the desktop pipeline normalises the rundown the renderer planned')
+  ok(read('src/App.tsx').includes('rundownToStudioClips') && read('src/lib/studio/importHtml.ts').includes('rundownToStudioClips'), 'a finished desktop job still seeds editable Studio clips')
+}
+
+/* ── 9. the storyboard the UI renders matches the design that was built ── */
+{
+  const built = m.run.buildDirection(a, 'atmosphere', (() => { let k = 0; return () => `sb${k++}` })())
+  const board = m.run.storyboardOf(built.design)
+  ok(board.length === built.design.scenes.length && board.length > 0, 'one storyboard entry per designed scene')
+  ok(board.every((b) => b.stage && b.headlineFont && b.accent && b.to > b.from), 'every entry names its stage, face, accent and timing')
+  ok(board.every((b) => ['hook', 'beat', 'proof', 'cta'].includes(b.role)), 'entries carry a real role')
 }
 
 console.log(`check:automation passed — ${n} assertions, 8-step pipeline, 3-direction battle`)
