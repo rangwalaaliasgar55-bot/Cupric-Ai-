@@ -31,8 +31,9 @@
  *      to `scripts/check-boot.mjs`, which is the harness that caught the 0.10.0
  *      white-screen regression);
  *   6. the uninstaller removes the installation and the Start Menu shortcut;
- *   7. the portable build carries the same version and signature as the installed
- *      one.
+ *   7. the portable build carries the same version as the installed one, and the
+ *      same signature state as the installed executable (signed for a release;
+ *      asserted *unsigned* under `--unsigned-build`, not skipped).
  *
  * Usage: npm run check:install                      (Windows only; needs `release/` built)
  *        npm run check:install -- --unsigned-build  (a build with no certificate)
@@ -156,7 +157,15 @@ try {
   }
 
   const updaterConfig = path.join(installDir, 'resources', 'app-update.yml')
-  if (!fs.existsSync(updaterConfig)) {
+  if (!fs.existsSync(updaterConfig) && unsignedBuild) {
+    // electron-builder writes this file only for a packager build that carries
+    // the update configuration; a certificate-less pull-request build may not.
+    // Reported, not failed, and the difference matters: a build with no feed at
+    // all cannot be tricked into installing anything, while a build that claims
+    // a publisher it cannot verify is dangerous — that case is the failure below,
+    // and it is checked whenever the file exists. Releases must have the file.
+    step('the unsigned build carries no updater feed', `no ${path.relative(installDir, updaterConfig)} — nothing to verify, and the release workflow still requires it`)
+  } else if (!fs.existsSync(updaterConfig)) {
     fail('APP_UPDATE_MISSING', `the installed app has no ${path.relative(installDir, updaterConfig)} — the updater would have no feed`)
   } else {
     const yaml = fs.readFileSync(updaterConfig, 'utf8')
@@ -209,8 +218,18 @@ try {
   else step('the portable build reports the same version', portableSeen[0])
 
   const portableSignature = authenticodeStatus(portablePath)
-  if (!/Valid/.test(portableSignature.Status)) fail('PORTABLE_UNSIGNED', `portable Authenticode status is "${portableSignature.Status}"`)
-  else step('the portable build is signed', portableSignature.Subject || 'valid')
+  if (unsignedBuild) {
+    // Same rule as the installed executable: asserted, inverted, not skipped.
+    if (/Valid/.test(portableSignature.Status)) {
+      fail('PORTABLE_SIGNED_UNEXPECTEDLY', `the portable build is signed (${portableSignature.Subject || 'no subject'}) but this run expects an unsigned build — run the check without --unsigned-build`)
+    } else {
+      step('the portable build is unsigned, as this run expects', `Authenticode status "${portableSignature.Status}"`)
+    }
+  } else if (!/Valid/.test(portableSignature.Status)) {
+    fail('PORTABLE_UNSIGNED', `portable Authenticode status is "${portableSignature.Status}"`)
+  } else {
+    step('the portable build is signed', portableSignature.Subject || 'valid')
+  }
 
   /* ── a real run of the portable build, from a temp directory ──────────── */
   const portableDir = tempDir('portable-check')
@@ -237,6 +256,13 @@ try {
 
 if (failures.length) {
   console.error(`\ncheck:install FAILED\n  ${failures.join('\n  ')}`)
+  // GitHub annotations, because the raw step log is not always reachable and a
+  // failure nobody can read is a failure nobody can fix. One annotation per
+  // failure code, so the first thing anyone sees is *which* assertion failed.
+  for (const failure of failures) {
+    const [code] = failure.split(':')
+    console.error(`::error title=check:install ${code}::${failure.replace(/[%\r\n]/g, ' ')}`)
+  }
   process.exit(1)
 }
 console.log('check:install passed — the published installers install, run, carry the right version and publisher, and uninstall cleanly')

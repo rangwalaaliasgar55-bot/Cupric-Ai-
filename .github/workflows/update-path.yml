@@ -78,16 +78,38 @@ jobs:
       - name: Decide which released version to install first
         shell: pwsh
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:FROM_INPUT)) {
-            # The newest tag reachable from main. Not "the newest tag": a tag on
-            # a branch that was never merged is not a release anybody installed.
-            $resolved = (git describe --tags --abbrev=0 origin/main).Trim()
-            Write-Host "no from_tag given; resolved the previous release as $resolved"
-          } else {
+          if (-not [string]::IsNullOrWhiteSpace($env:FROM_INPUT)) {
             $resolved = $env:FROM_INPUT.Trim()
             Write-Host "using the from_tag given: $resolved"
+          } else {
+            # The newest released tag whose version is *different* from the
+            # version this checkout declares.
+            #
+            # Not simply "the newest tag": on a pull request the version in
+            # package.json usually equals the last release, and installing
+            # 0.16.0 to update it to 0.16.0 tests nothing — the updater
+            # correctly reports "already current" and the job fails on the feed
+            # comparison. (That is exactly what the first run of this workflow
+            # did, which is why the rule is written down here.) The previous
+            # release is a release somebody actually has installed, which is the
+            # version an update has to come *from*.
+            $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+            Write-Host "this checkout declares version $version"
+            $resolved = $null
+            foreach ($tag in (git tag --list 'v*' --sort=-v:refname)) {
+              $tagVersion = $tag.TrimStart('v')
+              if ($tagVersion -eq $version) { Write-Host "skipping $tag — same version as this checkout"; continue }
+              if ($tagVersion -notmatch '^\d+\.\d+\.\d+$') { Write-Host "skipping $tag — not a release tag"; continue }
+              git merge-base --is-ancestor "$tag^{commit}" origin/main
+              if ($LASTEXITCODE -ne 0) { Write-Host "skipping $tag — not on main, so nobody released it"; continue }
+              $resolved = $tag
+              break
+            }
+            if ([string]::IsNullOrWhiteSpace($resolved)) {
+              throw "No released tag with a different version from $version exists on main. Cut a release first: there is nothing to update from."
+            }
+            Write-Host "resolved the version to install first as $resolved"
           }
-          if ([string]::IsNullOrWhiteSpace($resolved)) { throw "Could not resolve a released version to install." }
           git rev-parse --verify "$resolved^{commit}" | Out-Null
           "FROM_REF=$resolved" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 

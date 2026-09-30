@@ -142,13 +142,22 @@ versions in separate git worktrees and then, on Windows:
   certificate must be unsigned *and* must not declare a `publisherName` the updater
   cannot verify. Install → version readback → boot on every view → uninstall → no
   leftovers now runs on every pull request, not only in `release-windows.yml`.
-- `update-path.yml` also runs on `pull_request`, with the last released tag as the
-  "from" version and the pull request's own checkout as the "to" version — the only
-  way the update path can be exercised before a release exists to trigger it. It is
+- `update-path.yml` also runs on `pull_request`, with a released tag as the "from"
+  version and the pull request's own checkout as the "to" version — the only way
+  the update path can be exercised before a release exists to trigger it. It is
   deliberately **not** the required status check: a signed installation updating to
   an unsigned pull-request build can legitimately fail signature verification, and
   that is a finding about the release process rather than about the change under
   review. The workflow header says so, in those words.
+  Two things that first run — the first this workflow has ever had — taught it,
+  both fixed on the spot: the from-version was hard-coded to `v0.11.0`, which
+  cannot build today (it predates `npm run media:ensure`), and it then picked the
+  *newest* tag, which on a pull request is usually the same version the checkout
+  declares — installing 0.16.0 to update it to 0.16.0 tests nothing, and the
+  "the two feeds differ" step correctly failed on it. The from-version is now
+  resolved from the repository: the newest release tag on `main` whose version
+  differs from this checkout's, named in the job log, with a hard failure when
+  there is none.
 
 Supporting app changes: `CUPRIC_UPDATE_FEED` (validated as http/https, wired to
 `setFeedURL`, logged loudly when set, rejected with a log line when malformed),
