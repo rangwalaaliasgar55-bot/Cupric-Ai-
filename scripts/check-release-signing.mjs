@@ -87,6 +87,30 @@ ok(/check:install/.test(release), 'the workflow verifies install/run/uninstall b
 ok(!/continue-on-error/.test(release), 'no release step is allowed to fail quietly')
 ok(/--publish never/.test(release), 'electron-builder never publishes by itself (the workflow does, after verification)')
 
+/* ── 3b. release hygiene: the Phase 0 §D findings stay fixed ─────────────── */
+
+// Phase 0 found releases published on top of red checks and several tags per
+// hour. Both are properties of this workflow, so both are asserted here rather
+// than trusted to habit.
+ok(/workflow_dispatch/.test(release) && /tag:/.test(release), 'a manual run must name the tag it is releasing, so nothing publishes by accident')
+ok(/check_runs|actions\/runs/.test(release) && /conclusion/.test(release), 'the workflow inspects the check runs of the commit it is about to release')
+ok(/failure|cancelled|timed_out|action_required/.test(release), 'and it names the conclusions it refuses to release over')
+// One release per verified green build: the publish step must look for an
+// existing release rather than creating a second one for the same tag.
+ok(/gh release view/.test(release) && /gh release create/.test(release), 'publishing looks for an existing release before creating one')
+const viewIndex = release.indexOf('gh release view')
+const createIndex = release.indexOf('gh release create')
+ok(viewIndex > 0 && createIndex > viewIndex, 'the existence check runs before the create, so a re-run cannot duplicate a release')
+ok(/already exists/.test(release), 'a re-run says it is re-uploading the verified assets instead of starting a new release')
+// The tag is the version. A hand-made tag that disagrees with package.json fails.
+ok(/check:version-sync|version-sync\.mjs/.test(release) && /--tag/.test(release), 'the workflow runs the version gate against the tag being released')
+// And the version gate itself must compare all four statements of the version.
+const versionSync = read('scripts/check-version-sync.mjs')
+for (const source of ['package.json', 'README', 'CHANGELOG', 'app:info']) {
+  ok(new RegExp(source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(versionSync), `the version gate reads ${source}`)
+}
+ok(/drift|mismatch|does not match/i.test(versionSync), 'the version gate fails on drift rather than warning about it')
+
 /* ── 4. the updater keeps its guard ─────────────────────────────────────── */
 const main = read('electron/main.cjs')
 ok(/autoUpdater\.autoDownload = true/.test(main), 'updates still download automatically')

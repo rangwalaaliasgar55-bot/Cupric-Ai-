@@ -195,4 +195,56 @@ for (const channel of ['automation:step', 'automation:progress', 'automation:wai
   assert.ok(preloadSrc.includes(`'${channel}'`), `${channel} reaches the renderer`)
 }
 
-console.log(`automation steps check passed — 8 named steps, ${shapes.length} varied briefs locked and planned, artifacts consistent on disk, gate rules enforced`)
+/* ——— 8. twelve real briefs through the real planner, measured ——— */
+// Section 6 above locks and plans hand-built rundowns. This runs the *shipped*
+// planner over twelve varied briefs and asserts what actually came out, because
+// "outputs differ meaningfully" is a claim about real runs, not about the shape
+// of the code. The runner is shared with docs/PHASE1_AUTONOMOUS.md, so the
+// document's table is produced by the same code the check runs.
+const { runEvidence, distinctCounts } = await import('./lib/pipeline-evidence.mjs')
+const { shapes: evidence } = await runEvidence(root)
+assert.equal(evidence.length, 12, 'twelve briefs were run through the planner')
+const counts = distinctCounts(evidence)
+assert.equal(counts.durationSec.distinct, 9, `nine distinct durations from twelve briefs (got ${counts.durationSec.distinct})`)
+assert.ok(counts.sceneCount.distinct >= 6, `scene counts vary (${counts.sceneCount.distinct} distinct)`)
+assert.equal(counts.hook.distinct, 12, 'every brief produced its own hook line')
+assert.ok(counts.style.distinct >= 2, `the planner chooses between styles (${counts.style.distinct} distinct)`)
+// The same stated length must not collapse into the same film: these two are both
+// 17 seconds and must differ in structure and copy.
+const seventeen = evidence.filter((shape) => shape.durationSec === 17)
+assert.equal(seventeen.length, 3, 'three briefs share a 17-second length')
+assert.equal(new Set(seventeen.map((shape) => shape.sceneCount)).size, 3, 'the three 17-second briefs are built differently')
+assert.equal(new Set(seventeen.map((shape) => shape.hook)).size, 3, 'the three 17-second briefs open differently')
+assert.equal(new Set(seventeen.map((shape) => shape.sceneTypes)).size, 3, 'the three 17-second briefs are structured differently')
+// A scene may deliberately carry no copy — a hold, a visual beat, b-roll — and
+// the engine creates no text element for it (production/engine.ts skips empty
+// onScreenText). What must never happen is *hidden* filler: copy that is blank,
+// whitespace, or an unbracketed stand-in pretending to be the user's words.
+for (const shape of evidence) {
+  assert.ok(shape.sceneCount >= 2, `${shape.id} has at least two scenes`)
+  assert.ok(shape.copyLines.some((line) => line.trim().length > 0), `${shape.id} puts something on screen`)
+  for (const line of shape.copyLines) {
+    if (line.trim().length === 0) continue // a deliberately silent beat
+    assert.equal(line, line.trim(), `${shape.id} has no padded copy`)
+    if (line.includes('Add')) {
+      assert.ok(line.startsWith('[') && line.endsWith(']'), `${shape.id}: “${line}” is bracketed, so it reads as a placeholder and not as copy`)
+    }
+  }
+  assert.ok(shape.hook.trim().length > 3, `${shape.id} opens with something`)
+}
+// Every bracketed placeholder is reported as work still to do — nothing filler
+// may sit in the plan unnoticed.
+const placeholders = evidence.flatMap((shape) => shape.copyLines.filter((line) => line.startsWith('[')))
+assert.ok(placeholders.length > 0, 'the briefs without a supplied CTA do produce bracketed placeholders')
+assert.ok(placeholders.every((line) => line.endsWith(']')), 'every placeholder is bracketed on both sides')
+// The bug this section found, pinned: a Hindi brief states its duration in
+// Devanagari ("20 सेकंड") and it must be read, not defaulted to 30.
+const hindi = evidence.find((shape) => shape.id === 'hindi')
+assert.equal(hindi.durationSec, 20, 'a Hindi brief’s stated duration is read (was defaulted to 30 before)')
+assert.deepEqual(
+  evidence.filter((shape) => shape.id === 'vague').map((shape) => shape.durationSec),
+  [30],
+  'a brief with no duration gets the documented 30-second default',
+)
+
+console.log(`automation steps check passed — 8 named steps, ${shapes.length} hand-built rundowns, ${evidence.length} real briefs through the shipped planner (${counts.durationSec.distinct} distinct durations, ${counts.sceneCount.distinct} distinct scene counts), artifacts consistent on disk, gate rules enforced`)

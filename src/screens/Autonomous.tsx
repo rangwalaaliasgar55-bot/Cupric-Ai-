@@ -3,6 +3,7 @@ import { ThinkingStates } from '../components/loaders/ThinkingStates'
 import { MatrixLoader } from '../components/loaders/MatrixLoader'
 import { ProductionPlanner } from './production/ProductionPlanner'
 import { rundownToDoc } from '../lib/production/fromRundown'
+import { MAX_BRIEF_SECONDS, MIN_BRIEF_SECONDS, requestedDuration } from '../lib/automation/plan'
 import { studioOf } from '../lib/studio/doc'
 import { uid } from '../lib/utils'
 import type { AutomationJob } from '../types/project'
@@ -338,6 +339,25 @@ export function Autonomous() {
                     : 'Local scoring stays private and never automates public voting.'}
                 </p>
                 {job.outputPath && <p className="mt-1 font-mono text-[11px] text-muted">MP4: {job.outputPath}</p>}
+                {/*
+                  The plan's length against the brief's. `requestedDuration`
+                  reports every adjustment, so a 6-second brief that becomes an
+                  8-second plan (the floor) and a 5-minute brief capped at three
+                  both say so here instead of quietly changing the number.
+                */}
+                {job.rundown && (() => {
+                  const asked = requestedDuration({ brief: job.brief, aspect: '16:9', fps: 30, quality: job.quality })
+                  if (asked.adjustedFrom === null || !asked.seconds) return null
+                  const shorter = asked.seconds < asked.adjustedFrom
+                  return (
+                    <p className="mt-1 text-xs text-muted">
+                      Your brief asked for {asked.adjustedFrom}s. This plan is {asked.seconds}s — {shorter
+                        ? `the longest film this pipeline plans in one pass is ${MAX_BRIEF_SECONDS}s`
+                        : `the shortest structure it builds is ${MIN_BRIEF_SECONDS}s`}
+                      . Change the brief if you need a different length.
+                    </p>
+                  )
+                })()}
                 {job.renderEvaluation && (
                   <p className={`mt-2 text-xs ${job.renderEvaluation.valid ? 'text-accent-text' : 'text-danger'}`}>
                     Render QA: {job.renderEvaluation.valid ? 'passed' : 'review required'} · {job.renderEvaluation.score}/100

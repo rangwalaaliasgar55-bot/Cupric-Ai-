@@ -243,3 +243,78 @@ On a Windows 10 or 11 machine that has never had Cupric AI installed:
    is preserved — user data must survive an uninstall.
 7. Reinstall over the old version (without uninstalling) and confirm projects are
    still listed.
+
+---
+
+## 6. The one step that needs a human: the code-signing certificate
+
+Everything in this phase that can be automated is automated and gated (see §2.2
+and the 37 assertions in `scripts/check-release-signing.mjs`). What remains
+cannot be done from a repository: **acquiring a certificate is a business action
+with a verified legal identity behind it, and installing/uninstalling a signed
+build is a Windows action.** This section is the exact procedure, so the step is
+a checklist rather than a research project.
+
+### 6.1 Choose the certificate path
+
+| Option | What it costs | What it fixes | Notes |
+| --- | --- | --- | --- |
+| **Azure Trusted Signing** | ~US$10/month, individual or organisation validation | SmartScreen reputation is immediate — the certificate is backed by Microsoft's own trust chain | The cheapest correct answer in 2026, and it signs from CI without a `.pfx` in the repository. Needs a verified identity (a few days). |
+| **EV code-signing certificate** (DigiCert, Sectigo, GlobalSign) | ~US$300–600/year, hardware token or cloud HSM | Immediate SmartScreen reputation, same as above | Traditional choice; the certificate is on a USB token, so signing in CI needs the vendor's cloud signing service or a self-hosted runner with the token attached. |
+| **OV code-signing certificate** | ~US$150–300/year | Removes the "unknown publisher" name, but reputation still builds over downloads | Cheapest, and the weakest: expect SmartScreen warnings for the first weeks regardless. |
+| **Unsigned** | free | nothing | Not a supported state: the release workflow refuses it (§2.2), and an unsigned build would remove the Authenticode check from its own future update path. |
+
+### 6.2 Wire it into the repository
+
+The workflow reads exactly two secrets. Nothing else is needed.
+
+```powershell
+# From a Windows machine with the certificate exported as a base64 .pfx:
+$bytes = [IO.File]::ReadAllBytes('CupricAI.pfx')
+[Convert]::ToBase64String($bytes) | Set-Clipboard
+
+gh secret set CSC_LINK --repo rangwalaaliasgar55-bot/Cupric-Ai-
+# paste the base64 when prompted
+gh secret set CSC_KEY_PASSWORD --repo rangwalaaliasgar55-bot/Cupric-Ai-
+# paste the .pfx password when prompted
+```
+
+With Azure Trusted Signing the `.pfx` is replaced by the service's own
+credentials; the workflow's `--config.forceCodeSigning=true` and the Authenticode
+verification step stay exactly as they are, because both ask the *signature*
+rather than the mechanism.
+
+### 6.3 What must be observed, and what to record
+
+The release workflow already enforces steps 1–3 (it throws if any of them is not
+true). The human steps are 4–6, and each produces evidence worth pasting into the
+release notes:
+
+1. `CSC_LINK` is set — the workflow throws before packaging if it is not.
+2. `electron-builder --win --config.forceCodeSigning=true` produced the
+   installers — an unsigned build cannot be produced.
+3. `Get-AuthenticodeSignature` reports `Valid` **with a timestamp** on every
+   `.exe`, and `resources/app-update.yml` carries a `publisherName` — the workflow
+   throws otherwise, because the updater would otherwise accept any downloaded
+   update.
+4. **A clean Windows 10 or 11 VM** runs the installer with no SmartScreen
+   interstitial. Capture: a screenshot of the first installer screen, and
+   `signtool verify /pa /v Cupric-AI-Setup-<version>.exe` output.
+5. The §5 checklist is worked through end to end (install → launch → import →
+   export → update → uninstall → reinstall).
+6. `npm run check:install` and `npm run check:update-path` pass **on
+   windows-latest** in the run that produced the tag — these are the automated
+   versions of steps 4 and 5, and they refuse to run anywhere else.
+
+### 6.4 Release hygiene rules (from the Phase 0 §D findings)
+
+The Phase 0 audit found 21 releases in a short window, several tags per hour, at
+least four published on top of failing checks, and README version drift. Three of
+those are now structurally impossible; the fourth is a human rule.
+
+| Finding | Status |
+| --- | --- |
+| Published over red checks | **Impossible**: the workflow inspects the commit's check runs and refuses (`Refuse to release a commit whose checks failed`). |
+| More than one release per build | **Impossible**: publishing finds the existing release and re-uploads assets to it instead of creating a second one. |
+| README / CHANGELOG / in-app version drift | **Impossible**: `check-version-sync.mjs` (22 assertions) compares `package.json`, `README.md`, `CHANGELOG.md` and `app:info` against the tag, and the build fails on drift. |
+| Tags pushed by hand | **A human rule.** Nothing in the repository can stop someone pushing a tag; what it can do is refuse to publish a release for it. The rule is: tags are created by the release workflow's `workflow_dispatch`, one per verified green build, never in a batch. |

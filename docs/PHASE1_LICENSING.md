@@ -6,9 +6,30 @@ data — and the commercial-use restrictions `docs/AUDIT_PHASE0.md` §C flagged.
 
 Baseline commit: `821c788`.
 
-Every claim below is backed by `scripts/check-licences.mjs`, which is part of the
-release chain and reads the installed packages, the lockfile, the sources and the
-packs rather than trusting this document.
+Every claim below is backed by two checks in the release chain, neither of which
+trusts this document:
+
+* `scripts/check-licences.mjs` — the *packages*: installed production
+  dependencies, the lockfile, vendored packs (84 assertions at last run).
+* `scripts/check-attribution.mjs` — the *source*: any file in `src/` or `electron/`
+  whose header claims an upstream must be credited in `THIRD_PARTY_NOTICES.md`,
+  and the two restricted packages must stay absent from code and lockfile. It
+  exists because a licence check that reads `package.json` cannot see a function
+  copied from an Apache-2.0 project into this repository's own source, which is
+  where licence trouble actually hides.
+
+**Added in this round (both found by `check-attribution.mjs`, not by reading):**
+
+* **`thinking-orbs` ^0.3.2 is a real shipped dependency** (`src/app-shell/AskPanel.tsx`
+  renders `ThinkingOrb`) that arrived with the Libraries.dev skill and was credited
+  only inside `resources/libraries-dev/review.json` — never in
+  `THIRD_PARTY_NOTICES.md`. It is now recorded there with its upstream. The other
+  six packages in that skill are **not** installed; the review report lists them as
+  suggestions and the app never installs anything.
+* The Libraries.dev skill material itself (`resources/libraries-dev/SKILL.md`,
+  `references/`, the generated `review.json`) ships inside the app and had no
+  notice. Now credited to `Jakubantalik/Libraries.dev` with the licences of each
+  library it describes.
 
 ---
 

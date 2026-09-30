@@ -75,6 +75,26 @@ third-party material are not vendored.
 Vendored component sources with their upstream licence files preserved beside
 them (`resources/panelui/LICENSE.upstream.txt`, `resources/uselayouts/LICENSE`).
 
+## Libraries.dev skill (`Jakubantalik/Libraries.dev`) — MIT libraries, skill material
+
+`resources/libraries-dev/` ships the installed skill's own reference material
+(`SKILL.md`, `references/01-…` through `07-…`) and the report generated from it by
+`scripts/libraries-review.mjs` (`review.json`). Upstream:
+https://github.com/Jakubantalik/Libraries.dev — installed with
+`npx skills add Jakubantalik/Libraries.dev`.
+
+The skill is a set of documents describing seven MIT-licensed npm packages; it is
+reference material, not code compiled into Cupric. Every package it describes
+carries its licence in `review.json` (`"license": "MIT"` on each entry), and each
+entry records the exact version reviewed.
+
+**Shipped dependency from that set:** `thinking-orbs` ^0.3.2 is a real
+dependency of this app (`src/app-shell/AskPanel.tsx` renders `ThinkingOrb` for
+long AI waits) and is listed by `scripts/check-licences.mjs` like every other
+production dependency. The other six packages are **not** installed; `review.json`
+records them as suggestions only, and `LibrariesDev.tsx` never installs anything —
+Apply hands over the command for the user to run.
+
 ## Fonts
 
 Bundled families are SIL OFL (Fontsource). Fontshare families are **not**
