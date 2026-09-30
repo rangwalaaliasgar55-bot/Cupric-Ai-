@@ -15,7 +15,10 @@
  * reported, never skipped silently.
  */
 import { test, expect } from '@playwright/test'
-import { dismissOnboarding, launchApp } from './harness'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { dismissOnboarding, launchApp, makeFixtureVideo, mediaBinaries, waitForToast } from './harness'
 import type { LaunchedApp } from './harness'
 
 /**
@@ -170,13 +173,27 @@ test('the desks explain what they are for, and the explanation can be dismissed'
 test('the timeline playhead moves from the keyboard and says where it is', async () => {
   await dismissOnboarding(launched.page)
   await ensureProjectOpen(launched.page)
-  await openNav(launched.page, 'studio')
-  await launched.page.waitForSelector('canvas[aria-label="Studio preview"]')
-  await openNav(launched.page, 'timeline')
-  // `data-view` flips before the previous screen has finished exiting
-  // (AnimatePresence mode="wait"), and the Studio has a slider of its own with
-  // the same accessible name. Wait for the Timeline screen's own element, or the
-  // assertions below can be made against the screen that is on its way out.
+
+  // The Timeline screen only renders its ruler when the project has timeline
+  // clips — with none it shows an empty state (`Timeline.tsx`). Those clips come
+  // from the Footage Desk, so this walks the real path: import a raw video there,
+  // let the app analyse it, apply the edit, and land on the Timeline with
+  // something real to seek. That also covers two Phase 1 features nothing else
+  // touches — footage import and the silence scan behind "Apply edit".
+  const { ffmpeg } = mediaBinaries()
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-e2e-playhead-'))
+  const source = makeFixtureVideo(ffmpeg, workspace, { seconds: 3 })
+
+  await openNav(launched.page, 'footage')
+  await launched.page.locator('input[type="file"][accept="video/*"]').first().setInputFiles(source)
+  const scanned = await waitForToast(launched.page, /scanned/, 180_000)
+  expect(scanned, 'the footage import must report what it found').toMatch(/silence cut/)
+  await launched.page.getByRole('button', { name: 'Apply edit' }).click()
+  await waitForToast(launched.page, /added to the Timeline/, 60_000)
+  await launched.page.waitForSelector('main[data-view="timeline"]', { timeout: 60_000 })
+  // `data-view` flips before AnimatePresence has finished swapping screens, and
+  // the Studio has a slider with the same accessible name — so wait for the
+  // Timeline screen's own element before asserting on its playhead.
   await launched.page.locator('[data-timeline-announcer]').waitFor({ state: 'attached', timeout: 30_000 })
 
   const slider = launched.page.getByRole('slider', { name: 'Playhead' })
@@ -186,10 +203,9 @@ test('the timeline playhead moves from the keyboard and says where it is', async
   await slider.focus()
   await expect(slider).toBeFocused()
 
-  // With an empty timeline there is nothing to seek, so the range is 0..0. The
-  // assertions that matter are the ARIA contract and that keys do not throw.
   const max = Number(await slider.getAttribute('aria-valuemax'))
-  expect(Number.isFinite(max)).toBe(true)
+  expect(Number.isFinite(max), `the playhead reports a range (aria-valuemax=${max})`).toBe(true)
+  expect(max, 'the imported 3s clip must give the ruler a real range').toBeGreaterThan(0)
   await launched.page.keyboard.press('ArrowRight')
   await launched.page.keyboard.press('End')
   await expect(slider).toHaveAttribute('aria-valuenow', String(max))

@@ -13,7 +13,7 @@ import { expect, test } from '@playwright/test'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { expectNoAppErrors, filesNewestFirst, launchApp, makeFixtureVideo, mediaBinaries, probeFile, seedState } from './harness'
+import { expectNoAppErrors, exportEvidence, filesNewestFirst, launchApp, makeFixtureVideo, mediaBinaries, probeFile, seedState } from './harness'
 
 // Not serial: the two tests below use their own userData directories and launch
 // their own copy of the app, so one failing should not hide the other. On the
@@ -67,12 +67,11 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
         try {
           await toast.waitFor({ state: 'visible', timeout: 120_000 })
         } catch (error) {
-          const shown = await app.page.locator('[role="status"]').allInnerTexts()
           throw new Error([
             `the app never said it imported the clip (${(error as Error).message.split('\n')[0]}).`,
-            `  toasts on screen: ${JSON.stringify(shown)}`,
-            `  renderer output: ${JSON.stringify(app.errors)}`,
             `  the file was: ${source} (${sourceProbe.sizeBytes} bytes, ${sourceProbe.durationSec}s)`,
+            await exportEvidence(app.page, userDataDir),
+            `  renderer output: ${JSON.stringify(app.errors)}`,
           ].join('\n'))
         }
         return (await toast.innerText()).trim()
@@ -101,13 +100,10 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
         try {
           await outcome.waitFor({ state: 'visible', timeout: 240_000 })
         } catch (error) {
-          const shown = await app.page.locator('[role="status"]').allInnerTexts()
-          const renders = filesNewestFirst(path.join(userDataDir, 'renders'), (name) => name.toLowerCase().endsWith('.mp4'))
           throw new Error([
             `no export result within 240s (${(error as Error).message.split('\n')[0]}).`,
-            `  toasts on screen: ${JSON.stringify(shown)}`,
+            await exportEvidence(app.page, userDataDir),
             `  renderer output: ${JSON.stringify(app.errors)}`,
-            `  files under renders/: ${JSON.stringify(renders)}`,
           ].join('\n'))
         }
         return (await outcome.innerText()).trim()

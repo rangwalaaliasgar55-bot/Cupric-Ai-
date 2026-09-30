@@ -315,6 +315,42 @@ export async function dismissOnboarding(page: Page, timeoutMs = 8_000): Promise<
 }
 
 /**
+ * The tail of the app's own log file, for when something fails and the reason
+ * only exists in the main process.
+ *
+ * `electron/main.cjs` writes every render, export and load decision to
+ * `userData/logs/<date>.log`. The renderer cannot see any of it, and a CI
+ * artifact cannot be downloaded from this environment, so a failure that does
+ * not quote this is a failure nobody can diagnose.
+ */
+export function appLogTail(userDataDir: string, lines = 40): string {
+  const dir = path.join(userDataDir, 'logs')
+  if (!fs.existsSync(dir)) return `(no logs directory at ${dir})`
+  const files = fs.readdirSync(dir).filter((name) => name.endsWith('.log')).sort()
+  if (!files.length) return `(no .log files in ${dir}: ${fs.readdirSync(dir).join(', ') || 'empty'})`
+  const newest = path.join(dir, files[files.length - 1])
+  const all = fs.readFileSync(newest, 'utf8').split(/\r?\n/).filter(Boolean)
+  return `${files[files.length - 1]} (${all.length} lines, last ${Math.min(lines, all.length)}):\n${all.slice(-lines).join('\n')}`
+}
+
+/**
+ * Everything a person can see about an export in progress: the toasts, the
+ * export state the toolbar shows, and where the app is writing.
+ */
+export async function exportEvidence(page: Page, userDataDir: string): Promise<string> {
+  const toasts = await page.locator('[role="status"]').allInnerTexts().catch(() => ['(toasts unreadable)'])
+  const exportState = await page.locator('text=/Exporting|Queued|percent|%/').allInnerTexts().catch(() => [])
+  const rendersDir = path.join(userDataDir, 'renders')
+  const files = filesNewestFirst(rendersDir, () => true).map((file) => `${file} (${fs.existsSync(file) ? fs.statSync(file).size : '?'} bytes)`)
+  return [
+    `  toasts on screen: ${JSON.stringify(toasts)}`,
+    `  export state on screen: ${JSON.stringify(exportState.slice(0, 6))}`,
+    `  files under ${rendersDir}: ${JSON.stringify(files.slice(0, 8))}`,
+    `  app log tail:\n${appLogTail(userDataDir, 30)}`,
+  ].join('\n')
+}
+
+/**
  * A real source video for the import test: FFmpeg testsrc2 (a moving pattern,
  * so a still-frame export is obviously wrong) with a real sine tone.
  */
