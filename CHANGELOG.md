@@ -16,7 +16,16 @@ reconstructed from the published GitHub releases, and where a release was
 published with only GitHub's auto-generated notes it says so rather than
 inventing a summary.
 
-## [Unreleased]
+## [0.16.0] — 2026-09-30
+
+- **Phase 1.3 — frame-accurate timeline.** Drag, both trims, split, move-to-playhead
+  and the ←/→ frame step land on the document's frame grid instead of 0.01 s;
+  `normaliseClip` no longer rounds snapped edits back off the frame; the paused
+  preview seeks to the middle of the frame under the playhead with half-a-frame
+  tolerance. `scripts/check-frame-accurate.mjs`.
+- **`whisper:fetch` verifies bytes** against the publisher's SHA-256 (GitHub asset
+  digest, HuggingFace `x-linked-etag`) before installing; a mismatch deletes the file.
+- `check-encode-dims` follows the Studio MP4 argv into `studio-trim.cjs`.
 
 Remediation work on this branch, in phases (each phase's evidence is in
 `docs/`):
