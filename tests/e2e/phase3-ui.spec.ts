@@ -134,32 +134,38 @@ test('a missing speech engine offers a real download, not just a sentence', asyn
     return bridge.ipc.invoke('voice:engines')
   })
   if (!status) test.skip(true, 'not running inside the desktop app')
-  const engines = (status as { engines: { id: string; label: string; installed: boolean; sizeHint?: string }[] }).engines
+  const engines = (status as { engines: { id: string; label: string; installed: boolean; sizeHint?: string; detail: string }[] }).engines
   expect(engines.map((e) => e.id)).toEqual(['piper', 'piper-model-en', 'whisper', 'voice-hi'])
-  // Every entry says whether it is here and what it would cost to fetch.
+  // Every entry says what it is, whether it is here, and what it would cost.
   for (const engine of engines) {
     expect(typeof engine.installed).toBe('boolean')
     expect(engine.label.length).toBeGreaterThan(4)
+    expect(engine.detail.length).toBeGreaterThan(10)
   }
 
-  // Whatever the state, the panel must agree with it — and if something is
-  // missing, there must be a button to do something about it.
-  await launched.page.locator('[data-nav="home"]').click()
-  const panelToggle = launched.page.getByRole('button', { name: /What this machine can do|Readiness/ })
-  if (await panelToggle.count()) {
-    await panelToggle.first().click()
-    const missing = engines.filter((e) => !e.installed)
-    if (missing.length) {
-      const install = launched.page.getByRole('button', { name: /Download|Re-check/ }).first()
-      await expect(install).toBeVisible()
-      // A disabled button must say why (check-ui-audit enforces this too).
-      if (await install.isDisabled()) {
-        const described = await install.getAttribute('aria-describedby')
-        expect(described, 'a disabled install button explains itself').toBeTruthy()
-      }
+  // The panel lives in the Ask drawer's settings (src/app-shell/AskPanel.tsx),
+  // which is where a person would look for it. Open it the way they would.
+  await launched.page.keyboard.press('Control+k')
+  await launched.page.getByText('Ask Cupric AI').first().click()
+  const settings = launched.page.getByRole('button', { name: 'AI settings' })
+  await expect(settings).toBeVisible()
+  await settings.click()
+  const panel = launched.page.getByText('What this machine can do').first()
+  await expect(panel).toBeVisible()
+  // The panel must agree with what the main process reported: an engine it says
+  // is missing has to be either offered for download or explained.
+  const missing = engines.filter((e) => !e.installed && !e.id.startsWith('voice-hi'))
+  if (missing.length) {
+    const install = launched.page.getByRole('button', { name: /Download/ }).first()
+    await expect(install).toBeVisible()
+    // A disabled control has to say why — the same rule check-ui-audit enforces.
+    if (await install.isDisabled()) {
+      const described = await install.getAttribute('aria-describedby')
+      const reason = described ? await launched.page.locator(`#${described}`).innerText() : await install.getAttribute('title')
+      expect(reason, 'a blocked install button explains itself').toBeTruthy()
     }
-  } else {
-    // The panel is not behind a toggle in this build; report rather than assume.
-    console.log('readiness panel is always visible; install buttons asserted above')
+    // And an enabled one is the real download: it either reports progress or a
+    // failure that names the URL. It is never wired to nothing.
+    expect(await install.getAttribute('title')).toMatch(/Download|install/i)
   }
 })

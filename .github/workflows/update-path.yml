@@ -62,6 +62,9 @@ jobs:
           git worktree add ../cupric-from ${{ inputs.from_tag }}
           Push-Location ../cupric-from
           npm ci
+          # The installer this job builds must contain a working FFmpeg, or the
+          # "update" it proves would be an update to an app that cannot render.
+          npm run ffmpeg:ensure
           npm run build
           npx electron-builder --win --publish never
           Pop-Location

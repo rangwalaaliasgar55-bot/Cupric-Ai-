@@ -42,8 +42,13 @@ function findFfmpeg() {
     // renderer uses, so it is the right one to walk through with.
     path.join(root, 'node_modules', 'ffmpeg-static', 'ffmpeg'),
     path.join(root, 'node_modules', 'ffmpeg-static', 'ffmpeg.exe'),
-    path.join(root, 'node_modules', '@ffmpeg-installer', 'linux-x64', 'ffmpeg'),
-    '/tmp/ffbin/node_modules/@ffmpeg-installer/linux-x64/ffmpeg',
+    // Platform-specific installs of the same static build.
+    {
+      win32: path.join(root, 'node_modules', '@ffmpeg-installer', 'win32-x64', 'ffmpeg.exe'),
+      linux: path.join(root, 'node_modules', '@ffmpeg-installer', 'linux-x64', 'ffmpeg'),
+      darwin: path.join(root, 'node_modules', '@ffmpeg-installer', 'darwin-x64', 'ffmpeg'),
+    }[process.platform],
+    '/tmp/ffbin/node_modules/@ffmpeg-installer/linux-x64/ffmpeg', // this container's copy, when present
   ].filter(Boolean)
   for (const candidate of candidates) if (existsSync(candidate)) return candidate
   const which = spawnSync(process.platform === 'win32' ? 'where' : 'which', ['ffmpeg'], { encoding: 'utf8' })
@@ -349,7 +354,7 @@ const install = await guard('Speech engine install: plans, guards and failure re
     'plan': `${plan.items[0].url} → ${path.basename(plan.items[0].to)}`,
     'expected files after unzip': (plan.expect ?? []).join(', '),
     'real failure': `${failed.reason}: ${String(failed.error).slice(0, 60)}`,
-    'traversal guard': installer.safeEntryTarget('/tmp/dest', '../escape').ok === false ? 'refuses ../escape' : 'FAILED',
+    'traversal guard': installer.safeEntryTarget(TMP, '../escape').ok === false ? 'refuses ../escape' : 'FAILED',
   }
 })
 if (install) step('Speech engine install: plans, guards and failure reporting', 'pass', 'the plan, the entry-path guard and the failure path were all run for real', install)

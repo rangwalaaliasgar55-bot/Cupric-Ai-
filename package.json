@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "test": "vitest run",
+    "ffmpeg:ensure": "node scripts/ensure-ffmpeg.mjs",
     "verify:phase1": "node scripts/phase1-walkthrough.mjs",
     "test:e2e": "playwright test",
     "test:e2e:list": "playwright test --list",

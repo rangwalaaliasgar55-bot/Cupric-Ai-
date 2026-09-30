@@ -72,8 +72,36 @@ function resolveBinary(name) {
   return null
 }
 
+/**
+ * Every place a tool could be, and what happened at each. Printed on every run,
+ * because the difference between "the binary is missing" and "the binary is
+ * there but the module does not return it" is not visible from a red X.
+ */
+function explainResolution(name) {
+  const lines = []
+  const envPath = process.env[`CUPRIC_${name.toUpperCase()}_PATH`]
+  lines.push(`CUPRIC_${name.toUpperCase()}_PATH=${envPath ? (fs.existsSync(envPath) ? envPath : `${envPath} (not present)`) : 'unset'}`)
+  const onPath = spawnSync(process.platform === 'win32' ? 'where' : 'which', [name], { encoding: 'utf8' })
+  const found = onPath.status === 0 ? String(onPath.stdout).split(/\r?\n/).map((l) => l.trim()).filter(Boolean)[0] : null
+  lines.push(`PATH=${found || 'not found'}`)
+  for (const moduleName of [name === 'ffmpeg' ? 'ffmpeg-static' : 'ffprobe-static', '@ffmpeg-installer/ffmpeg']) {
+    try {
+      const resolved = moduleName === 'ffprobe-static' ? require(moduleName).path : require(moduleName)
+      const candidate = typeof resolved === 'string' ? resolved : resolved?.path
+      lines.push(`${moduleName}=${candidate ? (fs.existsSync(candidate) ? candidate : `${candidate} (not present)`) : 'no path exported'}`)
+    } catch (error) {
+      lines.push(`${moduleName}=${error?.code || error?.message}`)
+    }
+  }
+  return lines.join('\n      ')
+}
+
 const ffprobePath = resolveBinary('ffprobe')
 const ffmpegPath = resolveBinary('ffmpeg')
+if (!ffprobePath || !ffmpegPath) {
+  console.log(`resolve ffprobe → ${ffprobePath || 'NOT FOUND'}\n  tried:\n      ${explainResolution('ffprobe')}`)
+  console.log(`resolve ffmpeg  → ${ffmpegPath || 'NOT FOUND'}\n  tried:\n      ${explainResolution('ffmpeg')}`)
+}
 assert.ok(ffprobePath, 'FAIL: ffprobe could not be found — the export gate cannot verify anything without it. Run a clean install (ffprobe-static) or set CUPRIC_FFPROBE_PATH.')
 checks += 1
 
@@ -199,7 +227,16 @@ try {
     statfs: (dir) => fs.statfsSync(dir),
     platform: process.platform,
   })
-  ok(pass.ok, `a real writable folder with ffmpeg present passes preflight (${pass.checks.map((c) => `${c.id}:${c.ok ? 'ok' : 'no'}`).join(' ')})`)
+  // The verdict depends on whether this machine has FFmpeg, and both verdicts
+  // are worth asserting — that is the difference between a check that describes
+  // the machine it was written on and one that describes the product.
+  if (ffmpegPath) {
+    ok(pass.ok, `a real writable folder with ffmpeg present passes preflight (${pass.checks.map((c) => `${c.id}:${c.ok ? 'ok' : 'no'}`).join(' ')})`)
+  } else {
+    ok(!pass.ok && codes(pass).includes('FFMPEG_MISSING'), 'without ffmpeg the same preflight refuses, naming the missing tool rather than failing later')
+    skipped += 1
+    console.log('SKIPPED: no FFmpeg on this machine, so the "everything present passes" case cannot be asserted (run npm run ffmpeg:ensure).')
+  }
   ok(pass.checks.find((c) => c.id === 'disk').detail.includes('free'), 'the free space is reported from the real statfs')
   ok(pass.estimate.bytes > 0, 'the disk need is estimated')
 
@@ -233,6 +270,21 @@ try {
   if (rootUser) {
     skipped += 1
     console.log('SKIPPED: running as root, which ignores directory permissions — the read-only assertion did not run.')
+  } else if (process.platform === 'win32') {
+    // Found by the first real Windows CI run: this assertion cannot hold here.
+    // `chmod` on Windows toggles the read-only attribute on *files*; it does not
+    // remove write access from a directory, so `read-only` is still writable and
+    // the preflight is right to say so. Asserting the POSIX behaviour on Windows
+    // was the bug, not the code under test.
+    //
+    // Nothing is lost: `src/tests/render-preflight.test.ts` asserts
+    // OUTPUT_NOT_WRITABLE against a real EACCES, and DISK_FULL against a real
+    // ENOSPC, on every platform. A real read-only *folder* still reaches the
+    // same code path in production — this check just cannot manufacture one
+    // without an ACL change (icacls), which is not worth shelling out for.
+    skipped += 1
+    console.log('SKIPPED: Windows cannot express "unwritable directory" with chmod, so this assertion is not attempted here.')
+    console.log('SKIPPED: OUTPUT_NOT_WRITABLE (EACCES) and DISK_FULL (ENOSPC) are asserted by src/tests/render-preflight.test.ts on every platform.')
   } else {
     const denied = preflight.buildPreflight({
       outputPath: path.join(readOnly, 'launch.mp4'),

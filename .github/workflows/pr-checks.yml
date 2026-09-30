@@ -49,6 +49,15 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      # `ffmpeg-static` is an OPTIONAL dependency whose binary is downloaded by
+      # its postinstall script; when that download fails, npm drops the package
+      # silently and the app can no longer render MP4. The first real run of this
+      # workflow found exactly that: ffprobe present, ffmpeg absent. A Windows
+      # verification run without FFmpeg verifies nothing about rendering, so this
+      # is a hard failure, not a warning.
+      - name: Ensure FFmpeg is really here
+        run: npm run ffmpeg:ensure
+
       # `npm run build` is the real chain: pack builders, icon check, tsc,
       # `npm run test` (real Vitest), ~60 behaviour checks and `vite build`.
       # scripts/run-checks.mjs reads the chain from package.json and names the

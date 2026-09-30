@@ -103,27 +103,54 @@ ok(scale(25) === scale(10) && scale(10) === '0.60', 'an out-of-range rate is cla
   rmSync(dir, { recursive: true, force: true })
 }
 
-// ── the chain, run for real with no engine installed ─────────────────────────
-// This is the honest half: the machine really has no Windows voice and no
-// eSpeak NG, so the call really fails, and what is asserted is that the failure
-// is legible instead of an empty string or a stack trace.
-const missing = await tts.synthesize({ text: 'Save smarter', language: 'en' }, 'win32', { piper: null })
-ok(missing.ok === false, 'with no engine present, synthesis reports failure rather than empty audio')
-ok(typeof missing.error === 'string' && missing.error.trim().length > 0, 'the failure carries a sentence a person can act on')
-ok(!/^\s*at\s|\bError:|\bENOENT\b/.test(missing.error), 'the sentence is not a raw stack frame or errno')
-ok(/could not start Windows Speech/.test(missing.error) && /execution policy/.test(missing.error), 'a failure to start the engine is reported as that, with the likely causes')
-ok(missing.engine === 'Windows Speech', 'the result says which engine failed, so the UI does not have to guess')
-ok(typeof missing.detail === 'string' && missing.detail.length > 0, 'the engine’s own words are kept in a separate field, not lost')
-ok(!missing.error.includes(String(missing.detail)), 'the technical detail is not pasted into the sentence a person reads')
-ok(Array.isArray(missing.tried) && missing.tried.length >= 1, 'the engines that were tried are recorded')
-ok(missing.tried.every((line) => typeof line === 'string' && line.includes(':')), 'each attempt names the engine and what it said')
+// ── the chain, run for real ──────────────────────────────────────────────────
+//
+// This runs the shipped chain with no Piper and no fabricated binary, and then
+// asserts the *contract* rather than a particular outcome, because the outcome
+// depends on the machine:
+//
+//   * on a Linux container (where this was written) there is no Windows Speech
+//     and no eSpeak NG, so the call really fails and the failure is asserted
+//     line by line — a sentence, the engine named, the attempts recorded, the
+//     raw spawn error kept out of the user-facing copy;
+//   * on a Windows runner System.Speech *does* exist, so the call can really
+//     succeed — and then what is asserted is that it produced a real RIFF/WAVE
+//     payload from a named engine.
+//
+// The first version asserted the failure unconditionally, which would have gone
+// red the first time it ran on Windows. A check that only passes on the machine
+// it was written on is not a check.
+const chain = await tts.synthesize({ text: 'Save smarter', language: 'en' }, 'win32', { piper: null })
 
-// The regression this check found: a Hindi request with no engine must not be
-// answered with "add a Hindi voice" — the engine never started.
-const hiNoEngine = await tts.synthesize({ text: 'नमस्ते', language: 'hi' }, 'win32', { piper: null })
-ok(!/Add a Hindi voice|no Hindi voice is installed/i.test(hiNoEngine.error), 'a missing engine is not reported as a missing Hindi voice')
-ok(/could not start Windows Speech/.test(hiNoEngine.error), 'Hindi with no engine still names the real problem')
-// And the copy for a genuinely missing Hindi voice is unchanged.
+if (chain.ok) {
+  // Real audio came back. Assert it is audio, not just a truthy object.
+  const bytes = Buffer.from(chain.base64 || '', 'base64')
+  ok(bytes.length > 64, `the engine returned real bytes (${bytes.length})`)
+  ok(bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WAVE', 'the payload is a RIFF/WAVE file, not an empty buffer')
+  ok(typeof chain.engine === 'string' && chain.engine.length > 2, `the result names the engine that produced it (${chain.engine})`)
+  ok(chain.mime === 'audio/wav', 'and the mime type matches the bytes')
+  ok(chain.language === 'en', 'the language is reported back')
+} else {
+  ok(chain.error && chain.error.trim().length > 0, 'with no engine present, the failure carries a sentence a person can act on')
+  ok(!/^\s*at\s|\bError:|\bENOENT\b/.test(chain.error), 'the sentence is not a raw stack frame or errno')
+  ok(/could not start Windows Speech/.test(chain.error) && /execution policy/.test(chain.error), 'a failure to start the engine is reported as that, with the likely causes')
+  ok(chain.engine === 'Windows Speech', 'the result says which engine failed, so the UI does not have to guess')
+  ok(typeof chain.detail === 'string' && chain.detail.length > 0, 'the engine’s own words are kept in a separate field, not lost')
+  ok(!chain.error.includes(String(chain.detail)), 'the technical detail is not pasted into the sentence a person reads')
+  ok(Array.isArray(chain.tried) && chain.tried.length >= 1, 'the engines that were tried are recorded')
+  ok(chain.tried.every((line) => typeof line === 'string' && line.includes(':')), 'each attempt names the engine and what it said')
+
+  // The regression this check found: a request with no reachable engine must not
+  // be answered with "add a Hindi voice" — the engine never started.
+  const hiNoEngine = await tts.synthesize({ text: 'नमस्ते', language: 'hi' }, 'win32', { piper: null })
+  if (!hiNoEngine.ok) {
+    ok(!/Add a Hindi voice|no Hindi voice is installed/i.test(hiNoEngine.error), 'a missing engine is not reported as a missing Hindi voice')
+    ok(/could not start Windows Speech|No Hindi voice/i.test(hiNoEngine.error), 'Hindi with no engine names the real problem')
+  } else {
+    ok(/RIFF/.test(Buffer.from(hiNoEngine.base64 || '', 'base64').toString('ascii', 0, 4)), 'a Windows Hindi voice produced real audio when one is installed')
+  }
+}
+// And the copy for a genuinely missing Hindi voice is unchanged, on every machine.
 ok(/Add a Hindi voice/.test(tts.blockerFor('win32', 'hi')), 'the Hindi-voice blocker still gives the Windows settings path')
 
 ok(tts.MAX_CHARS > 0 && (await tts.synthesize({ text: '' }, 'win32', { piper: null })).ok === false, 'empty script is refused up front')
@@ -141,4 +168,11 @@ ok(!/localhost|127\.0\.0\.1/.test(installer), 'the installer never falls back to
 ok(readFileSync('src/screens/studio/StudioCreativePanel.tsx', 'utf8').includes('Hindi (हिन्दी)'), 'UI offers Hindi')
 
 console.log(`tts languages: ${n} assertions passed — no fake engines were used.`)
-console.log('UNVERIFIED here: real audio out of a real engine. That needs a Windows machine with a voice installed (/voice/status + a WAV that plays).')
+// Say what actually happened on this machine rather than a blanket disclaimer.
+// On a Linux container there is no engine, so real audio is unverified; on the
+// Windows runner there is one, and the payload above was checked byte for byte.
+console.log(
+  chain.ok
+    ? `VERIFIED on this machine: ${chain.engine} produced ${Buffer.from(chain.base64 || '', 'base64').length} bytes of ${chain.mime} for an English line.`
+    : 'UNVERIFIED here: real audio out of a real engine. That needs a Windows machine with a voice installed (/voice/status + a WAV that plays).',
+)
