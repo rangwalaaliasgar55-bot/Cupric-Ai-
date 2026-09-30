@@ -101,6 +101,7 @@ import { allowListOfReport, diffStudioDoc } from '../lib/studio/scopedEdit'
 import type { GateReport } from '../lib/studio/gates'
 import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
+import { frameOf, snapPlayhead, stepFrames } from '../lib/studio/frames'
 import { humanError } from '../lib/humanError'
 import { getIpc } from '../lib/bridge'
 import { rlog } from '../lib/log'
@@ -133,6 +134,7 @@ export function Studio() {
   const redo = useProjectStore((s) => s.redo)
   const removeStudioClip = useProjectStore((s) => s.removeStudioClip)
   const splitStudioClip = useProjectStore((s) => s.splitStudioClip)
+  const runTimelineCommand = useProjectStore((s) => s.runTimelineCommand)
   const duplicateStudioClip = useProjectStore((s) => s.duplicateStudioClip)
   const reorderStudioTracks = useProjectStore((s) => s.reorderStudioTracks)
   const settleStudioClip = useProjectStore((s) => s.settleStudioClip)
@@ -365,9 +367,32 @@ export function Studio() {
     speak(`Starting an autonomous job for ${brief}.`, { interrupt: true })
   }
 
+  /**
+   * Seeking lands on a frame (Phase 1.3).
+   *
+   * The playhead used to be a bare number of seconds, so a scrub or a shortcut
+   * could park it between two frames — a position the exporter cannot draw, and
+   * the preview would show the wrong frame by up to a frame's worth of edit.
+   * Every seek now snaps: the frame on screen is the frame at that index.
+   */
+  /**
+   * Split the selected clip at the playhead, through the command layer.
+   *
+   * The store's `splitStudioClip` is silent when the playhead is outside the
+   * clip (or too close to an edge) — nothing happens and nothing is said. The
+   * command returns the reason, so `S` either splits or explains why it did not.
+   */
+  const splitAtPlayhead = useCallback(
+    (clipId: string) => {
+      if (!pid) return
+      runTimelineCommand(pid, { kind: 'split', clipId, atSec: time }, { playhead: time })
+    },
+    [pid, runTimelineCommand, time],
+  )
+
   const seek = useCallback(
-    (t: number) => setTime(clamp(t, 0, Math.max(0, duration))),
-    [duration],
+    (t: number) => setTime(snapPlayhead(doc, clamp(t, 0, Math.max(0, duration)))),
+    [doc, duration],
   )
 
   /**
@@ -490,20 +515,22 @@ export function Studio() {
       // Arrows nudge the playhead a frame at a time; Shift makes it a second.
       if (!mod && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
         e.preventDefault()
-        const step = e.shiftKey ? 1 : 1 / doc.fps
-        seek(time + (e.key === 'ArrowRight' ? step : -step))
+        const dir = e.key === 'ArrowRight' ? 1 : -1
+        // Plain arrows step exactly one frame; Shift steps a second. The frame
+        // step is an integer index, so holding the key cannot drift.
+        seek(e.shiftKey ? time + dir : stepFrames(doc, time, dir))
         return
       }
 
       if (!mod && key === 's' && selectedId && pid) {
         e.preventDefault()
-        splitStudioClip(pid, selectedId, time)
+        splitAtPlayhead(selectedId)
         return
       }
       // Keep the older command available for existing users.
       if (mod && key === 'b' && selectedId && pid) {
         e.preventDefault()
-        splitStudioClip(pid, selectedId, time)
+        splitAtPlayhead(selectedId)
         return
       }
       // 2.1 / 2.7 pro timeline keys — each one labelled undo step, and a
@@ -542,7 +569,7 @@ export function Studio() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [doc, duration, patchStudio, pushToast, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitStudioClip, time, undo, updateStudioClip, runClipAction])
+  }, [doc, duration, patchStudio, pushToast, pid, playing, redo, removeStudioClip, seek, selectedId, showShortcuts, splitAtPlayhead, time, undo, updateStudioClip, runClipAction])
 
   useEffect(() => {
     if (time > duration) setTime(duration)
@@ -1151,7 +1178,7 @@ export function Studio() {
         seek(time + command.seconds)
         break
       case 'split':
-        if (selectedId) splitStudioClip(projectId, selectedId, time)
+        if (selectedId) splitAtPlayhead(selectedId)
         else pushToast('info', 'Select a clip first.')
         break
       case 'delete':
@@ -1524,7 +1551,7 @@ export function Studio() {
         <Button
           size="sm"
           variant="outline"
-          onClick={() => selectedId && splitStudioClip(projectId, selectedId, time)}
+          onClick={() => selectedId && splitAtPlayhead(selectedId)}
           disabled={!selectedId || exporting}
           title={selectedId ? 'Split the selected clip at the playhead (S)' : 'Select a clip to split it'}
         >
@@ -2000,8 +2027,9 @@ export function Studio() {
             <IconButton label={muted ? 'Unmute' : 'Mute'} onClick={() => setMuted((m) => !m)}>
               {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
             </IconButton>
-            <span className="mr-1 font-mono text-xs text-muted tabular-nums">
+            <span className="mr-1 font-mono text-xs text-muted tabular-nums" title="Playhead position, then the frame the preview is showing">
               {fmtClock(time)} / {fmtClock(duration)}
+              <span className="ml-2 text-muted/70">frame {frameOf(doc, time)}</span>
             </span>
             <button
               type="button"
@@ -2088,9 +2116,8 @@ export function Studio() {
                 setPlaying(false)
                 seek(t)
               }}
-              onPatchClip={(id, patch) => { const grouped = moveWithGroup(doc, id, patch); if (grouped) patchStudio(projectId, { clips: grouped.clips, trackCount: grouped.trackCount }, 'Move group'); else updateStudioClip(projectId, id, patch) }}
-              onReorderTrack={(from, to) => reorderStudioTracks(projectId, from, to)}
-              onSettleClip={(id) => settleStudioClip(projectId, id)}
+              onCommand={(command) => runTimelineCommand(projectId, command, { playhead: time, pps })}
+              onReorderTrack={(from, to) => runTimelineCommand(projectId, { kind: 'reorder-tracks', from, to })}
               onDropAt={onTimelineDrop}
               onClipContextMenu={(clipId, x, y) => { setSelectedId(clipId); setClipMenuAt({ clipId, x, y }) }}
             />
@@ -2161,7 +2188,7 @@ export function Studio() {
               setSelectedId(null)
             }}
             onDuplicate={() => selectedId && duplicateStudioClip(projectId, selectedId)}
-            onSplit={() => selectedId && splitStudioClip(projectId, selectedId, time)}
+            onSplit={() => selectedId && splitAtPlayhead(selectedId)}
           />
 
           <div className="mt-6 border-t border-line pt-4">

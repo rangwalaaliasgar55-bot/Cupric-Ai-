@@ -86,7 +86,7 @@ function planFor(engineId, destDir) {
   return { id: engineId, kind: engine.kind, label: engine.label, stripPrefix: engine.stripPrefix, expect: engine.expect ?? [], dir: destDir, items }
 }
 
-async function download(item, { onBytes, signal, timeoutMs = 15 * 60 * 1000 } = {}) {
+async function download(item, { onBytes, signal, fetchImpl, timeoutMs = 15 * 60 * 1000 } = {}) {
   const partial = `${item.to}.part`
   fs.mkdirSync(path.dirname(item.to), { recursive: true })
   const controller = new AbortController()
@@ -96,7 +96,7 @@ async function download(item, { onBytes, signal, timeoutMs = 15 * 60 * 1000 } = 
 
   let res
   try {
-    res = await fetch(item.url, {
+    res = await (fetchImpl || fetch)(item.url, {
       redirect: 'follow',
       signal: controller.signal,
       headers: { 'user-agent': 'Cupric-AI/voice-install' },
@@ -229,6 +229,11 @@ async function install(engineId, { dir, platform = process.platform, onProgress,
     const item = plan.items[index]
     report({ index, count: plan.items.length, name: item.name, phase: 'download', received: 0, total: null })
     const res = await download(item, {
+      // The option was accepted and then dropped on the floor, so anything that
+      // passed a fetch through (a test, a proxy, an offline mirror) silently got
+      // the real network instead. Threaded through, and the download is the only
+      // place that decides how bytes arrive.
+      fetchImpl,
       signal,
       onBytes: ({ received, total }) => report({ index, count: plan.items.length, name: item.name, phase: 'download', received, total }),
     })

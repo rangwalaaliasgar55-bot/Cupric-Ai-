@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, St
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime, snapToFrame } from '../../lib/studio/doc'
 import { markerTimes } from '../../lib/studio/timelineOps'
+import { newGesture, type TimelineCommand } from '../../lib/studio/commands'
 import { moveKeyframeTime } from '../../lib/studio/keyframeEdit'
 import { getMedia } from '../../lib/studio/media'
 import { clamp, cx, fmtClock } from '../../lib/utils'
@@ -22,9 +23,13 @@ type Props = {
   multiIds?: Set<string>
   onToggleMulti?: (id: string) => void
   onSeek: (t: number) => void
-  onPatchClip: (id: string, patch: Partial<StudioClip>) => void
+  /**
+   * Every drag, trim and keyframe edit leaves here as a command (Phase 1.3),
+   * carrying the gesture it belongs to. The store turns one gesture into one
+   * undo step — see src/lib/studio/commands.ts.
+   */
+  onCommand: (command: TimelineCommand) => void
   onReorderTrack: (from: number, to: number) => void
-  onSettleClip?: (id: string) => void
   /** 2.10 — a file or resource dropped on a lane, at the pointer's time and track. */
   onDropAt?: (data: DataTransfer, sec: number, track: number) => void
   /** Right-click on a clip: open the clip context menu at the pointer. */
@@ -32,10 +37,10 @@ type Props = {
 }
 
 type Drag =
-  | { mode: 'move'; id: string; grabOffsetSec: number; startTrack: number; pointerStartY: number }
-  | { mode: 'trim-start'; id: string; originStart: number; originDuration: number; originTrimIn: number }
-  | { mode: 'trim-end'; id: string; originDuration: number }
-  | { mode: 'keyframe'; id: string; index: number }
+  | { mode: 'move'; id: string; grabOffsetSec: number; startTrack: number; pointerStartY: number; gesture: string }
+  | { mode: 'trim-start'; id: string; originStart: number; originDuration: number; gesture: string }
+  | { mode: 'trim-end'; id: string; originDuration: number; gesture: string }
+  | { mode: 'keyframe'; id: string; index: number; gesture: string }
   | { mode: 'scrub' }
 
 function clipIcon(clip: StudioClip) {
@@ -104,7 +109,7 @@ function tickStep(pps: number): number {
   return 10
 }
 
-export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, multiIds, onToggleMulti, onSeek, onPatchClip, onReorderTrack, onSettleClip, onDropAt, onClipContextMenu }: Props) {
+export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect, multiIds, onToggleMulti, onSeek, onCommand, onReorderTrack, onDropAt, onClipContextMenu }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const laneRef = useRef<HTMLDivElement>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
@@ -160,49 +165,48 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       if (drag.mode === 'keyframe') {
         const keys = clip.keyframes ?? []
         const nextKeys = moveKeyframeTime(keys, drag.index, t - clip.startSec, clip.durationSec, doc.fps)
-        onPatchClip(clip.id, { keyframes: nextKeys })
+        onCommand({ kind: 'patch', clipId: clip.id, patch: { keyframes: nextKeys }, label: 'Move keyframe', gesture: drag.gesture })
         onSeek(clip.startSec + (nextKeys[drag.index]?.at ?? 0))
         return
       }
 
       if (drag.mode === 'move') {
         const rawStart = t - drag.grabOffsetSec
-        const start = snapTime(doc, rawStart, clip.id, [time, ...markerTimes(doc)], 8 / pps)
         // Rows are drawn top layer first, so dragging DOWN means a LOWER track.
         // Dragging above the top row opens a new layer.
         const rowDelta = Math.round((event.clientY - drag.pointerStartY) / (ROW_H + ROW_GAP))
         const track = clamp(drag.startTrack - rowDelta, 0, Math.min(MAX_TRACKS - 1, doc.trackCount))
-        onPatchClip(clip.id, { startSec: Math.max(0, start), track })
+        // Snapping happens inside the command, against the same clip edges,
+        // markers and playhead this line used to build by hand.
+        onCommand({ kind: 'move', clipId: clip.id, startSec: Math.max(0, rawStart), track, gesture: drag.gesture })
         return
       }
 
       if (drag.mode === 'trim-start') {
-        const maxShift = drag.originDuration - MIN_CLIP_SEC
+        // The new edge, snapped to clip edges, markers and frames exactly as the
+        // move drag is. The clamp is against the clip as it was when the drag
+        // began — so the pointer position, not the last applied edit, decides
+        // where the edge goes. Dragging left gives a cut-away back into its
+        // source; the command refuses to go further than the source allows, and
+        // never to a negative start time.
         const snapped = snapTime(doc, t, clip.id, [time, ...markerTimes(doc)], 8 / pps)
-        const shift = clamp(snapped - drag.originStart, -drag.originStart, maxShift)
-        const patch: Partial<StudioClip> = {
-          startSec: drag.originStart + shift,
-          durationSec: drag.originDuration - shift,
-        }
-        // Trimming the head of a media OR audio clip must move the source
-        // in-point too, otherwise dragging the left edge of a music bed just
-        // deletes the start of the song instead of sliding into it.
-        if (clip.kind === 'video' || clip.kind === 'audio') {
-          const speed = clip.kind === 'video' ? (clip as StudioMediaClip).speed || 1 : 1
-          ;(patch as Partial<StudioMediaClip>).trimInSec = Math.max(0, drag.originTrimIn + shift * speed)
-        }
-        onPatchClip(clip.id, patch)
+        const shift = clamp(snapped - drag.originStart, -drag.originStart, drag.originDuration - MIN_CLIP_SEC)
+        onCommand({ kind: 'trim', clipId: clip.id, edge: 'start', atSec: drag.originStart + shift, gesture: drag.gesture })
         return
       }
 
       // trim-end
-      const snapped = snapTime(doc, t, clip.id, [time, ...markerTimes(doc)], 8 / pps)
-      onPatchClip(clip.id, { durationSec: Math.max(MIN_CLIP_SEC, Math.round((snapped - clip.startSec) * 1e6) / 1e6) })
+      // The end edge goes to the command layer like every other gesture: it
+      // snaps against the same clip edges, markers and frames, rounds the
+      // duration up to a whole frame (never below MIN_CLIP_SEC), and lands in the
+      // same undo step as the rest of the drag.
+      onCommand({ kind: 'trim', clipId: clip.id, edge: 'end', atSec: t, gesture: drag.gesture })
     }
 
     const onUp = () => {
-      // A drop that lands on another clip is lifted onto a free layer.
-      if (drag.mode === 'move' || drag.mode === 'trim-end' || drag.mode === 'trim-start') onSettleClip?.(drag.id)
+      // A drop that lands on another clip is lifted onto a free layer — part of
+      // the same gesture, so it stays inside the same undo step.
+      if (drag.mode === 'move' || drag.mode === 'trim-end' || drag.mode === 'trim-start') onCommand({ kind: 'settle', clipId: drag.id, gesture: drag.gesture })
       setDrag(null)
     }
     window.addEventListener('pointermove', onMove)
@@ -213,7 +217,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
     }
-  }, [drag, doc, onPatchClip, onSettleClip, onSeek, pps, spanSec, time, timeAt])
+  }, [drag, doc, onCommand, onSeek, pps, spanSec, time, timeAt])
 
   // Keep the playhead in view while playing.
   useEffect(() => {
@@ -416,6 +420,10 @@ const ClipBlock = memo(function ClipBlock({ clip, selected, multi, pps, actions 
           grabOffsetSec: actions.timeAt(e.clientX) - clip.startSec,
           startTrack: clip.track,
           pointerStartY: e.clientY,
+          // One gesture per pointer-down: everything this drag does — the move,
+          // the settle when it lands, the clips that move with a group — folds
+          // into a single undo step. The next drag mints a new one.
+          gesture: newGesture('drag'),
         })
       }}
       className={cx(
@@ -463,7 +471,7 @@ const ClipBlock = memo(function ClipBlock({ clip, selected, multi, pps, actions 
             event.preventDefault()
             actions.select(clip.id)
             actions.seek(clip.startSec + keyframe.at)
-            actions.setDrag({ mode: 'keyframe', id: clip.id, index })
+              actions.setDrag({ mode: 'keyframe', id: clip.id, index, gesture: newGesture('keyframe') })
           }}
           className="absolute bottom-1 z-10 h-2.5 w-2.5 -translate-x-1/2 rotate-45 cursor-ew-resize border border-accent-ink bg-accent shadow-sm"
           style={{ left: `${clamp(keyframe.at / clip.durationSec, 0, 1) * 100}%` }}
@@ -483,10 +491,7 @@ const ClipBlock = memo(function ClipBlock({ clip, selected, multi, pps, actions 
             id: clip.id,
             originStart: clip.startSec,
             originDuration: clip.durationSec,
-            originTrimIn:
-              clip.kind === 'video' || clip.kind === 'audio'
-                ? (clip as StudioMediaClip | StudioAudioClip).trimInSec
-                : 0,
+            gesture: newGesture('trim'),
           })
         }}
         className="absolute inset-y-0 left-0 w-2 cursor-ew-resize bg-text/0 hover:bg-text/25"
@@ -498,7 +503,7 @@ const ClipBlock = memo(function ClipBlock({ clip, selected, multi, pps, actions 
           e.preventDefault()
           actions.select(clip.id)
           if (clip.locked) return
-          actions.setDrag({ mode: 'trim-end', id: clip.id, originDuration: clip.durationSec })
+          actions.setDrag({ mode: 'trim-end', id: clip.id, originDuration: clip.durationSec, gesture: newGesture('trim') })
         }}
         className="absolute inset-y-0 right-0 w-2 cursor-ew-resize bg-text/0 hover:bg-text/25"
       />

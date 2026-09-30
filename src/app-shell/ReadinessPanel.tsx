@@ -51,7 +51,17 @@ export function ReadinessPanel() {
   /** Real byte progress for an install in flight, keyed by engine id. */
   const [installing, setInstalling] = useState<{ engine: string; progress: InstallProgress | null } | null>(null)
   /** The last real failure, shown verbatim — never replaced by "something went wrong". */
-  const [installError, setInstallError] = useState<{ engine: string; message: string } | null>(null)
+  /**
+   * The two ways an install can end without installing anything.
+   *
+   * `error` is a real failure — a download that failed, an archive that would not
+   * unpack — and it is shown in red. `manual` is not a failure: some engines
+   * cannot be installed by an app at all (a Windows system voice, whisper.cpp
+   * fetched with the build), and the honest outcome is instructions. Showing
+   * those in the failure colour taught people to read a perfectly good
+   * explanation as something broken.
+   */
+  const [installError, setInstallError] = useState<{ engine: string; message: string; kind: 'error' | 'manual' } | null>(null)
 
   const doc = project ? studioOf(project) : null
   const renderable = Boolean(project && (project.timeline.length > 0 || project.brief.lockedRundown))
@@ -78,7 +88,7 @@ export function ReadinessPanel() {
     let live = true
     listVoiceEngines()
       .then((list) => { if (live) setEngines(list) })
-      .catch((error: Error) => { if (live) setInstallError({ engine: 'list', message: error.message }) })
+      .catch((error: Error) => { if (live) setInstallError({ engine: 'list', message: error.message, kind: 'error' }) })
     return () => { live = false }
   }, [])
 
@@ -91,7 +101,7 @@ export function ReadinessPanel() {
       setInstalling((current) => (current && current.engine === progress.engine ? { engine: progress.engine, progress } : current))
     })
     if (!result.ok) {
-      setInstallError({ engine, message: result.error })
+      setInstallError({ engine, message: result.error, kind: result.stage === 'manual' || result.stage === 'platform' ? 'manual' : 'error' })
       setInstalling(null)
       return
     }
@@ -137,6 +147,7 @@ export function ReadinessPanel() {
                   engines={engines}
                   installing={installing}
                   error={installError?.engine === installOfferFor(check.id, engines?.engines.find((e) => e.id.startsWith('piper'))?.id)?.engine ? installError?.message ?? null : null}
+                  errorKind={installError?.engine === installOfferFor(check.id, engines?.engines.find((e) => e.id.startsWith('piper'))?.id)?.engine ? installError?.kind ?? 'error' : null}
                   onInstall={runInstall}
                 />
               </div>
@@ -160,12 +171,15 @@ function InstallAction({
   engines,
   installing,
   error,
+  errorKind,
   onInstall,
 }: {
   check: ReadinessCheck
   engines: VoiceEngineList | null
   installing: { engine: string; progress: InstallProgress | null } | null
   error: string | null
+  /** `manual` means "here is what to do instead", not "this broke". */
+  errorKind: 'error' | 'manual' | null
   onInstall: (engine: string) => void
 }) {
   if (check.ok) return null
@@ -212,7 +226,17 @@ function InstallAction({
           aria-label={`Downloading ${info?.label ?? offer.engine}`}
         />
       )}
-      {error && <span className="text-[11px] text-danger">{error}</span>}
+      {error && (
+        <span
+          className={errorKind === 'manual' ? 'text-[11px] text-muted' : 'text-[11px] text-danger'}
+          // Instructions are read, a failure is announced. Both are surfaced;
+          // neither is swallowed, and the difference is in the wording and the
+          // colour, not in whether a person sees it.
+          role={errorKind === 'manual' ? undefined : 'alert'}
+        >
+          {error}
+        </span>
+      )}
     </div>
   )
 }
