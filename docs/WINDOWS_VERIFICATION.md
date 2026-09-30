@@ -80,9 +80,10 @@ zero warnings. The persistence failure was the assertion, not the product.
   (`src/app-shell/AppLayout.tsx:95-117`), and the Studio has a slider with the
   same accessible name.
 
-### Run 4 — one unexplained failure, now instrumented
+### Run 4 — the export failure, found in the app's own log
 
-11 passed, 2 failed. The remaining export failure reported:
+11 passed, 2 failed. The export failure was reported as a timeout with nothing
+on screen:
 
 ```
 no export result within 240s
@@ -91,12 +92,68 @@ no export result within 240s
   files under renders/: []
 ```
 
-No toast, no file, no renderer error. `src/screens/Studio.tsx:1324` calls
-`exportStudioInBackground` (`src/lib/studio/export.ts:283`), which waits for
-`render:done` or `render:error` from the queue in `electron/main.cjs:4830`. The
-export is a real-time recording (`src/screens/Studio.tsx:1854`), so a slow
-software-rendered runner is a candidate — but that is a hypothesis, not a
-result. See §3.
+That evidence was collected 240s after the event, by which time every toast had
+expired, so it proved nothing. The fix for *that* was to make the failure
+message quote the app's own log (`electron/main.cjs:207` writes every render,
+export and load decision to `userData/logs/<date>.log`, and none of it reaches
+the renderer). The next run printed the answer:
+
+```
+[render-queue-error] Error invoking remote method 'arena:previewPath':
+  Error: Preview path is outside Cupric AI project data
+  { jobId: 'studio-export-munjn1xx-89i4u6' }
+```
+
+**The export never started.** The clip's media was outside the app's own store,
+so the offscreen renderer could not load it.
+
+Two defects behind one line:
+
+1. **Imported media kept its original path.** `registerFile`
+   (`src/lib/studio/media.ts:210`) stored `filePathFor(file)` —
+   wherever the user keeps the file. Everything that reads media again is
+   contained to `userData/projects`, and above all `arena:previewPath`
+   (`electron/main.cjs:3443`), which the offscreen export renderer needs. So a
+   clip imported through the Studio previewed fine (a blob URL) and then could
+   not be exported at all — the app's primary path from "my file" to "my video".
+   The Footage Desk has always copied on import (`footage:analyze`,
+   `electron/main.cjs:4313`); the Studio did not.
+
+2. **The failure was reported as main-process jargon.** The toast really did
+   appear, immediately, saying *"Preview path is outside Cupric AI project
+   data."* — a sentence about containment rules shown to somebody who just
+   pressed Render. It also matched none of the words the E2E was waiting for
+   (`Saved|failed|could not|Refusing|error`), which is why the suite blamed a
+   timeout for four minutes while the app had already said what was wrong.
+
+Why it went unnoticed for so long: the E2E is the only thing that exercises the
+whole chain (import → export → probe the file). Every earlier export check ran
+through the main-process farm, which resolves its own sources.
+
+### Run 5 — the fixes for the above (UNVERIFIED at the time of writing)
+
+- `media:import` (`electron/main.cjs`) copies a picked file into
+  `userData/projects/media/` and returns the adopted path; `registerFile` uses
+  it. Idempotent — a source already inside the store is returned untouched, so
+  re-registering an asset cannot copy a copy. A copy that fails reports why
+  (out of space, permissions, file gone) instead of leaving media that will fail
+  later.
+- The import loop's catch in `src/screens/Studio.tsx` names the reason instead of
+  "Skipped X (unsupported or damaged)".
+- The E2E waits for *any* new toast rather than for words it guessed, and
+  records the `render:*` IPC the renderer actually receives, so "the app never
+  heard anything" and "the app said something else" can never be confused
+  again.
+
+Alongside these, `src/lib/studio/export.ts` no longer depends on the compositor
+for pictures: it captures with `captureStream(0)` and pushes each drawn frame
+with `requestFrame()`, drives the loop with a timer when
+`requestAnimationFrame` does not deliver a callback within 1.5s, bounds the font
+and AudioContext waits that sat before the recorder started, and fails a
+recording that stops drawing entirely (20s) instead of hanging. **This was the
+first hypothesis and it was wrong** — the recording was never reached. It is
+kept as a safety net, and it is verified only to the extent that §3's next run
+exercises the same path.
 
 ---
 
@@ -110,12 +167,15 @@ result. See §3.
 | `scripts/ensure-ffmpeg.mjs` (new) | — | Resolve → `npm rebuild ffmpeg-static` → `npm install --no-save`, then a failure that says what to do |
 | `scripts/check-export-preflight.mjs` | Asserted "everything present passes" with FFmpeg absent; printed nothing about where it looked | Prints its resolution chain; asserts the complement (`FFMPEG_MISSING`) when the binary is absent; the read-only assertion skips on win32, where `chmod 0o555` cannot make a directory unwritable |
 | `scripts/run-checks.mjs` | Step output went to `stdio: inherit`, so a failure existed only in a log this environment cannot read | Tails each step and emits `::error title=<step>::` annotations, which the API does return |
+| `src/lib/studio/media.ts`, `electron/main.cjs` | Imported media kept the user's path, so export failed with a containment error | `media:import` copies it into `userData/projects/media`; a failed copy says why |
+| `tests/e2e/harness.ts` | Failure detection matched wording the app never promised | Waits for any new toast, and records the `render:*` IPC the renderer receives |
 
 ## 3. Open, with the reason and what would settle it
 
 | Item | State | What settles it |
 | --- | --- | --- |
-| Studio export on Windows | **UNVERIFIED** — one run produced no toast, no file and no console error in 240s | The next run: the failure message now includes the app's own log (`userData/logs/<date>.log`), the on-screen export percentage and anything written under `renders/` |
+| Importing a file and exporting it on Windows | **UNVERIFIED** — was broken (`media:import` did not exist); fixed and now covered by the E2E | The next run of the required check |
+| The offscreen recorder without a compositor (frame pushing, timer driver, stall watchdog) | **UNVERIFIED** — written against a hypothesis that turned out not to be the cause | The same run: if the recorder path is wrong, the export test fails on the file it produces |
 | The `Brief.tsx` low-width layout and the `StudioTimeline` ARIA fix | **UNVERIFIED** — written and type-checked here, not yet run on Windows | The pushed commit's E2E run (the playhead test now reaches the ruler through the Footage Desk import) |
 | Timeline clip drag / trim / split and frame-accurate preview (Phase 1.3) | **Not started** | — |
 | Piper and Whisper engine bytes | **UNVERIFIED** — no network route to the artefacts exists in this environment | A Windows machine with network access, or a mirror |

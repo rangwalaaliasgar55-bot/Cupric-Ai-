@@ -851,8 +851,12 @@ export function Studio() {
                 } else {
                   imp.notes.push(`${handle.fileName} was added to the media bin.`)
                 }
-              } catch {
-                imp.notes.push(`Skipped ${asset.sourcePath} (unsupported or damaged).`)
+              } catch (error) {
+                // Say why, not just "skipped": a file the app could not copy, or
+                // could not decode, are different problems with different fixes.
+                const reason = error instanceof Error ? error.message : String(error)
+                rlog.warn('studio', 'import:asset-skipped', { source: asset.sourcePath, reason })
+                imp.notes.push(`Skipped ${asset.sourcePath} — ${reason}`)
               }
             }
             const next = resolveOverlaps({

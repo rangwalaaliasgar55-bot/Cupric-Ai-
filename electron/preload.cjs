@@ -41,6 +41,7 @@ const invokeChannels = new Set([
   'media:status',
   'studio:exportMp4',
   'studio:planEdits',
+  'media:import',
   'render:start',
   'render:cancel',
   'render:pause',

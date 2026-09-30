@@ -4310,6 +4310,49 @@ ipcMain.handle('dialog:pickFootage', async () => {
   return result.canceled ? null : result.filePaths[0]
 })
 
+/**
+ * Adopt a file the user picked into Cupric's own project data.
+ *
+ * Why this exists: the Studio used to keep the *original* path of an imported
+ * file (electron/preload.cjs `filePathFor` → `webUtils.getPathForFile`). Every
+ * other part of the app is contained to `userData/projects` — most importantly
+ * `arena:previewPath`, which the offscreen renderer needs to load a clip's media
+ * — so exporting a clip imported straight from the user's disk failed with
+ * "Preview path is outside Cupric AI project data", which is nobody's idea of an
+ * export error. The Footage Desk has always copied on import (`footage:analyze`
+ * below); the Studio now does too.
+ *
+ * Idempotent: a source that is already inside the store is returned untouched,
+ * so re-registering an asset can never copy a copy.
+ */
+ipcMain.handle('media:import', async (_event, payload) => {
+  const srcPath = payload?.srcPath
+  if (!srcPath) throw new Error('No media path was provided.')
+  let stat
+  try {
+    stat = fs.statSync(srcPath)
+  } catch (err) {
+    throw new Error(`That file is no longer where it was (${path.basename(String(srcPath))}): ${err?.code || err?.message || 'unreadable'}`)
+  }
+  if (!stat.isFile()) throw new Error(`${path.basename(String(srcPath))} is not a file.`)
+
+  const projectsRoot = userDataPath('projects')
+  if (isSubPath(srcPath, projectsRoot)) return { localPath: srcPath, bytes: stat.size, copied: false }
+
+  const dir = path.join(projectsRoot, 'media')
+  ensureDir(dir)
+  const dest = path.join(dir, `${Date.now()}-${safeFileName(path.basename(String(srcPath)), 'media.bin')}`)
+  try {
+    fs.copyFileSync(srcPath, dest)
+  } catch (err) {
+    // Distinct and actionable: out of space, no permission, or gone.
+    logLine('media-import-failed', err?.message || String(err), { srcPath, dest, code: err?.code || null })
+    throw new Error(`Cupric could not copy "${path.basename(String(srcPath))}" into its project folder (${err?.code || err?.message || 'unknown reason'}). Free some space or move the file somewhere Cupric can read, then import again.`)
+  }
+  logLine('media-import', 'copied an imported file into the project store', { name: path.basename(String(srcPath)), bytes: stat.size })
+  return { localPath: dest, bytes: stat.size, copied: true }
+})
+
 ipcMain.handle('footage:analyze', async (_event, payload) => {
   assertMediaTools()
   const srcPath = payload?.srcPath

@@ -13,7 +13,10 @@ import { expect, test } from '@playwright/test'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { expectNoAppErrors, exportEvidence, filesNewestFirst, launchApp, makeFixtureVideo, mediaBinaries, probeFile, seedState } from './harness'
+import {
+  expectNoAppErrors, exportEvidence, filesNewestFirst, launchApp, makeFixtureVideo,
+  mediaBinaries, probeFile, recordRenderEvents, renderEventLines, seedState, waitForNewToast,
+} from './harness'
 
 // Not serial: the two tests below use their own userData directories and launch
 // their own copy of the app, so one failing should not hide the other. On the
@@ -55,6 +58,9 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
     const app = await launchApp({ userDataDir })
     try {
       await app.page.waitForSelector('main[data-view="studio"]', { timeout: 90_000 })
+      // Watch the render IPC from here on: whether the app heard "done", "error"
+      // or nothing at all is the first question any export failure raises.
+      await recordRenderEvents(app.page)
       const startedAt = Date.now()
 
       // ── import through the real file input ────────────────────────────────
@@ -92,23 +98,23 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
       await renderButton.click()
 
       const savedToast = await test.step('render MP4 and wait for the app to report the result', async () => {
-        // Success and failure both arrive as toasts; whichever lands first is
-        // the result. Waiting only for success would make a failed export look
-        // like a timeout — and waiting longer than the test budget makes any
-        // failure look like a timeout, which is how this test failed first time.
-        const outcome = app.page.locator('[role="status"]').filter({ hasText: /Saved|failed|could not|Refusing|error/i }).first()
+        // Whatever the app says next in a toast is the result — success or
+        // failure. Matching on wording is how this test missed a real failure
+        // report once ("Preview path is outside Cupric AI project data" matched
+        // none of the words it looked for) and then blamed a 4-minute timeout.
         try {
-          await outcome.waitFor({ state: 'visible', timeout: 240_000 })
+          return await waitForNewToast(app.page, { timeoutMs: 240_000 })
         } catch (error) {
           throw new Error([
-            `no export result within 240s (${(error as Error).message.split('\n')[0]}).`,
+            (error as Error).message,
             await exportEvidence(app.page, userDataDir),
             `  renderer output: ${JSON.stringify(app.errors)}`,
           ].join('\n'))
         }
-        return (await outcome.innerText()).trim()
       })
-      expect(savedToast, `the export failed:\n${savedToast}`).toMatch(/Saved/i)
+      // The wait returns any new toast, so a failure that reported itself is
+      // still a failure here rather than a pass.
+      expect(savedToast, `the export did not report a saved file. render IPC: ${await renderEventLines(app.page)}`).toMatch(/Saved/i)
 
       // ── verify the file the app actually wrote ────────────────────────────
       const rendersDir = path.join(userDataDir, 'renders')

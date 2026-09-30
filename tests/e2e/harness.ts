@@ -226,6 +226,86 @@ export async function waitForToast(page: Page, pattern: RegExp, timeoutMs = 120_
   return (await toast.innerText()).trim()
 }
 
+/**
+ * Start recording the render IPC the renderer receives.
+ *
+ * The export hangs this suite twice, and both times the question was the same:
+ * did the app hear anything at all? `window.cupric.ipc.on` is the app's own
+ * channel — subscribing from the test adds nothing the product does not already
+ * do, and the answer goes into the failure message.
+ */
+export async function recordRenderEvents(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const w = window as unknown as {
+      cupric?: { ipc: { on: (channel: string, handler: (payload: unknown) => void) => () => void } }
+      __cupricRenderEvents?: Array<{ channel: string; payload: unknown; at: number }>
+    }
+    if (!w.cupric || w.__cupricRenderEvents) return
+    w.__cupricRenderEvents = []
+    for (const channel of ['render:progress', 'render:done', 'render:error']) {
+      w.cupric.ipc.on(channel, (payload) => {
+        const entry = { channel, payload, at: Date.now() }
+        // Progress arrives per frame; keep the last few so the list stays short.
+        const list = w.__cupricRenderEvents!
+        if (channel === 'render:progress') list.push(entry)
+        else list.push(entry)
+      })
+    }
+  })
+}
+
+/** The render IPC the renderer has received so far, as readable lines. */
+export async function renderEventLines(page: Page, max = 6): Promise<string> {
+  const events = await page.evaluate(() => {
+    const w = window as unknown as { __cupricRenderEvents?: Array<{ channel: string; payload: unknown; at: number }> }
+    return w.__cupricRenderEvents ?? []
+  })
+  if (!events.length) return '(the renderer received no render:* event at all)'
+  const progress = events.filter((event) => event.channel === 'render:progress')
+  const other = events.filter((event) => event.channel !== 'render:progress')
+  const lines = other.map((event) => `${event.channel} ${JSON.stringify(event.payload).slice(0, 200)}`)
+  if (progress.length) {
+    const last = progress[progress.length - 1]
+    const pct = (last.payload as { pct?: number })?.pct
+    lines.unshift(`render:progress × ${progress.length}, last ${JSON.stringify(pct)}%`)
+  }
+  return lines.slice(0, max).join('\n    ')
+}
+
+/**
+ * Wait for a toast that was not already on screen.
+ *
+ * The previous version waited for text matching a regex I invented, and the app
+ * answered "Preview path is outside Cupric AI project data." — a real, visible
+ * failure report that matched none of my words, so the test sat there for four
+ * minutes while the app had already told the user what was wrong. Toasts are the
+ * product's own channel; anything new appearing in one is the answer, whatever
+ * it says.
+ */
+export async function waitForNewToast(page: Page, options: { timeoutMs?: number } = {}): Promise<string> {
+  const timeoutMs = options.timeoutMs ?? 240_000
+  const initial = (await page.locator('[role="status"]').allInnerTexts()).map((text) => text.trim()).filter(Boolean)
+  const seen = new Set(initial)
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    for (const text of await page.locator('[role="status"]').allInnerTexts()) {
+      const trimmed = text.trim()
+      if (!trimmed || seen.has(trimmed)) continue
+      return trimmed
+    }
+    await page.waitForTimeout(250)
+  }
+  const now = (await page.locator('[role="status"]').allInnerTexts()).map((text) => text.trim()).filter(Boolean)
+  throw new Error(
+    [
+      `no new toast within ${timeoutMs}ms.`,
+      `  on screen at the start: ${JSON.stringify(initial)}`,
+      `  on screen now: ${JSON.stringify(now)}`,
+      `  render IPC: ${await renderEventLines(page)}`,
+    ].join('\n'),
+  )
+}
+
 /** Every file under `dir`, newest first by mtime. */
 export function filesNewestFirst(dir: string, filter: (name: string) => boolean): string[] {
   if (!fs.existsSync(dir)) return []
@@ -344,6 +424,7 @@ export async function exportEvidence(page: Page, userDataDir: string): Promise<s
   const files = filesNewestFirst(rendersDir, () => true).map((file) => `${file} (${fs.existsSync(file) ? fs.statSync(file).size : '?'} bytes)`)
   return [
     `  toasts on screen: ${JSON.stringify(toasts)}`,
+    `  render IPC received by the app: ${await renderEventLines(page)}`,
     `  export state on screen: ${JSON.stringify(exportState.slice(0, 6))}`,
     `  files under ${rendersDir}: ${JSON.stringify(files.slice(0, 8))}`,
     `  app log tail:\n${appLogTail(userDataDir, 30)}`,
