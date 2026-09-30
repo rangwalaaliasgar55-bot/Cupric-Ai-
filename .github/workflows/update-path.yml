@@ -45,16 +45,19 @@ permissions:
 
 jobs:
   update-path:
-    name: Install ${{ github.event.inputs.from_tag || 'v0.11.0' }}, update to ${{ github.event.inputs.to_tag || 'this pull request' }}
+    name: Install the previous release, update to ${{ github.event.inputs.to_tag || 'this pull request' }}
     runs-on: windows-latest
     timeout-minutes: 90
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       ELECTRON_BUILDER_PUBLISH: never
-      # A pull request has no inputs, so the defaults are resolved once here: the
-      # last released tag is the "from" version, and an empty "to" means "build
-      # the commit under review".
-      FROM_REF: ${{ github.event.inputs.from_tag || 'v0.11.0' }}
+      # A pull request has no inputs, so the "from" version is resolved in the
+      # step below from the repository itself (the most recent tag on main)
+      # rather than hard-coded here — a pinned tag rots, and a tag that predates
+      # a script this workflow calls fails the build for a reason that has
+      # nothing to do with updating. An empty "to" means "build the commit under
+      # review".
+      FROM_INPUT: ${{ github.event.inputs.from_tag || '' }}
       TO_REF: ${{ github.event.inputs.to_tag || '' }}
     steps:
       - name: Check out the repository
@@ -72,6 +75,22 @@ jobs:
       # and electron/ cannot leak between them — which also means each worktree
       # needs its own `npm ci` (a worktree has no node_modules). The check script
       # itself needs nothing but Node.
+      - name: Decide which released version to install first
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:FROM_INPUT)) {
+            # The newest tag reachable from main. Not "the newest tag": a tag on
+            # a branch that was never merged is not a release anybody installed.
+            $resolved = (git describe --tags --abbrev=0 origin/main).Trim()
+            Write-Host "no from_tag given; resolved the previous release as $resolved"
+          } else {
+            $resolved = $env:FROM_INPUT.Trim()
+            Write-Host "using the from_tag given: $resolved"
+          }
+          if ([string]::IsNullOrWhiteSpace($resolved)) { throw "Could not resolve a released version to install." }
+          git rev-parse --verify "$resolved^{commit}" | Out-Null
+          "FROM_REF=$resolved" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Build the version to install first
         shell: pwsh
         run: |
@@ -81,8 +100,11 @@ jobs:
           npm ci
           # The installer this job builds must contain working media tools, or
           # the "update" it proves would be an update to an app that cannot
-          # render, or cannot check what it rendered.
-          npm run media:ensure
+          # render, or cannot check what it rendered. `--if-present` because an
+          # older release may predate this script — and the step says which case
+          # it is, so a silent skip cannot pass for a checked download.
+          npm run media:ensure --if-present
+          if ($LASTEXITCODE -ne 0) { throw "media:ensure failed while building $env:FROM_REF" }
           npm run build
           npx electron-builder --win --publish never
           Pop-Location
@@ -96,6 +118,9 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($env:TO_REF)) {
             # The pull-request case: this checkout is the "to" version.
             npm ci
+            # This checkout is the code under review, so the media tools must be
+            # really here (no --if-present): the shipped app cannot render
+            # without them.
             npm run media:ensure
             npm run build
             npx electron-builder --win --publish never
@@ -105,7 +130,8 @@ jobs:
             git worktree add ../cupric-to $env:TO_REF
             Push-Location ../cupric-to
             npm ci
-            npm run media:ensure
+            npm run media:ensure --if-present
+            if ($LASTEXITCODE -ne 0) { throw "media:ensure failed while building $env:TO_REF" }
             npm run build
             npx electron-builder --win --publish never
             Pop-Location
