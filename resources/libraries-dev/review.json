@@ -196,7 +196,7 @@
     },
     {
       "file": "src/screens/Brief.tsx",
-      "line": 323,
+      "line": 331,
       "target": "Waiting state",
       "existingComponent": "<span className=\"nf-typing flex gap-1\">",
       "suggestedLibrary": "Thinking orbs",
@@ -547,7 +547,7 @@
     },
     {
       "file": "src/screens/Brief.tsx",
-      "line": 290,
+      "line": 298,
       "target": "Bot avatar",
       "existingComponent": "const gem = msg.role === 'gemini'",
       "suggestedLibrary": "Bot avatars",

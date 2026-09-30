@@ -153,9 +153,17 @@ export function Brief() {
   }
 
   return (
-    <div className="flex h-full">
-      {/* Chat — left ~60% */}
-      <section className="flex min-w-0 flex-1 flex-col">
+    // Column below the `lg` breakpoint and a row above it.
+    //
+    // Why: the Rundown panel used to be `hidden … lg:flex`. On a display smaller
+    // than 1024px the OS clamps the window to the work area (Electron's
+    // `minWidth` is a request, not a guarantee), the panel disappeared — and
+    // "Lock rundown" lives in that panel, so Arena Desk could never be unlocked.
+    // A locked door with the key inside. Stacking it under the chat costs a
+    // scroll and keeps every control reachable at any window size.
+    <div className="flex h-full flex-col lg:flex-row">
+      {/* Chat — full width below lg, left ~60% above it */}
+      <section className="flex min-h-0 min-w-0 flex-1 flex-col">
         <div className="px-6 pt-5">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-lg font-bold">Brief</h1>
@@ -241,8 +249,8 @@ export function Brief() {
         </div>
       </section>
 
-      {/* Rundown — right ~40% */}
-      <aside className="hidden w-[400px] shrink-0 flex-col border-l border-line bg-panel/50 lg:flex">
+      {/* Rundown — under the chat below lg, right ~40% above it */}
+      <aside className="flex max-h-[45%] min-h-0 w-full shrink-0 flex-col border-t border-line bg-panel/50 lg:max-h-none lg:h-auto lg:w-[400px] lg:border-l lg:border-t-0">
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <div>
             <div className="text-sm font-semibold">Rundown</div>

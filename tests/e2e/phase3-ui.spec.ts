@@ -173,6 +173,11 @@ test('the timeline playhead moves from the keyboard and says where it is', async
   await openNav(launched.page, 'studio')
   await launched.page.waitForSelector('canvas[aria-label="Studio preview"]')
   await openNav(launched.page, 'timeline')
+  // `data-view` flips before the previous screen has finished exiting
+  // (AnimatePresence mode="wait"), and the Studio has a slider of its own with
+  // the same accessible name. Wait for the Timeline screen's own element, or the
+  // assertions below can be made against the screen that is on its way out.
+  await launched.page.locator('[data-timeline-announcer]').waitFor({ state: 'attached', timeout: 30_000 })
 
   const slider = launched.page.getByRole('slider', { name: 'Playhead' })
   await expect(slider).toBeVisible()

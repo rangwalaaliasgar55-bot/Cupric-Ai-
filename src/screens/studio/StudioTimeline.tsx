@@ -276,6 +276,13 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
               aria-valuemin={0}
               aria-valuemax={Math.round(duration * 10) / 10}
               aria-valuenow={Math.round(time * 10) / 10}
+              // A number alone tells a screen-reader user nothing about what it
+              // measures. The Timeline screen's playhead has said "0:03 of 0:12"
+              // since Phase 3; this one — the ruler inside the Studio — was left
+              // with a bare "3", which is the kind of gap only a real run finds.
+              aria-valuetext={`${fmtClock(Math.min(time, duration))} of ${fmtClock(duration)}`}
+              // Only the keys this element actually handles.
+              aria-keyshortcuts="ArrowLeft ArrowRight" 
               onKeyDown={(e) => {
                 if (e.key === 'ArrowLeft') onSeek(Math.max(0, time - (e.shiftKey ? 1 : 1 / doc.fps)))
                 if (e.key === 'ArrowRight') onSeek(Math.min(duration, time + (e.shiftKey ? 1 : 1 / doc.fps)))

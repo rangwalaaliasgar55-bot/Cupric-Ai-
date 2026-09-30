@@ -160,6 +160,14 @@ export async function launchApp(options: LaunchOptions = {}): Promise<LaunchedAp
   })
   await page.waitForLoadState('domcontentloaded')
 
+  // The window size is a fact about the machine, and it decides which layout the
+  // app renders (`lg` is 1024px). A CI runner's virtual display is 1024x768, and
+  // Electron's `minWidth: 1120` is only a request — the OS clamps the window to
+  // the work area. Printing it makes "the panel was missing" measurable instead
+  // of inferred.
+  const size = await page.evaluate(() => ({ width: window.innerWidth, height: window.innerHeight }))
+  console.log(`[e2e] window is ${size.width}x${size.height} css px (lg breakpoint = 1024)`)
+
   return {
     app,
     page,

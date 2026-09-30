@@ -23,6 +23,11 @@ test.describe.configure({ mode: 'default' })
 
 test.describe('Studio: import a real clip and render a real MP4', () => {
   test('imports a generated MP4, shows it on the timeline, and exports a playable file', async () => {
+    // Import plus a render on a CI runner. The budget has to be larger than any
+    // single wait below, or a stuck step reports "Test timeout of 300000ms
+    // exceeded" and nothing about what it was waiting for — which is exactly
+    // what happened on the first run that reached this test.
+    test.setTimeout(8 * 60_000)
     const { ffmpeg, ffprobe } = mediaBinaries()
     const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-e2e-media-'))
     const source = makeFixtureVideo(ffmpeg, workspace, { seconds: 3 })
@@ -57,11 +62,21 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
       await expect(input, 'the Studio import input is missing').toHaveCount(1)
       await input.setInputFiles(source)
 
-      const importToast = await (async () => {
+      const importToast = await test.step('import the clip through the real file input', async () => {
         const toast = app.page.locator('[role="status"]').filter({ hasText: /Imported/i }).first()
-        await toast.waitFor({ state: 'visible', timeout: 180_000 })
+        try {
+          await toast.waitFor({ state: 'visible', timeout: 120_000 })
+        } catch (error) {
+          const shown = await app.page.locator('[role="status"]').allInnerTexts()
+          throw new Error([
+            `the app never said it imported the clip (${(error as Error).message.split('\n')[0]}).`,
+            `  toasts on screen: ${JSON.stringify(shown)}`,
+            `  renderer output: ${JSON.stringify(app.errors)}`,
+            `  the file was: ${source} (${sourceProbe.sizeBytes} bytes, ${sourceProbe.durationSec}s)`,
+          ].join('\n'))
+        }
         return (await toast.innerText()).trim()
-      })()
+      })
       expect(importToast, 'the import did not report what it did').toMatch(/Imported/i)
       // An import that failed says so in an error toast; a success toast plus a
       // non-zero-duration timeline is the evidence the clip is really there.
@@ -77,14 +92,26 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
       }
       await renderButton.click()
 
-      const savedToast = await (async () => {
+      const savedToast = await test.step('render MP4 and wait for the app to report the result', async () => {
         // Success and failure both arrive as toasts; whichever lands first is
         // the result. Waiting only for success would make a failed export look
-        // like a timeout.
+        // like a timeout — and waiting longer than the test budget makes any
+        // failure look like a timeout, which is how this test failed first time.
         const outcome = app.page.locator('[role="status"]').filter({ hasText: /Saved|failed|could not|Refusing|error/i }).first()
-        await outcome.waitFor({ state: 'visible', timeout: 300_000 })
+        try {
+          await outcome.waitFor({ state: 'visible', timeout: 240_000 })
+        } catch (error) {
+          const shown = await app.page.locator('[role="status"]').allInnerTexts()
+          const renders = filesNewestFirst(path.join(userDataDir, 'renders'), (name) => name.toLowerCase().endsWith('.mp4'))
+          throw new Error([
+            `no export result within 240s (${(error as Error).message.split('\n')[0]}).`,
+            `  toasts on screen: ${JSON.stringify(shown)}`,
+            `  renderer output: ${JSON.stringify(app.errors)}`,
+            `  files under renders/: ${JSON.stringify(renders)}`,
+          ].join('\n'))
+        }
         return (await outcome.innerText()).trim()
-      })()
+      })
       expect(savedToast, `the export failed:\n${savedToast}`).toMatch(/Saved/i)
 
       // ── verify the file the app actually wrote ────────────────────────────
@@ -112,6 +139,10 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
       }
 
       expectNoAppErrors(app, [/net::ERR_/, /Failed to load resource/])
+    } catch (error) {
+      // The renderer's own output is checked at the end of a *passing* test;
+      // when something fails above, this is the evidence that explains it.
+      throw new Error(`${(error as Error).message}\n\nrenderer output (${app.errors.length}):\n${app.errors.join('\n') || '(none)'}`)
     } finally {
       await app.close()
     }
