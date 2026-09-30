@@ -7,7 +7,7 @@
  * downloads unless `app-update.yml` carries a `publisherName`, and
  * electron-builder only writes that field when it verified a signing
  * certificate (`app-builder-lib/out/publish/PublishManager.js`, guarded by
- * `isForceCodeSigningVerification`; verified against electron-builder 25.1.8 in
+ * `isForceCodeSigningVerification`; verified against electron-builder 26.17.0 in
  * this repo). `NsisUpdater.verifySignature` returns `null` — no check at all —
  * when the field is missing, and the app downloads updates automatically. So an
  * unsigned build does not merely look suspicious to Windows: it removes the

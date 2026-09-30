@@ -26,6 +26,16 @@ inventing a summary.
 - **`whisper:fetch` verifies bytes** against the publisher's SHA-256 (GitHub asset
   digest, HuggingFace `x-linked-etag`) before installing; a mismatch deletes the file.
 - `check-encode-dims` follows the Studio MP4 argv into `studio-trim.cjs`.
+- **The Windows installer no longer dies on a fresh per-user install (Windows 11
+  24H2+).** electron-builder 25's NSIS template over-reads a heap buffer while
+  probing for a previous install location (`System.dll`, `0xc0000005`; the
+  [same crash](https://github.com/electron-userland/electron-builder/issues/7921)
+  [elsewhere](https://github.com/logseq/logseq/issues/13524)): on current Windows
+  the setup exits before installing anything — silently under `/S` — which
+  `check:install`'s first Windows run caught as `installer exited 3221225477`.
+  electron-builder is now 26.17.0, whose NSIS template copies that path safely
+  ([upstream fix](https://github.com/electron-userland/electron-builder/pull/9769),
+  released in 26.12.0).
 - **Timeline commands and gesture-atomic undo (Phase 1.3 close-out).** Drag, both
   trims, split, move-to-playhead and reorder go through a command layer with a
   gesture id minted per pointer-down, so one drag is one undo step however long
