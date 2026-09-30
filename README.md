@@ -45,10 +45,10 @@ npm run dist:win
 
 Outputs into `release/`:
 
-- `Cupric-AI-Setup-0.13.0.exe` — NSIS installer.
-- `Cupric-AI-0.13.0-x64-Portable.exe` — portable executable.
+- `Cupric-AI-Setup-0.16.0.exe` — NSIS installer.
+- `Cupric-AI-0.16.0-x64-Portable.exe` — portable executable.
 
-**Current version:** `0.13.0` — the version this checkout builds, the version
+**Current version:** `0.16.0` — the version this checkout builds, the version
 the app reports in Settings, and the version in `CHANGELOG.md`.
 `scripts/check-version-sync.mjs` fails the build if those three ever disagree
 with the artifact names above; it is what would have caught this README still
