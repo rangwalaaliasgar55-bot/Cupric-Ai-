@@ -75,6 +75,26 @@ third-party material are not vendored.
 Vendored component sources with their upstream licence files preserved beside
 them (`resources/panelui/LICENSE.upstream.txt`, `resources/uselayouts/LICENSE`).
 
+## Libraries.dev skill (`Jakubantalik/Libraries.dev`) — MIT libraries, skill material
+
+`resources/libraries-dev/` ships the installed skill's own reference material
+(`SKILL.md`, `references/01-…` through `07-…`) and the report generated from it by
+`scripts/libraries-review.mjs` (`review.json`). Upstream:
+https://github.com/Jakubantalik/Libraries.dev — installed with
+`npx skills add Jakubantalik/Libraries.dev`.
+
+The skill is a set of documents describing seven MIT-licensed npm packages; it is
+reference material, not code compiled into Cupric. Every package it describes
+carries its licence in `review.json` (`"license": "MIT"` on each entry), and each
+entry records the exact version reviewed.
+
+**Shipped dependency from that set:** `thinking-orbs` ^0.3.2 is a real
+dependency of this app (`src/app-shell/AskPanel.tsx` renders `ThinkingOrb` for
+long AI waits) and is listed by `scripts/check-licences.mjs` like every other
+production dependency. The other six packages are **not** installed; `review.json`
+records them as suggestions only, and `LibrariesDev.tsx` never installs anything —
+Apply hands over the command for the user to run.
+
 ## Fonts
 
 Bundled families are SIL OFL (Fontsource). Fontshare families are **not**
@@ -85,3 +105,57 @@ themselves. See `src/lib/studio/fontStyles.ts`.
 
 Not vendored. If a muxer library is added for the frame-exact export path, add
 its licence here before shipping.
+
+## Replaced engine packages — nothing shipped (Phase 5)
+
+Two runtime dependencies were **removed** rather than shipped, because their
+licences restrict commercial use. They are not in `package.json`, not in
+`package-lock.json`, and not imported anywhere; `scripts/check-licences.mjs`
+enforces all three.
+
+### @paper-design/shaders-react — PolyForm Shield 1.0.0 (removed, not used)
+
+The 18 Lab shader components (`fc-shader-*`) previously rendered through this
+package. PolyForm Shield restricts using the software in a competing product and
+restricts redistribution, so it cannot ship in a commercial build. The effects
+were re-implemented from scratch in `src/lib/shaders/fields.ts`,
+`src/lib/shaders/render.ts` and `src/lab/framecn/shader-kit.tsx`. **No Paper
+Design source, shader code or asset is included** — the effect *names* and prop
+*shapes* match what the vendored wrappers exposed, and the images are Cupric's
+own. See `docs/PHASE1_LICENSING.md` Decision 1.
+
+### Remotion (`remotion`, `@remotion/player`) — Remotion License (removed, not used)
+
+Free only for individuals and organisations of up to three employees; a paid
+company licence is required above that. The single usage — the Arena Desk rundown
+preview — is now `src/components/MotionCompositionPlayer.tsx`, which is Cupric
+code (a `requestAnimationFrame` clock, our own `springValue` from
+`src/core/math.ts`, real transport controls). The Remotion-derived **resource
+catalogue** (`resources/packs/remotion.json`) remains as metadata with
+attribution; it contains no Remotion source and no Remotion runtime. See
+`docs/PHASE1_LICENSING.md` Decision 2.
+
+## heic2any (HEIC import) — MIT wrapper over LGPL-3.0 wasm
+
+`heic2any` is MIT, but the WebAssembly inside it is compiled from **libheif**,
+which is **LGPL-3.0-or-later**. Distributing it therefore carries an LGPL
+obligation: the licence text and the corresponding source of libheif must travel
+with the build. Upstream source: https://github.com/strukturag/libheif ;
+the wasm in `node_modules/heic2any/dist/` is the build being redistributed.
+
+**Status:** recorded here and asserted by `scripts/check-licences.mjs`; the
+licence text is **not yet included in a packaged installer** and the position has
+not had legal review. `docs/PHASE1_LICENSING.md` §4 lists the two clean
+resolutions (ship the text plus corresponding source, or drop HEIC import).
+
+## FFmpeg and ffprobe — GPL-class static builds
+
+`ffmpeg-static` and `ffprobe-static` ship GPLv3-class static builds inside the
+installer and are invoked as separate processes (`asarUnpack`); nothing links
+against them. Required with every distribution, per Phase 4 packaging:
+
+- the FFmpeg licence text (GPLv2/v3 as the build declares) in the installer's
+  licence folder;
+- the corresponding-source offer or link for the exact build shipped.
+
+**Status:** recorded here; not yet verified inside a packaged build.

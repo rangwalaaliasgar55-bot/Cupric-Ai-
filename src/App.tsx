@@ -19,20 +19,11 @@ export default function App() {
     document.documentElement.dataset.theme = theme
   }, [theme])
 
-  // On macOS the window is a real vibrancy material, so the app must not paint
-  // an opaque background over it — the panels stay solid, the page behind them
-  // lets the desktop through. Everywhere else the background is opaque as usual.
   // The stored preference is the source of truth; the sound module holds the
   // live answer so it can be read from outside React.
   useEffect(() => {
     setSoundEnabled(soundCues)
   }, [soundCues])
-
-  useEffect(() => {
-    const platform = getBridge()?.platform
-    if (platform === 'darwin') document.documentElement.dataset.vibrancy = 'on'
-    else delete document.documentElement.dataset.vibrancy
-  }, [])
 
   /**
    * Updates announce themselves once, quietly, and only when there is

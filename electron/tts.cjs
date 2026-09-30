@@ -95,6 +95,23 @@ function ttsCommand(platform, outPath, { rate = 0, voice = '', language = 'en' }
   return { cmd: 'espeak-ng', fallback: 'espeak', args: ['-v', ESPEAK_VOICE[lang], '-w', outPath, '-s', speed, '--stdin'], ext: 'wav', stdinText: true, engine: 'eSpeak NG' }
 }
 
+/**
+ * The engine could not be started at all — a different failure from "this voice
+ * cannot speak that language", and it must not be reported as one.
+ *
+ * Found by scripts/check-tts-languages.mjs: with no PowerShell present, the old
+ * code fell through to the language blocker and told a person to install a Hindi
+ * voice, because the language was Hindi. The advisee would have done exactly that
+ * and still seen nothing work.
+ */
+function engineMissingFor(platform, engine, detail = '') {
+  const suffix = detail ? ` (${detail})` : ''
+  if (platform === 'win32') {
+    return `Cupric could not start Windows Speech (${engine})${suffix}. Windows always ships it, so something local is stopping it: a PowerShell execution policy, an antivirus block, or a broken System.Speech install. Try \`powershell.exe -Command "Add-Type -AssemblyName System.Speech"\` in a terminal — if that fails, that is the problem to fix. Piper — installable from Cupric — is the offline alternative.`
+  }
+  return `Cupric could not start the speech engine (${engine})${suffix}. Install it, or add Piper plus a voice model in the Cupric "piper" folder.`
+}
+
 /** Plain-language fix for a missing language/engine, per platform. */
 function blockerFor(platform, lang, detail = '') {
   if (lang === 'hi') {
@@ -151,11 +168,19 @@ async function synthesize(payload, platform = process.platform, opts = {}) {
   if (!res.ok && res.missing && c.fallback) res = await run(c.fallback, c.args, env, text)
   if (!res.ok) {
     const langMissing = res.code === 3 || /no-voice-for-language|voice.*not found|Invalid voice/i.test(res.error || '')
-    return { ok: false, error: langMissing || lang === 'hi' ? blockerFor(platform, lang) : blockerFor(platform, lang, res.error), language: lang, tried: [...tried, `${c.engine}: ${res.error}`] }
+    // Order matters: "we never started the engine" outranks "the voice cannot
+    // speak Hindi", because the first makes the second irrelevant.
+    const error = res.missing
+      ? engineMissingFor(platform, c.cmd)
+      : blockerFor(platform, lang)
+    // `error` is the sentence a person reads; `detail` is what the engine
+    // actually said, kept in its own field so it can be shown collapsed and
+    // written to the log without being mixed into the advice.
+    return { ok: false, error, detail: res.error, engine: c.engine, language: lang, tried: [...tried, `${c.engine}: ${res.error}`] }
   }
   const buf = readWav(out)
   if (!buf) return { ok: false, error: 'The system voice produced no audio.', language: lang }
   return { ok: true, mime: 'audio/wav', base64: buf.toString('base64'), engine: c.engine, language: lang }
 }
 
-module.exports = { synthesize, ttsCommand, piperSetup, piperCommand, resolveLanguage, blockerFor, MAX_CHARS, LANGS }
+module.exports = { synthesize, ttsCommand, piperSetup, piperCommand, resolveLanguage, blockerFor, engineMissingFor, MAX_CHARS, LANGS }

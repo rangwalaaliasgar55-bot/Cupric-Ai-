@@ -45,6 +45,9 @@ assert.match(arena, /evenFrameFilter\(ctx\.target\.width, ctx\.target\.height\)/
 assert.match(arena, /'-thread_queue_size',\s*'512',\s*'-framerate'/, 'the PNG input needs a larger thread queue')
 assert.match(source, /enableLargerThanScreen: true/, 'hidden capture windows must not be clamped to the screen')
 const studioMp4 = source.slice(source.indexOf('async function executeStudioMp4Job'), source.indexOf("ipcMain.handle('media:status'"))
-assert.match(studioMp4, /scale=trunc\(iw\/2\)\*2:trunc\(ih\/2\)\*2/, 'Studio MP4 conversion must snap odd canvas sizes to even')
+// The argv now lives in studio-trim.cjs (mp4Args); main must still route through it.
+assert.match(studioMp4, /studioTrim\.mp4Args\(/, 'Studio MP4 conversion must use studio-trim mp4Args')
+const studioTrimSrc = await readFile(new URL('../electron/studio-trim.cjs', import.meta.url), 'utf8')
+assert.match(studioTrimSrc, /scale=trunc\(iw\/2\)\*2:trunc\(ih\/2\)\*2/, 'Studio MP4 conversion must snap odd canvas sizes to even')
 
 console.log('encode dimensions check passed — every integer size from 240 through 4096 is even-safe, and arena/Studio encodes scale+pad to even frames')

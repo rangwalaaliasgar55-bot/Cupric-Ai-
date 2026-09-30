@@ -42,12 +42,52 @@ const ASPECT_WORD: Array<[RegExp, '16:9' | '9:16' | '1:1' | '4:5']> = [
 ]
 
 /** The spoken or typed brief → the structured intake the engine expects. */
+/**
+ * The number in a brief, in either script.
+ *
+ * English briefs write "20 seconds"; Hindi briefs write "20 सेकंड" and often in
+ * Devanagari digits ("२० सेकंड"). Both are a stated duration and both are read.
+ * Devanagari digits are folded to ASCII first, so the same pattern matches.
+ */
+const DEVANAGARI_DIGITS = /[\u0966-\u096F]/g
+const SECOND_WORDS = '(?:second|sec|s\\b|सेकंड|सेकेंड|सेकण्ड|सकंड)'
+
+function statedSeconds(text: string): number | null {
+  const ascii = text.replace(DEVANAGARI_DIGITS, (digit) => String(digit.charCodeAt(0) - 0x0966))
+  // "20 सेकंड", "20-second", "20s", and the Hindi word order "सेकंड 20".
+  const after = new RegExp(`(?<!\\d)(\\d{1,3})\\s*(?:-|\\s)?\\s*${SECOND_WORDS}`, 'i').exec(ascii)
+  if (after) return Number(after[1])
+  const before = new RegExp(`${SECOND_WORDS}\\s*(\\d{1,3})`, 'i').exec(ascii)
+  return before ? Number(before[1]) : null
+}
+
+/** The shortest structure the engine can build; below this a brief is raised to it. */
+export const MIN_BRIEF_SECONDS = 8
+/** The longest film this pipeline is designed to plan in one pass. */
+export const MAX_BRIEF_SECONDS = 180
+
+/**
+ * The duration the brief asked for, and what happened to it.
+ *
+ * `adjustedFrom` is set whenever the answer differs from what was asked: a
+ * 6-second request raised to the 8-second floor, or a 300-second request capped
+ * at 180. Neither is silent — the caller can tell the user "you asked for 6
+ * seconds; the shortest structure this engine builds is 8".
+ */
+export function requestedDuration(input: AutonomyBrief): { seconds: number | null; adjustedFrom: number | null } {
+  const text = String(input.brief ?? '').replace(/\s+/g, ' ').trim()
+  const explicit = Number(input.durationSec)
+  const stated = Number.isFinite(explicit) && explicit > 0 ? explicit : statedSeconds(text)
+  if (stated === null) return { seconds: null, adjustedFrom: null }
+  const wanted = Math.round(stated)
+  const clamped = Math.max(MIN_BRIEF_SECONDS, Math.min(MAX_BRIEF_SECONDS, wanted))
+  return { seconds: clamped, adjustedFrom: clamped !== wanted ? wanted : null }
+}
+
 export function intakeFromBrief(input: AutonomyBrief, brand?: { colors?: string[]; fonts?: string[] }, mediaNames?: string[]): ProductionIntake {
   const text = input.brief.replace(/\s+/g, ' ').trim()
   const lower = text.toLowerCase()
-  const duration = input.durationSec
-    ?? Number(/\b(\d{1,3})\s*(?:-|\s)?\s*(?:second|sec|s\b)/i.exec(lower)?.[1])
-    ?? 30
+  const duration = requestedDuration(input).seconds ?? 30
   const aspect = ASPECT_WORD.find(([re]) => re.test(lower))?.[1] ?? input.aspect
   const audience = /\b(?:for|aimed at|targeting|audience:?)\s+([^.;,]{3,60})/i.exec(text)?.[1]?.trim() ?? ''
   const platform = /\b(?:on|for|post(?:ed)? to)\s+(instagram|youtube|tiktok|linkedin|facebook|x|twitter|reels|shorts)\b/i.exec(text)?.[1] ?? ''
@@ -58,7 +98,7 @@ export function intakeFromBrief(input: AutonomyBrief, brand?: { colors?: string[
     making: text.slice(0, 400) || 'A short product video',
     audience: audience || (/\b(founder|creator|team|business|student|marketer|developer|coach)s?\b/i.exec(lower)?.[1] ?? ''),
     platform,
-    durationSec: Math.max(8, Math.min(180, Math.round(duration))),
+    durationSec: Math.max(MIN_BRIEF_SECONDS, Math.min(MAX_BRIEF_SECONDS, Math.round(duration))),
     aspect,
     // Real media in the project wins over a guess from the words: the planner
     // binds these names to shots, and `planToDoc` reuses the actual clips.

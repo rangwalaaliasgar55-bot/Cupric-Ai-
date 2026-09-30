@@ -16,6 +16,7 @@ import { cx } from '../lib/utils'
 import { getIpc } from '../lib/bridge'
 import { humanError } from '../lib/humanError'
 import { ProjectSafetyPanel } from './ProjectSafetyPanel'
+import { ProviderSettings } from './ProviderSettings'
 import { ReadinessPanel } from './ReadinessPanel'
 import { ThinkingOrb } from 'thinking-orbs'
 import { ThinkingStates } from '../components/loaders/ThinkingStates'
@@ -91,7 +92,7 @@ export function AskPanel() {
   const [msgs, setMsgs] = useState<ChatMsg[]>([
     {
       role: 'ai',
-      text: "Hey — I'm Cupric AI. Ask me anything — I use a local model if one is running, otherwise the built-in free brain. No setup needed; your own keys are optional.",
+      text: "Hey — I'm Cupric AI. Ask me anything. I use the provider you set in Settings, or a local model if one is running. With neither, I answer from the offline planner and say so.",
     },
   ])
   const [input, setInput] = useState('')
@@ -123,6 +124,14 @@ export function AskPanel() {
   const [autoLaunch, setAutoLaunch] = useState(false)
   const [updateStatus, setUpdateStatus] = useState('')
   const [updateReady, setUpdateReady] = useState(false)
+  /**
+   * The version the app is actually running, straight from `app.getVersion()`
+   * over IPC. Deliberately not a constant: the README once advertised 0.13.0
+   * while GitHub served 0.15.0 (Phase 0 finding D4), and a hardcoded string in
+   * the UI can only ever repeat that mistake. On a failed read it shows the
+   * error, never a plausible-looking guess.
+   */
+  const [appInfo, setAppInfo] = useState<{ version?: string; packaged?: boolean; error?: string } | null>(null)
   const [mediaReady, setMediaReady] = useState<boolean | null>(null)
   const [stockProxyUrl, setStockProxyUrl] = useState('')
   const [pixabayKey, setPixabayKey] = useState('')
@@ -171,6 +180,13 @@ export function AskPanel() {
       }
     })
     ipc.invoke('media:status').then((status: { ready?: boolean }) => setMediaReady(Boolean(status?.ready))).catch(() => setMediaReady(false))
+    ipc
+      .invoke('app:info')
+      .then((info: { ok?: boolean; version?: string; packaged?: boolean; message?: string }) => {
+        if (info?.ok === false) setAppInfo({ error: info.message || 'The app could not report its own version' })
+        else setAppInfo({ version: info?.version, packaged: info?.packaged })
+      })
+      .catch((err: unknown) => setAppInfo({ error: humanError(err, 'The app could not report its own version') }))
     if (typeof ipc.on === 'function') {
       return ipc.on('updater:status', (event: { status?: string; version?: string; message?: string }) => {
         setUpdateStatus(event?.version ? `${event.status} ${event.version}` : event?.message || event?.status || '')
@@ -494,6 +510,9 @@ export function AskPanel() {
 
           {showSettings && (
             <div className="max-h-[62%] shrink-0 space-y-3 overflow-y-auto overscroll-contain border-b border-line bg-panel-alt p-3">
+              {/* Phase 1.1: the real provider layer, with real tests and typed errors. */}
+              <ProviderSettings onChanged={refreshDiscovery} />
+              <div className="border-t border-line pt-2 text-xs font-medium text-muted">Legacy OpenCode-style endpoint (optional)</div>
               <form
                 className="space-y-2"
                 onSubmit={(e) => {
@@ -524,7 +543,7 @@ export function AskPanel() {
                 {aiMode === 'auto' && (
                   <div className="rounded-lg border border-accent/25 bg-accent/5 p-2 text-xs">
                     <div className="flex items-center justify-between gap-2"><span className="font-semibold text-text">Auto-using: {autoPick?.label || 'discovering…'}</span><button type="button" onClick={() => void refreshDiscovery()} className="text-accent-text underline">Change / refresh</button></div>
-                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric uses a local model if one is running, else the built-in free brain, then any keys you added.'}</div>
+                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric uses the provider you configured, else a local model server it can see, else the offline planner — and it names which one answered.'}</div>
                   </div>
                 )}
                 <FreeModels />
@@ -680,6 +699,16 @@ export function AskPanel() {
                 * question, which is why it reads as a quiet line of text
                 * rather than a button the workflow depends on.
                 */}
+              <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
+                <div className="flex items-center justify-between gap-3">
+                  <span>Cupric AI version</span>
+                  <span className="font-mono text-[11px] text-text">
+                    {appInfo?.version ? `v${appInfo.version}` : appInfo?.error ? 'unavailable' : 'reading…'}
+                    {appInfo?.packaged === false && appInfo?.version ? ' (development)' : ''}
+                  </span>
+                </div>
+                {appInfo?.error && <div className="mt-1 text-[11px] text-danger">{appInfo.error}</div>}
+              </div>
               <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
                 <div className="flex items-center justify-between gap-3">
                   <span>{updateReady ? 'A new release is ready' : 'Automatic app updates'}</span>

@@ -93,7 +93,10 @@ export default defineConfig({
       'next/navigation': fileURLToPath(new URL('./src/shims/next/navigation.ts', import.meta.url)),
       'next/server': fileURLToPath(new URL('./src/shims/next/server.ts', import.meta.url)),
       'next': fileURLToPath(new URL('./src/shims/next/index.ts', import.meta.url)),
-      'vitest': fileURLToPath(new URL('./src/shims/vitest.ts', import.meta.url)),
+      // NOTE: there is deliberately no `vitest` alias. It used to point at
+      // src/shims/vitest.ts, whose expect() matchers were empty functions, so
+      // any test bundled through this config passed without asserting
+      // anything. Tests now run under the real runner (`npm test`).
       'mediabunny': fileURLToPath(new URL('./src/shims/mediabunny.ts', import.meta.url)),
       'radix-ui': fileURLToPath(new URL('./src/shims/radix-ui.tsx', import.meta.url)),
     },

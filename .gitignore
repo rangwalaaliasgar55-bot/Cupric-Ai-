@@ -26,3 +26,8 @@ vendor/whisper/*
 .check-shapes-cursor-3d.mjs
 .check-framecn-fonts.mjs
 .check-agent-kit.mjs
+
+# Playwright E2E output (Phase 2): traces, screenshots and the HTML report are
+# build products of a test run, never sources.
+test-results/
+playwright-report/

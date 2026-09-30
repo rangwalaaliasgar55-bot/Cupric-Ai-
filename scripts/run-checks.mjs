@@ -16,7 +16,7 @@
  * Usage: node scripts/run-checks.mjs [--continue]
  *   --continue  run every step instead of stopping at the first failure
  */
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
@@ -45,15 +45,53 @@ const failures = []
 
 console.log(`running ${steps.length} release checks\n`)
 
+/**
+ * Announce a failing step's own words as a GitHub annotation.
+ *
+ * The log tail is what explains *why* a check failed, and annotations are the
+ * only part of a run this environment can retrieve — the job-log download is
+ * unreachable here. Without this, a Windows failure arrived as a red X and a
+ * step name, which is exactly what happened on the first real run of this
+ * workflow. `%0A` is the annotation escape for a newline.
+ */
+function annotate(step, output) {
+  const lines = output.split(/\r?\n/).map((line) => line.trimEnd()).filter((line) => line.trim())
+  // Prefer the assertion lines: a failing check explains itself best there.
+  const interesting = lines.filter((line) => /FAIL|Error|error:|expected|AssertionError|SKIP|throw|✗/.test(line))
+  const tail = (interesting.length ? interesting : lines).slice(-12).join('\n')
+  const escaped = tail.replace(/%/g, '%25').replace(/\r/g, '').replace(/\n/g, '%0A').slice(0, 6000)
+  console.log(`::error title=${step}::${escaped}`)
+}
+
 for (const [i, step] of steps.entries()) {
   const label = `${i + 1}/${steps.length} ${step}`
   const started = Date.now()
-  const result = spawnSync(step, { cwd: root, env, shell: true, stdio: 'inherit' })
+  // Streamed live *and* captured, so a failure can be summarised for anyone who
+  // cannot open the raw log.
+  const child = spawn(step, { cwd: root, env, shell: true })
+  let captured = ''
+  const tee = (stream) => (chunk) => {
+    const text = chunk.toString()
+    captured += text
+    if (captured.length > 400_000) captured = captured.slice(-200_000)
+    stream.write(text)
+  }
+  child.stdout?.on('data', tee(process.stdout))
+  child.stderr?.on('data', tee(process.stderr))
+  const status = await new Promise((resolve) => {
+    child.on('error', (error) => {
+      captured += `\nspawn error: ${error?.message || error}\n`
+      resolve(127)
+    })
+    child.on('close', (code, signal) => resolve(signal ? 1 : code ?? 1))
+  })
+  const result = { status }
   const seconds = ((Date.now() - started) / 1000).toFixed(1)
   if (result.status === 0) {
     console.log(`  ✓ ${label} (${seconds}s)\n`)
     continue
   }
+  annotate(step, captured)
   // `::error` is the GitHub Actions workflow command. It is plain text
   // everywhere else, so local runs are unaffected.
   console.log(`  ✗ ${label} (${seconds}s, exit ${result.status})`)

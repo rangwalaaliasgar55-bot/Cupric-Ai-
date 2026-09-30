@@ -1,10 +1,13 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react'
 import { Film, GanttChart, Pause, Play, Plus, Swords } from 'lucide-react'
 import { Button } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 import { NoProject } from '../components/NoProject'
+import { useLocalMediaUrl } from '../components/VideoPreview'
 import type { TimelineClip } from '../types/project'
 import { useActiveProject, useProjectStore } from '../state/useProjectStore'
+import { focusStudioClip } from '../lib/studio/focus'
+import { studioOf } from '../lib/studio/doc'
 import { clamp, cx, fmtClock, fmtDur, round1 } from '../lib/utils'
 
 const PPS = 56 // px per second
@@ -33,9 +36,22 @@ export function Timeline() {
   const [drag, setDrag] = useState<DragState | null>(null)
   const [insert, setInsert] = useState<InsertTarget | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  /**
+   * What a screen reader is told about the timeline.
+   *
+   * The visual timeline is a picture: a ruler, coloured blocks, a playhead. None
+   * of that reaches a screen reader, so every state change that a sighted person
+   * would notice — the playhead moving, a clip being reordered or removed,
+   * playback starting — is written here and read out. It is deliberately one
+   * channel: several live regions competing produces a stream of interruptions.
+   */
+  const [announcement, setAnnouncement] = useState('')
+  const announce = useCallback((message: string) => setAnnouncement(message), [])
 
   const clips = project?.timeline ?? []
   const total = clips.reduce((acc, c) => acc + c.durationSec, 0)
+  /** The clip the playhead is inside — what the preview below the ruler shows. */
+  const activeClip = clips.find((c) => t >= c.startSec && t < c.startSec + c.durationSec) ?? null
 
   // Timeline preview playback: playhead advances in real time and loops.
   useEffect(() => {
@@ -125,7 +141,21 @@ export function Timeline() {
     down: (e, clip, index, kind) => handlers.current.onPointerDown(e, clip, index, kind),
     move: (e) => handlers.current.onPointerMove(e),
     up: () => handlers.current.onPointerUp(),
-  }), [])
+    // The keyboard path uses the same store command as the drag path, so undo,
+    // persistence and the redo stack behave identically.
+    moveBy: (from, to) => {
+      const id = project?.id
+      if (!id) return
+      moveTimelineClip(id, from, to)
+      announce(`Clip moved to position ${to + 1} of ${clips.length}.`)
+    },
+    focus: (clip) => {
+      // focusStudioClip stores the clip id for the Studio to pick up; it takes
+      // one argument and never throws when there is nothing to focus.
+      focusStudioClip(clip.id)
+      announce(`Selected clip ${clips.findIndex((c) => c.id === clip.id) + 1}: ${clipName(clip)}, ${fmtDur(clip.durationSec)}.`)
+    },
+  }), [moveTimelineClip, project, clips, announce])
 
   const display: { clip: TimelineClip; originalIndex: number }[] = useMemo(() => {
     const withIdx = clips.map((clip, originalIndex) => ({ clip, originalIndex }))
@@ -145,6 +175,11 @@ export function Timeline() {
 
   return (
     <div className="flex h-full flex-col gap-4 px-6 py-5">
+      {/* One polite channel for everything the picture cannot say. Visually
+          hidden, present for assistive technology. */}
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only" data-timeline-announcer>
+        {announcement}
+      </div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-bold">Timeline</h1>
@@ -169,6 +204,15 @@ export function Timeline() {
         </div>
       </div>
 
+      {clips.length > 0 && (
+        <TimelinePreview
+          clip={activeClip}
+          inClipSec={activeClip ? Math.max(0, t - activeClip.startSec) : 0}
+          name={activeClip ? clipName(activeClip) : null}
+          onOpen={(view) => useProjectStore.getState().setView(view)}
+        />
+      )}
+
       {clips.length === 0 ? (
         <EmptyState
           icon={GanttChart}
@@ -186,9 +230,46 @@ export function Timeline() {
           ref={scrollRef}
           className="min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-xl border border-line bg-panel/40"
         >
-          <div className="relative" style={{ width: Math.max(total * PPS + 160, 0), minWidth: '100%' }}>
+          <div
+            className="relative"
+            style={{ width: Math.max(total * PPS + 160, 0), minWidth: '100%' }}
+            role="list"
+            aria-label={`Timeline clips, ${clips.length} in order`}
+          >
             {/* Ruler */}
-            <div className="relative h-7 border-b border-line" onClick={seek} aria-label="Seek" role="slider" aria-valuenow={Math.round(t)} aria-valuemin={0} aria-valuemax={Math.round(total)} tabIndex={-1}>
+            <div
+              className="relative h-7 border-b border-line focus-visible:bg-panel-alt/60"
+              onClick={seek}
+              role="slider"
+              // A slider that cannot be focused is a rectangle with ARIA on it.
+              // tabIndex 0 + the key handling below is what makes the playhead
+              // reachable without a mouse (Phase 3: keyboard + ARIA on the
+              // timeline). Left/Right move one frame, Shift+arrows one second,
+              // Home/End the ends, PageUp/PageDown five seconds.
+              tabIndex={0}
+              aria-label="Playhead"
+              aria-orientation="horizontal"
+              aria-valuemin={0}
+              aria-valuemax={Math.round(total)}
+              aria-valuenow={Math.round(t)}
+              aria-valuetext={`${fmtClock(Math.min(t, total))} of ${fmtClock(total)}`}
+              aria-keyshortcuts="ArrowLeft ArrowRight Home End PageUp PageDown"
+              onKeyDown={(event) => {
+                // One frame per press, one second with Shift. `fps` comes from
+                // the project because the ruler is measured in seconds.
+                const step = event.shiftKey ? 1 : 1 / Math.max(1, project ? studioOf(project).fps : 30)
+                let next: number | null = null
+                if (event.key === 'ArrowLeft') next = t - step
+                else if (event.key === 'ArrowRight') next = t + step
+                else if (event.key === 'Home') next = 0
+                else if (event.key === 'End') next = total
+                else if (event.key === 'PageUp') next = t + 5
+                else if (event.key === 'PageDown') next = t - 5
+                if (next === null) return
+                event.preventDefault()
+                setT(clamp(round1(next), 0, total))
+              }}
+            >
               {Array.from({ length: Math.ceil(total) + 1 }, (_, i) => (
                 <div key={i} className="absolute top-0 h-2 w-px bg-line" style={{ left: i * PPS }} />
               ))}
@@ -211,6 +292,7 @@ export function Timeline() {
                   <TimelineClipBlock
                     clip={clip}
                     index={originalIndex}
+                    totalClips={clips.length}
                     dragKind={drag?.id === clip.id ? drag.kind : null}
                     shownDur={drag?.id === clip.id && drag.kind === 'resize' ? drag.dur : clip.durationSec}
                     projectId={project.id}
@@ -253,6 +335,118 @@ export function Timeline() {
           }}
         />
       )}
+    </div>
+  )
+}
+
+/** Extensions a <video> element can actually decode. Anything else is not a film. */
+const PLAYABLE = /\.(mp4|webm|m4v|mov|ogv|ogg)$/i
+
+/**
+ * What the strip points at, at the playhead.
+ *
+ * The Timeline is the project-level sequence of Arena pieces and footage clips
+ * — a different model from the Studio document — so this is not the compositor:
+ * it shows the *source* the render queue will use, seeked to the right place,
+ * which is what the strip has always promised and never shown. A clip with no
+ * file (not uploaded/imported yet) or an Arena HTML piece says so and offers the
+ * screen that can do something about it, instead of a black rectangle.
+ */
+function TimelinePreview({
+  clip,
+  inClipSec,
+  name,
+  onOpen,
+}: {
+  clip: TimelineClip | null
+  inClipSec: number
+  name: string | null
+  onOpen: (view: 'footage' | 'arena') => void
+}) {
+  const project = useActiveProject()
+  const asset =
+    clip?.sourceType === 'footage'
+      ? project?.footageAssets.find((f) => f.id === clip.sourceId) ?? null
+      : clip?.sourceType === 'arena'
+        ? project?.arenaAssets.find((a) => a.id === clip.sourceId) ?? null
+        : null
+  const path = asset?.localPath ?? null
+  const playable = Boolean(path && PLAYABLE.test(path) && clip?.sourceType === 'footage')
+  const { url, error, loading } = useLocalMediaUrl(playable ? path : null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  // A file that opens but will not decode (corrupt, or a codec the machine has
+  // no decoder for) is a real failure and has to be shown, not swallowed.
+  const [decodeError, setDecodeError] = useState<string | null>(null)
+  useEffect(() => setDecodeError(null), [url])
+
+  // Follow the playhead: seek only when it has moved enough to matter, so a
+  // 60 Hz playhead does not thrash the decoder.
+  useEffect(() => {
+    const el = videoRef.current
+    if (!el || !url) return
+    const want = Math.max(0, inClipSec)
+    if (Number.isFinite(el.duration) && el.duration > 0) {
+      el.currentTime = Math.min(want, Math.max(0, el.duration - 0.05))
+      return
+    }
+    if (Math.abs(el.currentTime - want) > 0.15) el.currentTime = want
+  }, [url, inClipSec])
+
+  let body: ReactElement
+  if (!clip) {
+    body = <p className="text-xs text-muted">No clip under the playhead — scrub onto a clip to see its source here.</p>
+  } else if (!asset) {
+    body = (
+      <p className="text-xs text-muted">
+        This clip points at an asset that is no longer in the project, so there is nothing to show. Remove it from the strip or re-insert the asset.
+      </p>
+    )
+  } else if (clip.sourceType === 'arena') {
+    body = (
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-xs text-muted">
+          Arena pieces are generated HTML, not a video file, so there is no still to seek through. Render it from Arena Desk to get a video you can scrub here.
+        </p>
+        <Button size="sm" onClick={() => onOpen('arena')}>Open Arena Desk</Button>
+      </div>
+    )
+  } else if (!path) {
+    body = (
+      <div className="flex flex-wrap items-center gap-3">
+        <p className="text-xs text-muted">“{name}” has no local file yet — upload it in Footage Desk to preview and render it.</p>
+        <Button size="sm" onClick={() => onOpen('footage')}>Open Footage Desk</Button>
+      </div>
+    )
+  } else if (error || decodeError) {
+    body = <p className="text-xs text-danger">{error ?? decodeError}</p>
+  } else if (loading || !url) {
+    body = <p className="text-xs text-muted">Opening {name}…</p>
+  } else {
+    body = (
+      <video
+        ref={videoRef}
+        src={url}
+        muted
+        playsInline
+        preload="metadata"
+        className="max-h-52 w-full rounded-lg bg-black object-contain"
+        aria-label={`Source preview of ${name ?? 'the selected clip'}`}
+        onLoadedMetadata={() => {
+          const el = videoRef.current
+          if (el) el.currentTime = Math.max(0, Math.min(inClipSec, Math.max(0, el.duration - 0.05)))
+        }}
+        onError={() => setDecodeError(`${name ?? 'This file'} could not be decoded here. If it plays in another player, the codec is not available on this machine.`)}
+      />
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-line bg-panel/40 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2 text-xs text-muted">
+        <span className="truncate">{clip ? `${name} · ${clip.sourceType}` : 'Preview'}</span>
+        {clip && <span className="font-mono tabular-nums">{inClipSec.toFixed(1)}s in clip</span>}
+      </div>
+      {body}
     </div>
   )
 }
@@ -354,20 +548,26 @@ function InsertPopover({
 
 
 type TimelineClipActions = {
+  /** Alt+arrow reorder: same command as a drag, driven from the keyboard. */
+  moveBy: (from: number, to: number) => void
+  /** Enter/Space on a clip: put it in front of the person in the Studio. */
+  focus: (clip: TimelineClip) => void
   down: (e: React.PointerEvent, clip: TimelineClip, index: number, kind: 'move' | 'resize') => void
   move: (e: React.PointerEvent) => void
   up: () => void
 }
 
 /** One timeline clip, memoised so playback ticks do not re-render every block. */
-const TimelineClipBlock = memo(function TimelineClipBlock({ clip, index, dragKind, shownDur, projectId, name, actions }: { clip: TimelineClip; name: string; index: number; dragKind: 'move' | 'resize' | null; shownDur: number; projectId: string; actions: TimelineClipActions }) {
+const TimelineClipBlock = memo(function TimelineClipBlock({ clip, index, totalClips, dragKind, shownDur, projectId, name, actions }: { clip: TimelineClip; name: string; index: number; totalClips: number; dragKind: 'move' | 'resize' | null; shownDur: number; projectId: string; actions: TimelineClipActions }) {
   const isDragging = dragKind === 'move'
   const isArena = clip.sourceType === 'arena'
   return (
                   <div
-    role="button"
+                    role="listitem"
                     tabIndex={0}
-                    aria-label={`${isArena ? 'Arena' : 'Footage'} clip: ${name}, ${fmtDur(shownDur)}. Drag to reorder, drag right edge to resize.`}
+                    aria-label={`${isArena ? 'Arena' : 'Footage'} clip ${index + 1} of ${totalClips}: ${name}, ${fmtDur(shownDur)}. Press Alt and the left or right arrow to move it, Delete to remove it.`}
+                    aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight Delete Enter"
+                    data-clip-index={index}
                     onPointerDown={(e) => {
                       if ((e.target as HTMLElement).dataset.handle) return
                       actions.down(e, clip, index, 'move')
@@ -375,8 +575,31 @@ const TimelineClipBlock = memo(function TimelineClipBlock({ clip, index, dragKin
                     onPointerMove={actions.move}
                     onPointerUp={actions.up}
                     onKeyDown={(e) => {
+                      const store = useProjectStore.getState()
                       if (e.key === 'Backspace' || e.key === 'Delete') {
-                        useProjectStore.getState().removeTimelineClip(projectId, clip.id)
+                        e.preventDefault()
+                        store.removeTimelineClip(projectId, clip.id)
+                        // Removing is destructive and was previously a one-way
+                        // door from the keyboard. The command stack already holds
+                        // it, so the way back is one press away — and saying so is
+                        // the difference between an undo stack and a hidden one.
+                        store.pushToast('info', `Removed “${name}” from the timeline.`, {
+                          action: { label: 'Undo', run: () => useProjectStore.getState().undo() },
+                        })
+                        return
+                      }
+                      // Alt+arrows reorder without a drag; plain arrows used to do
+                      // nothing at all on a focused clip.
+                      if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                        e.preventDefault()
+                        const to = clamp(index + (e.key === 'ArrowLeft' ? -1 : 1), 0, Math.max(0, totalClips - 1))
+                        if (to === index) return
+                        actions.moveBy(index, to)
+                        return
+                      }
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        actions.focus(clip)
                       }
                     }}
                     className={cx(

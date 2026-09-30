@@ -6,7 +6,7 @@ import { useProjectStore } from '../state/useProjectStore'
 /**
  * Zero-setup brain notices (JOB 1/2). The main process sends `ai:notice`:
  *  - kind 'toast'  → one quiet info toast ("local brain found, switched", new free models);
- *  - kind 'inline' → a subtle one-line status ("free brain busy, retrying", "offline brain").
+ *  - kind 'inline' → a subtle one-line status ("rate-limited, retrying", "offline planner").
  * Never a dialog, never blocking, pointer-events-none.
  */
 export function BrainNotice() {

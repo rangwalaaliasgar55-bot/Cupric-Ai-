@@ -17,7 +17,21 @@ const encoders = require('./encoders.cjs')
 const assembly = require('./assembly.cjs')
 const proxies = require('./proxies.cjs')
 const tts = require('./tts.cjs')
+const voiceInstall = require('./voice-install.cjs')
 const { migrateSettings } = require('./settings-migration.cjs')
+// The provider layer (Phase 1.1): one interface, real adapters, typed errors.
+// It owns every HTTP call to an AI provider and every failure classification;
+// this file keeps routing, cooldowns and the deterministic template fallback.
+const aiProviders = require('./ai-providers.cjs')
+// The eight pipeline steps as pure functions (phase 1.2). The step *order* is
+// declared once, in the module, and referenced by name here.
+const automationSteps = require('./automation-steps.cjs')
+// Export preflight + post-render verification (phase 1.6): named failures with
+// a stated fix, and a real ffprobe read-back before the UI hears "done".
+const renderPreflight = require('./render-preflight.cjs')
+const studioTrim = require('./studio-trim.cjs')
+const AUTOMATION_STEP = Object.fromEntries(automationSteps.STEP_DEFINITIONS.map((definition, index) => [definition.id, index]))
+const aiProviderConfig = require('./ai-provider-config.cjs')
 const voiceEngines = require('./voice-engines.cjs')
 const { ADVANCED_VIDEO_PLAYBOOK_PROMPT } = require('./opus-playbook.cjs')
 const { createStockService } = require('./stock.cjs')
@@ -87,7 +101,9 @@ const ZEN_BASE_URL = 'https://opencode.ai/zen/v1'
 const AI_DISCOVERY_TIMEOUT_MS = 1500
 const AI_DISCOVERY_CACHE_MS = 30_000
 const freeBrain = require('./free-brain.cjs')
-const AI_MODES = new Set(['auto', 'gemini', 'zen', 'openrouter', 'ollama', 'lmstudio', 'template'])
+// 'none' = nothing configured and nothing discovered. It is a real state with a
+// real fix (open Settings), not a silent fallback to a third-party service.
+const AI_MODES = new Set(['auto', 'gemini', 'zen', 'openrouter', 'ollama', 'lmstudio', 'template', 'none'])
 // Discovery uses freeBrain.LOCAL_PROBE_ORDER (4096 → 11434 → 1234 → 8080).
 
 const renderJobs = new Map()
@@ -278,11 +294,17 @@ function writeSettings(next) {
 }
 
 function geminiApiKey() {
-  return String(readSettings().geminiApiKey || process.env.GEMINI_API_KEY || '').trim()
+  return aiProviderConfig.resolveKey(readSettings(), 'gemini').key
 }
 
 function geminiModel() {
-  return String(readSettings().geminiModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL).trim() || DEFAULT_GEMINI_MODEL
+  const settings = readSettings()
+  return String(settings.geminiModel || process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL).trim() || DEFAULT_GEMINI_MODEL
+}
+
+/** The configured provider (Phase 1.1). Settings + environment only, never inferred. */
+function configuredProvider() {
+  return aiProviderConfig.providerConfig(readSettings())
 }
 
 function stripJsonComments(text) {
@@ -633,17 +655,22 @@ async function autoDiscover(options = {}) {
       return { pick: picked, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
     }
 
-    // Built-in keyless free cloud: no key, no signup. A short silent reachability
-    // check only decides the label; routing still hops between both endpoints.
-    for (const endpoint of freeBrain.KEYLESS_ENDPOINTS) {
-      const reachable = await fetch(endpoint.modelsUrl, { signal: AbortSignal.timeout(AI_DISCOVERY_TIMEOUT_MS * 2) }).then((r) => r.ok).catch(() => false)
-      if (reachable) {
-        const picked = { kind: 'keyless', provider: 'keyless', baseUrl: endpoint.baseUrl, model: endpoint.draftModel, label: `${endpoint.label} · built in`, reason: 'Built-in free brain — no key or setup needed. A local model or your own key is used automatically when present.', source: 'builtin' }
-        return { pick: picked, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
-      }
+    // Nothing configured and nothing running locally. This used to be answered by
+    // a built-in third-party keyless endpoint (Pollinations) whose replies had to
+    // be ad-stripped; that route is gone (Phase 0 §A4/§B1). Report the state
+    // honestly with the exact fix instead of quietly using someone else's service.
+    const none = {
+      kind: 'none',
+      provider: 'none',
+      baseUrl: '',
+      model: '',
+      label: 'No AI provider configured',
+      reason: `No local model is running and no API key is saved. Add a key (OpenAI, Anthropic or Gemini) or start Ollama/LM Studio in Settings — until then this runs the deterministic planner, which needs no AI.`,
+      source: 'none',
+      fix: 'settings',
     }
+    return { pick: none, local, configured, setupRequired: true, checkedAt: new Date().toISOString() }
 
-    const offline = { kind: 'template', provider: 'template', baseUrl: '', model: '', label: 'offline brain', reason: 'No network and no local model — the deterministic planner keeps everything working. Live AI resumes automatically when you are back online.', source: 'builtin' }
     return { pick: offline, local, configured, setupRequired: false, checkedAt: new Date().toISOString() }
   })().then((result) => {
     const current = readSettings()
@@ -664,9 +691,10 @@ async function autoDiscover(options = {}) {
     aiStatusCache = {
       at: Date.now(),
       dots: {
-        gemini: geminiApiKey() ? 'unknown' : 'unknown',
+        gemini: geminiApiKey() ? 'configured' : 'missing',
         zen: result.pick?.kind === 'zen' ? 'ok' : 'unknown',
-        local: result.local?.length ? 'ok' : 'unknown',
+        local: result.local?.length ? 'ok' : 'missing',
+        configured: result.pick?.kind === 'none' ? 'missing' : 'ok',
       },
     }
     try { mainWindow?.webContents.send('ai:discovery', { ...publicDiscovery(result), statusDots: aiStatusCache.dots }) } catch {}
@@ -679,12 +707,15 @@ function aiSettings() {
   const settings = readSettings()
   const mode = configuredAiMode(settings)
   const pick = mode === 'auto' && settings.autoPick ? settings.autoPick : null
-  const baseFromPick = (pick?.kind === 'keyless' ? '' : pick?.baseUrl) || settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || ''
-  const modelFromPick = (pick?.kind === 'keyless' ? '' : pick?.model) || settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || ''
+  const baseFromPick = pick?.baseUrl || settings.openCodeBaseUrl || process.env.OPENCODE_BASE_URL || process.env.OPENAI_BASE_URL || ''
+  const modelFromPick = pick?.model || settings.openCodeModel || process.env.OPENCODE_MODEL || process.env.OPENAI_MODEL || ''
   const openCodeBaseUrl = String(baseFromPick || (mode === 'openrouter' ? 'https://openrouter.ai/api/v1' : mode === 'zen' ? ZEN_BASE_URL : '')).trim()
   const openCodeModel = String(modelFromPick || (mode === 'zen' ? ZEN_FREE_MODELS[0] : mode === 'openrouter' ? 'qwen/qwen3-235b-a22b:free' : '')).trim()
   const openCodeApiKey = String(settings.openCodeApiKey || process.env.OPENCODE_API_KEY || process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY || resolveOpenCodeApiKey(openCodeBaseUrl, openCodeModel) || (mode === 'zen' ? openCodeAuthSecrets()[0] : '') || '').trim()
-  const provider = mode === 'auto' && pick?.kind === 'keyless' ? 'keyless' : mode === 'gemini' ? 'gemini' : mode === 'template' || pick?.kind === 'template' || (mode === 'auto' && !pick) ? 'template' : mode === 'auto' && pick?.kind === 'gemini' ? 'gemini' : 'opencode'
+  // 'none' is a real, explainable state: no key saved and no local server found.
+  // Callers surface it with the fix (Settings) instead of falling back to a
+  // third-party service the user never chose.
+  const provider = mode === 'none' || (mode === 'auto' && pick?.kind === 'none') ? 'none' : mode === 'gemini' ? 'gemini' : mode === 'template' || pick?.kind === 'template' || (mode === 'auto' && !pick) ? 'template' : mode === 'auto' && pick?.kind === 'gemini' ? 'gemini' : 'opencode'
   return { mode, pick, provider, openCodeBaseUrl, openCodeModel, openCodeApiKey }
 }
 
@@ -702,15 +733,20 @@ function publicSettings() {
   const ai = aiSettings()
   const login = app.getLoginItemSettings ? app.getLoginItemSettings() : { openAtLogin: false }
   const pick = settings.autoPick || ai.pick || null
-  const needsKey = ai.mode === 'gemini' || ai.mode === 'zen' || ai.mode === 'openrouter'
+  const provider = aiProviderConfig.providerSummary(settings)
+  const needsKey = ai.mode === 'gemini' || ai.mode === 'zen' || ai.mode === 'openrouter' || provider.kind === 'none'
   return {
-    hasKey: ai.provider === 'template' ? true : ai.provider === 'opencode' ? hasOpenCodeAccess() : Boolean(geminiApiKey()),
+    // Phase 1.1: the honest provider report Settings renders. `aiProvider`
+    // stays the legacy string the current UI keys off; `provider` is the new
+    // object (label, model, keySource, typed error, fix).
+    aiProvider: ai.provider,
+    provider,
+    hasKey: provider.kind === 'none' ? false : ai.provider === 'template' ? true : provider.hasKey || (ai.provider === 'opencode' ? hasOpenCodeAccess() : Boolean(geminiApiKey())),
     hasGeminiKey: Boolean(geminiApiKey()),
     hasOpenCodeKey: hasOpenCodeAccess(),
-    aiProvider: ai.provider,
     aiMode: ai.mode,
     autoPick: pick,
-    setupRequired: Boolean(ai.mode === 'auto' && settings.autoPick?.kind === 'template'),
+    setupRequired: Boolean((ai.mode === 'auto' && settings.autoPick?.kind === 'template') || provider.kind === 'none'),
     fallbackOrder: Array.isArray(settings.fallbackOrder) ? settings.fallbackOrder : ['gemini', 'zen', 'ollama', 'lmstudio', 'template'],
     geminiModel: geminiModel(),
     openCodeBaseUrl: ai.openCodeBaseUrl,
@@ -759,6 +795,36 @@ function applySettingsPatch(patch) {
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiProvider')) {
     settings.aiProvider = patch.aiProvider === 'opencode' ? 'opencode' : 'gemini'
     if (!settings.aiMode) settings.aiMode = patch.aiProvider === 'opencode' ? 'openrouter' : 'gemini'
+  }
+  // Phase 1.1 provider selection. `aiKind` is an explicit user choice and
+  // `aiKind: ''` clears it back to detection; keys and models are stored per
+  // provider so switching back and forth never loses what was typed.
+  if (Object.prototype.hasOwnProperty.call(patch || {}, 'aiKind')) {
+    const kind = String(patch.aiKind || '').trim().toLowerCase()
+    if (aiProviderConfig.KNOWN_KINDS.includes(kind)) settings.aiKind = kind
+    else delete settings.aiKind
+    // Choosing a provider by hand ends the auto-pick, so discovery cannot
+    // silently override the choice on the next launch.
+    if (kind) {
+      delete settings.autoPick
+      if (settings.aiMode === 'auto' || !AI_MODES.has(String(settings.aiMode || ''))) settings.aiMode = kind === 'local' ? 'ollama' : kind
+    }
+  }
+  for (const [setting, value] of Object.entries({
+    openaiApiKey: patch?.openaiApiKey,
+    anthropicApiKey: patch?.anthropicApiKey,
+    openaiModel: patch?.openaiModel,
+    anthropicModel: patch?.anthropicModel,
+    geminiBaseUrl: patch?.geminiBaseUrl,
+    openaiBaseUrl: patch?.openaiBaseUrl,
+    anthropicBaseUrl: patch?.anthropicBaseUrl,
+    localBaseUrl: patch?.localBaseUrl,
+    localModel: patch?.localModel,
+  })) {
+    if (!Object.prototype.hasOwnProperty.call(patch || {}, setting)) continue
+    const text = String(value ?? '').trim()
+    if (text) settings[setting] = text
+    else delete settings[setting]
   }
   if (Object.prototype.hasOwnProperty.call(patch || {}, 'geminiModel')) {
     const v = String(patch.geminiModel || '').trim()
@@ -822,6 +888,92 @@ ipcMain.handle('settings:get', async () => {
   return publicSettings()
 })
 ipcMain.handle('settings:hasKey', () => publicSettings().hasKey)
+
+/* ——— Phase 1.1: provider surface (state, real test, real model list) ——— */
+
+ipcMain.handle('ai:providerState', () => {
+  const summary = aiProviderConfig.providerSummary(readSettings())
+  return { ...summary, localPresets: aiProviderConfig.LOCAL_PRESETS }
+})
+
+/**
+ * A real, minimal completion against the configured provider through the
+ * provider layer. `ok:false` carries the typed code and the fix, so the UI can
+ * say what is wrong instead of "connection failed".
+ */
+ipcMain.handle('ai:testProvider', async (_event, payload = {}) => {
+  const settings = readSettings()
+  const base = aiProviderConfig.providerConfig(settings)
+  const overrideKind = String(payload?.kind || '').trim()
+  const config = overrideKind && aiProviderConfig.KNOWN_KINDS.includes(overrideKind)
+    ? aiProviderConfig.providerConfig({ ...settings, aiKind: overrideKind, ...(payload?.baseUrl ? { [`${overrideKind}BaseUrl`]: String(payload.baseUrl) } : {}), ...(payload?.model ? { [`${overrideKind}Model`]: String(payload.model) } : {}), ...(payload?.apiKey ? { [`${overrideKind === 'gemini' ? 'gemini' : overrideKind}ApiKey`]: String(payload.apiKey) } : {}) })
+    : base
+  if (config.error) return { ok: false, code: config.error.code, message: config.error.message, fix: config.fix || null, label: config.label || 'Cupric AI' }
+  const started = Date.now()
+  const result = await aiProviders.generate(config, {
+    system: 'You are a connection test. Reply with the single word: ready',
+    messages: [{ role: 'user', content: 'Say ready.' }],
+    maxTokens: 16,
+    temperature: 0,
+    timeoutMs: 20_000,
+  })
+  const tookMs = Date.now() - started
+  if (!result.ok) {
+    logLine('ai-test-failed', result.error.message, { code: result.error.code, provider: config.provider })
+    return { ok: false, code: result.error.code, message: result.error.message, fix: result.error.action, label: config.label, tookMs, attempts: result.error.attempts }
+  }
+  logLine('ai-test-ok', `${config.label} answered in ${tookMs}ms`, { model: result.model, attempts: result.attempts })
+  return { ok: true, label: config.label, model: result.model, text: result.text.trim().slice(0, 120), tookMs, attempts: result.attempts }
+})
+
+/**
+ * The provider's own model list (OpenAI-compatible `/models`, Anthropic
+ * `/v1/models`, Gemini `/v1beta/models`). Rows come from the endpoint; when it
+ * is unreachable the caller is told why, and nothing is invented.
+ */
+ipcMain.handle('ai:listModels', async (_event, payload = {}) => {
+  const settings = readSettings()
+  const kind = String(payload?.kind || '').trim()
+  const config = aiProviderConfig.providerConfig(
+    kind && aiProviderConfig.KNOWN_KINDS.includes(kind)
+      ? { ...settings, aiKind: kind, ...(payload?.baseUrl ? { [`${kind}BaseUrl`]: String(payload.baseUrl) } : {}), ...(payload?.apiKey ? { [`${kind}ApiKey`]: String(payload.apiKey) } : {}) }
+      : settings,
+  )
+  if (config.error) return { ok: false, code: config.error.code, message: config.error.message, fix: config.fix || null, models: [] }
+  const request = aiProviderConfig.listModelsRequest(config)
+  if (!request) return { ok: false, code: 'BAD_REQUEST', message: `${config.label}: no model list endpoint for this provider.`, models: [] }
+  try {
+    const response = await fetch(request.url, { headers: request.init.headers, signal: AbortSignal.timeout(15_000) })
+    if (!response.ok) {
+      const detail = (await response.text().catch(() => '')).slice(0, 200)
+      const error = aiProviders.makeError(aiProviders.classifyStatus(response.status, detail), { provider: config.label, status: response.status, detail })
+      logLine('ai-list-models-failed', error.message, { provider: config.provider, status: response.status })
+      return { ok: false, code: error.code, message: error.message, fix: error.action, models: [] }
+    }
+    const models = aiProviderConfig.parseModels(config.provider, await response.json())
+    logLine('ai-list-models', `${config.label}: ${models.length} models`, { provider: config.provider })
+    return { ok: true, provider: config.provider, label: config.label, models, current: config.model }
+  } catch (error) {
+    const typed = aiProviders.classifyError(error)
+    logLine('ai-list-models-failed', typed.message, { provider: config.provider })
+    return { ok: false, code: typed.code, message: typed.message, fix: typed.action, models: [] }
+  }
+})
+
+/** Local model servers that are actually running right now, with their models. */
+ipcMain.handle('ai:detectLocal', async () => {
+  const locals = await freeBrain.probeLocals({ timeoutMs: 2000 }).catch((error) => {
+    logLine('ai-detect-local-failed', error?.message || String(error))
+    return []
+  })
+  brainLocalsCache = { at: Date.now(), locals }
+  return {
+    ok: locals.length > 0,
+    servers: locals.map((l) => ({ kind: l.kind, label: l.label, baseUrl: l.baseUrl, models: l.models })),
+    presets: aiProviderConfig.LOCAL_PRESETS,
+    message: locals.length ? `${locals.length} local model server${locals.length === 1 ? '' : 's'} running.` : 'No local model server answered on the usual ports (4096, 11434, 1234, 8080).',
+  }
+})
 ipcMain.handle('settings:set', async (_event, patch) => {
   const result = applySettingsPatch(patch || {})
   if (configuredAiMode(readSettings()) === 'auto') await autoDiscover({ force: true })
@@ -1011,6 +1163,34 @@ ipcMain.handle('diag:report', (_event, payload) => {
     rendererErrors: Array.isArray(payload?.rendererErrors) ? payload.rendererErrors.map(String).slice(-40) : [],
     homeDir: os.homedir(),
   })
+})
+/**
+ * What the running app actually is: version, packaging, platform, runtime.
+ *
+ * The version comes from `app.getVersion()` (the packaged `package.json`), never
+ * from a literal, so Settings, the diagnostics report and the release tag can
+ * only disagree if the build itself is wrong. Phase 0 finding D4 was the README
+ * advertising a version four releases old; the renderer had no way to see the
+ * real one at all, which is part of how that drifted.
+ */
+ipcMain.handle('app:info', () => {
+  try {
+    return {
+      ok: true,
+      version: app.getVersion(),
+      packaged: app.isPackaged,
+      platform: process.platform,
+      arch: process.arch,
+      electron: process.versions.electron,
+      chrome: process.versions.chrome,
+      node: process.versions.node,
+      updateFeedOverride: updateFeedOverride() ? 'CUPRIC_UPDATE_FEED' : null,
+    }
+  } catch (err) {
+    const message = err?.message || String(err)
+    logLine('app-info-failed', message)
+    return { ok: false, code: 'APP_INFO_FAILED', message: `Could not read the app version (${message}).` }
+  }
 })
 ipcMain.handle('state:listVersions', () => projectHistory.listVersions(app.getPath('userData')))
 ipcMain.handle('state:snapshotNow', () => {
@@ -1556,7 +1736,12 @@ async function openArenaBuilderForPrompt(prompt, extra = {}) {
   return { url, copied }
 }
 
-async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, warnings, state) {
+/**
+ * Render the plan. Every segment's kind, source, order, duration and captions
+ * come from `plan` (step 5) — the renderer no longer decides the edit for
+ * itself, which is what made the old timeline-plan.json unverifiable.
+ */
+async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, warnings, state, plan = null) {
   ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
   if (!ffmpegPath) throw new Error('FFmpeg is unavailable in this build, so Cupric AI cannot render MP4. Set CUPRIC_FFMPEG_PATH or install a build with ffmpeg-static unpacked.')
   const outDir = path.join(userDataPath('renders'), job.id)
@@ -1564,33 +1749,57 @@ async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, 
   fs.rmSync(workDir, { recursive: true, force: true })
   ensureDir(workDir); ensureDir(outDir)
   const target = targetSizeForAspect(job.aspect, rundown.size)
+  // Same preflight as every other export: a full disk or a missing encoder is
+  // reported before the first frame is captured, not after.
+  await runExportPreflight({
+    outputPath: job.outputPath || path.join(outDir, 'render.mp4'),
+    dir: outDir,
+    durationSec: Number(rundown.durationSec) || (plan ? plan.totalDurationSec : 0),
+    fps: Number(rundown.fps) || 30,
+    size: target,
+    quality: job.quality === 'final' ? 'final' : 'draft',
+    container: 'mp4',
+    codec: 'h264',
+    state,
+  })
   const segments = []
-  const arenaDuration = Math.min(MAX_RENDER_DURATION_SEC, Math.max(1, Number(rundown.durationSec) || 12))
-  segments.push(await renderArenaSegment(state, {
-    sourceType: 'arena',
-    arenaPath: winnerPath,
-    htmlPath: winnerPath,
-    durationSec: arenaDuration,
-    captions: rundown.scenes.map(s => ({ start: Math.max(0, Number(s.from) || 0), end: Math.min(arenaDuration, Number(s.to) || arenaDuration), text: s.copy })).filter(c => c.end > c.start),
-    captionStyle: 'standard',
-  }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} }))
-  if (footageMeta) {
+  const plannedSegments = Array.isArray(plan?.segments) && plan.segments.length
+    ? plan.segments
+    : automationSteps.buildTimelinePlan({ rundown, winnerPath, footage: footageMeta, aspect: job.aspect, fps: job.fps, quality: job.quality }).segments
+  for (const [index, planned] of plannedSegments.entries()) {
+    if (planned.kind === 'generated') {
+      segments.push(await renderArenaSegment(state, {
+        sourceType: 'arena',
+        arenaPath: planned.source,
+        htmlPath: planned.source,
+        durationSec: Math.min(MAX_RENDER_DURATION_SEC, Math.max(1, planned.durationSec)),
+        captions: (planned.captions || []).map((caption) => ({ start: caption.start, end: caption.end, text: caption.text })).filter((caption) => caption.end > caption.start),
+        captionStyle: 'standard',
+      }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: index, onUnits: () => {} }))
+      continue
+    }
+    // Footage: the intake's silence analysis and captions only apply to the file
+    // they were measured on; a different planned clip is rendered as supplied.
+    const sameFile = Boolean(footageMeta?.source && path.resolve(String(footageMeta.source)) === path.resolve(String(planned.source)))
     const footageSegments = await renderFootageSegments(state, {
       sourceType: 'footage',
-      videoPath: footageMeta.source,
-      durationSec: Math.min(120, footageMeta.durationSec),
-      silenceRanges: footageMeta.silenceRanges,
-      captions: footageMeta.captions,
-      applySilenceCuts: true,
-      captionStyle: footageMeta.captionStyle,
-      crop: footageMeta.crop,
-    }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: segments.length, onUnits: () => {} })
+      videoPath: planned.source,
+      durationSec: Math.min(120, Math.max(0.5, planned.durationSec)),
+      silenceRanges: sameFile ? footageMeta.silenceRanges : undefined,
+      captions: sameFile ? footageMeta.captions : undefined,
+      applySilenceCuts: Boolean(sameFile),
+      captionStyle: sameFile ? footageMeta.captionStyle : undefined,
+      crop: sameFile ? footageMeta.crop : undefined,
+    }, { fps: job.fps, quality: job.quality, target, workDir, segmentIndex: index, onUnits: () => {} })
     segments.push(...footageSegments)
   }
   if (!segments.length) throw new Error('No renderable media was produced')
-  const timeline = segments.map((s, i) => ({ id: `clip-${i + 1}`, startSec: segments.slice(0, i).reduce((n, x) => n + x.duration, 0), durationSec: s.duration, source: s.path }))
-  writeJson(path.join(root, 'timeline.json'), timeline)
-  writeJson(path.join(root, 'editing-plan.json'), { schema_version: '1.0', project: { target_duration_s: rundown.durationSec, aspect_ratio: job.aspect, fps: job.fps }, sections: [{ role: 'autonomous-edit', clips: timeline.map((clip, i) => ({ id: clip.id, source_file: clip.source, in_s: 0, out_s: clip.durationSec, purpose: i === 0 ? 'generated motion creative' : 'supporting footage edit', transition_in: i === 0 ? 'hard_cut' : 'dissolve', captions: [] })) }], captions: { enabled: true, mode: 'phrase', auto_from_transcript: true } })
+  if (plan) {
+    // The delivered segments are the plan, or the run failed loudly above. This
+    // records the mapping so the review report can compare plan against output.
+    const delivered = segments.reduce((sum, segment) => sum + (Number(segment.duration) || 0), 0)
+    job = patchAutomation(job.id, { renderedSegments: segments.length, renderedDurationSec: Math.round(delivered * 100) / 100 }) || job
+  }
   const outputPath = path.join(outDir, `${safeFileName(rundown.title, 'cupric-ai')}.mp4`)
   await concatSegments(state, segments, outputPath, { workDir })
   fs.rmSync(workDir, { recursive: true, force: true })
@@ -1613,44 +1822,58 @@ async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, 
  * a model's HTML score proves visual quality. A failed gate gets one bounded
  * render retry; it never loops forever or fabricates a pass.
  */
-async function evaluateAutomationRender(outputPath, job, rundown) {
-  const checks = []
-  const add = (id, ok, detail, fatal = false) => checks.push({ id, ok: Boolean(ok), detail, fatal })
+/**
+ * Probe the delivered file (this function's job) and hand the numbers to the
+ * mechanical gate in automation-steps.cjs, where the rules are unit-tested and
+ * cannot be softened by a retry.
+ */
+async function evaluateAutomationRender(outputPath, job, rundown, plan = null) {
   const exists = Boolean(outputPath && fs.existsSync(outputPath))
   const bytes = exists ? fs.statSync(outputPath).size : 0
-  add('file-exists', exists, exists ? 'MP4 exists at the delivered path' : 'MP4 is missing', true)
-  add('file-size', bytes > 4096, `${bytes} bytes`, true)
-  if (!exists || bytes <= 4096) return { valid: false, retryable: true, score: 0, checks }
-
-  try {
-    const probe = await probeMedia(outputPath)
-    const video = probe.streams.find((stream) => stream.codec_type === 'video')
-    const target = targetSizeForAspect(job.aspect, rundown.size)
-    const duration = Number(probe.durationSec) || 0
-    add('video-stream', Boolean(video), video ? `${video.codec_name || 'video'} stream present` : 'no video stream', true)
-    add('target-size', Boolean(video && Number(video.width) === target.width && Number(video.height) === target.height), video ? `${video.width}×${video.height}; expected ${target.width}×${target.height}` : 'unknown dimensions', true)
-    add('even-dimensions', Boolean(video && Number(video.width) % 2 === 0 && Number(video.height) % 2 === 0), video ? `${video.width}×${video.height} are encoder-safe` : 'unknown dimensions', true)
-    const expectedDuration = Math.max(0.5, Number(rundown.durationSec) || 1)
-    add('duration', duration >= expectedDuration * 0.85, `${duration.toFixed(2)}s; expected at least ${expectedDuration.toFixed(2)}s`, false)
-    add('audio-stream', Boolean(probe.hasAudio), probe.hasAudio ? 'audio stream present' : 'silent render (allowed, but review it)', false)
-    const fpsText = String(video?.avg_frame_rate || video?.r_frame_rate || '')
-    const [num, den] = fpsText.split('/').map(Number)
-    const actualFps = den ? num / den : Number(fpsText)
-    add('frame-rate', !actualFps || Math.abs(actualFps - Number(job.fps)) <= 0.5, fpsText ? `${actualFps.toFixed(2)} fps; expected ${job.fps}` : 'frame rate unavailable', false)
-    const fatalFailed = checks.filter((check) => check.fatal && !check.ok)
-    const passed = checks.filter((check) => check.ok).length
-    return {
-      valid: fatalFailed.length === 0,
-      retryable: fatalFailed.length > 0,
-      score: Math.round((passed / checks.length) * 100),
-      checks,
-      durationSec: duration,
-      size: video ? [video.width, video.height] : null,
-      hasAudio: Boolean(probe.hasAudio),
+  const target = targetSizeForAspect(job.aspect, rundown.size)
+  const probe = { exists, bytes, durationSec: 0, width: 0, height: 0, videoCodec: '', audioCodec: '', playable: false, fps: 0 }
+  const extra = []
+  if (exists && bytes > 4096) {
+    try {
+      const media = await probeMedia(outputPath)
+      const video = media.streams.find((stream) => stream.codec_type === 'video')
+      const audio = media.streams.find((stream) => stream.codec_type === 'audio')
+      const fpsText = String(video?.avg_frame_rate || video?.r_frame_rate || '')
+      const [num, den] = fpsText.split('/').map(Number)
+      Object.assign(probe, {
+        durationSec: Number(media.durationSec) || 0,
+        width: Number(video?.width) || 0,
+        height: Number(video?.height) || 0,
+        videoCodec: String(video?.codec_name || ''),
+        audioCodec: String(audio?.codec_name || (media.hasAudio ? 'audio' : '')),
+        fps: den ? num / den : Number(fpsText) || 0,
+        playable: true,
+      })
+      extra.push({ id: 'even-dimensions', ok: probe.width % 2 === 0 && probe.height % 2 === 0, detail: `${probe.width}×${probe.height} are encoder-safe`, fatal: true })
+      extra.push({ id: 'target-size', ok: probe.width === target.width && probe.height === target.height, detail: `${probe.width}×${probe.height}; expected ${target.width}×${target.height}`, fatal: true })
+      extra.push({ id: 'frame-rate', ok: !probe.fps || Math.abs(probe.fps - Number(job.fps)) <= 0.5, detail: `${probe.fps.toFixed(2)} fps; expected ${job.fps}`, fatal: false })
+      extra.push({ id: 'audio-stream', ok: Boolean(probe.audioCodec), detail: probe.audioCodec ? `${probe.audioCodec} stream present` : 'silent render (allowed, but review it)', fatal: false })
+    } catch (error) {
+      probe.playable = false
+      logLine('render-probe-failed', error?.message || String(error), { outputPath })
+      extra.push({ id: 'ffprobe', ok: false, detail: `Could not inspect the delivered MP4: ${error?.message || String(error)}`, fatal: true })
     }
-  } catch (error) {
-    add('ffprobe', false, `Could not inspect the delivered MP4: ${error?.message || String(error)}`, true)
-    return { valid: false, retryable: false, score: 0, checks }
+  }
+  const gate = automationSteps.evaluateMechanicalRender(probe, job, rundown, plan)
+  const checks = [...gate.checks, ...extra]
+  const fatalFailed = checks.filter((check) => check.fatal && !check.ok)
+  const passed = checks.filter((check) => check.ok).length
+  return {
+    valid: fatalFailed.length === 0,
+    // One bounded retry only for the failures a second attempt can plausibly
+    // fix (missing/tiny/unreadable output); a wrong size or length is a fix.
+    retryable: gate.retryable || checks.some((check) => check.fatal && !check.ok && ['ffprobe'].includes(check.id)),
+    score: Math.round((passed / checks.length) * 100),
+    checks,
+    failures: fatalFailed.map((check) => `${check.id}: ${check.detail}`),
+    durationSec: probe.durationSec,
+    size: probe.width ? [probe.width, probe.height] : null,
+    hasAudio: Boolean(probe.audioCodec),
   }
 }
 
@@ -1682,12 +1905,15 @@ function writeAutomationReview(job, root, rundown, rawWarnings) {
   const generationGuide = generationGuideFor(job, rundown)
   const sequenceMd = generationGuide.sequence.map(s => `- ${s.index}. ${s.from}-${s.to}s **${s.type}** — "${s.copy}"; motion: ${s.motion}`).join('\n')
   const sourcesMd = generationGuide.sources.map(s => `- ${s.id} (${s.type}): ${s.description}`).join('\n')
-  writeJson(reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, outputPath: job.outputPath || null, footageUsed: Boolean(job.footageMeta), generationGuide, renderEvaluation: job.renderEvaluation || null, warnings })
+  writeJson(reviewReportPath, { brief: job.brief, mode: job.mode, votingMode: job.votingMode, rundown, rundownLock: job.rundownLock || null, timelinePlan: job.timelinePlan || null, outputPath: job.outputPath || null, footageUsed: Boolean(job.footageMeta), generationGuide, renderEvaluation: job.renderEvaluation || null, warnings })
   const evaluation = job.renderEvaluation
   const qaMd = evaluation
     ? `## Delivered render QA\n\nScore: ${evaluation.score ?? 0}/100 · ${evaluation.valid ? 'PASS' : 'REVIEW REQUIRED'}\n\n${(evaluation.checks || []).map((check) => `- ${check.ok ? 'PASS' : 'FAIL'} ${check.id}: ${check.detail}`).join('\n') || '- No checks recorded.'}`
     : '## Delivered render QA\n\n- Not available yet.'
-  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath || 'Not rendered yet'}\n\n## Sources\n${sourcesMd}\n\n## Generation sequence\n${sequenceMd}\n\n## How the video is generated\n${generationGuide.generationSteps.map(step => `- ${step}`).join('\n')}\n\n${qaMd}\n\nWarnings:\n${warnings.length ? warnings.map(w => `- ${w}`).join('\n') : '- None'}\n`, 'utf8')
+  const planMd = job.timelinePlan
+    ? `## Edit plan\n\nLocked rundown ${job.rundownLock?.hash || 'unhashed'} (${job.rundownLock?.sceneCount ?? '?'} scenes). ${job.timelinePlan.segments.length} planned segments totalling ${job.timelinePlan.totalDurationSec}s; delivered ${job.renderedSegments ?? '?'} segments totalling ${job.renderedDurationSec ?? '?'}s.\n\n${job.timelinePlan.segments.map((segment, index) => `${index + 1}. ${segment.kind} · ${segment.durationSec}s · ${segment.source} · ${segment.purpose}`).join('\n')}`
+    : '## Edit plan\n\n- Not available.'
+  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath || 'Not rendered yet'}\n\n${planMd}\n\n## Sources\n${sourcesMd}\n\n## Generation sequence\n${sequenceMd}\n\n## How the video is generated\n${generationGuide.generationSteps.map(step => `- ${step}`).join('\n')}\n\n${qaMd}\n\nWarnings:\n${warnings.length ? warnings.map(w => `- ${w}`).join('\n') : '- None'}\n`, 'utf8')
   return reviewReportPath
 }
 async function runAutomationPipeline(jobId) {
@@ -1701,25 +1927,25 @@ async function runAutomationPipeline(jobId) {
     const root = automationRoot(job.id)
     ensureDir(root)
 
-    stepIndex = 0
-    if (automationStep(job, 0)?.status !== 'done') {
-      startAutomationStep(job.id, 0, 'Project workspace created')
+    stepIndex = AUTOMATION_STEP.workspace
+    if (automationStep(job, stepIndex)?.status !== 'done') {
+      startAutomationStep(job.id, stepIndex, 'Creating the job workspace and asset folders')
       ensureDir(path.join(root, 'assets'))
-      job = finishAutomationStep(job.id, 0, 'Project workspace ready') || job
+      job = finishAutomationStep(job.id, stepIndex, `Workspace ready at ${root}`) || job
     }
 
-    stepIndex = 1
+    stepIndex = AUTOMATION_STEP.rundown
     job = ensureAutomationActive(job.id, state)
     let rundown = job.rundown || null
     if (!rundown) {
-      startAutomationStep(job.id, 1, 'Drafting instant offline rundown')
+      startAutomationStep(job.id, stepIndex, 'Drafting the instant offline rundown')
       // Build the deterministic first pass immediately. A live polish can
       // replace it later, but neither the job nor the timeline waits on AI.
       rundown = fallbackRundownForJob(job)
       writeJson(path.join(root, 'rundown.json'), rundown)
       job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json'), warnings }) || job
       sendAutomation('automation:progress', job)
-      job = finishAutomationStep(job.id, 1, 'Instant rundown ready; live polish queued') || job
+      job = finishAutomationStep(job.id, stepIndex, 'Instant rundown ready; live polish queued') || job
       const capabilityContext = job.remotionPlan
         ? `\n\nREMOTION CAPABILITY PLAN (follow this deterministic plan): template=${job.remotionPlan.template}; font=${job.remotionPlan.font}; skills=${(job.remotionPlan.skills || []).join(', ')}; no remote assets; preview and export must match.`
         : ''
@@ -1736,22 +1962,35 @@ async function runAutomationPipeline(jobId) {
         .catch((err) => logLine('interactive-rundown-fallback', err?.message || String(err), { jobId: job.id }))
     }
 
-    stepIndex = 2
+    stepIndex = AUTOMATION_STEP.lock
     job = ensureAutomationActive(job.id, state)
-    if (automationStep(job, 2)?.status !== 'done') {
-      startAutomationStep(job.id, 2, 'Locking the generated rundown for review and render')
+    if (automationStep(job, stepIndex)?.status !== 'done') {
+      startAutomationStep(job.id, stepIndex, 'Validating the rundown against the render contract')
+      // Step 2 used to rewrite rundown.json and move on, which meant a rundown
+      // with gaps or the wrong frame size was "locked" and only failed later,
+      // inside a render. It now has to pass the contract, and the lock is a
+      // content hash the review report can verify.
+      const locked = automationSteps.lockRundown(rundown, { aspect: job.aspect, fps: job.fps })
+      if (!locked.ok) {
+        throw new Error(`The rundown did not pass the render contract, so it was not locked: ${locked.issues.join('; ')}`)
+      }
+      if (job.rundownLock && !automationSteps.lockMatches(job.rundownLock, rundown)) {
+        warnings.push('The rundown changed after it was locked; the new content was re-validated and re-locked.')
+        logLine('automation-relock', 'rundown content changed after lock', { jobId: job.id, previousHash: job.rundownLock.hash })
+      }
       writeJson(path.join(root, 'rundown.json'), rundown)
-      job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json') }) || job
+      writeJson(path.join(root, 'rundown.lock.json'), locked.lock)
+      job = patchAutomation(job.id, { rundown, rundownPath: path.join(root, 'rundown.json'), rundownLock: locked.lock, warnings }) || job
       sendAutomation('automation:progress', job)
-      job = finishAutomationStep(job.id, 2, 'Rundown locked') || job
+      job = finishAutomationStep(job.id, stepIndex, `Rundown locked · ${locked.lock.sceneCount} scenes · ${locked.lock.durationSec}s · ${locked.lock.hash}`) || job
     }
 
-    stepIndex = 3
+    stepIndex = AUTOMATION_STEP.candidates
     job = ensureAutomationActive(job.id, state)
     if (!job.winnerPath || !Array.isArray(job.candidates)) {
       startAutomationStep(
         job.id,
-        3,
+        stepIndex,
         job.votingMode === 'manual-arena'
           ? 'Generating AI review candidates before the manual Arena gate'
           : `Generating ${CANDIDATE_COUNT} AI candidates and scoring them against the render contract`,
@@ -1774,63 +2013,84 @@ async function runAutomationPipeline(jobId) {
       const gateWarnings = warnings.includes(message) ? warnings : warnings.concat(message)
       job.reviewReportPath = writeAutomationReview({ ...job, outputPath: null }, root, rundown, gateWarnings)
       patchAutomation(job.id, { reviewReportPath: job.reviewReportPath, warnings: gateWarnings })
-      waitAutomationStep(job.id, 3, message)
+      waitAutomationStep(job.id, stepIndex, message)
       return
     }
-    job = finishAutomationStep(job.id, 3, job.votingMode === 'manual-arena' ? 'Manual gate approved' : 'Winner selected from the AI candidate battle') || job
+    job = finishAutomationStep(job.id, stepIndex, job.votingMode === 'manual-arena' ? 'Manual gate approved' : 'Winner selected from the AI candidate battle') || job
     if (job.votingMode === 'manual-arena') {
       logLine('automation-gate-resumed', 'Manual Arena approval advanced to footage/timeline stages', { jobId: job.id, nextStep: 4 })
     }
 
-    stepIndex = 4
+    stepIndex = AUTOMATION_STEP.footage
     job = ensureAutomationActive(job.id, state)
     let footageMeta = job.footageMeta || null
-    if (automationStep(job, 4)?.status !== 'done') {
-      startAutomationStep(job.id, 4, job.footageFolder ? 'Analyzing footage folder' : 'No footage folder supplied; using generated creative')
+    if (automationStep(job, stepIndex)?.status !== 'done') {
+      startAutomationStep(job.id, stepIndex, job.footageFolder ? 'Analyzing the footage folder' : 'No footage folder supplied; using the generated creative')
       footageMeta = await ingestAutomationFootage(job, root, warnings, state)
       job = patchAutomation(job.id, { footageMeta, warnings }) || job
-      job = finishAutomationStep(job.id, 4, footageMeta ? 'Footage analyzed' : 'Footage skipped') || job
+      job = finishAutomationStep(job.id, stepIndex, footageMeta ? `Footage analyzed · ${Math.round(Number(footageMeta.durationSec) || 0)}s` : 'No footage supplied — the film is type-led') || job
     }
 
-    stepIndex = 5
+    stepIndex = AUTOMATION_STEP.timeline
     job = ensureAutomationActive(job.id, state)
-    if (automationStep(job, 5)?.status !== 'done') {
-      startAutomationStep(job.id, 5, 'Building timeline and edit plan')
-      writeJson(path.join(root, 'timeline-plan.json'), { winnerPath: job.winnerPath, footage: footageMeta, aspect: job.aspect, fps: job.fps, quality: job.quality })
-      job = finishAutomationStep(job.id, 5, 'Timeline built') || job
+    let timelinePlan = job.timelinePlan || null
+    if (automationStep(job, stepIndex)?.status !== 'done' || !timelinePlan) {
+      startAutomationStep(job.id, stepIndex, 'Building the edit plan from the locked rundown and the footage')
+      // Step 5 used to write a five-key stub that nothing read; the real
+      // timeline was invented later inside the render. The plan is now built,
+      // validated and written here, and the render follows it (step 6).
+      timelinePlan = automationSteps.buildTimelinePlan({
+        rundown,
+        winnerPath: job.winnerPath,
+        footage: footageMeta?.clips?.length ? footageMeta : footageMeta?.source ? { ...footageMeta, clips: [{ path: footageMeta.source, durationSec: footageMeta.durationSec }] } : null,
+        aspect: job.aspect,
+        fps: job.fps,
+        quality: job.quality,
+      })
+      const planCheck = automationSteps.validateTimelinePlan(timelinePlan)
+      if (!planCheck.ok) {
+        throw new Error(`The timeline plan is not renderable, so nothing was rendered: ${planCheck.issues.join('; ')}`)
+      }
+      const artifacts = automationSteps.timelineArtifacts(timelinePlan)
+      writeJson(path.join(root, 'timeline-plan.json'), timelinePlan)
+      writeJson(path.join(root, 'timeline.json'), artifacts.timeline)
+      writeJson(path.join(root, 'editing-plan.json'), artifacts.editingPlan)
+      job = patchAutomation(job.id, { timelinePlan, timelinePath: path.join(root, 'timeline.json'), editingPlanPath: path.join(root, 'editing-plan.json') }) || job
+      sendAutomation('automation:progress', job)
+      job = finishAutomationStep(job.id, stepIndex, `Edit plan ready · ${timelinePlan.segments.length} segment${timelinePlan.segments.length === 1 ? '' : 's'} · ${timelinePlan.totalDurationSec}s · ${timelinePlan.captions.windows.length} caption windows`) || job
     }
 
-    stepIndex = 6
+    stepIndex = AUTOMATION_STEP.render
     job = ensureAutomationActive(job.id, state)
     if (!job.outputPath) {
-      startAutomationStep(job.id, 6, 'Rendering MP4')
-      const outputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state)
+      startAutomationStep(job.id, stepIndex, `Rendering ${timelinePlan.segments.length} planned segment${timelinePlan.segments.length === 1 ? '' : 's'} to MP4`)
+      const outputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state, timelinePlan)
       job = patchAutomation(job.id, { outputPath, warnings }) || job
       sendAutomation('automation:progress', job)
-      job = finishAutomationStep(job.id, 6, 'MP4 rendered') || job
+      job = finishAutomationStep(job.id, stepIndex, `MP4 rendered · ${job.renderedSegments || timelinePlan.segments.length} segments · ${job.renderedDurationSec || timelinePlan.totalDurationSec}s`) || job
     } else {
-      job = finishAutomationStep(job.id, 6, 'MP4 already rendered') || job
+      job = finishAutomationStep(job.id, stepIndex, 'MP4 already rendered') || job
     }
 
-    stepIndex = 7
+    stepIndex = AUTOMATION_STEP.review
     job = ensureAutomationActive(job.id, state)
-    if (automationStep(job, 7)?.status !== 'done') {
-      startAutomationStep(job.id, 7, 'Evaluating the delivered MP4 and checking whether one bounded retry is needed')
+    if (automationStep(job, stepIndex)?.status !== 'done') {
+      startAutomationStep(job.id, stepIndex, 'Probing the delivered MP4 against the mechanical gate')
       let renderEvaluation = job.renderEvaluation || null
       if (!renderEvaluation) {
-        renderEvaluation = await evaluateAutomationRender(job.outputPath, job, rundown)
+        renderEvaluation = await evaluateAutomationRender(job.outputPath, job, rundown, timelinePlan)
         if (!renderEvaluation.valid && renderEvaluation.retryable) {
-          warnings.push('The delivered MP4 failed a mechanical render gate; Cupric performed one bounded re-render before reporting the result.')
-          const retryOutputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state)
+          warnings.push(`The delivered MP4 failed the mechanical render gate (${renderEvaluation.failures.join('; ')}); Cupric performed one bounded re-render before reporting the result.`)
+          const retryOutputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state, timelinePlan)
           job = patchAutomation(job.id, { outputPath: retryOutputPath }) || job
-          renderEvaluation = await evaluateAutomationRender(retryOutputPath, job, rundown)
+          renderEvaluation = await evaluateAutomationRender(retryOutputPath, job, rundown, timelinePlan)
         }
         if (!renderEvaluation.valid) warnings.push('Delivered MP4 needs review: the mechanical render gate did not pass all required checks. No quality pass was fabricated.')
         job = patchAutomation(job.id, { renderEvaluation, warnings }) || job
       }
       const reviewReportPath = writeAutomationReview(job, root, rundown, warnings)
       job = patchAutomation(job.id, { reviewReportPath, warnings }) || job
-      job = finishAutomationStep(job.id, 7, renderEvaluation.valid ? 'Render QA passed; review report ready' : 'Review report ready with QA warnings') || job
+      job = finishAutomationStep(job.id, stepIndex, renderEvaluation.valid ? `Render QA passed (${renderEvaluation.score ?? 0}/100); review report ready` : `Review report ready with QA warnings (${renderEvaluation.score ?? 0}/100)`) || job
     }
 
     const done = patchAutomation(job.id, { status: 'done', currentStepId: null, waitingMessage: null, warnings })
@@ -2438,7 +2698,7 @@ const brainCooldowns = freeBrain.createCooldowns()
 let brainLocalsCache = { at: 0, locals: [] }
 
 function routeKey(route) {
-  if (route.provider === 'keyless') return `${route.brain.chatUrl}|${route.brain.model}`
+  if (route.provider === 'provider') return `${route.config.provider}|${route.config.baseUrl}|${route.config.model}`
   if (route.provider === 'gemini') return `gemini|${geminiModel()}`
   const cfg = { ...aiSettings(), ...(route.override || {}) }
   return `${normalizedBaseUrl(cfg.openCodeBaseUrl)}|${cfg.openCodeModel}`
@@ -2457,11 +2717,17 @@ async function brainLocals() {
 }
 
 /**
- * JOB 1 route order. draft: local → keyless → user keys; strong (lock, repair,
- * agent-ops): user keys (best first) → local → keyless. First working wins;
- * the deterministic template stays the callers' final fallback.
+ * Route order. The provider the user configured comes first (Phase 1.1); then,
+ * by task: draft prefers a local server before a paid key, strong work (lock,
+ * repair, agent-ops) prefers the configured key before a local server. First
+ * working route wins; the deterministic planner stays the caller's final
+ * fallback, and no third-party service is ever used implicitly.
  */
 async function brainRoutes(task = 'draft') {
+  const provider = configuredProvider()
+  const primary = !provider.error && provider.source !== 'legacy-opencode'
+    ? [{ provider: 'provider', label: provider.label, config: provider }]
+    : []
   const existing = await aiRoutes(task).catch(() => [])
   const isLocalRoute = (r) => r.provider === 'opencode' && isLocalModelBase(r.override?.openCodeBaseUrl || aiSettings().openCodeBaseUrl)
   const locals = await brainLocals()
@@ -2470,16 +2736,14 @@ async function brainRoutes(task = 'draft') {
     ...existing.filter(isLocalRoute),
   ]
   const userRoutes = existing.filter((r) => !isLocalRoute(r))
-  const keyless = freeBrain.planRoutes({ task, keyless: freeBrain.KEYLESS_ENDPOINTS }).filter((r) => r.kind === 'keyless')
-    .map((brain) => ({ provider: 'keyless', label: brain.label, brain }))
   const strong = task !== 'draft' && task !== 'classify'
-  const ordered = strong ? [...userRoutes, ...localRoutes, ...keyless] : [...localRoutes, ...keyless, ...userRoutes]
+  const ordered = strong ? [...primary, ...userRoutes, ...localRoutes] : [...primary, ...localRoutes, ...userRoutes]
   const seen = new Set()
   return ordered.filter((r) => { const k = routeKey(r); if (seen.has(k) || brainCooldowns.cooling(k)) return false; seen.add(k); return true })
 }
 
 function noteRetiredModel(route) {
-  const model = route.provider === 'keyless' ? route.brain.model : route.provider === 'gemini' ? geminiModel() : (route.override?.openCodeModel || aiSettings().openCodeModel)
+  const model = route.provider === 'provider' ? route.config.model : route.provider === 'gemini' ? geminiModel() : (route.override?.openCodeModel || aiSettings().openCodeModel)
   brainCooldowns.set(routeKey(route), 24 * 3600_000, 'retired')
   const cat = readModelCatalogue()
   writeModelCatalogue(freeBrain.retireModel(cat, null, model))
@@ -2493,13 +2757,9 @@ function modelCatalogueFile() { return userDataPath('ai-cache', 'models.json') }
 function readModelCatalogue() { return readJson(modelCatalogueFile(), { fetchedAt: 0, models: [], knownIds: [] }) }
 function writeModelCatalogue(cat) { try { writeJson(modelCatalogueFile(), cat) } catch {} }
 
-/** Sources: keyless defaults + locals + OpenCode imports; keyed providers only when a key exists. */
+/** Sources: local servers + OpenCode imports + keyed providers the user configured. */
 async function modelSources() {
-  const sources = freeBrain.KEYLESS_ENDPOINTS.map((k) => ({
-    id: k.id, kind: 'keyless', url: k.modelsUrl,
-    parse: (data) => (Array.isArray(data) ? data : data?.data || [])
-      .filter((m) => k.id !== 'pollinations' || !m.tier || m.tier === 'anonymous'),
-  }))
+  const sources = []
   for (const l of await brainLocals()) sources.push({ id: l.kind, kind: 'local', url: `${l.baseUrl}/models` })
   const settings = readSettings()
   const orKey = String(process.env.OPENROUTER_API_KEY || (/openrouter\.ai/i.test(settings.openCodeBaseUrl || '') ? settings.openCodeApiKey : '') || '').trim()
@@ -2567,8 +2827,18 @@ async function completeWithFallback({ system, user, json = false, temperature = 
   if (task === 'agent-ops') json = true
   const routes = await brainRoutes(task)
   if (!routes.length) {
-    const error = new Error('No live AI provider is configured and no local model server (Ollama, LM Studio, OpenCode) is running')
-    error.code = 'NO_PROVIDER'
+    // Say which provider is missing and what fixes it. A chosen-but-unkeyed
+    // provider reports that specifically instead of a generic "nothing is
+    // configured": the user already made a choice and needs to know it is
+    // incomplete, not that nothing exists.
+    const configured = configuredProvider()
+    const error = new Error(
+      configured.error
+        ? `${configured.error.message}${configured.fix ? ` ${configured.fix}` : ''}`
+        : 'No live AI provider is configured and no local model server (Ollama, LM Studio, llama.cpp, OpenCode Desktop) is running. Open Settings → AI to add a key or start a local server.',
+    )
+    error.code = configured.error ? configured.error.code : 'NO_PROVIDER'
+    error.fix = configured.fix || null
     throw error
   }
   const deadline = Date.now() + deadlineMs
@@ -2579,20 +2849,25 @@ async function completeWithFallback({ system, user, json = false, temperature = 
     try {
       const ask = async (extraInstruction = '') => {
         const userText = extraInstruction ? `${user}\n\n${extraInstruction}` : user
-        if (route.provider === 'keyless') {
-          // Built-in keyless free endpoint: spacing per endpoint, low temp, fixed seed.
-          const key = `${route.brain.chatUrl}|${route.brain.model}`
-          // Queue behind other requests to the same free endpoint (≈1 per 15 s)
-          // instead of bursting into its rate limit.
-          const wait = brainCooldowns.reserve(key, route.brain.minIntervalMs)
-          if (wait > deadline - Date.now() - 2500) throw new Error('429 free brain queue is longer than this request can wait')
-          if (wait) await delay(wait)
-          const text = await freeBrain.chatOnce(route.brain, [
-            { role: 'system', content: system },
-            ...history.map((h) => ({ role: h.role === 'ai' ? 'assistant' : 'user', content: h.text })),
-            { role: 'user', content: userText },
-          ], { json, temperature: Math.min(temperature, 0.3), timeoutMs: Math.max(2000, deadline - Date.now()) })
-          return { text, model: route.brain.model }
+        if (route.provider === 'provider') {
+          // Phase 1.1: the user's chosen provider, through the provider layer.
+          // A failure arrives typed (code + fix) and is thrown as-is so the UI
+          // can show the real reason instead of a joined string of guesses.
+          const result = await aiProviders.generate(route.config, {
+            system,
+            messages: [...history.map((h) => ({ role: h.role === 'ai' ? 'assistant' : 'user', content: h.text })), { role: 'user', content: userText }],
+            json,
+            temperature,
+            images,
+            timeoutMs: Math.max(2000, deadline - Date.now()),
+          }, { backoffMs: [] })
+          if (!result.ok) {
+            const error = new Error(result.error.message)
+            error.code = result.error.code
+            error.aiAction = result.error.action
+            throw error
+          }
+          return { text: result.text, model: result.model }
         }
         if (route.provider === 'gemini') {
           const historyText = history.length ? `Conversation so far:\n${history.map((h) => `${h.role === 'ai' ? 'Assistant' : 'User'}: ${h.text}`).join('\n')}\n\n` : ''
@@ -2618,13 +2893,18 @@ async function completeWithFallback({ system, user, json = false, temperature = 
       // limits) get the same route again after 1 s, then 4 s, while the
       // deadline allows. A quota exhaustion moves straight to the next route
       // (retrying it only burns the remaining quota and the user's time).
+      //
+      // Retries have exactly one owner per call path: a 'provider' route is
+      // already retried inside the provider layer (which then reports the
+      // attempt count), so re-backing-off here would multiply requests. Every
+      // other route has no retry policy of its own and is retried here.
       const askWithBackoff = async (extra = '') => {
+        const backoff = route.provider === 'provider' ? [] : AI_BACKOFF_MS
         for (let attempt = 0; ; attempt += 1) {
           try {
             return await ask(extra)
           } catch (err) {
-            const wait = AI_BACKOFF_MS[attempt]
-            if (route.provider === 'keyless' && retryableAiError(err)) sendAiNotice(freeBrain.BUSY_NOTICE, 'inline')
+            const wait = backoff[attempt]
             if (wait === undefined || !retryableAiError(err) || deadline - Date.now() < wait + 2500) throw err
             logLine('ai-backoff', `${route.label}: retry in ${wait}ms`, { error: (err?.message || String(err)).slice(0, 200) })
             await delay(wait)
@@ -2658,7 +2938,6 @@ async function completeWithFallback({ system, user, json = false, temperature = 
         const cfg = aiSettings()
         aiCooldowns.set(`opencode:${cfg.openCodeBaseUrl}|${cfg.openCodeModel}`, { until: Date.now() + quotaCooldownMs(err), reason: 'quota' })
       }
-      if (route.provider === 'keyless' && /\((401|402|403|410)\)/.test(err?.message || '')) brainCooldowns.set(routeKey(route), 24 * 3600_000, 'keyless-revoked')
       // Dead model (404 / model_not_found): grey it out, fall through silently.
       if (/\b404\b|model_not_found|model not found|does not exist/i.test(err?.message || '')) noteRetiredModel(route)
     }
@@ -2902,22 +3181,32 @@ const STUDIO_PLAN_DEADLINE_MS = 25_000
 async function liveAiChat(text, ctx, extra = {}) {
   const images = Array.isArray(extra.images) ? extra.images.filter((image) => image && typeof image.data === 'string' && image.data.length < 12_000_000).slice(0, 4) : []
   const history = Array.isArray(extra.history) ? extra.history.slice(-8).map((h) => ({ role: h?.role === 'ai' ? 'ai' : 'user', text: String(h?.text || '').slice(0, 4000) })) : []
-  const reply = await completeWithFallback({
-    system: "You are Cupric AI's desktop creative copilot: a senior video editor and motion designer. Be concise, practical and specific. Help with video creation, keyframe animation, typography, transitions, rendering, resources, prompts and edits. When images are attached, look at them carefully and refer to what is actually in them.",
-    user: `Context: ${JSON.stringify(ctx || {})}\nUser: ${text}`,
-    images,
-    history,
-    temperature: 0.6,
-    deadlineMs: 60_000,
-  })
-  return reply.text
+  try {
+    const reply = await completeWithFallback({
+      system: "You are Cupric AI's desktop creative copilot: a senior video editor and motion designer. Be concise, practical and specific. Help with video creation, keyframe animation, typography, transitions, rendering, resources, prompts and edits. When images are attached, look at them carefully and refer to what is actually in them.",
+      user: `Context: ${JSON.stringify(ctx || {})}\nUser: ${text}`,
+      images,
+      history,
+      temperature: 0.6,
+      deadlineMs: 60_000,
+    })
+    return reply.text
+  } catch (err) {
+    // IPC flattens a thrown error to its message, so the typed code and the fix
+    // travel inside the sentence the renderer will show.
+    const message = err?.message || String(err)
+    const error = new Error(err?.fix ? `${message} ${err.fix}` : message)
+    error.code = err?.code || ''
+    throw error
+  }
 }
 
 async function handleGeminiAsk(payload) {
   try {
     const prompt = String(payload?.prompt || '').trim()
   const context = payload?.rundownContext || {}
-  const providerLabel = aiSettings().provider === 'opencode' ? 'your OpenCode model' : aiSettings().provider === 'gemini' ? 'Gemini' : 'the free built-in brain'
+  const configured = configuredProvider()
+  const providerLabel = configured.error ? 'your chosen provider' : configured.label
   const cacheKey = rundownCacheKey(prompt, context)
   const cached = rundownCache.get(cacheKey) || readRundownCache()[cacheKey]?.rundown
   if (cached) {
@@ -2930,9 +3219,9 @@ async function handleGeminiAsk(payload) {
   const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
   const instant = fallbackRundownForJob({ brief: prompt, aspect, fps: context.fps === 60 ? 60 : 30 })
   const requestId = String(payload?.requestId || uid('rundown'))
-  // Zero setup: the keyless free brain is always a route, so polish unless the
-  // user explicitly chose the offline template.
-  const shouldPolish = configuredAiMode() !== 'template'
+  // Polish only when a provider can actually answer: the honest 'none' state and
+  // the explicit offline template skip the queue instead of pretending to try.
+  const shouldPolish = configuredAiMode() !== 'template' && aiSettings().provider !== 'none'
   if (shouldPolish) {
     rundownQueue.push({ requestId, prompt, history: payload?.history || [], context, cacheKey, projectId: payload?.projectId || null })
     void pumpRundownQueue()
@@ -2944,7 +3233,7 @@ async function handleGeminiAsk(payload) {
     requestId,
     text: shouldPolish
       ? `Cupric AI drafted this rundown instantly. It's asking ${providerLabel} to refine it in the background, and the timeline is usable now.`
-      : 'Cupric AI drafted this rundown offline. The timeline is fully editable now. Connecting Gemini, Zen or a local model lets Cupric AI refine it further.',
+      : 'Cupric AI drafted this rundown offline. The timeline is fully editable now. Add an OpenAI, Anthropic or Gemini key in Settings (or start Ollama / LM Studio) to refine it with a live model.',
     rundownPatch: instant,
     }
   } catch (err) {
@@ -2952,7 +3241,7 @@ async function handleGeminiAsk(payload) {
     const context = payload?.rundownContext || {}
     const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
     const rundownPatch = fallbackRundownForJob({ brief: String(payload?.prompt || ''), aspect, fps: context.fps === 60 ? 60 : 30 })
-    logLine('interactive-rundown-fallback', fallbackReason, { provider: aiSettings().provider })
+    logLine('interactive-rundown-fallback', fallbackReason, { provider: configuredProvider().kind })
     return { source: 'local', fallbackReason: 'Live AI was unavailable; the offline template is ready.', text: 'Live AI was unavailable, so Cupric built an editable offline template instead.', rundownPatch }
   }
 }
@@ -3309,6 +3598,120 @@ function runProcessBuffer(jobState, bin, args, options = {}) {
   })
 }
 
+/**
+ * `ffmpeg -encoders`, read once per app run.
+ *
+ * Cached because the answer cannot change while the app is open, and spawning
+ * ffmpeg for every export would add a second to each one. A failure to read the
+ * list is reported and treated as "unknown" rather than as "no encoder": the
+ * encode itself is the authority.
+ */
+let encoderListCache = null
+async function availableEncoders(state = null) {
+  if (encoderListCache) return encoderListCache
+  const status = mediaToolStatus()
+  if (!status.ffmpeg) return null
+  try {
+    const out = await runProcess(state, status.ffmpeg, ['-hide_banner', '-encoders'])
+    encoderListCache = renderPreflight.parseEncoders(`${out.stdout || ''}${out.stderr || ''}`)
+    return encoderListCache
+  } catch (err) {
+    logLine('render-encoders', 'the FFmpeg encoder list could not be read', { error: err?.message || String(err) })
+    return null
+  }
+}
+
+/**
+ * Read the finished file back before anyone is told the export succeeded.
+ *
+ * A "Render complete" message over a file that will not play is the worst thing
+ * this app can produce, so the probe is part of the export, not an optional
+ * extra: `verifyExport` names what is wrong (no picture, no sound, wrong length,
+ * wrong size, unreadable) and the caller turns that into the user-facing error.
+ */
+async function verifyRenderOutput({ outputPath, expectedDurationSec = null, size = null, needsVideo = true, needsAudio = false, toleranceSec = 0.75 }) {
+  let sizeBytes = null
+  try {
+    sizeBytes = fs.statSync(outputPath).size
+  } catch (err) {
+    logLine('render-verify', 'the finished file could not be measured', { error: err?.message || String(err), outputPath })
+  }
+  let probe = null
+  if (sizeBytes === null || sizeBytes > 0) {
+    try {
+      probe = await probeMedia(outputPath)
+    } catch (err) {
+      logLine('render-verify', 'ffprobe could not read the finished file', { error: err?.message || String(err), outputPath })
+    }
+  }
+  const verdict = renderPreflight.verifyExport(probe, {
+    durationSec: expectedDurationSec,
+    toleranceSec,
+    width: Array.isArray(size) ? size[0] : null,
+    height: Array.isArray(size) ? size[1] : null,
+    needsVideo,
+    needsAudio,
+    sizeBytes,
+  })
+  logLine('render-verify', verdict.ok ? 'the finished file passed verification' : 'the finished file failed verification', {
+    outputPath,
+    checks: verdict.checks,
+    ...(verdict.ok ? {} : { failures: verdict.failures.map((f) => f.code) }),
+  })
+  return verdict
+}
+
+/** Everything knowable before the first frame is encoded. */
+async function runExportPreflight({ outputPath, dir, durationSec, fps, size, quality = 'balanced', container = 'mp4', codec = 'h264', state = null }) {
+  const status = mediaToolStatus()
+  const preflight = renderPreflight.buildPreflight({
+    outputPath,
+    dir,
+    durationSec,
+    fps,
+    size,
+    quality,
+    container,
+    codec,
+    ffmpegPath: status.ffmpeg,
+    ffprobePath: status.ffprobe,
+    encoders: await availableEncoders(state),
+    statfs: (target) => fs.statfsSync(target),
+    platform: process.platform,
+  })
+  logLine('render-preflight', preflight.ok ? 'passed' : 'refused the export', {
+    outputPath,
+    checks: preflight.checks,
+    estimate: preflight.estimate?.note,
+    ...(preflight.ok ? {} : { failures: preflight.failures.map((f) => f.code) }),
+  })
+  if (!preflight.ok) throw renderPreflight.failureError(preflight.failures)
+  return preflight
+}
+
+/**
+ * Whether the timeline's sources really carry audio.
+ *
+ * Measured, not assumed: each distinct source file is probed (bounded, so a
+ * 40-clip timeline does not add 40 probes) and the answer decides whether a
+ * silent delivered file is a failure or simply what the timeline was.
+ */
+async function sourcesHaveAudio(sources) {
+  const answers = new Map()
+  for (const source of (Array.isArray(sources) ? sources : []).slice(0, 12)) {
+    const mediaPath = mediaPathFromSource(source)
+    if (!mediaPath || answers.has(mediaPath)) continue
+    try {
+      const probe = await probeMedia(mediaPath)
+      answers.set(mediaPath, probe.hasAudio || probe.streams.some((stream) => stream.codec_type === 'audio'))
+    } catch (err) {
+      logLine('render-preflight', 'a source could not be probed for its audio track', { error: err?.message || String(err), mediaPath })
+    }
+  }
+  const known = [...answers.values()]
+  return known.length > 0 && known.some(Boolean)
+}
+
 async function probeMedia(filePath) {
   assertMediaTools()
   const result = await runProcess(null, ffprobePath, ['-v', 'error', '-print_format', 'json', '-show_streams', '-show_format', filePath])
@@ -3425,6 +3828,29 @@ async function executeStudioMp4Job(state, payload) {
 
   await fsp.writeFile(source, Buffer.from(bytes))
 
+  // Measure the recording that arrived, so the preflight can size the disk need
+  // and the finished MP4 can be checked against the real length and the real
+  // track list instead of against assumptions.
+  let recordingProbe = null
+  try {
+    recordingProbe = await probeMedia(source)
+  } catch (err) {
+    logLine('studio-export', 'the uploaded recording could not be probed', { error: err?.message || String(err) })
+  }
+  const videoStream = recordingProbe?.streams?.find((stream) => stream.codec_type === 'video')
+  const size = videoStream?.width && videoStream?.height ? [Number(videoStream.width), Number(videoStream.height)] : null
+  await runExportPreflight({
+    outputPath,
+    dir: outDir,
+    durationSec: recordingProbe?.durationSec || 30,
+    fps: Number(payload?.fps) > 0 ? Math.round(Number(payload.fps)) : 30,
+    size,
+    quality: 'final',
+    container: 'mp4',
+    codec: payload?.codec === 'av1' ? 'av1' : 'h264',
+    state,
+  })
+
   const fps = Number(payload?.fps) > 0 ? Math.round(Number(payload.fps)) : 30
   const crf = String(Math.max(14, Math.min(32, Number(payload?.crf) || 18)))
   // Loudness is a decision with a stated reason, taken from a one-pass measurement of the
@@ -3434,24 +3860,34 @@ async function executeStudioMp4Job(state, payload) {
   // The report says which one ran; a line that claims -14 LUFS after a fallback is a lie the
   // file cannot be checked against.
   const loudness = await planExportLoudness(state, source, payload?.loudnessTarget)
+
+  /**
+   * The export is a real-time capture, so it can run past the end of the edit —
+   * and it must not, because a file that is 30 % longer than the timeline is
+   * something the user can see. `studio-trim.cjs` owns that decision (pure, and
+   * exercised against the real FFmpeg by scripts/check-studio-trim.mjs); the
+   * expected length handed to verification is the TIMELINE's, never the
+   * recording's, so a short recording is reported instead of announced.
+   */
+  const trim = studioTrim.plan({
+    docDurationSec: Number(payload?.durationSec) > 0 ? Number(payload.durationSec) : null,
+    recordingDurationSec: recordingProbe?.durationSec ?? null,
+  })
+  logLine('studio-export', 'how the finished file will be cut', {
+    ...trim,
+    recordingDurationSec: recordingProbe?.durationSec ?? null,
+    timelineDurationSec: Number(payload?.durationSec) > 0 ? Number(payload.durationSec) : null,
+  })
+
   const buildArgs = (videoArgs) => [
-    '-y',
-    '-hide_banner',
-    '-v', 'error',
-    '-i', source,
-    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos,setsar=1',
-    ...videoArgs,
-    '-r', String(fps),
-    // Cut to the timeline: a late recorder stop on a slow machine leaves up to ~1 s extra.
-    ...assembly.trimToTimelineArgs(payload),
-    '-movflags', '+faststart',
-    ...(loudness.filter ? ['-af', loudness.filter] : []),
-    // 48 kHz on every path: loudnorm works at 192 kHz and would otherwise hand the encoder
-    // 96 kHz, so an export with a target and one without would differ in rate.
-    '-c:a', 'aac',
-    '-ar', '48000',
-    '-b:a', '192k',
-    outputPath,
+    ...studioTrim.mp4Args({
+      source,
+      outputPath,
+      fps,
+      targetSec: trim.targetSec,
+      videoArgs,
+      audioArgs: loudness.filter ? ['-af', loudness.filter] : [],
+    }),
   ]
 
   try {
@@ -3468,13 +3904,35 @@ async function executeStudioMp4Job(state, payload) {
 
   if (!fs.existsSync(outputPath)) {
     await fsp.rm(source, { force: true })
-    throw new Error('FFmpeg reported success but produced no file.')
+    throw renderPreflight.failureError([
+      renderPreflight.makeFailure(
+        renderPreflight.RENDER_FAILURES.NO_OUTPUT_FILE,
+        'FFmpeg reported success but produced no file.',
+        'Export again; if it repeats, check that the drive has free space and that the recording is not empty.',
+      ),
+    ])
   }
 
+  // The MP4 is read back with ffprobe before the UI is told it is ready: length
+  // against the recording, picture track present, sound present when the Studio
+  // mix had any. A broken file is kept on disk and named, never announced.
+  const verdict = await verifyRenderOutput({
+    outputPath,
+    // The timeline, not the take: that is what the user edited and what the
+    // toast must agree with.
+    expectedDurationSec: trim.expectedDurationSec,
+    toleranceSec: trim.toleranceSec,
+    size: null,
+    needsVideo: true,
+    // Measured from the recording that was just converted: if the captured WebM
+    // carries sound, the MP4 must as well.
+    needsAudio: Boolean(recordingProbe?.streams?.some((stream) => stream.codec_type === 'audio')),
+  })
   await fsp.rm(source, { force: true })
-  const { size } = await fsp.stat(outputPath)
+  if (!verdict.ok) throw renderPreflight.failureError(verdict.failures)
+  const { size: outputBytes } = await fsp.stat(outputPath)
   if (payload?.reveal !== false) shell.showItemInFolder(outputPath)
-  return { outputPath, bytes: size, loudness: { mode: loudness.mode, note: loudness.note, why: loudness.why } }
+  return { outputPath, bytes: outputBytes, loudness: { mode: loudness.mode, note: loudness.note, why: loudness.why } }
 }
 
 /**
@@ -3498,6 +3956,41 @@ async function planExportLoudness(state, source, requestedLufs) {
     return numbers ? assembly.loudnessPlan({ target, measured: numbers }) : assembly.silencePlan(target)
   } catch (err) {
     return assembly.loudnessPlan({ target, measureError: err?.message || String(err) })
+  }
+}
+
+/**
+ * How long an offscreen Studio recording may go completely silent before the job
+ * is failed instead of left hanging.
+ *
+ * The renderer reports progress on every frame it draws, so a *working* export
+ * resets this constantly — even a slow one on a software-rendered runner. What
+ * it catches is the opposite: a renderer that stopped compositing (or died), for
+ * which there is no error, no file and no toast, only a queue entry that waits
+ * forever. That is what the Windows E2E saw twice.
+ */
+const RECORDING_SILENCE_MS = 45_000
+
+function armRecordingWatchdog(state, why) {
+  clearRecordingWatchdog(state)
+  state.recordingStartedAt = state.recordingStartedAt || Date.now()
+  state.recordingWatchdog = setTimeout(() => {
+    const silentFor = Date.now() - (state.lastProgressAt || state.recordingStartedAt)
+    const message = [
+      `The offscreen Studio renderer stopped reporting (${why}): no progress for ${Math.round(silentFor / 1000)}s.`,
+      `  last progress ${state.lastProgressPct === undefined ? 'never' : `${Math.round(state.lastProgressPct)}%`},`,
+      `  job has been running ${Math.round((Date.now() - state.recordingStartedAt) / 1000)}s.`,
+      '  The export was aborted rather than left hanging. Nothing was written.',
+    ].join('\n')
+    logLine('studio-recording-stalled', message, { jobId: state.id })
+    state.recordingReject?.(new Error(message))
+  }, RECORDING_SILENCE_MS)
+}
+
+function clearRecordingWatchdog(state) {
+  if (state?.recordingWatchdog) {
+    clearTimeout(state.recordingWatchdog)
+    state.recordingWatchdog = null
   }
 }
 
@@ -3525,6 +4018,9 @@ async function executeStudioBackgroundJob(state, payload) {
       fileName: payload.fileName,
       scale: Number(payload.scale) > 0 ? Number(payload.scale) : 1,
     })
+    // Armed after the request is sent, cleared the moment a recording arrives:
+    // from here on, silence means something is wrong.
+    armRecordingWatchdog(state, 'the recorder never reported a frame')
     const submitted = await recording
     await ensureNotCancelled(state)
     const outputPayload = { ...payload, ...(submitted || {}) }
@@ -3532,6 +4028,7 @@ async function executeStudioBackgroundJob(state, payload) {
       ? await executeStudioWebmJob(state, outputPayload)
       : await executeStudioMp4Job(state, outputPayload)
   } finally {
+    clearRecordingWatchdog(state)
     state.recordingResolve = null
     state.recordingReject = null
     state.captureWindow = null
@@ -3546,6 +4043,9 @@ ipcMain.handle('studio:submitRecording', (event, payload) => {
   const state = renderJobs.get(id)
   if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) throw new Error('That Studio export is no longer accepting a recording.')
   if (!payload?.bytes || !payload.bytes.byteLength) throw new Error('The background Studio recorder returned an empty file.')
+  // The recording exists: the silence timer has nothing left to measure, and the
+  // encode that follows reports its own progress.
+  clearRecordingWatchdog(state)
   state.recordingResolve?.({ bytes: payload.bytes, ...(Number(payload.durationSec) > 0 ? { durationSec: Number(payload.durationSec) } : {}) })
   return { accepted: true }
 })
@@ -3554,6 +4054,7 @@ ipcMain.handle('studio:recordingError', (event, payload) => {
   const id = String(payload?.jobId || '')
   const state = renderJobs.get(id)
   if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) return false
+  clearRecordingWatchdog(state)
   state.recordingReject?.(new Error(String(payload?.error || 'Background Studio recording failed.')))
   return true
 })
@@ -3562,7 +4063,13 @@ ipcMain.handle('studio:progress', (event, payload) => {
   const id = String(payload?.jobId || '')
   const state = renderJobs.get(id)
   if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) return false
-  sendRenderEvent(state.sender, 'render:progress', { jobId: id, pct: Math.max(0, Math.min(100, Number(payload?.pct) || 0)) })
+  const pct = Math.max(0, Math.min(100, Number(payload?.pct) || 0))
+  // A frame was drawn: the renderer is alive. Reset the silence timer rather than
+  // measuring total duration — a long recording on a slow machine is not a stall.
+  state.lastProgressAt = Date.now()
+  state.lastProgressPct = pct
+  if (state.recordingWatchdog) armRecordingWatchdog(state, 'the recorder stopped reporting frames')
+  sendRenderEvent(state.sender, 'render:progress', { jobId: id, pct })
   return true
 })
 
@@ -3634,6 +4141,88 @@ function piperDirs() {
   ].filter(Boolean)
 }
 ipcMain.handle('voice:tts', async (_event, payload) => tts.synthesize(payload, process.platform, { piperDirs: piperDirs() }))
+
+/**
+ * What each engine needs, and whether it is already here. Read-only: the UI
+ * shows this so a person can see why voiceover is unavailable before pressing
+ * anything. Paths are real, resolved the same way the engines themselves are.
+ */
+ipcMain.handle('voice:engines', async () => {
+  const piper = tts.piperSetup({ platform: process.platform, dirs: piperDirs() })
+  const whisper = whisperSetup()
+  return {
+    platform: process.platform,
+    supported: voiceInstall.supported(process.platform),
+    piperDir: userDataPath('piper'),
+    whisperDir: userDataPath('whisper'),
+    engines: [
+      {
+        id: 'piper',
+        label: 'Piper voice engine',
+        detail: piper ? `Found at ${path.dirname(piper.bin)}` : 'Not installed — offline voiceover needs it.',
+        installed: Boolean(piper),
+        sizeHint: 'about 22 MB',
+      },
+      {
+        id: 'piper-model-en',
+        label: 'English voice (lessac, medium)',
+        detail: piper?.models?.en ? 'Present.' : 'Not installed — Piper has no voice to speak with until this is here.',
+        installed: Boolean(piper?.models?.en),
+        sizeHint: 'about 63 MB',
+      },
+      {
+        id: 'whisper',
+        label: 'Whisper speech recognition',
+        detail: whisper ? `Model ${path.basename(whisper.model)}` : 'Not installed — transcription is unavailable until this is here.',
+        installed: Boolean(whisper),
+        sizeHint: 'about 57 MB + the engine',
+      },
+      {
+        id: 'voice-hi',
+        label: 'Windows Hindi voice',
+        detail: 'Windows installs system voices itself; Cupric opens the right Settings page instead of pretending to install one.',
+        installed: false,
+        manual: true,
+      },
+    ],
+  }
+})
+
+/**
+ * Install one engine, streaming real progress to whichever window asked.
+ *
+ * Cancellation is per-window: closing the window or asking again stops the
+ * transfer rather than leaving it running with nowhere to report to.
+ */
+const voiceInstalls = new Map()
+ipcMain.handle('voice:install', async (event, payload) => {
+  const id = String(payload?.id ?? '')
+  if (id === 'whisper') {
+    // whisper.cpp is a plain download into <userData>/whisper with a model in
+    // the same folder; the ids and destinations are the same ones
+    // scripts/fetch-whisper.mjs uses for the packaged build.
+    return { ok: false, id, stage: 'manual', error: 'Whisper is fetched with the packaged build (npm run whisper:fetch) or by dropping whisper-cli.exe and a ggml model into the whisper folder. An in-app fetch for it is not written yet — the button explains the folder instead of pretending to download.' }
+  }
+  const sender = event.sender
+  const controller = new AbortController()
+  voiceInstalls.set(sender.id, controller)
+  sender.once('destroyed', () => controller.abort())
+  try {
+    const result = await voiceInstall.install(id, {
+      dir: id === 'piper' || id === 'piper-model-en' ? userDataPath('piper') : userDataPath('whisper'),
+      platform: process.platform,
+      signal: controller.signal,
+      onProgress: (progress) => {
+        if (!sender.isDestroyed()) sender.send('voice:install:progress', progress)
+      },
+    })
+    if (result.ok) logLine('voice', `installed ${id} into ${result.dir}`)
+    else logLine('voice', `install ${id} failed at ${result.stage}: ${result.error}`)
+    return { id, ...result }
+  } finally {
+    voiceInstalls.delete(sender.id)
+  }
+})
 
 ipcMain.handle('voice:status', async () => {
   const whisper = whisperSetup()
@@ -3735,6 +4324,49 @@ ipcMain.handle('dialog:pickFootage', async () => {
     filters: [{ name: 'Video', extensions: ['mp4', 'mov', 'm4v', 'webm', 'mkv', 'avi'] }],
   })
   return result.canceled ? null : result.filePaths[0]
+})
+
+/**
+ * Adopt a file the user picked into Cupric's own project data.
+ *
+ * Why this exists: the Studio used to keep the *original* path of an imported
+ * file (electron/preload.cjs `filePathFor` → `webUtils.getPathForFile`). Every
+ * other part of the app is contained to `userData/projects` — most importantly
+ * `arena:previewPath`, which the offscreen renderer needs to load a clip's media
+ * — so exporting a clip imported straight from the user's disk failed with
+ * "Preview path is outside Cupric AI project data", which is nobody's idea of an
+ * export error. The Footage Desk has always copied on import (`footage:analyze`
+ * below); the Studio now does too.
+ *
+ * Idempotent: a source that is already inside the store is returned untouched,
+ * so re-registering an asset can never copy a copy.
+ */
+ipcMain.handle('media:import', async (_event, payload) => {
+  const srcPath = payload?.srcPath
+  if (!srcPath) throw new Error('No media path was provided.')
+  let stat
+  try {
+    stat = fs.statSync(srcPath)
+  } catch (err) {
+    throw new Error(`That file is no longer where it was (${path.basename(String(srcPath))}): ${err?.code || err?.message || 'unreadable'}`)
+  }
+  if (!stat.isFile()) throw new Error(`${path.basename(String(srcPath))} is not a file.`)
+
+  const projectsRoot = userDataPath('projects')
+  if (isSubPath(srcPath, projectsRoot)) return { localPath: srcPath, bytes: stat.size, copied: false }
+
+  const dir = path.join(projectsRoot, 'media')
+  ensureDir(dir)
+  const dest = path.join(dir, `${Date.now()}-${safeFileName(path.basename(String(srcPath)), 'media.bin')}`)
+  try {
+    fs.copyFileSync(srcPath, dest)
+  } catch (err) {
+    // Distinct and actionable: out of space, no permission, or gone.
+    logLine('media-import-failed', err?.message || String(err), { srcPath, dest, code: err?.code || null })
+    throw new Error(`Cupric could not copy "${path.basename(String(srcPath))}" into its project folder (${err?.code || err?.message || 'unknown reason'}). Free some space or move the file somewhere Cupric can read, then import again.`)
+  }
+  logLine('media-import', 'copied an imported file into the project store', { name: path.basename(String(srcPath)), bytes: stat.size })
+  return { localPath: dest, bytes: stat.size, copied: true }
 })
 
 ipcMain.handle('footage:analyze', async (_event, payload) => {
@@ -4175,6 +4807,19 @@ async function executeRenderJob(event, job, queuedState = null) {
   ensureDir(workDir)
   ensureDir(outDir)
 
+  // Refuse before encoding: name rules, a writable folder, free disk space and a
+  // real encoder in this FFmpeg build — each failure named, with its own fix.
+  await runExportPreflight({
+    outputPath,
+    dir: outDir,
+    durationSec: nominalDuration,
+    fps,
+    size: target,
+    quality,
+    container: 'mp4',
+    codec: 'h264',
+  })
+
   const state = queuedState || { id, cancelled: false, paused: false, processes: new Set(), windows: new Set(), resumeWaiters: [], sender }
   state.id = id
   state.sender = sender
@@ -4231,6 +4876,16 @@ async function executeRenderJob(event, job, queuedState = null) {
     if (segments.length === 0) throw new Error('No renderable timeline segments were produced')
     sendRenderEvent(sender, 'render:progress', { jobId: id, pct: 96 })
     await concatSegments(state, segments, outputPath, { workDir })
+    // Real read-back of the delivered file. The UI only hears "done" once the
+    // file has been proved playable and the right length.
+    const verdict = await verifyRenderOutput({
+      outputPath,
+      expectedDurationSec: nominalDuration,
+      size: target,
+      needsVideo: true,
+      needsAudio: await sourcesHaveAudio(usableSources),
+    })
+    if (!verdict.ok) throw renderPreflight.failureError(verdict.failures)
     sendRenderEvent(sender, 'render:progress', { jobId: id, pct: 100 })
     sendRenderEvent(sender, 'render:done', { jobId: id, outputPath })
     fs.rmSync(workDir, { recursive: true, force: true })
@@ -4409,18 +5064,61 @@ ipcMain.handle('render:copyToDownloads', async (_event, outputPath) => {
 // Updater
 // ---------------------------------------------------------------------------
 
+/**
+ * The update feed override, for verifying a real version-to-version update.
+ *
+ * electron-updater reads `resources/app-update.yml`, which points at this
+ * repository's releases — correct for users and useless for a test, because a
+ * test must serve a fake newer release from localhost. `CUPRIC_UPDATE_FEED`
+ * exists for `scripts/check-update-path.mjs`; it is logged loudly when set so a
+ * user's report can never leave it a mystery.
+ */
+function updateFeedOverride() {
+  const url = process.env.CUPRIC_UPDATE_FEED
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      logLine('updater-feed-rejected', `CUPRIC_UPDATE_FEED must be http(s); ignoring ${url}`)
+      return null
+    }
+    return parsed.origin
+  } catch (err) {
+    logLine('updater-feed-rejected', `CUPRIC_UPDATE_FEED is not a URL; ignoring ${url}`, err?.message)
+    return null
+  }
+}
+
 function wireUpdater() {
   if (!autoUpdater) return
   autoUpdater.autoDownload = true
+  const override = updateFeedOverride()
+  if (override) {
+    autoUpdater.setFeedURL({ provider: 'generic', url: override })
+    logLine('updater-feed-override', `Update feed overridden for this session: ${override}`)
+  }
   autoUpdater.on('checking-for-update', () => mainWindow?.webContents.send('updater:status', { status: 'checking' }))
-  autoUpdater.on('update-available', (info) => mainWindow?.webContents.send('updater:status', { status: 'available', version: info?.version }))
-  autoUpdater.on('update-not-available', () => mainWindow?.webContents.send('updater:status', { status: 'current' }))
+  autoUpdater.on('update-available', (info) => {
+    logLine('updater-available', `Update available: ${info?.version}`, { current: app.getVersion() })
+    mainWindow?.webContents.send('updater:status', { status: 'available', version: info?.version })
+  })
+  autoUpdater.on('update-not-available', () => {
+    logLine('updater-current', `No update available; ${app.getVersion()} is the newest release`)
+    mainWindow?.webContents.send('updater:status', { status: 'current' })
+  })
   autoUpdater.on('error', (err) => {
     logLine('updater-error', err?.message || String(err))
     mainWindow?.webContents.send('updater:status', { status: 'error', message: err?.message || String(err) })
   })
   autoUpdater.on('update-downloaded', (info) => {
     updateDownloaded = true
+    // Logged because this is the moment the update becomes installable, and the
+    // only evidence a headless test (or a user's report) has that a download
+    // really finished rather than being announced.
+    logLine('updater-downloaded', `Update ${info?.version} downloaded; it installs on quit`, {
+      current: app.getVersion(),
+      file: info?.downloadedFile ? path.basename(String(info.downloadedFile)) : null,
+    })
     mainWindow?.webContents.send('updater:status', { status: 'downloaded', version: info?.version })
   })
 }
@@ -4500,11 +5198,9 @@ ipcMain.handle('updater:install', async () => {
 // ---------------------------------------------------------------------------
 
 function createWindow() {
-  // Real vibrancy, not a CSS imitation: on macOS the window background is the
-  // system material, so it samples the desktop behind it the way every native
-  // app does. `backgroundColor` must be transparent for the material to show,
-  // which is why it is set per-platform.
-  const isMac = process.platform === 'darwin'
+  // Cupric AI ships for Windows 10/11 only: no per-platform window options, no
+  // platform-specific material, no other-OS branches. The window is opaque and
+  // dark from the first paint.
   const win = new BrowserWindow({
     width: 1440,
     height: 900,
@@ -4513,16 +5209,7 @@ function createWindow() {
     // Taskbar / alt-tab / dock icon while running. Generated by
     // scripts/build-icons.mjs from the same mark the sidebar shows.
     icon: path.join(__dirname, 'assets', 'icon.png'),
-    backgroundColor: isMac ? '#00000000' : '#0B0B10',
-    ...(isMac
-      ? {
-          vibrancy: 'under-window',
-          visualEffectState: 'followWindow',
-          transparent: true,
-          titleBarStyle: 'hiddenInset',
-          trafficLightPosition: { x: 16, y: 18 },
-        }
-      : {}),
+    backgroundColor: '#0B0B10',
     title: 'Cupric AI',
     autoHideMenuBar: true,
     show: false,

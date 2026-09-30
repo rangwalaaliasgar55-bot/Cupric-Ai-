@@ -7,6 +7,7 @@ const invokeChannels = new Set([
   'settings:autoLaunch',
   'ai:autoDiscover',
   'ai:freeModels',
+  'ai:providerState', 'ai:testProvider', 'ai:listModels', 'ai:detectLocal',
   'agent:generateAnimation',
   'agent:saveGenerated',
   'ai:ackNewModels',
@@ -18,9 +19,11 @@ const invokeChannels = new Set([
   'state:load',
   'state:clear',
   'state:recoveryInfo', 'state:listVersions', 'state:snapshotNow', 'state:restoreVersion',
+  'app:info',
   'diag:report',
   'log:write',
   'voice:status', 'voice:tts', 'voice:transcribe', 'voice:transcribeMedia',
+  'voice:engines', 'voice:install',
   'media:proxy', 'media:proxyDelete',
   'gemini:ask',
   'gemini:chat',
@@ -38,6 +41,7 @@ const invokeChannels = new Set([
   'media:status',
   'studio:exportMp4',
   'studio:planEdits',
+  'media:import',
   'render:start',
   'render:cancel',
   'render:pause',
@@ -52,7 +56,7 @@ const invokeChannels = new Set([
   'automation:start', 'automation:cancel', 'automation:resume', 'automation:get', 'automation:list', 'automation:approveStep', 'automation:rejectStep', 'automation:setWatchedFolder', 'automation:setOutputFolder', 'automation:openOutput', 'automation:openArena',
 ])
 
-const eventChannels = new Set(['render:progress', 'render:done', 'render:error', 'studio:backgroundExport', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress', 'ai:discovery', 'ai:rundownPolished', 'ai:notice', 'ai:models'])
+const eventChannels = new Set(['voice:install:progress', 'render:progress', 'render:done', 'render:error', 'studio:backgroundExport', 'updater:status', 'automation:progress', 'automation:step', 'automation:waiting', 'automation:done', 'automation:error', 'media:proxyProgress', 'ai:discovery', 'ai:rundownPolished', 'ai:notice', 'ai:models'])
 
 function assertChannel(channel, allowed) {
   if (!allowed.has(channel)) throw new Error(`IPC channel is not exposed: ${channel}`)

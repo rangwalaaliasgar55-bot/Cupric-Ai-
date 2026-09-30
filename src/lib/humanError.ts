@@ -38,9 +38,9 @@ function localServer(raw: string): string | null {
 
 const RULES: Rule[] = [
   {
-    match: /No live AI provider is configured|NO_PROVIDER/i,
+    match: /No AI provider is configured|No live AI provider is configured|NO_PROVIDER/i,
     say: () =>
-      'No AI model is set up yet, so Cupric used its built-in motion engine. For live AI, add a free Gemini key, an OpenRouter key, or start Ollama / LM Studio — Settings finds them automatically.',
+      'No AI model is set up yet, so Cupric used its built-in motion engine. For live AI, open Settings → AI and add an OpenAI, Anthropic or Gemini key, or start a local model server (Ollama, LM Studio) — Cupric detects those on its own.',
   },
   {
     match: /ran out of time before any provider answered|Studio auto edit timed out|timed out after/i,
@@ -128,13 +128,32 @@ const RULES: Rule[] = [
     say: () => 'The video tool could not process that file. It may be an unusual codec — try re-exporting the source as H.264.',
   },
   {
-    match: /desktop app|electron/i,
+    // "…needs the desktop app", "…runs on the desktop app" — the feature only
+    // works in the packaged app, and the message already says so.
+    //
+    // This used to also match the bare word `electron`, which is in the path of
+    // every main-process stack frame (`/app/electron/main.cjs`), so a stack trace
+    // satisfied this rule and was returned verbatim to the user. Found by
+    // src/tests/human-error.test.ts.
+    match: /desktop app/i,
     say: (raw) => raw,
   },
 ]
 
 /** Anything that is obviously machine output rather than a sentence. */
 const LOOKS_TECHNICAL = /^\w*Error:|\n\s+at\s|\bat\s+\S+\s*\([^)]*:\d+:\d+\)|\bundefined is not\b|is not a function/
+
+/**
+ * A real stack frame: `
+    at fn (file:12:3)` or `at fn (file:12:3)`.
+ *
+ * Checked before the keyword rules, not after them. A rule matches on a word
+ * that can appear in a *path* — `electron`, `ffmpeg` — and a rule that echoes
+ * the raw text then hands the whole stack to the user. Neither the promise in
+ * this file's header ("never print a stack") nor LOOKS_TECHNICAL can hold if a
+ * keyword gets there first.
+ */
+const HAS_STACK_FRAMES = /\n\s+at\s|\bat\s+\S+\s*\([^)]*:\d+:\d+\)/
 
 /** The longest an error is allowed to be before it stops being readable. */
 const MAX_LENGTH = 180
@@ -154,6 +173,11 @@ export function humanError(error: unknown, context = 'That'): string {
     .replace(/^(?:\w*Error:\s*)+/, '')
     .replace(/^\[GoogleGenerativeAI Error\]:\s*/i, '')
     .trim()
+
+  // Machine output first: no rule may resurrect a stack trace.
+  if (HAS_STACK_FRAMES.test(raw)) {
+    return `${context} hit an internal error. It has been written to the log — trying again is worth a go.`
+  }
 
   for (const rule of RULES) {
     // Rule text is written by us, so it is never truncated mid-sentence.

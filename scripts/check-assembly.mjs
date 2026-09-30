@@ -185,10 +185,7 @@ eq(assembly.timelineSeconds({ durationSec: 0, doc: { clips: [] } }), null, 'noth
 eq(assembly.timelineSeconds({ durationSec: 'x', doc: { clips: [{ startSec: 1, durationSec: 1.23456 }] } }), 2.235, 'garbage falls through to the document, rounded to ms')
 assert.deepEqual(assembly.trimToTimelineArgs({ durationSec: 4.75 }), ['-t', '4.750'], 'trim argv is an output -t'); n += 1
 assert.deepEqual(assembly.trimToTimelineArgs({}), [], 'no length, no trim'); n += 1
-{
-  const main = fs.readFileSync(path.join(root, 'electron', 'main.cjs'), 'utf8')
-  ok(/assembly\.trimToTimelineArgs\(payload\)/.test(main), 'the Studio MP4 pass applies the timeline trim')
-}
+// The live Studio MP4 trim is studio-trim.cjs (check-studio-trim.mjs); this helper stays for assembly callers.
 
 /* ——————————————— apply-edl: the contract ——————————————— */
 

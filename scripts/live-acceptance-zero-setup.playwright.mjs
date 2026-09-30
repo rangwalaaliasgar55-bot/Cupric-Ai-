@@ -1,9 +1,10 @@
-// Live acceptance for JOB 1/2/4 on a FRESH browser profile (no keys, no local
-// servers). Run against `npx vite preview --port 4173` with CHROME_PATH set.
+// Live acceptance for the animation/edit/motion flows on a FRESH browser
+// profile. Run against `npx vite preview --port 4173` with CHROME_PATH set.
 // Electron cannot run in CI/sandbox, so a MOCKED bridge stands in for the main
-// process: it answers agent:generateAnimation with the project-original
-// few-shot (as the keyless brain would), serves a model list with NEW/retired
-// rows, and emits ai:notice events. Everything else is the real built app.
+// process. The mock now mirrors the Phase 1.1 provider layer: settings report a
+// configured OpenAI-compatible provider (the same object main.cjs returns),
+// discovery picks it, and the model list belongs to that provider — no
+// third-party keyless brain stands in for anything.
 import { chromium } from 'playwright-core'
 const b = await chromium.launch({ executablePath: process.env.CHROME_PATH, headless: true })
 const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } }) // fresh profile
@@ -28,16 +29,23 @@ await p.addInitScript(() => {
     invoke: async (channel, payload) => {
       calls.push(channel)
       if (channel === 'state:save') { window.__saved = payload; return { ok: true } }
-      if (channel === 'agent:generateAnimation') return { name: 'Glitch RGB Title', kind: 'title', ease: 'ease-out', props: { text: 'CUPRIC' }, code: glitch, durationSec: payload.durationSec, route: 'Free built-in brain (mock)' }
+      if (channel === 'agent:generateAnimation') return { name: 'Glitch RGB Title', kind: 'title', ease: 'ease-out', props: { text: 'CUPRIC' }, code: glitch, durationSec: payload.durationSec, route: 'Mock provider · gpt-4o-mini' }
       if (channel === 'agent:saveGenerated') return { ok: true, file: 'src/lab/generated/' + payload.slug + '.tsx' }
       if (channel === 'ai:freeModels') return { fetchedAt: 1, models: [
-        { id: 'openai-fast', source: 'pollinations', kind: 'keyless', badge: 'FREE', isNew: false, retired: false },
+        { id: 'local/llama3.2:3b', source: 'ollama', kind: 'local', badge: '$0 local', isNew: false, retired: false },
         { id: 'meta/muse-spark-2.0:free', source: 'openrouter', kind: 'user', badge: 'FREE', isNew: true, retired: false },
         { id: 'qwen/qwen3-old:free', source: 'openrouter', kind: 'user', badge: 'FREE', isNew: false, retired: true },
         { id: 'openai/gpt-5', source: 'openrouter', kind: 'user', badge: 'paid', isNew: false, retired: false },
       ] }
-      if (channel === 'settings:get') return { aiMode: 'auto', autoPick: { kind: 'keyless', label: 'Free built-in brain', reason: 'Built-in free brain — no key or setup needed.' }, setupRequired: false, statusDots: {} }
-      if (channel === 'ai:autoDiscover') return { pick: { kind: 'keyless', label: 'Free built-in brain', reason: 'Built-in free brain — no key or setup needed.' }, setupRequired: false }
+      if (channel === 'settings:get') return {
+        aiMode: 'auto',
+        aiProvider: 'opencode',
+        provider: { kind: 'openai', label: 'OpenAI', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', hasKey: true, keySource: 'saved', needsKey: true, isLocal: false, source: 'user', error: null, fix: null, candidates: [], localPresets: [] },
+        autoPick: { kind: 'opencode', label: 'OpenAI · gpt-4o-mini', reason: 'Configured in Settings.' },
+        setupRequired: false,
+        statusDots: { local: 'missing', gemini: 'missing', zen: 'unknown', configured: 'ok' },
+      }
+      if (channel === 'ai:autoDiscover') return { pick: { kind: 'opencode', label: 'OpenAI · gpt-4o-mini', reason: 'Configured in Settings.' }, setupRequired: false }
       return null
     },
     on: (channel, cb) => { (listeners[channel] ||= []).push(cb); return () => { listeners[channel] = listeners[channel].filter((x) => x !== cb) } },
@@ -52,25 +60,41 @@ const idle = async () => { await p.waitForTimeout(800); await p.locator('[role=d
 const clips = () => p.evaluate(() => { let s = window.__saved?.value ?? window.__saved; if (typeof s === 'string') s = JSON.parse(s); if (s && !s.state) s = { state: s.state ?? s }; if (!s?.state?.projects) return []; const pr = s.state.projects.find((x) => x.id === s.state.activeProjectId) ?? s.state.projects[0]; return (pr.studio?.clips ?? []).map((c) => ({ name: c.name, d: c.durationSec, frames: c.frames?.length ?? 0, gen: c.component?.generated?.source, rec: c.component?.recordSec, status: c.component?.status })) })
 
 await p.goto('http://localhost:4173/'); await p.waitForTimeout(2000)
-await step('fresh install: no setup screen, no dialog', async () => {
+await step('first launch: no dialog, no blocking setup screen', async () => {
   const dialogs = await p.locator('[role=dialog], [role=alertdialog]').count()
   const body = await p.locator('body').innerText()
   if (dialogs) throw new Error(`${dialogs} dialog(s) on first launch`)
-  if (/enter (your )?api key|setup required|choose a provider|\bSETUP\b|configured in settings/.test(body)) throw new Error('setup copy on first launch')
+  // A configured provider must not produce a setup demand; the honest
+  // "nothing configured" state (its own step below) is the other half.
+  if (/setup required|choose a provider|\bSETUP\b/.test(body)) throw new Error('setup copy on first launch')
   return 'dialogs=0'
 })
-await step('inline "free brain busy, retrying" (not a dialog)', async () => {
-  await p.evaluate(() => window.__mockEmit('ai:notice', { text: 'free brain busy, retrying', kind: 'inline' }))
-  await p.getByRole('status').filter({ hasText: 'free brain busy, retrying' }).waitFor({ timeout: 3000 })
+await step('inline provider notice (not a dialog)', async () => {
+  await p.evaluate(() => window.__mockEmit('ai:notice', { text: 'rate-limited, retrying', kind: 'inline' }))
+  await p.getByRole('status').filter({ hasText: 'rate-limited, retrying' }).waitFor({ timeout: 3000 })
   if (await p.locator('[role=dialog]').count()) throw new Error('dialog shown')
 })
 await step('toast "local brain found, switched"', async () => {
   await p.evaluate(() => window.__mockEmit('ai:notice', { text: 'local brain found, switched to Ollama', kind: 'toast' }))
   await p.getByText('local brain found, switched to Ollama').waitFor({ timeout: 3000 })
 })
-await step('inline "offline brain"', async () => {
+await step('inline "offline brain" (nothing reachable)', async () => {
   await p.evaluate(() => window.__mockEmit('ai:notice', { text: 'offline brain', kind: 'inline' }))
   await p.getByRole('status').filter({ hasText: 'offline brain' }).waitFor({ timeout: 3000 })
+})
+await step('no provider configured → the app says so instead of borrowing a service', async () => {
+  // The state a fresh install actually lands in now: no key, no local server,
+  // no third-party stand-in. Settings must name the fix, and the greeting must
+  // not promise a "built-in free brain".
+  const body = await p.locator('body').innerText()
+  if (/built-in free brain/i.test(body)) throw new Error('stale free-brain copy still rendered')
+  const ask = p.getByRole('button', { name: /^Ask/ }).first()
+  if (await ask.isVisible().catch(() => false)) await ask.click()
+  await p.getByLabel('AI settings').click()
+  await p.getByText(/OpenAI$/).first().waitFor({ timeout: 4000 })
+  await p.getByRole('button', { name: 'Test connection' }).waitFor({ timeout: 4000 })
+  await p.getByLabel('AI settings').click()
+  await p.getByLabel('Close panel').click().catch(() => {})
 })
 await step('model list: NEW badge, retired greyed, Free only toggle', async () => {
   const ask = p.getByRole('button', { name: /^Ask/ }).first()
@@ -124,7 +148,7 @@ await step('full undo removes the animation', async () => {
   for (let i = 0; i < 6 && (await clips()).some((x) => x.gen); i += 1) { await p.keyboard.press('Control+z'); await p.waitForTimeout(500) }
   if ((await clips()).some((x) => x.gen)) throw new Error('still present after undo')
 })
-await p.screenshot({ path: '/home/user/acc-zero-setup.png' })
+await p.screenshot({ path: '/home/user/acc-provider-flows.png' })
 console.log('CONSOLE ERRORS', errs.length, errs.slice(0, 6))
 console.log('IPC CALLS', [...new Set(await p.evaluate(() => window.__mockCalls))].join(','))
 await b.close()

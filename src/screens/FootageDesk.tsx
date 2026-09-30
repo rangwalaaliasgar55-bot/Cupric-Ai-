@@ -19,6 +19,7 @@ import { cx, fmtDur, hashStr, mulberry32, round1 } from '../lib/utils'
 import { humanError } from '../lib/humanError'
 import { StockBrowser } from '../components/StockBrowser'
 import { focusStudioClip } from '../lib/studio/focus'
+import { ScreenPurpose } from '../components/ScreenPurpose'
 
 const CAPTIONS = [
   {
@@ -123,6 +124,14 @@ export function FootageDesk() {
             Drop raw video — silences get marked, captions and crop get chosen, one click applies the edit.
           </p>
         </div>
+
+        <ScreenPurpose
+          id="footage"
+          icon={Film}
+          title="What Footage Desk is for"
+          what="This is where your own video files come in: it looks at each one, marks the silences, and proposes the cut, captions and crop."
+          next="Import a clip, choose a style, then apply the edit to send it to the Studio timeline. Nothing is changed on disk — the edit lives in this project."
+        />
 
         {/* Upload zone */}
         <div

@@ -67,6 +67,20 @@ export function docDuration(doc: StudioDoc): number {
   return doc.clips.reduce((max, clip) => Math.max(max, clipEnd(clip)), 0)
 }
 
+/**
+ * The frame time both the preview and the exporter draw for a playhead.
+ *
+ * Shared on purpose: the preview used to draw the raw playhead while the
+ * exporter clamped to the duration, so a playhead left past the end of a
+ * shortened doc showed a frame the exported file can never contain.
+ * `scripts/check-preview-parity.mjs` runs this function and asserts both call
+ * sites go through it.
+ */
+export function frameTimeFor(doc: StudioDoc, t: number): number {
+  const duration = docDuration(doc)
+  return Math.max(0, Math.min(Number.isFinite(t) ? t : 0, duration))
+}
+
 /** Clips visible at time t, bottom track first (draw order). */
 export function clipsAt(doc: StudioDoc, t: number): StudioClip[] {
   return doc.clips
