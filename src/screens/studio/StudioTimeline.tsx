@@ -1,7 +1,7 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, SlidersHorizontal, Type as TypeIcon, Video, Lock, EyeOff, VolumeX , Shapes, MousePointerClick, Loader as LoaderIcon, LayoutTemplate } from 'lucide-react'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
-import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
+import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime, snapToFrame } from '../../lib/studio/doc'
 import { markerTimes } from '../../lib/studio/timelineOps'
 import { moveKeyframeTime } from '../../lib/studio/keyframeEdit'
 import { getMedia } from '../../lib/studio/media'
@@ -197,7 +197,7 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
 
       // trim-end
       const snapped = snapTime(doc, t, clip.id, [time, ...markerTimes(doc)], 8 / pps)
-      onPatchClip(clip.id, { durationSec: Math.max(MIN_CLIP_SEC, snapped - clip.startSec) })
+      onPatchClip(clip.id, { durationSec: Math.max(MIN_CLIP_SEC, Math.round((snapped - clip.startSec) * 1e6) / 1e6) })
     }
 
     const onUp = () => {
@@ -276,9 +276,16 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
               aria-valuemin={0}
               aria-valuemax={Math.round(duration * 10) / 10}
               aria-valuenow={Math.round(time * 10) / 10}
+              // A number alone tells a screen-reader user nothing about what it
+              // measures. The Timeline screen's playhead has said "0:03 of 0:12"
+              // since Phase 3; this one — the ruler inside the Studio — was left
+              // with a bare "3", which is the kind of gap only a real run finds.
+              aria-valuetext={`${fmtClock(Math.min(time, duration))} of ${fmtClock(duration)}`}
+              // Only the keys this element actually handles.
+              aria-keyshortcuts="ArrowLeft ArrowRight" 
               onKeyDown={(e) => {
-                if (e.key === 'ArrowLeft') onSeek(Math.max(0, time - (e.shiftKey ? 1 : 1 / doc.fps)))
-                if (e.key === 'ArrowRight') onSeek(Math.min(duration, time + (e.shiftKey ? 1 : 1 / doc.fps)))
+                if (e.key === 'ArrowLeft') onSeek(Math.max(0, snapToFrame(time - (e.shiftKey ? 1 : 1 / doc.fps), doc.fps)))
+                if (e.key === 'ArrowRight') onSeek(Math.min(duration, snapToFrame(time + (e.shiftKey ? 1 : 1 / doc.fps), doc.fps)))
               }}
               onPointerDown={(e) => {
                 e.preventDefault()

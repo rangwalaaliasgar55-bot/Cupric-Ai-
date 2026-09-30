@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
-const [inspector, preview, timeline, studio, app, main, css, generatedPackage, lab, sources, projectTypes] = await Promise.all([
+const [inspector, preview, timeline, studio, app, main, css, generatedPackage, lab, sources, projectTypes, strip] = await Promise.all([
   readFile(new URL('../src/screens/studio/StudioInspector.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/screens/studio/StudioPreview.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/screens/studio/StudioTimeline.tsx', import.meta.url), 'utf8'),
@@ -15,6 +15,7 @@ const [inspector, preview, timeline, studio, app, main, css, generatedPackage, l
   readFile(new URL('../src/screens/Lab.tsx', import.meta.url), 'utf8'),
   readFile(new URL('../src/lib/studio/sources.ts', import.meta.url), 'utf8'),
   readFile(new URL('../src/types/project.ts', import.meta.url), 'utf8'),
+  readFile(new URL('../src/screens/Timeline.tsx', import.meta.url), 'utf8'),
 ])
 
 for (const [label, pattern] of [
@@ -71,9 +72,23 @@ assert.match(studio, /key === 'i' \|\| key === 'o'/, 'I/O shortcuts must stay wi
 assert.match(studio, /if \(mod && key === 'z'\)/, 'undo/redo must be reachable from Studio')
 assert.match(main, /critiqueAndRepair/, 'generated candidates must retain critique-and-repair')
 assert.match(main, /perspective: 1200px[\s\S]*?preserve-3d/, 'generated HTML prompt must retain deterministic CSS 3D guidance')
-assert.match(main, /vibrancy: 'under-window'/, 'macOS BrowserWindow must request native vibrancy')
-assert.match(main, /transparent: true/, 'macOS vibrancy window must be transparent')
-assert.match(app, /dataset\.vibrancy = 'on'/, 'renderer must enable the vibrancy CSS surface on macOS')
-assert.match(css, /html\[data-vibrancy='on'\]/, 'vibrancy CSS must let the native material show through')
+// Windows-only, and the window chrome has to stay that way: no macOS vibrancy,
+// no platform conditionals around the BrowserWindow.
+assert.doesNotMatch(main, /darwin/, 'the main process must not carry macOS code paths')
+assert.doesNotMatch(main, /vibrancy|titleBarStyle|trafficLightPosition/, 'the window must not request macOS-only chrome')
+assert.doesNotMatch(main, /process\.platform === 'linux'/, 'the main process must not carry Linux code paths')
+assert.doesNotMatch(app, /vibrancy/, 'the renderer must not carry a macOS-only surface flag')
+assert.doesNotMatch(css, /data-vibrancy/, 'the stylesheet must not carry macOS-only rules')
 
-console.log('studio surface audit passed — rotation, keyframes, 3-node grade, masks and macOS vibrancy are UI-reachable')
+// The Timeline screen is the project-level strip of Arena pieces and footage:
+// its playhead must show the real source it points at, and say so when there is
+// nothing it can honestly show.
+assert.match(strip, /useLocalMediaUrl/, 'the Timeline preview must resolve local files the same way every other player does')
+assert.match(strip, /const activeClip = clips\.find\(/, 'the Timeline must know which clip the playhead is inside')
+assert.match(strip, /<video[\s\S]*?currentTime/, 'the Timeline preview must seek the real file')
+assert.match(strip, /No clip under the playhead/, 'an empty playhead state must exist')
+assert.match(strip, /Render it from Arena Desk/, 'Arena HTML pieces must explain why there is no video still')
+assert.match(strip, /Open Footage Desk/, 'a footage clip with no file must offer the screen that fixes it')
+assert.match(strip, /could not be decoded/, 'a file that fails to decode must say so, not show black')
+
+console.log('studio surface audit passed — rotation, keyframes, 3-node grade, masks, Timeline preview and the Windows-only window are enforced')

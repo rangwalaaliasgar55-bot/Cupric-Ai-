@@ -851,8 +851,12 @@ export function Studio() {
                 } else {
                   imp.notes.push(`${handle.fileName} was added to the media bin.`)
                 }
-              } catch {
-                imp.notes.push(`Skipped ${asset.sourcePath} (unsupported or damaged).`)
+              } catch (error) {
+                // Say why, not just "skipped": a file the app could not copy, or
+                // could not decode, are different problems with different fixes.
+                const reason = error instanceof Error ? error.message : String(error)
+                rlog.warn('studio', 'import:asset-skipped', { source: asset.sourcePath, reason })
+                imp.notes.push(`Skipped ${asset.sourcePath} — ${reason}`)
               }
             }
             const next = resolveOverlaps({
@@ -1358,7 +1362,7 @@ export function Studio() {
         return 'cancelled'
       } else if (asMp4) {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
-        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal)
+        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal, result.durationSec)
         setLastExport({ url: result.url, fileName: result.fileName })
         const level = mp4.loudness && mp4.loudness.mode !== 'none' ? ` \u2014 ${mp4.loudness.note}` : ''
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)${level}`)

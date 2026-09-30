@@ -22,7 +22,8 @@ import { uid } from '../utils'
 import { emptyStudioDoc } from '../studio/doc'
 import { designScenes, directionById, DESIGN_DIRECTIONS, type DesignDirectionId, type DesignReport } from '../studio/design'
 import { directProduction, planToDoc, polishEdit, reviewEdit, reviewScore } from '../production/engine'
-import { loadCatalogue, planLocally, type AutonomyBrief, type LocalPlan } from './plan'
+import { loadCatalogue, planLocally, requestedDuration, type AutonomyBrief, type LocalPlan } from './plan'
+import { lockSummary, validateRundown } from './lock'
 import { buildReport, type RunArtefacts } from './report'
 
 export type CandidateResult = { id: DesignDirectionId; name: string; score: number; reasons: string[]; design: DesignReport }
@@ -138,8 +139,9 @@ export function storyboardOf(design: DesignReport): NonNullable<AutomationJob['d
 
 /** Rough target duration from the brief ("exactly a 30-second video"). */
 export const durationFromBrief = (brief: string, fallback = 30): number => {
-  const n = Number(/\b(\d{1,3})\s*(?:-|\s)?\s*(?:second|sec|s\b)/i.exec(brief)?.[1])
-  return Number.isFinite(n) && n > 0 ? Math.min(180, Math.max(8, Math.round(n))) : fallback
+  // The reader is shared with the planner, so a Hindi brief ("20 सेकंड") is read
+  // the same way here as it is there — one rule, one place.
+  return requestedDuration({ brief, aspect: '16:9', fps: 30, quality: 'draft' }).seconds ?? fallback
 }
 
 /**
@@ -191,11 +193,22 @@ export async function runAutonomousJob(
     }
 
     // — 2. lock ———————————————————————————————————————————————————
+    // The same contract the desktop lock enforces (electron/automation-steps.cjs,
+    // mirrored in ./lock and kept in step by src/tests/automation-lock-parity).
+    // A rundown that cannot be rendered stops the run here rather than at export.
     if (!stepDone(2)) {
-      hooks.step(2, { status: 'running', progressPct: 60, message: 'Locking the rundown for review and render' })
+      hooks.step(2, { status: 'running', progressPct: 60, message: 'Checking the rundown against the render contract' })
       guard()
+      const verdict = validateRundown(rundown, { aspect: job.aspect, fps: job.fps })
+      if (!verdict.ok) {
+        const reason = `The rundown did not pass the render contract, so the run stopped before building scenes: ${verdict.issues.join('; ')}`
+        warn(reason)
+        hooks.step(2, { status: 'error', progressPct: 100, message: reason })
+        hooks.patch({ status: 'error', errorMessage: reason, rundown, warnings })
+        return null
+      }
       hooks.patch({ rundown, warnings })
-      hooks.step(2, { status: 'done', progressPct: 100, message: `Locked: ${rundown.title}` })
+      hooks.step(2, { status: 'done', progressPct: 100, message: lockSummary(rundown, { aspect: job.aspect, fps: job.fps }) })
     }
 
     // — 3. the candidate battle ———————————————————————————————————

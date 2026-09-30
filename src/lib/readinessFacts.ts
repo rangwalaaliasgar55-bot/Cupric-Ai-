@@ -76,10 +76,14 @@ export async function gatherReadinessFacts(doc: StudioDoc | null | undefined, op
   ])
 
   const provider = String(settings?.aiProvider ?? '')
-  const localModel = settings?.statusDots?.local === 'ok' || provider === 'keyless'
+  const reported = (settings as { provider?: { kind?: string; isLocal?: boolean; hasKey?: boolean } } | null)?.provider
+  // A local model server counts as configured only when discovery actually saw
+  // one (statusDots.local === 'ok'), not merely because a mode name says so.
+  const localModel = Boolean(reported?.isLocal) || settings?.statusDots?.local === 'ok'
   // `template` reports a key as present because offline templates work — true,
   // but it is not a model answering, so it must not read as "AI configured".
-  const aiConfigured = provider !== 'template' && Boolean(settings?.hasKey)
+  // `none` is the honest state: nothing is configured yet.
+  const aiConfigured = provider !== 'template' && provider !== 'none' && Boolean(settings?.hasKey)
 
   return {
     ...base,

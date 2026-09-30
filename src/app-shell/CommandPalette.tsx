@@ -31,6 +31,10 @@ export function CommandPalette() {
     return [
       ...VIEWS.map(([v, label, kw]) => ({ id: `go-${v}`, label: `Go to ${label}`, group: 'Navigate', keywords: kw, run: () => st().setView(v) })),
       { id: 'ask', label: 'Ask Cupric AI', group: 'Cupric AI', keywords: 'assistant chat edit keyframes captions', run: () => st().setAskOpen(true) },
+      // Reopening the tour is a plain DOM event rather than store state: the
+      // dialog is shell chrome, and putting it in the project store would make
+      // it part of every saved project.
+      { id: 'tour', label: 'Quick tour of Cupric', group: 'Help', keywords: 'onboarding welcome help what is this learn', run: () => window.dispatchEvent(new Event('cupric:onboarding')) },
       { id: 'plan', label: 'Start a guided production', group: 'Cupric AI', keywords: 'autonomous plan intake', run: () => st().setView('auto') },
       { id: 'new', label: 'New project', group: 'Project', keywords: 'create', run: () => { st().createProject(); st().setView('studio') } },
       { id: 'undo', label: 'Undo', group: 'Project', keywords: 'revert back', run: () => st().undo() },

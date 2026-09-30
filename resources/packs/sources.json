@@ -1538,7 +1538,7 @@
       "id": "remotion-templates",
       "kind": "source",
       "name": "reactvideoeditor/remotion-templates",
-      "description": "Free Remotion video templates meant to be copied into an existing React + Remotion app — directly minable, since Cupric already ships @remotion/player.",
+      "description": "Free Remotion video templates — reference structure only. Cupric does not ship or depend on the Remotion runtime (see docs/PHASE1_LICENSING.md), so these are mined as ideas and layout metadata, not as embeddable packages.",
       "data": {
         "url": "https://github.com/reactvideoeditor/remotion-templates",
         "sourceKind": "templates",

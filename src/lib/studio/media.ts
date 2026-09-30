@@ -7,7 +7,8 @@
  * and tells the UI honestly when a clip needs relinking after a reload.
  */
 
-import { getBridge } from '../bridge'
+import { getBridge, getIpc } from '../bridge'
+import { rlog } from '../log'
 import { uid } from '../utils'
 import { convertHeic, isHeicBytes, looksLikeHeicName, preparePhoto } from './photoImport'
 
@@ -199,6 +200,34 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   })
 }
 
+/**
+ * Where a picked file should live for the rest of its life in the app.
+ *
+ * A file the user picked sits wherever they keep it. Everything that needs to
+ * read it again — the offscreen renderer during an export, above all — is
+ * contained to Cupric's own project data (`arena:previewPath` in
+ * electron/main.cjs), so a clip that keeps its original path previews fine and
+ * then fails to export. Asking the main process to adopt it (`media:import`)
+ * copies it in once, and the answer is stable from then on.
+ *
+ * Returns the path to store, or null when there is no real path to copy (a
+ * browser, or a File made in memory from a zip).
+ */
+async function adoptImportedFile(file: File): Promise<{ localPath: string | null; copied: boolean }> {
+  const original = getBridge()?.filePathFor(file) ?? null
+  if (!original) return { localPath: null, copied: false }
+  const ipc = getIpc()
+  if (!ipc) return { localPath: original, copied: false }
+  const result = (await ipc.invoke('media:import', { srcPath: original })) as { localPath?: string; copied?: boolean } | null
+  if (!result?.localPath) {
+    // Never fall back to the original silently: that is the state that used to
+    // break exports much later, with a message about paths.
+    throw new Error(`Cupric could not adopt "${file.name}" into the project store.`)
+  }
+  if (result.copied) rlog.info('studio', 'media:adopted', { name: file.name, bytes: file.size })
+  return { localPath: result.localPath, copied: Boolean(result.copied) }
+}
+
 /** Register a picked File and return a handle the editor can draw immediately. */
 export async function registerFile(file: File, existingId?: string): Promise<MediaHandle> {
   const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|webm|mkv|m4v|avi)$/i.test(file.name)
@@ -207,7 +236,7 @@ export async function registerFile(file: File, existingId?: string): Promise<Med
   if (!isVideo && !isImage && !isAudio) throw new Error(`${file.name} is not a video, image or audio file.`)
 
   const id = existingId ?? uid()
-  const localPath = getBridge()?.filePathFor(file) ?? null
+  const localPath = (await adoptImportedFile(file)).localPath
   if (isImage && !isVideo) return registerPhoto(file, file.name, id, localPath)
   const url = URL.createObjectURL(file)
 

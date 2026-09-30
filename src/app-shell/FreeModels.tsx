@@ -47,7 +47,7 @@ export function FreeModels() {
         </div>
       </div>
       {!rows.length ? (
-        <p className="mt-1 text-muted">{busy ? 'Checking free models…' : 'The built-in free brain is ready; the full list fills in when online.'}</p>
+        <p className="mt-1 text-muted">{busy ? 'Checking your providers…' : 'No models to list yet. Add a provider key or start a local model server in Settings — the list is your own account\u2019s models, never a shared pool.'}</p>
       ) : (
         <ul className="mt-1.5 max-h-40 space-y-0.5 overflow-auto">
           {shown.map((r) => (

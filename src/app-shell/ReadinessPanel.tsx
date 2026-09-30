@@ -13,6 +13,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { CheckCircle2, CircleAlert, CircleDashed, RefreshCw } from 'lucide-react'
 import { describeReadiness, type ReadinessCheck, type ReadinessReport } from '../lib/readiness'
+import {
+  installOfferFor,
+  installVoiceEngine,
+  listVoiceEngines,
+  progressFraction,
+  progressLabel,
+  type InstallProgress,
+  type InstallResult,
+  type VoiceEngineList,
+} from '../lib/voiceEngines'
 import { gatherReadinessFacts } from '../lib/readinessFacts'
 import { studioOf } from '../lib/studio/doc'
 import { useActiveProject } from '../state/useProjectStore'
@@ -37,6 +47,11 @@ export function ReadinessPanel() {
   const project = useActiveProject()
   const [report, setReport] = useState<ReadinessReport | null>(null)
   const [busy, setBusy] = useState(false)
+  const [engines, setEngines] = useState<VoiceEngineList | null>(null)
+  /** Real byte progress for an install in flight, keyed by engine id. */
+  const [installing, setInstalling] = useState<{ engine: string; progress: InstallProgress | null } | null>(null)
+  /** The last real failure, shown verbatim — never replaced by "something went wrong". */
+  const [installError, setInstallError] = useState<{ engine: string; message: string } | null>(null)
 
   const doc = project ? studioOf(project) : null
   const renderable = Boolean(project && (project.timeline.length > 0 || project.brief.lockedRundown))
@@ -55,6 +70,36 @@ export function ReadinessPanel() {
   // expensive, but a stale "no FFmpeg" after an install would be worse than none.
   useEffect(() => {
     void probe()
+  }, [probe])
+
+  // Which engines exist here. Read-only, and a failure is reported rather than
+  // shown as "nothing installed".
+  useEffect(() => {
+    let live = true
+    listVoiceEngines()
+      .then((list) => { if (live) setEngines(list) })
+      .catch((error: Error) => { if (live) setInstallError({ engine: 'list', message: error.message }) })
+    return () => { live = false }
+  }, [])
+
+  const runInstall = useCallback(async (engine: string) => {
+    setInstallError(null)
+    setInstalling({ engine, progress: null })
+    const result: InstallResult = await installVoiceEngine(engine, (progress) => {
+      // Progress events for other engines are ignored: two installs cannot run
+      // from this panel at once, and a stray event must not move this bar.
+      setInstalling((current) => (current && current.engine === progress.engine ? { engine: progress.engine, progress } : current))
+    })
+    if (!result.ok) {
+      setInstallError({ engine, message: result.error })
+      setInstalling(null)
+      return
+    }
+    setInstalling(null)
+    // Re-probe and re-list: the point of installing is that the checks change.
+    const list = await listVoiceEngines().catch(() => null)
+    if (list) setEngines(list)
+    await probe()
   }, [probe])
 
   return (
@@ -87,11 +132,87 @@ export function ReadinessPanel() {
                 </div>
                 <div className="text-muted/80">{check.detail}</div>
                 {check.remedy && <div className="text-muted/70">{check.remedy}</div>}
+                <InstallAction
+                  check={check}
+                  engines={engines}
+                  installing={installing}
+                  error={installError?.engine === installOfferFor(check.id, engines?.engines.find((e) => e.id.startsWith('piper'))?.id)?.engine ? installError?.message ?? null : null}
+                  onInstall={runInstall}
+                />
               </div>
             </li>
           ))}
         </ul>
       )}
+    </div>
+  )
+}
+
+/**
+ * The install button for a check that has one.
+ *
+ * Three states, all real: nothing to offer (the written remedy stays), an offer,
+ * and an install in flight with byte counts and, when it fails, the actual
+ * message from the download rather than a generic apology.
+ */
+function InstallAction({
+  check,
+  engines,
+  installing,
+  error,
+  onInstall,
+}: {
+  check: ReadinessCheck
+  engines: VoiceEngineList | null
+  installing: { engine: string; progress: InstallProgress | null } | null
+  error: string | null
+  onInstall: (engine: string) => void
+}) {
+  if (check.ok) return null
+  const piper = engines?.engines.find((e) => e.id === 'piper')
+  const offer = installOfferFor(check.id, piper?.id)
+  if (!offer) return null
+  const active = installing?.engine === offer.engine
+  const info = engines?.engines.find((e) => e.id === offer.engine)
+  const fraction = active ? progressFraction(installing.progress) : null
+  /**
+   * Why the button cannot be pressed, in words.
+   *
+   * A greyed-out control with no explanation is a dead end wearing a different
+   * hat, and `check-ui-audit.mjs` fails the build for it. The reason is both
+   * visible and wired to the button with `aria-describedby`, so it reaches a
+   * screen reader too.
+   */
+  const blockedReason = engines && !engines.supported
+    ? 'Speech engines install themselves on Windows only.'
+    : installing && !active
+      ? `Waiting for the ${installing.engine} download to finish.`
+      : null
+  const reasonId = `install-reason-${offer.engine}`
+  return (
+    <div className="mt-1.5 flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        onClick={() => onInstall(offer.engine)}
+        disabled={Boolean(installing) || (engines ? !engines.supported : false)}
+        title={blockedReason ?? `Download ${info?.label ?? offer.engine} and install it into your Cupric folder`}
+        aria-describedby={blockedReason ? reasonId : undefined}
+        className="rounded-md border border-line bg-panel-alt/60 px-2 py-1 text-[11px] font-medium text-text transition-colors duration-150 hover:border-text/20 hover:bg-panel-alt disabled:opacity-50"
+      >
+        {active ? progressLabel(installing.progress) : offer.verb}
+      </button>
+      {blockedReason && <span id={reasonId} className="text-[11px] text-muted/70">{blockedReason}</span>}
+      {info?.sizeHint && <span className="text-[11px] text-muted/70">{info.sizeHint}</span>}
+      {active && (
+        <progress
+          // Determinate only when the server declared a length.
+          value={fraction ?? undefined}
+          max={fraction === null ? undefined : 1}
+          className="h-1.5 w-32"
+          aria-label={`Downloading ${info?.label ?? offer.engine}`}
+        />
+      )}
+      {error && <span className="text-[11px] text-danger">{error}</span>}
     </div>
   )
 }

@@ -105,7 +105,7 @@
   "findings": [
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 764,
+      "line": 795,
       "target": "Existing placement",
       "existingComponent": "<ThinkingOrb state=\"composing\" size={20} theme={theme === 'light' ? 'light' : 'dark'} paused={reducedMotion} aria-label=",
       "suggestedLibrary": "Thinking orbs",
@@ -117,10 +117,36 @@
       "status": "applied"
     },
     {
+      "file": "src/app-shell/ProviderSettings.tsx",
+      "line": 167,
+      "target": "Waiting state",
+      "existingComponent": "return <div className=\"flex items-center gap-2 p-3 text-xs text-muted\"><Loader2 size={13} className=\"animate-spin\" /> Re",
+      "suggestedLibrary": "Thinking orbs",
+      "package": "thinking-orbs",
+      "variant": "state from the activity (composing / searching / weaving), size 20 inline",
+      "why": "An AI wait of 2 s or more gets an orb next to its label (skill decision rule).",
+      "risks": "Low: a 2D canvas or CSS layer. Check it pauses when hidden.",
+      "license": "MIT",
+      "status": "suggested"
+    },
+    {
       "file": "src/components/editor/Editor.tsx",
       "line": 210,
       "target": "Waiting state",
       "existingComponent": "{render.busy ? <button type=\"button\" className=\"inline-flex items-center gap-1.5 rounded-lg bg-rose-500/20 px-3 py-1.5 t",
+      "suggestedLibrary": "Thinking orbs",
+      "package": "thinking-orbs",
+      "variant": "state from the activity (composing / searching / weaving), size 20 inline",
+      "why": "An AI wait of 2 s or more gets an orb next to its label (skill decision rule).",
+      "risks": "Low: a 2D canvas or CSS layer. Check it pauses when hidden.",
+      "license": "MIT",
+      "status": "suggested"
+    },
+    {
+      "file": "src/components/ScreenStates.tsx",
+      "line": 49,
+      "target": "Waiting state",
+      "existingComponent": "<Loader2 size={15} className=\"animate-spin text-accent-text motion-reduce:animate-none\" aria-hidden />",
       "suggestedLibrary": "Thinking orbs",
       "package": "thinking-orbs",
       "variant": "state from the activity (composing / searching / weaving), size 20 inline",
@@ -157,7 +183,7 @@
     },
     {
       "file": "src/screens/ArenaDesk.tsx",
-      "line": 249,
+      "line": 258,
       "target": "Waiting state",
       "existingComponent": "<Loader2 size={18} className=\"motion-safe:animate-spin text-accent-text\" />",
       "suggestedLibrary": "Thinking orbs",
@@ -170,7 +196,7 @@
     },
     {
       "file": "src/screens/Brief.tsx",
-      "line": 323,
+      "line": 331,
       "target": "Waiting state",
       "existingComponent": "<span className=\"nf-typing flex gap-1\">",
       "suggestedLibrary": "Thinking orbs",
@@ -183,7 +209,7 @@
     },
     {
       "file": "src/screens/FootageDesk.tsx",
-      "line": 401,
+      "line": 410,
       "target": "Waiting state",
       "existingComponent": "{sending ? <Loader2 size={13} className=\"animate-spin\" /> : <Clapperboard size={13} />}",
       "suggestedLibrary": "Thinking orbs",
@@ -222,7 +248,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1376,
+      "line": 1460,
       "target": "Waiting state",
       "existingComponent": "{importing ? <Loader2 size={13} className=\"animate-spin\" /> : <Plus size={13} />} Import",
       "suggestedLibrary": "Thinking orbs",
@@ -235,7 +261,7 @@
     },
     {
       "file": "src/screens/studio/ClipProFields.tsx",
-      "line": 143,
+      "line": 144,
       "target": "Waiting state",
       "existingComponent": "disabled={variants?.busy} title={(variants?.busy) ? 'Generating variants…' : undefined}",
       "suggestedLibrary": "Thinking orbs",
@@ -287,7 +313,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 579,
+      "line": 599,
       "target": "Search input (loads after submit)",
       "existingComponent": "placeholder=\"Search free models…\"",
       "suggestedLibrary": "Border beam",
@@ -300,7 +326,7 @@
     },
     {
       "file": "src/app-shell/AskPanel.tsx",
-      "line": 845,
+      "line": 876,
       "target": "Chat input",
       "existingComponent": "placeholder=\"Ask anything, or paste an image…\"",
       "suggestedLibrary": "Border beam",
@@ -456,7 +482,7 @@
     },
     {
       "file": "src/screens/Autonomous.tsx",
-      "line": 105,
+      "line": 106,
       "target": "Mic button",
       "existingComponent": "const [transcribing, setTranscribing] = useState(false)",
       "suggestedLibrary": "Voice",
@@ -482,7 +508,7 @@
     },
     {
       "file": "src/screens/ReviewRoom.tsx",
-      "line": 63,
+      "line": 68,
       "target": "Mic button",
       "existingComponent": "const [micOff, setMicOff] = useState(false)",
       "suggestedLibrary": "Voice",
@@ -495,7 +521,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 28,
+      "line": 29,
       "target": "Mic button",
       "existingComponent": "MicOff,",
       "suggestedLibrary": "Voice",
@@ -508,7 +534,7 @@
     },
     {
       "file": "src/screens/studio/StudioProPanel.tsx",
-      "line": 72,
+      "line": 76,
       "target": "Mic button",
       "existingComponent": "const [transcribing, setTranscribing] = useState(false)",
       "suggestedLibrary": "Voice",
@@ -521,7 +547,7 @@
     },
     {
       "file": "src/screens/Brief.tsx",
-      "line": 290,
+      "line": 298,
       "target": "Bot avatar",
       "existingComponent": "const gem = msg.role === 'gemini'",
       "suggestedLibrary": "Bot avatars",
@@ -529,6 +555,19 @@
       "variant": "BotAvatar size 32, state 'working' while the reply is pending",
       "why": "Bot/agent avatars get a BotAvatar driven by real status.",
       "risks": "Medium: a per-frame canvas/SVG filter. Keep it to one instance per area.",
+      "license": "MIT",
+      "status": "suggested"
+    },
+    {
+      "file": "src/components/ScreenStates.tsx",
+      "line": 59,
+      "target": "Image placeholder",
+      "existingComponent": "<div className=\"h-1 w-1/3 animate-pulse rounded bg-muted/60 motion-reduce:animate-none motion-reduce:w-full\" />",
+      "suggestedLibrary": "Image",
+      "package": "img-fx",
+      "variant": "ImageGeneration preset 'sweep-gradient', strength 0.5",
+      "why": "Images that are generated or lazy-loaded get Image placeholders.",
+      "risks": "Higher: WebGL context per instance, so avoid it in long lists. Every metal element on a page shares one colour.",
       "license": "MIT",
       "status": "suggested"
     },
@@ -599,7 +638,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1644,
+      "line": 1728,
       "target": "Image placeholder",
       "existingComponent": "<span className={cx('h-2 w-2 shrink-0 rounded-full', listening ? 'animate-pulse bg-accent' : 'bg-muted')} />",
       "suggestedLibrary": "Image",
@@ -612,7 +651,7 @@
     },
     {
       "file": "src/app-shell/Sidebar.tsx",
-      "line": 76,
+      "line": 80,
       "target": "Plus menu / segmented control",
       "existingComponent": "layoutId=\"rail-active\"",
       "suggestedLibrary": "Gooey",
@@ -664,7 +703,7 @@
     },
     {
       "file": "src/screens/Studio.tsx",
-      "line": 1413,
+      "line": 1497,
       "target": "Plus menu / segmented control",
       "existingComponent": "<Button size=\"sm\" variant=\"outline\" onClick={() => setShapeOpen((v) => !v)} disabled={exporting} title={(exporting) ? 'W",
       "suggestedLibrary": "Gooey",
@@ -677,7 +716,7 @@
     },
     {
       "file": "src/screens/ArenaDesk.tsx",
-      "line": 431,
+      "line": 440,
       "target": "Primary button",
       "existingComponent": "<Button size=\"sm\" variant=\"primary\" onClick={onRender} disabled={!asset.localPath} title={(!asset.localPath) ? 'Import t",
       "suggestedLibrary": "Liquid metal",
@@ -716,9 +755,9 @@
     }
   ],
   "counts": {
-    "findings": 47,
+    "findings": 50,
     "applied": 1,
-    "files": 28
+    "files": 30
   },
   "footer": "Run `libraries apply` on any line to install it."
 }

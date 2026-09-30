@@ -7,11 +7,16 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
+    "test": "vitest run",
+    "media:ensure": "node scripts/ensure-media-tools.mjs",
+    "verify:phase1": "node scripts/phase1-walkthrough.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:list": "playwright test --list",
     "check:agent-code": "node scripts/check-agent-code.mjs",
-    "build": "node scripts/build-packs.mjs && node scripts/build-icons.mjs --check && tsc --noEmit && node scripts/check-bridge.mjs && node scripts/check-agent-code.mjs && node scripts/check-speech.mjs && node scripts/check-gates.mjs && node scripts/check-scoped-edit.mjs && node scripts/check-renderer.mjs && node scripts/check-encode-dims.mjs && node scripts/check-stock.mjs && node scripts/check-keyframe-edit.mjs && node scripts/check-agent-edits.mjs && node scripts/check-ipc-allowlist.mjs && node scripts/check-ai-connections.mjs && node scripts/check-updater.mjs && node scripts/check-resources.mjs && node scripts/check-generated-package.mjs && node scripts/check-template-fill.mjs && node scripts/check-resource-apply.mjs && node scripts/check-automation-gate.mjs && node scripts/check-studio-surfaces.mjs && node scripts/check-voice.mjs && node scripts/check-encoders.mjs && node scripts/check-project-history.mjs && node scripts/check-diagnostics.mjs && node scripts/check-sandbox.mjs && node scripts/check-migration.mjs && node scripts/check-project-schema.mjs && node scripts/check-photo-import.mjs && node scripts/check-local-voice.mjs && node scripts/check-undo-audit.mjs && node scripts/check-pro-features.mjs && node scripts/check-editor-upgrades.mjs && node scripts/check-source-project.mjs && node scripts/check-mask-track.mjs && node scripts/check-physics.mjs && node scripts/check-resource-reach.mjs && node scripts/check-shapes-cursor-3d.mjs && node scripts/check-framecn-fonts.mjs && node scripts/check-agent-kit.mjs && node scripts/check-resource-finder.mjs && node scripts/check-creative-tools.mjs && node scripts/check-proxies.mjs && node scripts/check-auto-captions.mjs && node scripts/check-decompose.mjs && node scripts/check-component-director.mjs && node scripts/check-scrub-perf.mjs && node scripts/check-progress-coverage.mjs && node scripts/check-loaders.mjs && node scripts/check-production.mjs && node scripts/check-libraries-dev.mjs && node scripts/check-tts-languages.mjs && node scripts/check-upgrades-batch1.mjs && node scripts/check-upgrades-batch2.mjs && node scripts/check-upgrades-batch3.mjs && node scripts/check-upgrades-batch4.mjs && node scripts/check-upgrades-batch5.mjs && node scripts/check-upgrades-batch6.mjs && node scripts/check-upgrades-batch7.mjs && node scripts/check-upgrades-batch8.mjs && node scripts/check-upgrades-batch9.mjs && node scripts/check-upgrades-batch10.mjs && node scripts/check-upgrades-batch11.mjs && node scripts/check-product-sting.mjs && node scripts/check-home-videos.mjs && node scripts/check-home-extras.mjs && node scripts/check-automation.mjs && node scripts/check-ui-audit.mjs && node scripts/check-readiness.mjs && node scripts/check-placement.mjs && node scripts/check-creative-log.mjs && node scripts/check-assembly.mjs && vite build",
+    "build": "node scripts/build-packs.mjs && node scripts/build-icons.mjs --check && tsc --noEmit && node scripts/check-test-runner.mjs && npm run test && node scripts/check-bridge.mjs && node scripts/check-agent-code.mjs && node scripts/check-speech.mjs && node scripts/check-gates.mjs && node scripts/check-scoped-edit.mjs && node scripts/check-renderer.mjs && node scripts/check-preview-parity.mjs && node scripts/check-studio-trim.mjs && node scripts/check-export-preflight.mjs && node scripts/check-licences.mjs && node scripts/check-version-sync.mjs && node scripts/check-release-signing.mjs && node scripts/check-encode-dims.mjs && node scripts/check-stock.mjs && node scripts/check-keyframe-edit.mjs && node scripts/check-agent-edits.mjs && node scripts/check-ipc-allowlist.mjs && node scripts/check-ai-connections.mjs && node scripts/check-ai-providers.mjs && node scripts/check-updater.mjs && node scripts/check-resources.mjs && node scripts/check-generated-package.mjs && node scripts/check-template-fill.mjs && node scripts/check-resource-apply.mjs && node scripts/check-automation-gate.mjs && node scripts/check-studio-surfaces.mjs && node scripts/check-voice.mjs && node scripts/check-encoders.mjs && node scripts/check-project-history.mjs && node scripts/check-diagnostics.mjs && node scripts/check-sandbox.mjs && node scripts/check-migration.mjs && node scripts/check-project-schema.mjs && node scripts/check-photo-import.mjs && node scripts/check-local-voice.mjs && node scripts/check-undo-audit.mjs && node scripts/check-pro-features.mjs && node scripts/check-editor-upgrades.mjs && node scripts/check-source-project.mjs && node scripts/check-mask-track.mjs && node scripts/check-physics.mjs && node scripts/check-resource-reach.mjs && node scripts/check-shapes-cursor-3d.mjs && node scripts/check-framecn-fonts.mjs && node scripts/check-agent-kit.mjs && node scripts/check-resource-finder.mjs && node scripts/check-creative-tools.mjs && node scripts/check-proxies.mjs && node scripts/check-auto-captions.mjs && node scripts/check-decompose.mjs && node scripts/check-component-director.mjs && node scripts/check-scrub-perf.mjs && node scripts/check-progress-coverage.mjs && node scripts/check-loaders.mjs && node scripts/check-production.mjs && node scripts/check-libraries-dev.mjs && node scripts/check-tts-languages.mjs && node scripts/check-upgrades-batch1.mjs && node scripts/check-upgrades-batch2.mjs && node scripts/check-upgrades-batch3.mjs && node scripts/check-upgrades-batch4.mjs && node scripts/check-upgrades-batch5.mjs && node scripts/check-upgrades-batch6.mjs && node scripts/check-upgrades-batch7.mjs && node scripts/check-upgrades-batch8.mjs && node scripts/check-upgrades-batch9.mjs && node scripts/check-upgrades-batch10.mjs && node scripts/check-upgrades-batch11.mjs && node scripts/check-product-sting.mjs && node scripts/check-home-videos.mjs && node scripts/check-home-extras.mjs && node scripts/check-automation.mjs && node scripts/check-automation-steps.mjs && node scripts/check-ui-audit.mjs && node scripts/check-readiness.mjs && node scripts/check-placement.mjs && node scripts/check-creative-log.mjs && node scripts/check-assembly.mjs && node scripts/check-frame-accurate.mjs && node scripts/check-phase3-ui.mjs && node scripts/check-attribution.mjs && vite build",
     "typecheck": "tsc --noEmit",
     "packs:build": "node scripts/audit-uselayouts.mjs && node scripts/build-opus-index.mjs && node scripts/build-packs.mjs",
-    "check:renderer": "node scripts/check-renderer.mjs && node scripts/check-encode-dims.mjs",
+    "check:renderer": "node scripts/check-renderer.mjs && node scripts/check-preview-parity.mjs && node scripts/check-encode-dims.mjs",
     "check:bridge": "node scripts/check-bridge.mjs",
     "check:boot": "node scripts/check-boot.mjs",
     "check:schema": "node scripts/check-project-schema.mjs",
@@ -47,6 +52,14 @@
     "check:photo-import": "node scripts/check-photo-import.mjs",
     "check:local-voice": "node scripts/check-local-voice.mjs",
     "check:undo": "node scripts/check-undo-audit.mjs",
+    "check:preview-parity": "node scripts/check-preview-parity.mjs",
+    "check:studio-trim": "node scripts/check-studio-trim.mjs",
+    "check:export-preflight": "node scripts/check-export-preflight.mjs",
+    "check:licences": "node scripts/check-licences.mjs",
+    "check:version-sync": "node scripts/check-version-sync.mjs",
+    "check:release-signing": "node scripts/check-release-signing.mjs",
+    "check:install": "node scripts/check-install-windows.mjs",
+    "check:update-path": "node scripts/check-update-path.mjs",
     "check:pro": "node scripts/check-pro-features.mjs",
     "check:proxies": "node scripts/check-proxies.mjs",
     "check:captions": "node scripts/check-auto-captions.mjs",
@@ -73,7 +86,8 @@
     "check:readiness": "node scripts/check-readiness.mjs",
     "check:placement": "node scripts/check-placement.mjs",
     "check:creative-log": "node scripts/check-creative-log.mjs",
-    "check:assembly": "node scripts/check-assembly.mjs"
+    "check:assembly": "node scripts/check-assembly.mjs",
+    "check:frame-accurate": "node scripts/check-frame-accurate.mjs"
   },
   "dependencies": {
     "@dimforge/rapier3d-compat": "~0.12.0",
@@ -100,8 +114,6 @@
     "@fontsource/noto-sans-devanagari": "^5.3.0",
     "@fontsource/poppins": "^5.3.0",
     "@google/generative-ai": "^0.24.1",
-    "@paper-design/shaders-react": "^0.0.76",
-    "@remotion/player": "^4.0.529",
     "adm-zip": "^0.6.1",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
@@ -118,7 +130,6 @@
     "pg": "^8.20.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "remotion": "^4.0.529",
     "simple-icons": "^16.32.0",
     "tailwind-merge": "^3.7.0",
     "thinking-orbs": "^0.3.2",
@@ -129,6 +140,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/vite": "^4.0.0",
     "@types/canvas-confetti": "^1.9.0",
@@ -147,7 +159,8 @@
     "puppeteer-core": "^24.43.1",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.6.3",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "vitest": "^3.2.7"
   },
   "build": {
     "appId": "app.cupric-ai.studio",
@@ -181,7 +194,13 @@
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "Cupric-AI-${version}-${arch}-Portable.${ext}"
+      "artifactName": "Cupric-AI-${version}-${arch}-Portable.${ext}",
+      "signtoolOptions": {
+        "signingHashAlgorithms": [
+          "sha256"
+        ],
+        "rfc3161TimeStampServer": "http://timestamp.digicert.com"
+      }
     },
     "nsis": {
       "oneClick": false,

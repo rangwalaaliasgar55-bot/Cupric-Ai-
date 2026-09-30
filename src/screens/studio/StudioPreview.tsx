@@ -11,7 +11,7 @@ import type {
   StudioTextClip,
 } from '../../types/project'
 import { resolveForOutput } from '../../lib/studio/resolve'
-import { clipEnd, previewSizeForAspect, sourceTimeFor } from '../../lib/studio/doc'
+import { clipEnd, frameTimeFor, previewSizeForAspect, snapToFrame, sourceTimeFor } from '../../lib/studio/doc'
 import { safeAreas } from '../../lib/studio/textTools'
 import { mixGainAt } from '../../lib/studio/audioMix'
 import { getMedia, previewVideoOf } from '../../lib/studio/media'
@@ -119,8 +119,12 @@ export function StudioPreview({
       el.volume = Math.min(1, Math.max(0, media.volume))
       el.playbackRate = media.speed > 0 ? media.speed : 1
       if (active) {
-        const want = sourceTimeFor(media, t)
-        if (Math.abs(el.currentTime - want) > (isPlaying ? 0.28 : 0.03)) el.currentTime = want
+        // Paused: show the exact frame under the playhead. Seek to the middle of the
+        // timeline frame (a boundary seek can decode the previous frame) and accept
+        // no drift beyond half a frame — 0.03 s let a 60 fps preview sit a frame off.
+        const fps = doc.fps > 0 ? doc.fps : 30
+        const want = isPlaying ? sourceTimeFor(media, t) : sourceTimeFor(media, snapToFrame(t, fps) + 0.5 / fps)
+        if (Math.abs(el.currentTime - want) > (isPlaying ? 0.28 : 0.5 / fps)) el.currentTime = want
         if (isPlaying && el.paused) void el.play().catch(() => undefined)
         if (!isPlaying && !el.paused) el.pause()
       } else if (!el.paused) {
@@ -152,7 +156,10 @@ export function StudioPreview({
     }
 
     try {
-      drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, registrySources)
+      // The same frame time the exporter draws (`frameTimeFor`): a playhead left
+      // past the end of a shortened doc shows the last frame the file will
+      // contain, never a frame the export cannot produce.
+      drawStudioFrame(ctx, doc, frameTimeFor(doc, t), canvas.width, canvas.height, registrySources)
     } catch (err) {
       failCanvas(`The canvas renderer failed: ${err instanceof Error ? err.message : String(err)}`, err)
     }

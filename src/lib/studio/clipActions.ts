@@ -8,7 +8,7 @@
  */
 import type { StudioClip, StudioDoc } from '../../types/project'
 import { uid } from '../utils'
-import { MAX_TRACKS, clipEnd, placeClip, splitClipAt } from './doc'
+import { MAX_TRACKS, clipEnd, placeClip, snapToFrame, splitClipAt } from './doc'
 import { rippleDelete } from './timelineOps'
 
 export type ClipActionId =
@@ -87,7 +87,7 @@ export function applyClipAction(doc: StudioDoc, clipId: string | null, action: C
       return { doc: { ...doc, trackCount: placed.trackCount, clips: [...doc.clips, placed.clip] }, label: 'Duplicate clip', select: placed.clip.id }
     }
     case 'split': {
-      const halves = splitClipAt(clip, ctx.time)
+      const halves = splitClipAt(clip, ctx.time, doc.fps)
       if (!halves) return { message: 'Move the playhead inside the clip to split it.' }
       return { doc: { ...doc, clips: doc.clips.flatMap((c) => (c.id === clip.id ? halves : [c])) }, label: 'Split clip' }
     }
@@ -115,7 +115,7 @@ export function applyClipAction(doc: StudioDoc, clipId: string | null, action: C
       return { doc: reposition({ ...doc, trackCount: Math.max(doc.trackCount, track + 1) }, { ...clip, track }), label: action === 'bring-forward' ? 'Bring forward' : 'Send backward' }
     }
     case 'to-playhead':
-      return { doc: reposition(doc, { ...clip, startSec: Math.max(0, Math.round(ctx.time * 100) / 100) }), label: 'Move to playhead' }
+      return { doc: reposition(doc, { ...clip, startSec: Math.max(0, snapToFrame(ctx.time, doc.fps)) }), label: 'Move to playhead' }
   }
 }
 

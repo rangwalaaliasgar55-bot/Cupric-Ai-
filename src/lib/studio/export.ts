@@ -11,17 +11,18 @@
  * isn't" behaviour this app is trying to avoid.
  */
 
-import { registrySources } from './sources'
+import { exportSources } from './sources'
 import { ensureDocFonts } from './fonts'
 import type { StudioAudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { getIpc, isDesktop } from '../bridge'
 import { resolveForOutput } from './resolve'
-import { clipEnd, docDuration, sizeForAspect, sourceTimeFor } from './doc'
+import { clipEnd, docDuration, frameTimeFor, sizeForAspect, sourceTimeFor } from './doc'
 import { mixGainAt } from './audioMix'
 import { getMedia, overlayImage } from './media'
-import { preloadLottie, stickerFrame } from './lottie'
+import { preloadLottie } from './lottie'
 import { ensurePhysicsFor } from './physics'
-import { drawableElement, drawStudioFrame, type FrameSources } from './renderer'
+import { drawStudioFrame, type FrameSources } from './renderer'
+import { rlog } from '../log'
 
 export type ExportOptions = {
   fileName?: string
@@ -87,6 +88,15 @@ function rampGain(ctx: AudioContext, el: HTMLMediaElement, value: number) {
   gain.gain.linearRampToValueAtTime(value, now + 0.02)
 }
 
+/**
+ * A promise that resolves to `fallback` after `ms`, for bounding a wait that may
+ * never finish. Used only for waits whose failure is survivable and reported —
+ * never to hide a long-but-real operation.
+ */
+function withTimeout<T>(fallback: T, ms: number): Promise<T> {
+  return new Promise<T>((resolve) => window.setTimeout(() => resolve(fallback), ms))
+}
+
 export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = {}): Promise<ExportResult> {
   if (editDoc.clips.some((c) => c.kind === 'sticker')) await preloadLottie()
   const doc = resolveForOutput(editDoc)
@@ -105,7 +115,19 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
   }
   // Physics layers must never be baked as the loading placeholder.
   await ensurePhysicsFor(doc)
-  await document.fonts?.ready.catch(() => undefined)
+  // Bounded: everything below is the recording, and the stall watchdog only
+  // starts once the recorder is rolling. A font promise that never settles (a
+  // hidden window that never finishes a text layout, for instance) would
+  // therefore hang the export with no error at all — the exact failure the
+  // Windows E2E kept hitting. Waiting forever for a font is not worth it; the
+  // fallback face is what the warning above already covers.
+  if (document.fonts?.ready) {
+    const settled = await Promise.race([
+      document.fonts.ready.then(() => true).catch(() => true),
+      withTimeout(false, 5_000),
+    ])
+    if (!settled) rlog.warn('studio', 'export:fonts-not-ready', { waitedMs: 5_000, visibility: document.visibilityState })
+  }
 
   const scale = options.scale ?? 1
   const [fullW, fullH] = sizeForAspect(doc.aspect, doc.resolution)
@@ -133,7 +155,16 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
   if (audible.length) {
     const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     audioCtx = new Ctor()
-    if (audioCtx.state === 'suspended') await audioCtx.resume()
+    if (audioCtx.state === 'suspended') {
+      // Bounded, and never silent about it: an AudioContext may refuse to resume
+      // without a user gesture, and an export that quietly loses its sound is a
+      // worse outcome than one that says so.
+      const resumed = await Promise.race([audioCtx.resume().then(() => true).catch(() => false), withTimeout(false, 3_000)])
+      if (!resumed) {
+        rlog.warn('studio', 'export:audio-suspended', { state: audioCtx.state, visibility: document.visibilityState })
+        options.onWarning?.('The audio engine stayed suspended in this window, so this export may be silent. Press play on the timeline once, then export again.')
+      }
+    }
     mixDest = audioCtx.createMediaStreamDestination()
     for (const clip of audible) {
       const handle = getMedia(clip.mediaId)
@@ -146,7 +177,28 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
     }
   }
 
-  const stream = canvas.captureStream(doc.fps)
+  /**
+   * Frames are pushed explicitly rather than sampled by the compositor.
+   *
+   * `captureStream(fps)` only produces frames while the page is being composited,
+   * and an offscreen Studio renderer (`electron/main.cjs` creates it with
+   * `show: false`) may never composite — no GPU, no display, or a platform that
+   * simply does not present hidden windows. The stream then stays empty, the
+   * recorder writes nothing, and the export hangs with no error, no file and no
+   * toast. `captureStream(0)` + `requestFrame()` after each draw removes the
+   * compositor from the picture: the frames exist because we drew them.
+   */
+  let stream = canvas.captureStream(0)
+  let canvasTrack = stream.getVideoTracks()[0] as (MediaStreamTrack & { requestFrame?: () => void }) | undefined
+  const pushFrames = typeof canvasTrack?.requestFrame === 'function'
+  if (!pushFrames) {
+    // No explicit-frame support (very old Chromium): fall back to the
+    // compositor-sampled stream this used to create, and say so.
+    for (const track of stream.getTracks()) track.stop()
+    stream = canvas.captureStream(doc.fps)
+    canvasTrack = stream.getVideoTracks()[0] as (MediaStreamTrack & { requestFrame?: () => void }) | undefined
+    rlog.warn('studio', 'export:no-requestFrame', { fps: doc.fps, visibility: document.visibilityState })
+  }
   if (mixDest) for (const track of mixDest.stream.getAudioTracks()) stream.addTrack(track)
 
   const mimeType = pickMimeType()
@@ -159,12 +211,8 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
     if (event.data && event.data.size) chunks.push(event.data)
   }
 
-  const sources: FrameSources = {
-    media: (clip) => drawableElement(clip.mediaId),
-    // Same resolver as the preview, so animated Lab captures export animated.
-    overlay: registrySources.overlay,
-    sticker: (clip, localSec) => stickerFrame(clip, localSec),
-  }
+  // Full-resolution media; the same overlay/sticker resolvers the preview uses.
+  const sources: FrameSources = exportSources()
 
   // Reset every audio clip to its trim-in as well, so a music bed that was
   // auditioned mid-track does not start from wherever it was left.
@@ -196,9 +244,77 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
   const startedAt = performance.now()
   let cancelled = false
 
+  /**
+   * A recording that stops advancing has to fail, not hang.
+   *
+   * The loop below advances on `requestAnimationFrame`, because the recording is
+   * real-time: the compositor draws the frame and MediaRecorder captures it. In a
+   * window that never composites — an offscreen renderer on a machine with no
+   * GPU, which is what a CI runner is — no frame callback ever arrives, `elapsed`
+   * stays at zero, nothing is reported and nothing is submitted. The export then
+   * hangs with no error, no file and no toast: the worst possible failure, and
+   * one the Windows E2E hit twice.
+   *
+   * This watchdog only measures silence — it is not a progress bar and it never
+   * reports success. Timers still run when frame callbacks do not, so it can
+   * tell the two apart, and it names what it observed.
+   */
+  const STALL_AFTER_MS = 20_000
+  let framesDrawn = 0
+  let lastFrameAt = performance.now()
+  let stalledMs: number | null = null
+  let finishLoop: () => void = () => undefined
+  const stallWatch = window.setInterval(() => {
+    const silentMs = performance.now() - lastFrameAt
+    if (silentMs < STALL_AFTER_MS) return
+    stalledMs = silentMs
+    finishLoop()
+  }, 1_000)
+
+  // One line that answers the only question a stalled export raises: was this
+  // window even being drawn? It lands in the app's own log, which the E2E
+  // failure message quotes.
+  rlog.info('studio', 'export:recording-start', {
+    hidden: document.hidden,
+    visibility: document.visibilityState,
+    fps: doc.fps,
+    durationSec: Math.round(duration * 10) / 10,
+    size: `${width}x${height}`,
+    clips: doc.clips.length,
+    pushesFrames: pushFrames,
+  })
+
+  // rAF only runs while the window composites. Wait briefly for one callback; if
+  // none arrives, the recording is driven by a timer instead — the pictures no
+  // longer depend on the compositor, because every draw pushes its own frame.
+  const animationFrames = await new Promise<boolean>((resolve) => {
+    let answered = false
+    requestAnimationFrame(() => {
+      if (!answered) {
+        answered = true
+        resolve(true)
+      }
+    })
+    window.setTimeout(() => {
+      if (!answered) {
+        answered = true
+        resolve(false)
+      }
+    }, 1_500)
+  })
+  if (!animationFrames) {
+    rlog.warn('studio', 'export:no-animation-frames', { visibility: document.visibilityState, hidden: document.hidden, driver: 'timer' })
+  }
+
+  const frameMs = Math.max(8, Math.round(1000 / Math.max(1, doc.fps)))
+  let nextFramePushAt = 0
+
   await new Promise<void>((resolve) => {
+    finishLoop = resolve
     const tick = () => {
       const elapsed = (performance.now() - startedAt) / 1000
+      lastFrameAt = performance.now()
+      framesDrawn += 1
 
       if (options.signal?.cancelled) {
         cancelled = true
@@ -238,25 +354,45 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
         }
       }
 
-      drawStudioFrame(ctx, doc, Math.min(elapsed, duration), width, height, sources)
+      drawStudioFrame(ctx, doc, frameTimeFor(doc, elapsed), width, height, sources)
+      // Push the frame that was just drawn, at the document's own rate: with
+      // captureStream(0) this call is what puts a picture in the stream.
+      const now = performance.now()
+      if (pushFrames && now >= nextFramePushAt) {
+        nextFramePushAt = now + frameMs
+        canvasTrack?.requestFrame?.()
+      }
       options.onProgress?.(Math.min(99, (elapsed / duration) * 100))
 
       if (elapsed >= duration) {
         resolve()
         return
       }
-      requestAnimationFrame(tick)
+      schedule()
     }
-    requestAnimationFrame(tick)
+    const schedule = animationFrames
+      ? () => { requestAnimationFrame(tick) }
+      : () => { window.setTimeout(tick, frameMs) }
+    schedule()
   })
+
+  window.clearInterval(stallWatch)
 
   for (const clip of [...videoClips, ...audioClips]) {
     const el = getMedia(clip.mediaId)?.element
     if (el instanceof HTMLMediaElement) el.pause()
   }
 
+  /**
+   * Stop the recorder, but never wait on a recorder that is not answering:
+   * `onstop` is delivered by the same machinery that just went quiet, and
+   * waiting for it is how a stall turns into a hang a second time.
+   */
   recorder.stop()
-  await stopped
+  const stoppedOrAbandoned = await Promise.race([
+    stopped.then(() => true),
+    new Promise<boolean>((resolve) => window.setTimeout(() => resolve(false), 5_000)),
+  ])
   for (const track of stream.getTracks()) track.stop()
   if (mixDest) {
     for (const clip of audible) {
@@ -266,6 +402,17 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
     }
   }
   await audioCtx?.close()
+
+  if (stalledMs !== null) {
+    const elapsed = (performance.now() - startedAt) / 1000
+    throw new Error([
+      `The recording stalled: ${Math.round(stalledMs)}ms without a single animation frame.`,
+      `  drew ${framesDrawn} frame${framesDrawn === 1 ? '' : 's'}, reached ${elapsed.toFixed(1)}s of ${duration.toFixed(1)}s,`,
+      `  ${chunks.length} recorder chunk${chunks.length === 1 ? '' : 's'}, MediaRecorder ${stoppedOrAbandoned ? 'stopped cleanly' : 'never reported that it stopped'}.`,
+      '  This window stopped compositing — nothing was captured, so the export cannot finish.',
+      '  Nothing was written: an absent file is better than a broken one.',
+    ].join('\n'))
+  }
 
   const blob = new Blob(chunks, { type: mimeType || 'video/webm' })
   if (!blob.size && !cancelled) throw new Error('The recorder produced an empty file.')
@@ -338,6 +485,10 @@ export async function exportStudioInBackground(
       assets: [...assets.values()],
       fileName: options.fileName,
       fps: options.fps,
+      // The timeline's own length, so the export can be cut to the edit rather
+      // than to the take: a real-time capture on a slow machine runs long, and
+      // the main process has no other way to know what the user edited.
+      durationSec: docDuration(doc),
       loudnessTarget: options.loudnessTarget ?? null,
       width,
       height,
@@ -370,6 +521,7 @@ export async function convertToMp4(
   fps: number,
   loudnessTarget: number | null = null,
   signal?: { cancelled: boolean },
+  durationSec?: number,
 ): Promise<{ outputPath: string; bytes: number; loudness?: LoudnessReport | null }> {
   const ipc = getIpc()
   if (!isDesktop() || !ipc) throw new Error('MP4 conversion needs the desktop app (FFmpeg runs in the main process).')
@@ -405,6 +557,7 @@ export async function convertToMp4(
       fileName,
       fps,
       loudnessTarget,
+      ...(durationSec && durationSec > 0 ? { durationSec } : {}),
     }).then((accepted: { jobId?: string; outputPath?: string; bytes?: number; status?: string }) => {
       if (accepted?.outputPath) {
         finish(() => resolve({ outputPath: accepted.outputPath!, bytes: Number(accepted.bytes) || 0 }))
@@ -430,12 +583,7 @@ export function captureStill(editDoc: StudioDoc, t: number, maxWidth = 640): str
   canvas.height = Math.round(fullH * scale)
   const ctx = canvas.getContext('2d')
   if (!ctx) return null
-  drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, {
-    media: (clip) => drawableElement(clip.mediaId),
-    // Same resolver as the preview, so animated Lab captures export animated.
-    overlay: registrySources.overlay,
-    sticker: (clip, localSec) => stickerFrame(clip, localSec),
-  })
+  drawStudioFrame(ctx, doc, t, canvas.width, canvas.height, exportSources())
   try {
     return canvas.toDataURL('image/jpeg', 0.7)
   } catch {

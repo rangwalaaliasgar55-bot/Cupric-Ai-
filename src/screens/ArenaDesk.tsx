@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, Clapperboard, Copy, ExternalLink, FileCode2, Loader2, Lock, Play, Swords, Upload } from 'lucide-react'
+import { Check, Clapperboard, Copy, ExternalLink, FileCode2, Loader2, Lock, Play, Sparkles, Swords, Upload } from 'lucide-react'
 import { Badge } from '../components/Badge'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
@@ -20,6 +20,7 @@ import { copyText, cx, deriveAspect, gradientFor, relTime } from '../lib/utils'
 import { getIpc, getBridge } from '../lib/bridge'
 import { humanError } from '../lib/humanError'
 import { focusStudioClip } from '../lib/studio/focus'
+import { ScreenPurpose } from '../components/ScreenPurpose'
 
 const STATUS_TONE = {
   'prompt-ready': 'neutral',
@@ -142,13 +143,21 @@ export function ArenaDesk() {
           </p>
         </div>
 
+        <ScreenPurpose
+          id="arena"
+          icon={Sparkles}
+          title="What Arena Desk is for"
+          what="Generated scenes land here and stay editable: an animation, an HTML page or a ZIP package goes in, and the good one becomes clips on your timeline."
+          next="Paste a ZIP or HTML from arena.ai/code (or Cupric's own Arena run) into the drop zone — the preview below is the real thing, playing."
+        />
+
         <Card className="overflow-hidden p-4">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-muted">Remotion preview</div>
               <p className="mt-1 text-xs text-muted">A live React/Remotion composition generated from the locked rundown.</p>
             </div>
-            <Badge tone="info">@remotion/player</Badge>
+            <Badge tone="info">Cupric motion stage</Badge>
           </div>
           <MotionCompositionPlayer rundown={locked} />
         </Card>

@@ -37,19 +37,35 @@ const doc = () => S().projects.find((p) => p.id === pid).studio
 const steps = () => S().past.length
 const clip = (id) => doc().clips.find((c) => c.id === id)
 
-/** Run `fn`, assert it added exactly one undo step, undo restores, redo re-applies. */
-async function oneStep(label, fn) {
-  await wait(750) // outside the slider-coalescing window
-  const before = JSON.stringify(doc())
+/**
+ * Run `fn`, assert it added exactly one undo step, undo restores, redo re-applies.
+ * `pick` selects the slice of the project being audited (the Studio doc by
+ * default, the timeline strip for the timeline ops).
+ */
+async function oneStep(label, fn, pick = () => doc()) {
+  await wait(750) // outside the coalescing window
+  const before = JSON.stringify(pick())
   const n = steps()
   fn()
-  const after = JSON.stringify(doc())
+  const after = JSON.stringify(pick())
   assert.notEqual(after, before, `${label}: changed something`)
   assert.equal(steps(), n + 1, `${label}: exactly one undo step`)
   S().undo()
-  assert.equal(JSON.stringify(doc()), before, `${label}: undo restores`)
+  assert.equal(JSON.stringify(pick()), before, `${label}: undo restores`)
   S().redo()
-  assert.equal(JSON.stringify(doc()), after, `${label}: redo re-applies`)
+  assert.equal(JSON.stringify(pick()), after, `${label}: redo re-applies`)
+}
+
+/** A mutation that changes nothing must add NO undo step and keep the redo branch. */
+async function noStep(label, fn, pick = () => doc()) {
+  await wait(750)
+  const before = JSON.stringify(pick())
+  const n = steps()
+  const future = S().future.length
+  fn()
+  assert.equal(JSON.stringify(pick()), before, `${label}: changed nothing`)
+  assert.equal(steps(), n, `${label}: no undo step for a no-op`)
+  assert.equal(S().future.length, future, `${label}: the redo branch survives a no-op`)
 }
 
 const text = { ...m.defaultTextClip(0, 0), id: 't1' }
@@ -95,5 +111,37 @@ await wait(750)
 const k = steps()
 for (let i = 1; i <= 5; i += 1) S().updateStudioClip(pid, 'c1', { opacity: 1 - i * 0.1 })
 assert.equal(steps(), k + 1, 'a drag is one undo step')
-console.log('undo audit passed — every Studio mutation is one undo step; recordings never hijack Undo; shelf + legibility covered')
+
+// The timeline strip is the same project, a different model: same undo rules.
+const project = () => S().projects.find((p) => p.id === pid)
+const timeline = () => project().timeline
+
+// No-op mutations are not edits: settling an already settled clip, deleting an
+// id that is not there, a trim that snaps back to the same length.
+await noStep('settle an already settled clip', () => S().settleStudioClip(pid, 'c1'))
+await noStep('delete a clip id that does not exist', () => S().removeStudioClip(pid, 'nope'))
+await noStep('resize a clip to the length it already has', () => S().setClipDuration(pid, 'c1'), () => project().timeline)
+await oneStep('settle a clip moved off its neighbours (2.31)', () => {
+  S().updateStudioClip(pid, 'c1', { startSec: 0.37 })
+  S().settleStudioClip(pid, 'c1')
+}, () => doc())
+
+assert.equal(timeline().length, 0, 'the timeline starts empty in this project')
+await oneStep('add a timeline clip', () => S().addTimelineClip(pid, { sourceType: 'footage', sourceId: 'f1', durationSec: 4 }), timeline)
+assert.equal(timeline().length, 1, 'the clip is on the strip')
+await oneStep('change a timeline clip duration', () => S().setClipDuration(pid, timeline()[0].id, 6), timeline)
+assert.equal(timeline()[0].durationSec, 6, 'the duration changed')
+await oneStep('remove a timeline clip', () => S().removeTimelineClip(pid, timeline()[0].id), timeline)
+assert.equal(timeline().length, 0, 'the strip is empty again')
+
+// Two clips, then reorder: the strip is ordered by the project, not by start times.
+S().addTimelineClip(pid, { sourceType: 'footage', sourceId: 'f1', durationSec: 2 })
+S().addTimelineClip(pid, { sourceType: 'arena', sourceId: 'a1', durationSec: 2 })
+await oneStep('reorder timeline clips', () => S().moveTimelineClip(pid, 0, 1), timeline)
+assert.equal(timeline()[0].sourceType, 'arena', 'reorder moved the second clip first')
+
+// Production sessions (the Autonomous hand-off) are one step, like any edit.
+await oneStep('commit a production session', () => S().commitProduction(pid, { step: 'review', briefs: 1 }, 'Autonomous run'), () => project().production)
+
+console.log('undo audit passed — 16 mutations each exactly one undo step, 3 no-ops add none, recordings never hijack Undo, shelf/legibility/timeline/production covered')
 process.exit(0)

@@ -13,8 +13,31 @@ on:
 
 # Publishing is deliberately performed only after electron-builder has created
 # the NSIS installer. A failed build cannot leave an empty public release.
+#
+# Phase 4 — this release path is FAIL-CLOSED about signing, because the updater
+# trusts what it downloads unless `resources/app-update.yml` carries a
+# `publisherName`, and electron-builder only writes that field when it verified
+# a signing certificate. An unsigned build therefore does not just look
+# suspicious to Windows: it removes the Authenticode check from its own update
+# path for every future version installed over it. Accordingly:
+#
+#   * the certificate must be present as repository secrets (CSC_LINK /
+#     CSC_KEY_PASSWORD) or the run fails before packaging;
+#   * electron-builder runs with `--config.forceCodeSigning=true`, so it refuses
+#     to produce an unsigned build;
+#   * the tag must equal `v<package.json version>` and the changelog must be
+#     finalised for it (`npm run check:version-sync --tag`);
+#   * every installer's Authenticode status must be Valid, with a timestamp;
+#   * the packaged app-update.yml must carry a publisherName;
+#   * the install/run/uninstall check must pass against the built installer.
 permissions:
   contents: write
+
+# A tag pushed twice, or a manual re-run while the first is still packaging,
+# must not produce two publishes for the same release.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build-and-publish:
@@ -39,14 +62,97 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      # The installer unpacks both media tools (see package.json `asarUnpack`).
+      # Every render path calls FFmpeg and every verification path calls ffprobe;
+      # an optional dependency that silently failed to download would ship an app
+      # whose exports either cannot work or cannot be checked, so the release
+      # refuses to build without them.
+      - name: Ensure FFmpeg and ffprobe are really here
+        run: npm run media:ensure
+
+      # No certificate, no release. This is the first thing that runs after the
+      # checkout, so the failure message says what is missing instead of
+      # surfacing forty minutes later as an unsigned installer.
+      - name: Require the signing certificate
+        shell: pwsh
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+        run: |
+          if (-not $env:CSC_LINK) { throw "CSC_LINK is not set. A release must be signed: add the Authenticode certificate (base64 .pfx) and its password as the CSC_LINK and CSC_KEY_PASSWORD repository secrets. See docs/PHASE4_RELEASE.md." }
+
+      # The tag and the version must be the same release, and the changelog must
+      # have been finalised for it. v0.15.0 was tagged while package.json said
+      # 0.13.0 on main, which is exactly how an artifact and its documentation
+      # drift apart.
+      - name: Check the tag against the version and the changelog
+        shell: pwsh
+        run: npm run check:version-sync -- --tag ${{ inputs.tag || github.ref_name }}
+
+      # "One release per verified green build." The tagged commit must not have
+      # a red CI run against it. A commit with no runs at all is reported rather
+      # than blocked: a squash-merged main commit legitimately has none (the PR
+      # check ran on the merge ref), and this workflow's own steps are the
+      # verification for that case.
+      - name: Refuse to release a commit whose checks failed
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $sha = '${{ github.sha }}'
+          $repo = '${{ github.repository }}'
+          $json = gh api "repos/$repo/commits/$sha/check-runs" 2>$null | ConvertFrom-Json
+          if (-not $json -or -not $json.check_runs) {
+            Write-Host "No CI check runs are recorded for $sha (typical for a squash-merged commit). This workflow's own checks are the verification for this release."
+            exit 0
+          }
+          $bad = @($json.check_runs | Where-Object { $_.conclusion -in @('failure','cancelled','timed_out','action_required','startup_failure') })
+          if ($bad.Count -gt 0) {
+            foreach ($run in $bad) { Write-Host "::error::$($run.name) finished $($run.conclusion): $($run.html_url)" }
+            throw "$($bad.Count) check run(s) against $sha did not pass; a release must be cut from a verified green build."
+          }
+          $passing = @($json.check_runs | Where-Object { $_.conclusion -eq 'success' }).Count
+          Write-Host "$passing check run(s) against $sha are green; releasing."
+
       # `npm run build` is a 65-step && chain. Run it through the reporting
       # runner so a failure names the step that broke (v0.12.0 and v0.13.0 both
       # died here with a bare exit 1 and no clue which check had failed).
       - name: Run release checks and build the app
         run: node scripts/run-checks.mjs
 
-      - name: Package Windows installers
-        run: npx electron-builder --win --publish never
+      - name: Package Windows installers (signing enforced)
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: npx electron-builder --win --publish never --config.forceCodeSigning=true
+
+      - name: Verify the installers are signed, timestamped and updateable
+        shell: pwsh
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          $setups = Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe' -File
+          $portables = Get-ChildItem -Path release -Filter 'Cupric-AI-*-Portable.exe' -File
+          if ($setups.Count -ne 1) { throw "Expected exactly one setup; found $($setups.Count)." }
+          if ($portables.Count -ne 1) { throw "Expected exactly one portable build; found $($portables.Count)." }
+          foreach ($exe in @($setups[0], $portables[0])) {
+            $sig = Get-AuthenticodeSignature -LiteralPath $exe.FullName
+            if ($sig.Status -ne 'Valid') { throw "$($exe.Name) is not validly signed: $($sig.Status)" }
+            if (-not $sig.SignerCertificate.Subject.Contains('CN=')) { throw "$($exe.Name) has no CN in its signer subject." }
+            if (-not $sig.TimeStamperCertificate) { throw "$($exe.Name) is signed but not timestamped; the signature would stop verifying when the certificate expires and every installed app would lose the ability to update." }
+            Write-Host "$($exe.Name): Valid — $($sig.SignerCertificate.Subject) (timestamped by $($sig.TimeStamperCertificate.Subject))"
+          }
+
+          # The field the updater reads to decide whether to verify anything.
+          $updateYml = 'release/win-unpacked/resources/app-update.yml'
+          if (-not (Test-Path $updateYml)) { throw "The packaged app has no app-update.yml at $updateYml." }
+          $publisher = Select-String -Path $updateYml -Pattern '^publisherName:\s*(.+)$'
+          if (-not $publisher) { throw "app-update.yml has no publisherName: the updater would accept any downloaded update without verifying its signature. This is the failure mode signing is meant to prevent." }
+          Write-Host "app-update.yml pins: $($publisher.Matches[0].Groups[1].Value)"
+
+      - name: Install, run and uninstall the built installers
+        shell: pwsh
+        run: npm run check:install
 
       # 0.10.0 shipped a Studio that went white on mount. Boot the PACKAGED
       # app (real preload, real contextBridge) with --disable-gpu, visit every
@@ -92,8 +198,14 @@ jobs:
         run: |
           $tag = "${{ inputs.tag || github.ref_name }}"
           $repo = "${{ github.repository }}"
-          gh release view $tag --repo $repo --json tagName 2>$null
-          if ($LASTEXITCODE -ne 0) {
+          # One release per verified green build. A published release means its
+          # assets already went through every check above, so publishing over it
+          # would replace verified downloads with unverified ones; `--clobber`
+          # is kept only for re-running this workflow after an upload failed.
+          gh release view $tag --repo $repo --json tagName,isDraft,url 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Release $tag already exists; uploading the verified assets from this run only."
+          } else {
             gh release create $tag --repo $repo --title "Cupric AI $tag" --generate-notes --latest --target ${{ github.sha }}
           }
           $files = @(

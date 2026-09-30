@@ -48,7 +48,19 @@ Outputs into `release/`:
 - `Cupric-AI-Setup-0.13.0.exe` — NSIS installer.
 - `Cupric-AI-0.13.0-x64-Portable.exe` — portable executable.
 
-Get them from the [latest release](https://github.com/rangwalaaliasgar55-bot/Cupric-Ai-/releases/latest) — the in-app updater uses `latest.yml` to find them.
+**Current version:** `0.13.0` — the version this checkout builds, the version
+the app reports in Settings, and the version in `CHANGELOG.md`.
+`scripts/check-version-sync.mjs` fails the build if those three ever disagree
+with the artifact names above; it is what would have caught this README still
+advertising 0.13.0 two releases after 0.15.0 shipped.
+
+Get published builds from the [latest release](https://github.com/rangwalaaliasgar55-bot/Cupric-Ai-/releases/latest) — the in-app updater uses `latest.yml` to find them. Published releases are cut from
+release commits that bump this version, so the newest release may be newer than
+the checkout you are reading.
+
+Releases are code-signed and the release workflow refuses to publish an unsigned
+build; see [docs/PHASE4_RELEASE.md](docs/PHASE4_RELEASE.md) for what that
+enforces and how to verify it.
 
 The packaged app loads the built `dist/` over `file://` and self-hosts fonts, so
 it can run offline after installation. On first AI use and when Settings opens,

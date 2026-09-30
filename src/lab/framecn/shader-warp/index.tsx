@@ -1,9 +1,11 @@
 // Vendored from framecn (MIT) — https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-warp
-// Only import paths changed. See src/lab/framecn/LICENSE.
+// Import paths changed, and the shader component comes from Cupric's own kit
+// (../shader-kit) instead of the PolyForm-licensed upstream package. See src/lab/framecn/LICENSE
+// and docs/PHASE1_LICENSING.md.
 
 import { Timegroup, useTimingInfo } from "../editframe-shim";
-import { Warp } from "@paper-design/shaders-react";
-import type { WarpProps } from "@paper-design/shaders-react";
+import { Warp } from "../shader-kit";
+import type { WarpProps } from "../shader-kit";
 import { createContext, useCallback, useContext, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
