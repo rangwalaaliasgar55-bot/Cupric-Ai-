@@ -15,10 +15,19 @@
  * reported, never skipped silently.
  */
 import { test, expect } from '@playwright/test'
-import { launchApp } from './harness'
+import { dismissOnboarding, launchApp } from './harness'
 import type { LaunchedApp } from './harness'
 
-test.describe.configure({ mode: 'serial' })
+/**
+ * Not `mode: 'serial'`.
+ *
+ * The tests share one launched app (below), and `workers: 1` already runs them
+ * one at a time, in order. Serial mode would add one thing: abort the rest of
+ * the file after the first failure. On a Windows CI run that costs real
+ * information — the first run reported "4 did not run" and the failures behind
+ * that number were invisible. Each test below now gets itself into the state it
+ * needs, so one failure does not hide the others.
+ */
 
 let launched: LaunchedApp
 
@@ -35,10 +44,69 @@ test.afterAll(async () => {
   expect(launched.errors, `renderer errors:\n${launched.errors.join('\n')}`).toEqual([])
 })
 
-/** The tour is a first-run dialog; make sure the app is past it before a test. */
-async function dismissTourIfPresent(target: import('playwright').Page) {
-  const close = target.locator('[data-onboarding] button[aria-label="Close the welcome tour"]')
-  if (await close.count()) await close.first().click()
+/**
+ * Open a project if one is not open already. Idempotent, so a test can ask for
+ * the state it needs without depending on which test ran before it.
+ */
+async function ensureProjectOpen(page: import('playwright').Page): Promise<void> {
+  const nameField = page.locator('input[aria-label="Project name"]')
+  if (await nameField.count()) return
+  console.log('[e2e] no project open — creating one the way Home offers')
+  await page.locator('[data-nav="home"]').click()
+  await page.getByRole('button', { name: 'New project' }).first().click()
+  await expect(nameField, 'Home did not open the project it just created').toBeVisible({ timeout: 30_000 })
+}
+
+/**
+ * Click a sidebar entry, and refuse to pretend a locked one was clicked.
+ *
+ * Half the sidebar is deliberately locked without a project or a locked rundown
+ * (`src/app-shell/Sidebar.tsx`), and a locked button says why in its title. When
+ * a test wants a locked view it has to unlock it for real first — the failure
+ * message names the app's own reason instead of a bare timeout.
+ */
+async function openNav(page: import('playwright').Page, view: string): Promise<void> {
+  const button = page.locator(`[data-nav="${view}"]`)
+  const reason = (await button.getAttribute('title')) ?? 'no reason given'
+  await expect(button, `${view} is locked: ${reason}`).toBeEnabled({ timeout: 30_000 })
+  await button.click()
+  await page.waitForSelector(`main[data-view="${view}"]`, { timeout: 60_000 })
+}
+
+/**
+ * Get the app to the state where both desks are open for business: one project,
+ * one locked rundown.
+ *
+ * This is not test scaffolding — it is the product's own rule
+ * (`src/app-shell/Sidebar.tsx`: Arena Desk needs `needProject` + `needLock`), so
+ * a person has to do it too. The path below is the one they would take: create a
+ * project, describe the video in the Brief, let the planner fill the rundown,
+ * lock it. No key is configured on a CI runner, which is also the state of a
+ * fresh install, so the local planner is what answers — and if it cannot, this
+ * fails loudly instead of skipping.
+ */
+async function unlockDesks(page: import('playwright').Page): Promise<void> {
+  const arena = page.locator('[data-nav="arena"]')
+  if (await arena.isEnabled()) {
+    console.log('[e2e] desks already unlocked — using the project that is open')
+    return
+  }
+
+  await ensureProjectOpen(page)
+
+  const idea = page.getByLabel('Brief idea')
+  await expect(idea, 'creating a project did not land in the Brief').toBeVisible({ timeout: 30_000 })
+  await idea.fill('12s SaaS launch bumper for Aurora — dark, lime, confident')
+  await page.getByRole('button', { name: 'Generate rundown' }).click()
+
+  // The rundown is filled in field by field, and "Lock rundown" stays disabled
+  // until the planner has produced a title, scenes and an Arena prompt. Wait for
+  // the product to say it is ready — not for a fixed delay.
+  const lock = page.getByRole('button', { name: 'Lock rundown' })
+  await expect(lock, 'the planner never filled enough of the rundown to lock it').toBeEnabled({ timeout: 120_000 })
+  await lock.click()
+  await expect(page.locator('[role="status"]').filter({ hasText: 'Rundown locked' }).first()).toBeVisible({ timeout: 30_000 })
+  await expect(arena, 'locking a rundown did not unlock the Arena Desk').toBeEnabled({ timeout: 30_000 })
 }
 
 test('the first-run tour explains the four screens and goes somewhere', async () => {
@@ -79,9 +147,13 @@ test('the tour does not come back after it has been seen', async () => {
 })
 
 test('the desks explain what they are for, and the explanation can be dismissed', async () => {
-  await dismissTourIfPresent(launched.page)
+  await dismissOnboarding(launched.page)
+  // Both desks are locked until there is a project with a locked rundown
+  // behind them — the app says why on the locked buttons. Unlock them the way a
+  // person does; this also covers Brief → Generate → Lock end to end.
+  await unlockDesks(launched.page)
   for (const [nav, purposeId] of [['arena', 'arena'], ['footage', 'footage']]) {
-    await launched.page.locator(`[data-nav="${nav}"]`).click()
+    await openNav(launched.page, nav)
     const block = launched.page.locator(`[data-screen-purpose="${purposeId}"]`)
     await expect(block, `${nav} explains itself`).toBeVisible()
     await expect(block).toContainText('is for')
@@ -96,9 +168,11 @@ test('the desks explain what they are for, and the explanation can be dismissed'
 })
 
 test('the timeline playhead moves from the keyboard and says where it is', async () => {
-  await launched.page.locator('[data-nav="studio"]').click()
+  await dismissOnboarding(launched.page)
+  await ensureProjectOpen(launched.page)
+  await openNav(launched.page, 'studio')
   await launched.page.waitForSelector('canvas[aria-label="Studio preview"]')
-  await launched.page.locator('[data-nav="timeline"]').click()
+  await openNav(launched.page, 'timeline')
 
   const slider = launched.page.getByRole('slider', { name: 'Playhead' })
   await expect(slider).toBeVisible()
@@ -122,12 +196,19 @@ test('the timeline playhead moves from the keyboard and says where it is', async
 })
 
 test('the timeline announces what it cannot show', async () => {
+  // Not inherited from the test above: this one opens the Timeline itself, so a
+  // failure there cannot make this look like a broken live region.
+  await dismissOnboarding(launched.page)
+  await ensureProjectOpen(launched.page)
+  await openNav(launched.page, 'timeline')
   const live = launched.page.locator('[data-timeline-announcer]')
   await expect(live).toHaveAttribute('aria-live', 'polite')
   await expect(live).toHaveAttribute('role', 'status')
 })
 
 test('a missing speech engine offers a real download, not just a sentence', async () => {
+  await dismissOnboarding(launched.page)
+  await ensureProjectOpen(launched.page)
   const status = await launched.page.evaluate(async () => {
     const bridge = (window as unknown as { cupric?: { ipc: { invoke: (c: string, p?: unknown) => Promise<unknown> } } }).cupric
     if (!bridge) return null

@@ -8,7 +8,10 @@
  * uncaught error.
  */
 import { expect, test } from '@playwright/test'
-import { expectNoAppErrors, launchApp, seedState } from './harness'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { dismissOnboarding, expectNoAppErrors, launchApp } from './harness'
 
 const VIEWS = ['home', 'auto', 'review', 'brief', 'arena', 'footage', 'timeline', 'studio', 'motion', 'lab', 'render', 'library'] as const
 
@@ -30,6 +33,13 @@ test.describe('the app launches', () => {
     const app = await launchApp()
     try {
       await expect(app.page.locator('main[data-view]')).toBeVisible({ timeout: 60_000 })
+      // A profile with no projects is greeted by the first-run tour, which is a
+      // real modal covering the sidebar. Close it the way a person does before
+      // walking the nav — the sidebar underneath is "visible" to Playwright even
+      // while the overlay intercepts every click, which is how this test failed
+      // on the first Windows run.
+      const dismissed = await dismissOnboarding(app.page)
+      test.info().annotations.push({ type: 'first-run-tour', description: dismissed ? 'shown and dismissed' : 'not shown' })
       for (const view of VIEWS) {
         const button = app.page.locator(`[data-nav="${view}"]`).first()
         // A view can be legitimately unreachable on a fresh profile (nothing to
@@ -75,6 +85,7 @@ test.describe('the app launches', () => {
     const app = await launchApp()
     try {
       await expect(app.page.locator('main[data-view]')).toBeVisible({ timeout: 60_000 })
+      await dismissOnboarding(app.page)
       // Settings is the app's own surface for the version the release gate
       // (scripts/check-version-sync.mjs) ties to package.json.
       const version = await app.page.evaluate(async () => {
@@ -92,36 +103,60 @@ test.describe('the app launches', () => {
     }
   })
 
-  test('a seeded project survives a restart', async () => {
-    const { mkdtemp } = await import('node:fs/promises')
-    const { tmpdir } = await import('node:os')
-    const nodePath = await import('node:path')
-    const userDataDir = await mkdtemp(nodePath.join(tmpdir(), 'cupric-e2e-persist-'))
-    seedState(userDataDir, {
-      projects: [{ id: 'e2e-project', name: 'E2E persistence', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), doc: null }],
-      activeProjectId: 'e2e-project',
-      view: 'studio',
-      theme: 'dark',
-      soundCues: false,
-      automationJobs: [],
-    })
+  test('a project created in the app is still there after a restart', async () => {
+    // Why this changed: the old version hand-wrote a projects.json, then looked
+    // for the project name in `localStorage` and in `document.body.innerText`.
+    // Neither can work. On the desktop the store persists through the main
+    // process (`state:save` → projects.json), not localStorage — and the project
+    // name is an <input value>, which no `innerText` ever contains. It failed on
+    // Windows for those reasons, not because anything was lost.
+    //
+    // What it does now: create the project through the app, rename it through
+    // the same field a person uses, wait for the write to land on disk, restart,
+    // and assert what is on screen and on disk.
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-e2e-persist-'))
+    const stateFile = path.join(userDataDir, 'projects.json')
+    const name = 'E2E persistence'
+
     const first = await launchApp({ userDataDir })
     try {
-      await first.page.waitForSelector('main[data-view="studio"]', { timeout: 60_000 })
-      // Let the app flush its own state before closing.
-      await first.page.waitForTimeout(1500)
+      await expect(first.page.locator('main[data-view]')).toBeVisible({ timeout: 60_000 })
+      await dismissOnboarding(first.page)
+      await first.page.locator('[data-nav="home"]').click()
+      await first.page.getByRole('button', { name: 'New project' }).first().click()
+
+      const nameField = first.page.locator('input[aria-label="Project name"]')
+      await expect(nameField, 'creating a project did not open one').toBeVisible({ timeout: 30_000 })
+      await nameField.fill(name)
+      await expect(nameField).toHaveValue(name)
+
+      // The rename is only real once the main process has written it. Wait for
+      // the file, never for a timer.
+      await expect
+        .poll(() => (fs.existsSync(stateFile) ? fs.readFileSync(stateFile, 'utf8') : ''), {
+          message: `the app never wrote "${name}" to ${stateFile}`,
+          timeout: 30_000,
+        })
+        .toContain(name)
     } finally {
       await first.close()
     }
 
     const second = await launchApp({ userDataDir })
     try {
-      await second.page.waitForSelector('main[data-view="studio"]', { timeout: 60_000 })
-      const restored = await second.page.evaluate(() => {
-        const raw = localStorage.getItem('cupric-projects') ?? ''
-        return raw.includes('E2E persistence') || document.body.innerText.includes('E2E persistence')
-      })
-      expect(restored, 'the project was not restored after a restart').toBe(true)
+      await expect(second.page.locator('main[data-view]')).toBeVisible({ timeout: 60_000 })
+      await dismissOnboarding(second.page)
+
+      const restoredField = second.page.locator('input[aria-label="Project name"]')
+      const shown = (await restoredField.count()) > 0
+        ? await restoredField.inputValue()
+        : '(no project name field — the app opened with no project)'
+      const onDisk = fs.existsSync(stateFile) ? fs.readFileSync(stateFile, 'utf8') : '(no projects.json was written)'
+      expect(shown, `after a restart the app shows ${JSON.stringify(shown)}. projects.json: ${onDisk.slice(0, 600)}`).toBe(name)
+
+      // And the list a person would actually look at agrees.
+      await second.page.locator('[data-nav="home"]').click()
+      await expect(second.page.getByText(name).first(), 'Home does not list the project created before the restart').toBeVisible({ timeout: 30_000 })
     } finally {
       await second.close()
     }

@@ -49,39 +49,64 @@ export function electronBinary(): string {
   }
 }
 
+/**
+ * Resolve one media tool exactly the way `electron/main.cjs` resolves it:
+ * environment, then the module the app itself requires, then PATH.
+ *
+ * This matters more than it looks. The previous version of this function
+ * guessed at package *layouts* and ended up looking for
+ * `node_modules/ffmpeg-static/ffmpeg-static.exe` — a path that has never
+ * existed, because `ffmpeg-static`'s entry point computes `ffmpeg.exe` for the
+ * running platform and exports it. The first Windows CI run therefore threw
+ * "no ffmpeg-static binary in this checkout" while the binary was sitting right
+ * there, which is the worst kind of failure: the test, not the product.
+ *
+ * Asking the same modules the app asks means the E2E can never verify a
+ * different binary than the one the product would use.
+ */
+function resolveMediaTool(kind: 'ffmpeg' | 'ffprobe'): string {
+  const tried: string[] = []
+  const envNames = kind === 'ffmpeg' ? ['CUPRIC_FFMPEG_PATH', 'FFMPEG_PATH'] : ['CUPRIC_FFPROBE_PATH', 'FFPROBE_PATH']
+  for (const name of envNames) {
+    const value = process.env[name]
+    if (!value) {
+      tried.push(`${name}: unset`)
+      continue
+    }
+    if (fs.existsSync(value)) return value
+    tried.push(`${name}=${value} (does not exist)`)
+  }
+
+  const moduleName = kind === 'ffmpeg' ? 'ffmpeg-static' : 'ffprobe-static'
+  try {
+    const loaded = require(moduleName) as unknown
+    // ffmpeg-static exports the path itself; ffprobe-static exports { path }.
+    const candidate = typeof loaded === 'string' ? loaded : (loaded as { path?: string } | null)?.path
+    if (candidate && fs.existsSync(candidate)) return candidate
+    tried.push(`${moduleName}: resolved to ${candidate ?? 'nothing usable'}`)
+  } catch (error) {
+    tried.push(`${moduleName}: ${(error as Error).message}`)
+  }
+
+  const which = spawnSync(process.platform === 'win32' ? 'where' : 'which', [kind], { encoding: 'utf8' })
+  const onPath = which.status === 0 ? String(which.stdout).split(/\r?\n/).map((line) => line.trim()).filter(Boolean)[0] : null
+  if (onPath && fs.existsSync(onPath)) return onPath
+  tried.push(`PATH: ${onPath ?? `${kind} is not on PATH`}`)
+
+  throw new Error(
+    [
+      `E2E CANNOT RUN: no ${kind} binary in this checkout.`,
+      '  the app resolves it the same three ways, so it would fail identically:',
+      ...tried.map((line) => `    ${line}`),
+      '  fix: `npm run ffmpeg:ensure` — ffmpeg-static is an OPTIONAL dependency whose binary is',
+      '  downloaded by its postinstall script, and npm removes it silently if that download fails.',
+    ].join('\n'),
+  )
+}
+
 /** The ffmpeg/ffprobe binaries the app itself uses, or a thrown explanation. */
 export function mediaBinaries(): { ffmpeg: string; ffprobe: string } {
-  const resolve = (moduleName: string, packageName: string): string => {
-    const modulePath = require.resolve(`${moduleName}/package.json`)
-    const dir = path.dirname(modulePath)
-    const manifest = JSON.parse(fs.readFileSync(modulePath, 'utf8')) as { binary?: string }
-    const candidates = [
-      manifest.binary ? path.join(dir, manifest.binary) : null,
-      // ffprobe-static keeps its binary under bin/<platform>/<arch>/
-      path.join(dir, 'bin', process.platform, process.arch, process.platform === 'win32' ? `${moduleName}.exe` : moduleName),
-      path.join(dir, `${moduleName}.exe`),
-      path.join(dir, moduleName),
-    ].filter((value): value is string => Boolean(value))
-    const found = candidates.find((candidate) => fs.existsSync(candidate))
-    if (!found) {
-      throw new Error(
-        [
-          `E2E CANNOT RUN: no ${packageName} binary in this checkout.`,
-          `  looked in: ${candidates.join(', ')}`,
-          `  fix: \`npm ci\` on Windows downloads it; on a sandbox set CUPRIC_FFMPEG_PATH or install @ffmpeg-installer/ffmpeg.`,
-        ].join('\n'),
-      )
-    }
-    return found
-  }
-  // ffmpeg-static ships one binary at the package root; ffprobe-static under bin/.
-  const ffmpeg = process.env.CUPRIC_FFMPEG_PATH && fs.existsSync(process.env.CUPRIC_FFMPEG_PATH)
-    ? process.env.CUPRIC_FFMPEG_PATH
-    : resolve('ffmpeg-static', 'ffmpeg-static')
-  const ffprobe = process.env.CUPRIC_FFPROBE_PATH && fs.existsSync(process.env.CUPRIC_FFPROBE_PATH)
-    ? process.env.CUPRIC_FFPROBE_PATH
-    : resolve('ffprobe-static', 'ffprobe-static')
-  return { ffmpeg, ffprobe }
+  return { ffmpeg: resolveMediaTool('ffmpeg'), ffprobe: resolveMediaTool('ffprobe') }
 }
 
 export type LaunchedApp = {
@@ -251,6 +276,34 @@ export function probeFile(ffprobe: string, file: string): Probe {
     sizeBytes: parsed.format?.size ? Number(parsed.format.size) : 0,
     raw,
   }
+}
+
+/**
+ * Close the first-run tour the way a person does, if this profile is showing
+ * it.
+ *
+ * A profile with no projects is greeted by the tour, and the tour is a real
+ * modal: it covers the sidebar. Playwright's `toBeVisible` does not care about
+ * overlays (the button under it is still "visible"), but `click()` does, so a
+ * test that does not dismiss it fails with "…intercepts pointer events" — which
+ * is exactly what the first Windows run reported for the sidebar walk.
+ *
+ * Returns whether it actually dismissed something, so a caller can tell "this
+ * profile was already past it" from "the tour was closed", instead of assuming.
+ * Never throws: an absent tour is a normal state, not a failure.
+ */
+export async function dismissOnboarding(page: Page, timeoutMs = 8_000): Promise<boolean> {
+  const dialog = page.locator('[data-onboarding]')
+  try {
+    await dialog.waitFor({ state: 'visible', timeout: timeoutMs })
+  } catch {
+    console.log(`[e2e] first-run tour not shown (waited ${timeoutMs}ms) — this profile is already past it`)
+    return false
+  }
+  await page.locator('[data-onboarding] button[aria-label="Close the welcome tour"]').first().click()
+  await dialog.waitFor({ state: 'hidden', timeout: 15_000 })
+  console.log('[e2e] first-run tour dismissed')
+  return true
 }
 
 /**

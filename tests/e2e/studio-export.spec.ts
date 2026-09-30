@@ -15,7 +15,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { expectNoAppErrors, filesNewestFirst, launchApp, makeFixtureVideo, mediaBinaries, probeFile, seedState } from './harness'
 
-test.describe.configure({ mode: 'serial' })
+// Not serial: the two tests below use their own userData directories and launch
+// their own copy of the app, so one failing should not hide the other. On the
+// first Windows run, serial mode turned the ffmpeg resolution failure into two
+// lost signals instead of one.
+test.describe.configure({ mode: 'default' })
 
 test.describe('Studio: import a real clip and render a real MP4', () => {
   test('imports a generated MP4, shows it on the timeline, and exports a playable file', async () => {
