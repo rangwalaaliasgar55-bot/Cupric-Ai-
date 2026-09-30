@@ -75,10 +75,15 @@ export function installSilently(installerPath, installDir) {
 export function uninstallSilently(installDir) {
   const uninstaller = path.join(installDir, UNINSTALLER_NAME)
   if (!fs.existsSync(uninstaller)) throw new Error(`UNINSTALLER_MISSING: ${uninstaller}`)
-  // cwd = the install dir, the same thing a user double-clicking "Uninstall
-  // Cupric AI.exe" gets. The path contains spaces; spawned directly that is
-  // one argv entry, where a cmd-built command line would have split it.
-  const result = run(uninstaller, ['/S'], { timeout: 10 * 60 * 1000, cwd: installDir })
+  // Exactly what the installer registered as `QuietUninstallString`:
+  // `"Uninstall Cupric AI.exe" /currentuser /S`. `/currentuser` is not cosmetic
+  // — it is how the uninstaller resolves its shell context ($SMPROGRAMS, the
+  // registry hive) for a per-user install, and without it the mode is inferred
+  // instead of known. cwd = the install dir, the same thing a user
+  // double-clicking "Uninstall Cupric AI.exe" gets. The path contains spaces;
+  // spawned directly that is one argv entry, where a cmd-built command line
+  // would have split it.
+  const result = run(uninstaller, ['/currentuser', '/S'], { timeout: 10 * 60 * 1000, cwd: installDir })
   if (result.code !== 0) {
     throw new Error(`UNINSTALL_FAILED: uninstaller exited ${result.code}${result.stderr ? ` — ${result.stderr.trim()}` : ''}`)
   }

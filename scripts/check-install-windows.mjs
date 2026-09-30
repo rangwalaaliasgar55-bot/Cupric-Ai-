@@ -30,7 +30,12 @@
  *   5. the installed app boots with zero uncaught errors on every view (delegated
  *      to `scripts/check-boot.mjs`, which is the harness that caught the 0.10.0
  *      white-screen regression);
- *   6. the uninstaller removes the installation and the Start Menu shortcut;
+ *   6. the uninstaller removes the installation, the Start Menu shortcut and
+ *      its registry entry — a leftover registry key means the uninstall
+ *      section stopped before its last step, which is also how a surviving
+ *      shortcut is diagnosed; the leftover scan and the shortcut check poll
+ *      until the set settles, so a file Windows holds for a second is not
+ *      reported as debris;
  *   7. the portable build carries the same version as the installed one, and the
  *      same signature state as the installed executable (signed for a release;
  *      asserted *unsigned* under `--unsigned-build`, not skipped).
@@ -61,6 +66,7 @@ import {
   installSilently,
   isRunning,
   launchApp,
+  powershell,
   readFileVersion,
   run,
   tempDir,
@@ -69,6 +75,15 @@ import {
 } from './lib/windows-install.mjs'
 
 const unsignedBuild = process.argv.includes('--unsigned-build')
+
+/**
+ * PE version resources are four-part (`0.16.0.0`); `package.json` is three-part
+ * (`0.16.0`). The artifact must carry the declared version — that is the whole
+ * point of reading the resource instead of trusting the file name — so accept
+ * exactly the declared version or its four-part form with a zero build number,
+ * and nothing else.
+ */
+const matchesDeclaredVersion = (reported, declared) => reported === declared || reported === `${declared}.0`
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const releaseDir = path.join(root, 'release')
@@ -132,7 +147,7 @@ try {
   step('the installed executable exists', `${APP_EXE_NAME} (${(fs.statSync(exePath).size / 1024 / 1024).toFixed(1)} MB)`)
   const seen = [info.FileVersion, info.ProductVersion].filter(Boolean).map((v) => v.trim())
   if (!seen.length) fail('VERSION_MISSING', 'the installed executable carries no FileVersion/ProductVersion')
-  else if (!seen.every((v) => v === version)) fail('VERSION_MISMATCH', `installed exe reports ${seen.join(' / ')}, package.json says ${version}`)
+  else if (!seen.every((v) => matchesDeclaredVersion(v, version))) fail('VERSION_MISMATCH', `installed exe reports ${seen.join(' / ')}, package.json says ${version} (accepted: ${version} or its PE form ${version}.0)`)
   else step('the installed version matches package.json', `FileVersion ${info.FileVersion}${info.ProductVersion && info.ProductVersion !== info.FileVersion ? ` · ProductVersion ${info.ProductVersion}` : ''}`)
 
   /* ── the signature the updater will require ───────────────────────────── */
@@ -199,22 +214,70 @@ try {
   else step('the installed app booted every view', 'scripts/check-boot.mjs, zero uncaught errors')
 
   /* ── 6. uninstall ─────────────────────────────────────────────────────── */
-  await waitFor(() => !isRunning(), { timeoutMs: 60_000, describe: 'the app to exit before uninstalling' }).catch(() => closeApp())
+  // The boot check above force-crashes routes and can leave windowless child
+  // processes behind; `taskkill` without `/F` only closes windows and does not
+  // reach them, and their loaded modules keep files busy while the uninstaller
+  // walks the directory. Ask nicely, wait, and insist if the wait times out.
+  closeApp()
+  await waitFor(() => !isRunning(), { timeoutMs: 30_000, describe: 'the app to exit before uninstalling' }).catch(async () => {
+    run('taskkill.exe', ['/F', '/IM', APP_EXE_NAME, '/T'])
+    await waitFor(() => !isRunning(), { timeoutMs: 30_000, describe: 'the app to die after being force-killed' })
+  })
   uninstallSilently(installDir)
   await waitFor(() => !fs.existsSync(path.join(installDir, APP_EXE_NAME)), { timeoutMs: 120_000, describe: 'the uninstaller to remove the executable' })
-  const leftovers = fs.existsSync(installDir) ? fs.readdirSync(installDir) : []
-  if (leftovers.length) fail('UNINSTALL_LEFTOVERS', `the uninstall left ${leftovers.length} item(s): ${leftovers.slice(0, 8).join(', ')}`)
+
+  // The uninstaller removes each file once, with no retry: anything Windows is
+  // holding at that instant (a module a process has not released, Defender's
+  // first scan of a freshly written file) survives and stays forever. Poll
+  // before judging — the set is watched until it stops shrinking, and only the
+  // stable remainder is reported.
+  const settle = async (read, { timeoutMs = 60_000, stableMs = 10_000 } = {}) => {
+    const deadline = Date.now() + timeoutMs
+    let last = JSON.stringify(read())
+    let stableSince = Date.now()
+    for (;;) {
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      const value = JSON.stringify(read())
+      if (value !== last) {
+        last = value
+        stableSince = Date.now()
+      } else if (Date.now() - stableSince >= stableMs) {
+        return read()
+      }
+      if (Date.now() >= deadline) return read()
+    }
+  }
+
+  let leftovers = fs.existsSync(installDir) ? fs.readdirSync(installDir) : []
+  if (leftovers.length) {
+    leftovers = await settle(() => (fs.existsSync(installDir) ? fs.readdirSync(installDir) : []))
+  }
+  if (leftovers.length) fail('UNINSTALL_LEFTOVERS', `the uninstall left ${leftovers.length} item(s) after settling: ${leftovers.slice(0, 8).join(', ')}`)
   else step('the uninstaller removed the installation', installDir)
 
   const shortcut = path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Cupric AI.lnk')
+  if (fs.existsSync(shortcut)) await settle(() => fs.existsSync(shortcut))
   if (fs.existsSync(shortcut)) fail('UNINSTALL_SHORTCUT_LEFT', `the Start Menu shortcut survived: ${shortcut}`)
   else step('the Start Menu shortcut is gone', 'no Cupric AI.lnk')
+
+  // The registry entry is the uninstaller's own work (it is the last thing the
+  // uninstall section does): if it survives, the section never reached its end,
+  // which is also how a shortcut left behind is diagnosed — a gone registry key
+  // with a live shortcut means Delete failed; a live key means the section
+  // stopped early.
+  const regLeft = powershell(
+    `$k = Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue `
+    + `| Where-Object { $_.DisplayName -like 'Cupric AI*' }; if ($k) { $k.DisplayName }`,
+  )
+  const regNames = regLeft.stdout.trim()
+  if (regNames) fail('UNINSTALL_REGISTRY_LEFTOVER', `the uninstall registry entry survived: ${regNames}`)
+  else step('the uninstall registry entry is gone', 'no Cupric AI entry under HKCU Uninstall')
 
   /* ── 7. the portable build carries the same version ───────────────────── */
   const portableInfo = readFileVersion(portablePath)
   const portableSeen = [portableInfo.FileVersion, portableInfo.ProductVersion].filter(Boolean).map((v) => v.trim())
   if (!portableSeen.length) fail('PORTABLE_VERSION_MISSING', 'the portable executable carries no version resource')
-  else if (!portableSeen.every((v) => v === version)) fail('PORTABLE_VERSION_MISMATCH', `portable reports ${portableSeen.join(' / ')}, package.json says ${version}`)
+  else if (!portableSeen.every((v) => matchesDeclaredVersion(v, version))) fail('PORTABLE_VERSION_MISMATCH', `portable reports ${portableSeen.join(' / ')}, package.json says ${version} (accepted: ${version} or its PE form ${version}.0)`)
   else step('the portable build reports the same version', portableSeen[0])
 
   const portableSignature = authenticodeStatus(portablePath)
