@@ -12,12 +12,21 @@ evidence log for the Windows half of Phases 1–3.
 
 ## 1. The runs
 
-| Run | Commit | Chain (85 checks) | Package | Boot | E2E | First failure |
+| Run | Commit | Chain | Package | Boot | E2E | First failure |
 | --- | --- | --- | --- | --- | --- | --- |
-| 36656481386 | `30ddf23` | ✗ | — | — | — | `scripts/check-export-preflight.mjs`, at 1m57s |
-| 36657033448 | `4c7ce4c` | ✓ | ✓ | ✓ | 5 pass / 4 fail / 4 not run | `tests/e2e/launch.spec.ts:43` |
-| 36660333176 | `27f5db9` | ✓ | ✓ | ✓ | 11 pass / 2 fail (6.2m) | `tests/e2e/studio-export.spec.ts` render wait |
-| 36665419223 | `2c25cc3` | ✓ | ✓ | ✓ | **13 passed (2.0m)** | — |
+| 36656481386 | `30ddf23` | ✗ (85) | — | — | — | `scripts/check-export-preflight.mjs`, at 1m57s |
+| 36657033448 | `4c7ce4c` | ✓ (85) | ✓ | ✓ | 5 pass / 4 fail / 4 not run | `tests/e2e/launch.spec.ts:43` |
+| 36660333176 | `27f5db9` | ✓ (85) | ✓ | ✓ | 11 pass / 2 fail (6.2m) | `tests/e2e/studio-export.spec.ts` render wait |
+| 36665419223 | `2c25cc3` | ✓ (85) | ✓ | ✓ | **13 passed (2.0m)** | — |
+| 36666576364 | `79e1bfd` | ✓ (85) | ✓ | ✓ | 12 pass / 1 fail (1.9m) | export length 3.969s vs `<3.6` (bound too tight for a GPU-less real-time capture; now a band) |
+| 36668552925 | `3e00874` | **✗ (86)** | — | — | — | `node scripts/check-encode-dims.mjs` — the check still grepped `electron/main.cjs` for the FFmpeg filter the trim work had moved into `electron/studio-trim.cjs`. Found locally by running the chain, fixed in `c35b563` (`docs/PHASE1_TIMELINE.md` §1, T6) |
+| *queued* | the Phase 1.3 commit (merged with `main`) | 87 + install/run/uninstall + live speech | — | — | — | — |
+
+The last two rows are deliberately blank: the chain grew from 85 to 86 checks
+(`check:studio-trim`) and then gained two Phase 4 steps, and **none of that has
+been observed on Windows yet**. Two stale release checks were found by running the
+87-step chain locally on the Phase 1.3 commit (`docs/PHASE1_TIMELINE.md` §1, T6) —
+the reason the chain is run locally before every push.
 
 "Boot" is `npm run check:boot -- --no-build`, which launches the **packaged**
 installer build and visits every view with an empty and a corrupt project. It
@@ -38,6 +47,20 @@ must not be shorter than the source and must not run away.
 
 Nothing below is a leftover from the failing runs: the sections are kept as the
 record of what each run found, which is the point of this file.
+
+Since `2c25cc3`, two things changed that the next run has to prove:
+
+1. **`3e00874` — the export is cut to the timeline** (`electron/studio-trim.cjs`).
+   Verified against the real FFmpeg locally (32 assertions, 3 real encodes) and
+   **never on Windows**.
+2. **The Phase 1.3 commit — the timeline command layer, frame-snapped playhead, and
+   two new workflow steps.** The gate now also runs `npm run check:install --
+   --unsigned-build` (install → version readback → boot → uninstall → no leftovers,
+   with the signature assertions inverted because a pull request has no
+   certificate) and `npm run check:speech-live -- --with-whisper` (real Piper
+   download → real synthesis → parsed WAV → whisper.cpp transcript). `update-path.yml`
+   also runs on pull requests; it is not the required check, and the reason is in
+   the workflow's header comment.
 
 ### Run 1 — no FFmpeg on the runner
 
@@ -192,7 +215,9 @@ exercises the same path.
 | --- | --- | --- |
 | Exported length on a slow machine | **Known limitation** — the export is a real-time capture, so a clip can end up with a tail: 3.97s for a 3.0s clip on a GPU-less runner, ~3.0s on the run before. The E2E asserts a band (not truncated, not runaway) rather than an exact length, and says why | Trimming to the document duration in the MP4 pass (`-t`), which needs its own verification |
 | Timeline clip drag / trim / split and frame-accurate preview (Phase 1.3) | **Not started** — the largest piece of Phase 1 still outstanding | Implementation plus the E2E that would prove it |
-| Piper and Whisper engine bytes | **UNVERIFIED** — no network route to the artefacts exists in this environment | A Windows machine with network access, or a mirror |
+| Piper and Whisper engine bytes | **Still unverified here** — no network route to the artefacts exists in this environment. There is now a check that downloads and runs them (`npm run check:speech-live -- --with-whisper`, in the pull-request gate); it has not run on any runner yet, and it exits 1 on any non-Windows platform rather than skipping | The next Windows run |
+| Clean-VM install / run / uninstall | **Now asserted in the gate** (`check:install --unsigned-build`, with the signature assertions inverted rather than skipped) but **never observed** | The next Windows run |
+| Version-to-version auto-update | Wired (`check:update-path.mjs`, `update-path.yml` on `workflow_dispatch` **and** `pull_request`) but **never observed**; the on-demand trigger needs the workflow file on the default branch (it 404s from this branch) | A merge to `main`, then a run |
 | Branch protection on `main` | **Not set** — the token used here has no admin scope | `docs/PHASE2_TESTING.md` §3 |
 | EV code signing and the clean-VM / auto-update runs (Phase 4) | **Not run** — no certificate | A certificate and a clean VM (`docs/PHASE4_RELEASE.md` §5–6) |
 | The offscreen recorder without a compositor (frame pushing, timer driver, stall watchdog) | Verified only to the extent that the export test exercises it — it was written against a hypothesis that turned out not to be the cause | A machine without a GPU where the test still renders |
@@ -207,7 +232,9 @@ For `2c25cc3`, on `windows-latest`, from a clean checkout:
   cannot encode verifies nothing about rendering.
 - All 85 build checks pass, including the unit tests, the export preflight
   against the real FFmpeg, the licence and provenance checks, the version-sync
-  gate and the UI audit.
+  gate and the UI audit. (The chain is now 86 checks; the next run has to show
+  that, and this paragraph will be rewritten from its output rather than from
+  expectation.)
 - `electron-builder --win` produces an NSIS installer, and the workflow refuses a
   setup below 10 MB or more than one installer.
 - The **packaged** build boots and visits every view with an empty project and

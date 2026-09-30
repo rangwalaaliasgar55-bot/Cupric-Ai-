@@ -2,7 +2,7 @@
   "id": "transitions",
   "name": "Transitions",
   "description": "Every transition the Studio renderer implements, including the glass and liquid families.",
-  "version": "0.13.0",
+  "version": "0.16.0",
   "source": "Cupric Studio renderer",
   "license": "MIT",
   "items": [

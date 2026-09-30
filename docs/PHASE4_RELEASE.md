@@ -135,6 +135,30 @@ versions in separate git worktrees and then, on Windows:
    the new release;
 7. uninstalls and shuts the feed down.
 
+**Update (Phase 1.3 close-out).** Two changes to how the Phase 4 checks run:
+
+- `check:install` gained `--unsigned-build`, used by the pull-request gate. It does
+  not skip the signature assertions, it **inverts** them: a build with no
+  certificate must be unsigned *and* must not declare a `publisherName` the updater
+  cannot verify. Install → version readback → boot on every view → uninstall → no
+  leftovers now runs on every pull request, not only in `release-windows.yml`.
+- `update-path.yml` also runs on `pull_request`, with a released tag as the "from"
+  version and the pull request's own checkout as the "to" version — the only way
+  the update path can be exercised before a release exists to trigger it. It is
+  deliberately **not** the required status check: a signed installation updating to
+  an unsigned pull-request build can legitimately fail signature verification, and
+  that is a finding about the release process rather than about the change under
+  review. The workflow header says so, in those words.
+  Two things that first run — the first this workflow has ever had — taught it,
+  both fixed on the spot: the from-version was hard-coded to `v0.11.0`, which
+  cannot build today (it predates `npm run media:ensure`), and it then picked the
+  *newest* tag, which on a pull request is usually the same version the checkout
+  declares — installing 0.16.0 to update it to 0.16.0 tests nothing, and the
+  "the two feeds differ" step correctly failed on it. The from-version is now
+  resolved from the repository: the newest release tag on `main` whose version
+  differs from this checkout's, named in the job log, with a hard failure when
+  there is none.
+
 Supporting app changes: `CUPRIC_UPDATE_FEED` (validated as http/https, wired to
 `setFeedURL`, logged loudly when set, rejected with a log line when malformed),
 and updater transitions are now logged (`updater-available`, `updater-current`,
@@ -186,7 +210,10 @@ afterwards.
    Windows.** Both were written in a Linux container that cannot install an
    NSIS package or launch Electron. Their first run on `windows-latest` is the
    verification. The failure codes exist so the first run is diagnosable, but I
-   will not claim they work.
+   will not claim they work. `check:install --unsigned-build` is now a step in
+   the required pull-request check, so the next run is also its first exercise —
+   including the boot of the *installed* app on every view, which no previous run
+   has done.
 3. **UNVERIFIED — a real clean-VM install.** The release workflow installs and
    uninstalls on a GitHub-hosted runner, which is *not* a clean VM: it has Node,
    build tools and a warmed filesystem. A true clean-VM pass needs a Hyper-V or

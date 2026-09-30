@@ -125,15 +125,25 @@ The macOS vibrancy branch, the transparent background, `titleBarStyle`/`trafficL
    (WebCodecs) — the Studio preview is still the compositor drawn per animation
    frame, and the export is still a real-time MediaRecorder capture. Replacing
    that changes the export contract and belongs with Phase 1.6.
+   **Update (Phase 1.3 close-out, `docs/PHASE1_TIMELINE.md` §2.2):** the playhead
+   is now snapped to frames, so the preview shows the frame at the playhead rather
+   than a time between two of them, and arrow keys step integer frame indices. The
+   export is still a real-time capture, so the *file* is not frame-exact; that
+   distinction is stated in the new document rather than blurred.
 6. **`@dnd-kit`/`react-dnd` were not added.** The Studio timeline's drag/trim/
    split already work on pointer events with pointer capture, snapping and
    one-step coalescing, and the undo audit covers them; adding a dependency would
    not change behaviour this phase can verify.
-7. **Command-pattern undo was not adopted.** The history is snapshot-based
-   (`docs/AUDIT_PHASE0.md` §B4), capped at `HISTORY_LIMIT`, coalescing drags into
-   one step. Commands would be a rewrite of every mutation for an identical user
-   outcome; the audit now enforces the property that actually matters (exactly one
-   step per change, none per non-change).
+7. **Command-pattern undo was not adopted** *in this phase.* The history is
+   snapshot-based (`docs/AUDIT_PHASE0.md` §B4), capped at `HISTORY_LIMIT`,
+   coalescing drags into one step. Commands would be a rewrite of every mutation
+   for an identical user outcome; the audit now enforces the property that
+   actually matters (exactly one step per change, none per non-change).
+   **Update (Phase 1.3 close-out, `docs/PHASE1_TIMELINE.md` §2.1):** adopted for
+   the timeline, because the snapshot history had one property it could not
+   provide — an undo boundary that follows the gesture rather than a 700 ms
+   wall-clock window. Commands carry the name and the merge key; the snapshot
+   engine is still what applies and reverts them.
 8. **Remaining non-Windows code paths** (`electron/tts.cjs:87,102,105` macOS/Linux
    voice branches, `electron/encoders.cjs:21` `h264_videotoolbox`,
    `scripts/check-tts-languages.mjs` / `check-encoders.mjs` asserting them) were

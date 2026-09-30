@@ -138,8 +138,8 @@ on the only platform the product ships on.
 | `npx vitest run src/tests/human-error.test.ts` | `10 passed` — and while writing it, the three findings in §2.3: two were bugs in my test (a `String(Object.create(null))` throw in the failure message, and an ellipsis not counted as a sentence ending), one was the real product bug |
 | `node scripts/check-voice.mjs` | `voice and error-copy check passed — 54 assertions (15 false-positive guards)` — the pre-existing humanError check is unaffected |
 | `npx tsc --noEmit` | clean, now including `tests/e2e` and `playwright.config.ts` |
-| `npx vitest run` | `Test Files 9 passed (9)`, `Tests 158 passed \| 1 skipped (159)` (was 141) |
-| `node scripts/run-checks.mjs` | `BUILD PASSED: all 83 checks` |
+| `npx vitest run` | `Test Files 9 passed (9)`, `Tests 158 passed \| 1 skipped (159)` (was 141). **Update (Phase 1.3 close-out):** `Test Files 16 passed (16)`, `Tests 256 passed \| 1 skipped (257)` — `timeline-commands.test.ts` (25 tests, the pure command layer and frame arithmetic) and `timeline-history.test.ts` (6 tests, the real store behind an in-memory storage shim: one gesture = one undo step, with a deliberate 750 ms pause inside the drag). |
+| `node scripts/run-checks.mjs` | `BUILD PASSED: all 83 checks` (the chain is now 87 — `check:studio-trim`, `check-frame-accurate` from the merged release work, both media tools, the install/run/uninstall gate step and the live speech check; `BUILD PASSED: all 87 checks` was observed locally on the Phase 1.3 commit **with real FFmpeg and ffprobe**) |
 | `node scripts/check-licences.mjs` (after the mishap in §2.5) | `licences check passed — 84 assertions, 48 production dependencies all permissive …` |
 | Coverage measurement | 148 modules in `src/lib`; 48 reachable from the unit tests (41 in `src/lib/studio`); 43 top-level `src/lib` modules have no unit test at all — `humanError.ts`, `trimFrames.ts`, `commandRank.ts`, `signature.ts`, `progress.ts`, `readiness.ts`, `editingPlan.ts`, `render.ts`, `arena.ts`, `voice.ts`, `localVoice.ts`, `gemini.ts`, `opencode.ts`, `sources.ts`, `diagnostics.ts`, `log.ts`, `packs.ts` and more |
 | Branch protection | `gh api repos/…/branches/main/protection` and the `PUT` that would require `Build and test on Windows` → **`403 Resource not accessible by integration`**. The check cannot be *made* required by the token available to this session |
@@ -169,7 +169,9 @@ gh api -X PUT repos/rangwalaaliasgar55-bot/Cupric-Ai-/branches/main/protection \
 3. **NOT DONE — branch protection.** The token here cannot set it (403 above).
    Until the owner runs the command in §3, a red PR can still be merged, so the
    "merge blocked on failure" requirement is **not** met.
-4. **NOT DONE — unit tests for every module.** 100 of 148 `src/lib` modules have no
+4. **NOT DONE — unit tests for every module.** (Unchanged by the Phase 1.3
+   close-out: `frames.ts` and `commands.ts` are now covered, `timeline-history`
+   drives the store itself.) 100 of 148 `src/lib` modules have no
    unit test (T5). The largest untested cluster is the AI/provider layer
    (`gemini.ts`, `opencode.ts`, `localVoice.ts`, `voice.ts` — network-bound, so
    they need a recorded-exchange or a local server, which is a phase of its own),

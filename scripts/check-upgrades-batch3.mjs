@@ -26,7 +26,12 @@ ok(clampMv.clips.find((c) => c.id === 'a').startSec === 0 && clampMv.clips.find(
 ok(m.et.moveWithGroup(doc, 'a', { startSec: 2 }) === null && m.et.moveWithGroup(g.doc, 'a', { opacity: 0.5 }) === null, 'ungrouped or non-move patches fall through')
 const u = m.et.ungroup(g.doc, 'b')
 ok(u.count === 2 && u.doc.clips.every((c) => !c.groupId), 'ungroup clears the whole group')
-ok(/moveWithGroup\(doc, id, patch\)/.test(read('src/screens/Studio.tsx')), 'timeline drags route through group move')
+// Phase 1.3 moved the drag path behind the timeline command layer, so the group
+// move happens in the `move-group` command. Assert the whole chain: Studio hands
+// the timeline's commands to the store, and the store's command layer routes a
+// grouped clip through moveWithGroup.
+ok(/onCommand=\{\(command\) => runTimelineCommand\(/.test(read('src/screens/Studio.tsx')), 'timeline gestures route through the command layer')
+ok(/case 'move-group':[\s\S]*?moveWithGroup\(doc, clip\.id/.test(read('src/lib/studio/commands.ts')), 'a grouped drag moves the whole group')
 
 /* text-based editing */
 const words = ['So', 'um', 'this', 'is', 'basically', 'Penny'].map((w, i) => ({ word: w, start: i * 0.5, end: i * 0.5 + 0.4 }))
