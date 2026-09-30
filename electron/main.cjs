@@ -3442,6 +3442,8 @@ async function executeStudioMp4Job(state, payload) {
     '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos,setsar=1',
     ...videoArgs,
     '-r', String(fps),
+    // Cut to the timeline: a late recorder stop on a slow machine leaves up to ~1 s extra.
+    ...assembly.trimToTimelineArgs(payload),
     '-movflags', '+faststart',
     ...(loudness.filter ? ['-af', loudness.filter] : []),
     // 48 kHz on every path: loudnorm works at 192 kHz and would otherwise hand the encoder
@@ -3544,7 +3546,7 @@ ipcMain.handle('studio:submitRecording', (event, payload) => {
   const state = renderJobs.get(id)
   if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) throw new Error('That Studio export is no longer accepting a recording.')
   if (!payload?.bytes || !payload.bytes.byteLength) throw new Error('The background Studio recorder returned an empty file.')
-  state.recordingResolve?.({ bytes: payload.bytes })
+  state.recordingResolve?.({ bytes: payload.bytes, ...(Number(payload.durationSec) > 0 ? { durationSec: Number(payload.durationSec) } : {}) })
   return { accepted: true }
 })
 

@@ -703,7 +703,7 @@ export const useProjectStore = create<AppState>()(
             const doc = studioOf(p)
             const clip = doc.clips.find((c) => c.id === clipId)
             if (!clip) return p
-            const halves = splitClipAt(clip, atSec)
+            const halves = splitClipAt(clip, atSec, doc.fps)
             if (!halves) return p
             return {
               ...p,

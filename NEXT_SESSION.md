@@ -1,3 +1,32 @@
+## Status of the open items (2026-09-30)
+
+- **Export overrun (~1 s on slow machines): fixed.** The Studio MP4 pass now trims to the timeline
+  (`assembly.trimToTimelineArgs` → `-t <timeline>` as an output option, so audio and picture are both
+  cut). The length is the document's own (`durationSec` from the recorder, else the last clip end), and
+  no length means no trim, never a zero-length file. Checked against a real FFmpeg 7.0.2: a 6 s WebM
+  came out as a 5.01 s MP4 at `-t 5.000` (AAC frame rounding). `check-assembly.mjs` +8 assertions.
+- **Frame-pushing / watchdog net: not on `main`.** No such code exists in this tree, so there is
+  nothing to keep or remove. The hidden export window already runs with `backgroundThrottling: false`.
+  Don't add a watchdog until a stall has actually been reproduced.
+- **Phase 1.3 (frame-accurate timeline): done.** Drag, trim and split were already there; they landed on
+  a 0.01 s grid, which falls between frames. `doc.snapToFrame` now drives `snapTime` (drag and both
+  trims), split (store + menu), move-to-playhead and the ←/→ frame step. `normaliseClip` rounds to µs
+  instead of 0.01 s, because 0.01 s rounding was quietly undoing every snap. Paused preview seeks to the
+  middle of the frame under the playhead with half-a-frame tolerance (it used to allow 30 ms).
+  `scripts/check-frame-accurate.mjs` has 16 assertions and runs in `build`.
+- **Piper/Whisper bytes: still UNVERIFIED.** From the build sandbox, huggingface.co and
+  release-assets.githubusercontent.com are blocked, though api.github.com works. What changed:
+  `whisper:fetch` now checks each download against the publisher's SHA-256 before moving it into place
+  (GitHub's `asset.digest` for whisper-cli, HF's `x-linked-etag` for the model). A mismatch deletes the
+  file; a download with no digest prints UNVERIFIED. Published digests for whisper.cpp b5130 are
+  `whisper-bin-x64.zip` f9ec6c52…316f3c and `whisper-bin-ubuntu-x64.tar.gz` 53e7fd8b…536c32. Piper
+  2023.11.14-2 publishes no digests, and there is still no Piper fetch script.
+- **EV signing, clean-VM install, auto-update: not run.** These need the certificate and Windows
+  hardware (see `HARDWARE_TEST_PLAN.md`).
+- **Branch protection on `main`: not set.** The Arena GitHub integration returns 403 because it has no
+  admin rights. A repo admin can run:
+  `gh api -X PUT repos/rangwalaaliasgar55-bot/Cupric-Ai-/branches/main/protection --input - <<<'{"required_status_checks":null,"enforce_admins":false,"required_pull_request_reviews":{"required_approving_review_count":0},"restrictions":null,"allow_force_pushes":false,"allow_deletions":false}'`
+
 ## Also shipped: what has already been tried on this footage, and the FFmpeg assembly half
 
 Two more items from the audit's open-edit list — #8 and #10.

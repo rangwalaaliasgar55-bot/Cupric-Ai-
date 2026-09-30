@@ -109,11 +109,24 @@ export function nextFreeStart(doc: StudioDoc, track: number, from = 0, needSec =
 }
 
 /**
+ * Nearest frame boundary for `t` at `fps` (Phase 1.3: edits land on frames).
+ * A cut, trim or move at 0.01 s resolution lands between frames at 24/25/30/60 fps,
+ * so the export and preview disagree about which frame is first. Rounded to the
+ * microsecond so 1/30-multiples stay stable through JSON and float arithmetic.
+ */
+export function snapToFrame(t: number, fps: number): number {
+  const f = fps > 0 && Number.isFinite(fps) ? fps : 30
+  return Math.round(Math.round(t * f) / f * 1e6) / 1e6
+}
+
+/**
  * Split a clip at absolute time t. Returns the replacement clips, or null when
  * the cut falls outside the clip (nothing to split).
  */
-export function splitClipAt(clip: StudioClip, t: number): [StudioClip, StudioClip] | null {
-  const offset = t - clip.startSec
+export function splitClipAt(clip: StudioClip, t: number, fps?: number): [StudioClip, StudioClip] | null {
+  // With a frame rate the cut lands on the nearest frame of the timeline.
+  const at = fps ? snapToFrame(t, fps) : t
+  const offset = Math.round((at - clip.startSec) * 1e6) / 1e6
   if (offset <= MIN_CLIP_SEC || offset >= clip.durationSec - MIN_CLIP_SEC) return null
 
   const left: StudioClip = { ...clip, durationSec: offset }
@@ -250,13 +263,17 @@ export function defaultGlassClip(
   }
 }
 
-/** Keep clips inside the document: no negative starts, no sub-frame durations. */
+/**
+ * Keep clips inside the document: no negative starts, no sub-minimum durations.
+ * Rounded to the microsecond, not 0.01 s — a 0.01 s grid moved every frame-snapped
+ * edit (1/30, 1/24, 1/60 multiples) back off the frame it was placed on.
+ */
 export function normaliseClip(clip: StudioClip, trackCount: number): StudioClip {
   return {
     ...clip,
     track: clamp(Math.round(clip.track), 0, Math.max(0, trackCount - 1)),
-    startSec: Math.max(0, Math.round(clip.startSec * 100) / 100),
-    durationSec: Math.max(MIN_CLIP_SEC, Math.round(clip.durationSec * 100) / 100),
+    startSec: Math.max(0, Math.round(clip.startSec * 1e6) / 1e6),
+    durationSec: Math.max(MIN_CLIP_SEC, Math.round(clip.durationSec * 1e6) / 1e6),
     opacity: clamp(clip.opacity ?? 1, 0, 1),
   }
 }
@@ -294,7 +311,7 @@ export function snapTime(doc: StudioDoc, time: number, ignoreId: string, extra: 
       bestDelta = delta
     }
   }
-  return Math.max(0, Math.round(best * 100) / 100)
+  return Math.max(0, snapToFrame(best, doc.fps))
 }
 
 /* ——— Overlap-free placement ————————————————————————————————————————————————

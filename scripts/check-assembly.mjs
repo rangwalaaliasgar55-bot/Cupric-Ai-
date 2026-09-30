@@ -178,6 +178,17 @@ deepEq(
 ok(!muxArgv.includes('-shortest'), 'never -shortest: a short track must not truncate the film')
 eq(assembly.muxArgs({ silent: 'p.mp4', audio: 'a.m4a', durationSec: 6, outPath: 'o.mp4' }).includes('-af'), false, 'and a mux with no filter applies none')
 eq(assembly.pictureDurationArgs('p.mp4').length, 2, 'the picture duration is asked of the stream first and the container second')
+// Studio MP4 pass trims to the timeline (a late MediaRecorder stop overruns by up to ~1 s).
+eq(assembly.timelineSeconds({ durationSec: 5 }), 5, 'an explicit timeline length wins')
+eq(assembly.timelineSeconds({ doc: { clips: [{ startSec: 0, durationSec: 3 }, { startSec: 2.5, durationSec: 2.25 }] } }), 4.75, 'without one, the last clip end is the length')
+eq(assembly.timelineSeconds({ durationSec: 0, doc: { clips: [] } }), null, 'nothing to trim to is null, never zero')
+eq(assembly.timelineSeconds({ durationSec: 'x', doc: { clips: [{ startSec: 1, durationSec: 1.23456 }] } }), 2.235, 'garbage falls through to the document, rounded to ms')
+assert.deepEqual(assembly.trimToTimelineArgs({ durationSec: 4.75 }), ['-t', '4.750'], 'trim argv is an output -t'); n += 1
+assert.deepEqual(assembly.trimToTimelineArgs({}), [], 'no length, no trim'); n += 1
+{
+  const main = fs.readFileSync(path.join(root, 'electron', 'main.cjs'), 'utf8')
+  ok(/assembly\.trimToTimelineArgs\(payload\)/.test(main), 'the Studio MP4 pass applies the timeline trim')
+}
 
 /* ——————————————— apply-edl: the contract ——————————————— */
 

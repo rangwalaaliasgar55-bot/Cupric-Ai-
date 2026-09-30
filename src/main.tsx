@@ -48,7 +48,7 @@ if (backgroundIpc) {
           onProgress: (pct) => { void backgroundIpc.invoke('studio:progress', { jobId: request.jobId, pct }) },
         })
         const bytes = new Uint8Array(await result.blob.arrayBuffer())
-        await backgroundIpc.invoke('studio:submitRecording', { jobId: request.jobId, bytes })
+        await backgroundIpc.invoke('studio:submitRecording', { jobId: request.jobId, bytes, durationSec: result.durationSec })
       } catch (error) {
         await backgroundIpc.invoke('studio:recordingError', {
           jobId: request.jobId,

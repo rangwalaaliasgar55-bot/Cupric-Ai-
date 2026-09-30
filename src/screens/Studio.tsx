@@ -1358,7 +1358,7 @@ export function Studio() {
         return 'cancelled'
       } else if (asMp4) {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
-        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal)
+        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal, result.durationSec)
         setLastExport({ url: result.url, fileName: result.fileName })
         const level = mp4.loudness && mp4.loudness.mode !== 'none' ? ` \u2014 ${mp4.loudness.note}` : ''
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)${level}`)
