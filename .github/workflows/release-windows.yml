@@ -30,6 +30,16 @@ on:
 #   * every installer's Authenticode status must be Valid, with a timestamp;
 #   * the packaged app-update.yml must carry a publisherName;
 #   * the install/run/uninstall check must pass against the built installer.
+#
+# When the repository has no certificate at all (`CSC_LINK` unset) there is
+# nothing to fail closed over. The workflow then takes an explicit UNSIGNED path
+# instead of dying at the first step: the run and the release are labelled
+# unsigned, electron-builder is not forced to sign, and the signature assertions
+# are inverted rather than skipped (the build must be unsigned and must not
+# claim a publisherName the updater cannot verify — `check:install
+# --unsigned-build`). With `CSC_LINK` configured, every assertion above still
+# has to hold or nothing is published. `scripts/check-release-signing.mjs`
+# asserts both paths.
 permissions:
   contents: write
 
@@ -70,15 +80,24 @@ jobs:
       - name: Ensure FFmpeg and ffprobe are really here
         run: npm run media:ensure
 
-      # No certificate, no release. This is the first thing that runs after the
-      # checkout, so the failure message says what is missing instead of
-      # surfacing forty minutes later as an unsigned installer.
-      - name: Require the signing certificate
+      # No certificate, no *signed* release. When CSC_LINK is configured this is
+      # still the first thing that runs after the checkout, so the failure
+      # message says what is missing instead of surfacing forty minutes later as
+      # an unsigned installer. When it is not configured, the run says so on its
+      # face and every later step takes the labelled unsigned path instead.
+      - name: Resolve the signing certificate
+        id: signing
         shell: pwsh
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
         run: |
-          if (-not $env:CSC_LINK) { throw "CSC_LINK is not set. A release must be signed: add the Authenticode certificate (base64 .pfx) and its password as the CSC_LINK and CSC_KEY_PASSWORD repository secrets. See docs/PHASE4_RELEASE.md." }
+          if ($env:CSC_LINK) {
+            "enabled=true" >> $env:GITHUB_OUTPUT
+            Write-Host "CSC_LINK is set; packaging is forced to produce a signed installer."
+          } else {
+            "enabled=false" >> $env:GITHUB_OUTPUT
+            Write-Host "::warning::UNSIGNED RELEASE: CSC_LINK is not set. This run packages an unsigned build and the release will say so. To ship a signed release, add the Authenticode certificate (base64 .pfx) and its password as the CSC_LINK and CSC_KEY_PASSWORD repository secrets. See docs/PHASE4_RELEASE.md."
+          }
 
       # The tag and the version must be the same release, and the changelog must
       # have been finalised for it. v0.15.0 was tagged while package.json said
@@ -119,13 +138,19 @@ jobs:
       - name: Run release checks and build the app
         run: node scripts/run-checks.mjs
 
-      - name: Package Windows installers (signing enforced)
+      - name: Package Windows installers
+        shell: pwsh
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-        run: npx electron-builder --win --publish never --config.forceCodeSigning=true
+        run: |
+          if ("${{ steps.signing.outputs.enabled }}" -eq "true") {
+            npx electron-builder --win --publish never --config.forceCodeSigning=true
+          } else {
+            npx electron-builder --win --publish never
+          }
 
-      - name: Verify the installers are signed, timestamped and updateable
+      - name: Verify the installers' signature state is exactly what this run claims
         shell: pwsh
         env:
           CSC_LINK: ${{ secrets.CSC_LINK }}
@@ -135,24 +160,40 @@ jobs:
           $portables = Get-ChildItem -Path release -Filter 'Cupric-AI-*-Portable.exe' -File
           if ($setups.Count -ne 1) { throw "Expected exactly one setup; found $($setups.Count)." }
           if ($portables.Count -ne 1) { throw "Expected exactly one portable build; found $($portables.Count)." }
+          $signing = "${{ steps.signing.outputs.enabled }}" -eq "true"
           foreach ($exe in @($setups[0], $portables[0])) {
             $sig = Get-AuthenticodeSignature -LiteralPath $exe.FullName
-            if ($sig.Status -ne 'Valid') { throw "$($exe.Name) is not validly signed: $($sig.Status)" }
-            if (-not $sig.SignerCertificate.Subject.Contains('CN=')) { throw "$($exe.Name) has no CN in its signer subject." }
-            if (-not $sig.TimeStamperCertificate) { throw "$($exe.Name) is signed but not timestamped; the signature would stop verifying when the certificate expires and every installed app would lose the ability to update." }
-            Write-Host "$($exe.Name): Valid — $($sig.SignerCertificate.Subject) (timestamped by $($sig.TimeStamperCertificate.Subject))"
+            if ($signing) {
+              if ($sig.Status -ne 'Valid') { throw "$($exe.Name) is not validly signed: $($sig.Status)" }
+              if (-not $sig.SignerCertificate.Subject.Contains('CN=')) { throw "$($exe.Name) has no CN in its signer subject." }
+              if (-not $sig.TimeStamperCertificate) { throw "$($exe.Name) is signed but not timestamped; the signature would stop verifying when the certificate expires and every installed app would lose the ability to update." }
+              Write-Host "$($exe.Name): Valid — $($sig.SignerCertificate.Subject) (timestamped by $($sig.TimeStamperCertificate.Subject))"
+            } else {
+              if ($sig.Status -eq 'Valid') { throw "$($exe.Name) is signed although this run configured no certificate (Authenticode status Valid, $($sig.SignerCertificate.Subject)) — run it without the inverted path instead." }
+              Write-Host "::warning::$($exe.Name) is unsigned (Authenticode status: $($sig.Status)); Windows SmartScreen will warn on install, and the updater cannot verify the signature of future updates."
+            }
           }
 
           # The field the updater reads to decide whether to verify anything.
           $updateYml = 'release/win-unpacked/resources/app-update.yml'
           if (-not (Test-Path $updateYml)) { throw "The packaged app has no app-update.yml at $updateYml." }
           $publisher = Select-String -Path $updateYml -Pattern '^publisherName:\s*(.+)$'
-          if (-not $publisher) { throw "app-update.yml has no publisherName: the updater would accept any downloaded update without verifying its signature. This is the failure mode signing is meant to prevent." }
-          Write-Host "app-update.yml pins: $($publisher.Matches[0].Groups[1].Value)"
+          if ($signing) {
+            if (-not $publisher) { throw "app-update.yml has no publisherName: the updater would accept any downloaded update without verifying its signature. This is the failure mode signing is meant to prevent." }
+            Write-Host "app-update.yml pins: $($publisher.Matches[0].Groups[1].Value)"
+          } else {
+            if ($publisher) { throw "app-update.yml claims publisherName ""$($publisher.Matches[0].Groups[1].Value)"" on an unsigned build — the updater would check every update against a publisher this build cannot satisfy." }
+            Write-Host "::warning::app-update.yml has no publisherName, which is correct for an unsigned build: the updater will accept downloaded updates without verifying a signature."
+          }
 
       - name: Install, run and uninstall the built installers
         shell: pwsh
-        run: npm run check:install
+        run: |
+          if ("${{ steps.signing.outputs.enabled }}" -eq "true") {
+            npm run check:install
+          } else {
+            npm run check:install -- --unsigned-build
+          }
 
       # 0.10.0 shipped a Studio that went white on mount. Boot the PACKAGED
       # app (real preload, real contextBridge) with --disable-gpu, visit every
@@ -216,3 +257,10 @@ jobs:
           )
           foreach ($f in $files) { if (-not (Test-Path $f)) { throw "Missing release file: $f" } }
           gh release upload $tag --repo $repo --clobber $files
+          if ("${{ steps.signing.outputs.enabled }}" -ne "true") {
+            # The release must not look like something it is not. This is
+            # appended to the generated notes so a downloader reads it before
+            # they run the installer.
+            gh release edit $tag --repo $repo --notes-append "> **UNSIGNED BUILD.** No signing certificate is configured on this repository (\`CSC_LINK\` is unset), so these installers carry no Authenticode signature. Windows SmartScreen will warn on install, and the app's updater cannot verify the signature of future updates. Add the \`CSC_LINK\` / \`CSC_KEY_PASSWORD\` repository secrets and re-run the release to ship a signed build."
+            Write-Host "::warning::Release $tag published with UNSIGNED assets; the release notes say so."
+          }

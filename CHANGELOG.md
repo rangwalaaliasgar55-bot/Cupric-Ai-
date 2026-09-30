@@ -26,6 +26,22 @@ inventing a summary.
 - **`whisper:fetch` verifies bytes** against the publisher's SHA-256 (GitHub asset
   digest, HuggingFace `x-linked-etag`) before installing; a mismatch deletes the file.
 - `check-encode-dims` follows the Studio MP4 argv into `studio-trim.cjs`.
+- **Timeline commands and gesture-atomic undo (Phase 1.3 close-out).** Drag, both
+  trims, split, move-to-playhead and reorder go through a command layer with a
+  gesture id minted per pointer-down, so one drag is one undo step however long
+  it takes; two real bugs fell out of the new tests (a head trim moved the
+  source in-point the wrong way; millisecond rounding knocked times off frame
+  boundaries). `check:install --unsigned-build` (install → version readback →
+  boot on every view → uninstall → no leftovers) runs on every pull request,
+  and the update path is exercised there too.
+- **Release path: an honest unsigned mode.** This repository has no signing
+  certificate configured (`CSC_LINK` is unset — the first v0.16.0 release run
+  died on exactly that), so `release-windows.yml` now takes a labelled UNSIGNED
+  path when no certificate is present: the run and the release say so, the
+  signature assertions are inverted rather than skipped (the build must be
+  unsigned and must not claim a `publisherName`), and the install check runs as
+  `check:install --unsigned-build`. With `CSC_LINK` configured, the fail-closed
+  signed path is unchanged.
 
 Remediation work on this branch, in phases (each phase's evidence is in
 `docs/`):

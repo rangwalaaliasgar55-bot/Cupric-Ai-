@@ -28,6 +28,17 @@
  *   4. the workflow runs the version-sync gate under the tag, verifies the
  *      install/run/uninstall path, and publishes once.
  *
+ * When the repository has no certificate at all (`CSC_LINK` unset), fail-closed
+ * would mean "no release ever" — and this repository does have one configured:
+ * the v0.16.0 release run failed at `CSC_LINK is not set` before packaging
+ * anything. The workflow therefore has a second path that this check also pins
+ * down: an unsigned release is fine ONLY when it is labelled as unsigned on the
+ * run and in the release notes, its signature assertions are inverted rather
+ * than skipped (the build must be unsigned and must not claim a publisherName —
+ * `check:install --unsigned-build`), and the signed path above is not weakened
+ * by one character. What must never happen is an unsigned release that pretends
+ * to be signed, or a signed path that is weaker than the assertions above.
+ *
  * Run: npm run check:release-signing
  */
 
@@ -86,6 +97,11 @@ ok(/check:version-sync\s+--tag/.test(release), 'the workflow runs the version-sy
 ok(/check:install/.test(release), 'the workflow verifies install/run/uninstall before publishing')
 ok(!/continue-on-error/.test(release), 'no release step is allowed to fail quietly')
 ok(/--publish never/.test(release), 'electron-builder never publishes by itself (the workflow does, after verification)')
+// The unsigned fallback has to stay honest, not quiet: the run and the release
+// are labelled UNSIGNED, and the install check runs with the signature
+// assertions inverted (build must be unsigned, must not claim a publisherName).
+ok(/UNSIGNED RELEASE/.test(release), 'an unsigned release is labelled as unsigned on the run and in the release notes')
+ok(/check:install -- --unsigned-build/.test(release), 'the unsigned path runs the install check with inverted signature assertions')
 
 /* ── 3b. release hygiene: the Phase 0 §D findings stay fixed ─────────────── */
 
@@ -126,6 +142,7 @@ ok(/logLine\([^)]*updater/.test(main), 'updater transitions are logged, so an up
 
 console.log(
   `release signing check passed — ${checks} assertions: SHA-256 + RFC 3161 signing configured, `
-  + 'verifyUpdateCodeSignature intact, release path fail-closed (forceCodeSigning, secret-backed certificate, '
-  + 'Authenticode + publisherName verification, version gate, install verification, single publish)',
+  + 'verifyUpdateCodeSignature intact, signed release path fail-closed (forceCodeSigning, secret-backed '
+  + 'certificate, Authenticode + publisherName verification, version gate, install verification, single '
+  + 'publish), and the unsigned fallback labelled and inverted rather than skipped',
 )
