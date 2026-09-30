@@ -62,12 +62,13 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
-      # The installer unpacks ffmpeg-static (see package.json `asarUnpack`), and
-      # every render path calls it. An optional dependency that silently failed
-      # to download would ship an app whose exports cannot work, so the release
-      # refuses to build without it.
-      - name: Ensure FFmpeg is really here
-        run: npm run ffmpeg:ensure
+      # The installer unpacks both media tools (see package.json `asarUnpack`).
+      # Every render path calls FFmpeg and every verification path calls ffprobe;
+      # an optional dependency that silently failed to download would ship an app
+      # whose exports either cannot work or cannot be checked, so the release
+      # refuses to build without them.
+      - name: Ensure FFmpeg and ffprobe are really here
+        run: npm run media:ensure
 
       # No certificate, no release. This is the first thing that runs after the
       # checkout, so the failure message says what is missing instead of

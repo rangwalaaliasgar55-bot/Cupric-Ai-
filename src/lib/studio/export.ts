@@ -485,6 +485,10 @@ export async function exportStudioInBackground(
       assets: [...assets.values()],
       fileName: options.fileName,
       fps: options.fps,
+      // The timeline's own length, so the export can be cut to the edit rather
+      // than to the take: a real-time capture on a slow machine runs long, and
+      // the main process has no other way to know what the user edited.
+      durationSec: docDuration(doc),
       loudnessTarget: options.loudnessTarget ?? null,
       width,
       height,

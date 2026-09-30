@@ -29,6 +29,7 @@ const automationSteps = require('./automation-steps.cjs')
 // Export preflight + post-render verification (phase 1.6): named failures with
 // a stated fix, and a real ffprobe read-back before the UI hears "done".
 const renderPreflight = require('./render-preflight.cjs')
+const studioTrim = require('./studio-trim.cjs')
 const AUTOMATION_STEP = Object.fromEntries(automationSteps.STEP_DEFINITIONS.map((definition, index) => [definition.id, index]))
 const aiProviderConfig = require('./ai-provider-config.cjs')
 const voiceEngines = require('./voice-engines.cjs')
@@ -3859,22 +3860,34 @@ async function executeStudioMp4Job(state, payload) {
   // The report says which one ran; a line that claims -14 LUFS after a fallback is a lie the
   // file cannot be checked against.
   const loudness = await planExportLoudness(state, source, payload?.loudnessTarget)
+
+  /**
+   * The export is a real-time capture, so it can run past the end of the edit —
+   * and it must not, because a file that is 30 % longer than the timeline is
+   * something the user can see. `studio-trim.cjs` owns that decision (pure, and
+   * exercised against the real FFmpeg by scripts/check-studio-trim.mjs); the
+   * expected length handed to verification is the TIMELINE's, never the
+   * recording's, so a short recording is reported instead of announced.
+   */
+  const trim = studioTrim.plan({
+    docDurationSec: Number(payload?.durationSec) > 0 ? Number(payload.durationSec) : null,
+    recordingDurationSec: recordingProbe?.durationSec ?? null,
+  })
+  logLine('studio-export', 'how the finished file will be cut', {
+    ...trim,
+    recordingDurationSec: recordingProbe?.durationSec ?? null,
+    timelineDurationSec: Number(payload?.durationSec) > 0 ? Number(payload.durationSec) : null,
+  })
+
   const buildArgs = (videoArgs) => [
-    '-y',
-    '-hide_banner',
-    '-v', 'error',
-    '-i', source,
-    '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos,setsar=1',
-    ...videoArgs,
-    '-r', String(fps),
-    '-movflags', '+faststart',
-    ...(loudness.filter ? ['-af', loudness.filter] : []),
-    // 48 kHz on every path: loudnorm works at 192 kHz and would otherwise hand the encoder
-    // 96 kHz, so an export with a target and one without would differ in rate.
-    '-c:a', 'aac',
-    '-ar', '48000',
-    '-b:a', '192k',
-    outputPath,
+    ...studioTrim.mp4Args({
+      source,
+      outputPath,
+      fps,
+      targetSec: trim.targetSec,
+      videoArgs,
+      audioArgs: loudness.filter ? ['-af', loudness.filter] : [],
+    }),
   ]
 
   try {
@@ -3905,7 +3918,10 @@ async function executeStudioMp4Job(state, payload) {
   // mix had any. A broken file is kept on disk and named, never announced.
   const verdict = await verifyRenderOutput({
     outputPath,
-    expectedDurationSec: recordingProbe?.durationSec || null,
+    // The timeline, not the take: that is what the user edited and what the
+    // toast must agree with.
+    expectedDurationSec: trim.expectedDurationSec,
+    toleranceSec: trim.toleranceSec,
     size: null,
     needsVideo: true,
     // Measured from the recording that was just converted: if the captured WebM

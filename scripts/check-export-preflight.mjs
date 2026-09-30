@@ -235,7 +235,7 @@ try {
   } else {
     ok(!pass.ok && codes(pass).includes('FFMPEG_MISSING'), 'without ffmpeg the same preflight refuses, naming the missing tool rather than failing later')
     skipped += 1
-    console.log('SKIPPED: no FFmpeg on this machine, so the "everything present passes" case cannot be asserted (run npm run ffmpeg:ensure).')
+    console.log('SKIPPED: no FFmpeg on this machine, so the "everything present passes" case cannot be asserted (run npm run media:ensure).')
   }
   ok(pass.checks.find((c) => c.id === 'disk').detail.includes('free'), 'the free space is reported from the real statfs')
   ok(pass.estimate.bytes > 0, 'the disk need is estimated')
