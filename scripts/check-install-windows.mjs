@@ -34,7 +34,18 @@
  *   7. the portable build carries the same version and signature as the installed
  *      one.
  *
- * Usage: npm run check:install            (Windows only; needs `release/` built)
+ * Usage: npm run check:install                      (Windows only; needs `release/` built)
+ *        npm run check:install -- --unsigned-build  (a build with no certificate)
+ *
+ * `--unsigned-build` exists because the signature assertions are the only part of
+ * this check that cannot hold outside the release workflow: there is no
+ * certificate on a pull request, and pretending otherwise would either fail every
+ * PR or quietly skip the check. In that mode the assertions are inverted rather
+ * than dropped — the build must be unsigned, and the updater must NOT claim a
+ * publisher it cannot verify (an unsigned build with a publisherName would make
+ * electron-updater accept any downloaded update as trusted). Everything else —
+ * install, version on the installed exe, boot on every view, uninstall, no
+ * leftovers, the portable build — is asserted exactly as it is for a release.
  */
 
 import fs from 'node:fs'
@@ -55,6 +66,8 @@ import {
   uninstallSilently,
   waitFor,
 } from './lib/windows-install.mjs'
+
+const unsignedBuild = process.argv.includes('--unsigned-build')
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const releaseDir = path.join(root, 'release')
@@ -123,7 +136,16 @@ try {
 
   /* ── the signature the updater will require ───────────────────────────── */
   const exeSignature = authenticodeStatus(exePath)
-  if (!/Valid/.test(exeSignature.Status)) {
+  if (unsignedBuild) {
+    // Inverted, not skipped. An unsigned build is expected here — and it is
+    // asserted, so a build that *is* signed when we think it is not is still a
+    // surprise worth failing on.
+    if (/Valid/.test(exeSignature.Status)) {
+      fail('SIGNED_UNEXPECTEDLY', `this was expected to be an unsigned build, but the installed executable's Authenticode status is "Valid" (${exeSignature.Subject || 'no subject'}) — run the check without --unsigned-build`)
+    } else {
+      step('the build is unsigned, as this run expects', `Authenticode status "${exeSignature.Status}" — Windows SmartScreen will warn on install and the app cannot verify update signatures`)
+    }
+  } else if (!/Valid/.test(exeSignature.Status)) {
     fail('EXE_UNSIGNED', `the installed executable's Authenticode status is "${exeSignature.Status}"${exeSignature.Subject ? ` (${exeSignature.Subject})` : ''}`)
   } else if (!/CN=/.test(exeSignature.Subject || '')) {
     fail('EXE_PUBLISHER_UNKNOWN', `signed but with no CN in the signer subject: ${exeSignature.Subject}`)
@@ -139,8 +161,15 @@ try {
   } else {
     const yaml = fs.readFileSync(updaterConfig, 'utf8')
     const publisher = yaml.match(/^publisherName:\s*(.+)$/m)
-    if (!publisher) {
+    if (!publisher && unsignedBuild) {
+      // The fail-closed half of the signature rule, and it still applies: with no
+      // valid signature there must be no publisher to verify against, or the
+      // updater would trust anything.
+      step('the updater makes no signature claim it cannot keep', 'app-update.yml has no publisherName, which is correct for an unsigned build')
+    } else if (!publisher) {
       fail('PUBLISHER_NAME_MISSING', 'app-update.yml has no publisherName, so electron-updater accepts any downloaded update without verifying its signature')
+    } else if (unsignedBuild) {
+      fail('PUBLISHER_UNVERIFIABLE', `app-update.yml claims publisherName "${publisher[1].trim()}" on an unsigned build — electron-updater would check every update against a publisher this build cannot satisfy`)
     } else {
       step('the updater will verify update signatures', `publisherName: ${publisher[1].trim()}`)
       if (!exeSignature.Subject?.includes(publisher[1].trim().replace(/^['"]|['"]$/g, ''))) {

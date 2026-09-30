@@ -27,6 +27,7 @@ import { planWithRemotionCapabilities } from '../lib/remotionResources'
 import { startRender as launchRender, type RenderSource } from '../lib/render'
 import { makeSeedProjects } from '../lib/seed'
 import { MAX_TRACKS, emptyStudioDoc, normaliseClip, placeClip, reorderTracks, settleClip, splitClipAt, studioOf } from '../lib/studio/doc'
+import { applyTimelineCommand, commandMeta, type TimelineCommand } from '../lib/studio/commands'
 import { clamp, nowIso, round1, slugify, uid } from '../lib/utils'
 import { cancelLocalRun, durationFromBrief, planLocalRundown, runAutonomousJob, RUN_STEP_LABELS } from '../lib/automation/run'
 import { setSoundEnabled } from '../lib/sound'
@@ -225,6 +226,12 @@ type AppState = {
   landComponentRecording: (pid: string, clipId: string, patch: Partial<StudioOverlayClip>) => void
   removeStudioClip: (pid: string, clipId: string) => void
   splitStudioClip: (pid: string, clipId: string, atSec: number) => void
+  /**
+   * Run one timeline command (Phase 1.3). Every drag, trim, split, reorder and
+   * clip patch goes through here so the undo boundary follows the gesture
+   * rather than a timer — see src/lib/studio/commands.ts.
+   */
+  runTimelineCommand: (pid: string, command: TimelineCommand, context?: { playhead?: number; pps?: number }) => void
   duplicateStudioClip: (pid: string, clipId: string) => void
   reorderStudioTracks: (pid: string, from: number, to: number) => void
   addStudioTrack: (pid: string) => void
@@ -248,7 +255,7 @@ type AppState = {
  * diff scheme gives you: *every* action is undoable, including the ones added
  * after this was written, because nothing has to remember to record itself.
  */
-type HistoryEntry = { projects: Project[]; label: string; at: number }
+type HistoryEntry = { projects: Project[]; label: string; at: number; mergeKey?: string | null }
 
 /** Deepest the undo stack goes. Beyond this the oldest steps are dropped. */
 const HISTORY_LIMIT = 80
@@ -282,7 +289,7 @@ export const useProjectStore = create<AppState>()(
        * `label` is what the user is told they are undoing. Repeats of the same
        * label in quick succession (a slider drag) collapse into one step.
        */
-      const updateProject = (id: string, fn: (p: Project) => Project, label = 'Edit') =>
+      const updateProject = (id: string, fn: (p: Project) => Project, label = 'Edit', mergeKey?: string | null) =>
         set((s) => {
           const current = s.projects.find((p) => p.id === id)
           if (!current) return s
@@ -294,9 +301,22 @@ export const useProjectStore = create<AppState>()(
           // and swallows a real edit. Returning the same object is the
           // contract the studio helpers already use (`settleClip` does it).
           if (next === current) return s
-          const snapshot: HistoryEntry = { projects: s.projects, label, at: Date.now() }
+          const snapshot: HistoryEntry = { projects: s.projects, label, at: Date.now(), mergeKey: mergeKey ?? null }
           const top = s.past[s.past.length - 1]
-          const coalesce = Boolean(top && top.label === label && snapshot.at - top.at < COALESCE_MS)
+          /**
+           * Two ways to merge into the previous step, and they are not the same
+           * rule.
+           *
+           * A *gesture* key is exact: the timeline mints one per pointer-down
+           * and keeps it until pointer-up, so a drag that lasts four seconds —
+           * or that pauses while the person thinks — is one undo step, and the
+           * next drag is always a new one. The wall-clock window below stays for
+           * the edits that have no gesture (a slider, a repeated button press),
+           * where "the same thing again, quickly" is the best available guess.
+           */
+          const coalesce = mergeKey
+            ? Boolean(top && top.mergeKey === mergeKey)
+            : Boolean(top && !top.mergeKey && top.label === label && snapshot.at - top.at < COALESCE_MS)
           const past = coalesce ? s.past : [...s.past, snapshot].slice(-HISTORY_LIMIT)
           return {
             projects: s.projects.map((p) => (p.id === id ? { ...next, updatedAt: nowIso() } : p)),
@@ -713,6 +733,34 @@ export const useProjectStore = create<AppState>()(
             // Deleting an id that is not there is not an edit (2.31 audit).
             return clips.length === doc.clips.length ? p : { ...p, studio: { ...doc, clips } }
           }, 'Delete clip'),
+
+        runTimelineCommand: (pid, command, context) => {
+          const meta = commandMeta(command)
+          // The command knows why it did nothing ("Move the playhead inside the
+          // clip to split it"), and that sentence is the whole difference between
+          // a shortcut that silently fails and one that explains itself. `set` is
+          // synchronous, so the reason is filled in by the time we read it.
+          let reason: string | undefined
+          updateProject(
+            pid,
+            (p) => {
+              const result = applyTimelineCommand(studioOf(p), command, context)
+              if (!result.changed) {
+                reason = result.reason
+                return p
+              }
+              const next = result.doc
+              const trackCount = Math.max(next.trackCount, ...next.clips.map((c) => c.track + 1), 1)
+              return { ...p, studio: { ...next, trackCount: Math.min(MAX_TRACKS, trackCount) } }
+            },
+            meta.label,
+            meta.mergeKey,
+          )
+          // Only unsolicited commands explain themselves. A drag that has not
+          // moved yet fires dozens of commands a second, and a toast per frame
+          // would be worse than silence.
+          if (reason && !meta.mergeKey) get().pushToast('info', reason)
+        },
 
         splitStudioClip: (pid, clipId, atSec) =>
           updateProject(pid, (p) => {

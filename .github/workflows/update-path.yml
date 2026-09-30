@@ -8,14 +8,22 @@ name: Verify the update path (version to version)
 # requires Windows to report the new version on the installed executable
 # afterwards.
 #
-# It is manual and not part of the release gate on purpose: it packages two
-# complete builds (about fifteen minutes) and it exercises a signed updater
-# best when it runs against signed releases. Run it before a release that
-# changes packaging, the feed, or electron-updater.
+# It packages two complete builds (about fifteen minutes), which is why it is a
+# workflow of its own rather than a step in the pull-request gate. It runs:
 #
-# UNVERIFIED as of the commit that added it: this workflow has never run on a
-# Windows runner (the container it was written in cannot run Electron or an
-# installer). The first run is the verification — the checks name what failed.
+#   - on every pull request, against the last released tag as the "from" version
+#     and the pull request's own checkout as the "to" version. This is the only
+#     way the update path can be verified at all in a repository whose release
+#     workflow can only be triggered by a tag: without it, the machinery that
+#     keeps every existing installation current is never executed until the day
+#     it is needed.
+#   - on demand, with any two refs.
+#
+# It does not block the merge gate (it is not the required status check), because
+# a signed installation updating to an *unsigned* pull-request build can
+# legitimately fail signature verification — a finding about the release process
+# rather than about the change under review. When that happens the job says so in
+# those terms; see docs/PHASE4_RELEASE.md.
 
 on:
   workflow_dispatch:
@@ -25,21 +33,29 @@ on:
         required: true
         type: string
       to_tag:
-        description: 'Version the app must update itself to (for example, v0.14.0)'
-        required: true
+        description: 'Version the app must update itself to. Empty builds the checked-out commit.'
+        required: false
+        default: ''
         type: string
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
 
 jobs:
   update-path:
-    name: Install ${{ inputs.from_tag }}, update to ${{ inputs.to_tag }}
+    name: Install ${{ github.event.inputs.from_tag || 'v0.11.0' }}, update to ${{ github.event.inputs.to_tag || 'this pull request' }}
     runs-on: windows-latest
     timeout-minutes: 90
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       ELECTRON_BUILDER_PUBLISH: never
+      # A pull request has no inputs, so the defaults are resolved once here: the
+      # last released tag is the "from" version, and an empty "to" means "build
+      # the commit under review".
+      FROM_REF: ${{ github.event.inputs.from_tag || 'v0.11.0' }}
+      TO_REF: ${{ github.event.inputs.to_tag || '' }}
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -56,10 +72,11 @@ jobs:
       # and electron/ cannot leak between them — which also means each worktree
       # needs its own `npm ci` (a worktree has no node_modules). The check script
       # itself needs nothing but Node.
-      - name: Build ${{ inputs.from_tag }}
+      - name: Build the version to install first
         shell: pwsh
         run: |
-          git worktree add ../cupric-from ${{ inputs.from_tag }}
+          Write-Host "from: $env:FROM_REF"
+          git worktree add ../cupric-from $env:FROM_REF
           Push-Location ../cupric-from
           npm ci
           # The installer this job builds must contain working media tools, or
@@ -72,16 +89,28 @@ jobs:
           Copy-Item ../cupric-from/release -Destination ./release-from -Recurse
           Get-ChildItem ./release-from | Format-Table Name, Length
 
-      - name: Build ${{ inputs.to_tag }}
+      - name: Build the version the app must update itself to
         shell: pwsh
         run: |
-          git worktree add ../cupric-to ${{ inputs.to_tag }}
-          Push-Location ../cupric-to
-          npm ci
-          npm run build
-          npx electron-builder --win --publish never
-          Pop-Location
-          Copy-Item ../cupric-to/release -Destination ./release-to -Recurse
+          Write-Host "to: $env:TO_REF (empty means the checked-out commit)"
+          if ([string]::IsNullOrWhiteSpace($env:TO_REF)) {
+            # The pull-request case: this checkout is the "to" version.
+            npm ci
+            npm run media:ensure
+            npm run build
+            npx electron-builder --win --publish never
+            New-Item -ItemType Directory -Force -Path ./release-to | Out-Null
+            Copy-Item ./release/* -Destination ./release-to -Recurse -Force
+          } else {
+            git worktree add ../cupric-to $env:TO_REF
+            Push-Location ../cupric-to
+            npm ci
+            npm run media:ensure
+            npm run build
+            npx electron-builder --win --publish never
+            Pop-Location
+            Copy-Item ../cupric-to/release -Destination ./release-to -Recurse
+          }
           Get-ChildItem ./release-to | Format-Table Name, Length
 
       # The two builds must be different versions, or the test proves nothing.
@@ -104,7 +133,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: update-path-${{ inputs.from_tag }}-to-${{ inputs.to_tag }}
+          name: update-path-${{ env.FROM_REF }}-to-${{ env.TO_REF || 'pr' }}
           if-no-files-found: warn
           path: |
             release-from/latest.yml

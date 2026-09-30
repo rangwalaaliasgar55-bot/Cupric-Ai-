@@ -80,6 +80,7 @@
     "check:ui-audit": "node scripts/check-ui-audit.mjs",
     "check:automation": "node scripts/check-automation.mjs",
     "check:speech": "node scripts/check-speech.mjs",
+    "check:speech-live": "node scripts/check-speech-live.mjs",
     "check:gates": "node scripts/check-gates.mjs",
     "check:decompose": "node scripts/check-decompose.mjs",
     "check:scoped-edit": "node scripts/check-scoped-edit.mjs",

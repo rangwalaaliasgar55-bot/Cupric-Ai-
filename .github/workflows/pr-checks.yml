@@ -97,6 +97,31 @@ jobs:
       # The suite is not in `npm run build` because `npm run build` must work
       # without an Electron binary (sandboxes, containers, a laptop mid-install).
       # It is in this workflow, and this workflow is the required check.
+      # Phase 4's acceptance test, on every pull request: the installer that was
+      # just built is installed silently into a throwaway directory, the version
+      # Windows reports on the installed executable is read back, the installed
+      # app is booted through every view, and then it is uninstalled and the
+      # leftovers are checked. `--unsigned-build` inverts the signature
+      # assertions rather than skipping them: a pull request has no certificate,
+      # and an unsigned build must not claim a publisher it cannot verify.
+      - name: Install, run and uninstall the built installer
+        run: npm run check:install -- --unsigned-build
+
+      - name: Show what the install check left behind when it failed
+        if: failure()
+        shell: pwsh
+        run: |
+          Get-ChildItem "$env:TEMP\cupric-*" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+          Get-ChildItem "$env:LOCALAPPDATA\Programs" -Directory -ErrorAction SilentlyContinue | Format-Table FullName
+
+      # The download button, actually pressed. This fetches the real Piper engine
+      # and voice, runs the app's own installer and its own piper.exe command,
+      # and then hands the audio to whisper.cpp to check it transcribed as speech.
+      # It needs github.com and huggingface.co; if either is unreachable the step
+      # says which host failed rather than reporting any speech problem.
+      - name: Speech engines end to end (real download, real synthesis, real transcript)
+        run: npm run check:speech-live -- --with-whisper
+
       - name: End-to-end suite (real app, real FFmpeg)
         env:
           CUPRIC_E2E: '1'

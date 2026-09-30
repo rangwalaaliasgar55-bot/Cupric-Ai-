@@ -38,7 +38,13 @@ assert.match(inspector, /Import a Lottie/, 'Lottie import must be reachable from
 assert.match(studio, /addSticker/, 'built-in Lottie stickers must be addable from Studio')
 for (const key of ['j', 'k', 'l', 's']) assert.match(studio, new RegExp(`key === '${key}'`), `${key.toUpperCase()} shortcut must stay wired`)
 assert.match(studio, /key === 'k'[\s\S]*?patchTransformKeyframe/, 'K must create a keyframe on the selected clip')
-assert.match(studio, /key === 's'[\s\S]*?splitStudioClip/, 'S must split the selected clip')
+// S still splits the selected clip; since Phase 1.3 it goes through the command
+// layer so a split that cannot happen (playhead outside the clip, too close to
+// an edge) says why instead of doing nothing. Assert the routing, not just the
+// keypress: the shortcut has to reach a split command, not merely call a
+// function whose name contains "split".
+assert.match(studio, /key === 's'[\s\S]*?splitAtPlayhead\(/, 'S must split the selected clip')
+assert.match(studio, /const splitAtPlayhead = useCallback\([\s\S]*?kind: 'split'[\s\S]*?runTimelineCommand\(/, 'the split shortcut must issue a split command through the timeline command layer')
 {
   const accept = (studio.match(/accept="(video\/\*[^"]*)"/) || [])[1] || ''
   for (const t of ['video/*', 'image/*', 'audio/*', '.zip', '.html', '.htm', '.heic']) assert.ok(accept.split(',').includes(t), `Studio import must accept ${t} (generated HTML/zip packages, HEIC photos)`)
