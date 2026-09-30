@@ -146,8 +146,8 @@ export async function launchApp(options: LaunchOptions = {}): Promise<LaunchedAp
       // packaged build does.
       ELECTRON_START_URL: '',
       CUPRIC_USER_DATA_DIR: userDataDir,
-      // The boot check uses this to disable the single-instance lock interplay
-      // with a developer's running copy; harmless here and consistent with CI.
+      // Kept for parity with scripts/check-boot.mjs, which launches the packaged
+      // app the same way. It is a marker only: nothing in electron/ reads it.
       CUPRIC_BOOT_CHECK: '1',
       ...options.env,
     } as Record<string, string>,

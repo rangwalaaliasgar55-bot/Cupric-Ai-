@@ -3943,6 +3943,41 @@ async function planExportLoudness(state, source, requestedLufs) {
   }
 }
 
+/**
+ * How long an offscreen Studio recording may go completely silent before the job
+ * is failed instead of left hanging.
+ *
+ * The renderer reports progress on every frame it draws, so a *working* export
+ * resets this constantly — even a slow one on a software-rendered runner. What
+ * it catches is the opposite: a renderer that stopped compositing (or died), for
+ * which there is no error, no file and no toast, only a queue entry that waits
+ * forever. That is what the Windows E2E saw twice.
+ */
+const RECORDING_SILENCE_MS = 45_000
+
+function armRecordingWatchdog(state, why) {
+  clearRecordingWatchdog(state)
+  state.recordingStartedAt = state.recordingStartedAt || Date.now()
+  state.recordingWatchdog = setTimeout(() => {
+    const silentFor = Date.now() - (state.lastProgressAt || state.recordingStartedAt)
+    const message = [
+      `The offscreen Studio renderer stopped reporting (${why}): no progress for ${Math.round(silentFor / 1000)}s.`,
+      `  last progress ${state.lastProgressPct === undefined ? 'never' : `${Math.round(state.lastProgressPct)}%`},`,
+      `  job has been running ${Math.round((Date.now() - state.recordingStartedAt) / 1000)}s.`,
+      '  The export was aborted rather than left hanging. Nothing was written.',
+    ].join('\n')
+    logLine('studio-recording-stalled', message, { jobId: state.id })
+    state.recordingReject?.(new Error(message))
+  }, RECORDING_SILENCE_MS)
+}
+
+function clearRecordingWatchdog(state) {
+  if (state?.recordingWatchdog) {
+    clearTimeout(state.recordingWatchdog)
+    state.recordingWatchdog = null
+  }
+}
+
 async function executeStudioBackgroundJob(state, payload) {
   const doc = payload?.doc
   if (!doc || !Array.isArray(doc.clips)) throw new Error('Studio export did not include an editable timeline.')
@@ -3967,6 +4002,9 @@ async function executeStudioBackgroundJob(state, payload) {
       fileName: payload.fileName,
       scale: Number(payload.scale) > 0 ? Number(payload.scale) : 1,
     })
+    // Armed after the request is sent, cleared the moment a recording arrives:
+    // from here on, silence means something is wrong.
+    armRecordingWatchdog(state, 'the recorder never reported a frame')
     const submitted = await recording
     await ensureNotCancelled(state)
     const outputPayload = { ...payload, ...(submitted || {}) }
@@ -3974,6 +4012,7 @@ async function executeStudioBackgroundJob(state, payload) {
       ? await executeStudioWebmJob(state, outputPayload)
       : await executeStudioMp4Job(state, outputPayload)
   } finally {
+    clearRecordingWatchdog(state)
     state.recordingResolve = null
     state.recordingReject = null
     state.captureWindow = null
@@ -3988,6 +4027,9 @@ ipcMain.handle('studio:submitRecording', (event, payload) => {
   const state = renderJobs.get(id)
   if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) throw new Error('That Studio export is no longer accepting a recording.')
   if (!payload?.bytes || !payload.bytes.byteLength) throw new Error('The background Studio recorder returned an empty file.')
+  // The recording exists: the silence timer has nothing left to measure, and the
+  // encode that follows reports its own progress.
+  clearRecordingWatchdog(state)
   state.recordingResolve?.({ bytes: payload.bytes })
   return { accepted: true }
 })
@@ -3996,6 +4038,7 @@ ipcMain.handle('studio:recordingError', (event, payload) => {
   const id = String(payload?.jobId || '')
   const state = renderJobs.get(id)
   if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) return false
+  clearRecordingWatchdog(state)
   state.recordingReject?.(new Error(String(payload?.error || 'Background Studio recording failed.')))
   return true
 })
@@ -4004,7 +4047,13 @@ ipcMain.handle('studio:progress', (event, payload) => {
   const id = String(payload?.jobId || '')
   const state = renderJobs.get(id)
   if (!state || state.kind !== 'studio-background' || state.captureSender !== event.sender) return false
-  sendRenderEvent(state.sender, 'render:progress', { jobId: id, pct: Math.max(0, Math.min(100, Number(payload?.pct) || 0)) })
+  const pct = Math.max(0, Math.min(100, Number(payload?.pct) || 0))
+  // A frame was drawn: the renderer is alive. Reset the silence timer rather than
+  // measuring total duration — a long recording on a slow machine is not a stall.
+  state.lastProgressAt = Date.now()
+  state.lastProgressPct = pct
+  if (state.recordingWatchdog) armRecordingWatchdog(state, 'the recorder stopped reporting frames')
+  sendRenderEvent(state.sender, 'render:progress', { jobId: id, pct })
   return true
 })
 

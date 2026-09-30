@@ -212,7 +212,9 @@ test('the timeline playhead moves from the keyboard and says where it is', async
   await launched.page.keyboard.press('Home')
   await expect(slider).toHaveAttribute('aria-valuenow', '0')
   const valueText = await slider.getAttribute('aria-valuetext')
-  expect(valueText, 'the slider reads out a time').toMatch(/\d+:\d{2} of \d+:\d{2}/)
+  // `fmtClock` (src/lib/utils.ts) renders tenths: "0:00.0 of 0:03.0". Asserting a
+  // whole-second shape failed against the app's own correct output.
+  expect(valueText, 'the slider reads out a time').toMatch(/^\d+:\d{2}\.\d of \d+:\d{2}\.\d$/)
   expect(await slider.getAttribute('aria-keyshortcuts')).toContain('ArrowLeft')
 })
 
