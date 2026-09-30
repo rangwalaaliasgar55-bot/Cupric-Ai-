@@ -394,6 +394,33 @@ function pictureDurationArgs(file) {
   ]
 }
 
+/**
+ * The length an export must be cut to: the timeline's own length, never the recording's.
+ * MediaRecorder stops on the first animation frame at/after the end, and on a slow machine
+ * the stop and the final chunk flush land late — the WebM then runs up to ~1 s past the
+ * timeline. Trimming in the MP4 pass (`-t` as an output option, so it bounds audio and
+ * picture alike) is the one place that can fix that without touching the recorder.
+ * An explicit `durationSec` wins; otherwise the document's last clip end is used; a value
+ * that is missing or not positive returns null (no trim, never a zero-length file).
+ */
+function timelineSeconds(payload) {
+  const explicit = Number(payload?.durationSec)
+  if (Number.isFinite(explicit) && explicit > 0) return Math.round(explicit * 1000) / 1000
+  const clips = Array.isArray(payload?.doc?.clips) ? payload.doc.clips : []
+  let end = 0
+  for (const c of clips) {
+    const e = Number(c?.startSec) + Number(c?.durationSec)
+    if (Number.isFinite(e) && e > end) end = e
+  }
+  return end > 0 ? Math.round(end * 1000) / 1000 : null
+}
+
+/** Output-side trim argv for `timelineSeconds`; empty when there is nothing to trim to. */
+function trimToTimelineArgs(payload) {
+  const sec = timelineSeconds(payload)
+  return sec ? ['-t', sec.toFixed(3)] : []
+}
+
 /** `loudnorm=I=…` needs a target; Cupric's document stores the integrated value in LUFS. */
 function targetFromLufs(lufs) {
   const i = Number(lufs)
@@ -782,6 +809,8 @@ module.exports = {
   silencePlan,
   muxArgs,
   pictureDurationArgs,
+  timelineSeconds,
+  trimToTimelineArgs,
   /* edl */
   assertRanges,
   parseEdl,

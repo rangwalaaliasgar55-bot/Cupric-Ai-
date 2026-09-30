@@ -101,7 +101,7 @@ import { allowListOfReport, diffStudioDoc } from '../lib/studio/scopedEdit'
 import type { GateReport } from '../lib/studio/gates'
 import { cueDone, cueProblem } from '../lib/sound'
 import { clamp, cx, fmtClock, slugify, uid } from '../lib/utils'
-import { frameOf, snapToFrame, stepFrames } from '../lib/studio/frames'
+import { frameOf, snapPlayhead, stepFrames } from '../lib/studio/frames'
 import { humanError } from '../lib/humanError'
 import { getIpc } from '../lib/bridge'
 import { rlog } from '../lib/log'
@@ -391,7 +391,7 @@ export function Studio() {
   )
 
   const seek = useCallback(
-    (t: number) => setTime(snapToFrame(doc, clamp(t, 0, Math.max(0, duration)))),
+    (t: number) => setTime(snapPlayhead(doc, clamp(t, 0, Math.max(0, duration)))),
     [doc, duration],
   )
 
@@ -1389,7 +1389,7 @@ export function Studio() {
         return 'cancelled'
       } else if (asMp4) {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
-        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal)
+        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal, result.durationSec)
         setLastExport({ url: result.url, fileName: result.fileName })
         const level = mp4.loudness && mp4.loudness.mode !== 'none' ? ` \u2014 ${mp4.loudness.note}` : ''
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)${level}`)

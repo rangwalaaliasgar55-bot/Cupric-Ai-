@@ -19,13 +19,13 @@ evidence log for the Windows half of Phases 1–3.
 | 36660333176 | `27f5db9` | ✓ (85) | ✓ | ✓ | 11 pass / 2 fail (6.2m) | `tests/e2e/studio-export.spec.ts` render wait |
 | 36665419223 | `2c25cc3` | ✓ (85) | ✓ | ✓ | **13 passed (2.0m)** | — |
 | 36666576364 | `79e1bfd` | ✓ (85) | ✓ | ✓ | 12 pass / 1 fail (1.9m) | export length 3.969s vs `<3.6` (bound too tight for a GPU-less real-time capture; now a band) |
-| *queued* | `3e00874` | 86 — **never observed** | — | — | — | — |
-| *queued* | the Phase 1.3 commit | 86 + install/run/uninstall + live speech | — | — | — | — |
+| 36668552925 | `3e00874` | **✗ (86)** | — | — | — | `node scripts/check-encode-dims.mjs` — the check still grepped `electron/main.cjs` for the FFmpeg filter the trim work had moved into `electron/studio-trim.cjs`. Found locally by running the chain, fixed in `c35b563` (`docs/PHASE1_TIMELINE.md` §1, T6) |
+| *queued* | the Phase 1.3 commit (merged with `main`) | 87 + install/run/uninstall + live speech | — | — | — | — |
 
 The last two rows are deliberately blank: the chain grew from 85 to 86 checks
 (`check:studio-trim`) and then gained two Phase 4 steps, and **none of that has
 been observed on Windows yet**. Two stale release checks were found by running the
-86-step chain locally on the Phase 1.3 commit (`docs/PHASE1_TIMELINE.md` §1, T6) —
+87-step chain locally on the Phase 1.3 commit (`docs/PHASE1_TIMELINE.md` §1, T6) —
 the reason the chain is run locally before every push.
 
 "Boot" is `npm run check:boot -- --no-build`, which launches the **packaged**

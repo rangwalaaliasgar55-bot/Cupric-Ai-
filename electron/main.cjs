@@ -4046,7 +4046,7 @@ ipcMain.handle('studio:submitRecording', (event, payload) => {
   // The recording exists: the silence timer has nothing left to measure, and the
   // encode that follows reports its own progress.
   clearRecordingWatchdog(state)
-  state.recordingResolve?.({ bytes: payload.bytes })
+  state.recordingResolve?.({ bytes: payload.bytes, ...(Number(payload.durationSec) > 0 ? { durationSec: Number(payload.durationSec) } : {}) })
   return { accepted: true }
 })
 

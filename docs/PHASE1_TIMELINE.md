@@ -141,14 +141,14 @@ the Windows column marks what still needs the runner.
 | `node scripts/check-studio-surfaces.mjs` | initially **failed**: `AssertionError: S must split the selected clip` — the check matched the literal call `splitStudioClip`. Rewritten to assert the routing (the shortcut reaches a `kind: 'split'` command), which is a stronger claim; passes. |
 | `node scripts/check-upgrades-batch3.mjs` | initially **failed**: `timeline drags route through group move` (grep on the moved call site). Rewritten as above; `23 assertions passed`. |
 | `node scripts/check-encode-dims.mjs` | initially **failed** on `3e00874` (see T6). Now asserts the produced argv; passes, including `['-t', '3.000']` and the even-size filter. |
-| `CUPRIC_FFMPEG_PATH=… CUPRIC_FFPROBE_PATH=… node scripts/run-checks.mjs` | `BUILD PASSED: all 86 checks` — with the real FFmpeg and ffprobe, so `check:studio-trim` (32 assertions, 3 real encodes) ran in full rather than in its no-FFmpeg half. |
+| `CUPRIC_FFMPEG_PATH=… CUPRIC_FFPROBE_PATH=… node scripts/run-checks.mjs` | `BUILD PASSED: all 87 checks` — with the real FFmpeg and ffprobe, so `check:studio-trim` (32 assertions, 3 real encodes) ran in full rather than in its no-FFmpeg half. |
 | `node scripts/check-speech-live.mjs` (this container) | **exits 1 by design**: `check:speech-live FAILED — this check installs and runs the Windows speech engines… running on linux`. Reported as the honest outcome; it is wired into the Windows workflow below. |
 
 ### What the Windows run for this commit has to prove (queued, not yet observed)
 
 | Step | What it proves |
 | ---- | -------------- |
-| `Type-check, unit tests and release checks` | all 86 checks, including the three rewritten ones, on Windows |
+| `Type-check, unit tests and release checks` | all 87 checks, including the three rewritten ones, on Windows |
 | `Package Windows installers` → `Install, run and uninstall the built installer` | Phase 4's acceptance test in the gate: silent install, `FileVersion` read back off the installed exe, boot on every view, uninstall, no leftovers, no Start-Menu shortcut — with the signature assertions inverted for a certificate-less pull request |
 | `Speech engines end to end` | the real Piper download → real `piper.exe` synthesis → parsed WAV → whisper.cpp transcript, on the platform this ships for |
 | `End-to-end suite` | the existing 13 Playwright flows (import → scan → Apply edit → render → ffprobe), now against the command-layer timeline |
@@ -156,6 +156,32 @@ the Windows column marks what still needs the runner.
 **Nothing in this pass has been observed running on Windows yet.** The status is
 UNVERIFIED until that run's results are recorded in
 `docs/WINDOWS_VERIFICATION.md`.
+
+### 3.1 A merge, and one frame-snapping implementation instead of two
+
+While this pass was being written, `main` moved: PR #29 (this branch's previous
+work) was merged, and a second session landed its own release work on `main`,
+including `snapToFrame(t, fps)` in `src/lib/studio/doc.ts`, microsecond rounding
+in `normaliseClip`, frame-snapped arrow keys in the timeline ruler, and a new
+`check-frame-accurate.mjs`. Two sessions had solved the same problem in two
+places, which is exactly the kind of duplication that later disagrees with
+itself. The merge resolved it deliberately:
+
+- **`doc.ts`'s `snapToFrame(t, fps)` is the only implementation of "which frame is
+  this time on".** It is the primitive `snapTime`, `normaliseClip` and
+  `splitClipAt` in that file now use, so all four agree.
+- **`frames.ts` keeps the frame *indices*, the document bounds, the frame
+  stepping and the readout**, and delegates its rounding to that primitive. Its
+  document-clamped snap is renamed **`snapPlayhead`** because that is what it is —
+  clip times must *not* be clamped to the document (a clip dropped past the end
+  extends the timeline), so the command layer snaps clip times through `snapTime`
+  and the playhead through `snapPlayhead`.
+- The two branches' fixes to the same stale check (`check-encode-dims.mjs`) were
+  reconciled in favour of the stronger one: the produced FFmpeg argv, not a grep
+  of the module that builds it.
+- `main`'s release commit also brought two non-FFmpeg checks into the chain
+  (`check-frame-accurate`, plus changes to `check-assembly`), so the chain is now
+  **87 checks**, and 87 is what the local run below observed.
 
 ---
 

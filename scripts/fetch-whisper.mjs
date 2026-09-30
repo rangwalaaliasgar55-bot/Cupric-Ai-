@@ -15,7 +15,8 @@
  */
 import AdmZip from 'adm-zip'
 import { execFileSync } from 'node:child_process'
-import { createWriteStream, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -31,13 +32,40 @@ const ASSET = {
   linux: { x64: 'whisper-bin-ubuntu-x64.tar.gz', arm64: 'whisper-bin-ubuntu-arm64.tar.gz' },
 }[process.platform]?.[process.arch]
 
-async function download(url, file) {
+async function sha256(file) {
+  const h = createHash('sha256')
+  await pipeline(createReadStream(file), h)
+  return h.digest('hex')
+}
+
+/**
+ * Download to `<file>.part`, check the SHA-256 against the publisher's digest when one is
+ * known, and only then move it into place. A mismatch deletes the file and fails — an
+ * unverified engine never lands in vendor/. With no published digest the hash is printed
+ * as UNVERIFIED so the gap is visible instead of silent.
+ */
+async function download(url, file, expected = null) {
   const res = await fetch(url, { redirect: 'follow', headers: { 'user-agent': 'cupric-ai-fetch-whisper' } })
   if (!res.ok || !res.body) throw new Error(`${url} → HTTP ${res.status}`)
   const tmp = `${file}.part`
   await pipeline(Readable.fromWeb(res.body), createWriteStream(tmp))
+  const got = await sha256(tmp)
+  if (expected && got !== expected.toLowerCase()) {
+    rmSync(tmp, { force: true })
+    throw new Error(`${path.basename(file)}: SHA-256 mismatch — expected ${expected}, got ${got}. Deleted.`)
+  }
+  console.log(`  sha256 ${got} ${expected ? '(verified against publisher digest)' : 'UNVERIFIED (publisher gave no digest)'}`)
   renameSync(tmp, file)
   return statSync(file).size
+}
+
+/** HuggingFace serves LFS files with their SHA-256 in `x-linked-etag` on the un-followed resolve. */
+async function huggingFaceSha256(url) {
+  try {
+    const res = await fetch(url, { method: 'HEAD', redirect: 'manual', headers: { 'user-agent': 'cupric-ai-fetch-whisper' } })
+    const tag = (res.headers.get('x-linked-etag') || '').replace(/^W\//, '').replace(/"/g, '')
+    return /^[0-9a-f]{64}$/i.test(tag) ? tag : null
+  } catch { return null }
 }
 
 mkdirSync(dest, { recursive: true })
@@ -46,7 +74,8 @@ mkdirSync(dest, { recursive: true })
 const modelPath = path.join(dest, modelName)
 if (existsSync(modelPath)) console.log(`model: ${modelName} already present`)
 else {
-  const size = await download(`https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${modelName}`, modelPath)
+  const url = `https://huggingface.co/ggerganov/whisper.cpp/resolve/main/${modelName}`
+  const size = await download(url, modelPath, await huggingFaceSha256(url))
   console.log(`model: ${modelName} (${(size / 1e6).toFixed(0)} MB)`)
 }
 
@@ -65,7 +94,9 @@ if (hasBinary) {
   if (!release) throw new Error(`No whisper.cpp release with ${ASSET} found.`)
   const asset = release.assets.find((a) => a.name === ASSET)
   const archive = path.join(dest, ASSET)
-  await download(asset.browser_download_url, archive)
+  // GitHub publishes `digest: "sha256:…"` for release assets; verify against it.
+  const digest = /^sha256:([0-9a-f]{64})$/i.exec(String(asset.digest || ''))?.[1] || null
+  await download(asset.browser_download_url, archive, digest)
   if (ASSET.endsWith('.zip')) new AdmZip(archive).extractAllTo(dest, true)
   else execFileSync('tar', ['-xzf', archive, '-C', dest])
   rmSync(archive, { force: true })

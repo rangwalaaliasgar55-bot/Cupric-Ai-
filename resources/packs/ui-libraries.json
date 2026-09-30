@@ -2,7 +2,7 @@
   "id": "ui-libraries",
   "name": "UI libraries (Mantine · Pixel Perfect · Sora UI)",
   "description": "Indexed component libraries used as pattern references by the agent, the generation prompt and Cupric's own chrome. Mantine is MIT; Pixel Perfect and Sora UI declare no license, so they are linked and attributed, never copied.",
-  "version": "0.13.0",
+  "version": "0.16.0",
   "source": "https://mantine.dev, https://www.pixel-perfect.space, https://ui.soralabs.studio",
   "license": "Index only. Mantine MIT; Pixel Perfect and Sora UI: no license declared — link only.",
   "items": [

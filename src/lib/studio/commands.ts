@@ -23,7 +23,7 @@
  */
 import type { StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
 import { MIN_CLIP_SEC, placeClip, reorderTracks, settleClip, snapTime, splitClipAt, trackIsFree, clipEnd } from './doc'
-import { snapDurationToFrames, snapToFrame } from './frames'
+import { snapDurationToFrames, snapPlayhead } from './frames'
 import { markerTimes } from './timelineOps'
 import { moveWithGroup } from './editTools'
 
@@ -89,10 +89,16 @@ export function commandMeta(command: TimelineCommand): CommandMeta {
   return { label, mergeKey: gesture ?? null }
 }
 
-/** Snap a time against clip edges, markers and the playhead, then to a frame. */
+/**
+ * Snap a clip's time against clip edges, markers and the playhead.
+ *
+ * `snapTime` (doc.ts) already rounds to the nearest frame; deliberately no
+ * document-length clamp afterwards, because a clip dropped past the end of the
+ * timeline extends it rather than being illegal.
+ */
 function snapFor(doc: StudioDoc, clipId: string, raw: number, playhead: number, pps: number): number {
   const tolerance = Math.max(1 / 60, 8 / Math.max(1, pps))
-  return snapToFrame(doc, snapTime(doc, raw, clipId, [playhead, ...markerTimes(doc)], tolerance))
+  return Math.max(0, snapTime(doc, raw, clipId, [playhead, ...markerTimes(doc)], tolerance))
 }
 
 export type ApplyOptions = {
@@ -194,7 +200,7 @@ export function applyTimelineCommand(doc: StudioDoc, command: TimelineCommand, o
     case 'split': {
       const clip = doc.clips.find((c) => c.id === command.clipId)
       if (!clip) return same(doc, 'Select a clip to split.')
-      const at = snapToFrame(doc, command.atSec)
+      const at = snapPlayhead(doc, command.atSec)
       const halves = splitClipAt(clip, at)
       if (!halves) return same(doc, `Put the playhead at least ${MIN_CLIP_SEC}s inside the clip to split it.`)
       return {

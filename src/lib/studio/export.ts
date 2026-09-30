@@ -521,6 +521,7 @@ export async function convertToMp4(
   fps: number,
   loudnessTarget: number | null = null,
   signal?: { cancelled: boolean },
+  durationSec?: number,
 ): Promise<{ outputPath: string; bytes: number; loudness?: LoudnessReport | null }> {
   const ipc = getIpc()
   if (!isDesktop() || !ipc) throw new Error('MP4 conversion needs the desktop app (FFmpeg runs in the main process).')
@@ -556,6 +557,7 @@ export async function convertToMp4(
       fileName,
       fps,
       loudnessTarget,
+      ...(durationSec && durationSec > 0 ? { durationSec } : {}),
     }).then((accepted: { jobId?: string; outputPath?: string; bytes?: number; status?: string }) => {
       if (accepted?.outputPath) {
         finish(() => resolve({ outputPath: accepted.outputPath!, bytes: Number(accepted.bytes) || 0 }))

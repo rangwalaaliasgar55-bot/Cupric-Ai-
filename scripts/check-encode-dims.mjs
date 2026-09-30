@@ -54,6 +54,9 @@ assert.match(source, /enableLargerThanScreen: true/, 'hidden capture windows mus
  * it cannot be satisfied by a comment.
  */
 const studioMp4 = source.slice(source.indexOf('async function executeStudioMp4Job'), source.indexOf("ipcMain.handle('media:status'"))
+// Both branches fixed this check for the same reason; this is the stronger
+// half of the two — the argv the app really hands FFmpeg, not the text of the
+// module that builds it (a source match can be satisfied by a comment).
 assert.match(studioMp4, /studioTrim\.mp4Args\(/, 'Studio MP4 conversion must build its FFmpeg argv through electron/studio-trim.cjs')
 assert.ok(!/'-vf'/.test(studioMp4), 'the Studio MP4 filter chain must live in one place, not a second copy in main.cjs')
 

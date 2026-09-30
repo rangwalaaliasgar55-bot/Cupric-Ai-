@@ -15,7 +15,7 @@
 import { describe, expect, it } from 'vitest'
 import { emptyStudioDoc, MIN_CLIP_SEC, clipEnd, docDuration, snapTime } from '../lib/studio/doc'
 import { applyTimelineCommand, commandMeta, newGesture, type TimelineCommand } from '../lib/studio/commands'
-import { frameOf, lastFrame, snapToFrame, stepFrames, timeOfFrame, formatFrame, snapDurationToFrames } from '../lib/studio/frames'
+import { frameOf, lastFrame, snapPlayhead, stepFrames, timeOfFrame, formatFrame, snapDurationToFrames } from '../lib/studio/frames'
 import type { StudioDoc, StudioMarker, StudioMediaClip } from '../types/project'
 
 /** A three-clip document at 30 fps, entirely on track 0 unless a test moves it. */
@@ -71,8 +71,8 @@ describe('frame arithmetic', () => {
     const doc = fixture()
     const end = docDuration(doc)
     expect(lastFrame(doc)).toBe(Math.ceil(end * 30) - 1)
-    expect(snapToFrame(doc, end + 5)).toBeLessThanOrEqual(end)
-    expect(frameOf(doc, snapToFrame(doc, end))).toBeLessThanOrEqual(lastFrame(doc))
+    expect(snapPlayhead(doc, end + 5)).toBeLessThanOrEqual(end)
+    expect(frameOf(doc, snapPlayhead(doc, end))).toBeLessThanOrEqual(lastFrame(doc))
   })
 
   it('steps whole frames in both directions, inside the document', () => {

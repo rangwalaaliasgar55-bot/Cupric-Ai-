@@ -1,10 +1,9 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Image as ImageIcon, Layers, Music, Sparkles, Sticker, SlidersHorizontal, Type as TypeIcon, Video, Lock, EyeOff, VolumeX , Shapes, MousePointerClick, Loader as LoaderIcon, LayoutTemplate } from 'lucide-react'
 import type { StudioAudioClip, StudioClip, StudioDoc, StudioMediaClip } from '../../types/project'
-import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime } from '../../lib/studio/doc'
+import { MAX_TRACKS, MIN_CLIP_SEC, clipEnd, snapTime, snapToFrame } from '../../lib/studio/doc'
 import { markerTimes } from '../../lib/studio/timelineOps'
 import { newGesture, type TimelineCommand } from '../../lib/studio/commands'
-import { snapToFrame } from '../../lib/studio/frames'
 import { moveKeyframeTime } from '../../lib/studio/keyframeEdit'
 import { getMedia } from '../../lib/studio/media'
 import { clamp, cx, fmtClock } from '../../lib/utils'
@@ -197,6 +196,10 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
       }
 
       // trim-end
+      // The end edge goes to the command layer like every other gesture: it
+      // snaps against the same clip edges, markers and frames, rounds the
+      // duration up to a whole frame (never below MIN_CLIP_SEC), and lands in the
+      // same undo step as the rest of the drag.
       onCommand({ kind: 'trim', clipId: clip.id, edge: 'end', atSec: t, gesture: drag.gesture })
     }
 
@@ -285,8 +288,8 @@ export function StudioTimeline({ doc, time, pps, duration, selectedId, onSelect,
               // Only the keys this element actually handles.
               aria-keyshortcuts="ArrowLeft ArrowRight" 
               onKeyDown={(e) => {
-                if (e.key === 'ArrowLeft') onSeek(Math.max(0, time - (e.shiftKey ? 1 : 1 / doc.fps)))
-                if (e.key === 'ArrowRight') onSeek(Math.min(duration, time + (e.shiftKey ? 1 : 1 / doc.fps)))
+                if (e.key === 'ArrowLeft') onSeek(Math.max(0, snapToFrame(time - (e.shiftKey ? 1 : 1 / doc.fps), doc.fps)))
+                if (e.key === 'ArrowRight') onSeek(Math.min(duration, snapToFrame(time + (e.shiftKey ? 1 : 1 / doc.fps), doc.fps)))
               }}
               onPointerDown={(e) => {
                 e.preventDefault()

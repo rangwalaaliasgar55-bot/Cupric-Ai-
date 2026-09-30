@@ -21,11 +21,18 @@
  * before writing them, and the timeline matches that resolution.
  */
 import type { StudioDoc } from '../../types/project'
-import { docDuration } from './doc'
+import { docDuration, snapToFrame } from './doc'
 
 /** Microsecond resolution: the finest value the app ever stores. */
 const RESOLUTION = 1e6
-const toTime = (frame: number, fps: number) => Math.round((frame / fps) * RESOLUTION) / RESOLUTION
+/**
+ * The rounding lives in `doc.ts` (`snapToFrame(t, fps)`), which is the primitive
+ * the timeline's snapping, `normaliseClip` and `splitClipAt` already use. Two
+ * implementations of "which frame is this time on" would eventually disagree;
+ * this file adds the frame *indices*, the document bounds and the readout on top
+ * of that one.
+ */
+const toTime = (frame: number, fps: number) => snapToFrame(frame / fps, fps)
 
 /** The project's frame rate, defended against a document that lost it. */
 export function fpsOf(doc: Pick<StudioDoc, 'fps'>): number {
@@ -52,25 +59,27 @@ export function timeOfFrame(doc: Pick<StudioDoc, 'fps'>, frame: number): number 
   return toTime(Math.max(0, Math.round(Number.isFinite(frame) ? frame : 0)), fpsOf(doc))
 }
 
+/**
+ * Snap a time onto the frame it is nearest, bounded by the document.
+ *
+ * This is the playhead's snap (and the split's): it clamps to the last frame the
+ * document can draw, because a playhead past the end would show a frame the
+ * export cannot contain. Clip times do **not** go through this — dropping a clip
+ * at the end legitimately makes the document longer, so `commands.ts` uses
+ * `snapTime` from `doc.ts`, which snaps to a frame without an upper bound.
+ */
+export function snapPlayhead(doc: StudioDoc, t: number): number {
+  const duration = docDuration(doc)
+  const clamped = Math.min(Math.max(Number.isFinite(t) ? t : 0, 0), duration)
+  const frame = Math.min(frameOf(doc, clamped), lastFrame(doc))
+  return Math.min(timeOfFrame(doc, frame), duration)
+}
+
 /** The last frame the export can contain, given the document's length. */
 export function lastFrame(doc: StudioDoc): number {
   // A 3.000 s / 30 fps document renders frames 0..89; frame 90 is one frame past
   // the end, and its time equals the document duration exactly.
   return Math.max(0, Math.ceil(docDuration(doc) * fpsOf(doc)) - 1)
-}
-
-/**
- * Snap a time onto a frame, inside the document.
- *
- * Used by every seek, scrub and trim so the app never holds a time the exporter
- * cannot draw. The clamp happens *after* rounding so that a playhead dragged
- * past the end lands on the last drawable frame rather than on the duration
- * (which is one frame beyond it).
- */
-export function snapToFrame(doc: StudioDoc, t: number): number {
-  const frame = frameOf(doc, Math.min(Math.max(t, 0), docDuration(doc)))
-  const snapped = timeOfFrame(doc, Math.min(frame, lastFrame(doc)))
-  return Math.min(snapped, docDuration(doc))
 }
 
 /** Move the playhead by whole frames. `n` may be negative. */
