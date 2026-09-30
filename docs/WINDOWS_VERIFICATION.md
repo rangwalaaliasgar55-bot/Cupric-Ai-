@@ -17,11 +17,21 @@ evidence log for the Windows half of Phases 1–3.
 | 36656481386 | `30ddf23` | ✗ | — | — | — | `scripts/check-export-preflight.mjs`, at 1m57s |
 | 36657033448 | `4c7ce4c` | ✓ | ✓ | ✓ | 5 pass / 4 fail / 4 not run | `tests/e2e/launch.spec.ts:43` |
 | 36660333176 | `27f5db9` | ✓ | ✓ | ✓ | 11 pass / 2 fail (6.2m) | `tests/e2e/studio-export.spec.ts` render wait |
+| 36665419223 | `2c25cc3` | ✓ | ✓ | ✓ | **13 passed (2.0m)** | — |
 
 "Boot" is `npm run check:boot -- --no-build`, which launches the **packaged**
 installer build and visits every view with an empty and a corrupt project. It
-has passed on Windows twice, which is the first real evidence that the shipped
-app opens on the platform it ships to.
+has passed on Windows three times.
+
+`2c25cc3` is the first commit where every step of the required check is green on
+the platform the product ships to: 85 build checks, the NSIS installer built and
+verified, the packaged app booted, and all 13 E2E tests — including the one that
+imports a real video, renders it with the bundled FFmpeg and probes the MP4 that
+lands on disk. The run took 2.0m; the earlier ones took 5–6m because they were
+waiting out timeouts.
+
+Nothing below is a leftover from the failing runs: the sections are kept as the
+record of what each run found, which is the point of this file.
 
 ### Run 1 — no FFmpeg on the runner
 
@@ -174,15 +184,35 @@ exercises the same path.
 
 | Item | State | What settles it |
 | --- | --- | --- |
-| Importing a file and exporting it on Windows | **UNVERIFIED** — was broken (`media:import` did not exist); fixed and now covered by the E2E | The next run of the required check |
-| The offscreen recorder without a compositor (frame pushing, timer driver, stall watchdog) | **UNVERIFIED** — written against a hypothesis that turned out not to be the cause | The same run: if the recorder path is wrong, the export test fails on the file it produces |
-| The `Brief.tsx` low-width layout and the `StudioTimeline` ARIA fix | **UNVERIFIED** — written and type-checked here, not yet run on Windows | The pushed commit's E2E run (the playhead test now reaches the ruler through the Footage Desk import) |
-| Timeline clip drag / trim / split and frame-accurate preview (Phase 1.3) | **Not started** | — |
+| Timeline clip drag / trim / split and frame-accurate preview (Phase 1.3) | **Not started** — the largest piece of Phase 1 still outstanding | Implementation plus the E2E that would prove it |
 | Piper and Whisper engine bytes | **UNVERIFIED** — no network route to the artefacts exists in this environment | A Windows machine with network access, or a mirror |
 | Branch protection on `main` | **Not set** — the token used here has no admin scope | `docs/PHASE2_TESTING.md` §3 |
+| EV code signing and the clean-VM / auto-update runs (Phase 4) | **Not run** — no certificate | A certificate and a clean VM (`docs/PHASE4_RELEASE.md` §5–6) |
+| The offscreen recorder without a compositor (frame pushing, timer driver, stall watchdog) | Verified only to the extent that the export test exercises it — it was written against a hypothesis that turned out not to be the cause | A machine without a GPU where the test still renders |
 | English + Hindi only; no screen-reader run | Known limitation | — |
 
-## 4. How to reproduce any of this
+## 4. What the green run proves
+
+For `2c25cc3`, on `windows-latest`, from a clean checkout:
+
+- `npm ci` installs the locked dependencies, **and FFmpeg is really there** —
+  `npm run ffmpeg:ensure` fails the build otherwise, because a Windows run that
+  cannot encode verifies nothing about rendering.
+- All 85 build checks pass, including the unit tests, the export preflight
+  against the real FFmpeg, the licence and provenance checks, the version-sync
+  gate and the UI audit.
+- `electron-builder --win` produces an NSIS installer, and the workflow refuses a
+  setup below 10 MB or more than one installer.
+- The **packaged** build boots and visits every view with an empty project and
+  with a corrupt `projects.json` (`npm run check:boot -- --no-build`).
+- 13 E2E tests pass against the real app, the real preload bridge and the real
+  FFmpeg: launch and restore, the first-run tour, the desks, keyboard access to
+  the timeline, the speech-engine download surface, and the full flow —
+  import a video, scan it for silences, apply the edit, land on the Timeline,
+  render MP4, and probe the file that appears on disk (h264 + aac, ~3s, non-zero
+  and playable).
+
+## 5. How to reproduce any of this
 
 ```
 gh pr checks 29                      # the required check and its annotations
