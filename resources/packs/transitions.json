@@ -2,7 +2,7 @@
   "id": "transitions",
   "name": "Transitions",
   "description": "Every transition the Studio renderer implements, including the glass and liquid families.",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "source": "NewBrand Studio renderer",
   "license": "MIT",
   "items": [

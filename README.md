@@ -39,10 +39,10 @@ npm run dist:win
 
 Build artifacts are written to `release/`:
 
-- `NewBrand-Setup-0.16.0.exe` — NSIS installer
-- `NewBrand-0.16.0-x64-Portable.exe` — portable build
+- `NewBrand-Setup-0.17.0.exe` — NSIS installer
+- `NewBrand-0.17.0-x64-Portable.exe` — portable build
 
-**Current version:** `0.16.0`
+**Current version:** `0.17.0`
 
 ## Configuration
 

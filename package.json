@@ -1,7 +1,7 @@
 {
   "name": "newbrand",
   "private": true,
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "NewBrand is a desktop studio for planning, editing, and exporting short-form video with local media tools and configurable AI providers.",
   "type": "module",
   "main": "electron/main.cjs",

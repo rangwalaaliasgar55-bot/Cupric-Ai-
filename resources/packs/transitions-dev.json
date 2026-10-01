@@ -2,7 +2,7 @@
   "id": "transitions-dev",
   "name": "Transitions.dev — thinking states & matrix loader",
   "description": "14 loader presets rebuilt as native, export-exact Studio clips with editable text, timing, colour, easing, loop and reduced-motion props.",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "source": "https://transitions.dev",
   "license": "Original NewBrand re-implementation; upstream snippets kept for reference with attribution (resources/transitions-dev/ATTRIBUTION.md).",
   "items": [

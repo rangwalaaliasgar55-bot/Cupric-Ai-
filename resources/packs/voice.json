@@ -2,7 +2,7 @@
   "id": "voice",
   "name": "Voice commands",
   "description": "The Studio voice grammar. Each entry is a phrase the parser in src/lib/voice.ts accepts.",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "source": "NewBrand voice parser (Web Speech API)",
   "license": "MIT",
   "items": [

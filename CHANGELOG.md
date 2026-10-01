@@ -16,6 +16,13 @@ reconstructed from the published GitHub releases, and where a release was
 published with only GitHub's auto-generated notes it says so rather than
 inventing a summary.
 
+## [0.17.0] — 2026-10-01
+
+- **NewBrand release.** Rebranded the package, desktop application identity,
+  installers, resource metadata, updater migration path, user-facing copy, and
+  generated icon set. Existing Cupric AI installations remain an explicit
+  updater-migration source for this release.
+
 ## [0.16.0] — 2026-09-30
 
 - **Phase 1.3 — frame-accurate timeline.** Drag, both trims, split, move-to-playhead
