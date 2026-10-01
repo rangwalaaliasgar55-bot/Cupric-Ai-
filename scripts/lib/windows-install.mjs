@@ -49,14 +49,23 @@ export function freshInstallDir(label) {
 }
 
 /**
- * Silent install. `cmd /c` is used so the quoting is exactly what NSIS expects:
- * the installer path may be quoted, the `/D=` value must not be, and `/D=` must
- * come last.
+ * Silent install.
+ *
+ * The installer is spawned directly — deliberately NOT through `cmd /c`. The
+ * first version of this helper built `"path" /S /D=<dir>` and handed it to
+ * `cmd /d /s /c` through spawnSync; Node re-quotes that argument for
+ * CreateProcess as `\"path\" /S /D=…`, cmd does not unescape backslash-quotes,
+ * and it tried to execute a program literally named `"…\Cupric-AI-Setup-….exe"`
+ * ('is not recognized as an internal or external command' — the first Windows
+ * run of check:install died exactly there). Spawned directly, Node's argv
+ * quoting is exactly what the NSIS bootstrap parses: the installer path may be
+ * quoted, `/S` is a plain switch, and `/D=` stays the last, unquoted argument
+ * (freshInstallDir asserts the value has no spaces, which is the one thing NSIS
+ * cannot represent there).
  */
 export function installSilently(installerPath, installDir) {
   if (!fs.existsSync(installerPath)) throw new Error(`INSTALLER_MISSING: ${installerPath}`)
-  const command = `"${installerPath}" /S /D=${installDir}`
-  const result = run('cmd.exe', ['/d', '/s', '/c', command], { timeout: 15 * 60 * 1000 })
+  const result = run(installerPath, ['/S', `/D=${installDir}`], { timeout: 15 * 60 * 1000 })
   if (result.code !== 0) {
     throw new Error(`INSTALL_FAILED: installer exited ${result.code}${result.stderr ? ` — ${result.stderr.trim()}` : ''}`)
   }
@@ -66,8 +75,15 @@ export function installSilently(installerPath, installDir) {
 export function uninstallSilently(installDir) {
   const uninstaller = path.join(installDir, UNINSTALLER_NAME)
   if (!fs.existsSync(uninstaller)) throw new Error(`UNINSTALLER_MISSING: ${uninstaller}`)
-  const command = `"${uninstaller}" /S`
-  const result = run('cmd.exe', ['/d', '/s', '/c', command], { timeout: 10 * 60 * 1000 })
+  // Exactly what the installer registered as `QuietUninstallString`:
+  // `"Uninstall Cupric AI.exe" /currentuser /S`. `/currentuser` is not cosmetic
+  // — it is how the uninstaller resolves its shell context ($SMPROGRAMS, the
+  // registry hive) for a per-user install, and without it the mode is inferred
+  // instead of known. cwd = the install dir, the same thing a user
+  // double-clicking "Uninstall Cupric AI.exe" gets. The path contains spaces;
+  // spawned directly that is one argv entry, where a cmd-built command line
+  // would have split it.
+  const result = run(uninstaller, ['/currentuser', '/S'], { timeout: 10 * 60 * 1000, cwd: installDir })
   if (result.code !== 0) {
     throw new Error(`UNINSTALL_FAILED: uninstaller exited ${result.code}${result.stderr ? ` — ${result.stderr.trim()}` : ''}`)
   }

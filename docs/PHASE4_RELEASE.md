@@ -345,3 +345,29 @@ those are now structurally impossible; the fourth is a human rule.
 | More than one release per build | **Impossible**: publishing finds the existing release and re-uploads assets to it instead of creating a second one. |
 | README / CHANGELOG / in-app version drift | **Impossible**: `check-version-sync.mjs` (22 assertions) compares `package.json`, `README.md`, `CHANGELOG.md` and `app:info` against the tag, and the build fails on drift. |
 | Tags pushed by hand | **A human rule.** Nothing in the repository can stop someone pushing a tag; what it can do is refuse to publish a release for it. The rule is: tags are created by the release workflow's `workflow_dispatch`, one per verified green build, never in a batch. |
+
+### 6.5 When the repository has no certificate (the unsigned path)
+
+The fail-closed rule is "no certificate, no *signed* release" — not "no release
+ever". This repository currently has **no** `CSC_LINK` configured (the first
+v0.16.0 release run died at the certificate check before packaging anything), so
+`release-windows.yml` resolves the certificate instead of demanding it:
+
+- **`CSC_LINK` set** — the signed path runs exactly as written in §6.3:
+  `forceCodeSigning=true`, Authenticode `Valid` **with a timestamp**, a
+  `publisherName` in `app-update.yml`, install check with the signature
+  assertions in force. None of that is weakened.
+- **`CSC_LINK` unset** — the run is labelled **UNSIGNED RELEASE** (a `::warning::`
+  annotation and a note appended to the release body after publishing),
+  electron-builder is packaged without `forceCodeSigning`, and the signature
+  assertions are **inverted, not skipped** (the same contract as
+  `check:install --unsigned-build` from PR #32): the installers must be
+  unsigned and `app-update.yml` must **not** claim a `publisherName` the updater
+  cannot verify. Everything else — version gate, install/run/uninstall, boot on
+  every view, single publish — runs identically.
+
+What an unsigned release costs, in the same terms as §1: SmartScreen warns on
+install, and `NsisUpdater.verifySignature` returns `null` (no check) while
+`publisherName` is absent, so a build installed from it will accept future
+updates without verifying their signatures. `scripts/check-release-signing.mjs`
+asserts both paths stay as described here.
