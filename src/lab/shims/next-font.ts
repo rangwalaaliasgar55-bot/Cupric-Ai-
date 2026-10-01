@@ -1,7 +1,7 @@
 /**
  * next/font/google shim.
  *
- * Cupric AI ships offline (Electron, file://), so it never fetches Google
+ * NewBrand ships offline (Electron, file://), so it never fetches Google
  * Fonts at runtime. Each loader returns the same shape Next.js returns —
  * `{ className, style, variable }` — pointing at a self-hosted / system stack
  * declared in `src/styles.css`.

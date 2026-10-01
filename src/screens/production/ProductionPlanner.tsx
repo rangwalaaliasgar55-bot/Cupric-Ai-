@@ -124,15 +124,15 @@ export function ProductionPlanner() {
   function runAll() {
     if (!catalogue || !session.intake.making.trim()) return
     const r = runToApproval(catalogue.index, session.intake, catalogue.resources)
-    save({ ...session, ...r, approved: false, replaceApproved: false, review: null, stage: 'preview' }, 'Cupric AI: run to approval')
-    pushToast('success', 'Cupric AI planned everything up to the preview. Check it and approve when you are happy.')
+    save({ ...session, ...r, approved: false, replaceApproved: false, review: null, stage: 'preview' }, 'NewBrand: run to approval')
+    pushToast('success', 'NewBrand planned everything up to the preview. Check it and approve when you are happy.')
   }
   function finish(replace: boolean) {
     if (!session.plan || !session.brief || !session.approved) return
     try {
       const r = autoFinish(studioOf(project), session.plan, session.brief, { makeId: () => uid(), replace, replaceApproved: session.replaceApproved, snapToBeats: snapBeats })
       const designed = designBuilt(r.doc, session.brief, r.clipIds)
-      save({ ...session, builtClipIds: r.clipIds, review: reviewEdit(designed.doc, session.brief, session.plan, r.clipIds), stage: 'review' }, 'Cupric AI: build + polish + design', designed.doc)
+      save({ ...session, builtClipIds: r.clipIds, review: reviewEdit(designed.doc, session.brief, session.plan, r.clipIds), stage: 'review' }, 'NewBrand: build + polish + design', designed.doc)
       setPolishNotes({ fixes: [...r.rounds.map((x) => `Round ${x.round}: score ${x.score}. ${x.fixes.join(' ')}`), ...(r.beatNote ? [r.beatNote] : [])], leftForYou: r.leftForYou })
       pushToast('success', `Built and polished in ${r.rounds.length - 1} round(s). Final score ${r.rounds[r.rounds.length - 1].score}/100. One undo reverts it all.`)
     } catch (e) {
@@ -145,9 +145,9 @@ export function ProductionPlanner() {
     const ids = session.builtClipIds.filter((id) => live.has(id))
     const r = polishEdit(studioOf(project), session.brief, session.plan, ids)
     const review = reviewEdit(r.doc, session.brief, session.plan, ids)
-    save({ ...session, builtClipIds: ids, review }, 'Cupric AI polish', r.doc)
+    save({ ...session, builtClipIds: ids, review }, 'NewBrand polish', r.doc)
     setPolishNotes({ fixes: r.fixes, leftForYou: r.leftForYou })
-    pushToast('success', `Cupric AI applied ${r.fixes.length} fix(es). Undo reverts them all.`)
+    pushToast('success', `NewBrand applied ${r.fixes.length} fix(es). Undo reverts them all.`)
   }
   function rerunReview() {
     if (!session.brief) return
@@ -178,7 +178,7 @@ export function ProductionPlanner() {
             <motion.div key={na.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
               className="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3" data-testid="agent-next-step">
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-accent-text">Cupric AI · next step</p>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-accent-text">NewBrand · next step</p>
                 <p className="text-sm font-medium text-text">{na.title}</p>
                 <p className="text-xs text-muted">{na.why}</p>
               </div>
@@ -347,13 +347,13 @@ export function ProductionPlanner() {
 
         {view === 'build' && session.plan && (
           <>
-            <p className="text-xs text-muted">Build adds {session.plan.shots.length} media slots plus text as real, editable Studio clips <strong>after</strong> your current timeline. Cupric AI keyframes their motion (enter → hold → exit, eased for the tone), and every keyframe stays editable in the inspector. It's one undo step. Replacing the timeline is destructive and needs a second approval.</p>
+            <p className="text-xs text-muted">Build adds {session.plan.shots.length} media slots plus text as real, editable Studio clips <strong>after</strong> your current timeline. NewBrand keyframes their motion (enter → hold → exit, eased for the tone), and every keyframe stays editable in the inspector. It's one undo step. Replacing the timeline is destructive and needs a second approval.</p>
             <div className="flex flex-wrap items-center gap-2">
-              <Button onClick={() => finish(false)} disabled={!session.approved} title="Build, then review and polish until the score stops improving (max 3 rounds)">Build + Cupric AI polish</Button>
+              <Button onClick={() => finish(false)} disabled={!session.approved} title="Build, then review and polish until the score stops improving (max 3 rounds)">Build + NewBrand polish</Button>
               <Button variant="outline" onClick={() => build(false)} disabled={!session.approved} title={(!session.approved) ? 'Approve the plan first (manual approval is required)' : undefined}>Build only</Button>
               <label className="flex items-center gap-1.5 text-xs text-muted"><input type="checkbox" checked={snapBeats} onChange={(e) => setSnapBeats(e.target.checked)} />Cut on music beats</label>
               <label className="flex items-center gap-1.5 text-xs text-muted" title="Designs three directions of this plan (type-led, composition-led, atmosphere-led), scores them on this machine and builds the winner: a stage per scene, contrast-checked type, native accents and safe areas.">
-                <input type="checkbox" checked={autoDesign} onChange={(e) => setAutoDesign(e.target.checked)} />Cupric design engine
+                <input type="checkbox" checked={autoDesign} onChange={(e) => setAutoDesign(e.target.checked)} />NewBrand design engine
               </label>
               <label className="flex items-center gap-2 text-xs text-muted">
                 <input type="checkbox" checked={session.replaceApproved} disabled={!session.approved} onChange={(e) => save({ ...session, replaceApproved: e.target.checked }, 'Approve timeline replacement')} />
@@ -381,10 +381,10 @@ export function ProductionPlanner() {
 
         {view === 'review' && session.review && (
           <>
-            <div className="flex items-center gap-3"><Badge tone={reviewScore(session.review) >= 80 ? 'accent' : reviewScore(session.review) >= 50 ? 'info' : 'danger'}>Review {reviewScore(session.review)}/100</Badge><Button size="sm" onClick={polish} disabled={!session.builtClipIds.length} title="Fixes safe-area, volume, transition density, ducking and keyframe motion. It never writes copy or fakes footage.">Cupric AI polish</Button><Button size="sm" variant="outline" onClick={rerunReview}>Re-run review</Button><Button size="sm" variant="outline" onClick={() => setAskOpen(true)} title="Ask Cupric AI for specific edits: trims, captions, keyframes, transitions">Ask Cupric AI</Button><Button size="sm" variant="outline" onClick={() => setView('studio')}>Open Studio</Button></div>
+            <div className="flex items-center gap-3"><Badge tone={reviewScore(session.review) >= 80 ? 'accent' : reviewScore(session.review) >= 50 ? 'info' : 'danger'}>Review {reviewScore(session.review)}/100</Badge><Button size="sm" onClick={polish} disabled={!session.builtClipIds.length} title="Fixes safe-area, volume, transition density, ducking and keyframe motion. It never writes copy or fakes footage.">NewBrand polish</Button><Button size="sm" variant="outline" onClick={rerunReview}>Re-run review</Button><Button size="sm" variant="outline" onClick={() => setAskOpen(true)} title="Ask NewBrand for specific edits: trims, captions, keyframes, transitions">Ask NewBrand</Button><Button size="sm" variant="outline" onClick={() => setView('studio')}>Open Studio</Button></div>
             {polishNotes && (
               <div className="rounded-lg border border-accent/30 bg-accent/5 p-3 text-xs">
-                <div className="font-medium text-text">Cupric AI polish</div>
+                <div className="font-medium text-text">NewBrand polish</div>
                 <ul className="mt-1 list-disc pl-4 text-muted">{polishNotes.fixes.map((f) => <li key={f}>{f}</li>)}</ul>
                 {polishNotes.leftForYou.length > 0 && <><div className="mt-2 font-medium text-text">Needs you</div><ul className="mt-1 list-disc pl-4 text-muted">{polishNotes.leftForYou.map((f) => <li key={f}>{f}</li>)}</ul></>}
               </div>
@@ -414,7 +414,7 @@ export function ProductionPlanner() {
           <summary className="cursor-pointer text-xs text-muted hover:text-text">Agent activity ({session.checkpoints.length} checkpoints, each one undoable)</summary>
           <ActivityTimeline className="mt-2" label="Agent activity" now={Date.now()} events={[...session.checkpoints].reverse().slice(0, 12).map((c, i) => ({
             id: `${c.at}-${i}`, kind: c.stage === 'build' || c.stage === 'review' ? 'deploy' as const : c.label.startsWith('Edit') ? 'comment' as const : 'commit' as const,
-            actor: c.label.startsWith('Cupric AI') ? 'Cupric AI' : 'You', action: c.label.replace(/^Cupric AI:\s*/, ''), target: STAGE_LABEL[c.stage], detail: '', at: Date.parse(c.at) || 0,
+            actor: c.label.startsWith('NewBrand') ? 'NewBrand' : 'You', action: c.label.replace(/^NewBrand:\s*/, ''), target: STAGE_LABEL[c.stage], detail: '', at: Date.parse(c.at) || 0,
           }))} />
         </details>
       )}

@@ -40,11 +40,11 @@ const RULES: Rule[] = [
   {
     match: /No AI provider is configured|No live AI provider is configured|NO_PROVIDER/i,
     say: () =>
-      'No AI model is set up yet, so Cupric used its built-in motion engine. For live AI, open Settings → AI and add an OpenAI, Anthropic or Gemini key, or start a local model server (Ollama, LM Studio) — Cupric detects those on its own.',
+      'No AI model is set up yet, so NewBrand used its built-in motion engine. For live AI, open Settings → AI and add an OpenAI, Anthropic or Gemini key, or start a local model server (Ollama, LM Studio) — NewBrand detects those on its own.',
   },
   {
     match: /ran out of time before any provider answered|Studio auto edit timed out|timed out after/i,
-    say: () => 'The AI took too long to answer, so Cupric used its built-in motion engine instead. Try again later for a live plan.',
+    say: () => 'The AI took too long to answer, so NewBrand used its built-in motion engine instead. Try again later for a live plan.',
   },
   {
     // First, because quota errors quote URLs, JSON and the word "fetching",
@@ -68,7 +68,7 @@ const RULES: Rule[] = [
   },
   {
     match: /width not divisible by 2|height not divisible by 2/i,
-    say: () => 'The frame size was an odd number of pixels, which H.264 cannot encode. Update Cupric — renders are now snapped to even sizes automatically.',
+    say: () => 'The frame size was an odd number of pixels, which H.264 cannot encode. Update NewBrand — renders are now snapped to even sizes automatically.',
   },
   {
     match: /MediaRecorder|mimeType|codec not supported|isTypeSupported/i,
@@ -84,7 +84,7 @@ const RULES: Rule[] = [
   },
   {
     match: /EACCES|EPERM|read-only/i,
-    say: () => 'Cupric is not allowed to write there. Pick a different output folder.',
+    say: () => 'NewBrand is not allowed to write there. Pick a different output folder.',
   },
   {
     match: /ENOSPC|no space/i,
@@ -96,7 +96,7 @@ const RULES: Rule[] = [
   },
   {
     match: /timeout|timed out|ETIMEDOUT|deadline/i,
-    say: () => 'That took too long and Cupric stopped waiting. It is usually worth one more try.',
+    say: () => 'That took too long and NewBrand stopped waiting. It is usually worth one more try.',
   },
   {
     // A local model server that is simply not running is not "no internet".
@@ -105,7 +105,7 @@ const RULES: Rule[] = [
   },
   {
     match: /fetch failed|Failed to fetch|ENOTFOUND|ECONNREFUSED|ECONNRESET|network|offline|EAI_AGAIN/i,
-    say: () => 'Cupric could not reach the AI provider. Check the connection and the model base URL in Settings — everything already downloaded still works offline.',
+    say: () => 'NewBrand could not reach the AI provider. Check the connection and the model base URL in Settings — everything already downloaded still works offline.',
   },
   {
     match: /api key|unauthori[sz]ed|\b401\b|\b403\b|permission_denied/i,
@@ -117,11 +117,11 @@ const RULES: Rule[] = [
   },
   {
     match: /Unexpected token|JSON\.parse|in JSON at position|Unexpected end of JSON|is not valid JSON|malformed/i,
-    say: () => 'The model replied, but not in the format Cupric needs, so the reply was discarded instead of guessed at. Cupric retries with a stricter prompt automatically — try once more if this persists.',
+    say: () => 'The model replied, but not in the format NewBrand needs, so the reply was discarded instead of guessed at. NewBrand retries with a stricter prompt automatically — try once more if this persists.',
   },
   {
     match: /__seek/i,
-    say: () => 'That HTML does not expose window.__seek(t), so Cupric cannot step it frame by frame. It has to be a deterministic single file.',
+    say: () => 'That HTML does not expose window.__seek(t), so NewBrand cannot step it frame by frame. It has to be a deterministic single file.',
   },
   {
     match: /ffmpeg|ffprobe/i,
@@ -193,7 +193,7 @@ export function humanError(error: unknown, context = 'That'): string {
   // An empty or unreadable error is the worst case: say so plainly rather than
   // showing "undefined" or "[object Object]".
   if (!trimmed || /^\[object|undefined$|^null$/.test(trimmed)) {
-    return `${context} failed, and Cupric did not get a reason why. Trying once more is worth it; if it keeps happening, check Settings.`
+    return `${context} failed, and NewBrand did not get a reason why. Trying once more is worth it; if it keeps happening, check Settings.`
   }
 
   // A message written for a person already: keep it, just make sure it reads
@@ -223,7 +223,7 @@ export function dedupeMessages(list: readonly string[] | null | undefined): Arra
     // Rewrite only what a rule recognises (quota, offline, odd frame size…);
     // an informational note is already written for a person.
     const text = RULES.some((rule) => rule.match.test(cleaned))
-      ? humanError(cleaned, 'Cupric')
+      ? humanError(cleaned, 'NewBrand')
       : cleaned.length > 320 ? `${cleaned.slice(0, 317).trimEnd()}…` : cleaned
     const key = text.toLowerCase().replace(/\d{2,}(?:\.\d+)?|\d+\.\d+/g, '#').slice(0, 180)
     const hit = out.get(key)

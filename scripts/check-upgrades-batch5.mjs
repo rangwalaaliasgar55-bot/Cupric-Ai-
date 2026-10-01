@@ -48,7 +48,7 @@ ok(Math.abs(p2.texts.find((t) => t.text === 'CREATE.').y - 512 / 1080) < 0.01, '
 
 /* 3. GSAP timeline with no chapter map (brand-film (3) shape) — used to be refused */
 const gsap = [pkg,
-  { path: 'src/App.tsx', text: `import gsap from "gsap";\nexport default function App() {\n  useEffect(() => { const tl = gsap.timeline();\n    tl.fromTo('#text-create', { opacity: 0 }, { opacity: 1 }, 1.2);\n    tl.to('#text-create', { opacity: 0, duration: 0.5 }, 2.1);\n    tl.fromTo('#text-idea', { opacity: 0 }, { opacity: 1 }, 3.4);\n    tl.fromTo('#text-brand', { opacity: 0 }, { opacity: 1 }, 6);\n  }, []);\n  return (<div><div id="text-create">CREATE<span>.</span></div><div id="text-idea">ONE IDEA.</div><div id="text-brand">CUPRIC AI</div></div>);\n}` },
+  { path: 'src/App.tsx', text: `import gsap from "gsap";\nexport default function App() {\n  useEffect(() => { const tl = gsap.timeline();\n    tl.fromTo('#text-create', { opacity: 0 }, { opacity: 1 }, 1.2);\n    tl.to('#text-create', { opacity: 0, duration: 0.5 }, 2.1);\n    tl.fromTo('#text-idea', { opacity: 0 }, { opacity: 1 }, 3.4);\n    tl.fromTo('#text-brand', { opacity: 0 }, { opacity: 1 }, 6);\n  }, []);\n  return (<div><div id="text-create">CREATE<span>.</span></div><div id="text-idea">ONE IDEA.</div><div id="text-brand">NEWBRAND</div></div>);\n}` },
   { path: 'src/main.tsx', text: 'import App from "./App"' },
 ]
 const p3 = m.sp.detectSourceProject(gsap, '<div id="root"></div>')
@@ -81,12 +81,12 @@ ok(/Empty media slot/.test(insp) && /mediaId: handle\.id/.test(insp) && /registe
 /* 7. Kinetic brand film recipe */
 ok(Math.abs(m.bf.BRAND_FILM_BEATS.reduce((s, b) => s + b.share, 0) - 1) < 1e-9 && m.bf.BRAND_FILM_BEATS.length === 14, '14 beats summing to the full duration')
 const index = JSON.parse(read('resources/opus55/data/index.json'))
-const intake = { ...m.pe.emptyIntake(), making: 'A 40 second cinematic brand film for Cupric AI', audience: 'builders', platform: 'YouTube', durationSec: 40, aspect: '16:9', cta: 'Start building at cupric.ai', referenceStyle: 'kinetic typography, dark, lime' }
+const intake = { ...m.pe.emptyIntake(), making: 'A 40 second cinematic brand film for NewBrand', audience: 'builders', platform: 'YouTube', durationSec: 40, aspect: '16:9', cta: 'Start building at newbrand.ai', referenceStyle: 'kinetic typography, dark, lime' }
 const r = m.pe.runToApproval(index, intake)
 ok(r.plan.skillId === 'kinetic-brand-film' && r.plan.shots.length === 14 && r.plan.shots.every((s) => s.typeShot), 'brand-film brief → type-led 14-shot plan')
 ok(r.plan.decisions[0].area === 'Format' && /pull\/20/.test(r.plan.decisions[0].why), 'plan cites PR #20 as the learned source')
 ok(r.plan.shots.find((s) => s.beat === 'Multiplier').onScreenText.startsWith('['), 'numeric claim never invented (placeholder)')
-ok(r.plan.shots.find((s) => s.beat === 'Brand reveal').onScreenText === 'CUPRIC AI', 'brand name taken from the brief')
+ok(r.plan.shots.find((s) => s.beat === 'Brand reveal').onScreenText === 'NEWBRAND', 'brand name taken from the brief')
 ok(!r.plan.unresolved.some((u) => /no footage/.test(u)), 'type-led shots are not flagged as missing footage')
 let k = 0
 const built = m.pe.planToDoc(m.docm.emptyStudioDoc(), r.plan, r.brief, { makeId: () => `b${k++}` })

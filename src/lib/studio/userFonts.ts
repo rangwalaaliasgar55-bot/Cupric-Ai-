@@ -2,16 +2,16 @@
  * Fonts the user adds themselves (for example families they downloaded from
  * fontshare.com under their own free ITF licence). They stay on this machine
  * (IndexedDB), are registered with FontFace for preview AND export, and are
- * never uploaded or redistributed by Cupric.
+ * never uploaded or redistributed by NewBrand.
  */
 
 export const FONT_FILE_EXT = /\.(woff2|woff|otf|ttf)$/i
 export type UserFontFace = { id: string; family: string; weight: string; style: 'normal' | 'italic'; fileName: string; source: 'fontshare' | 'file'; addedAt: number }
 type Stored = UserFontFace & { data: ArrayBuffer }
 
-export const USER_FONTS_EVENT = 'cupric:user-fonts-changed'
+export const USER_FONTS_EVENT = 'newbrand:user-fonts-changed'
 const FONT_EXT = /\.(woff2|woff|otf|ttf)$/i
-const DB = 'cupric-user-fonts'
+const DB = 'newbrand-user-fonts'
 const STORE = 'faces'
 
 let faces: UserFontFace[] = []

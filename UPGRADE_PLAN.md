@@ -1,7 +1,7 @@
-# Cupric AI — upgrade plan
+# NewBrand — upgrade plan
 
 Written after the autonomous-run / design-engine / font work on
-`arena/01a0ecc4-cupric-ai`. Every item names the files it touches, why it matters
+`arena/01a0ecc4-newbrand`. Every item names the files it touches, why it matters
 and roughly what it costs. **Effort**: S ≈ a day, M ≈ a week, L ≈ a month of
 evenings. **Impact**: what the user actually notices.
 
@@ -84,7 +84,7 @@ intent (`src/lib/automation/plan.ts`) and the app already has offline TTS paths
   voiceover (`ducking` exists on `StudioDoc:848`, and the renderer already honours
   it).
 - Voiceover: Piper is wired on desktop (`electron/tts.cjs` searches
-  `CUPRIC_PIPER_*`, `<userData>/piper`, `vendor/piper` — the models simply are not
+  `NEWBRAND_PIPER_*`, `<userData>/piper`, `vendor/piper` — the models simply are not
   vendored yet, so shipping one voice is the missing step). The web build can
   start with SpeechSynthesis for drafts and move to a WASM voice later.
 - Word-level timing so `word-reveal`/`kinetic` text follows the voice, plus

@@ -109,11 +109,11 @@ export function sanitizeSettings(raw: unknown): QuickVideoSettings {
 
 /** Export/import generation settings (MPT "import/export settings"). */
 export function exportSettings(s: QuickVideoSettings): string {
-  return JSON.stringify({ kind: 'cupric.quickVideo', version: 1, settings: sanitizeSettings(s) }, null, 2)
+  return JSON.stringify({ kind: 'newbrand.quickVideo', version: 1, settings: sanitizeSettings(s) }, null, 2)
 }
 export function importSettings(text: string): QuickVideoSettings {
   const parsed = JSON.parse(text) as { kind?: string; settings?: unknown }
-  if (parsed?.kind !== 'cupric.quickVideo') throw new Error('Not a Cupric Quick Video settings file')
+  if (parsed?.kind !== 'newbrand.quickVideo') throw new Error('Not a NewBrand Quick Video settings file')
   return sanitizeSettings(parsed.settings)
 }
 

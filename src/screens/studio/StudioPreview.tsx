@@ -607,7 +607,7 @@ function DomPreview({ doc, time, problem, onRetry }: { doc: StudioDoc; time: num
   const texts = doc.clips.filter((c): c is StudioTextClip => c.kind === 'text' && !c.hidden && time >= c.startSec && time < clipEnd(c))
   return (
     <div
-      data-cupric-dom-preview
+      data-newbrand-dom-preview
       aria-label="Studio preview (simplified)"
       className="relative h-full w-full overflow-hidden rounded-xl border border-line shadow-[0_12px_32px_rgb(0_0_0/0.36)]"
       style={{ backgroundColor: 'var(--color-stage)', containerType: 'size', ...styleFromCss(bg.css) }}
@@ -632,7 +632,7 @@ function DomPreview({ doc, time, problem, onRetry }: { doc: StudioDoc; time: num
         </div>
       ))}
       <div
-        data-cupric-notice
+        data-newbrand-notice
         title={`${problem} Editing still works; export needs the canvas — restart, update graphics drivers, or launch without --disable-gpu.`}
         className="absolute inset-x-2 top-2 flex items-center gap-2 rounded-md border border-amber-400/40 bg-panel/90 px-2 py-1 text-[11px] text-text backdrop-blur"
       >

@@ -116,7 +116,7 @@ export function Brief() {
     if (!project || busy) return
     let rundown = (project.brief.lockedRundown ?? shown) as SceneRundown
     if (!rundown?.title || !rundown.scenes?.length || !rundown.size) {
-      const text = input.trim() || project.name || 'Cupric AI launch video'
+      const text = input.trim() || project.name || 'NewBrand launch video'
       setBusy(true)
       // Root cause of "the Video tab does not use Gemini": this path called
       // askGeminiLocal() — the offline planner — directly, so the desktop
@@ -168,12 +168,12 @@ export function Brief() {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-lg font-bold">Brief</h1>
             <div className="flex items-center gap-2 text-[10px] text-muted" aria-label="AI provider status">
-              <span className="flex items-center gap-1" title="Built-in Cupric AI engine: rundowns, plans, edits and checks, fully offline"><span className="h-2 w-2 rounded-full bg-accent" />Cupric AI</span>{([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local model']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1"><span className={cx('h-2 w-2 rounded-full', aiStatus.statusDots?.[key] === 'ok' ? 'bg-accent' : aiStatus.statusDots?.[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label}</span>)}
+              <span className="flex items-center gap-1" title="Built-in NewBrand engine: rundowns, plans, edits and checks, fully offline"><span className="h-2 w-2 rounded-full bg-accent" />NewBrand</span>{([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local model']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1"><span className={cx('h-2 w-2 rounded-full', aiStatus.statusDots?.[key] === 'ok' ? 'bg-accent' : aiStatus.statusDots?.[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label}</span>)}
               {aiStatus.mode === 'auto' && <span className="rounded-full border border-line px-1.5 py-0.5">Auto · {aiStatus.pick?.label || 'discovering…'}</span>}
             </div>
           </div>
           <p className="text-sm text-muted">
-            Describe the video you want. Cupric AI drafts an instant offline rundown, then polishes it in the background when a model is available.
+            Describe the video you want. NewBrand drafts an instant offline rundown, then polishes it in the background when a model is available.
           </p>
           {aiStatus.setupRequired && <p className="mt-2 text-xs text-muted">offline brain — the deterministic planner is active; live AI resumes automatically when you are online.</p>}
         </div>
@@ -254,7 +254,7 @@ export function Brief() {
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
           <div>
             <div className="text-sm font-semibold">Rundown</div>
-            <div className="text-xs text-muted">Fills in as Cupric AI drafts</div>
+            <div className="text-xs text-muted">Fills in as NewBrand drafts</div>
           </div>
           {locked ? (
             <Badge tone="accent">
@@ -271,7 +271,7 @@ export function Brief() {
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {Object.keys(shown).length === 0 ? (
             <div className="rounded-lg border border-dashed border-line p-4 text-xs leading-relaxed text-muted">
-              Nothing yet — describe the video and Cupric AI will build a rundown here.
+              Nothing yet — describe the video and NewBrand will build a rundown here.
             </div>
           ) : (
             <RundownJson r={shown} flash={flash} />
@@ -314,7 +314,7 @@ function ChatMessage({ msg }: { msg: BriefMessage }) {
           gem ? 'border border-line bg-panel text-text' : 'bg-panel-alt text-text',
         )}
       >
-        {gem && <div className="mb-1 text-xs font-semibold text-accent-text">Cupric AI</div>}
+        {gem && <div className="mb-1 text-xs font-semibold text-accent-text">NewBrand</div>}
         {msg.text}
       </div>
     </motion.div>
@@ -327,7 +327,7 @@ function TypingIndicator() {
       <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-accent font-mono text-xs font-bold text-accent-ink">
         C
       </div>
-      <div className="flex items-center gap-1 rounded-xl border border-line bg-panel px-4 py-3.5" aria-label="Cupric AI is drafting">
+      <div className="flex items-center gap-1 rounded-xl border border-line bg-panel px-4 py-3.5" aria-label="NewBrand is drafting">
         <span className="nf-typing flex gap-1">
           <span className="h-1.5 w-1.5 rounded-full bg-muted" />
           <span className="h-1.5 w-1.5 rounded-full bg-muted" />

@@ -55,7 +55,7 @@ const codes = (verdict) => verdict.failures.map((f) => f.code)
 
 /* ── resolve the media tools the way electron/main.cjs does ───────────────── */
 function resolveBinary(name) {
-  const envPath = process.env[`CUPRIC_${name.toUpperCase()}_PATH`]
+  const envPath = process.env[`NEWBRAND_${name.toUpperCase()}_PATH`]
   if (envPath && fs.existsSync(envPath)) return envPath
   const fromPath = spawnSync(process.platform === 'win32' ? 'where' : 'which', [name], { encoding: 'utf8' })
   const found = fromPath.status === 0 ? String(fromPath.stdout).split(/\r?\n/).map((l) => l.trim()).filter(Boolean)[0] : null
@@ -79,8 +79,8 @@ function resolveBinary(name) {
  */
 function explainResolution(name) {
   const lines = []
-  const envPath = process.env[`CUPRIC_${name.toUpperCase()}_PATH`]
-  lines.push(`CUPRIC_${name.toUpperCase()}_PATH=${envPath ? (fs.existsSync(envPath) ? envPath : `${envPath} (not present)`) : 'unset'}`)
+  const envPath = process.env[`NEWBRAND_${name.toUpperCase()}_PATH`]
+  lines.push(`NEWBRAND_${name.toUpperCase()}_PATH=${envPath ? (fs.existsSync(envPath) ? envPath : `${envPath} (not present)`) : 'unset'}`)
   const onPath = spawnSync(process.platform === 'win32' ? 'where' : 'which', [name], { encoding: 'utf8' })
   const found = onPath.status === 0 ? String(onPath.stdout).split(/\r?\n/).map((l) => l.trim()).filter(Boolean)[0] : null
   lines.push(`PATH=${found || 'not found'}`)
@@ -102,10 +102,10 @@ if (!ffprobePath || !ffmpegPath) {
   console.log(`resolve ffprobe → ${ffprobePath || 'NOT FOUND'}\n  tried:\n      ${explainResolution('ffprobe')}`)
   console.log(`resolve ffmpeg  → ${ffmpegPath || 'NOT FOUND'}\n  tried:\n      ${explainResolution('ffmpeg')}`)
 }
-assert.ok(ffprobePath, 'FAIL: ffprobe could not be found — the export gate cannot verify anything without it. Run a clean install (ffprobe-static) or set CUPRIC_FFPROBE_PATH.')
+assert.ok(ffprobePath, 'FAIL: ffprobe could not be found — the export gate cannot verify anything without it. Run a clean install (ffprobe-static) or set NEWBRAND_FFPROBE_PATH.')
 checks += 1
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-preflight-'))
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-preflight-'))
 const cleanup = () => fs.rmSync(tmp, { recursive: true, force: true })
 
 function ffprobe(file) {

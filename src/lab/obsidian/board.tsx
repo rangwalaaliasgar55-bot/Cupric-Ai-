@@ -1,5 +1,5 @@
 /**
- * Motion-board components — Cupric's own implementations of techniques shown
+ * Motion-board components — NewBrand's own implementations of techniques shown
  * in a user-supplied "motion board" reference (no licence; nothing copied: no
  * code, fonts or images). What is learnt is the grammar every tile follows:
  *

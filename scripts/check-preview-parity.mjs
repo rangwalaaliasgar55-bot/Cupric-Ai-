@@ -151,7 +151,7 @@ globalThis.requestAnimationFrame = (cb) => setTimeout(() => cb(Date.now()), 16)
 globalThis.cancelAnimationFrame = clearTimeout
 globalThis.CSS = { supports: () => false }
 /** Stands in for Vite's `import.meta.glob` in the Lottie registry. */
-globalThis.__cupricGlob = () => ({})
+globalThis.__newbrandGlob = () => ({})
 globalThis.document = {
   createElement: (tag) => {
     if (tag !== 'canvas') return { style: {}, setAttribute() {}, appendChild() {} }
@@ -180,7 +180,7 @@ await build({
     name: 'vite-glob-shim',
     setup(build) {
       build.onLoad({ filter: /studio[/\\]lottie\.ts$/ }, async (args) => ({
-        contents: (await readFile(args.path, 'utf8')).replace(/import\.meta\.glob\(/g, '__cupricGlob('),
+        contents: (await readFile(args.path, 'utf8')).replace(/import\.meta\.glob\(/g, '__newbrandGlob('),
         loader: 'ts',
       }))
     },
@@ -287,7 +287,7 @@ function drawFrame(doc, t, width, height, sources) {
   return { events: rec.events, painted: rec.painted, requests }
 }
 
-if (process.env.CUPRIC_TRACE) {
+if (process.env.NEWBRAND_TRACE) {
   const doc = mod.resolveForOutput({ ...mod.emptyStudioDoc(), clips: [textClip({ id: 'dbg' })] })
   for (const [w, h, label] of [[mod.previewSizeForAspect('16:9')[0], mod.previewSizeForAspect('16:9')[1], 'preview'], [mod.sizeForAspect('16:9', '1080p')[0], mod.sizeForAspect('16:9', '1080p')[1], 'export']]) {
     const frame = drawFrame(doc, 0, w, h, mod.exportSources())
@@ -367,12 +367,12 @@ for (const { label, doc: editDoc } of battery()) {
 /* ── 4. a doc whose variables change the text: both paths resolve ─────────── */
 {
   const raw = { ...mod.emptyStudioDoc(), clips: [textClip({ id: 'v', text: 'Made with {{tool}}' })] }
-  raw.variables = [{ name: 'tool', value: 'Cupric AI' }]
+  raw.variables = [{ name: 'tool', value: 'NewBrand' }]
   const resolved = mod.resolveForOutput(raw)
   ok(!JSON.stringify(resolved).includes('{{tool}}'), 'variables are substituted by the resolver, not by the renderer')
   const preview = drawFrame(resolved, 0.4, pw, ph, mod.registrySources)
   const exported = drawFrame(resolved, 0.4, pw, ph, mod.exportSources())
-  ok(preview.painted.some((word) => word.includes('Cupric')), 'the preview paints the substituted text')
+  ok(preview.painted.some((word) => word.includes('NewBrand')), 'the preview paints the substituted text')
   eq(preview.painted.join('\u0000'), exported.painted.join('\u0000'), 'the export paints the same substituted text')
 }
 

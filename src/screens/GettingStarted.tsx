@@ -5,7 +5,7 @@ import type { Project } from '../types/project'
 import { useProjectStore } from '../state/useProjectStore'
 import { gettingStartedSteps, progressOf } from '../lib/gettingStarted'
 
-const KEY = 'cupric.gettingStarted.dismissed'
+const KEY = 'newbrand.gettingStarted.dismissed'
 
 export function GettingStarted({ project }: { project: Project | null }) {
   const setActiveProject = useProjectStore((s) => s.setActiveProject)

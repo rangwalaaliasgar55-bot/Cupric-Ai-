@@ -86,7 +86,7 @@ export const PACKS_BASE = `https://raw.githubusercontent.com/${PACKS_REPO}/${PAC
 
 /* ——— IndexedDB key/value, ~40 lines, no dependency ——— */
 
-const DB_NAME = 'cupric-packs'
+const DB_NAME = 'newbrand-packs'
 const STORE = 'packs'
 
 function idb(): Promise<IDBDatabase | null> {

@@ -65,7 +65,7 @@ if (process.platform !== 'win32') {
   process.exit(1)
 }
 
-const work = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-speech-live-'))
+const work = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-speech-live-'))
 const piperDir = path.join(work, 'piper')
 fs.mkdirSync(piperDir, { recursive: true })
 
@@ -130,7 +130,7 @@ function speak(text) {
   return { file: out, wav: readWav(out) }
 }
 
-const first = speak('Cupric AI turns a rough idea into a finished video.')
+const first = speak('NewBrand turns a rough idea into a finished video.')
 ok(first.wav.riff === 'RIFF' && first.wav.wave === 'WAVE', 'the engine wrote a real RIFF/WAVE file')
 ok(first.wav.audioFormat === 1 && first.wav.bitsPerSample === 16, `and it is uncompressed 16-bit PCM (format ${first.wav.audioFormat}, ${first.wav.bitsPerSample}-bit)`)
 ok([16000, 22050, 24000].includes(first.wav.sampleRate), `at a sample rate the voice model declares (${first.wav.sampleRate} Hz)`)
@@ -160,7 +160,7 @@ if (withWhisper) {
   })
   ok(whisper !== null, `electron/voice-engines.cjs finds what was just fetched (${whisper ? path.basename(whisper.bin) : 'nothing'})`)
 
-  const spoken = 'Cupric AI turns a rough idea into a finished video.'
+  const spoken = 'NewBrand turns a rough idea into a finished video.'
   const heard = speak(spoken)
   const outBase = path.join(work, 'transcript')
   const args = voiceEngines.whisperArgs({ model: whisper.model, wavPath: heard.file, outBase, lang: 'en', threads: Math.max(1, os.cpus().length - 1) })
@@ -169,7 +169,7 @@ if (withWhisper) {
   ok(run.status === 0, `whisper-cli exited ${run.status}${run.status === 0 ? '' : `: ${(run.stderr || '').slice(-300)}`}`)
   ok(transcript.length > 0, `it produced a transcript: "${transcript}"`)
   const normalised = transcript.toLowerCase().replace(/[^a-z ]/g, ' ')
-  const expected = ['cupric', 'idea', 'video']
+  const expected = ['newbrand', 'idea', 'video']
   const found = expected.filter((word) => normalised.includes(word))
   ok(found.length >= 1, `the transcript contains what was actually spoken (matched: ${found.join(', ') || 'nothing'} of ${expected.join(', ')})`)
 }

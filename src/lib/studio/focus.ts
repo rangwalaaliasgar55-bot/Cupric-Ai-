@@ -6,7 +6,7 @@
  * canvas — which read as "it added nothing". The Studio picks this up on
  * mount, selects the clip, and parks the playhead where it is fully visible.
  */
-const KEY = 'cupric:studio-focus'
+const KEY = 'newbrand:studio-focus'
 
 export function focusStudioClip(clipId: string | null | undefined): void {
   if (!clipId) return

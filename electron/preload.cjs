@@ -64,11 +64,11 @@ function assertChannel(channel, allowed) {
 
 /**
  * The ONE bridge object. It is deep-frozen here and exposed exactly once per
- * name below; contextBridge then defines `window.cupric` / `window.northframe`
+ * name below; contextBridge then defines `window.newbrand` / `window.northframe`
  * as non-writable, non-configurable properties. Nothing — preload or renderer —
  * may mutate, extend, reassign or delete it (0.10.0 blanked the Studio by
- * doing `window.cupric = {...window.cupric, studio}`). Renderer-owned globals
- * use their own names, e.g. `window.__cupricStudio`. Enforced by
+ * doing `window.newbrand = {...window.newbrand, studio}`). Renderer-owned globals
+ * use their own names, e.g. `window.__newbrandStudio`. Enforced by
  * `npm run check:bridge`.
  */
 function deepFreeze(value) {
@@ -111,4 +111,4 @@ const bridge = deepFreeze({
   },
 })
 
-for (const name of ['cupric', 'northframe']) contextBridge.exposeInMainWorld(name, bridge)
+for (const name of ['newbrand', 'northframe']) contextBridge.exposeInMainWorld(name, bridge)

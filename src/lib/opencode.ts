@@ -9,7 +9,7 @@
  * Chat only. Video is never generated through this path.
  */
 
-const SETTINGS_KEY = 'cupric.opencode.settings'
+const SETTINGS_KEY = 'newbrand.opencode.settings'
 
 export type OpenCodeSettings = {
   baseUrl: string
@@ -73,8 +73,8 @@ function headers(settings: OpenCodeSettings): Record<string, string> {
   const out: Record<string, string> = { 'Content-Type': 'application/json' }
   if (settings.apiKey) out.Authorization = `Bearer ${settings.apiKey}`
   if (/openrouter\.ai/i.test(settings.baseUrl)) {
-    out['HTTP-Referer'] = 'https://cupric.ai'
-    out['X-Title'] = 'Cupric AI'
+    out['HTTP-Referer'] = 'https://newbrand.ai'
+    out['X-Title'] = 'NewBrand'
   }
   return out
 }

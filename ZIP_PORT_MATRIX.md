@@ -1,6 +1,6 @@
 # ZIP port matrix
 
-The source archives were reviewed file-by-file. Cupric AI supports TypeScript/TSX, JavaScript, CommonJS, Electron IPC, and JSON. Python/Next.js/Drizzle files cannot be copied directly without changing the runtime.
+The source archives were reviewed file-by-file. NewBrand supports TypeScript/TSX, JavaScript, CommonJS, Electron IPC, and JSON. Python/Next.js/Drizzle files cannot be copied directly without changing the runtime.
 
 | Archive | Source file | Action |
 |---|---|---|

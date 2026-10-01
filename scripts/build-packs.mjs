@@ -53,7 +53,7 @@ packs.push({
   description:
     'Refracting glass materials for the app chrome and for the Studio canvas. One parameter set drives the DOM (backdrop-filter + SVG displacement) and the exported video (canvas).',
   version: VERSION,
-  source: 'Cupric implementation, technique after agpallav.com/liquid-glass, glass-lens-react and liquefy-ui',
+  source: 'NewBrand implementation, technique after agpallav.com/liquid-glass, glass-lens-react and liquefy-ui',
   license: 'MIT (this implementation)',
   items: mod.GLASS_PRESETS.map((p) => ({
     id: p.id,
@@ -70,7 +70,7 @@ packs.push({
   name: 'Transitions',
   description: 'Every transition the Studio renderer implements, including the glass and liquid families.',
   version: VERSION,
-  source: 'Cupric Studio renderer',
+  source: 'NewBrand Studio renderer',
   license: 'MIT',
   items: mod.TRANSITIONS.map((t) => ({
     id: t.id,
@@ -87,7 +87,7 @@ packs.push({
   name: 'Text animations',
   description: 'Caption and title animations, all pure functions of clip progress so preview and export match.',
   version: VERSION,
-  source: 'Cupric Studio renderer',
+  source: 'NewBrand Studio renderer',
   license: 'MIT',
   items: mod.TEXT_ANIMATIONS.map((t) => ({
     id: t.id,
@@ -104,7 +104,7 @@ packs.push({
   name: 'Backgrounds & gradients',
   description: 'Studio stage backgrounds — gradients, mesh gradients and patterns — with the CSS twin used by the app and by Arena HTML.',
   version: VERSION,
-  source: 'Cupric tokens, catalogue shape after ibelick',
+  source: 'NewBrand tokens, catalogue shape after ibelick',
   license: 'MIT',
   items: [
     ...mod.STUDIO_BACKGROUNDS.map((b) => ({
@@ -134,7 +134,7 @@ packs.push({
   name: 'Effects',
   description: 'Effect cues shared by the Arena prompt builder and the local renderer.',
   version: VERSION,
-  source: 'Cupric effects registry, mapping notes in resources/kdenlive',
+  source: 'NewBrand effects registry, mapping notes in resources/kdenlive',
   license: 'MIT',
   items: mod.EFFECTS.map((e) => ({
     id: e.id,
@@ -151,7 +151,7 @@ packs.push({
   name: 'Voice commands',
   description: 'The Studio voice grammar. Each entry is a phrase the parser in src/lib/voice.ts accepts.',
   version: VERSION,
-  source: 'Cupric voice parser (Web Speech API)',
+  source: 'NewBrand voice parser (Web Speech API)',
   license: 'MIT',
   items: mod.VOICE_PHRASES.map((p, i) => ({
     id: `voice-${i}`,
@@ -166,7 +166,7 @@ packs.push({
   id: 'sources',
   name: 'Sources',
   description:
-    'The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.',
+    'The external libraries, generators and galleries NewBrand draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.',
   version: VERSION,
   source: 'src/lib/sources.ts (links only; nothing third-party is bundled)',
   license: 'Per entry — see each item',
@@ -193,7 +193,7 @@ packs.push({
   description:
     'Self-contained HTML scenes under resources/effects. Each exposes window.__seek(t) and a source manifest, so the desktop renderer can capture it frame by frame into an MP4 with no network.',
   version: VERSION,
-  source: 'Cupric templates, built after Forge UI, 23rd.dev and motion-primitives',
+  source: 'NewBrand templates, built after Forge UI, 23rd.dev and motion-primitives',
   license: 'MIT (this implementation)',
   items: mod.VIDEO_TEMPLATES.map((t) => ({
     id: t.id,
@@ -213,7 +213,7 @@ packs.push({
 })
 
 // PanelUI: catalogue only. The library is React Native, so its source cannot
-// run in Cupric's DOM renderer — what we vendor is the behaviour catalogue that
+// run in NewBrand's DOM renderer — what we vendor is the behaviour catalogue that
 // the prompt builder and our own components learn from.
 try {
   const panel = JSON.parse(await readFile(path.join(root, 'resources', 'panelui', 'registry.json'), 'utf8'))
@@ -221,7 +221,7 @@ try {
     id: 'panelui',
     name: 'PanelUI catalogue',
     description:
-      'All 135 PanelUI components and 21 chart visualisations as editable Cupric-native Studio storyboards. React Native source stays upstream; Cupric uses its own deterministic renderer.',
+      'All 135 PanelUI components and 21 chart visualisations as editable NewBrand-native Studio storyboards. React Native source stays upstream; NewBrand uses its own deterministic renderer.',
     version: VERSION,
     source: `${panel.source} (${panel.package} ${panel.upstreamVersion}, ${panel.platform})`,
     license: panel.license,
@@ -231,7 +231,7 @@ try {
       id: all.findIndex((e) => e.slug === entry.slug) === _i ? `panelui-${entry.slug}` : `panelui-${entry.group}-${entry.slug}`,
       kind: 'saas-template',
       name: entry.name,
-      description: `${entry.description || `PanelUI ${entry.group} entry`} · editable Cupric-native storyboard`,
+      description: `${entry.description || `PanelUI ${entry.group} entry`} · editable NewBrand-native storyboard`,
       data: {
         durationSec: 9,
         scenes: [
@@ -262,8 +262,8 @@ try {
     name: 'SaaS video templates',
     description: saas.description,
     version: VERSION,
-    source: 'Cupric authored templates',
-    license: 'MIT (Cupric authored blueprint)',
+    source: 'NewBrand authored templates',
+    license: 'MIT (NewBrand authored blueprint)',
     items: saas.templates.map((template) => ({
       id: template.id,
       kind: 'saas-template',
@@ -312,7 +312,7 @@ try {
   // edit. Each now has a real, on-brief storyboard for what it is for.
   const REMOTION_STORYBOARDS = {
     audiogram: [['EPISODE 42', 2.5, 'pop'], ['The one habit that doubled our output', 4, 'word-reveal'], ['New episode — listen now', 3.5, 'shimmer']],
-    blank: [['Your story starts here', 3, 'fade-up'], ['Add media, text and motion', 3.5, 'word-reveal'], ['Made with Cupric', 2.5, 'shimmer']],
+    blank: [['Your story starts here', 3, 'fade-up'], ['Add media, text and motion', 3.5, 'word-reveal'], ['Made with NewBrand', 2.5, 'shimmer']],
     'code-hike': [['Ship it in three lines', 3, 'typewriter'], ['npm install your-sdk', 3.5, 'typewriter'], ['Read the docs', 3, 'fade-up']],
     electron: [['Your desktop app', 3, 'pop'], ['Native speed. Web skills.', 4, 'word-reveal'], ['Download for Mac and Windows', 3, 'shimmer']],
     helloworld: [['Hello, world', 3, 'pop'], ['Every video starts with one frame', 4, 'word-reveal'], ['Let’s make yours', 3, 'fade-up']],
@@ -352,7 +352,7 @@ try {
       id: `template-${t.id}`,
       kind: 'saas-template',
       name: t.name,
-      description: `Editable Cupric-native storyboard for the ${t.name} workflow · upstream ${t.package}`,
+      description: `Editable NewBrand-native storyboard for the ${t.name} workflow · upstream ${t.package}`,
       data: {
         durationSec: storyboardFor(t).reduce((sum, scene) => sum + scene[1], 0),
         scenes: storyboardFor(t),
@@ -380,7 +380,7 @@ try {
       description: `${skill.description} · editable agent-ready storyboard`,
       data: {
         durationSec: 10,
-        scenes: [[humanName(skill.name), 3, 'pop', 'text'], [firstSentence(skill.description), 4.5, 'word-reveal', 'text'], ['Automated with Cupric', 2.5, 'fade-up', 'text']],
+        scenes: [[humanName(skill.name), 3, 'pop', 'text'], [firstSentence(skill.description), 4.5, 'word-reveal', 'text'], ['Automated with NewBrand', 2.5, 'fade-up', 'text']],
         source: `${remotion.source.url}/tree/${remotion.source.ref}/.agents/skills/${skill.id}`,
         editable: true,
         agentUsable: true,
@@ -409,7 +409,7 @@ try {
   packs.push({
     id: 'remotion',
     name: 'Remotion toolkit',
-    description: 'Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.',
+    description: 'Remotion templates, skills and package capabilities are usable as editable NewBrand-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.',
     version: VERSION,
     source: remotion.source.url,
     license: remotion.source.license,
@@ -427,12 +427,12 @@ try {
   packs.push({
     id: 'react-bits',
     name: 'React Bits storyboards',
-    description: `All ${reactBits.items.length} current React Bits ideas as attributed references plus original, editable Cupric-native storyboards. No upstream component source is redistributed.`,
+    description: `All ${reactBits.items.length} current React Bits ideas as attributed references plus original, editable NewBrand-native storyboards. No upstream component source is redistributed.`,
     version: VERSION,
     source: reactBits.source.url,
     license: reactBits.source.license,
     items: reactBits.items.map((item, index) => {
-      // These are deliberately simple Cupric scenes, not ports of the upstream
+      // These are deliberately simple NewBrand scenes, not ports of the upstream
       // implementation. Every resulting clip uses Studio's own renderer and is
       // therefore editable, keyframeable, agent-readable and safe to export.
       const animation = item.category === 'text'
@@ -450,7 +450,7 @@ try {
         id: `react-bits-${item.id}`,
         kind: 'saas-template',
         name: item.name,
-        description: `Original editable Cupric storyboard using “${item.name}” as attributed visual vocabulary`,
+        description: `Original editable NewBrand storyboard using “${item.name}” as attributed visual vocabulary`,
         data: {
           durationSec: scenes.reduce((sum, scene) => sum + scene[1], 0),
           scenes,
@@ -472,7 +472,7 @@ try {
 }
 
 // Skiper UI permits commercial adaptation with attribution. Each entry becomes
-// an original Cupric-native storyboard: editable text/media clips rather than a
+// an original NewBrand-native storyboard: editable text/media clips rather than a
 // copy of upstream source or assets, with the source credit retained in data.
 try {
   const skiper = JSON.parse(await readFile(path.join(root, 'resources', 'skiper', 'catalog.json'), 'utf8'))
@@ -588,7 +588,7 @@ try {
 }
 
 // uselayouts (MIT): preserve every upstream copy-ready React component as a
-// source resource. Cupric does not execute this third-party code in its
+// source resource. NewBrand does not execute this third-party code in its
 // renderer; Apply rebuilds an editable native storyboard while the copied
 // source, dependencies and attribution remain available for developers.
 try {
@@ -597,7 +597,7 @@ try {
   const browse = JSON.parse(await readFile(path.join(sourceRoot, 'browse-media.json'), 'utf8'))
   const entries = Array.isArray(registry.items) ? registry.items : []
   // Static audit (scripts/audit-uselayouts.mjs): category, interaction/animation
-  // model, props, Cupric equivalent, safety verdict. Missing audit = hard error,
+  // model, props, NewBrand equivalent, safety verdict. Missing audit = hard error,
   // so a pack never ships unaudited third-party components.
   const audit = JSON.parse(await readFile(path.join(sourceRoot, 'audit.json'), 'utf8'))
   const auditBySlug = new Map(audit.items.map((row) => [row.slug, row]))
@@ -634,7 +634,7 @@ try {
             animation: auditBySlug.get(entry.name).animation,
             requiredProps: auditBySlug.get(entry.name).requiredProps,
             optionalProps: auditBySlug.get(entry.name).optionalProps,
-            cupricEquivalent: auditBySlug.get(entry.name).cupricEquivalent,
+            newbrandEquivalent: auditBySlug.get(entry.name).newbrandEquivalent,
             previewable: auditBySlug.get(entry.name).previewable,
             deterministicExport: auditBySlug.get(entry.name).deterministicExport,
             insertable: auditBySlug.get(entry.name).insertable,
@@ -652,7 +652,7 @@ try {
 }
 
 // dashi-motion: the upstream repository has no declared license. Preserve its
-// main reference material with attribution, but expose only Cupric-authored,
+// main reference material with attribution, but expose only NewBrand-authored,
 // reference-only skills to the autonomous agent; external AE/Rive/Cavalry
 // helpers are not executed by the desktop app.
 try {
@@ -661,7 +661,7 @@ try {
   packs.push({
     id: 'dashi-motion',
     name: 'dashi-motion native production skills',
-    description: `${dashi.rules.length} attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; Cupric applies the principles through its own deterministic renderer.`,
+    description: `${dashi.rules.length} attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; NewBrand applies the principles through its own deterministic renderer.`,
     version: VERSION,
     source: dashi.source,
     license: 'No upstream license declared — reference-only attribution; see resources/dashi-motion/UPSTREAM-NOTICE.md',
@@ -716,7 +716,7 @@ try {
   packs.push({
     id: 'iphone-duo',
     name: 'iPhone Duo-inspired foldable promotion skills',
-    description: `Attribution-preserving reference source plus ${skillItems.length - 1} promotion rules and one editable Cupric Studio foldable-device action. Apple reference assets are excluded.`,
+    description: `Attribution-preserving reference source plus ${skillItems.length - 1} promotion rules and one editable NewBrand Studio foldable-device action. Apple reference assets are excluded.`,
     version: VERSION,
     source: duo.source,
     license: duo.license,
@@ -730,7 +730,7 @@ try {
 // searchable resources. The repository links to third-party X/GitHub media but
 // does not redistribute those binaries, so this pack stores links, summaries,
 // exact published prompts (when present), and honest prompt-availability flags.
-// The separate playbook contains Cupric-authored production heuristics distilled
+// The separate playbook contains NewBrand-authored production heuristics distilled
 // from recurring case patterns; it is guidance, not model training.
 try {
   const opusRoot = path.join(root, 'resources', 'opus55')
@@ -760,7 +760,7 @@ try {
         githubVideoComplete: Boolean(entry.githubVideoComplete),
         catalogCase: caseFile,
         mediaPolicy: 'Links only; videos, images, prompts, trademarks and other third-party material retain their owners rights.',
-        editableTranslation: 'Use the case as a reference for a native deterministic Cupric scene; do not claim to reproduce the original output.',
+        editableTranslation: 'Use the case as a reference for a native deterministic NewBrand scene; do not claim to reproduce the original output.',
       },
       tags: ['opus55', 'case', String(entry.category || 'uncategorized'), String(entry.sourceAuthor || 'unknown')],
     }
@@ -783,7 +783,7 @@ try {
   packs.push({
     id: 'opus55',
     name: 'Opus 5.5 video cases & production playbook',
-    description: `${caseItems.length} attributed case studies plus ${playbookItems.length} Cupric-native production rules. Linked media remains external; the autonomous agent uses the playbook as craft guidance for deterministic editable scenes.`,
+    description: `${caseItems.length} attributed case studies plus ${playbookItems.length} NewBrand-native production rules. Linked media remains external; the autonomous agent uses the playbook as craft guidance for deterministic editable scenes.`,
     version: VERSION,
     source: 'https://github.com/chuspeeism/awesome-opus-5-5-videos',
     license: 'MIT for the original catalogue and repository code; third-party media and quoted material retain their own rights.',
@@ -809,7 +809,7 @@ try {
       source: 'https://transitions.dev',
       upstreamPattern: preset.upstream,
       referencePath: preset.upstream === 'p28' ? 'resources/transitions-dev/thinking-states.reference.jsx' : 'resources/transitions-dev/matrix-loader.reference.jsx',
-      license: 'Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.',
+      license: 'Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.',
       nativeAction: 'loader',
       loaderPreset: preset.id,
       loader: preset.patch,
@@ -826,7 +826,7 @@ try {
     description: `${loaderItems.length} loader presets rebuilt as native, export-exact Studio clips with editable text, timing, colour, easing, loop and reduced-motion props.`,
     version: VERSION,
     source: 'https://transitions.dev',
-    license: 'Original Cupric re-implementation; upstream snippets kept for reference with attribution (resources/transitions-dev/ATTRIBUTION.md).',
+    license: 'Original NewBrand re-implementation; upstream snippets kept for reference with attribution (resources/transitions-dev/ATTRIBUTION.md).',
     items: loaderItems,
   })
 }

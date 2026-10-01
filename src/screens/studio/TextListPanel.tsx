@@ -8,7 +8,7 @@ import type { StudioDoc } from '../../types/project'
 import { applyPreset, parsePresets, presetFromClip, upsertPreset, applyBrandKit, findReplaceText, listTextClips, matchStyleFrom, restyleText, roleOf, setClipText, shiftAllText, type TextRole } from '../../lib/studio/textList'
 import { VIDEO_FONTS } from '../../lib/studio/videoFonts'
 
-const PRESET_KEY = 'cupric.textStylePresets'
+const PRESET_KEY = 'newbrand.textStylePresets'
 
 type Props = {
   doc: StudioDoc

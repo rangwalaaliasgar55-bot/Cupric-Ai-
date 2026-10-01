@@ -23,7 +23,7 @@
  * for CI and a clear message for a developer.
  *
  *   npm run media:ensure
- *   CUPRIC_FFMPEG_PATH=/path/to/ffmpeg CUPRIC_FFPROBE_PATH=/path/to/ffprobe npm run media:ensure
+ *   NEWBRAND_FFMPEG_PATH=/path/to/ffmpeg NEWBRAND_FFPROBE_PATH=/path/to/ffprobe npm run media:ensure
  */
 import { existsSync, statSync } from 'node:fs'
 import { createRequire } from 'node:module'
@@ -41,7 +41,7 @@ const TOOLS = ['ffmpeg', 'ffprobe']
 /** Where a tool could legitimately be, in the order the app checks. */
 function candidates(tool) {
   const list = []
-  const envName = `CUPRIC_${tool.toUpperCase()}_PATH`
+  const envName = `NEWBRAND_${tool.toUpperCase()}_PATH`
   if (process.env[envName]) list.push([envName, process.env[envName]])
   if (process.env[`${tool.toUpperCase()}_PATH`]) list.push([`${tool.toUpperCase()}_PATH`, process.env[`${tool.toUpperCase()}_PATH`]])
   const moduleName = `${tool}-static`
@@ -143,6 +143,6 @@ console.error('they are absent, so this is a failure, not a warning.')
 console.error('')
 console.error('Fixes, in order of preference:')
 console.error('  1. npm rebuild ffmpeg-static ffprobe-static        (on a network that can reach the registries)')
-console.error('  2. Install them and set CUPRIC_FFMPEG_PATH / CUPRIC_FFPROBE_PATH')
+console.error('  2. Install them and set NEWBRAND_FFMPEG_PATH / NEWBRAND_FFPROBE_PATH')
 console.error('  3. FFMPEG_BINARIES_URL=<mirror> npm rebuild ffmpeg-static')
 process.exit(1)

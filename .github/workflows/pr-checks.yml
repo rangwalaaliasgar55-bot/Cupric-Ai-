@@ -74,7 +74,7 @@ jobs:
       - name: Verify installer artifacts
         shell: pwsh
         run: |
-          $setup = Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe' -File
+          $setup = Get-ChildItem -Path release -Filter 'NewBrand-Setup-*.exe' -File
           if ($setup.Count -ne 1) {
             throw "Expected exactly one NSIS setup executable; found $($setup.Count)."
           }
@@ -86,7 +86,7 @@ jobs:
       - name: Boot the packaged app on every view (empty and corrupt projects)
         shell: pwsh
         env:
-          CUPRIC_BOOT_EXE: ${{ github.workspace }}\release\win-unpacked\Cupric AI.exe
+          NEWBRAND_BOOT_EXE: ${{ github.workspace }}\release\win-unpacked\NewBrand.exe
         run: npm run check:boot -- --no-build
 
       # Phase 2: the E2E suite drives the real app — launch, every view, a real
@@ -111,7 +111,7 @@ jobs:
         if: failure()
         shell: pwsh
         run: |
-          Get-ChildItem "$env:TEMP\cupric-*" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+          Get-ChildItem "$env:TEMP\newbrand-*" -Directory -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
           Get-ChildItem "$env:LOCALAPPDATA\Programs" -Directory -ErrorAction SilentlyContinue | Format-Table FullName
 
       # The download button, actually pressed. This fetches the real Piper engine
@@ -124,7 +124,7 @@ jobs:
 
       - name: End-to-end suite (real app, real FFmpeg)
         env:
-          CUPRIC_E2E: '1'
+          NEWBRAND_E2E: '1'
         run: npm run test:e2e
 
       - name: Keep the E2E trace and screenshots when it failed

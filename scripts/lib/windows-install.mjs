@@ -13,8 +13,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-export const APP_EXE_NAME = 'Cupric AI.exe'
-export const UNINSTALLER_NAME = 'Uninstall Cupric AI.exe'
+export const APP_EXE_NAME = 'NewBrand.exe'
+export const UNINSTALLER_NAME = 'Uninstall NewBrand.exe'
 
 /** Run a program, capture output, and never throw on a non-zero exit code. */
 export function run(command, args, options = {}) {
@@ -41,7 +41,7 @@ export function powershell(command, options = {}) {
  */
 export function freshInstallDir(label) {
   const drive = process.env.SystemDrive || 'C:'
-  const dir = `${drive}\\cupric-${label}-${process.pid}`
+  const dir = `${drive}\\newbrand-${label}-${process.pid}`
   if (/\s/.test(dir)) throw new Error(`INSTALL_DIR_HAS_SPACE: "${dir}" cannot be passed to an NSIS /D= switch`)
   fs.rmSync(dir, { recursive: true, force: true })
   fs.mkdirSync(dir, { recursive: true })
@@ -55,7 +55,7 @@ export function freshInstallDir(label) {
  * first version of this helper built `"path" /S /D=<dir>` and handed it to
  * `cmd /d /s /c` through spawnSync; Node re-quotes that argument for
  * CreateProcess as `\"path\" /S /D=…`, cmd does not unescape backslash-quotes,
- * and it tried to execute a program literally named `"…\Cupric-AI-Setup-….exe"`
+ * and it tried to execute a program literally named `"…\NewBrand-Setup-….exe"`
  * ('is not recognized as an internal or external command' — the first Windows
  * run of check:install died exactly there). Spawned directly, Node's argv
  * quoting is exactly what the NSIS bootstrap parses: the installer path may be
@@ -76,11 +76,11 @@ export function uninstallSilently(installDir) {
   const uninstaller = path.join(installDir, UNINSTALLER_NAME)
   if (!fs.existsSync(uninstaller)) throw new Error(`UNINSTALLER_MISSING: ${uninstaller}`)
   // Exactly what the installer registered as `QuietUninstallString`:
-  // `"Uninstall Cupric AI.exe" /currentuser /S`. `/currentuser` is not cosmetic
+  // `"Uninstall NewBrand.exe" /currentuser /S`. `/currentuser` is not cosmetic
   // — it is how the uninstaller resolves its shell context ($SMPROGRAMS, the
   // registry hive) for a per-user install, and without it the mode is inferred
   // instead of known. cwd = the install dir, the same thing a user
-  // double-clicking "Uninstall Cupric AI.exe" gets. The path contains spaces;
+  // double-clicking "Uninstall NewBrand.exe" gets. The path contains spaces;
   // spawned directly that is one argv entry, where a cmd-built command line
   // would have split it.
   const result = run(uninstaller, ['/currentuser', '/S'], { timeout: 10 * 60 * 1000, cwd: installDir })
@@ -154,7 +154,7 @@ export function launchApp(exePath, { userDataDir, env = {} } = {}) {
   const child = spawn(exePath, [], {
     detached: true,
     stdio: 'ignore',
-    env: { ...process.env, ...(userDataDir ? { CUPRIC_USER_DATA_DIR: userDataDir } : {}), ...env },
+    env: { ...process.env, ...(userDataDir ? { NEWBRAND_USER_DATA_DIR: userDataDir } : {}), ...env },
   })
   child.unref()
   return child
@@ -183,7 +183,7 @@ export function readLog(userDataDir) {
 }
 
 export function tempDir(label) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `cupric-${label}-`))
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), `newbrand-${label}-`))
   return dir
 }
 

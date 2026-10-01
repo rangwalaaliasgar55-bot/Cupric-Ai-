@@ -1,7 +1,7 @@
 {
   "id": "react-bits",
   "name": "React Bits storyboards",
-  "description": "All 209 current React Bits ideas as attributed references plus original, editable Cupric-native storyboards. No upstream component source is redistributed.",
+  "description": "All 209 current React Bits ideas as attributed references plus original, editable NewBrand-native storyboards. No upstream component source is redistributed.",
   "version": "0.16.0",
   "source": "https://github.com/DavidHDev/react-bits",
   "license": "MIT + Commons Clause v1.0",
@@ -10,7 +10,7 @@
       "id": "react-bits-gradual-blur",
       "kind": "saas-template",
       "name": "Gradual Blur",
-      "description": "Original editable Cupric storyboard using “Gradual Blur” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Gradual Blur” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -55,7 +55,7 @@
       "id": "react-bits-blob-cursor",
       "kind": "saas-template",
       "name": "Blob Cursor",
-      "description": "Original editable Cupric storyboard using “Blob Cursor” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Blob Cursor” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -100,7 +100,7 @@
       "id": "react-bits-animated-content",
       "kind": "saas-template",
       "name": "Animated Content",
-      "description": "Original editable Cupric storyboard using “Animated Content” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Animated Content” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -145,7 +145,7 @@
       "id": "react-bits-magnet",
       "kind": "saas-template",
       "name": "Magnet",
-      "description": "Original editable Cupric storyboard using “Magnet” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Magnet” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -190,7 +190,7 @@
       "id": "react-bits-fade-content",
       "kind": "saas-template",
       "name": "Fade Content",
-      "description": "Original editable Cupric storyboard using “Fade Content” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Fade Content” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -235,7 +235,7 @@
       "id": "react-bits-crosshair",
       "kind": "saas-template",
       "name": "Crosshair",
-      "description": "Original editable Cupric storyboard using “Crosshair” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Crosshair” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -280,7 +280,7 @@
       "id": "react-bits-shape-blur",
       "kind": "saas-template",
       "name": "Shape Blur",
-      "description": "Original editable Cupric storyboard using “Shape Blur” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Shape Blur” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -325,7 +325,7 @@
       "id": "react-bits-star-border",
       "kind": "saas-template",
       "name": "Star Border",
-      "description": "Original editable Cupric storyboard using “Star Border” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Star Border” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -370,7 +370,7 @@
       "id": "react-bits-noise",
       "kind": "saas-template",
       "name": "Noise",
-      "description": "Original editable Cupric storyboard using “Noise” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Noise” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -415,7 +415,7 @@
       "id": "react-bits-magnet-lines",
       "kind": "saas-template",
       "name": "Magnet Lines",
-      "description": "Original editable Cupric storyboard using “Magnet Lines” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Magnet Lines” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -460,7 +460,7 @@
       "id": "react-bits-splash-cursor",
       "kind": "saas-template",
       "name": "Splash Cursor",
-      "description": "Original editable Cupric storyboard using “Splash Cursor” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Splash Cursor” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -505,7 +505,7 @@
       "id": "react-bits-click-spark",
       "kind": "saas-template",
       "name": "Click Spark",
-      "description": "Original editable Cupric storyboard using “Click Spark” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Click Spark” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -550,7 +550,7 @@
       "id": "react-bits-pixel-transition",
       "kind": "saas-template",
       "name": "Pixel Transition",
-      "description": "Original editable Cupric storyboard using “Pixel Transition” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Pixel Transition” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -595,7 +595,7 @@
       "id": "react-bits-pixel-swap",
       "kind": "saas-template",
       "name": "Pixel Swap",
-      "description": "Original editable Cupric storyboard using “Pixel Swap” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Pixel Swap” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -640,7 +640,7 @@
       "id": "react-bits-image-trail",
       "kind": "saas-template",
       "name": "Image Trail",
-      "description": "Original editable Cupric storyboard using “Image Trail” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Image Trail” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -685,7 +685,7 @@
       "id": "react-bits-pixel-trail",
       "kind": "saas-template",
       "name": "Pixel Trail",
-      "description": "Original editable Cupric storyboard using “Pixel Trail” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Pixel Trail” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -730,7 +730,7 @@
       "id": "react-bits-ribbons",
       "kind": "saas-template",
       "name": "Ribbons",
-      "description": "Original editable Cupric storyboard using “Ribbons” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Ribbons” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -775,7 +775,7 @@
       "id": "react-bits-meta-balls",
       "kind": "saas-template",
       "name": "Meta Balls",
-      "description": "Original editable Cupric storyboard using “Meta Balls” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Meta Balls” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -820,7 +820,7 @@
       "id": "react-bits-metallic-paint",
       "kind": "saas-template",
       "name": "Metallic Paint",
-      "description": "Original editable Cupric storyboard using “Metallic Paint” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Metallic Paint” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -865,7 +865,7 @@
       "id": "react-bits-glare-hover",
       "kind": "saas-template",
       "name": "Glare Hover",
-      "description": "Original editable Cupric storyboard using “Glare Hover” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Glare Hover” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -910,7 +910,7 @@
       "id": "react-bits-cubes",
       "kind": "saas-template",
       "name": "Cubes",
-      "description": "Original editable Cupric storyboard using “Cubes” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Cubes” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -955,7 +955,7 @@
       "id": "react-bits-target-cursor",
       "kind": "saas-template",
       "name": "Target Cursor",
-      "description": "Original editable Cupric storyboard using “Target Cursor” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Target Cursor” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1000,7 +1000,7 @@
       "id": "react-bits-sticker-peel",
       "kind": "saas-template",
       "name": "Sticker Peel",
-      "description": "Original editable Cupric storyboard using “Sticker Peel” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Sticker Peel” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1045,7 +1045,7 @@
       "id": "react-bits-scroll-expand",
       "kind": "saas-template",
       "name": "Scroll Expand",
-      "description": "Original editable Cupric storyboard using “Scroll Expand” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Scroll Expand” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1090,7 +1090,7 @@
       "id": "react-bits-masked-heading",
       "kind": "saas-template",
       "name": "Masked Heading",
-      "description": "Original editable Cupric storyboard using “Masked Heading” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Masked Heading” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1135,7 +1135,7 @@
       "id": "react-bits-elastic-mesh",
       "kind": "saas-template",
       "name": "Elastic Mesh",
-      "description": "Original editable Cupric storyboard using “Elastic Mesh” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Elastic Mesh” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1180,7 +1180,7 @@
       "id": "react-bits-ripple-distortion",
       "kind": "saas-template",
       "name": "Ripple Distortion",
-      "description": "Original editable Cupric storyboard using “Ripple Distortion” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Ripple Distortion” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1225,7 +1225,7 @@
       "id": "react-bits-swarm-cursor",
       "kind": "saas-template",
       "name": "Swarm Cursor",
-      "description": "Original editable Cupric storyboard using “Swarm Cursor” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Swarm Cursor” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1270,7 +1270,7 @@
       "id": "react-bits-halftone-reveal",
       "kind": "saas-template",
       "name": "Halftone Reveal",
-      "description": "Original editable Cupric storyboard using “Halftone Reveal” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Halftone Reveal” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1315,7 +1315,7 @@
       "id": "react-bits-electric-border",
       "kind": "saas-template",
       "name": "Electric Border",
-      "description": "Original editable Cupric storyboard using “Electric Border” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Electric Border” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1360,7 +1360,7 @@
       "id": "react-bits-laser-flow",
       "kind": "saas-template",
       "name": "Laser Flow",
-      "description": "Original editable Cupric storyboard using “Laser Flow” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Laser Flow” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1405,7 +1405,7 @@
       "id": "react-bits-ghost-cursor",
       "kind": "saas-template",
       "name": "Ghost Cursor",
-      "description": "Original editable Cupric storyboard using “Ghost Cursor” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Ghost Cursor” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1450,7 +1450,7 @@
       "id": "react-bits-antigravity",
       "kind": "saas-template",
       "name": "Antigravity",
-      "description": "Original editable Cupric storyboard using “Antigravity” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Antigravity” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1495,7 +1495,7 @@
       "id": "react-bits-orbit-images",
       "kind": "saas-template",
       "name": "Orbit Images",
-      "description": "Original editable Cupric storyboard using “Orbit Images” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Orbit Images” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1540,7 +1540,7 @@
       "id": "react-bits-magic-rings",
       "kind": "saas-template",
       "name": "Magic Rings",
-      "description": "Original editable Cupric storyboard using “Magic Rings” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Magic Rings” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1585,7 +1585,7 @@
       "id": "react-bits-strands",
       "kind": "saas-template",
       "name": "Strands",
-      "description": "Original editable Cupric storyboard using “Strands” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Strands” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1630,7 +1630,7 @@
       "id": "react-bits-cursor-grid",
       "kind": "saas-template",
       "name": "Cursor Grid",
-      "description": "Original editable Cupric storyboard using “Cursor Grid” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Cursor Grid” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1675,7 +1675,7 @@
       "id": "react-bits-glow-cursor",
       "kind": "saas-template",
       "name": "Glow Cursor",
-      "description": "Original editable Cupric storyboard using “Glow Cursor” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Glow Cursor” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1720,7 +1720,7 @@
       "id": "react-bits-dither-veil",
       "kind": "saas-template",
       "name": "Dither Veil",
-      "description": "Original editable Cupric storyboard using “Dither Veil” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Dither Veil” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1765,7 +1765,7 @@
       "id": "react-bits-electric-logo",
       "kind": "saas-template",
       "name": "Electric Logo",
-      "description": "Original editable Cupric storyboard using “Electric Logo” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Electric Logo” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1810,7 +1810,7 @@
       "id": "react-bits-split-text",
       "kind": "saas-template",
       "name": "Split Text",
-      "description": "Original editable Cupric storyboard using “Split Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Split Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1855,7 +1855,7 @@
       "id": "react-bits-blur-text",
       "kind": "saas-template",
       "name": "Blur Text",
-      "description": "Original editable Cupric storyboard using “Blur Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Blur Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1900,7 +1900,7 @@
       "id": "react-bits-shiny-text",
       "kind": "saas-template",
       "name": "Shiny Text",
-      "description": "Original editable Cupric storyboard using “Shiny Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Shiny Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1945,7 +1945,7 @@
       "id": "react-bits-gradient-text",
       "kind": "saas-template",
       "name": "Gradient Text",
-      "description": "Original editable Cupric storyboard using “Gradient Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Gradient Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -1990,7 +1990,7 @@
       "id": "react-bits-count-up",
       "kind": "saas-template",
       "name": "Count Up",
-      "description": "Original editable Cupric storyboard using “Count Up” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Count Up” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2035,7 +2035,7 @@
       "id": "react-bits-decrypted-text",
       "kind": "saas-template",
       "name": "Decrypted Text",
-      "description": "Original editable Cupric storyboard using “Decrypted Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Decrypted Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2080,7 +2080,7 @@
       "id": "react-bits-true-focus",
       "kind": "saas-template",
       "name": "True Focus",
-      "description": "Original editable Cupric storyboard using “True Focus” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “True Focus” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2125,7 +2125,7 @@
       "id": "react-bits-variable-proximity",
       "kind": "saas-template",
       "name": "Variable Proximity",
-      "description": "Original editable Cupric storyboard using “Variable Proximity” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Variable Proximity” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2170,7 +2170,7 @@
       "id": "react-bits-text-pressure",
       "kind": "saas-template",
       "name": "Text Pressure",
-      "description": "Original editable Cupric storyboard using “Text Pressure” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Text Pressure” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2215,7 +2215,7 @@
       "id": "react-bits-ascii-text",
       "kind": "saas-template",
       "name": "Ascii Text",
-      "description": "Original editable Cupric storyboard using “Ascii Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Ascii Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2260,7 +2260,7 @@
       "id": "react-bits-falling-text",
       "kind": "saas-template",
       "name": "Falling Text",
-      "description": "Original editable Cupric storyboard using “Falling Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Falling Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2305,7 +2305,7 @@
       "id": "react-bits-rotating-text",
       "kind": "saas-template",
       "name": "Rotating Text",
-      "description": "Original editable Cupric storyboard using “Rotating Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Rotating Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2350,7 +2350,7 @@
       "id": "react-bits-circular-text",
       "kind": "saas-template",
       "name": "Circular Text",
-      "description": "Original editable Cupric storyboard using “Circular Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Circular Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2395,7 +2395,7 @@
       "id": "react-bits-scroll-velocity",
       "kind": "saas-template",
       "name": "Scroll Velocity",
-      "description": "Original editable Cupric storyboard using “Scroll Velocity” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Scroll Velocity” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2440,7 +2440,7 @@
       "id": "react-bits-scroll-reveal",
       "kind": "saas-template",
       "name": "Scroll Reveal",
-      "description": "Original editable Cupric storyboard using “Scroll Reveal” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Scroll Reveal” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2485,7 +2485,7 @@
       "id": "react-bits-scroll-float",
       "kind": "saas-template",
       "name": "Scroll Float",
-      "description": "Original editable Cupric storyboard using “Scroll Float” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Scroll Float” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2530,7 +2530,7 @@
       "id": "react-bits-glitch-text",
       "kind": "saas-template",
       "name": "Glitch Text",
-      "description": "Original editable Cupric storyboard using “Glitch Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Glitch Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2575,7 +2575,7 @@
       "id": "react-bits-fuzzy-text",
       "kind": "saas-template",
       "name": "Fuzzy Text",
-      "description": "Original editable Cupric storyboard using “Fuzzy Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Fuzzy Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2620,7 +2620,7 @@
       "id": "react-bits-text-cursor",
       "kind": "saas-template",
       "name": "Text Cursor",
-      "description": "Original editable Cupric storyboard using “Text Cursor” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Text Cursor” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2665,7 +2665,7 @@
       "id": "react-bits-scrambled-text",
       "kind": "saas-template",
       "name": "Scrambled Text",
-      "description": "Original editable Cupric storyboard using “Scrambled Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Scrambled Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2710,7 +2710,7 @@
       "id": "react-bits-curved-loop",
       "kind": "saas-template",
       "name": "Curved Loop",
-      "description": "Original editable Cupric storyboard using “Curved Loop” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Curved Loop” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2755,7 +2755,7 @@
       "id": "react-bits-text-type",
       "kind": "saas-template",
       "name": "Text Type",
-      "description": "Original editable Cupric storyboard using “Text Type” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Text Type” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2800,7 +2800,7 @@
       "id": "react-bits-logo-loop",
       "kind": "saas-template",
       "name": "Logo Loop",
-      "description": "Original editable Cupric storyboard using “Logo Loop” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Logo Loop” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2845,7 +2845,7 @@
       "id": "react-bits-shuffle",
       "kind": "saas-template",
       "name": "Shuffle",
-      "description": "Original editable Cupric storyboard using “Shuffle” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Shuffle” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2890,7 +2890,7 @@
       "id": "react-bits-particle-text",
       "kind": "saas-template",
       "name": "Particle Text",
-      "description": "Original editable Cupric storyboard using “Particle Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Particle Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2935,7 +2935,7 @@
       "id": "react-bits-split-flap-text",
       "kind": "saas-template",
       "name": "Split Flap Text",
-      "description": "Original editable Cupric storyboard using “Split Flap Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Split Flap Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -2980,7 +2980,7 @@
       "id": "react-bits-warp-text",
       "kind": "saas-template",
       "name": "Warp Text",
-      "description": "Original editable Cupric storyboard using “Warp Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Warp Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3025,7 +3025,7 @@
       "id": "react-bits-stroke-text",
       "kind": "saas-template",
       "name": "Stroke Text",
-      "description": "Original editable Cupric storyboard using “Stroke Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Stroke Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3070,7 +3070,7 @@
       "id": "react-bits-depth-text",
       "kind": "saas-template",
       "name": "Depth Text",
-      "description": "Original editable Cupric storyboard using “Depth Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Depth Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3115,7 +3115,7 @@
       "id": "react-bits-fold-text",
       "kind": "saas-template",
       "name": "Fold Text",
-      "description": "Original editable Cupric storyboard using “Fold Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Fold Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3160,7 +3160,7 @@
       "id": "react-bits-echo-text",
       "kind": "saas-template",
       "name": "Echo Text",
-      "description": "Original editable Cupric storyboard using “Echo Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Echo Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3205,7 +3205,7 @@
       "id": "react-bits-text-loop",
       "kind": "saas-template",
       "name": "Text Loop",
-      "description": "Original editable Cupric storyboard using “Text Loop” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Text Loop” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3250,7 +3250,7 @@
       "id": "react-bits-tech-text",
       "kind": "saas-template",
       "name": "Tech Text",
-      "description": "Original editable Cupric storyboard using “Tech Text” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Tech Text” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3295,7 +3295,7 @@
       "id": "react-bits-stack",
       "kind": "saas-template",
       "name": "Stack",
-      "description": "Original editable Cupric storyboard using “Stack” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Stack” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3340,7 +3340,7 @@
       "id": "react-bits-dock",
       "kind": "saas-template",
       "name": "Dock",
-      "description": "Original editable Cupric storyboard using “Dock” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Dock” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3385,7 +3385,7 @@
       "id": "react-bits-spotlight-card",
       "kind": "saas-template",
       "name": "Spotlight Card",
-      "description": "Original editable Cupric storyboard using “Spotlight Card” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Spotlight Card” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3430,7 +3430,7 @@
       "id": "react-bits-border-glow",
       "kind": "saas-template",
       "name": "Border Glow",
-      "description": "Original editable Cupric storyboard using “Border Glow” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Border Glow” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3475,7 +3475,7 @@
       "id": "react-bits-elastic-slider",
       "kind": "saas-template",
       "name": "Elastic Slider",
-      "description": "Original editable Cupric storyboard using “Elastic Slider” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Elastic Slider” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3520,7 +3520,7 @@
       "id": "react-bits-decay-card",
       "kind": "saas-template",
       "name": "Decay Card",
-      "description": "Original editable Cupric storyboard using “Decay Card” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Decay Card” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3565,7 +3565,7 @@
       "id": "react-bits-bounce-cards",
       "kind": "saas-template",
       "name": "Bounce Cards",
-      "description": "Original editable Cupric storyboard using “Bounce Cards” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Bounce Cards” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3610,7 +3610,7 @@
       "id": "react-bits-pixel-card",
       "kind": "saas-template",
       "name": "Pixel Card",
-      "description": "Original editable Cupric storyboard using “Pixel Card” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Pixel Card” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3655,7 +3655,7 @@
       "id": "react-bits-tilted-card",
       "kind": "saas-template",
       "name": "Tilted Card",
-      "description": "Original editable Cupric storyboard using “Tilted Card” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Tilted Card” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3700,7 +3700,7 @@
       "id": "react-bits-infinite-spiral",
       "kind": "saas-template",
       "name": "Infinite Spiral",
-      "description": "Original editable Cupric storyboard using “Infinite Spiral” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Infinite Spiral” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3745,7 +3745,7 @@
       "id": "react-bits-infinite-menu",
       "kind": "saas-template",
       "name": "Infinite Menu",
-      "description": "Original editable Cupric storyboard using “Infinite Menu” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Infinite Menu” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3790,7 +3790,7 @@
       "id": "react-bits-flying-posters",
       "kind": "saas-template",
       "name": "Flying Posters",
-      "description": "Original editable Cupric storyboard using “Flying Posters” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Flying Posters” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3835,7 +3835,7 @@
       "id": "react-bits-flowing-menu",
       "kind": "saas-template",
       "name": "Flowing Menu",
-      "description": "Original editable Cupric storyboard using “Flowing Menu” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Flowing Menu” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3880,7 +3880,7 @@
       "id": "react-bits-depth-carousel",
       "kind": "saas-template",
       "name": "Depth Carousel",
-      "description": "Original editable Cupric storyboard using “Depth Carousel” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Depth Carousel” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3925,7 +3925,7 @@
       "id": "react-bits-accordion-gallery",
       "kind": "saas-template",
       "name": "Accordion Gallery",
-      "description": "Original editable Cupric storyboard using “Accordion Gallery” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Accordion Gallery” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -3970,7 +3970,7 @@
       "id": "react-bits-morph-slider",
       "kind": "saas-template",
       "name": "Morph Slider",
-      "description": "Original editable Cupric storyboard using “Morph Slider” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Morph Slider” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4015,7 +4015,7 @@
       "id": "react-bits-drift-wall",
       "kind": "saas-template",
       "name": "Drift Wall",
-      "description": "Original editable Cupric storyboard using “Drift Wall” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Drift Wall” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4060,7 +4060,7 @@
       "id": "react-bits-circular-gallery",
       "kind": "saas-template",
       "name": "Circular Gallery",
-      "description": "Original editable Cupric storyboard using “Circular Gallery” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Circular Gallery” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4105,7 +4105,7 @@
       "id": "react-bits-stepper",
       "kind": "saas-template",
       "name": "Stepper",
-      "description": "Original editable Cupric storyboard using “Stepper” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Stepper” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4150,7 +4150,7 @@
       "id": "react-bits-carousel",
       "kind": "saas-template",
       "name": "Carousel",
-      "description": "Original editable Cupric storyboard using “Carousel” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Carousel” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4195,7 +4195,7 @@
       "id": "react-bits-counter",
       "kind": "saas-template",
       "name": "Counter",
-      "description": "Original editable Cupric storyboard using “Counter” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Counter” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4240,7 +4240,7 @@
       "id": "react-bits-lanyard",
       "kind": "saas-template",
       "name": "Lanyard",
-      "description": "Original editable Cupric storyboard using “Lanyard” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Lanyard” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4285,7 +4285,7 @@
       "id": "react-bits-glass-icons",
       "kind": "saas-template",
       "name": "Glass Icons",
-      "description": "Original editable Cupric storyboard using “Glass Icons” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Glass Icons” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4330,7 +4330,7 @@
       "id": "react-bits-animated-list",
       "kind": "saas-template",
       "name": "Animated List",
-      "description": "Original editable Cupric storyboard using “Animated List” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Animated List” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4375,7 +4375,7 @@
       "id": "react-bits-folder",
       "kind": "saas-template",
       "name": "Folder",
-      "description": "Original editable Cupric storyboard using “Folder” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Folder” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4420,7 +4420,7 @@
       "id": "react-bits-gooey-nav",
       "kind": "saas-template",
       "name": "Gooey Nav",
-      "description": "Original editable Cupric storyboard using “Gooey Nav” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Gooey Nav” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4465,7 +4465,7 @@
       "id": "react-bits-chroma-grid",
       "kind": "saas-template",
       "name": "Chroma Grid",
-      "description": "Original editable Cupric storyboard using “Chroma Grid” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Chroma Grid” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4510,7 +4510,7 @@
       "id": "react-bits-profile-card",
       "kind": "saas-template",
       "name": "Profile Card",
-      "description": "Original editable Cupric storyboard using “Profile Card” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Profile Card” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4555,7 +4555,7 @@
       "id": "react-bits-card-swap",
       "kind": "saas-template",
       "name": "Card Swap",
-      "description": "Original editable Cupric storyboard using “Card Swap” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Card Swap” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4600,7 +4600,7 @@
       "id": "react-bits-model-viewer",
       "kind": "saas-template",
       "name": "Model Viewer",
-      "description": "Original editable Cupric storyboard using “Model Viewer” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Model Viewer” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4645,7 +4645,7 @@
       "id": "react-bits-fluid-glass",
       "kind": "saas-template",
       "name": "Fluid Glass",
-      "description": "Original editable Cupric storyboard using “Fluid Glass” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Fluid Glass” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4690,7 +4690,7 @@
       "id": "react-bits-masonry",
       "kind": "saas-template",
       "name": "Masonry",
-      "description": "Original editable Cupric storyboard using “Masonry” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Masonry” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4735,7 +4735,7 @@
       "id": "react-bits-magic-bento",
       "kind": "saas-template",
       "name": "Magic Bento",
-      "description": "Original editable Cupric storyboard using “Magic Bento” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Magic Bento” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4780,7 +4780,7 @@
       "id": "react-bits-scroll-stack",
       "kind": "saas-template",
       "name": "Scroll Stack",
-      "description": "Original editable Cupric storyboard using “Scroll Stack” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Scroll Stack” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4825,7 +4825,7 @@
       "id": "react-bits-glass-surface",
       "kind": "saas-template",
       "name": "Glass Surface",
-      "description": "Original editable Cupric storyboard using “Glass Surface” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Glass Surface” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4870,7 +4870,7 @@
       "id": "react-bits-pill-nav",
       "kind": "saas-template",
       "name": "Pill Nav",
-      "description": "Original editable Cupric storyboard using “Pill Nav” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Pill Nav” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4915,7 +4915,7 @@
       "id": "react-bits-card-nav",
       "kind": "saas-template",
       "name": "Card Nav",
-      "description": "Original editable Cupric storyboard using “Card Nav” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Card Nav” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -4960,7 +4960,7 @@
       "id": "react-bits-bubble-menu",
       "kind": "saas-template",
       "name": "Bubble Menu",
-      "description": "Original editable Cupric storyboard using “Bubble Menu” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Bubble Menu” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5005,7 +5005,7 @@
       "id": "react-bits-dome-gallery",
       "kind": "saas-template",
       "name": "Dome Gallery",
-      "description": "Original editable Cupric storyboard using “Dome Gallery” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Dome Gallery” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5050,7 +5050,7 @@
       "id": "react-bits-staggered-menu",
       "kind": "saas-template",
       "name": "Staggered Menu",
-      "description": "Original editable Cupric storyboard using “Staggered Menu” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Staggered Menu” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5095,7 +5095,7 @@
       "id": "react-bits-reflective-card",
       "kind": "saas-template",
       "name": "Reflective Card",
-      "description": "Original editable Cupric storyboard using “Reflective Card” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Reflective Card” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5140,7 +5140,7 @@
       "id": "react-bits-line-sidebar",
       "kind": "saas-template",
       "name": "Line Sidebar",
-      "description": "Original editable Cupric storyboard using “Line Sidebar” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Line Sidebar” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5185,7 +5185,7 @@
       "id": "react-bits-curved-input",
       "kind": "saas-template",
       "name": "Curved Input",
-      "description": "Original editable Cupric storyboard using “Curved Input” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Curved Input” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5230,7 +5230,7 @@
       "id": "react-bits-option-wheel",
       "kind": "saas-template",
       "name": "Option Wheel",
-      "description": "Original editable Cupric storyboard using “Option Wheel” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Option Wheel” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5275,7 +5275,7 @@
       "id": "react-bits-specular-button",
       "kind": "saas-template",
       "name": "Specular Button",
-      "description": "Original editable Cupric storyboard using “Specular Button” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Specular Button” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5320,7 +5320,7 @@
       "id": "react-bits-squish-switch",
       "kind": "saas-template",
       "name": "Squish Switch",
-      "description": "Original editable Cupric storyboard using “Squish Switch” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Squish Switch” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5365,7 +5365,7 @@
       "id": "react-bits-hold-button",
       "kind": "saas-template",
       "name": "Hold Button",
-      "description": "Original editable Cupric storyboard using “Hold Button” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Hold Button” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5410,7 +5410,7 @@
       "id": "react-bits-peek-rating",
       "kind": "saas-template",
       "name": "Peek Rating",
-      "description": "Original editable Cupric storyboard using “Peek Rating” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Peek Rating” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5455,7 +5455,7 @@
       "id": "react-bits-spring-check",
       "kind": "saas-template",
       "name": "Spring Check",
-      "description": "Original editable Cupric storyboard using “Spring Check” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Spring Check” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5500,7 +5500,7 @@
       "id": "react-bits-pulse-heart",
       "kind": "saas-template",
       "name": "Pulse Heart",
-      "description": "Original editable Cupric storyboard using “Pulse Heart” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Pulse Heart” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5545,7 +5545,7 @@
       "id": "react-bits-rubber-segment",
       "kind": "saas-template",
       "name": "Rubber Segment",
-      "description": "Original editable Cupric storyboard using “Rubber Segment” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Rubber Segment” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5590,7 +5590,7 @@
       "id": "react-bits-slide-commit",
       "kind": "saas-template",
       "name": "Slide Commit",
-      "description": "Original editable Cupric storyboard using “Slide Commit” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Slide Commit” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5635,7 +5635,7 @@
       "id": "react-bits-warm-tooltip",
       "kind": "saas-template",
       "name": "Warm Tooltip",
-      "description": "Original editable Cupric storyboard using “Warm Tooltip” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Warm Tooltip” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5680,7 +5680,7 @@
       "id": "react-bits-fuse-button",
       "kind": "saas-template",
       "name": "Fuse Button",
-      "description": "Original editable Cupric storyboard using “Fuse Button” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Fuse Button” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5725,7 +5725,7 @@
       "id": "react-bits-scrub-field",
       "kind": "saas-template",
       "name": "Scrub Field",
-      "description": "Original editable Cupric storyboard using “Scrub Field” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Scrub Field” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5770,7 +5770,7 @@
       "id": "react-bits-lattice-loader",
       "kind": "saas-template",
       "name": "Lattice Loader",
-      "description": "Original editable Cupric storyboard using “Lattice Loader” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Lattice Loader” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5815,7 +5815,7 @@
       "id": "react-bits-dodge-field",
       "kind": "saas-template",
       "name": "Dodge Field",
-      "description": "Original editable Cupric storyboard using “Dodge Field” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Dodge Field” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5860,7 +5860,7 @@
       "id": "react-bits-code-slots",
       "kind": "saas-template",
       "name": "Code Slots",
-      "description": "Original editable Cupric storyboard using “Code Slots” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Code Slots” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5905,7 +5905,7 @@
       "id": "react-bits-wake-slider",
       "kind": "saas-template",
       "name": "Wake Slider",
-      "description": "Original editable Cupric storyboard using “Wake Slider” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Wake Slider” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5950,7 +5950,7 @@
       "id": "react-bits-comet-dial",
       "kind": "saas-template",
       "name": "Comet Dial",
-      "description": "Original editable Cupric storyboard using “Comet Dial” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Comet Dial” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -5995,7 +5995,7 @@
       "id": "react-bits-jelly-radio",
       "kind": "saas-template",
       "name": "Jelly Radio",
-      "description": "Original editable Cupric storyboard using “Jelly Radio” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Jelly Radio” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6040,7 +6040,7 @@
       "id": "react-bits-swipe-row",
       "kind": "saas-template",
       "name": "Swipe Row",
-      "description": "Original editable Cupric storyboard using “Swipe Row” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Swipe Row” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6085,7 +6085,7 @@
       "id": "react-bits-glide-select",
       "kind": "saas-template",
       "name": "Glide Select",
-      "description": "Original editable Cupric storyboard using “Glide Select” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Glide Select” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6130,7 +6130,7 @@
       "id": "react-bits-status-mark",
       "kind": "saas-template",
       "name": "Status Mark",
-      "description": "Original editable Cupric storyboard using “Status Mark” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Status Mark” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6175,7 +6175,7 @@
       "id": "react-bits-call-chip",
       "kind": "saas-template",
       "name": "Call Chip",
-      "description": "Original editable Cupric storyboard using “Call Chip” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Call Chip” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6220,7 +6220,7 @@
       "id": "react-bits-bell-toggle",
       "kind": "saas-template",
       "name": "Bell Toggle",
-      "description": "Original editable Cupric storyboard using “Bell Toggle” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Bell Toggle” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6265,7 +6265,7 @@
       "id": "react-bits-sling-button",
       "kind": "saas-template",
       "name": "Sling Button",
-      "description": "Original editable Cupric storyboard using “Sling Button” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Sling Button” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6310,7 +6310,7 @@
       "id": "react-bits-swipe-toast",
       "kind": "saas-template",
       "name": "Swipe Toast",
-      "description": "Original editable Cupric storyboard using “Swipe Toast” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Swipe Toast” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6355,7 +6355,7 @@
       "id": "react-bits-prompt-bar",
       "kind": "saas-template",
       "name": "Prompt Bar",
-      "description": "Original editable Cupric storyboard using “Prompt Bar” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Prompt Bar” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6400,7 +6400,7 @@
       "id": "react-bits-slosh-gauge",
       "kind": "saas-template",
       "name": "Slosh Gauge",
-      "description": "Original editable Cupric storyboard using “Slosh Gauge” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Slosh Gauge” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6445,7 +6445,7 @@
       "id": "react-bits-voice-pill",
       "kind": "saas-template",
       "name": "Voice Pill",
-      "description": "Original editable Cupric storyboard using “Voice Pill” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Voice Pill” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6490,7 +6490,7 @@
       "id": "react-bits-thought-line",
       "kind": "saas-template",
       "name": "Thought Line",
-      "description": "Original editable Cupric storyboard using “Thought Line” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Thought Line” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6535,7 +6535,7 @@
       "id": "react-bits-refine-frame",
       "kind": "saas-template",
       "name": "Refine Frame",
-      "description": "Original editable Cupric storyboard using “Refine Frame” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Refine Frame” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6580,7 +6580,7 @@
       "id": "react-bits-folder-float",
       "kind": "saas-template",
       "name": "Folder Float",
-      "description": "Original editable Cupric storyboard using “Folder Float” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Folder Float” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6625,7 +6625,7 @@
       "id": "react-bits-branched-menu",
       "kind": "saas-template",
       "name": "Branched Menu",
-      "description": "Original editable Cupric storyboard using “Branched Menu” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Branched Menu” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6670,7 +6670,7 @@
       "id": "react-bits-flip-card",
       "kind": "saas-template",
       "name": "Flip Card",
-      "description": "Original editable Cupric storyboard using “Flip Card” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Flip Card” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6715,7 +6715,7 @@
       "id": "react-bits-tear-ticket",
       "kind": "saas-template",
       "name": "Tear Ticket",
-      "description": "Original editable Cupric storyboard using “Tear Ticket” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Tear Ticket” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6760,7 +6760,7 @@
       "id": "react-bits-paper-crumple",
       "kind": "saas-template",
       "name": "Paper Crumple",
-      "description": "Original editable Cupric storyboard using “Paper Crumple” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Paper Crumple” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6805,7 +6805,7 @@
       "id": "react-bits-shredder",
       "kind": "saas-template",
       "name": "Shredder",
-      "description": "Original editable Cupric storyboard using “Shredder” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Shredder” as attributed visual vocabulary",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -6850,7 +6850,7 @@
       "id": "react-bits-shape-waves",
       "kind": "saas-template",
       "name": "Shape Waves",
-      "description": "Original editable Cupric storyboard using “Shape Waves” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Shape Waves” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -6889,7 +6889,7 @@
       "id": "react-bits-aero-shards",
       "kind": "saas-template",
       "name": "Aero Shards",
-      "description": "Original editable Cupric storyboard using “Aero Shards” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Aero Shards” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -6928,7 +6928,7 @@
       "id": "react-bits-ghost-fibers",
       "kind": "saas-template",
       "name": "Ghost Fibers",
-      "description": "Original editable Cupric storyboard using “Ghost Fibers” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Ghost Fibers” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -6967,7 +6967,7 @@
       "id": "react-bits-silk",
       "kind": "saas-template",
       "name": "Silk",
-      "description": "Original editable Cupric storyboard using “Silk” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Silk” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7006,7 +7006,7 @@
       "id": "react-bits-aurora",
       "kind": "saas-template",
       "name": "Aurora",
-      "description": "Original editable Cupric storyboard using “Aurora” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Aurora” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7045,7 +7045,7 @@
       "id": "react-bits-shape-grid",
       "kind": "saas-template",
       "name": "Shape Grid",
-      "description": "Original editable Cupric storyboard using “Shape Grid” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Shape Grid” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7084,7 +7084,7 @@
       "id": "react-bits-hyperspeed",
       "kind": "saas-template",
       "name": "Hyperspeed",
-      "description": "Original editable Cupric storyboard using “Hyperspeed” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Hyperspeed” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7123,7 +7123,7 @@
       "id": "react-bits-iridescence",
       "kind": "saas-template",
       "name": "Iridescence",
-      "description": "Original editable Cupric storyboard using “Iridescence” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Iridescence” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7162,7 +7162,7 @@
       "id": "react-bits-grid-motion",
       "kind": "saas-template",
       "name": "Grid Motion",
-      "description": "Original editable Cupric storyboard using “Grid Motion” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Grid Motion” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7201,7 +7201,7 @@
       "id": "react-bits-waves",
       "kind": "saas-template",
       "name": "Waves",
-      "description": "Original editable Cupric storyboard using “Waves” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Waves” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7240,7 +7240,7 @@
       "id": "react-bits-ballpit",
       "kind": "saas-template",
       "name": "Ballpit",
-      "description": "Original editable Cupric storyboard using “Ballpit” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Ballpit” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7279,7 +7279,7 @@
       "id": "react-bits-letter-glitch",
       "kind": "saas-template",
       "name": "Letter Glitch",
-      "description": "Original editable Cupric storyboard using “Letter Glitch” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Letter Glitch” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7318,7 +7318,7 @@
       "id": "react-bits-grid-distortion",
       "kind": "saas-template",
       "name": "Grid Distortion",
-      "description": "Original editable Cupric storyboard using “Grid Distortion” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Grid Distortion” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7357,7 +7357,7 @@
       "id": "react-bits-orb",
       "kind": "saas-template",
       "name": "Orb",
-      "description": "Original editable Cupric storyboard using “Orb” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Orb” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7396,7 +7396,7 @@
       "id": "react-bits-particles",
       "kind": "saas-template",
       "name": "Particles",
-      "description": "Original editable Cupric storyboard using “Particles” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Particles” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7435,7 +7435,7 @@
       "id": "react-bits-liquid-chrome",
       "kind": "saas-template",
       "name": "Liquid Chrome",
-      "description": "Original editable Cupric storyboard using “Liquid Chrome” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Liquid Chrome” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7474,7 +7474,7 @@
       "id": "react-bits-balatro",
       "kind": "saas-template",
       "name": "Balatro",
-      "description": "Original editable Cupric storyboard using “Balatro” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Balatro” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7513,7 +7513,7 @@
       "id": "react-bits-threads",
       "kind": "saas-template",
       "name": "Threads",
-      "description": "Original editable Cupric storyboard using “Threads” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Threads” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7552,7 +7552,7 @@
       "id": "react-bits-dither",
       "kind": "saas-template",
       "name": "Dither",
-      "description": "Original editable Cupric storyboard using “Dither” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Dither” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7591,7 +7591,7 @@
       "id": "react-bits-lightning",
       "kind": "saas-template",
       "name": "Lightning",
-      "description": "Original editable Cupric storyboard using “Lightning” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Lightning” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7630,7 +7630,7 @@
       "id": "react-bits-dot-grid",
       "kind": "saas-template",
       "name": "Dot Grid",
-      "description": "Original editable Cupric storyboard using “Dot Grid” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Dot Grid” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7669,7 +7669,7 @@
       "id": "react-bits-beams",
       "kind": "saas-template",
       "name": "Beams",
-      "description": "Original editable Cupric storyboard using “Beams” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Beams” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7708,7 +7708,7 @@
       "id": "react-bits-ripple-grid",
       "kind": "saas-template",
       "name": "Ripple Grid",
-      "description": "Original editable Cupric storyboard using “Ripple Grid” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Ripple Grid” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7747,7 +7747,7 @@
       "id": "react-bits-dark-veil",
       "kind": "saas-template",
       "name": "Dark Veil",
-      "description": "Original editable Cupric storyboard using “Dark Veil” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Dark Veil” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7786,7 +7786,7 @@
       "id": "react-bits-galaxy",
       "kind": "saas-template",
       "name": "Galaxy",
-      "description": "Original editable Cupric storyboard using “Galaxy” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Galaxy” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7825,7 +7825,7 @@
       "id": "react-bits-light-rays",
       "kind": "saas-template",
       "name": "Light Rays",
-      "description": "Original editable Cupric storyboard using “Light Rays” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Light Rays” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7864,7 +7864,7 @@
       "id": "react-bits-faulty-terminal",
       "kind": "saas-template",
       "name": "Faulty Terminal",
-      "description": "Original editable Cupric storyboard using “Faulty Terminal” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Faulty Terminal” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7903,7 +7903,7 @@
       "id": "react-bits-plasma",
       "kind": "saas-template",
       "name": "Plasma",
-      "description": "Original editable Cupric storyboard using “Plasma” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Plasma” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7942,7 +7942,7 @@
       "id": "react-bits-plasma-wave",
       "kind": "saas-template",
       "name": "Plasma Wave",
-      "description": "Original editable Cupric storyboard using “Plasma Wave” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Plasma Wave” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -7981,7 +7981,7 @@
       "id": "react-bits-prism",
       "kind": "saas-template",
       "name": "Prism",
-      "description": "Original editable Cupric storyboard using “Prism” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Prism” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8020,7 +8020,7 @@
       "id": "react-bits-gradient-blinds",
       "kind": "saas-template",
       "name": "Gradient Blinds",
-      "description": "Original editable Cupric storyboard using “Gradient Blinds” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Gradient Blinds” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8059,7 +8059,7 @@
       "id": "react-bits-grainient",
       "kind": "saas-template",
       "name": "Grainient",
-      "description": "Original editable Cupric storyboard using “Grainient” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Grainient” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8098,7 +8098,7 @@
       "id": "react-bits-prismatic-burst",
       "kind": "saas-template",
       "name": "Prismatic Burst",
-      "description": "Original editable Cupric storyboard using “Prismatic Burst” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Prismatic Burst” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8137,7 +8137,7 @@
       "id": "react-bits-pixel-blast",
       "kind": "saas-template",
       "name": "Pixel Blast",
-      "description": "Original editable Cupric storyboard using “Pixel Blast” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Pixel Blast” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8176,7 +8176,7 @@
       "id": "react-bits-liquid-ether",
       "kind": "saas-template",
       "name": "Liquid Ether",
-      "description": "Original editable Cupric storyboard using “Liquid Ether” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Liquid Ether” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8215,7 +8215,7 @@
       "id": "react-bits-color-bends",
       "kind": "saas-template",
       "name": "Color Bends",
-      "description": "Original editable Cupric storyboard using “Color Bends” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Color Bends” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8254,7 +8254,7 @@
       "id": "react-bits-crt-warp",
       "kind": "saas-template",
       "name": "Crt Warp",
-      "description": "Original editable Cupric storyboard using “Crt Warp” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Crt Warp” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8293,7 +8293,7 @@
       "id": "react-bits-line-waves",
       "kind": "saas-template",
       "name": "Line Waves",
-      "description": "Original editable Cupric storyboard using “Line Waves” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Line Waves” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8332,7 +8332,7 @@
       "id": "react-bits-grid-scan",
       "kind": "saas-template",
       "name": "Grid Scan",
-      "description": "Original editable Cupric storyboard using “Grid Scan” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Grid Scan” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8371,7 +8371,7 @@
       "id": "react-bits-floating-lines",
       "kind": "saas-template",
       "name": "Floating Lines",
-      "description": "Original editable Cupric storyboard using “Floating Lines” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Floating Lines” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8410,7 +8410,7 @@
       "id": "react-bits-light-pillar",
       "kind": "saas-template",
       "name": "Light Pillar",
-      "description": "Original editable Cupric storyboard using “Light Pillar” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Light Pillar” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8449,7 +8449,7 @@
       "id": "react-bits-pixel-snow",
       "kind": "saas-template",
       "name": "Pixel Snow",
-      "description": "Original editable Cupric storyboard using “Pixel Snow” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Pixel Snow” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8488,7 +8488,7 @@
       "id": "react-bits-radar",
       "kind": "saas-template",
       "name": "Radar",
-      "description": "Original editable Cupric storyboard using “Radar” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Radar” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8527,7 +8527,7 @@
       "id": "react-bits-soft-aurora",
       "kind": "saas-template",
       "name": "Soft Aurora",
-      "description": "Original editable Cupric storyboard using “Soft Aurora” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Soft Aurora” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8566,7 +8566,7 @@
       "id": "react-bits-evil-eye",
       "kind": "saas-template",
       "name": "Evil Eye",
-      "description": "Original editable Cupric storyboard using “Evil Eye” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Evil Eye” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8605,7 +8605,7 @@
       "id": "react-bits-dot-field",
       "kind": "saas-template",
       "name": "Dot Field",
-      "description": "Original editable Cupric storyboard using “Dot Field” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Dot Field” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8644,7 +8644,7 @@
       "id": "react-bits-side-rays",
       "kind": "saas-template",
       "name": "Side Rays",
-      "description": "Original editable Cupric storyboard using “Side Rays” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Side Rays” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8683,7 +8683,7 @@
       "id": "react-bits-lightfall",
       "kind": "saas-template",
       "name": "Lightfall",
-      "description": "Original editable Cupric storyboard using “Lightfall” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Lightfall” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8722,7 +8722,7 @@
       "id": "react-bits-ferrofluid",
       "kind": "saas-template",
       "name": "Ferrofluid",
-      "description": "Original editable Cupric storyboard using “Ferrofluid” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Ferrofluid” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8761,7 +8761,7 @@
       "id": "react-bits-molten-metal",
       "kind": "saas-template",
       "name": "Molten Metal",
-      "description": "Original editable Cupric storyboard using “Molten Metal” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Molten Metal” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8800,7 +8800,7 @@
       "id": "react-bits-gradient-waves",
       "kind": "saas-template",
       "name": "Gradient Waves",
-      "description": "Original editable Cupric storyboard using “Gradient Waves” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Gradient Waves” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8839,7 +8839,7 @@
       "id": "react-bits-web-threads",
       "kind": "saas-template",
       "name": "Web Threads",
-      "description": "Original editable Cupric storyboard using “Web Threads” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Web Threads” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8878,7 +8878,7 @@
       "id": "react-bits-topography",
       "kind": "saas-template",
       "name": "Topography",
-      "description": "Original editable Cupric storyboard using “Topography” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Topography” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8917,7 +8917,7 @@
       "id": "react-bits-light-tunnel",
       "kind": "saas-template",
       "name": "Light Tunnel",
-      "description": "Original editable Cupric storyboard using “Light Tunnel” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Light Tunnel” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8956,7 +8956,7 @@
       "id": "react-bits-sliced-waves",
       "kind": "saas-template",
       "name": "Sliced Waves",
-      "description": "Original editable Cupric storyboard using “Sliced Waves” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Sliced Waves” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -8995,7 +8995,7 @@
       "id": "react-bits-acid-squares",
       "kind": "saas-template",
       "name": "Acid Squares",
-      "description": "Original editable Cupric storyboard using “Acid Squares” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Acid Squares” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [
@@ -9034,7 +9034,7 @@
       "id": "react-bits-scanner",
       "kind": "saas-template",
       "name": "Scanner",
-      "description": "Original editable Cupric storyboard using “Scanner” as attributed visual vocabulary",
+      "description": "Original editable NewBrand storyboard using “Scanner” as attributed visual vocabulary",
       "data": {
         "durationSec": 8,
         "scenes": [

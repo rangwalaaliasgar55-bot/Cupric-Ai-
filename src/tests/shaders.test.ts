@@ -1,5 +1,5 @@
 /**
- * Cupric's shader kit (phase 5).
+ * NewBrand's shader kit (phase 5).
  *
  * The Lab's 18 `fc-shader-*` effects used to render through
  * `@paper-design/shaders-react`, which is licensed PolyForm Shield 1.0.0 —

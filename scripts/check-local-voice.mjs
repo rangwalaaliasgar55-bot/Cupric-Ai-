@@ -69,7 +69,7 @@ const found = e.findWhisper({ platform: 'win32', dirs: ['/app/whisper', '/data/w
 assert.equal(found.bin.replace(/\\/g, '/'), '/app/whisper/Release/whisper-cli.exe')
 assert.equal(path.basename(found.model), 'ggml-base.en-q5_1.bin', 'prefers the quantized base model')
 assert.equal(e.findWhisper({ platform: 'win32', dirs: ['/nowhere'], exists: () => false, list: () => [] }), null)
-const envFound = e.findWhisper({ env: { CUPRIC_WHISPER_PATH: '/x/w', CUPRIC_WHISPER_MODEL: '/x/m.bin' }, dirs: [], exists: () => true, list: () => [] })
+const envFound = e.findWhisper({ env: { NEWBRAND_WHISPER_PATH: '/x/w', NEWBRAND_WHISPER_MODEL: '/x/m.bin' }, dirs: [], exists: () => true, list: () => [] })
 assert.deepEqual(envFound, { bin: '/x/w', model: '/x/m.bin' })
 
 // Arguments and transcript cleaning.
@@ -85,7 +85,7 @@ assert.match(e.WINDOWS_SPEECH_SCRIPT, /DictationGrammar/)
 
 // A fake whisper-cli honouring the real CLI contract (-of base → base.txt).
 if (process.platform !== 'win32') {
-  const dir = mkdtempSync(path.join(os.tmpdir(), 'cupric-whisper-'))
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'newbrand-whisper-'))
   try {
     mkdirSync(path.join(dir, 'models'))
     writeFileSync(path.join(dir, 'models', 'ggml-base.en.bin'), 'x')

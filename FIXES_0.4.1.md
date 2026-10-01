@@ -38,7 +38,7 @@ present. Fatal failures disqualify; the rest are points.
 **The fallback is now honest.** The built-in template is only written when *no*
 model candidate survives, and when that happens the job pushes:
 
-> "No AI candidate passed the render contract (…). Cupric fell back to its
+> "No AI candidate passed the render contract (…). NewBrand fell back to its
 > built-in deterministic template — this render was NOT chosen by a model
 > battle."
 

@@ -182,7 +182,7 @@ for (const anim of mod.TEXT_ANIMATIONS) {
 for (const preset of mod.GLASS_PRESETS) {
   for (const shape of ['panel', 'lens']) {
     for (const motion of ['static', 'sweep', 'drift', 'pop']) {
-      const clip = { ...mod.defaultGlassClip(0, 1, preset.id, shape), motion, label: 'Cupric' }
+      const clip = { ...mod.defaultGlassClip(0, 1, preset.id, shape), motion, label: 'NewBrand' }
       render(`glass:${preset.id}/${shape}/${motion}`, [clip], [0, 0.4, 2.2])
     }
   }
@@ -198,7 +198,7 @@ render('stack', [
 // 6. Voice grammar — the parser is pure, so assert the contract directly.
 const voiceCases = [
   ['play', 'play'],
-  ['hey cupric, pause', 'pause'],
+  ['hey newbrand, pause', 'pause'],
   ['go to 12 seconds', 'seek-to'],
   ['forward five', 'nudge'],
   ['back 2 secs', 'nudge'],
@@ -458,7 +458,7 @@ if (mod.parseVoiceCommand('add text hello world')?.text !== 'hello world') failu
 // 14. Generated HTML → editable clips.
 {
   const manifestHtml = `<!doctype html><html><body><div id="scene"></div><script>
-    window.__cupricSourceManifest = {
+    window.__newbrandSourceManifest = {
       sources: ['inline typography', 'css gradient'],
       renderSpec: { fps: 30, size: [1080, 1920], durationSec: 9 },
       sequence: [

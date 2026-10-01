@@ -14,7 +14,7 @@ and knows what a failure looks like.
 
 ## Preconditions
 
-- `Cupric-AI-Setup-<version>.exe` installed on Windows 10/11 (unsigned NSIS build; SmartScreen
+- `NewBrand-Setup-<version>.exe` installed on Windows 10/11 (unsigned NSIS build; SmartScreen
   will warn).
 - The app opens without the recovery card ("Renderer recovered").
 - Settings shows the media tools as found (FFmpeg/FFprobe). If not, the run will say so instead
@@ -71,7 +71,7 @@ and knows what a failure looks like.
 
 1. Studio → import a video that has speech in it (Import media / drag onto the timeline).
 2. Right-click the clip on the timeline → **Break into clips (measured pauses)**.
-3. Expected: an info toast says Cupric is measuring; then a success toast names the piece count and
+3. Expected: an info toast says NewBrand is measuring; then a success toast names the piece count and
    the seconds of silence closed, and says one Undo reverts it.
 4. Expected on the timeline: the clip is now several clips named `Name · 1/N` …, butted together,
    each selectable, trimmable, deletable and movable on its own; an overlay that sat after the cuts
@@ -85,7 +85,7 @@ and knows what a failure looks like.
 
 **Failure signatures**
 
-- `Cupric cannot read this clip's audio` → the file is missing/relinked, or the browser build cannot
+- `NewBrand cannot read this clip's audio` → the file is missing/relinked, or the browser build cannot
   decode this container; relink it or use the even split.
 - `No speech in this clip` → the level never rises 6 dB above its floor (music, B-roll, dead audio):
   the even split is the honest tool for that.
@@ -97,7 +97,7 @@ and knows what a failure looks like.
 1. Studio → import an edited video whose picture changes at its cuts (a montage, a screen
    recording with hard cuts, anything without useful speech).
 2. Right-click the clip → **Break at scene changes (the picture)**.
-3. Expected: an info toast says Cupric is sampling the clip's frames; then a success toast names
+3. Expected: an info toast says NewBrand is sampling the clip's frames; then a success toast names
    the number of scene changes found and says nothing was re-timed and one Undo reverts it.
 4. Expected on the timeline: the clip is cut where the picture changes, every piece selectable/movable/
    deletable on its own, and the total length **unchanged** (nothing was removed). An overlay that

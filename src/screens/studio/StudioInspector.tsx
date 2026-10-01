@@ -1305,7 +1305,7 @@ function GlassFields({ clip, onPatch }: { clip: StudioGlassClip; onPatch: (p: Pa
           value={clip.label}
           onChange={(e) => onPatch({ label: e.target.value } as Partial<StudioClip>)}
           className={inputCx}
-          placeholder="e.g. Cupric AI"
+          placeholder="e.g. NewBrand"
         />
       </Field>
     </div>

@@ -65,7 +65,7 @@ export function validatePersistedState(raw: unknown, opts: Options): ValidationR
   const knownKinds = new Set<string>(KNOWN_CLIP_KINDS)
 
   if (!isObj(raw)) {
-    if (raw !== undefined && raw !== null) warn('Saved projects were not in a readable shape, so Cupric started with an empty workspace.')
+    if (raw !== undefined && raw !== null) warn('Saved projects were not in a readable shape, so NewBrand started with an empty workspace.')
     return { state: {}, warnings }
   }
 

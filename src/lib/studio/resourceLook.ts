@@ -2,7 +2,7 @@
  * What a resource *is*, read from its name, category and description.
  *
  * Most catalogue entries (Great UI, Spell, Bencho, React Bits, Skiper, PanelUI)
- * are references to React components whose source Cupric does not ship. They
+ * are references to React components whose source NewBrand does not ship. They
  * still have a clear visual identity — "Pixel Page Transition", "Tilt Card",
  * "Count Up", "Aurora" — so Apply rebuilds that identity with native, editable
  * Studio clips instead of refusing. This file is the shared vocabulary: one

@@ -2,7 +2,7 @@
 /**
  * Hardware-accelerated export (2.24): encoder selection and arguments.
  * Selection logic runs against a fake FFmpeg; when a real FFmpeg is available
- * (CUPRIC_FFMPEG_PATH or ffmpeg-static) it also really detects and encodes.
+ * (NEWBRAND_FFMPEG_PATH or ffmpeg-static) it also really detects and encodes.
  */
 import assert from 'node:assert/strict'
 import { createRequire } from 'node:module'
@@ -137,11 +137,11 @@ assert.deepEqual(enc.videoArgs('h264_nvenc', 'final', 'av1').slice(0, 2), ['-c:v
 assert.deepEqual(enc.videoArgs('libx264', 'final', 'av1').slice(0, 2), ['-c:v', 'libaom-av1'], 'AV1 software flag is ready')
 
 // Real FFmpeg, when present.
-const ffmpeg = process.env.CUPRIC_FFMPEG_PATH || (() => { try { return require('ffmpeg-static') } catch { return null } })()
+const ffmpeg = process.env.NEWBRAND_FFMPEG_PATH || (() => { try { return require('ffmpeg-static') } catch { return null } })()
 if (ffmpeg && existsSync(ffmpeg)) {
   const run = (args) => new Promise((resolve, reject) => execFile(ffmpeg, args, { maxBuffer: 16 << 20 }, (err, stdout, stderr) => (err ? reject(Object.assign(err, { stderr })) : resolve({ stdout, stderr }))))
   const r = await enc.detect(run, process.platform)
-  const dir = mkdtempSync(path.join(os.tmpdir(), 'cupric-enc-'))
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'newbrand-enc-'))
   try {
     for (const q of ['draft', 'final']) {
       const out = path.join(dir, `${q}.mp4`)
@@ -154,6 +154,6 @@ if (ffmpeg && existsSync(ffmpeg)) {
     rmSync(dir, { recursive: true, force: true })
   }
 } else {
-  console.log('encoders check: no FFmpeg binary here — selection logic only (set CUPRIC_FFMPEG_PATH to also encode for real)')
+  console.log('encoders check: no FFmpeg binary here — selection logic only (set NEWBRAND_FFMPEG_PATH to also encode for real)')
 }
 console.log('encoders check passed')

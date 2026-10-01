@@ -21,7 +21,7 @@ const BUNDLED = new Set(['inter', 'inter variable', 'jetbrains mono', 'jetbrains
 
 import { USER_FONTS_EVENT, isUserFont, userFontsReady } from './userFonts'
 
-const CACHE_NAME = 'cupric-fonts-v1'
+const CACHE_NAME = 'newbrand-fonts-v1'
 /** In-flight requests only — settled results are dropped so a late font file wins. */
 const pending = new Map<string, Promise<boolean>>()
 /** Families that just failed, so a loop of callers does not hammer the network. */
@@ -31,9 +31,9 @@ if (typeof window !== 'undefined') {
   // Adding a font file invalidates every earlier failure immediately.
   window.addEventListener(USER_FONTS_EVENT, () => { failedAt.clear(); pending.clear() })
 }
-export const FONTS_CHANGED_EVENT = 'cupric:fonts-changed'
+export const FONTS_CHANGED_EVENT = 'newbrand:fonts-changed'
 /** Fired when a family turns out to be unusable, so the UI can say so. */
-export const FONT_MISSING_EVENT = 'cupric:font-missing'
+export const FONT_MISSING_EVENT = 'newbrand:font-missing'
 
 export type FontKind = 'bundled' | 'user' | 'remote'
 /** ready = painted with the real face · loading · missing = will fall back. */

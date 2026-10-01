@@ -17,7 +17,7 @@ failure (section 3).
 | # | Finding | Evidence at `f20f7ec` |
 |---|---|---|
 | H1 | **The build was unsigned, and that removed the updater's signature check — not just SmartScreen reputation.** electron-builder writes `publisherName` into `resources/app-update.yml` only when it has a signing certificate; `publish/PublishManager.js:206-211` guards that on `isForceCodeSigningVerification`, which `winPackager.js:26-28` defines as `verifyUpdateCodeSignature !== false`. `NsisUpdater.js:84-99` then returns `null` (no verification at all) when the field is missing. With `autoUpdater.autoDownload = true` (`electron/main.cjs:4850`) and a four-hourly check (`main.cjs:4875-4882`), an unsigned build accepts whatever the feed hands it — for every future version installed over it. | `package.json` `build.win` had only `target`, `icon`, `artifactName`; no `signtoolOptions`, no `publisherName`, no `forceCodeSigning`. Nothing in `.github/workflows/release-windows.yml` mentioned signing. |
-| H2 | **The version was stated in four places and compared in none.** The README advertised `Cupric-AI-Setup-0.13.0.exe` while the newest published release was v0.15.0 (Phase 0 finding D4). | `README.md:48-49` were the only version statements in the repo; `grep -c "version" scripts/*.mjs` found no check that compared them. `package.json:4` said `0.13.0`. |
+| H2 | **The version was stated in four places and compared in none.** The README advertised `NewBrand-Setup-0.13.0.exe` while the newest published release was v0.15.0 (Phase 0 finding D4). | `README.md:48-49` were the only version statements in the repo; `grep -c "version" scripts/*.mjs` found no check that compared them. `package.json:4` said `0.13.0`. |
 | H3 | **The app could not show its own version.** The preload bridge exposed only the *runtime* versions (`electron`, `chrome`, `node`), so the renderer had no way to obtain `app.getVersion()` — the value the diagnostics report and the log already used. | `electron/preload.cjs:82-86`; `app.getVersion()` appears in `main.cjs:1149` (diagnostics) and `main.cjs:5042` (log line) and nowhere the UI could reach. |
 | H4 | **The release workflow published first and asked questions never.** It never checked that the artifacts were signed, and it accepted any `v*` tag regardless of what `package.json` said — which is how `v0.15.0` was tagged while `main` still declared 0.13.0. | `.github/workflows/release-windows.yml`: `npx electron-builder --win --publish never` with no signing inputs; no `Get-AuthenticodeSignature`; no tag/version comparison. |
 | H5 | **No install/run/uninstall verification existed.** The only artifact assertion was "exactly one setup exists and it is ≥10 MB". | `.github/workflows/release-windows.yml`, "Verify installer artifacts" step. |
@@ -98,7 +98,7 @@ packaged Windows build. It runs in the release workflow after packaging:
    quoting rules respected — `/D=` last and unquoted, and a space in the path
    fails loudly as `INSTALL_DIR_HAS_SPACE` rather than mysteriously inside the
    installer);
-3. the installed `Cupric AI.exe`'s PE `FileVersion`/`ProductVersion` must equal
+3. the installed `NewBrand.exe`'s PE `FileVersion`/`ProductVersion` must equal
    `package.json`'s version — this is what ties an artifact to a version, instead
    of trusting the file name;
 4. the installed executable must be signed **and timestamped**, and the installed
@@ -123,7 +123,7 @@ versions in separate git worktrees and then, on Windows:
    the installed executable;
 2. serves the new release directory (a real electron-builder output with its
    `latest.yml`) over HTTP from `127.0.0.1`;
-3. launches the installed app with `CUPRIC_UPDATE_FEED` pointing at that server
+3. launches the installed app with `NEWBRAND_UPDATE_FEED` pointing at that server
    and an isolated userData directory;
 4. reads the app's **own log** until it records `updater-downloaded` — the moment
    the update exists on disk — failing with the updater's message if it records
@@ -159,7 +159,7 @@ versions in separate git worktrees and then, on Windows:
   differs from this checkout's, named in the job log, with a hard failure when
   there is none.
 
-Supporting app changes: `CUPRIC_UPDATE_FEED` (validated as http/https, wired to
+Supporting app changes: `NEWBRAND_UPDATE_FEED` (validated as http/https, wired to
 `setFeedURL`, logged loudly when set, rejected with a log line when malformed),
 and updater transitions are now logged (`updater-available`, `updater-current`,
 `updater-downloaded`) with the current version — previously only failures were
@@ -170,7 +170,7 @@ recorded.
 `electron/main.cjs` gains an `app:info` handler returning `{ ok, version,
 packaged, platform, arch, electron, chrome, node }`, with a real failure branch
 (`APP_INFO_FAILED`, logged). It is on the preload allowlist, and Settings now
-shows `Cupric AI version — v<version>` next to the updater block. On a failed
+shows `NewBrand version — v<version>` next to the updater block. On a failed
 read it shows the error in `text-danger`; it never shows a plausible-looking
 guess. The `check-updater.mjs` contract (automatic checks, four-hourly interval,
 `quitAndInstall(false, true)`, "Update & restart") is unchanged.
@@ -249,14 +249,14 @@ afterwards.
 
 ## 5. Clean-VM checklist (for the human step)
 
-On a Windows 10 or 11 machine that has never had Cupric AI installed:
+On a Windows 10 or 11 machine that has never had NewBrand installed:
 
-1. `\\path\to\Cupric-AI-Setup-<version>.exe` → run it. Observe: no SmartScreen
+1. `\\path\to\NewBrand-Setup-<version>.exe` → run it. Observe: no SmartScreen
    "unknown publisher" interstitial (EV), the per-user installer offers a
    directory, and it finishes without elevation prompts.
 2. Confirm the installer is signed: right-click the exe → Properties → Digital
    Signatures → the publisher's name, and "Timestamp" present.
-3. Launch from the Start Menu. Settings must show `Cupric AI version — v<version>`
+3. Launch from the Start Menu. Settings must show `NewBrand version — v<version>`
    matching the installer's file name; if it shows `unavailable`, the error text
    under it is the diagnostic.
 4. Import a video, export an MP4, confirm the file plays (this exercises the
@@ -264,9 +264,9 @@ On a Windows 10 or 11 machine that has never had Cupric AI installed:
 5. Install the *previous* version first, let the updater find the new one, and
    confirm "A new release is ready" → "Update & restart" brings the app back on
    the new version. Compare with the log at
-   `%APPDATA%\Cupric AI\logs\<date>.log` (records `updater-downloaded`).
+   `%APPDATA%\NewBrand\logs\<date>.log` (records `updater-downloaded`).
 6. Uninstall from Settings → Apps. Confirm the install directory is gone, the
-   Start Menu shortcut is gone, and `%APPDATA%\Cupric AI` (projects and settings)
+   Start Menu shortcut is gone, and `%APPDATA%\NewBrand` (projects and settings)
    is preserved — user data must survive an uninstall.
 7. Reinstall over the old version (without uninstalling) and confirm projects are
    still listed.
@@ -297,7 +297,7 @@ The workflow reads exactly two secrets. Nothing else is needed.
 
 ```powershell
 # From a Windows machine with the certificate exported as a base64 .pfx:
-$bytes = [IO.File]::ReadAllBytes('CupricAI.pfx')
+$bytes = [IO.File]::ReadAllBytes('NewBrandAI.pfx')
 [Convert]::ToBase64String($bytes) | Set-Clipboard
 
 gh secret set CSC_LINK --repo rangwalaaliasgar55-bot/Cupric-Ai-
@@ -326,7 +326,7 @@ release notes:
    update.
 4. **A clean Windows 10 or 11 VM** runs the installer with no SmartScreen
    interstitial. Capture: a screenshot of the first installer screen, and
-   `signtool verify /pa /v Cupric-AI-Setup-<version>.exe` output.
+   `signtool verify /pa /v NewBrand-Setup-<version>.exe` output.
 5. The §5 checklist is worked through end to end (install → launch → import →
    export → update → uninstall → reinstall).
 6. `npm run check:install` and `npm run check:update-path` pass **on

@@ -19,7 +19,7 @@
  *   1. exactly one NSIS setup and one portable build exist in `release/`, named
  *      with the version `package.json` declares;
  *   2. the setup installs silently into a throwaway directory (exit 0);
- *   3. the installed `Cupric AI.exe` exists, and its PE `FileVersion` /
+ *   3. the installed `NewBrand.exe` exists, and its PE `FileVersion` /
  *      `ProductVersion` equal the declared version — this is what ties the
  *      artifact to the version, rather than trusting the file name;
  *   4. the installed app carries `resources/app-update.yml` with a
@@ -115,12 +115,12 @@ if (process.platform !== 'win32') {
 console.log(`check:install — verifying the ${version} build in ${path.relative(root, releaseDir)}/`)
 
 /* ── 1. the artifacts ───────────────────────────────────────────────────── */
-const setupName = `Cupric-AI-Setup-${version}.exe`
-const portableName = `Cupric-AI-${version}-x64-Portable.exe`
+const setupName = `NewBrand-Setup-${version}.exe`
+const portableName = `NewBrand-${version}-x64-Portable.exe`
 const setupPath = path.join(releaseDir, setupName)
 const portablePath = path.join(releaseDir, portableName)
-const setups = fs.existsSync(releaseDir) ? fs.readdirSync(releaseDir).filter((f) => /^Cupric-AI-Setup-.*\.exe$/.test(f)) : []
-const portables = fs.existsSync(releaseDir) ? fs.readdirSync(releaseDir).filter((f) => /^Cupric-AI-.*-Portable\.exe$/.test(f)) : []
+const setups = fs.existsSync(releaseDir) ? fs.readdirSync(releaseDir).filter((f) => /^NewBrand-Setup-.*\.exe$/.test(f)) : []
+const portables = fs.existsSync(releaseDir) ? fs.readdirSync(releaseDir).filter((f) => /^NewBrand-.*-Portable\.exe$/.test(f)) : []
 
 if (setups.length !== 1) fail('INSTALLER_MISSING', `expected exactly one setup in release/, found ${setups.length}: ${setups.join(', ') || 'none'}`)
 else if (setups[0] !== setupName) fail('INSTALLER_VERSION_MISMATCH', `expected ${setupName}, found ${setups[0]}`)
@@ -205,7 +205,7 @@ try {
   /* ── 4/5. the installed app boots ─────────────────────────────────────── */
   const boot = spawnSync(process.execPath, [path.join(root, 'scripts', 'check-boot.mjs'), '--no-build'], {
     cwd: root,
-    env: { ...process.env, CUPRIC_BOOT_EXE: exePath },
+    env: { ...process.env, NEWBRAND_BOOT_EXE: exePath },
     encoding: 'utf8',
     timeout: 20 * 60 * 1000,
   })
@@ -255,10 +255,10 @@ try {
   if (leftovers.length) fail('UNINSTALL_LEFTOVERS', `the uninstall left ${leftovers.length} item(s) after settling: ${leftovers.slice(0, 8).join(', ')}`)
   else step('the uninstaller removed the installation', installDir)
 
-  const shortcut = path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Cupric AI.lnk')
+  const shortcut = path.join(process.env.APPDATA || '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'NewBrand.lnk')
   if (fs.existsSync(shortcut)) await settle(() => fs.existsSync(shortcut))
   if (fs.existsSync(shortcut)) fail('UNINSTALL_SHORTCUT_LEFT', `the Start Menu shortcut survived: ${shortcut}`)
-  else step('the Start Menu shortcut is gone', 'no Cupric AI.lnk')
+  else step('the Start Menu shortcut is gone', 'no NewBrand.lnk')
 
   // The registry entry is the uninstaller's own work (it is the last thing the
   // uninstall section does): if it survives, the section never reached its end,
@@ -267,11 +267,11 @@ try {
   // stopped early.
   const regLeft = powershell(
     `$k = Get-ItemProperty 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*' -ErrorAction SilentlyContinue `
-    + `| Where-Object { $_.DisplayName -like 'Cupric AI*' }; if ($k) { $k.DisplayName }`,
+    + `| Where-Object { $_.DisplayName -like 'NewBrand*' }; if ($k) { $k.DisplayName }`,
   )
   const regNames = regLeft.stdout.trim()
   if (regNames) fail('UNINSTALL_REGISTRY_LEFTOVER', `the uninstall registry entry survived: ${regNames}`)
-  else step('the uninstall registry entry is gone', 'no Cupric AI entry under HKCU Uninstall')
+  else step('the uninstall registry entry is gone', 'no NewBrand entry under HKCU Uninstall')
 
   /* ── 7. the portable build carries the same version ───────────────────── */
   const portableInfo = readFileVersion(portablePath)
@@ -296,7 +296,7 @@ try {
 
   /* ── a real run of the portable build, from a temp directory ──────────── */
   const portableDir = tempDir('portable-check')
-  const portableRun = spawnSync(portablePath, [], { env: { ...process.env, CUPRIC_USER_DATA_DIR: portableDir }, timeout: 90_000, encoding: 'utf8' })
+  const portableRun = spawnSync(portablePath, [], { env: { ...process.env, NEWBRAND_USER_DATA_DIR: portableDir }, timeout: 90_000, encoding: 'utf8' })
   // The portable build is a self-extracting app: it runs until closed. A timeout
   // here means it started and stayed up, which is what "it runs" means for a GUI.
   const logFile = path.join(portableDir, 'logs')

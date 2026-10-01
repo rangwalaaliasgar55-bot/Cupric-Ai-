@@ -31,7 +31,7 @@ function rundown(opts: { title?: string; durationSec?: number; aspect?: string; 
   const copies = opts.copies ?? ['Open on the problem', 'The turn', 'The proof', 'The ask']
   const each = durationSec / sceneCount
   return {
-    title: opts.title ?? 'Cupric AI',
+    title: opts.title ?? 'NewBrand',
     durationSec,
     fps: opts.fps ?? 30,
     size: sizeFor(aspect),

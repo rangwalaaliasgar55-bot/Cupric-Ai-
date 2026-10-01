@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 2.7 video proxies. Pure rules always; with a real FFmpeg (CUPRIC_FFMPEG_PATH
+ * 2.7 video proxies. Pure rules always; with a real FFmpeg (NEWBRAND_FFMPEG_PATH
  * or ffmpeg-static) it transcodes a real 1440p clip and verifies the proxy:
  * 540p short side, even dims, a keyframe every 12 frames, audio kept.
  */
@@ -37,7 +37,7 @@ assert.throws(() => px.validateSource('/nope/missing.mp4'), /missing/); n += 1
 ok(px.progressFrom('frame=10\nout_time_us=2500000\n', 10) === 0.25, 'progress parse')
 ok(px.progressFrom('garbage', 10) === null, 'progress ignores noise')
 
-const dir = mkdtempSync(path.join(os.tmpdir(), 'cupric-proxy-'))
+const dir = mkdtempSync(path.join(os.tmpdir(), 'newbrand-proxy-'))
 try {
   const src = path.join(dir, 'source 4k.mp4')
   writeFileSync(src, 'x')
@@ -45,7 +45,7 @@ try {
   const k1 = px.proxyKey(src, st)
   ok(k1 === px.proxyKey(src, st) && k1 !== px.proxyKey(src, { ...st, mtimeMs: st.mtimeMs + 5000 }), 'cache key changes when the source changes')
 
-  let ffmpeg = process.env.CUPRIC_FFMPEG_PATH
+  let ffmpeg = process.env.NEWBRAND_FFMPEG_PATH
   if (!ffmpeg || !existsSync(ffmpeg)) { try { ffmpeg = require('ffmpeg-static') } catch { ffmpeg = null } }
   if (!ffmpeg || !existsSync(ffmpeg)) {
     console.log(`video proxy check passed — ${n} assertions (FFmpeg not found: real transcode skipped)`)

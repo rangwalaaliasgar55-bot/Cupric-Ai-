@@ -1,5 +1,5 @@
-// REFERENCE ONLY — Transitions.dev "Thinking states" (p28), as supplied. Not imported by Cupric.
-// See ATTRIBUTION.md. Cupric's implementation: src/lib/studio/loaders.ts, src/components/loaders/ThinkingStates.tsx
+// REFERENCE ONLY — Transitions.dev "Thinking states" (p28), as supplied. Not imported by NewBrand.
+// See ATTRIBUTION.md. NewBrand's implementation: src/lib/studio/loaders.ts, src/components/loaders/ThinkingStates.tsx
 
 // Transitions.dev — Thinking states (React, self-contained)
 // Drop into any React project — no extra CSS file needed.

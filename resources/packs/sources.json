@@ -1,7 +1,7 @@
 {
   "id": "sources",
   "name": "Sources",
-  "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
+  "description": "The external libraries, generators and galleries NewBrand draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
   "version": "0.16.0",
   "source": "src/lib/sources.ts (links only; nothing third-party is bundled)",
   "license": "Per entry — see each item",
@@ -284,7 +284,7 @@
         "use": "ui",
         "intake": "registry",
         "license": "Mixed, per item",
-        "promptCue": "Registry install: shadcn add <item>, then restyle to Cupric tokens (near-black #0B0B10, lime #C8F542)."
+        "promptCue": "Registry install: shadcn add <item>, then restyle to NewBrand tokens (near-black #0B0B10, lime #C8F542)."
       },
       "tags": [
         "source",
@@ -842,7 +842,7 @@
       "id": "designmd",
       "kind": "source",
       "name": "designmd.ai",
-      "description": "Design systems expressed as markdown an agent can read — the format Cupric briefs should follow.",
+      "description": "Design systems expressed as markdown an agent can read — the format NewBrand briefs should follow.",
       "data": {
         "url": "https://designmd.ai",
         "sourceKind": "prompts",
@@ -1341,7 +1341,7 @@
       "id": "fontsource",
       "kind": "source",
       "name": "Fontsource",
-      "description": "Google Fonts as npm packages — self-hosted, so generated HTML stays inside the no-CDN rule. Cupric already ships Inter and JetBrains Mono this way.",
+      "description": "Google Fonts as npm packages — self-hosted, so generated HTML stays inside the no-CDN rule. NewBrand already ships Inter and JetBrains Mono this way.",
       "data": {
         "url": "https://fontsource.org",
         "sourceKind": "generators",
@@ -1538,7 +1538,7 @@
       "id": "remotion-templates",
       "kind": "source",
       "name": "reactvideoeditor/remotion-templates",
-      "description": "Free Remotion video templates — reference structure only. Cupric does not ship or depend on the Remotion runtime (see docs/PHASE1_LICENSING.md), so these are mined as ideas and layout metadata, not as embeddable packages.",
+      "description": "Free Remotion video templates — reference structure only. NewBrand does not ship or depend on the Remotion runtime (see docs/PHASE1_LICENSING.md), so these are mined as ideas and layout metadata, not as embeddable packages.",
       "data": {
         "url": "https://github.com/reactvideoeditor/remotion-templates",
         "sourceKind": "templates",
@@ -1560,7 +1560,7 @@
       "id": "designcombo-react-video-editor",
       "kind": "source",
       "name": "designcombo/react-video-editor",
-      "description": "React + Remotion CapCut/Canva-style editor — the closest architectural sibling to Cupric. Read for timeline state shape and effect-registry structure.",
+      "description": "React + Remotion CapCut/Canva-style editor — the closest architectural sibling to NewBrand. Read for timeline state shape and effect-registry structure.",
       "data": {
         "url": "https://github.com/designcombo/react-video-editor",
         "sourceKind": "inspiration",
@@ -1604,7 +1604,7 @@
       "id": "opusclip",
       "kind": "source",
       "name": "OpusClip",
-      "description": "Long-to-short repurposing with content-aware clipping, dynamic captions and AI reframing — the reference if Cupric adds a \"drop in raw footage, get a short\" mode.",
+      "description": "Long-to-short repurposing with content-aware clipping, dynamic captions and AI reframing — the reference if NewBrand adds a \"drop in raw footage, get a short\" mode.",
       "data": {
         "url": "https://opus.pro",
         "sourceKind": "inspiration",
@@ -1626,7 +1626,7 @@
       "id": "web-speech-api",
       "kind": "source",
       "name": "Web Speech API",
-      "description": "Built-in speech recognition and synthesis. Cupric uses it for voice commands and for speak-a-brief; no dependency, no audio leaves the machine.",
+      "description": "Built-in speech recognition and synthesis. NewBrand uses it for voice commands and for speak-a-brief; no dependency, no audio leaves the machine.",
       "data": {
         "url": "https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API",
         "sourceKind": "generators",
@@ -1648,7 +1648,7 @@
       "id": "pipecat",
       "kind": "source",
       "name": "Pipecat",
-      "description": "Frame-based realtime voice-agent pipeline (VAD → STT → LLM → TTS). Deliberately not adopted: Cupric records one instruction and renders, it does not hold a conversation.",
+      "description": "Frame-based realtime voice-agent pipeline (VAD → STT → LLM → TTS). Deliberately not adopted: NewBrand records one instruction and renders, it does not hold a conversation.",
       "data": {
         "url": "https://github.com/pipecat-ai/pipecat",
         "sourceKind": "inspiration",
@@ -1677,7 +1677,7 @@
         "use": "ui",
         "intake": "reference",
         "license": "Apache-2.0",
-        "promptCue": "Reference only until Cupric needs duplex audio."
+        "promptCue": "Reference only until NewBrand needs duplex audio."
       },
       "tags": [
         "source",

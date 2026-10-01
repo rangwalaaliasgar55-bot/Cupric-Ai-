@@ -1,5 +1,5 @@
 /**
- * Cupric design engine — the layer that turns a generated plan into a piece
+ * NewBrand design engine — the layer that turns a generated plan into a piece
  * that *looks designed*.
  *
  * Why this exists: `planToDoc` produces an honest but flat build — one chrome

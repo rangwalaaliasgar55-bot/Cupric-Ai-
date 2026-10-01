@@ -31,7 +31,7 @@ const defaultItems: StackCardItem[] = [
       </span>
     ),
     title: "New Message",
-    description: "Cupric AI",
+    description: "NewBrand",
     time: "3 hrs ago",
   },
   {
@@ -42,7 +42,7 @@ const defaultItems: StackCardItem[] = [
       </span>
     ),
     title: "User Signed Up",
-    description: "Cupric AI",
+    description: "NewBrand",
     time: "7 hrs ago",
   },
   {
@@ -53,7 +53,7 @@ const defaultItems: StackCardItem[] = [
       </span>
     ),
     title: "Billing Reminder",
-    description: "Cupric AI",
+    description: "NewBrand",
     time: "9 hrs ago",
   },
 ];

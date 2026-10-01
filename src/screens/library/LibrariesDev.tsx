@@ -34,7 +34,7 @@ export function LibrariesDev() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold">Libraries.dev</h2>
-          <p className="mt-1 max-w-2xl text-xs text-muted">The {report.libraries.length} MIT libraries in the Libraries.dev skill, where they fit in Cupric, and how to add one. Nothing here changes code without your approval.</p>
+          <p className="mt-1 max-w-2xl text-xs text-muted">The {report.libraries.length} MIT libraries in the Libraries.dev skill, where they fit in NewBrand, and how to add one. Nothing here changes code without your approval.</p>
         </div>
         <div role="tablist" aria-label="Libraries.dev" className="flex gap-1">
           {(['libraries', 'review', 'apply'] as Tab[]).map((t) => (

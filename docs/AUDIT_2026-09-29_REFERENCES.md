@@ -1,6 +1,6 @@
-# Cupric AI vs open-edit vs MoneyPrinterTurbo — evidence-based audit
+# NewBrand vs open-edit vs MoneyPrinterTurbo — evidence-based audit
 
-Date: 2026-09-29 · Cupric AI `0.13.0` · branch `arena/01a0ecc4-cupric-ai` @ `b73f733`
+Date: 2026-09-29 · NewBrand `0.13.0` · branch `arena/01a0ecc4-newbrand` @ `b73f733`
 References: `veedstudio/open-edit` (Apache-2.0, cloned to `/tmp/open-edit`) and
 `harry0703/MoneyPrinterTurbo` (MIT © 2024 Harry, cloned to `/tmp/mpt`), both at their
 default branch, read locally. Every claim below was read in the code of this checkout.
@@ -56,14 +56,14 @@ Nothing here is inferred from README claims or from the presence of a check scri
 
 ### Biggest bottleneck (one sentence)
 
-**Cupric has two pipelines that never meet: an editable, gated, deterministic Studio core and an
+**NewBrand has two pipelines that never meet: an editable, gated, deterministic Studio core and an
 LLM/HTML generation core — and nothing in between carries provenance or task state, so how truthful
 the result is depends on which door the user walked in.**
 
 Evidence:
 - `Project` keeps `studio?: StudioDoc` (typed) next to `production?: unknown` ("normalised on read",
   `src/types/project.ts:175-178`) — the production/automation world has no contract.
-- Quick Video's history lives outside the store (`localStorage['cupric.quickVideo.history']` and
+- Quick Video's history lives outside the store (`localStorage['newbrand.quickVideo.history']` and
   `…settings` in `src/screens/production/QuickVideoPanel.tsx:28-29`), while automation jobs live in
   the store (`src/state/useProjectStore.ts:168`), and Studio scenes in the doc. Three histories.
 - Pre-render gates (`src/lib/studio/gates.ts`, `runGates` `:665`) are wired to the Studio audit
@@ -78,14 +78,14 @@ Evidence:
 
 **vs open-edit (Apache-2.0 CLI/skill):**
 1. *One transcript shape everywhere.* open-edit's rule is that every provider writes one shape and
-   word delays are derived "by construction". Cupric ported the mapper, but only Studio's
+   word delays are derived "by construction". NewBrand ported the mapper, but only Studio's
    auto-captions consume real timings; Quick Video still guesses (`quickVideo.ts:190`).
 2. *One gate chain that stops at the first named failure* (lint → verify → contrast → record → mux,
-   `docs/FLOW.md:32` upstream, ≤2 fix cycles per gate). Cupric has the machinery
+   `docs/FLOW.md:32` upstream, ≤2 fix cycles per gate). NewBrand has the machinery
    (`gates.ts`, `GATE_BUDGET = 2` at `gates.ts:730`) but two divergent gate chains and no single
    entry point.
 3. *Retime, don't re-transcribe.* open-edit moves existing per-word timings onto the snapped edit
-   timeline (`retime-transcript`). Cupric's clip-relative `wordDelaysMs` gives the same property for
+   timeline (`retime-transcript`). NewBrand's clip-relative `wordDelaysMs` gives the same property for
    free (`src/types/project.ts:497-506`) — but nothing re-derives timings after a silence cut, so the
    property is untested outside Studio.
 
@@ -96,7 +96,7 @@ Evidence:
    `app/services/task.py:610-636`). Quick Video has no word-level path at all — that is exactly the
    gap this PR closes.
 2. *One orchestration entry point per topic with a durable task object.* MPT's `task.py` owns
-   state/steps/history for the whole run. Cupric splits this across `src/lib/automation/run.ts`,
+   state/steps/history for the whole run. NewBrand splits this across `src/lib/automation/run.ts`,
    `src/lib/production/engine.ts` and the Quick Video panel, each with its own state shape.
 3. *Batch variations as a first-class knob.* Both have it (`variantSeeds`/`buildQuickVariants` in
    `quickVideo.ts:224-245` saving variants as Studio scenes) — this one is a genuine parity, not a gap.
@@ -106,9 +106,9 @@ Evidence:
 ## B. Comparison matrix
 
 Confidence: **High** = read the code and ran a headless check; **Med** = read the code, not executed;
-**Low** = read partially. Cupric evidence is `file:line` / function.
+**Low** = read partially. NewBrand evidence is `file:line` / function.
 
-| # | Dimension | Cupric AI | open-edit | MoneyPrinterTurbo | Confidence |
+| # | Dimension | NewBrand | open-edit | MoneyPrinterTurbo | Confidence |
 |---|---|---|---|---|---|
 | 1 | Transcript contract | `VERIFIED` one shape, word-count invariant, throws instead of dropping words (`src/lib/speech/transcript.ts`, `mapWhisperTranscript`); provenance (`interpolated`, `reordered`) returned but **not persisted onto clips** | one `transcript.json` shape per provider, written into the run dir (`cli/src/prep/*`) | faster-whisper output consumed directly, sentence or word mode (`app/services/subtitle.py:59-131`) | High |
 | 2 | Word timing in the *default* caption path | `PARTIAL` Studio auto-captions are word-timed (`StudioProPanel.tsx:534`, `autoCaptions.ts` `captionsForClip`/`wordsToTimeline` honour trim+speed); **Quick Video subtitles are proportional and unlabelled** (`quickVideo.ts:190`, `buildQuickDoc` `:256` writes no `wordDelaysMs`) | word delays derived from `word-timings.json` for the compiled recipe | word-level mode available from the same ASR pass (`word_level` flag) | High |
@@ -237,7 +237,7 @@ Still open from backlog item 5: a *user* cut (not a probe or a shot) does not re
 What "editable" does **not** include, and no amount of splitting will change: anything burned into the
 pixels (baked-in captions, logos, watermarks, a picture-in-picture) and audio that arrived mixed into a
 single stream. Breaking an imported file gives you its pieces, not its layers; removing a burned-in
-caption needs paint-out/inpainting, which Cupric does not have and this audit does not claim.
+caption needs paint-out/inpainting, which NewBrand does not have and this audit does not claim.
 
 ## D. Architecture plan
 
@@ -335,7 +335,7 @@ Rule: adapters are pure/typed where possible; the renderer keeps working with `w
 
 **Migrations.** Phase 0 is additive and needs none: `timingSource` and extra `words` fields are
 optional, `validatePersistedState` (`src/state/projectSchema.ts`) keeps unknown-but-optional fields,
-and `QuickVideoSettings` keeps `kind: 'cupric.quickVideo'` at v1 because the new flag is optional.
+and `QuickVideoSettings` keeps `kind: 'newbrand.quickVideo'` at v1 because the new flag is optional.
 Phase 2 migrates `Project.production` from `unknown` to `ProductionRecord` with a normaliser
 (`normaliseProductionRecord`, `migrate.ts` `fromVersion` bump) and a repair warning through the
 existing load-report toast.
@@ -370,7 +370,7 @@ Scope, exactly:
 9. `docs/SMOKE_WORD_TIMED_CAPTIONS.md` — the packaged-desktop smoke scenario (cannot be executed in
    this environment: no Electron binary).
 
-**Packaged-desktop smoke scenario (documented; not executed here).** Install `Cupric-AI-Setup-0.13.0.exe`,
+**Packaged-desktop smoke scenario (documented; not executed here).** Install `NewBrand-Setup-0.13.0.exe`,
 open a project, Production → Quick Video, topic + subtitles on, "Real word timings" on, run all:
 expect the log to name Whisper as the timing source; open the timeline in Studio, select a caption,
 confirm `Word timing: real word times (whisper)` and that words reveal on the voice; re-run with
@@ -389,7 +389,7 @@ the transcription error and still builds labelled-estimate captions.
   *for* that engine) are not portable and must never be vendored.
 - open-edit's VEED account/login flow and its credit model (`~4 credits a second`, `docs/FLOW.md:25`)
   are a hosted product: borrow the *idea* of a quoted spend approval, never the integration.
-- Do not port open-edit's "runs outside any sandbox" assumption; Cupric is an Electron app with a
+- Do not port open-edit's "runs outside any sandbox" assumption; NewBrand is an Electron app with a
   different threat model (`ARCHITECTURE.md:37`).
 - MoneyPrinterTurbo's code is MIT © 2024 Harry and already attributed (`THIRD_PARTY_NOTICES.md`), but
   its Streamlit UI, `config.toml` shape and long provider list are Python/desktop-Web specific: keep
@@ -403,7 +403,7 @@ the transcription error and still builds labelled-estimate captions.
 - `safeStorage` is **not** used today; if keys are ever encrypted, migrate rather than add a parallel
   store.
 
-**Features Cupric already implements — do not "add" again**
+**Features NewBrand already implements — do not "add" again**
 - Topic → script → voice → footage → subtitles → music → compose pipeline, settings export/import,
   task history, batch variants (`buildQuickVariants`), stock search with cache/attribution, ducking
   with own music volume, aspect presets, subtitle position/size/colour/style, offline degraded paths.
@@ -434,7 +434,7 @@ implied. The NOTICE also excludes three things by name: the renderer binary `vee
 (downloaded at setup from `veedstudio/weave-renderer-public-releases`, **PolyForm Shield 1.0.0** —
 "any use except building a product that competes with VEED"), the two OFL fonts embedded in their login
 page, and transcription, which runs "against the VEED service, which requires a VEED account and
-credits". Cupric already keeps `resources/open-edit/LICENSE` + `NOTICE` verbatim.
+credits". NewBrand already keeps `resources/open-edit/LICENSE` + `NOTICE` verbatim.
 
 ### Already taken — do not port again
 The eight rows in `THIRD_PARTY_NOTICES.md` (whisper mapper, transcript types, `synth-word-timings`,
@@ -479,7 +479,7 @@ words a clip already carries as `drift` instead of applying it in silence. **#7 
 `src/lib/readiness.ts` + `app-shell/ReadinessPanel.tsx` (what is present vs missing, each miss with its
 remedy, the *present-but-not-runnable* case diagnosed separately), and `src/lib/studio/placement.ts`
 (measure the footage under a caption and move it clear of the face, one undo step). **#12 is written:**
-`AGENTS.md` now states Cupric's own contract — the gate chain that stops at the first failure, the \u2264 2
+`AGENTS.md` now states NewBrand's own contract — the gate chain that stops at the first failure, the \u2264 2
 correction budget, re-measure what a fix achieved, prove the scope of an edit, name every degraded path,
 and the test/provenance/product rules. **#8 and #10 are done as well.** #8 —
 `src/lib/studio/creativeLog.ts` keeps, per piece of footage, every look that was tried and rejected with
@@ -504,21 +504,21 @@ honest state, not a claim of a shipped feature. Remaining from the list: #6 (que
 surface yet), #11 (the utilities half), #13 (the shadow solver, and the WCAG *recommend* mode).
 
 
-| # | Upstream | What it actually is | Cupric gap it closes | Verdict |
+| # | Upstream | What it actually is | NewBrand gap it closes | Verdict |
 |---|---|---|---|---|
-| 1 | `cli/src/commands/scoped-edit.ts` | Static proof that an edit changed **only** what it was asked to: diff two documents, allow-list the intended targets, fail on anything else. Their corpus calls this the largest 100 %-decidable defect class. | Every Cupric edit path (`patchStudio`, `applyAuditFixes`, autonomy stages, `agentCode`) replaces whole documents and nothing compares baseline vs candidate, so an edit that moves 40 ms of a caption nobody asked about is invisible. Pure over two docs → headless-testable. | **ADAPT** (best value/effort left) |
+| 1 | `cli/src/commands/scoped-edit.ts` | Static proof that an edit changed **only** what it was asked to: diff two documents, allow-list the intended targets, fail on anything else. Their corpus calls this the largest 100 %-decidable defect class. | Every NewBrand edit path (`patchStudio`, `applyAuditFixes`, autonomy stages, `agentCode`) replaces whole documents and nothing compares baseline vs candidate, so an edit that moves 40 ms of a caption nobody asked about is invisible. Pure over two docs → headless-testable. | **ADAPT** (best value/effort left) |
 | 2 | `pipeline/scripts/cut-frames.ts` | Sample frames **at the cuts**, not on a uniform grid — their run passed a uniform 1.2/3.8/9.5 s sample while the defect lived only at 1.83/5.29/8.58 s. | `gateRunner.auditTimes` samples uniformly at `fps` plus text midpoints, so a fault that exists only at a cut is missed — and `studio/shots.ts` now knows where the cuts are. | **ADAPT** (small, pairs with the shots work) |
 | 3 | `cli/src/wcag/verify-applied.ts`, `verdicts.ts`, `wcag-choice.ts` | Structural post-apply check: the proof that the fix which was **scored** is the fix that **landed** (it exists, every rule targets measured text, no fewer/more rules than scored). | `applyAuditFixes` runs once and nothing re-audits the result; a "Fix all" that silently missed a clip looks identical to one that worked. | **ADAPT** |
-| 4 | `cli/src/commands/expect-windows.ts` | Derive "this element must be visible from t1 to t2" assertions from the document itself, so "drawn at the wrong time" becomes a gate failure. Their `timing-offset` class is 30 recorded corrections. | Cupric's gates judge **what** is drawn, never **when**: a caption that arrives late, or stays up into the next one, passes every check today. | **ADAPT** (new gate class) |
-| 5 | `cli/src/prep/transcript-cache.ts` | One transcript per source, plus a guard that a *retimed* transcript is never silently overwritten by a fresh alignment. | Cupric re-runs Whisper per action and persists no transcript (`speech/transcript.ts`'s `transcriptToJson` has no callers), so the next caption run can silently restore drift a retime removed. | **ADAPT** |
-| 6 | `cli/src/providers/queue-ledger.ts` | "Never pay twice": jobs keyed by a hash of the *request*, the id written down before the first poll, recovering a real double charge. | Cupric has no cost estimate and no ledger (backlog item 4); a retried model/TTS step is not deduplicated. | **PATTERN** (Cupric has no generation queue) |
-| 7 | `cli/src/commands/readiness.ts`, `session-start.ts`, `init.ts` | Read-only "what is present vs blocking for this run", and an advisory session note for an agent harness. | Nothing in Cupric tells the user what a run still needs (media relinked / key / ffmpeg / Whisper model); `npm run verify` is the dev-side analogue only. | **ADAPT** |
-| 8 | `cli/src/commands/creative-log.ts` | A per-**source-video** log of what was tried, rejected and why, kept outside the model's context so three rounds stop converging. | Cupric's design engine pins a direction per project but keeps no rejection history on the footage. | **ADAPT** (small) |
+| 4 | `cli/src/commands/expect-windows.ts` | Derive "this element must be visible from t1 to t2" assertions from the document itself, so "drawn at the wrong time" becomes a gate failure. Their `timing-offset` class is 30 recorded corrections. | NewBrand's gates judge **what** is drawn, never **when**: a caption that arrives late, or stays up into the next one, passes every check today. | **ADAPT** (new gate class) |
+| 5 | `cli/src/prep/transcript-cache.ts` | One transcript per source, plus a guard that a *retimed* transcript is never silently overwritten by a fresh alignment. | NewBrand re-runs Whisper per action and persists no transcript (`speech/transcript.ts`'s `transcriptToJson` has no callers), so the next caption run can silently restore drift a retime removed. | **ADAPT** |
+| 6 | `cli/src/providers/queue-ledger.ts` | "Never pay twice": jobs keyed by a hash of the *request*, the id written down before the first poll, recovering a real double charge. | NewBrand has no cost estimate and no ledger (backlog item 4); a retried model/TTS step is not deduplicated. | **PATTERN** (NewBrand has no generation queue) |
+| 7 | `cli/src/commands/readiness.ts`, `session-start.ts`, `init.ts` | Read-only "what is present vs blocking for this run", and an advisory session note for an agent harness. | Nothing in NewBrand tells the user what a run still needs (media relinked / key / ffmpeg / Whisper model); `npm run verify` is the dev-side analogue only. | **ADAPT** |
+| 8 | `cli/src/commands/creative-log.ts` | A per-**source-video** log of what was tried, rejected and why, kept outside the model's context so three rounds stop converging. | NewBrand's design engine pins a direction per project but keeps no rejection history on the footage. | **ADAPT** (small) |
 | 9 | `cli/src/commands/measure-placement.ts` | Real glyph metrics for placement decisions instead of an estimate. | `textLayout` documents its text box as an estimate, and the safe-zone gate inherits that error. | **ADAPT** (renderer already measures) |
-| 10 | `cli/src/commands/concat-chapters.ts`, `mix-audio.ts`, `mux-audio.ts`, `apply-edl.ts` | The FFmpeg assembly half: crossfaded joins (a butt join clicks), a multi-piece soundtrack with music ducked by the narration itself, one `loudnorm` per chapter with a stated reason to skip, and an `apply-edl` that reports the edit it performed. | Cupric's desktop export is a single MediaRecorder→FFmpeg path with `loudnorm`; chapter-long parity and joined-edit parity are unverified. | **ADAPT later** (after exported-file verification) |
-| 11 | `cli/src/seeded-random.ts`, `json-file.ts`, `sheet.ts` | Trivial pure utilities: deterministic RNG, atomic JSON write, contact-sheet geometry. | Cupric's `buildQuickVariants` is id-seeded but there is no shared seeded RNG; contact sheets do not exist. | **COPY** (cite) if used |
-| 12 | `.claude/skills/open-edit/*.md`, `docs/FLOW.md`, `docs/recipe-format.md` | The **contract text** an agent follows: one gate chain that stops at the first failure and names it, a budget of two mechanical corrections per gate, "mechanical verification only", a spend gate that quotes the cost before paid work. | Cupric has no `AGENTS.md` and no skills directory, so its own agent surface has no written contract to follow. | **PATTERN** (write Cupric's own, don't copy the engine syntax) |
-| 13 | `cli/src/wcag/recommend.ts` | Solver for the *minimal* soft-shadow recipe that clears a ratio against the pixels actually behind the text. | Cupric offers solid plates and outlines; a shadow rung would be new. | **ADAPT only if** shadows are offered |
+| 10 | `cli/src/commands/concat-chapters.ts`, `mix-audio.ts`, `mux-audio.ts`, `apply-edl.ts` | The FFmpeg assembly half: crossfaded joins (a butt join clicks), a multi-piece soundtrack with music ducked by the narration itself, one `loudnorm` per chapter with a stated reason to skip, and an `apply-edl` that reports the edit it performed. | NewBrand's desktop export is a single MediaRecorder→FFmpeg path with `loudnorm`; chapter-long parity and joined-edit parity are unverified. | **ADAPT later** (after exported-file verification) |
+| 11 | `cli/src/seeded-random.ts`, `json-file.ts`, `sheet.ts` | Trivial pure utilities: deterministic RNG, atomic JSON write, contact-sheet geometry. | NewBrand's `buildQuickVariants` is id-seeded but there is no shared seeded RNG; contact sheets do not exist. | **COPY** (cite) if used |
+| 12 | `.claude/skills/open-edit/*.md`, `docs/FLOW.md`, `docs/recipe-format.md` | The **contract text** an agent follows: one gate chain that stops at the first failure and names it, a budget of two mechanical corrections per gate, "mechanical verification only", a spend gate that quotes the cost before paid work. | NewBrand has no `AGENTS.md` and no skills directory, so its own agent surface has no written contract to follow. | **PATTERN** (write NewBrand's own, don't copy the engine syntax) |
+| 13 | `cli/src/wcag/recommend.ts` | Solver for the *minimal* soft-shadow recipe that clears a ratio against the pixels actually behind the text. | NewBrand offers solid plates and outlines; a shadow rung would be new. | **ADAPT only if** shadows are offered |
 
 ### Never (outside the Apache-2.0 grant, or useless without it)
 
@@ -527,23 +527,23 @@ surface yet), #11 (the utilities half), #13 (the shadow solver, and the WCAG *re
   `generate.ts`, `generate-set.ts`, `generate-recipe.ts`, `sample-style.ts`, `sample-presenter.ts`,
   `brand.ts`, `background-removal.ts`, `lipsync.ts`, `lint.ts` (template lint).
 - The VEED service paths: `login.ts`, `token.ts`, `providers/fal.ts`, `providers/assets.ts`, and their
-  transcription command (`cli/src/commands/transcribe.ts`) — cloud transcription on credits. Cupric stays
+  transcription command (`cli/src/commands/transcribe.ts`) — cloud transcription on credits. NewBrand stays
   on local Whisper; the *contract* is already ported.
 - Their brand and media: `docs/logo/**`, example renders, and the OFL fonts embedded in their login page
   (Inter, STIX Two Text — both available from their own upstreams if ever wanted).
-- Do not copy the `.wv`/recipe syntax into Cupric. Cupric's equivalent surface already exists
+- Do not copy the `.wv`/recipe syntax into NewBrand. NewBrand's equivalent surface already exists
   (`studio/design.ts`, `generatedPackage.ts`, `importHtml.ts`, `agentCode.ts`); adding a second
   authoring format is the "another preset" trap, not an upgrade.
 
 ### Obligations if we take anything above
 
 1. Keep `resources/open-edit/LICENSE` and `NOTICE` verbatim.
-2. Add upstream→Cupric rows to `THIRD_PARTY_NOTICES.md`, and say in each new file's header what was
+2. Add upstream→NewBrand rows to `THIRD_PARTY_NOTICES.md`, and say in each new file's header what was
    changed.
-3. Cupric's version is a derivative work under Apache-2.0 — do not relicense it, and keep the patent
+3. NewBrand's version is a derivative work under Apache-2.0 — do not relicense it, and keep the patent
    grant intact.
 4. No VEED marks, names or endorsement claims anywhere in the product or docs, and the PolyForm binary
-   must never be bundled or downloaded by Cupric.
+   must never be bundled or downloaded by NewBrand.
 
 ## Appendix — verification log for this audit
 

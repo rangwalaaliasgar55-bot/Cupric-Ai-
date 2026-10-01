@@ -9,7 +9,7 @@
  *
  * Users of an installed build can instead drop whisper-cli(.exe) and a
  * ggml-*.bin model into  <userData>/whisper/  (on Windows:
- * %APPDATA%\Cupric AI\whisper\).
+ * %APPDATA%\NewBrand\whisper\).
  *
  * whisper.cpp is MIT licensed; the ggml Whisper models are MIT (OpenAI).
  */
@@ -45,7 +45,7 @@ async function sha256(file) {
  * as UNVERIFIED so the gap is visible instead of silent.
  */
 async function download(url, file, expected = null) {
-  const res = await fetch(url, { redirect: 'follow', headers: { 'user-agent': 'cupric-ai-fetch-whisper' } })
+  const res = await fetch(url, { redirect: 'follow', headers: { 'user-agent': 'newbrand-fetch-whisper' } })
   if (!res.ok || !res.body) throw new Error(`${url} → HTTP ${res.status}`)
   const tmp = `${file}.part`
   await pipeline(Readable.fromWeb(res.body), createWriteStream(tmp))
@@ -62,7 +62,7 @@ async function download(url, file, expected = null) {
 /** HuggingFace serves LFS files with their SHA-256 in `x-linked-etag` on the un-followed resolve. */
 async function huggingFaceSha256(url) {
   try {
-    const res = await fetch(url, { method: 'HEAD', redirect: 'manual', headers: { 'user-agent': 'cupric-ai-fetch-whisper' } })
+    const res = await fetch(url, { method: 'HEAD', redirect: 'manual', headers: { 'user-agent': 'newbrand-fetch-whisper' } })
     const tag = (res.headers.get('x-linked-etag') || '').replace(/^W\//, '').replace(/"/g, '')
     return /^[0-9a-f]{64}$/i.test(tag) ? tag : null
   } catch { return null }
@@ -82,14 +82,14 @@ else {
 // 2. Binary. Tagged releases are sometimes published without assets; the
 //    numbered builds (bNNNN) carry them, so take the newest one that has ours.
 if (!ASSET) {
-  console.log(`binary: no prebuilt whisper.cpp for ${process.platform}/${process.arch}. Build it (https://github.com/ggml-org/whisper.cpp) and copy whisper-cli into ${dest}, or set CUPRIC_WHISPER_PATH.`)
+  console.log(`binary: no prebuilt whisper.cpp for ${process.platform}/${process.arch}. Build it (https://github.com/ggml-org/whisper.cpp) and copy whisper-cli into ${dest}, or set NEWBRAND_WHISPER_PATH.`)
   process.exit(0)
 }
 const hasBinary = readdirSync(dest, { recursive: true }).some((f) => /(^|[\\/])whisper-cli(\.exe)?$/.test(String(f)))
 if (hasBinary) {
   console.log('binary: whisper-cli already present')
 } else {
-  const releases = await (await fetch('https://api.github.com/repos/ggml-org/whisper.cpp/releases?per_page=20', { headers: { 'user-agent': 'cupric-ai-fetch-whisper' } })).json()
+  const releases = await (await fetch('https://api.github.com/repos/ggml-org/whisper.cpp/releases?per_page=20', { headers: { 'user-agent': 'newbrand-fetch-whisper' } })).json()
   const release = Array.isArray(releases) ? releases.find((r) => r.assets?.some((a) => a.name === ASSET)) : null
   if (!release) throw new Error(`No whisper.cpp release with ${ASSET} found.`)
   const asset = release.assets.find((a) => a.name === ASSET)
@@ -102,4 +102,4 @@ if (hasBinary) {
   rmSync(archive, { force: true })
   console.log(`binary: whisper.cpp ${release.tag_name} (${ASSET})`)
 }
-console.log(`done — Cupric will find Whisper in ${path.relative(root, dest)} (dev) and resources/whisper (packaged).`)
+console.log(`done — NewBrand will find Whisper in ${path.relative(root, dest)} (dev) and resources/whisper (packaged).`)

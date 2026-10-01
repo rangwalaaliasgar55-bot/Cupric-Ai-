@@ -1,6 +1,6 @@
 # Changelog
 
-Cupric AI is a Windows desktop app. This file is the release record, and
+NewBrand is a Windows desktop app. This file is the release record, and
 `scripts/check-version-sync.mjs` fails the build when it drifts from
 `package.json`, the README, or the version the app reports at runtime.
 
@@ -173,7 +173,7 @@ Remediation work on this branch, in phases (each phase's evidence is in
 
 ## [0.2.2] - 2026-09-26
 
-- "feat: Cupric AI autonomous editing workflow" (auto-generated notes).
+- "feat: NewBrand autonomous editing workflow" (auto-generated notes).
 
 ## [0.2.1] - 2026-09-26
 
@@ -181,5 +181,5 @@ Remediation work on this branch, in phases (each phase's evidence is in
 
 ## [0.2.0] - 2026-09-26
 
-- Cupric AI Autonomous Mode foundation, local editing pipeline, captions, video
+- NewBrand Autonomous Mode foundation, local editing pipeline, captions, video
   preview, editing plans and Electron automation.

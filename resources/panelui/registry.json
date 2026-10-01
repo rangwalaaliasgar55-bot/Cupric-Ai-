@@ -4,7 +4,7 @@
   "upstreamVersion": "0.102.1",
   "package": "panelui-native",
   "platform": "react-native",
-  "note": "PanelUI is a React Native / Expo library (reanimated, expo-blur, uniwind). Its source cannot run in Cupric\u2019s DOM renderer, so the catalogue is vendored as reference + prompt material, not as code. Behaviour and copy are what we mine; the React Native implementation stays upstream. Descriptions come from upstream doc frontmatter; 14 gesture/physics entries were additionally read against the component source and are marked \"verified\": \"source\".",
+  "note": "PanelUI is a React Native / Expo library (reanimated, expo-blur, uniwind). Its source cannot run in NewBrand\u2019s DOM renderer, so the catalogue is vendored as reference + prompt material, not as code. Behaviour and copy are what we mine; the React Native implementation stays upstream. Descriptions come from upstream doc frontmatter; 14 gesture/physics entries were additionally read against the component source and are marked \"verified\": \"source\".",
   "counts": {
     "componentModules": 135,
     "packageComponentExports": 135,

@@ -12,7 +12,7 @@ import { getMedia, loadVideo, onVideoRegistered, proxyMode, type MediaHandle } f
 export type ProxyStatus = { state: 'none' | 'making' | 'ready' | 'failed' | 'unavailable'; pct: number; error?: string; cached?: boolean }
 
 const status = new Map<string, ProxyStatus>()
-export const PROXY_EVENT = 'cupric:proxy'
+export const PROXY_EVENT = 'newbrand:proxy'
 const emit = (mediaId: string) => globalThis.dispatchEvent?.(new CustomEvent(PROXY_EVENT, { detail: { mediaId } }))
 
 export function proxyStatus(mediaId: string): ProxyStatus {

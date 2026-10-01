@@ -2,20 +2,20 @@
 /**
  * check:bridge — the desktop bridge stays read-only (v0.10.1).
  *
- * 0.10.0 blanked the Studio with `window.cupric = {...window.cupric, studio}`:
- * contextBridge defines window.cupric non-writable, so the packaged app threw
- * "Cannot assign to read only property 'cupric' of object '#<Window>'" on
+ * 0.10.0 blanked the Studio with `window.newbrand = {...window.newbrand, studio}`:
+ * contextBridge defines window.newbrand non-writable, so the packaged app threw
+ * "Cannot assign to read only property 'newbrand' of object '#<Window>'" on
  * mount. This check makes every way back to that a build failure:
  *
  *   1. ESLint `no-restricted-syntax` (scripts/eslint-bridge-rule.mjs) over
  *      src/ and electron/ — zero errors allowed.
  *   2. The rule is self-tested against the exact 0.10.0 code and other write
- *      forms (and must NOT fire on legitimate reads / window.__cupricStudio).
+ *      forms (and must NOT fire on legitimate reads / window.__newbrandStudio).
  *   3. A comment-stripped source grep as a second net.
  *   4. The preload is executed against a mocked contextBridge: ONE deep-frozen
- *      bridge, exposed exactly as `cupric` + `northframe`, identical object.
+ *      bridge, exposed exactly as `newbrand` + `northframe`, identical object.
  *   5. A tsc fixture proves direct assignment is a TYPE error.
- *   6. If dist/ exists, the minified bundle is scanned for `.cupric=`.
+ *   6. If dist/ exists, the minified bundle is scanned for `.newbrand=`.
  */
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
@@ -39,28 +39,28 @@ else ok(`ESLint bridge rule: ${results.length} files, 0 errors`)
 
 /* 2. Self-test the rule ————————————————————————————————————————————— */
 const BAD = {
-  '0.10.0 Studio (verbatim)': `const w = window as unknown as { cupric?: Record<string, unknown> }\nw.cupric = { ...(w.cupric ?? {}), studio: api }\nif (w.cupric?.studio === api) delete w.cupric.studio`,
-  'minified form': `nt.cupric={...nt.cupric,studio:Ve}`,
-  'direct window assign': `window.cupric = bridge`,
+  '0.10.0 Studio (verbatim)': `const w = window as unknown as { newbrand?: Record<string, unknown> }\nw.newbrand = { ...(w.newbrand ?? {}), studio: api }\nif (w.newbrand?.studio === api) delete w.newbrand.studio`,
+  'minified form': `nt.newbrand={...nt.newbrand,studio:Ve}`,
+  'direct window assign': `window.newbrand = bridge`,
   'legacy alias assign': `window.northframe = bridge`,
-  'computed assign': `window['cupric'] = bridge`,
-  'nested member assign': `window.cupric.studio = api`,
-  'cast then assign': `;(window as any).cupric = {}`,
-  'globalThis assign': `globalThis.cupric = {}`,
-  'logical assign': `window.cupric ??= bridge`,
-  'delete bridge': `delete (window as any).cupric`,
-  'delete nested': `delete window.cupric.studio`,
-  'Object.assign into bridge': `Object.assign(window.cupric, { studio: api })`,
-  'defineProperty on window': `Object.defineProperty(window, 'cupric', { value: 1 })`,
+  'computed assign': `window['newbrand'] = bridge`,
+  'nested member assign': `window.newbrand.studio = api`,
+  'cast then assign': `;(window as any).newbrand = {}`,
+  'globalThis assign': `globalThis.newbrand = {}`,
+  'logical assign': `window.newbrand ??= bridge`,
+  'delete bridge': `delete (window as any).newbrand`,
+  'delete nested': `delete window.newbrand.studio`,
+  'Object.assign into bridge': `Object.assign(window.newbrand, { studio: api })`,
+  'defineProperty on window': `Object.defineProperty(window, 'newbrand', { value: 1 })`,
   'Reflect.deleteProperty': `Reflect.deleteProperty(window, 'northframe')`,
 }
 const GOOD = {
-  'getBridge read': `const b = window.cupric ?? window.northframe ?? null`,
-  'optional call': `void window.cupric?.ipc.invoke('settings:get')`,
-  'comparison': `if (window.cupric === x) {}`,
-  'studio global assign': `window.__cupricStudio = api`,
-  'studio global delete': `delete window.__cupricStudio`,
-  'unrelated property': `obj.cupricSomething = 1`,
+  'getBridge read': `const b = window.newbrand ?? window.northframe ?? null`,
+  'optional call': `void window.newbrand?.ipc.invoke('settings:get')`,
+  'comparison': `if (window.newbrand === x) {}`,
+  'studio global assign': `window.__newbrandStudio = api`,
+  'studio global delete': `delete window.__newbrandStudio`,
+  'unrelated property': `obj.newbrandSomething = 1`,
 }
 const selfTestFile = path.join(root, 'src/__bridge_selftest__.ts')
 for (const [name, code] of Object.entries(BAD)) {
@@ -86,10 +86,10 @@ function walk(dir, out = []) {
 }
 const stripComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1')
 const GREP = [
-  /\.(cupric|northframe)\s*(?:=(?!=)|\?\?=|\|\|=|&&=)/,
-  /\[\s*['"`](cupric|northframe)['"`]\s*\]\s*=(?!=)/,
-  /\bdelete\s+[^;\n]*\.(cupric|northframe)\b/,
-  /\.(cupric|northframe)\s*\.\s*\w+\s*=(?!=)/,
+  /\.(newbrand|northframe)\s*(?:=(?!=)|\?\?=|\|\|=|&&=)/,
+  /\[\s*['"`](newbrand|northframe)['"`]\s*\]\s*=(?!=)/,
+  /\bdelete\s+[^;\n]*\.(newbrand|northframe)\b/,
+  /\.(newbrand|northframe)\s*\.\s*\w+\s*=(?!=)/,
 ]
 const grepHits = []
 for (const file of [...walk(path.join(root, 'src')), ...walk(path.join(root, 'electron'))]) {
@@ -99,7 +99,7 @@ for (const file of [...walk(path.join(root, 'src')), ...walk(path.join(root, 'el
   })
 }
 if (grepHits.length) problems.push(`source grep found bridge writes:\n    ${grepHits.join('\n    ')}`)
-else ok('source grep: no window.cupric= / window.northframe= / delete *.cupric.* in src/ or electron/')
+else ok('source grep: no window.newbrand= / window.northframe= / delete *.newbrand.* in src/ or electron/')
 
 /* 4. Preload: one frozen bridge, exposed twice, never changed ——————————— */
 {
@@ -115,7 +115,7 @@ else ok('source grep: no window.cupric= / window.northframe= / delete *.cupric.*
   vm.runInNewContext(source, sandbox, { filename: preloadPath })
   const names = exposed.map((e) => e.name).sort()
   try {
-    assert.deepEqual(names, ['cupric', 'northframe'], 'preload must expose exactly `cupric` and `northframe`')
+    assert.deepEqual(names, ['newbrand', 'northframe'], 'preload must expose exactly `newbrand` and `northframe`')
     assert.equal(exposed[0].value, exposed[1].value, 'both names must expose the SAME bridge object')
     const b = exposed[0].value
     for (const [label, obj] of [['bridge', b], ['bridge.ipc', b.ipc], ['bridge.versions', b.versions], ['bridge.paths', b.paths]]) {
@@ -127,7 +127,7 @@ else ok('source grep: no window.cupric= / window.northframe= / delete *.cupric.*
     assert.equal(b.isDesktop, true)
     assert.equal((source.match(/exposeInMainWorld\(/g) || []).length, 1, 'exposeInMainWorld must appear once (a loop over the two names)')
     assert.ok(!/\bbridge\s*(?:\.\s*\w+|\[[^\]]+\])\s*=(?!=)/.test(stripComments(source)), 'preload must not mutate the bridge after creating it')
-    ok('preload: one deep-frozen bridge, exposed as cupric + northframe (same object), immutable')
+    ok('preload: one deep-frozen bridge, exposed as newbrand + northframe (same object), immutable')
   } catch (err) {
     problems.push(`preload: ${err.message}`)
   }
@@ -136,10 +136,10 @@ else ok('source grep: no window.cupric= / window.northframe= / delete *.cupric.*
 /* 5. Types: direct assignment must be a type error ————————————————————— */
 {
   const bridgeTs = readFileSync(path.join(root, 'src/lib/bridge.ts'), 'utf8')
-  if (!/readonly\s+cupric\?\s*:\s*Readonly<CupricBridge>/.test(bridgeTs) || !/readonly\s+northframe\?\s*:\s*Readonly<CupricBridge>/.test(bridgeTs)) {
-    problems.push('src/lib/bridge.ts: Window must declare `readonly cupric?: Readonly<CupricBridge>` and `readonly northframe?: Readonly<CupricBridge>`')
+  if (!/readonly\s+newbrand\?\s*:\s*Readonly<NewBrandBridge>/.test(bridgeTs) || !/readonly\s+northframe\?\s*:\s*Readonly<NewBrandBridge>/.test(bridgeTs)) {
+    problems.push('src/lib/bridge.ts: Window must declare `readonly newbrand?: Readonly<NewBrandBridge>` and `readonly northframe?: Readonly<NewBrandBridge>`')
   }
-  if (!/__cupricStudio\?\s*:\s*StudioApi/.test(bridgeTs)) problems.push('src/lib/bridge.ts: Window must declare `__cupricStudio?: StudioApi`')
+  if (!/__newbrandStudio\?\s*:\s*StudioApi/.test(bridgeTs)) problems.push('src/lib/bridge.ts: Window must declare `__newbrandStudio?: StudioApi`')
   const tsconfig = path.join(root, '.bridge-typecheck.tsconfig.json')
   writeFileSync(
     tsconfig,
@@ -148,7 +148,7 @@ else ok('source grep: no window.cupric= / window.northframe= / delete *.cupric.*
   try {
     const tsc = spawnSync(process.execPath, [path.join(root, 'node_modules/typescript/bin/tsc'), '-p', tsconfig], { cwd: root, encoding: 'utf8' })
     if (tsc.status !== 0) problems.push(`type fixture scripts/fixtures/bridge-readonly.ts failed (a read-only guarantee was lost, or a legitimate use broke):\n    ${(tsc.stdout + tsc.stderr).trim().split('\n').slice(0, 12).join('\n    ')}`)
-    else ok('types: assigning/deleting window.cupric / window.northframe is a compile error; window.__cupricStudio is allowed')
+    else ok('types: assigning/deleting window.newbrand / window.northframe is a compile error; window.__newbrandStudio is allowed')
   } finally {
     rmSync(tsconfig, { force: true })
   }
@@ -164,7 +164,7 @@ else ok('source grep: no window.cupric= / window.northframe= / delete *.cupric.*
     const hits = []
     for (const f of readdirSync(assets).filter((n) => n.endsWith('.js'))) {
       const text = readFileSync(path.join(assets, f), 'utf8')
-      const re = /[\w$\])]\.(cupric|northframe)\s*=(?!=)|delete\s+[\w$.]+\.(cupric|northframe)\b/g
+      const re = /[\w$\])]\.(newbrand|northframe)\s*=(?!=)|delete\s+[\w$.]+\.(newbrand|northframe)\b/g
       let m
       while ((m = re.exec(text))) hits.push(`${f}: …${text.slice(Math.max(0, m.index - 30), m.index + 50)}…`)
     }

@@ -85,7 +85,7 @@ export function MotionCompositionStage({ rundown, time, width, height }: { rundo
         }}
       />
       <div style={{ position: 'absolute', left: width * 0.065, top: height * 0.085, color: 'var(--color-accent)', fontSize: width * 0.028, fontWeight: 800, letterSpacing: 5 }}>
-        CUPRIC AI
+        NEWBRAND
       </div>
       <div style={{ position: 'absolute', left: width * 0.065, right: width * 0.065, top: height * 0.31, transform: `scale(${0.96 + enter * 0.04})`, opacity: wordOpacity }}>
         <div style={{ color: 'var(--color-muted)', fontSize: width * 0.022, fontWeight: 700, letterSpacing: 3, textTransform: 'uppercase', marginBottom: height * 0.026 }}>

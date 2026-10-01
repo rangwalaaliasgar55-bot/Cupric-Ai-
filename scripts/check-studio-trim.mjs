@@ -47,7 +47,7 @@ const ok = (condition, label) => {
 // ── ffmpeg / ffprobe, resolved the same way the app resolves them ────────────
 const isWindows = process.platform === 'win32'
 function resolveTool(kind) {
-  const envName = kind === 'ffmpeg' ? 'CUPRIC_FFMPEG_PATH' : 'CUPRIC_FFPROBE_PATH'
+  const envName = kind === 'ffmpeg' ? 'NEWBRAND_FFMPEG_PATH' : 'NEWBRAND_FFPROBE_PATH'
   const fromEnv = process.env[envName]
   // A relative path in the environment is relative to the shell that set it, not
   // to this file, so it is resolved here before it is trusted.
@@ -99,7 +99,7 @@ ok(args.lastIndexOf('-t') > 0 && args[args.lastIndexOf('-t') + 1] === '3.000', '
 ok(args[args.length - 1] === 'C:\\tmp\\out.mp4', 'the output path is still the last argument, where FFmpeg expects it')
 
 // ── the real half: an actual encode, measured ────────────────────────────────
-const work = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-trim-'))
+const work = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-trim-'))
 const probe = (file) => {
   const result = spawnSync(ffprobe, ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=nw=1:nk=1', file], { encoding: 'utf8' })
   const value = Number(String(result.stdout).trim())
@@ -125,7 +125,7 @@ function makeRecording(name, seconds) {
 if (!ffmpeg) {
   console.log('SKIPPED: FFmpeg was not found in this checkout (optional dependency, downloaded at install time).')
   console.log('SKIPPED: the plan assertions above ran; the real encode and the trim did NOT.')
-  console.log('SKIPPED: run `npm run media:ensure`, or set CUPRIC_FFMPEG_PATH, to run them.')
+  console.log('SKIPPED: run `npm run media:ensure`, or set NEWBRAND_FFMPEG_PATH, to run them.')
   console.log(`studio trim check passed — ${checks} assertions, encode skipped (no FFmpeg)`)
   process.exit(0)
 }

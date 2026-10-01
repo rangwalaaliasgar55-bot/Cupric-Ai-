@@ -319,7 +319,7 @@ export async function runAutonomousJob(
         })
         if (result.cancelled) throw new Error('Automation cancelled')
         output = { fileName: result.fileName, url: result.url, bytes: result.blob.size, mimeType: result.mimeType, durationSec: result.durationSec }
-        hooks.patch({ outputPath: `cupric-runs/${job.id}/${output.fileName}`, outputUrl: output.url, warnings })
+        hooks.patch({ outputPath: `newbrand-runs/${job.id}/${output.fileName}`, outputUrl: output.url, warnings })
         hooks.step(6, { status: 'done', progressPct: 100, message: `${output.fileName} · ${(output.bytes / 1_048_576).toFixed(1)} MB · ${output.durationSec.toFixed(1)}s · ${output.mimeType.replace('video/', '')}` })
       }
     }
@@ -350,8 +350,8 @@ export async function runAutonomousJob(
       status: 'done',
       waitingMessage: null,
       warnings,
-      ...(output ? { outputPath: `cupric-runs/${job.id}/${output.fileName}` } : {}),
-      reviewReportPath: `cupric-runs/${job.id}/review-report.md`,
+      ...(output ? { outputPath: `newbrand-runs/${job.id}/${output.fileName}` } : {}),
+      reviewReportPath: `newbrand-runs/${job.id}/review-report.md`,
       reviewReport: report.markdown,
       renderEvaluation: report.evaluation,
       designScore: built.design.score,
@@ -399,4 +399,4 @@ export function buildDirection(
   return { doc: polished.doc, clipIds: built.clipIds, placeholders: built.placeholders, design: designed.report, reused: built.reused }
 }
 
-const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'cupric-run'
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) || 'newbrand-run'

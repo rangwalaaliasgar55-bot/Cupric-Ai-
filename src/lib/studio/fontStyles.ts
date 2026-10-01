@@ -3,8 +3,8 @@
  *
  * Fontshare: every family below was verified on fontshare.com as "Closed
  * Source" (ITF Free Font License). That licence forbids an app from offering
- * the fonts to its users, so Cupric ships only these names/roles: the user
- * downloads a family free from Fontshare and drops the zip into Cupric
+ * the fonts to its users, so NewBrand ships only these names/roles: the user
+ * downloads a family free from Fontshare and drops the zip into NewBrand
  * (userFonts.ts), after which suggestions and the agent use it like any font.
  */
 import { VIDEO_FONTS, type VideoFont } from './videoFonts'

@@ -103,7 +103,7 @@ export type StudioEditPlan = { summary: string; ops: StudioEditOp[]; source: 'li
 const PATCH_KEYS = new Set(['tiltX', 'turnY', 'perspective', 'emphasisColor', 'emphasisFont', 'boxColor', 'accentColor', 'textGlow', 'x', 'y', 'scale', 'rotation', 'opacity', 'fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim', 'transitionIn', 'transitionOut', 'volume', 'durationSec', 'startSec', 'name'])
 const TEXT_KEYS = new Set(['fontSizePct', 'color', 'fontFamily', 'weight', 'align', 'highlightWord', 'text', 'anim'])
 const FONTS = { has: (f: string) => VIDEO_FONT_FAMILIES.has(f) || isUserFont(f) }
-const fontError = (f: unknown) => fontshareFont(String(f)) ? `“${f}” is a Fontshare font the user has not added yet — use a bundled font and suggest they download it free from Fontshare and drop the zip into Cupric` : `Unknown font “${f}”`
+const fontError = (f: unknown) => fontshareFont(String(f)) ? `“${f}” is a Fontshare font the user has not added yet — use a bundled font and suggest they download it free from Fontshare and drop the zip into NewBrand` : `Unknown font “${f}”`
 const ANIMS = new Set<StudioTextAnim>(['none', 'fade-up', 'pop', 'typewriter', 'word-reveal', 'shimmer', 'slide-left', 'glass-rise', 'liquid-wave', 'kinetic'])
 const BLEND_MODES = new Set<StudioBlendMode>(['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'soft-light', 'difference', 'add'])
 const TRANSITIONS = new Set<StudioTransition>(['none', 'fade', 'wipe-left', 'zoom-in', 'blur', 'iris', 'push-up', 'glass-wipe', 'liquid-dissolve', 'lens-sweep'])
@@ -907,7 +907,7 @@ export function componentPlan(instruction: string, doc: StudioDoc, opts: LocalOp
   const style = styleFromInstruction(instruction)
   const motion: MotionSpec = { entrance: style === 'bold-social' ? 'scale-pop' : 'rise-in', exit: 'fade-out', intensity: style === 'bold-social' ? 1.2 : 0.9 }
   return {
-    summary: `Add the “${entry.name}” component — Cupric records its real animation`,
+    summary: `Add the “${entry.name}” component — NewBrand records its real animation`,
     source: 'local',
     ops: [{ type: 'addComponent', slug: entry.slug, startSec, durationSec: Number.isFinite(seconds) ? clamp(seconds, 1, 30) : 4, ...(y !== undefined ? { y } : {}), motion }],
   }
@@ -989,7 +989,7 @@ export function localStudioEditPlan(instruction: string, doc: StudioDoc, selecte
   if (!selectedId) return polishPlan(doc, instruction)
 
   const clip = doc.clips.find((item) => item.id === selectedId)
-  if (!clip) throw new Error('Select a clip first so Cupric knows what to edit')
+  if (!clip) throw new Error('Select a clip first so NewBrand knows what to edit')
   const patch: Record<string, string | number> = {}
   const visualX: number | null = clip.kind === 'video' || clip.kind === 'image' ? (clip.x ?? 0.5) : 'x' in clip && typeof clip.x === 'number' ? clip.x : null
   const visualY: number | null = clip.kind === 'video' || clip.kind === 'image' ? (clip.y ?? 0.5) : 'y' in clip && typeof clip.y === 'number' ? clip.y : null
@@ -1054,7 +1054,7 @@ export function localStudioEditPlan(instruction: string, doc: StudioDoc, selecte
     summary: `Give “${clip.name}” directed motion: ${describeMotionSpec(spec)}`,
     source: 'local',
     ops: [{ type: 'applyMotion', clipId: clip.id, motion: spec }],
-    warning: 'Cupric did not recognise a specific change, so it proposed professional motion for the selected clip. Try “bounce in and float”, “make it bigger”, or “add a caption saying …”.',
+    warning: 'NewBrand did not recognise a specific change, so it proposed professional motion for the selected clip. Try “bounce in and float”, “make it bigger”, or “add a caption saying …”.',
   }
 }
 

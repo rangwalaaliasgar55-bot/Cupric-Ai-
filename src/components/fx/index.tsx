@@ -2,7 +2,7 @@ import { EASE_SOFT } from '../../lib/motion'
 /**
  * App-chrome effects in the spirit of React Bits (https://github.com/DavidHDev/react-bits)
  * — shiny text, spotlight card, animated pipeline icons. Written from scratch
- * for Cupric; no React Bits source is copied (its licence has a Commons Clause).
+ * for NewBrand; no React Bits source is copied (its licence has a Commons Clause).
  * These live in the app shell only, never in the Studio renderer, and every
  * one of them goes still under reduced motion.
  */

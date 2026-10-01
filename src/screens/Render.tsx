@@ -200,7 +200,7 @@ export function Render() {
                   if (job.outputPath?.startsWith('blob:') || job.outputPath?.startsWith('data:')) {
                     const a = document.createElement('a')
                     a.href = job.outputPath
-                    a.download = job.outputName || 'cupric-render.webm'
+                    a.download = job.outputName || 'newbrand-render.webm'
                     a.click()
                     pushToast('success', `Downloaded ${job.outputName || 'browser render'}`)
                   }

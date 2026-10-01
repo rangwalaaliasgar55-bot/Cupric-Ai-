@@ -44,7 +44,7 @@ export function Sidebar() {
 
   return (
     <aside className="relative z-10 flex h-full w-44 shrink-0 flex-col border-r border-line bg-panel/80 px-3 py-3 backdrop-blur-xl">
-      <img src={logoUrl} alt="Cupric AI" className="mb-4 h-10 w-full" />
+      <img src={logoUrl} alt="NewBrand" className="mb-4 h-10 w-full" />
 
       <div className="cu-eyebrow mb-1.5 px-3">Workspace</div>
       <nav aria-label="Primary" className="flex flex-col gap-0.5">

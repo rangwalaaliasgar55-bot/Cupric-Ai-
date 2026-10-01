@@ -2,7 +2,7 @@
 // Static audit of every vendored uselayouts component.
 // Reads the source as text and never imports or executes it. For each registry item it
 // records category, licence, dependencies, the interaction and animation model, the
-// required props, the Cupric-native equivalent, and whether the source is safe to
+// required props, the NewBrand-native equivalent, and whether the source is safe to
 // adapt. Output: resources/uselayouts/audit.json. build-packs.mjs merges that file
 // into the Library pack.
 //
@@ -124,19 +124,19 @@ for (const entry of registry.items) {
     requiredProps: props.required,
     optionalProps: props.optional,
     tags: controls?.tags ?? [],
-    cupricEquivalent: EQUIVALENT[category] ?? 'Native storyboard scene (glass panel, text, shapes) rebuilt from the item name and description',
+    newbrandEquivalent: EQUIVALENT[category] ?? 'Native storyboard scene (glass panel, text, shapes) rebuilt from the item name and description',
     previewable: Boolean(m.posterUrl),
     posterUrl: m.posterUrl ?? null,
     videoUrl: m.videoUrl ?? null,
-    // The upstream React code never runs in Cupric. Apply builds native clips, so
+    // The upstream React code never runs in NewBrand. Apply builds native clips, so
     // export is deterministic whatever the source does.
     deterministicExport: true,
     insertable: unsafe.length === 0,
     referenceOnly: unsafe.length > 0,
     unsafePatterns: unsafe,
     sourceNondeterminism: nondeterministic,
-    refusal: unsafe.length ? `Source uses ${unsafe.join(', ')}. Cupric will not adapt it automatically; it stays reference-only.` : null,
-    fallback: 'If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips.',
+    refusal: unsafe.length ? `Source uses ${unsafe.join(', ')}. NewBrand will not adapt it automatically; it stays reference-only.` : null,
+    fallback: 'If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips.',
   })
 }
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Cupric effect — quote card</title>
+<title>NewBrand effect — quote card</title>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
   #scene {
@@ -22,7 +22,7 @@
 <body>
 <div id="scene">
   <div id="quote"></div>
-  <div id="attr">— Cupric AI</div>
+  <div id="attr">— NewBrand</div>
 </div>
 <script>
 const DUR = 6, FPS = 30;
@@ -39,11 +39,11 @@ window.__seek = function (t) {
   }).join('');
   document.getElementById('attr').style.opacity = String(clamp((p - 0.65) / 0.2, 0, 1));
 };
-window.__cupricSourceManifest = {
+window.__newbrandSourceManifest = {
   sources: ['kinetic-type', 'dot-field'],
   sequence: [
     { from: 0, to: 4, type: 'quote', copy: 'Make it obvious.' },
-    { from: 4, to: 6, type: 'attribution', copy: '— Cupric AI' }
+    { from: 4, to: 6, type: 'attribution', copy: '— NewBrand' }
   ],
   renderSpec: { durationSec: DUR, fps: FPS, size: [1080, 1920] }
 };

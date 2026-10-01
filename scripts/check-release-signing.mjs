@@ -135,9 +135,9 @@ ok(!/verifyUpdateCodeSignature\s*=\s*\(\s*\)\s*=>\s*Promise\.resolve\(\s*null\s*
 
 // A remote-update path must never accept an arbitrary feed from the environment
 // in a released build: the override exists for the update-path test and says so.
-const feedOverride = main.match(/CUPRIC_UPDATE_FEED/g) ?? []
-ok(feedOverride.length >= 1, 'the updater documents its test feed override (CUPRIC_UPDATE_FEED)')
-ok(/CUPRIC_UPDATE_FEED[\s\S]{0,300}setFeedURL|setFeedURL[\s\S]{0,300}CUPRIC_UPDATE_FEED/.test(main), 'the override is wired to setFeedURL, not to a silent ignore')
+const feedOverride = main.match(/NEWBRAND_UPDATE_FEED/g) ?? []
+ok(feedOverride.length >= 1, 'the updater documents its test feed override (NEWBRAND_UPDATE_FEED)')
+ok(/NEWBRAND_UPDATE_FEED[\s\S]{0,300}setFeedURL|setFeedURL[\s\S]{0,300}NEWBRAND_UPDATE_FEED/.test(main), 'the override is wired to setFeedURL, not to a silent ignore')
 ok(/logLine\([^)]*updater/.test(main), 'updater transitions are logged, so an update can be observed without a screenshot')
 
 console.log(

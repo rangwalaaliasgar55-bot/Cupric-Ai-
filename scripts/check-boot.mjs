@@ -4,22 +4,22 @@
  * uncaught error or blank screen (v0.10.1).
  *
  * 0.10.0 shipped a Studio that went white on mount: it assigned to
- * `window.cupric`, which contextBridge defines read-only, so the effect threw,
+ * `window.newbrand`, which contextBridge defines read-only, so the effect threw,
  * React unmounted the whole tree and nothing was left on screen. Web builds
  * never saw it because there is no bridge there. This check therefore always
  * boots WITH a read-only bridge, and drives every view with good, empty and
  * corrupt saved projects.
  *
  * Modes (picked automatically, or with --mode=electron|browser):
- *   electron  Launches Electron (or the packaged app in CUPRIC_BOOT_EXE, e.g.
- *             "release/win-unpacked/Cupric AI.exe") with a throwaway userData
+ *   electron  Launches Electron (or the packaged app in NEWBRAND_BOOT_EXE, e.g.
+ *             "release/win-unpacked/NewBrand.exe") with a throwaway userData
  *             dir and `--remote-debugging-port`, writes projects.json fixtures
  *             into it and drives the window over CDP. The real preload and
  *             main process run. The matrix runs with --disable-gpu (the 0.10.0
  *             repro flags) plus a GPU-enabled pass.
  *   browser   When no Electron binary is available (sandboxes/CI without the
  *             binary download), serves dist/ over HTTP and drives headless
- *             Chrome/Chromium (CUPRIC_BOOT_CHROME=path) with a stub bridge
+ *             Chrome/Chromium (NEWBRAND_BOOT_CHROME=path) with a stub bridge
  *             defined exactly like contextBridge defines it: non-writable,
  *             non-configurable, frozen. Assigning to it throws the same
  *             TypeError the packaged app threw.
@@ -152,19 +152,19 @@ function run(cmd, cmdArgs, { env = {}, shell = process.platform === 'win32' } = 
 // Fast pure check first: projects.json schema validation (no browser needed).
 run(process.execPath, [path.join(root, 'scripts/check-project-schema.mjs')], { shell: false })
 
-if (!flag('no-build') && !process.env.CUPRIC_BOOT_EXE) {
+if (!flag('no-build') && !process.env.NEWBRAND_BOOT_EXE) {
   console.log('check:boot — building renderer (vite build)…')
   run('npx', ['vite', 'build', '--logLevel', 'warn'])
 }
 const distIndex = path.join(root, 'dist', 'index.html')
-if (!process.env.CUPRIC_BOOT_EXE && !existsSync(distIndex)) throw new Error('dist/index.html is missing — run without --no-build')
+if (!process.env.NEWBRAND_BOOT_EXE && !existsSync(distIndex)) throw new Error('dist/index.html is missing — run without --no-build')
 
-// The minified bundle is where 0.10.0's `nt.cupric={...}` lived; scan it too.
+// The minified bundle is where 0.10.0's `nt.newbrand={...}` lived; scan it too.
 if (!flag('no-bundle-scan') && existsSync(path.join(root, 'dist', 'assets'))) {
   const bad = []
   for (const f of readdirSync(path.join(root, 'dist', 'assets')).filter((n) => n.endsWith('.js'))) {
     const text = readFileSync(path.join(root, 'dist', 'assets', f), 'utf8')
-    const re = /[\w$\])]\.(cupric|northframe)\s*=(?!=)|delete\s+[\w$.]+\.(cupric|northframe)\b/g
+    const re = /[\w$\])]\.(newbrand|northframe)\s*=(?!=)|delete\s+[\w$.]+\.(newbrand|northframe)\b/g
     let m
     while ((m = re.exec(text))) bad.push(`${f}: …${text.slice(Math.max(0, m.index - 40), m.index + 60)}…`)
   }
@@ -185,7 +185,7 @@ try {
 }
 
 function electronBinary() {
-  if (process.env.CUPRIC_BOOT_EXE) return existsSync(process.env.CUPRIC_BOOT_EXE) ? process.env.CUPRIC_BOOT_EXE : null
+  if (process.env.NEWBRAND_BOOT_EXE) return existsSync(process.env.NEWBRAND_BOOT_EXE) ? process.env.NEWBRAND_BOOT_EXE : null
   try {
     const p = require('electron')
     return typeof p === 'string' && existsSync(p) ? p : null
@@ -196,7 +196,7 @@ function electronBinary() {
 
 function chromeBinary() {
   const candidates = [
-    process.env.CUPRIC_BOOT_CHROME,
+    process.env.NEWBRAND_BOOT_CHROME,
     process.env.CHROME_PATH,
     process.env.PUPPETEER_EXECUTABLE_PATH,
     '/usr/bin/google-chrome',
@@ -240,8 +240,8 @@ async function connectWithRetry(browserURL, child, timeoutMs = 30_000) {
 
 /**
  * Stub bridge for browser mode. Defined the way contextBridge defines it —
- * non-writable, non-configurable, frozen — so `window.cupric = …` throws
- * "Cannot assign to read only property 'cupric'" exactly as in 0.10.0.
+ * non-writable, non-configurable, frozen — so `window.newbrand = …` throws
+ * "Cannot assign to read only property 'newbrand'" exactly as in 0.10.0.
  * Saved state lives in localStorage under __boot_state (the runner seeds it).
  */
 const STUB_BRIDGE = `(() => {
@@ -272,7 +272,7 @@ const STUB_BRIDGE = `(() => {
     }),
     paths: Object.freeze({ arenaPreviewUrl: () => ok(null) }),
   })
-  for (const name of ['cupric', 'northframe']) Object.defineProperty(window, name, { value: bridge, writable: false, configurable: false, enumerable: true })
+  for (const name of ['newbrand', 'northframe']) Object.defineProperty(window, name, { value: bridge, writable: false, configurable: false, enumerable: true })
 })()`
 
 function serveDist() {
@@ -319,7 +319,7 @@ async function waitReady(page, view) {
   // The shell sets main[data-view]; a fallback card also counts as "not blank".
   await page
     .waitForFunction(
-      (v) => Boolean(document.querySelector(`main[data-view="${v}"]`) || document.querySelector('[data-cupric-fallback]') || document.querySelector('main[data-view]')),
+      (v) => Boolean(document.querySelector(`main[data-view="${v}"]`) || document.querySelector('[data-newbrand-fallback]') || document.querySelector('main[data-view]')),
       { timeout: READY_TIMEOUT_MS },
       view,
     )
@@ -328,13 +328,13 @@ async function waitReady(page, view) {
   return page.evaluate(() => {
     const rootEl = document.getElementById('root')
     const main = document.querySelector('main[data-view]')
-    const fallbacks = [...document.querySelectorAll('[data-cupric-fallback]')].map((el) => ({ kind: el.getAttribute('data-cupric-fallback'), text: el.textContent?.slice(0, 300) }))
+    const fallbacks = [...document.querySelectorAll('[data-newbrand-fallback]')].map((el) => ({ kind: el.getAttribute('data-newbrand-fallback'), text: el.textContent?.slice(0, 300) }))
     return {
       view: main?.getAttribute('data-view') ?? null,
       rootChildren: rootEl?.childElementCount ?? 0,
       textLength: (document.body?.innerText ?? '').trim().length,
       fallbacks,
-      warnings: [...document.querySelectorAll('[data-cupric-notice]')].map((el) => el.textContent?.trim()),
+      warnings: [...document.querySelectorAll('[data-newbrand-notice]')].map((el) => el.textContent?.trim()),
     }
   })
 }
@@ -384,7 +384,7 @@ async function runMatrix({ label, page, seed, load }) {
     await sleep(400) // let the first boot's autosave land
     await reload() // second boot reads what the first one saved
     const state = await waitReady(page, 'studio')
-    const hasCanvas = await page.evaluate(() => Boolean(document.querySelector('canvas[aria-label="Studio preview"], [data-cupric-dom-preview]')))
+    const hasCanvas = await page.evaluate(() => Boolean(document.querySelector('canvas[aria-label="Studio preview"], [data-newbrand-dom-preview]')))
     const hasHint = await page.evaluate(() => Boolean(document.querySelector('[data-studio-empty-hint]')))
     if (problems.length) fail(tag, problems.join(' | '))
     else if (state.view !== 'studio') fail(tag, `view is ${state.view}`)
@@ -400,16 +400,16 @@ async function runMatrix({ label, page, seed, load }) {
     await seed(FIXTURES['empty-project'](view))
     await load({ forceThrow: view })
     const state = await waitReady(page, view)
-    await page.evaluate(() => sessionStorage.removeItem('cupric:debug:forceThrow'))
+    await page.evaluate(() => sessionStorage.removeItem('newbrand:debug:forceThrow'))
     const card = state.fallbacks.find((f) => f.kind === 'route')
-    const buttons = await page.evaluate(() => [...document.querySelectorAll('[data-cupric-fallback] button')].map((b) => b.textContent?.trim()))
+    const buttons = await page.evaluate(() => [...document.querySelectorAll('[data-newbrand-fallback] button')].map((b) => b.textContent?.trim()))
     if (problems.length) fail(tag, `uncaught despite boundary: ${problems.join(' | ')}`)
     else if (!card) fail(tag, `no fallback card (fallbacks: ${JSON.stringify(state.fallbacks)})`)
     else if (!buttons.some((b) => /copy error/i.test(b ?? '')) || !buttons.some((b) => /go to library/i.test(b ?? ''))) fail(tag, `card is missing buttons: ${buttons.join(', ')}`)
     else if (!/p-empty/.test(card.text ?? '')) fail(tag, 'card does not show the project id')
     else {
       if (view !== 'library') {
-        await page.evaluate(() => [...document.querySelectorAll('[data-cupric-fallback] button')].find((b) => /go to library/i.test(b.textContent ?? ''))?.click())
+        await page.evaluate(() => [...document.querySelectorAll('[data-newbrand-fallback] button')].find((b) => /go to library/i.test(b.textContent ?? ''))?.click())
         const after = await waitReady(page, 'library')
         if (after.view !== 'library' || after.fallbacks.length) {
           fail(tag, `Go to Library did not recover (view ${after.view}, fallbacks ${after.fallbacks.length})`)
@@ -453,8 +453,8 @@ if (mode === 'none' || (mode === 'electron' && !electronPath) || (mode === 'brow
     [
       'check:boot FAILED — nothing to boot the app with.',
       '  • Electron: `npm install` downloads it (set ELECTRON_MIRROR if GitHub downloads are blocked),',
-      '    or point CUPRIC_BOOT_EXE at a packaged "Cupric AI.exe".',
-      '  • Browser: set CUPRIC_BOOT_CHROME to a Chrome/Chromium/Edge executable.',
+      '    or point NEWBRAND_BOOT_EXE at a packaged "NewBrand.exe".',
+      '  • Browser: set NEWBRAND_BOOT_CHROME to a Chrome/Chromium/Edge executable.',
     ].join('\n'),
   )
   process.exit(1)
@@ -468,13 +468,13 @@ try {
       { label: 'Electron (GPU enabled)', extra: [] },
     ]
     for (const p of passes) {
-      const userData = mkdtempSync(path.join(os.tmpdir(), 'cupric-boot-'))
+      const userData = mkdtempSync(path.join(os.tmpdir(), 'newbrand-boot-'))
       if (!flag('keep')) cleanups.push(() => rmSync(userData, { recursive: true, force: true }))
       const port = await freePort()
-      const appArgs = process.env.CUPRIC_BOOT_EXE ? [] : [root]
+      const appArgs = process.env.NEWBRAND_BOOT_EXE ? [] : [root]
       const child = spawn(electronPath, [...appArgs, `--remote-debugging-port=${port}`, ...p.extra], {
         cwd: root,
-        env: { ...process.env, CUPRIC_USER_DATA_DIR: userData, ELECTRON_START_URL: '', CUPRIC_BOOT_CHECK: '1', ELECTRON_ENABLE_LOGGING: '1' },
+        env: { ...process.env, NEWBRAND_USER_DATA_DIR: userData, ELECTRON_START_URL: '', NEWBRAND_BOOT_CHECK: '1', ELECTRON_ENABLE_LOGGING: '1' },
         stdio: ['ignore', 'pipe', 'pipe'],
       })
       const appLog = []
@@ -508,7 +508,7 @@ try {
         load: async ({ forceThrow } = {}) => {
           await page.goto(appUrl, { waitUntil: 'domcontentloaded' })
           if (forceThrow) {
-            await page.evaluate((v) => sessionStorage.setItem('cupric:debug:forceThrow', v), forceThrow)
+            await page.evaluate((v) => sessionStorage.setItem('newbrand:debug:forceThrow', v), forceThrow)
             await page.reload({ waitUntil: 'domcontentloaded' })
           }
         },
@@ -549,7 +549,7 @@ try {
         }, text)
       },
       load: async ({ forceThrow } = {}) => {
-        if (forceThrow) await page.evaluate((v) => sessionStorage.setItem('cupric:debug:forceThrow', v), forceThrow)
+        if (forceThrow) await page.evaluate((v) => sessionStorage.setItem('newbrand:debug:forceThrow', v), forceThrow)
         await page.goto(url, { waitUntil: 'domcontentloaded' })
       },
     })

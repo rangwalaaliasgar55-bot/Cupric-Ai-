@@ -342,7 +342,7 @@ export function Studio() {
     }
     const command = parseVoiceCommand(first) ?? parseVoiceCommand(phrase)
     if (!command) {
-      pushToast('info', `“${first}” is not a command Cupric can run from here.`)
+      pushToast('info', `“${first}” is not a command NewBrand can run from here.`)
       return
     }
     setHeard(`“${first}”`)
@@ -584,8 +584,8 @@ export function Studio() {
   useEffect(() => emitStudio('selection:change', { clipId: selectedId }), [selectedId])
   useEffect(() => emitStudio('time:change', { time }), [time])
 
-  // Scripting API (window.__cupricStudio) — reads live state through refs.
-  // NEVER graft it onto window.cupric: that is the read-only contextBridge
+  // Scripting API (window.__newbrandStudio) — reads live state through refs.
+  // NEVER graft it onto window.newbrand: that is the read-only contextBridge
   // object, and writing to it is what blanked the Studio in 0.10.0.
   const apiState = useRef({ doc, selectedId, time })
   apiState.current = { doc, selectedId, time }
@@ -599,9 +599,9 @@ export function Studio() {
       getTime: () => apiState.current.time,
       seek: (t) => seek(t),
     })
-    window.__cupricStudio = api
+    window.__newbrandStudio = api
     return () => {
-      if (window.__cupricStudio === api) delete window.__cupricStudio
+      if (window.__newbrandStudio === api) delete window.__newbrandStudio
     }
   }, [pid, patchStudio, seek])
 
@@ -748,7 +748,7 @@ export function Studio() {
           playheadSec: Math.round(time * 100) / 100,
           selectedId,
           // Names only: the agent uses these attributed libraries as visual
-          // vocabulary, then translates the idea into Cupric's safe native
+          // vocabulary, then translates the idea into NewBrand's safe native
           // operations. Third-party source is never sent, copied or executed.
           motionReferences: {
             reactBits: relevantNames(reactBitsCatalog.items),
@@ -782,7 +782,7 @@ export function Studio() {
           // No network, no key, quota spent or a local server that is off: the
           // built-in motion engine still plans a real edit.
           const local = localStudioEditPlan(instruction, doc, selectedId, { time })
-          raw = { ...local, warning: `Planned offline with Cupric's motion engine. ${humanError(err, 'AI connection')}` }
+          raw = { ...local, warning: `Planned offline with NewBrand's motion engine. ${humanError(err, 'AI connection')}` }
         }
       } else {
         raw = localStudioEditPlan(instruction, doc, selectedId, { time })
@@ -797,7 +797,7 @@ export function Studio() {
         const local = localStudioEditPlan(instruction, doc, selectedId, { time })
         plan = validateStudioEditPlan({
           ...local,
-          warning: `The live response was unsafe or incomplete, so Cupric rebuilt it locally with its motion engine (${humanError(validationError, 'invalid edit plan')}).`,
+          warning: `The live response was unsafe or incomplete, so NewBrand rebuilt it locally with its motion engine (${humanError(validationError, 'invalid edit plan')}).`,
         }, doc)
       }
       setAgentPlan(enrichThinPlan(plan, instruction, doc, selectedId))
@@ -960,7 +960,7 @@ export function Studio() {
             setTime(sceneClips[0].startSec + Math.min(0.8, sceneClips[0].durationSec / 2))
           }
           const how = {
-            manifest: 'from its Cupric manifest',
+            manifest: 'from its NewBrand manifest',
             'scene-array': 'from its scene list',
             'timed-markup': 'from its timed markup',
             'scene-blocks': 'scene by scene, with each scene’s own timing',
@@ -1353,7 +1353,7 @@ export function Studio() {
     const signal = { cancelled: false }
     cancelRef.current = signal
     try {
-      const fileName = `${slugify(project?.name ?? 'cupric-studio')}-studio${suffix}`
+      const fileName = `${slugify(project?.name ?? 'newbrand-studio')}-studio${suffix}`
       // In Electron, the main-process farm owns the offscreen compositor and
       // the durable output. The browser path below remains the portable
       // fallback, but the interactive Studio never records its own canvas on
@@ -1389,7 +1389,7 @@ export function Studio() {
         return 'cancelled'
       } else if (asMp4) {
         pushToast('info', 'Converting to MP4 with FFmpeg\u2026')
-        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'cupric-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal, result.durationSec)
+        const mp4 = await convertToMp4(result.blob, `${slugify(project?.name ?? 'newbrand-studio')}${suffix}`, doc.fps, doc.loudnessTarget ?? null, signal, result.durationSec)
         setLastExport({ url: result.url, fileName: result.fileName })
         const level = mp4.loudness && mp4.loudness.mode !== 'none' ? ` \u2014 ${mp4.loudness.note}` : ''
         pushToast('success', `Saved ${mp4.outputPath.split(/[\\/]/).pop()} (${Math.round(mp4.bytes / 1024)} KB)${level}`)
@@ -1471,8 +1471,8 @@ export function Studio() {
         >
             <Sparkles size={13} /> Pro tools
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setAskOpen(true)} title="Ask Cupric AI to edit this timeline: trims, captions, keyframes, transitions">
-            <Wand2 size={13} /> Cupric AI
+          <Button size="sm" variant="outline" onClick={() => setAskOpen(true)} title="Ask NewBrand to edit this timeline: trims, captions, keyframes, transitions">
+            <Wand2 size={13} /> NewBrand
           </Button>
         </div>
         <div className="flex-1" />
@@ -1678,7 +1678,7 @@ export function Studio() {
         <div className="flex shrink-0 items-center gap-3 border-b border-line bg-accent/5 px-6 py-2 text-xs text-muted" role="status" aria-live="polite">
           <MatrixLoader variant="orbit" tone="lime" label="Planning the edit" />
           <ThinkingStates states={[agentPhase || 'Planning the edit']} baseColor="var(--color-text)" />
-          <span>· Live AI has at most 10 seconds, then Cupric instantly switches to its local editor.</span>
+          <span>· Live AI has at most 10 seconds, then NewBrand instantly switches to its local editor.</span>
         </div>
       )}
 

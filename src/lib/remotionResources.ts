@@ -1,10 +1,10 @@
 /**
- * Remotion capability bridge for Cupric's autonomous planner.
+ * Remotion capability bridge for NewBrand's autonomous planner.
  *
  * `resources/remotion/catalog.json` is intentionally a metadata index: it
  * makes upstream templates, fonts and skills searchable without copying an
  * entire upstream monorepo or silently changing its license. The actual
- * render path remains Cupric's deterministic Studio renderer and Remotion
+ * render path remains NewBrand's deterministic Studio renderer and Remotion
  * Player preview.
  */
 

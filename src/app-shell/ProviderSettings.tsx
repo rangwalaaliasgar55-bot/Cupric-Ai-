@@ -306,7 +306,7 @@ export function ProviderSettings({ onChanged }: { onChanged?: () => void }) {
           </button>
         ) : null}
         {draft.key && state.keySource.startsWith('environment') ? (
-          <span className="text-xs text-muted">Your environment already has a key for this provider; saving here stores one in Cupric.</span>
+          <span className="text-xs text-muted">Your environment already has a key for this provider; saving here stores one in NewBrand.</span>
         ) : null}
       </div>
 

@@ -8,7 +8,7 @@ import path from 'node:path'
 
 const require = createRequire(import.meta.url)
 const h = require('../electron/project-history.cjs')
-const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-history-'))
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-history-'))
 const blob = (name, clips = 1) => JSON.stringify({ state: { projects: [{ name, studio: { clips: Array.from({ length: clips }, (_, i) => ({ id: i })) } }] }, version: 2 })
 const at = (min) => new Date(Date.UTC(2026, 8, 27, 10, min, 0))
 

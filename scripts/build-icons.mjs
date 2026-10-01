@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Build every app icon from ONE definition of the Cupric mark: the lime
- * eight-point asterisk on the ink tile, the same mark the sidebar shows.
+ * Build every app icon from ONE definition of the NewBrand mark: a lime N
+ * on the ink tile, the same mark the sidebar shows.
  *
  * Why a hand-rolled rasterizer: the mark is only a rounded square and four
  * round-capped strokes, so it can be rendered exactly (analytic coverage with
@@ -29,8 +29,8 @@ export const MARK = {
   inkTop: [0x1a, 0x1c, 0x24],
   lime: [0xc8, 0xf5, 0x42],
   radius: 0.225, // tile corner radius, fraction of size
-  arm: 0.29, // asterisk arm length from the centre, fraction of size
-  stroke: 0.082, // stroke width, fraction of size
+  arm: 0.255, // N stem height and half-width from centre, fraction of size
+  stroke: 0.092, // stroke width, fraction of size
 }
 
 /** Small sizes get a heavier stroke so the mark survives 16 px taskbars. */
@@ -64,13 +64,11 @@ export function renderMark(size) {
   const r = MARK.radius * size
   const c = size / 2
   const a = MARK.arm * size
-  const d = a * Math.SQRT1_2
   const half = (strokeFor(size) * size) / 2
   const segments = [
-    [c, c - a, c, c + a],
-    [c - a, c, c + a, c],
-    [c - d, c - d, c + d, c + d],
-    [c + d, c - d, c - d, c + d],
+    [c - a, c - a, c - a, c + a],
+    [c + a, c - a, c + a, c + a],
+    [c - a, c - a, c + a, c + a],
   ]
   const S = 4
   for (let y = 0; y < size; y++) {
@@ -167,9 +165,8 @@ export function markSvg() {
   const s = 64
   const c = s / 2
   const a = +(MARK.arm * s).toFixed(2)
-  const d = +(a * Math.SQRT1_2).toFixed(2)
   const hex = (rgb) => '#' + rgb.map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase()
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${s} ${s}" role="img" aria-label="Cupric AI"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hex(MARK.inkTop)}"/><stop offset="1" stop-color="${hex(MARK.ink)}"/></linearGradient></defs><rect width="${s}" height="${s}" rx="${+(MARK.radius * s).toFixed(2)}" fill="url(#g)"/><g transform="translate(${c} ${c})" stroke="${hex(MARK.lime)}" stroke-width="${+(MARK.stroke * s * 1.1).toFixed(2)}" stroke-linecap="round"><path d="M0 -${a}V${a}M-${a} 0H${a}M-${d} -${d} ${d} ${d}M${d} -${d} -${d} ${d}"/></g></svg>\n`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${s} ${s}" role="img" aria-label="NewBrand"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hex(MARK.inkTop)}"/><stop offset="1" stop-color="${hex(MARK.ink)}"/></linearGradient></defs><rect width="${s}" height="${s}" rx="${+(MARK.radius * s).toFixed(2)}" fill="url(#g)"/><g transform="translate(${c} ${c})" stroke="${hex(MARK.lime)}" stroke-width="${+(MARK.stroke * s * 1.1).toFixed(2)}" stroke-linecap="round"><path d="M-${a} -${a}V${a}M${a} -${a}V${a}M-${a} -${a}L${a} ${a}"/></g></svg>\n`
 }
 
 function outputs() {

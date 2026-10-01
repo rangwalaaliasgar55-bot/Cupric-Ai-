@@ -1,6 +1,6 @@
 /**
  * Few-shot examples for the addAnimation op (project-original code, written
- * for Cupric). Each one follows every rule in agentCode.ts; the Node check
+ * for NewBrand). Each one follows every rule in agentCode.ts; the Node check
  * validates them, so a prompt never teaches the model something we'd reject.
  */
 export const AGENT_ANIMATION_FEWSHOTS: Array<{ request: string; answer: { name: string; kind: string; durationSec: number; ease: string; props: Record<string, string | number | boolean>; code: string } }> = [

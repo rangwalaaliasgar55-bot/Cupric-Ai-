@@ -29,7 +29,7 @@ await p.addInitScript(() => {
     invoke: async (channel, payload) => {
       calls.push(channel)
       if (channel === 'state:save') { window.__saved = payload; return { ok: true } }
-      if (channel === 'agent:generateAnimation') return { name: 'Glitch RGB Title', kind: 'title', ease: 'ease-out', props: { text: 'CUPRIC' }, code: glitch, durationSec: payload.durationSec, route: 'Mock provider · gpt-4o-mini' }
+      if (channel === 'agent:generateAnimation') return { name: 'Glitch RGB Title', kind: 'title', ease: 'ease-out', props: { text: 'NEWBRAND' }, code: glitch, durationSec: payload.durationSec, route: 'Mock provider · gpt-4o-mini' }
       if (channel === 'agent:saveGenerated') return { ok: true, file: 'src/lab/generated/' + payload.slug + '.tsx' }
       if (channel === 'ai:freeModels') return { fetchedAt: 1, models: [
         { id: 'local/llama3.2:3b', source: 'ollama', kind: 'local', badge: '$0 local', isNew: false, retired: false },
@@ -50,7 +50,7 @@ await p.addInitScript(() => {
     },
     on: (channel, cb) => { (listeners[channel] ||= []).push(cb); return () => { listeners[channel] = listeners[channel].filter((x) => x !== cb) } },
   })
-  Object.defineProperty(window, 'cupric', { value: Object.freeze({ isDesktop: false, platform: 'linux', versions: {}, ipc, filePathFor: () => null, paths: {} }), writable: false })
+  Object.defineProperty(window, 'newbrand', { value: Object.freeze({ isDesktop: false, platform: 'linux', versions: {}, ipc, filePathFor: () => null, paths: {} }), writable: false })
   window.__mockEmit = (channel, payload) => (listeners[channel] || []).forEach((cb) => cb(payload))
   window.__mockCalls = calls
 })

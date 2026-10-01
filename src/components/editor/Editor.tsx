@@ -22,7 +22,7 @@ const TABS: [Tab, string, string[]][] = [["ai", "AI", []], ["templates", "Templa
 const HEAVY = new Set(["three", "physics", "shader"]);
 
 export default function Editor() {
-  const [doc, setDoc] = useState<VideoDoc>(() => buildTemplate("productLaunch", { brand: { name: "Cupric AI" } }));
+  const [doc, setDoc] = useState<VideoDoc>(() => buildTemplate("productLaunch", { brand: { name: "NewBrand" } }));
   const hist = useRef<{ past: VideoDoc[]; future: VideoDoc[]; lastKey?: string; lastAt: number }>({ past: [], future: [], lastAt: 0 });
   const [, bump] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -40,7 +40,7 @@ export default function Editor() {
   const [alpha, setAlpha] = useState(false);
   const [projects, setProjects] = useState<{ id: string; name: string; updatedAt: string }[] | null>(null);
   const [presets, setPresets] = useState<{ id: string; name: string; kind: string; data: { asset?: string; props?: Record<string, unknown>; node?: SceneNode } }[]>([]);
-  const [prompt, setPrompt] = useState("Create a 25-second premium futuristic AI SaaS advertisement for Cupric AI");
+  const [prompt, setPrompt] = useState("Create a 25-second premium futuristic AI SaaS advertisement for NewBrand");
   const [search, setSearch] = useState("");
   const [brandColor, setBrandColor] = useState("#7c8cff");
   const dragRef = useRef<{ id: string; dx: number; dy: number } | null>(null);
@@ -92,7 +92,7 @@ export default function Editor() {
     const d = a.defaults;
     const at = { x: cx, y: cy };
     switch (a.kind) {
-      case "template": { const id = a.id.replace("template:", ""); const inp = (doc.meta?.input ?? {}) as TemplateInput; replaceDoc(buildTemplate(id, { brand: inp.brand ?? { name: "Cupric AI" }, aspect: (inp.aspect as Aspect) ?? TEMPLATES[id]?.aspect })); flash(`Loaded template: ${a.name}`); return; }
+      case "template": { const id = a.id.replace("template:", ""); const inp = (doc.meta?.input ?? {}) as TemplateInput; replaceDoc(buildTemplate(id, { brand: inp.brand ?? { name: "NewBrand" }, aspect: (inp.aspect as Aspect) ?? TEMPLATES[id]?.aspect })); flash(`Loaded template: ${a.name}`); return; }
       case "typography": return insert(createNode("text", { text: "Your headline here", size: 110 * s, animation: d.animation }, { ...at, name: "Text" }));
       case "shape": return insert(createNode("shape", { shape: d.shape, w: 320 * s, h: 320 * s, colors: [getTheme(doc.theme).colors.primary, getTheme(doc.theme).colors.secondary] }, { ...at, name: String(d.shape), enter: { preset: "pop" } }));
       case "background": case "shader": return insert(createNode(a.kind, { ...d, colors: getTheme(doc.theme).gradient, speed: 0.6 }, { ...at, name: a.name }), true);
@@ -101,7 +101,7 @@ export default function Editor() {
       case "ui": return insert(createNode("ui", { ...d }, { transform: { ...at, scale: 0.8 * s }, name: a.name, enter: { preset: "saas" } }));
       case "device": return insert(createNode("device", { ...d }, { transform: { ...at, scale: 0.6 * s }, name: a.name, enter: { preset: "perspectiveIn" } }));
       case "chart": return insert(createNode("chart", { ...d, w: 800 * s, h: 440 * s, card: true, title: "Revenue" }, { ...at, name: a.name }));
-      case "logo": return insert(createNode("logo", { ...d, text: (doc.meta?.input as TemplateInput | undefined)?.brand?.name ?? "Cupric", size: 130 * s }, { ...at, name: "Logo" }));
+      case "logo": return insert(createNode("logo", { ...d, text: (doc.meta?.input as TemplateInput | undefined)?.brand?.name ?? "NewBrand", size: 130 * s }, { ...at, name: "Logo" }));
       case "motion": { if (!node) { flash("Select a layer first, then choose a motion preset."); return; } const id = a.id.replace("motion:", ""); const loop = a.tags.includes("loop"); commit((dd) => updateNode(dd, node.id, (n) => (loop ? { ...n, loop: { preset: id } } : { ...n, enter: { preset: id } }))); flash(`${loop ? "Loop" : "Entrance"} set to ${a.name}`); return; }
       case "effect": { if (!current) return; commit((dd) => updateScene(dd, current.scene.id, (sc) => ({ ...sc, effects: [...(sc.effects ?? []), { id: uid("fx"), type: a.id.replace("effect:", "") }] }))); flash(`${a.name} added to scene “${current.scene.name}”`); return; }
       case "transition": { if (!current || current.index === 0) { flash("Select the second scene or later; the transition plays into that scene."); return; } commit((dd) => updateScene(dd, current.scene.id, (sc) => ({ ...sc, transition: { type: a.id.replace("transition:", ""), duration: sc.transition?.duration || 18 } }))); flash(`Transition into “${current.scene.name}”: ${a.name}`); return; }

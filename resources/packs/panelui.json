@@ -1,7 +1,7 @@
 {
   "id": "panelui",
   "name": "PanelUI catalogue",
-  "description": "All 135 PanelUI components and 21 chart visualisations as editable Cupric-native Studio storyboards. React Native source stays upstream; Cupric uses its own deterministic renderer.",
+  "description": "All 135 PanelUI components and 21 chart visualisations as editable NewBrand-native Studio storyboards. React Native source stays upstream; NewBrand uses its own deterministic renderer.",
   "version": "0.16.0",
   "source": "https://github.com/panel-ui/PanelUI (panelui-native 0.102.1, react-native)",
   "license": "MIT — Copyright (c) 2026 Khalid Abdi",
@@ -10,7 +10,7 @@
       "id": "panelui-api-route",
       "kind": "saas-template",
       "name": "API route",
-      "description": "The server handler that streams from the model. · editable Cupric-native storyboard",
+      "description": "The server handler that streams from the model. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -53,7 +53,7 @@
       "id": "panelui-chat-ui",
       "kind": "saas-template",
       "name": "Chat UI",
-      "description": "A transcript and composer built from PanelUI components. · editable Cupric-native storyboard",
+      "description": "A transcript and composer built from PanelUI components. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -96,7 +96,7 @@
       "id": "panelui-index",
       "kind": "saas-template",
       "name": "AI",
-      "description": "Building AI chat interfaces in React Native with PanelUI. · editable Cupric-native storyboard",
+      "description": "Building AI chat interfaces in React Native with PanelUI. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -139,7 +139,7 @@
       "id": "panelui-setup",
       "kind": "saas-template",
       "name": "Setup",
-      "description": "Dependencies, polyfills and getting the API URL right on a device. · editable Cupric-native storyboard",
+      "description": "Dependencies, polyfills and getting the API URL right on a device. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -182,7 +182,7 @@
       "id": "panelui-streaming-performance",
       "kind": "saas-template",
       "name": "Streaming performance",
-      "description": "Why token-by-token rendering drops frames on native, and what to do. · editable Cupric-native storyboard",
+      "description": "Why token-by-token rendering drops frames on native, and what to do. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -225,7 +225,7 @@
       "id": "panelui-tools",
       "kind": "saas-template",
       "name": "Tools",
-      "description": "Letting the model call your code, and showing it in the conversation. · editable Cupric-native storyboard",
+      "description": "Letting the model call your code, and showing it in the conversation. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -268,7 +268,7 @@
       "id": "panelui-voice",
       "kind": "saas-template",
       "name": "Voice",
-      "description": "A level from the microphone, an assistant that talks back, and voice notes in a transcript. · editable Cupric-native storyboard",
+      "description": "A level from the microphone, an assistant that talks back, and voice notes in a transcript. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -311,7 +311,7 @@
       "id": "panelui-ai-input",
       "kind": "saas-template",
       "name": "aiInput",
-      "description": "A prompt composer: a field that grows to five lines, a row of controls, and the sheet they open. · editable Cupric-native storyboard",
+      "description": "A prompt composer: a field that grows to five lines, a row of controls, and the sheet they open. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -354,7 +354,7 @@
       "id": "panelui-code-block",
       "kind": "saas-template",
       "name": "CodeBlock",
-      "description": "A fenced snippet, syntax-coloured and scrolled sideways. · editable Cupric-native storyboard",
+      "description": "A fenced snippet, syntax-coloured and scrolled sideways. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -397,7 +397,7 @@
       "id": "panelui-image-generation",
       "kind": "saas-template",
       "name": "ImageGeneration",
-      "description": "The place an image will be, while it is being made. · editable Cupric-native storyboard",
+      "description": "The place an image will be, while it is being made. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -440,7 +440,7 @@
       "id": "panelui-panelside",
       "kind": "saas-template",
       "name": "Panelside",
-      "description": "Navigation panel that moves the app aside instead of covering it. · editable Cupric-native storyboard",
+      "description": "Navigation panel that moves the app aside instead of covering it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -483,7 +483,7 @@
       "id": "panelui-plan",
       "kind": "saas-template",
       "name": "Plan",
-      "description": "What an agent intends to do, before it does it. · editable Cupric-native storyboard",
+      "description": "What an agent intends to do, before it does it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -526,7 +526,7 @@
       "id": "panelui-reasoning",
       "kind": "saas-template",
       "name": "Reasoning",
-      "description": "The model's working, shown while it happens and folded away after. · editable Cupric-native storyboard",
+      "description": "The model's working, shown while it happens and folded away after. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -569,7 +569,7 @@
       "id": "panelui-response",
       "kind": "saas-template",
       "name": "Response",
-      "description": "A model's answer, rendered as markdown while it is still arriving. · editable Cupric-native storyboard",
+      "description": "A model's answer, rendered as markdown while it is still arriving. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -612,7 +612,7 @@
       "id": "panelui-shimmer",
       "kind": "saas-template",
       "name": "Shimmer",
-      "description": "Animated highlight sweeping across content. · editable Cupric-native storyboard",
+      "description": "Animated highlight sweeping across content. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -655,7 +655,7 @@
       "id": "panelui-soundwave",
       "kind": "saas-template",
       "name": "Soundwave",
-      "description": "What a voice looks like while an app listens. · editable Cupric-native storyboard",
+      "description": "What a voice looks like while an app listens. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -698,7 +698,7 @@
       "id": "panelui-sources",
       "kind": "saas-template",
       "name": "Sources",
-      "description": "Where an answer came from, folded under a count. · editable Cupric-native storyboard",
+      "description": "Where an answer came from, folded under a count. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -741,7 +741,7 @@
       "id": "panelui-task",
       "kind": "saas-template",
       "name": "Task",
-      "description": "One step an agent took, and what it did while it was there. · editable Cupric-native storyboard",
+      "description": "One step an agent took, and what it did while it was there. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -784,7 +784,7 @@
       "id": "panelui-thinking-orb",
       "kind": "saas-template",
       "name": "ThinkingOrb",
-      "description": "Dotted orb saying which kind of busy an agent is. · editable Cupric-native storyboard",
+      "description": "Dotted orb saying which kind of busy an agent is. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -827,7 +827,7 @@
       "id": "panelui-area-chart",
       "kind": "saas-template",
       "name": "AreaChart",
-      "description": "Filled bands over time, stacked or overlaid. · editable Cupric-native storyboard",
+      "description": "Filled bands over time, stacked or overlaid. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -870,7 +870,7 @@
       "id": "panelui-bar-chart",
       "kind": "saas-template",
       "name": "BarChart",
-      "description": "Categories compared by length, grouped or stacked. · editable Cupric-native storyboard",
+      "description": "Categories compared by length, grouped or stacked. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -913,7 +913,7 @@
       "id": "panelui-bubble-chart",
       "kind": "saas-template",
       "name": "BubbleChart",
-      "description": "Named circles on two axes, with a third quantity on their area. · editable Cupric-native storyboard",
+      "description": "Named circles on two axes, with a third quantity on their area. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -956,7 +956,7 @@
       "id": "panelui-bump-chart",
       "kind": "saas-template",
       "name": "BumpChart",
-      "description": "How a set of things ranked against each other over time. · editable Cupric-native storyboard",
+      "description": "How a set of things ranked against each other over time. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -999,7 +999,7 @@
       "id": "panelui-candlestick-chart",
       "kind": "saas-template",
       "name": "CandlestickChart",
-      "description": "Open, high, low and close for a period, drawn as one mark. · editable Cupric-native storyboard",
+      "description": "Open, high, low and close for a period, drawn as one mark. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1042,7 +1042,7 @@
       "id": "panelui-funnel-chart",
       "kind": "saas-template",
       "name": "FunnelChart",
-      "description": "Where a population drained away, one step at a time. · editable Cupric-native storyboard",
+      "description": "Where a population drained away, one step at a time. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1085,7 +1085,7 @@
       "id": "panelui-heatmap-chart",
       "kind": "saas-template",
       "name": "HeatmapChart",
-      "description": "Contribution grid with a themed colour ramp and a readout. · editable Cupric-native storyboard",
+      "description": "Contribution grid with a themed colour ramp and a readout. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1128,7 +1128,7 @@
       "id": "panelui-hex-chart",
       "kind": "saas-template",
       "name": "HexChart",
-      "description": "A whole broken into parts, counted out in cells. · editable Cupric-native storyboard",
+      "description": "A whole broken into parts, counted out in cells. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1171,7 +1171,7 @@
       "id": "panelui-line-chart",
       "kind": "saas-template",
       "name": "LineChart",
-      "description": "Animated time series, drawn on the UI thread. · editable Cupric-native storyboard",
+      "description": "Animated time series, drawn on the UI thread. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1214,7 +1214,7 @@
       "id": "panelui-live-line-chart",
       "kind": "saas-template",
       "name": "LiveLineChart",
-      "description": "A reading that keeps arriving, against a window that keeps moving. · editable Cupric-native storyboard",
+      "description": "A reading that keeps arriving, against a window that keeps moving. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1257,7 +1257,7 @@
       "id": "panelui-mirror-area-chart",
       "kind": "saas-template",
       "name": "MirrorAreaChart",
-      "description": "Two readings of one timeline, one above a baseline and one below it. · editable Cupric-native storyboard",
+      "description": "Two readings of one timeline, one above a baseline and one below it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1300,7 +1300,7 @@
       "id": "panelui-pie-chart",
       "kind": "saas-template",
       "name": "PieChart",
-      "description": "One whole, divided between its parts. · editable Cupric-native storyboard",
+      "description": "One whole, divided between its parts. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1343,7 +1343,7 @@
       "id": "panelui-plot",
       "kind": "saas-template",
       "name": "Plot",
-      "description": "A chart you assemble out of its marks. · editable Cupric-native storyboard",
+      "description": "A chart you assemble out of its marks. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1386,7 +1386,7 @@
       "id": "panelui-polar-area-chart",
       "kind": "saas-template",
       "name": "PolarAreaChart",
-      "description": "Several readings on one scale, compared as wedges. · editable Cupric-native storyboard",
+      "description": "Several readings on one scale, compared as wedges. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1429,7 +1429,7 @@
       "id": "panelui-pyramid-chart",
       "kind": "saas-template",
       "name": "PyramidChart",
-      "description": "Two series mirrored about a centre, on one shared scale. · editable Cupric-native storyboard",
+      "description": "Two series mirrored about a centre, on one shared scale. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1472,7 +1472,7 @@
       "id": "panelui-radar-chart",
       "kind": "saas-template",
       "name": "RadarChart",
-      "description": "Several measures of one thing, drawn as one shape. · editable Cupric-native storyboard",
+      "description": "Several measures of one thing, drawn as one shape. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1515,7 +1515,7 @@
       "id": "panelui-ring-chart",
       "kind": "saas-template",
       "name": "RingChart",
-      "description": "Concentric arcs, each measured against its own target. · editable Cupric-native storyboard",
+      "description": "Concentric arcs, each measured against its own target. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1558,7 +1558,7 @@
       "id": "panelui-sankey-chart",
       "kind": "saas-template",
       "name": "SankeyChart",
-      "description": "Where a quantity came from and where it ended up. · editable Cupric-native storyboard",
+      "description": "Where a quantity came from and where it ended up. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1601,7 +1601,7 @@
       "id": "panelui-scatter-chart",
       "kind": "saas-template",
       "name": "ScatterChart",
-      "description": "Two quantities against each other, to show how they relate. · editable Cupric-native storyboard",
+      "description": "Two quantities against each other, to show how they relate. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1644,7 +1644,7 @@
       "id": "panelui-treemap-chart",
       "kind": "saas-template",
       "name": "TreemapChart",
-      "description": "A total, cut into the parts it is made of, sized by area. · editable Cupric-native storyboard",
+      "description": "A total, cut into the parts it is made of, sized by area. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1687,7 +1687,7 @@
       "id": "panelui-waterfall-chart",
       "kind": "saas-template",
       "name": "WaterfallChart",
-      "description": "How a run of changes carried one total to another. · editable Cupric-native storyboard",
+      "description": "How a run of changes carried one total to another. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1730,7 +1730,7 @@
       "id": "panelui-accordion",
       "kind": "saas-template",
       "name": "Accordion",
-      "description": "Collapsible sections with single or multiple selection. · editable Cupric-native storyboard",
+      "description": "Collapsible sections with single or multiple selection. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1773,7 +1773,7 @@
       "id": "panelui-alert",
       "kind": "saas-template",
       "name": "Alert",
-      "description": "Status message with a built-in icon. · editable Cupric-native storyboard",
+      "description": "Status message with a built-in icon. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1816,7 +1816,7 @@
       "id": "panelui-animated-badge",
       "kind": "saas-template",
       "name": "AnimatedBadge",
-      "description": "Status pill whose icon and label roll over when the status changes. · editable Cupric-native storyboard",
+      "description": "Status pill whose icon and label roll over when the status changes. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1859,7 +1859,7 @@
       "id": "panelui-attachment",
       "kind": "saas-template",
       "name": "Attachment",
-      "description": "File row with upload states, built on Item. · editable Cupric-native storyboard",
+      "description": "File row with upload states, built on Item. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1902,7 +1902,7 @@
       "id": "panelui-avatar",
       "kind": "saas-template",
       "name": "Avatar",
-      "description": "User image with an initials fallback, a badge overlay, and a stack for a group of them. · editable Cupric-native storyboard",
+      "description": "User image with an initials fallback, a badge overlay, and a stack for a group of them. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1945,7 +1945,7 @@
       "id": "panelui-badge",
       "kind": "saas-template",
       "name": "Badge",
-      "description": "Compact status label, dot, or notification count. · editable Cupric-native storyboard",
+      "description": "Compact status label, dot, or notification count. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -1988,7 +1988,7 @@
       "id": "panelui-bottom-sheet",
       "kind": "saas-template",
       "name": "BottomSheet",
-      "description": "Draggable sheet anchored to the bottom of the screen. · editable Cupric-native storyboard",
+      "description": "Draggable sheet anchored to the bottom of the screen. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2031,7 +2031,7 @@
       "id": "panelui-breadcrumb",
       "kind": "saas-template",
       "name": "Breadcrumb",
-      "description": "The trail of links back up the hierarchy to the current page. · editable Cupric-native storyboard",
+      "description": "The trail of links back up the hierarchy to the current page. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2074,7 +2074,7 @@
       "id": "panelui-button",
       "kind": "saas-template",
       "name": "Button",
-      "description": "Pressable action with variants, sizes, loading state and icon slots. · editable Cupric-native storyboard",
+      "description": "Pressable action with variants, sizes, loading state and icon slots. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2117,7 +2117,7 @@
       "id": "panelui-button-group",
       "kind": "saas-template",
       "name": "ButtonGroup",
-      "description": "Several buttons drawn as one control — a segmented run, a split action, a toolbar. · editable Cupric-native storyboard",
+      "description": "Several buttons drawn as one control — a segmented run, a split action, a toolbar. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2160,7 +2160,7 @@
       "id": "panelui-calendar",
       "kind": "saas-template",
       "name": "Calendar",
-      "description": "A month of days, for picking one, several, or a range. · editable Cupric-native storyboard",
+      "description": "A month of days, for picking one, several, or a range. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2203,7 +2203,7 @@
       "id": "panelui-card",
       "kind": "saas-template",
       "name": "Card",
-      "description": "Content surface with header, body and footer. · editable Cupric-native storyboard",
+      "description": "Content surface with header, body and footer. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2246,7 +2246,7 @@
       "id": "panelui-carousel",
       "kind": "saas-template",
       "name": "Carousel",
-      "description": "A run of slides dragged with a finger — variants default, interactive, coverflow and stack, horizontal or vertical, optional looping. · editable Cupric-native storyboard",
+      "description": "A run of slides dragged with a finger — variants default, interactive, coverflow and stack, horizontal or vertical, optional looping. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2289,7 +2289,7 @@
       "id": "panelui-checkbox",
       "kind": "saas-template",
       "name": "Checkbox",
-      "description": "Animated checkbox, as a row or a selectable card. · editable Cupric-native storyboard",
+      "description": "Animated checkbox, as a row or a selectable card. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2332,7 +2332,7 @@
       "id": "panelui-chip",
       "kind": "saas-template",
       "name": "Chip",
-      "description": "Interactive pill — a filter, a tag, or a removable token. · editable Cupric-native storyboard",
+      "description": "Interactive pill — a filter, a tag, or a removable token. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2375,7 +2375,7 @@
       "id": "panelui-circular-text",
       "kind": "saas-template",
       "name": "CircularText",
-      "description": "Text set around a circle, turning. · editable Cupric-native storyboard",
+      "description": "Text set around a circle, turning. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2418,7 +2418,7 @@
       "id": "panelui-collapsible",
       "kind": "saas-template",
       "name": "Collapsible",
-      "description": "One section of content, shown and hidden by its own header. · editable Cupric-native storyboard",
+      "description": "One section of content, shown and hidden by its own header. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2461,7 +2461,7 @@
       "id": "panelui-color-picker",
       "kind": "saas-template",
       "name": "ColorPicker",
-      "description": "A colour chosen by dragging — a saturation square or a wheel, a hue scale, and opacity. · editable Cupric-native storyboard",
+      "description": "A colour chosen by dragging — a saturation square or a wheel, a hue scale, and opacity. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2504,7 +2504,7 @@
       "id": "panelui-combobox",
       "kind": "saas-template",
       "name": "Combobox",
-      "description": "A text field that filters a list of options as you type. · editable Cupric-native storyboard",
+      "description": "A text field that filters a list of options as you type. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2547,7 +2547,7 @@
       "id": "panelui-compare",
       "kind": "saas-template",
       "name": "Compare",
-      "description": "Two versions of one picture with a seam you drag across it (pan gesture). · editable Cupric-native storyboard",
+      "description": "Two versions of one picture with a seam you drag across it (pan gesture). · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2590,7 +2590,7 @@
       "id": "panelui-context-menu",
       "kind": "saas-template",
       "name": "ContextMenu",
-      "description": "Actions for a piece of content, opened by holding it. · editable Cupric-native storyboard",
+      "description": "Actions for a piece of content, opened by holding it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2633,7 +2633,7 @@
       "id": "panelui-date-picker",
       "kind": "saas-template",
       "name": "DatePicker",
-      "description": "A calendar behind a button. · editable Cupric-native storyboard",
+      "description": "A calendar behind a button. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2676,7 +2676,7 @@
       "id": "panelui-date-time-picker",
       "kind": "saas-template",
       "name": "DateTimePicker",
-      "description": "A day and a time of day, picked in one panel. · editable Cupric-native storyboard",
+      "description": "A day and a time of day, picked in one panel. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2719,7 +2719,7 @@
       "id": "panelui-dialog",
       "kind": "saas-template",
       "name": "Dialog",
-      "description": "Modal dialog with a backdrop and footer actions. · editable Cupric-native storyboard",
+      "description": "Modal dialog with a backdrop and footer actions. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2762,7 +2762,7 @@
       "id": "panelui-direction",
       "kind": "saas-template",
       "name": "Direction",
-      "description": "Reading direction for everything below it. · editable Cupric-native storyboard",
+      "description": "Reading direction for everything below it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2805,7 +2805,7 @@
       "id": "panelui-drawer",
       "kind": "saas-template",
       "name": "Drawer",
-      "description": "A panel that comes in from an edge of the screen and covers the app until dismissed. · editable Cupric-native storyboard",
+      "description": "A panel that comes in from an edge of the screen and covers the app until dismissed. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2848,7 +2848,7 @@
       "id": "panelui-empty-state",
       "kind": "saas-template",
       "name": "EmptyState",
-      "description": "Placeholder for a list or screen with no content. · editable Cupric-native storyboard",
+      "description": "Placeholder for a list or screen with no content. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2891,7 +2891,7 @@
       "id": "panelui-fab",
       "kind": "saas-template",
       "name": "Fab",
-      "description": "The floating action button — one action pinned over the content, with an optional dial of others behind it. · editable Cupric-native storyboard",
+      "description": "The floating action button — one action pinned over the content, with an optional dial of others behind it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2934,7 +2934,7 @@
       "id": "panelui-feedback",
       "kind": "saas-template",
       "name": "Feedback",
-      "description": "Dialog whose body is a well to write in, with the actions in the band around it. · editable Cupric-native storyboard",
+      "description": "Dialog whose body is a well to write in, with the actions in the band around it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -2977,7 +2977,7 @@
       "id": "panelui-field",
       "kind": "saas-template",
       "name": "Field",
-      "description": "Layout and validation-state kit a form control composes into. · editable Cupric-native storyboard",
+      "description": "Layout and validation-state kit a form control composes into. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3020,7 +3020,7 @@
       "id": "panelui-flip-card",
       "kind": "saas-template",
       "name": "FlipCard",
-      "description": "Two faces of one card, and a turn between them. · editable Cupric-native storyboard",
+      "description": "Two faces of one card, and a turn between them. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3063,7 +3063,7 @@
       "id": "panelui-flow",
       "kind": "saas-template",
       "name": "Flow",
-      "description": "Pan-and-zoom canvas of draggable nodes joined by animated edges; pan and pinch run simultaneously, with dots, lines, cross or no background. · editable Cupric-native storyboard",
+      "description": "Pan-and-zoom canvas of draggable nodes joined by animated edges; pan and pinch run simultaneously, with dots, lines, cross or no background. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3106,7 +3106,7 @@
       "id": "panelui-frame",
       "kind": "saas-template",
       "name": "Frame",
-      "description": "Widget shell — a card of rows sitting in a titled tray. · editable Cupric-native storyboard",
+      "description": "Widget shell — a card of rows sitting in a titled tray. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3149,7 +3149,7 @@
       "id": "panelui-grid-item",
       "kind": "saas-template",
       "name": "GridItem",
-      "description": "Bento tiles, and the grid that places them. · editable Cupric-native storyboard",
+      "description": "Bento tiles, and the grid that places them. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3192,7 +3192,7 @@
       "id": "panelui-image-viewer",
       "kind": "saas-template",
       "name": "ImageViewer",
-      "description": "An image that opens out of the page over a blur, to zoom into and swipe through. · editable Cupric-native storyboard",
+      "description": "An image that opens out of the page over a blur, to zoom into and swipe through. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3235,7 +3235,7 @@
       "id": "panelui-components-index",
       "kind": "saas-template",
       "name": "Components",
-      "description": "Every component module in PanelUI, by what it is for — 135 component modules, each with its anatomy, props and variants. · editable Cupric-native storyboard",
+      "description": "Every component module in PanelUI, by what it is for — 135 component modules, each with its anatomy, props and variants. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3278,7 +3278,7 @@
       "id": "panelui-input",
       "kind": "saas-template",
       "name": "Input",
-      "description": "Text field with label, description and error message. · editable Cupric-native storyboard",
+      "description": "Text field with label, description and error message. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3321,7 +3321,7 @@
       "id": "panelui-input-group",
       "kind": "saas-template",
       "name": "InputGroup",
-      "description": "Input with leading and trailing decorators. · editable Cupric-native storyboard",
+      "description": "Input with leading and trailing decorators. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3364,7 +3364,7 @@
       "id": "panelui-item",
       "kind": "saas-template",
       "name": "Item",
-      "description": "Row of media, text and actions for lists and settings. · editable Cupric-native storyboard",
+      "description": "Row of media, text and actions for lists and settings. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3407,7 +3407,7 @@
       "id": "panelui-kpi",
       "kind": "saas-template",
       "name": "Kpi",
-      "description": "One number, what it is doing, and the shape it made getting there. · editable Cupric-native storyboard",
+      "description": "One number, what it is doing, and the shape it made getting there. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3450,7 +3450,7 @@
       "id": "panelui-label",
       "kind": "saas-template",
       "name": "Label",
-      "description": "Form field label with required, invalid and disabled states. · editable Cupric-native storyboard",
+      "description": "Form field label with required, invalid and disabled states. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3493,7 +3493,7 @@
       "id": "panelui-loader",
       "kind": "saas-template",
       "name": "Loader",
-      "description": "Nine loading animations behind one variant prop: pulse-dots, bounce-dots, pulsating-dots, liquid-dots, bar-cascade, bouncing-bars, symmetric-wave, morph-ring, wave-physics. · editable Cupric-native storyboard",
+      "description": "Nine loading animations behind one variant prop: pulse-dots, bounce-dots, pulsating-dots, liquid-dots, bar-cascade, bouncing-bars, symmetric-wave, morph-ring, wave-physics. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3536,7 +3536,7 @@
       "id": "panelui-map",
       "kind": "saas-template",
       "name": "Map",
-      "description": "Vector map whose basemap is drawn from your theme tokens. · editable Cupric-native storyboard",
+      "description": "Vector map whose basemap is drawn from your theme tokens. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3579,7 +3579,7 @@
       "id": "panelui-markdown-editor",
       "kind": "saas-template",
       "name": "MarkdownEditor",
-      "description": "A field for writing markdown, with a formatting toolbar and a rendered preview. · editable Cupric-native storyboard",
+      "description": "A field for writing markdown, with a formatting toolbar and a rendered preview. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3622,7 +3622,7 @@
       "id": "panelui-marker",
       "kind": "saas-template",
       "name": "Marker",
-      "description": "Inline note between conversation turns. · editable Cupric-native storyboard",
+      "description": "Inline note between conversation turns. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3665,7 +3665,7 @@
       "id": "panelui-marquee",
       "kind": "saas-template",
       "name": "Marquee",
-      "description": "Content that travels across its container on a loop. · editable Cupric-native storyboard",
+      "description": "Content that travels across its container on a loop. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3708,7 +3708,7 @@
       "id": "panelui-menu",
       "kind": "saas-template",
       "name": "Menu",
-      "description": "The list of things you can do to something. · editable Cupric-native storyboard",
+      "description": "The list of things you can do to something. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3751,7 +3751,7 @@
       "id": "panelui-message",
       "kind": "saas-template",
       "name": "Message",
-      "description": "Chat turn with avatar, bubble, header and footer. · editable Cupric-native storyboard",
+      "description": "Chat turn with avatar, bubble, header and footer. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3794,7 +3794,7 @@
       "id": "panelui-message-scroller",
       "kind": "saas-template",
       "name": "MessageScroller",
-      "description": "Scroll behaviour a chat transcript needs. · editable Cupric-native storyboard",
+      "description": "Scroll behaviour a chat transcript needs. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3837,7 +3837,7 @@
       "id": "panelui-meter",
       "kind": "saas-template",
       "name": "Meter",
-      "description": "A measurement on a fixed scale, coloured by where it falls. · editable Cupric-native storyboard",
+      "description": "A measurement on a fixed scale, coloured by where it falls. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3880,7 +3880,7 @@
       "id": "panelui-number-input",
       "kind": "saas-template",
       "name": "NumberInput",
-      "description": "Numeric field stepped by buttons or typed by hand. · editable Cupric-native storyboard",
+      "description": "Numeric field stepped by buttons or typed by hand. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3923,7 +3923,7 @@
       "id": "panelui-otp-input",
       "kind": "saas-template",
       "name": "OtpInput",
-      "description": "One-time-code field drawn as a row of separate cells. · editable Cupric-native storyboard",
+      "description": "One-time-code field drawn as a row of separate cells. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -3966,7 +3966,7 @@
       "id": "panelui-page-header",
       "kind": "saas-template",
       "name": "PageHeader",
-      "description": "Cover, face and actions at the top of a profile. · editable Cupric-native storyboard",
+      "description": "Cover, face and actions at the top of a profile. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4009,7 +4009,7 @@
       "id": "panelui-pagination",
       "kind": "saas-template",
       "name": "Pagination",
-      "description": "Paged navigation over a long result set. · editable Cupric-native storyboard",
+      "description": "Paged navigation over a long result set. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4052,7 +4052,7 @@
       "id": "panelui-planner",
       "kind": "saas-template",
       "name": "Planner",
-      "description": "A month of days, each carrying what falls on it. · editable Cupric-native storyboard",
+      "description": "A month of days, each carrying what falls on it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4095,7 +4095,7 @@
       "id": "panelui-popover",
       "kind": "saas-template",
       "name": "Popover",
-      "description": "Panel anchored to the element that opened it. · editable Cupric-native storyboard",
+      "description": "Panel anchored to the element that opened it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4138,7 +4138,7 @@
       "id": "panelui-post",
       "kind": "saas-template",
       "name": "Post",
-      "description": "A social card — author, body, media and the counts underneath, with the votes animated. · editable Cupric-native storyboard",
+      "description": "A social card — author, body, media and the counts underneath, with the votes animated. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4181,7 +4181,7 @@
       "id": "panelui-progress",
       "kind": "saas-template",
       "name": "Progress",
-      "description": "Determinate and indeterminate progress bar. · editable Cupric-native storyboard",
+      "description": "Determinate and indeterminate progress bar. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4224,7 +4224,7 @@
       "id": "panelui-progress-button",
       "kind": "saas-template",
       "name": "ProgressButton",
-      "description": "Press and hold to confirm, with the wait drawn on the button. · editable Cupric-native storyboard",
+      "description": "Press and hold to confirm, with the wait drawn on the button. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4267,7 +4267,7 @@
       "id": "panelui-qr-code",
       "kind": "saas-template",
       "name": "QRCode",
-      "description": "A string a camera can read — framed, titled, or folded away behind a button. · editable Cupric-native storyboard",
+      "description": "A string a camera can read — framed, titled, or folded away behind a button. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4310,7 +4310,7 @@
       "id": "panelui-questionnaire",
       "kind": "saas-template",
       "name": "Questionnaire",
-      "description": "One question at a time, with progress, validation and a way back. · editable Cupric-native storyboard",
+      "description": "One question at a time, with progress, validation and a way back. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4353,7 +4353,7 @@
       "id": "panelui-radio-group",
       "kind": "saas-template",
       "name": "RadioGroup",
-      "description": "Single-select list of options. · editable Cupric-native storyboard",
+      "description": "Single-select list of options. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4396,7 +4396,7 @@
       "id": "panelui-rating",
       "kind": "saas-template",
       "name": "Rating",
-      "description": "A row of stars to read or set a score. · editable Cupric-native storyboard",
+      "description": "A row of stars to read or set a score. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4439,7 +4439,7 @@
       "id": "panelui-scroll-blur",
       "kind": "saas-template",
       "name": "ScrollBlur",
-      "description": "Blurs the edges of a scroll container. · editable Cupric-native storyboard",
+      "description": "Blurs the edges of a scroll container. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4482,7 +4482,7 @@
       "id": "panelui-scroll-canvas",
       "kind": "saas-template",
       "name": "ScrollCanvas",
-      "description": "Image frame whose contents move as you scroll, scrubbed not triggered: parallax, zoom, reveal, or a frame sequence. · editable Cupric-native storyboard",
+      "description": "Image frame whose contents move as you scroll, scrubbed not triggered: parallax, zoom, reveal, or a frame sequence. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4525,7 +4525,7 @@
       "id": "panelui-scroll-fade",
       "kind": "saas-template",
       "name": "ScrollFade",
-      "description": "Fades the edges of a scroll container. · editable Cupric-native storyboard",
+      "description": "Fades the edges of a scroll container. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4568,7 +4568,7 @@
       "id": "panelui-scroll-header",
       "kind": "saas-template",
       "name": "ScrollHeader",
-      "description": "A screen title that hands over to a compact bar as the page scrolls. · editable Cupric-native storyboard",
+      "description": "A screen title that hands over to a compact bar as the page scrolls. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4611,7 +4611,7 @@
       "id": "panelui-scroll-text",
       "kind": "saas-template",
       "name": "ScrollText",
-      "description": "Text that resolves word by word as you scroll, reversible because the effect is scrubbed rather than triggered. · editable Cupric-native storyboard",
+      "description": "Text that resolves word by word as you scroll, reversible because the effect is scrubbed rather than triggered. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4654,7 +4654,7 @@
       "id": "panelui-search-bar",
       "kind": "saas-template",
       "name": "SearchBar",
-      "description": "Search field with a clear button, a Cancel button and a panel of results. · editable Cupric-native storyboard",
+      "description": "Search field with a clear button, a Cancel button and a panel of results. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4697,7 +4697,7 @@
       "id": "panelui-section-progress",
       "kind": "saas-template",
       "name": "SectionProgress",
-      "description": "Floating pill with a scroll-filled ring and the section being read; pressed, it opens into the section list and jumps. · editable Cupric-native storyboard",
+      "description": "Floating pill with a scroll-filled ring and the section being read; pressed, it opens into the section list and jumps. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4740,7 +4740,7 @@
       "id": "panelui-section-rail",
       "kind": "saas-template",
       "name": "SectionRail",
-      "description": "Floating section navigator for a long screen. · editable Cupric-native storyboard",
+      "description": "Floating section navigator for a long screen. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4783,7 +4783,7 @@
       "id": "panelui-select",
       "kind": "saas-template",
       "name": "Select",
-      "description": "Picker shown in a bottom sheet, expanded in place, or floating over the page. · editable Cupric-native storyboard",
+      "description": "Picker shown in a bottom sheet, expanded in place, or floating over the page. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4826,7 +4826,7 @@
       "id": "panelui-selection-mode",
       "kind": "saas-template",
       "name": "SelectionMode",
-      "description": "Pick several things at once, on a screen or in a sheet. · editable Cupric-native storyboard",
+      "description": "Pick several things at once, on a screen or in a sheet. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4869,7 +4869,7 @@
       "id": "panelui-separator",
       "kind": "saas-template",
       "name": "Separator",
-      "description": "Horizontal or vertical rule between content, optionally labelled. · editable Cupric-native storyboard",
+      "description": "Horizontal or vertical rule between content, optionally labelled. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4912,7 +4912,7 @@
       "id": "panelui-signature",
       "kind": "saas-template",
       "name": "Signature",
-      "description": "Sign with a finger, and get the result back out as SVG or PNG. · editable Cupric-native storyboard",
+      "description": "Sign with a finger, and get the result back out as SVG or PNG. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4955,7 +4955,7 @@
       "id": "panelui-skeleton",
       "kind": "saas-template",
       "name": "Skeleton",
-      "description": "Shimmer placeholder for loading content. · editable Cupric-native storyboard",
+      "description": "Shimmer placeholder for loading content. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -4998,7 +4998,7 @@
       "id": "panelui-slide-button",
       "kind": "saas-template",
       "name": "SlideButton",
-      "description": "Drag across to confirm: a neutral thumb on a rail that carries the colour variant, with the travelled distance drawn on the button. · editable Cupric-native storyboard",
+      "description": "Drag across to confirm: a neutral thumb on a rail that carries the colour variant, with the travelled distance drawn on the button. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5041,7 +5041,7 @@
       "id": "panelui-slider",
       "kind": "saas-template",
       "name": "Slider",
-      "description": "Pick a value, or a span, by dragging a thumb along a track. · editable Cupric-native storyboard",
+      "description": "Pick a value, or a span, by dragging a thumb along a track. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5084,7 +5084,7 @@
       "id": "panelui-sortable",
       "kind": "saas-template",
       "name": "Sortable",
-      "description": "A list whose rows can be dragged into a different order, with a spring lift under the dragged row and the others displacing around it. · editable Cupric-native storyboard",
+      "description": "A list whose rows can be dragged into a different order, with a spring lift under the dragged row and the others displacing around it. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5127,7 +5127,7 @@
       "id": "panelui-spinner",
       "kind": "saas-template",
       "name": "Spinner",
-      "description": "Indeterminate loading indicator. · editable Cupric-native storyboard",
+      "description": "Indeterminate loading indicator. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5170,7 +5170,7 @@
       "id": "panelui-split-view",
       "kind": "saas-template",
       "name": "SplitView",
-      "description": "Two resizable stacked panes that settle on one of a few named heights (snapPoints), spring-animated; variants \"panes\" and \"seam\". · editable Cupric-native storyboard",
+      "description": "Two resizable stacked panes that settle on one of a few named heights (snapPoints), spring-animated; variants \"panes\" and \"seam\". · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5213,7 +5213,7 @@
       "id": "panelui-splitter",
       "kind": "saas-template",
       "name": "Splitter",
-      "description": "Panes sharing a container with a draggable seam between them; a double-tap resets the split. · editable Cupric-native storyboard",
+      "description": "Panes sharing a container with a draggable seam between them; a double-tap resets the split. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5256,7 +5256,7 @@
       "id": "panelui-stack-card",
       "kind": "saas-template",
       "name": "StackCard",
-      "description": "A pile of cards, taken one at a time by throwing the top one off. · editable Cupric-native storyboard",
+      "description": "A pile of cards, taken one at a time by throwing the top one off. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5299,7 +5299,7 @@
       "id": "panelui-steps",
       "kind": "saas-template",
       "name": "Steps",
-      "description": "Stepper for multi-step flows. · editable Cupric-native storyboard",
+      "description": "Stepper for multi-step flows. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5342,7 +5342,7 @@
       "id": "panelui-support",
       "kind": "saas-template",
       "name": "Support",
-      "description": "The screen a person arrives on when they need help. · editable Cupric-native storyboard",
+      "description": "The screen a person arrives on when they need help. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5385,7 +5385,7 @@
       "id": "panelui-surface",
       "kind": "saas-template",
       "name": "Surface",
-      "description": "Elevated container with a variant ladder. · editable Cupric-native storyboard",
+      "description": "Elevated container with a variant ladder. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5428,7 +5428,7 @@
       "id": "panelui-swipe",
       "kind": "saas-template",
       "name": "Swipe",
-      "description": "A row that slides aside on a pan gesture to reveal the actions on it, springing back or latching open. · editable Cupric-native storyboard",
+      "description": "A row that slides aside on a pan gesture to reveal the actions on it, springing back or latching open. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5471,7 +5471,7 @@
       "id": "panelui-switch",
       "kind": "saas-template",
       "name": "Switch",
-      "description": "Animated on/off toggle. · editable Cupric-native storyboard",
+      "description": "Animated on/off toggle. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5514,7 +5514,7 @@
       "id": "panelui-table",
       "kind": "saas-template",
       "name": "Table",
-      "description": "Rows and columns that stay lined up, with sortable headers. · editable Cupric-native storyboard",
+      "description": "Rows and columns that stay lined up, with sortable headers. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5557,7 +5557,7 @@
       "id": "panelui-tabs",
       "kind": "saas-template",
       "name": "Tabs",
-      "description": "Segmented navigation with an animated indicator. · editable Cupric-native storyboard",
+      "description": "Segmented navigation with an animated indicator. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5600,7 +5600,7 @@
       "id": "panelui-tag-input",
       "kind": "saas-template",
       "name": "TagInput",
-      "description": "A field whose value is a list of tokens rather than a string. · editable Cupric-native storyboard",
+      "description": "A field whose value is a list of tokens rather than a string. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5643,7 +5643,7 @@
       "id": "panelui-text-animation",
       "kind": "saas-template",
       "name": "TextAnimation",
-      "description": "Five ways a piece of text or a number arrives: Typing, Rotating, Counting, Sliding, Scrolling. · editable Cupric-native storyboard",
+      "description": "Five ways a piece of text or a number arrives: Typing, Rotating, Counting, Sliding, Scrolling. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5686,7 +5686,7 @@
       "id": "panelui-textarea",
       "kind": "saas-template",
       "name": "Textarea",
-      "description": "Text field that runs to several lines, sized in rows. · editable Cupric-native storyboard",
+      "description": "Text field that runs to several lines, sized in rows. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5729,7 +5729,7 @@
       "id": "panelui-theme-selector",
       "kind": "saas-template",
       "name": "ThemeSelector",
-      "description": "Light, dark or the device's setting, drawn as three miniature screens. · editable Cupric-native storyboard",
+      "description": "Light, dark or the device's setting, drawn as three miniature screens. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5772,7 +5772,7 @@
       "id": "panelui-time-picker",
       "kind": "saas-template",
       "name": "TimePicker",
-      "description": "A time of day as a wheel, a clock face with a spring-driven hand, or a swipeable scale. · editable Cupric-native storyboard",
+      "description": "A time of day as a wheel, a clock face with a spring-driven hand, or a swipeable scale. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5815,7 +5815,7 @@
       "id": "panelui-timeline",
       "kind": "saas-template",
       "name": "Timeline",
-      "description": "A sequence of events, vertical or swiped sideways. · editable Cupric-native storyboard",
+      "description": "A sequence of events, vertical or swiped sideways. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5858,7 +5858,7 @@
       "id": "panelui-toast",
       "kind": "saas-template",
       "name": "Toast",
-      "description": "Transient notification queue with swipe to dismiss. · editable Cupric-native storyboard",
+      "description": "Transient notification queue with swipe to dismiss. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5901,7 +5901,7 @@
       "id": "panelui-toggle-button",
       "kind": "saas-template",
       "name": "ToggleButton",
-      "description": "A button that stays down, on its own or in a group. · editable Cupric-native storyboard",
+      "description": "A button that stays down, on its own or in a group. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5944,7 +5944,7 @@
       "id": "panelui-tooltip",
       "kind": "saas-template",
       "name": "Tooltip",
-      "description": "A small label that names the control under your finger. · editable Cupric-native storyboard",
+      "description": "A small label that names the control under your finger. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -5987,7 +5987,7 @@
       "id": "panelui-tour",
       "kind": "saas-template",
       "name": "Tour",
-      "description": "A walkthrough that introduces a screen one control at a time. · editable Cupric-native storyboard",
+      "description": "A walkthrough that introduces a screen one control at a time. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6030,7 +6030,7 @@
       "id": "panelui-tree",
       "kind": "saas-template",
       "name": "Tree",
-      "description": "A hierarchy you can open a level at a time. · editable Cupric-native storyboard",
+      "description": "A hierarchy you can open a level at a time. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6073,7 +6073,7 @@
       "id": "panelui-typography",
       "kind": "saas-template",
       "name": "Typography",
-      "description": "Semantic text presets. · editable Cupric-native storyboard",
+      "description": "Semantic text presets. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6116,7 +6116,7 @@
       "id": "panelui-charts",
       "kind": "saas-template",
       "name": "Charts",
-      "description": "The five-colour series ramp every chart draws from, how a series picks its colour, what to change to put a whole app's charts on brand, and how to build a chart the library does not ship. · editable Cupric-native storyboard",
+      "description": "The five-colour series ramp every chart draws from, how a series picks its colour, what to change to put a whole app's charts on brand, and how to build a chart the library does not ship. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6159,7 +6159,7 @@
       "id": "panelui-colors",
       "kind": "saas-template",
       "name": "Colors",
-      "description": "The semantic colour tokens every component draws from, what each one is for, and how to change them. · editable Cupric-native storyboard",
+      "description": "The semantic colour tokens every component draws from, what each one is for, and how to change them. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6202,7 +6202,7 @@
       "id": "panelui-fonts",
       "kind": "saas-template",
       "name": "Fonts",
-      "description": "Load a font and point five tokens at it. Every component in the library follows. · editable Cupric-native storyboard",
+      "description": "Load a font and point five tokens at it. Every component in the library follows. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6245,7 +6245,7 @@
       "id": "panelui-icons",
       "kind": "saas-template",
       "name": "Icons",
-      "description": "Every icon in the library, what to import, and how they take their colour and size. · editable Cupric-native storyboard",
+      "description": "Every icon in the library, what to import, and how they take their colour and size. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6288,7 +6288,7 @@
       "id": "panelui-styling",
       "kind": "saas-template",
       "name": "Styling",
-      "description": "className on every component, when to reach for style instead, and how to build your own components on top. · editable Cupric-native storyboard",
+      "description": "className on every component, when to reach for style instead, and how to build your own components on top. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6331,7 +6331,7 @@
       "id": "panelui-theming",
       "kind": "saas-template",
       "name": "Theming",
-      "description": "Six built-in themes across three families, how to switch at runtime, and how to write a theme of your own. · editable Cupric-native storyboard",
+      "description": "Six built-in themes across three families, how to switch at runtime, and how to write a theme of your own. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6374,7 +6374,7 @@
       "id": "panelui-form",
       "kind": "saas-template",
       "name": "Form",
-      "description": "Form state — values, validation and submission — with no form library underneath. · editable Cupric-native storyboard",
+      "description": "Form state — values, validation and submission — with no form library underneath. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6417,7 +6417,7 @@
       "id": "panelui-use-back-handler",
       "kind": "saas-template",
       "name": "useBackHandler",
-      "description": "Run a handler when the Android hardware back button is pressed. · editable Cupric-native storyboard",
+      "description": "Run a handler when the Android hardware back button is pressed. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6460,7 +6460,7 @@
       "id": "panelui-use-breakpoint",
       "kind": "saas-template",
       "name": "useBreakpoint",
-      "description": "Responsive state derived from the window size. · editable Cupric-native storyboard",
+      "description": "Responsive state derived from the window size. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6503,7 +6503,7 @@
       "id": "panelui-use-copy-to-clipboard",
       "kind": "saas-template",
       "name": "useCopyToClipboard",
-      "description": "Copy text to the clipboard with a temporary copied state. · editable Cupric-native storyboard",
+      "description": "Copy text to the clipboard with a temporary copied state. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6546,7 +6546,7 @@
       "id": "panelui-use-debounced-value",
       "kind": "saas-template",
       "name": "useDebouncedValue",
-      "description": "A copy of a value that settles after changes stop. · editable Cupric-native storyboard",
+      "description": "A copy of a value that settles after changes stop. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6589,7 +6589,7 @@
       "id": "panelui-use-direction",
       "kind": "saas-template",
       "name": "useDirection and useDirectionSign",
-      "description": "Read the nearest LTR or RTL direction for layout and gesture maths. · editable Cupric-native storyboard",
+      "description": "Read the nearest LTR or RTL direction for layout and gesture maths. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6632,7 +6632,7 @@
       "id": "panelui-use-disclosure",
       "kind": "saas-template",
       "name": "useDisclosure",
-      "description": "Open and closed state for an overlay. · editable Cupric-native storyboard",
+      "description": "Open and closed state for an overlay. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6675,7 +6675,7 @@
       "id": "panelui-use-keyboard",
       "kind": "saas-template",
       "name": "useKeyboard",
-      "description": "Keyboard height and visibility. · editable Cupric-native storyboard",
+      "description": "Keyboard height and visibility. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6718,7 +6718,7 @@
       "id": "panelui-use-keyboard-avoidance",
       "kind": "saas-template",
       "name": "useKeyboardAvoidance",
-      "description": "Keep an element clear of the software keyboard. · editable Cupric-native storyboard",
+      "description": "Keep an element clear of the software keyboard. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6761,7 +6761,7 @@
       "id": "panelui-use-previous",
       "kind": "saas-template",
       "name": "usePrevious",
-      "description": "The value from the previous render. · editable Cupric-native storyboard",
+      "description": "The value from the previous render. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6804,7 +6804,7 @@
       "id": "panelui-use-reveal-progress",
       "kind": "saas-template",
       "name": "useRevealProgress",
-      "description": "Derive a shared reveal value from an element's travel through a scroll viewport. · editable Cupric-native storyboard",
+      "description": "Derive a shared reveal value from an element's travel through a scroll viewport. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6847,7 +6847,7 @@
       "id": "panelui-use-scroll-sections",
       "kind": "saas-template",
       "name": "useScrollSections",
-      "description": "Track which section of a scroll view is being read. · editable Cupric-native storyboard",
+      "description": "Track which section of a scroll view is being read. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6890,7 +6890,7 @@
       "id": "panelui-use-skeleton-handoff",
       "kind": "saas-template",
       "name": "useSkeletonHandoff",
-      "description": "Keep a placeholder on screen through a fade while the real content arrives. · editable Cupric-native storyboard",
+      "description": "Keep a placeholder on screen through a fade while the real content arrives. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6933,7 +6933,7 @@
       "id": "panelui-use-theme",
       "kind": "saas-template",
       "name": "useTheme and useThemeMode",
-      "description": "Read and change the active theme. · editable Cupric-native storyboard",
+      "description": "Read and change the active theme. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -6976,7 +6976,7 @@
       "id": "panelui-logo-maker",
       "kind": "saas-template",
       "name": "Logo Maker",
-      "description": "An agent skill that designs an original app logo — a compact mark that stays readable at 32 × 32, as a vector file or through an image model. · editable Cupric-native storyboard",
+      "description": "An agent skill that designs an original app logo — a compact mark that stays readable at 32 × 32, as a vector file or through an image model. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -7019,7 +7019,7 @@
       "id": "panelui-neon",
       "kind": "saas-template",
       "name": "Neon",
-      "description": "We recommend using Neon — serverless Postgres for the API routes behind a PanelUI app, with the connection string kept off the device. · editable Cupric-native storyboard",
+      "description": "We recommend using Neon — serverless Postgres for the API routes behind a PanelUI app, with the connection string kept off the device. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -7062,7 +7062,7 @@
       "id": "panelui-panelwind",
       "kind": "saas-template",
       "name": "panelwind",
-      "description": "An ESLint plugin that checks how a screen uses the design system — and catches the classes that compile and then do nothing on a device. · editable Cupric-native storyboard",
+      "description": "An ESLint plugin that checks how a screen uses the design system — and catches the classes that compile and then do nothing on a device. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -7105,7 +7105,7 @@
       "id": "panelui-components",
       "kind": "saas-template",
       "name": "Component API",
-      "description": "135 public component modules, linked to their guides and per-module export tables. · editable Cupric-native storyboard",
+      "description": "135 public component modules, linked to their guides and per-module export tables. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -7148,7 +7148,7 @@
       "id": "panelui-foundations",
       "kind": "saas-template",
       "name": "Foundations API",
-      "description": "Providers, themes, primitives and optional native bridges. · editable Cupric-native storyboard",
+      "description": "Providers, themes, primitives and optional native bridges. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -7191,7 +7191,7 @@
       "id": "panelui-hooks",
       "kind": "saas-template",
       "name": "Hooks API",
-      "description": "Standalone public hooks, their values and option/result types. · editable Cupric-native storyboard",
+      "description": "Standalone public hooks, their values and option/result types. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -7234,7 +7234,7 @@
       "id": "panelui-reference-icons",
       "kind": "saas-template",
       "name": "Icons API",
-      "description": "Every icon and icon support export available from the package root. · editable Cupric-native storyboard",
+      "description": "Every icon and icon support export available from the package root. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -7277,7 +7277,7 @@
       "id": "panelui-reference-index",
       "kind": "saas-template",
       "name": "Public API",
-      "description": "Every supported root export from panelui-native — 1398 symbols across 162 modules. · editable Cupric-native storyboard",
+      "description": "Every supported root export from panelui-native — 1398 symbols across 162 modules. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -7320,7 +7320,7 @@
       "id": "panelui-utilities",
       "kind": "saas-template",
       "name": "Utilities API",
-      "description": "The complete public cn, color and time utility surface. · editable Cupric-native storyboard",
+      "description": "The complete public cn, color and time utility surface. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -7363,7 +7363,7 @@
       "id": "panelui-cn",
       "kind": "saas-template",
       "name": "cn",
-      "description": "Merge Tailwind classes with conflicts resolved. · editable Cupric-native storyboard",
+      "description": "Merge Tailwind classes with conflicts resolved. · editable NewBrand-native storyboard",
       "data": {
         "durationSec": 9,
         "scenes": [

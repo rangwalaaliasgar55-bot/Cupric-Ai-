@@ -142,14 +142,14 @@ export function Onboarding({ visible, onDismiss }: { visible: boolean; onDismiss
 
             <div className="border-b border-line px-6 py-5">
               <h2 id="onboarding-title" className="text-lg font-semibold tracking-[var(--tracking-display)]">
-                Welcome to Cupric AI
+                Welcome to NewBrand
               </h2>
               <p id="onboarding-intro" className="mt-1.5 max-w-2xl text-sm leading-relaxed text-muted">
                 Four screens do most of the work. You can skip this and come back to it any time — press
                 {' '}<kbd className="rounded border border-line px-1.5 py-0.5 font-mono text-[11px]">Ctrl</kbd>
                 {' '}+{' '}
                 <kbd className="rounded border border-line px-1.5 py-0.5 font-mono text-[11px]">K</kbd>
-                {' '}and choose “Quick tour of Cupric”.
+                {' '}and choose “Quick tour of NewBrand”.
               </p>
             </div>
 

@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url)
 const stock = require('../electron/stock.cjs')
 
 const response = (data, status = 200, headers = {}) => ({ status, ok: status >= 200 && status < 300, headers: { get: (key) => headers[key.toLowerCase()] || null }, json: async () => data, arrayBuffer: async () => Buffer.from('image-data') })
-const dir = await mkdtemp(path.join(os.tmpdir(), 'cupric-stock-'))
+const dir = await mkdtemp(path.join(os.tmpdir(), 'newbrand-stock-'))
 try {
   let calls = []
   const settings = { pixabayApiKey: 'pixabay-test', pexelsApiKey: 'pexels-test' }
@@ -70,7 +70,7 @@ try {
   const rendererText = rendererFiles.join('\n')
   assert.ok(!/PIXABAY_API_KEY|PEXELS_API_KEY|Authorization\s*:/i.test(rendererText), 'renderer never contains stock keys or auth headers')
   const main = await readFile(new URL('../electron/main.cjs', import.meta.url), 'utf8')
-  assert.ok(main.includes("ipcMain.handle('stock:search'") && main.includes("ipcMain.handle('stock:download'") && main.includes("ipcMain.handle('stock:proxyHealth'") && main.includes('CUPRIC_STOCK_PROXY_URL') && main.includes('quota:'), 'stock IPC, deployment proxy health and quota status stay in main')
+  assert.ok(main.includes("ipcMain.handle('stock:search'") && main.includes("ipcMain.handle('stock:download'") && main.includes("ipcMain.handle('stock:proxyHealth'") && main.includes('NEWBRAND_STOCK_PROXY_URL') && main.includes('quota:'), 'stock IPC, deployment proxy health and quota status stay in main')
   console.log('stock check passed — Pixabay/Pexels/Openverse/Picsum URLs, cache, attribution, retry, rate limits and key isolation')
 } finally {
   await rm(dir, { recursive: true, force: true })

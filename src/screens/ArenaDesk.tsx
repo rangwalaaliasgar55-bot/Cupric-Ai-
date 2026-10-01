@@ -148,7 +148,7 @@ export function ArenaDesk() {
           icon={Sparkles}
           title="What Arena Desk is for"
           what="Generated scenes land here and stay editable: an animation, an HTML page or a ZIP package goes in, and the good one becomes clips on your timeline."
-          next="Paste a ZIP or HTML from arena.ai/code (or Cupric's own Arena run) into the drop zone — the preview below is the real thing, playing."
+          next="Paste a ZIP or HTML from arena.ai/code (or NewBrand's own Arena run) into the drop zone — the preview below is the real thing, playing."
         />
 
         <Card className="overflow-hidden p-4">
@@ -157,7 +157,7 @@ export function ArenaDesk() {
               <div className="text-xs font-semibold uppercase tracking-wider text-muted">Remotion preview</div>
               <p className="mt-1 text-xs text-muted">A live React/Remotion composition generated from the locked rundown.</p>
             </div>
-            <Badge tone="info">Cupric motion stage</Badge>
+            <Badge tone="info">NewBrand motion stage</Badge>
           </div>
           <MotionCompositionPlayer rundown={locked} />
         </Card>
@@ -193,7 +193,7 @@ export function ArenaDesk() {
                 <li>Use the locked scene copy as the text source.</li>
                 <li>Generate visuals inside one HTML file: CSS/JS type, grids, gradients, masks, counters, and inline SVG/CSS shapes.</li>
                 <li>No remote images, CDNs, fonts, audio, video, or build step.</li>
-                <li>Expose <span className="font-mono">window.__cupricSourceManifest</span> for inspection.</li>
+                <li>Expose <span className="font-mono">window.__newbrandSourceManifest</span> for inspection.</li>
               </ul>
             </div>
             <div className="rounded-lg border border-line bg-bg/40 p-3">

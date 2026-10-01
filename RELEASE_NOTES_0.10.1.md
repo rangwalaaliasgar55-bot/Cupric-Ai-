@@ -1,4 +1,4 @@
-# Cupric AI 0.10.1 — blank Studio fix + "never white again" hardening
+# NewBrand 0.10.1 — blank Studio fix + "never white again" hardening
 
 ## The bug (0.10.0)
 
@@ -6,16 +6,16 @@
 Windows app. Launching with `--enable-logging --v=1 --disable-gpu` logged:
 
 ```
-Uncaught TypeError: Cannot assign to read only property 'cupric' of object '#<Window>'
+Uncaught TypeError: Cannot assign to read only property 'newbrand' of object '#<Window>'
     at dist/assets/index-C3eb6nHN.js:977
 ```
 
 **Root cause.** The preload exposes the desktop bridge with
-`contextBridge.exposeInMainWorld('cupric', bridge)`, which defines
-`window.cupric` as a **non-writable, non-configurable** property. On mount the
+`contextBridge.exposeInMainWorld('newbrand', bridge)`, which defines
+`window.newbrand` as a **non-writable, non-configurable** property. On mount the
 Studio published its scripting API with
-`window.cupric = { ...window.cupric, studio: api }` (and
-`delete window.cupric.studio` on unmount). In the packaged app that assignment
+`window.newbrand = { ...window.newbrand, studio: api }` (and
+`delete window.newbrand.studio` on unmount). In the packaged app that assignment
 threw inside a React effect. With no error boundary, React unmounted the whole
 tree, leaving a white window. The web build has no bridge, so the bug never
 showed there. `project:create` had already succeeded, which is why
@@ -26,29 +26,29 @@ boot check reproduces the exact error against it.
 
 ## Workaround for anyone still on 0.10.0
 
-If restarting reopens the blank Studio: quit Cupric, open `projects.json` in
-the app data folder (`%APPDATA%\Cupric AI\projects.json` on Windows) and change
+If restarting reopens the blank Studio: quit NewBrand, open `projects.json` in
+the app data folder (`%APPDATA%\NewBrand\projects.json` on Windows) and change
 `"view":"studio"` to `"view":"library"`. The app then boots to the Library.
 Don't open the Studio again until you update to 0.10.1.
 
 ## Fix
 
 - **Bridge is read-only everywhere.** The preload builds **one** deep-frozen
-  bridge and exposes it as `cupric` + `northframe` (the legacy alias, same
+  bridge and exposes it as `newbrand` + `northframe` (the legacy alias, same
   object). The renderer only reads it via `getBridge()` / `getIpc()`.
-- The Studio scripting API moved to its own global, **`window.__cupricStudio`**,
+- The Studio scripting API moved to its own global, **`window.__newbrandStudio`**,
   and cleanup deletes only that.
-- Types: `Window.cupric` / `Window.northframe` are `readonly … Readonly<Bridge>`,
+- Types: `Window.newbrand` / `Window.northframe` are `readonly … Readonly<Bridge>`,
   so any direct assignment is a compile error.
 
 ## Hardening
 
 - **`npm run check:bridge`**: an ESLint `no-restricted-syntax` ban on assigning
-  to, deleting from, or `defineProperty`-ing `cupric` / `northframe` (inline
+  to, deleting from, or `defineProperty`-ing `newbrand` / `northframe` (inline
   disables are ignored). The rule is self-tested against the verbatim 0.10.0
   code and 13 other write forms. The check also runs a comment-stripped source
   grep, executes the preload against a mocked contextBridge, runs a tsc fixture
-  where `window.cupric = …` must fail to compile, and scans the built bundle.
+  where `window.newbrand = …` must fail to compile, and scans the built bundle.
   It is part of `npm run build`.
 - **Error boundaries**: one per route (every screen, including Studio, Library,
   Render, Lab and Brief), one around the Ask panel and one around the whole app.
@@ -57,16 +57,16 @@ Don't open the Studio again until you update to 0.10.1.
   the project id and has **Copy error** and **Go to Library** buttons. Go to
   Library also saves `view: "library"`, so a restart doesn't boot back into the
   broken screen. To test the fallback in any build, set
-  `sessionStorage['cupric:debug:forceThrow'] = 'studio'` and reload.
+  `sessionStorage['newbrand:debug:forceThrow'] = 'studio'` and reload.
 - **File logging**: electron-log writes main + renderer lines to
-  `userData/logs/cupric.log`. Logged events: app start (flags, GPU state), the
+  `userData/logs/newbrand.log`. Logged events: app start (flags, GPU state), the
   renderer console (so any `Uncaught …` lands in the file), preload errors,
   failed loads, `bridge:init`, `project:create`, `project:load` (with timings
   and repair warnings) and `studio:mount` (with timings). `--enable-logging`
   switches to verbose.
 - **DevTools shortcut** (Ctrl+Shift+I / F12) works in dev and in prerelease
-  builds (`-beta` / `-rc` / `-alpha`), or with `--cupric-devtools` /
-  `CUPRIC_DEVTOOLS=1`. Stable builds log that it's disabled instead of doing
+  builds (`-beta` / `-rc` / `-alpha`), or with `--newbrand-devtools` /
+  `NEWBRAND_DEVTOOLS=1`. Stable builds log that it's disabled instead of doing
   nothing.
 - **projects.json schema validation (zod) on every load.** zustand's `migrate`
   only runs on a version change. A same-version file with `brief: null` also
@@ -106,8 +106,8 @@ must recover), and forces a global error. It fails on any uncaught error, blank
 screen, or unexpected fallback.
 
 Modes: Electron (a real preload; two passes, `--disable-gpu` and GPU on), the
-packaged exe via `CUPRIC_BOOT_EXE` (the release workflow runs this before
-publishing), or headless Chrome via `CUPRIC_BOOT_CHROME` with a bridge defined
+packaged exe via `NEWBRAND_BOOT_EXE` (the release workflow runs this before
+publishing), or headless Chrome via `NEWBRAND_BOOT_CHROME` with a bridge defined
 exactly as contextBridge defines it. If none of these is available, the check
 fails. It never passes silently.
 
@@ -115,4 +115,4 @@ fails. It never passes silently.
 
 Fresh install → Create New Project → Studio is visible. Restart with
 `view: "studio"` → still visible. Launch with `--enable-logging` → no
-`TypeError` in the console or in `userData/logs/cupric.log`.
+`TypeError` in the console or in `userData/logs/newbrand.log`.

@@ -1,4 +1,4 @@
-# Cupric AI v0.2.3 upgrade
+# NewBrand v0.2.3 upgrade
 
 Shipped on `main` for the design-system + resources + bridge pass.
 
@@ -20,7 +20,7 @@ Shipped on `main` for the design-system + resources + bridge pass.
 - Visual gradient swatches on background cards
 
 ### Bridge / fake-logic cleanup
-- `src/lib/bridge.ts` — prefer `window.cupric`, legacy `northframe`
+- `src/lib/bridge.ts` — prefer `window.newbrand`, legacy `northframe`
 - `App.tsx` + `gemini.ts` use `getIpc()` only
 - Preload already exposes both names
 
@@ -38,7 +38,7 @@ npm run desktop      # Electron
 ## Still open (next seams)
 
 1. Wire Autonomous job queue end-to-end to rundown → Arena import → render services
-2. Unify any remaining `NORTHFRAME_*` env mentions in Electron main to `CUPRIC_*`
+2. Unify any remaining `NORTHFRAME_*` env mentions in Electron main to `NEWBRAND_*`
 3. Windows installer smoke test on clean machine
 4. Optional: pull specific Spectrum empty-state / toast patterns into local components if a screen needs them
 

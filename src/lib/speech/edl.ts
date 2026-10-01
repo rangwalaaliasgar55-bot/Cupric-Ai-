@@ -4,7 +4,7 @@
  *
  * Ported from veedstudio/open-edit `cli/src/edl.ts` and
  * `cli/src/commands/retime-transcript.ts` (Apache-2.0 — see
- * THIRD_PARTY_NOTICES.md). Adapted from file paths to in-memory media: Cupric's
+ * THIRD_PARTY_NOTICES.md). Adapted from file paths to in-memory media: NewBrand's
  * sources are clips in a project, not paths on disk, so `sources` becomes a
  * label and the caller supplies the transcript.
  *

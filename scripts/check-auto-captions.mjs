@@ -44,10 +44,10 @@ ok(phr.length === 4 && phr[0].start === 1 && Math.abs(phr[2].end - 3) < 1e-9 && 
 ok(ve.WINDOWS_TIMED_SCRIPT.includes('$args[0]') && !ve.windowsTimedArgs('/x; rm -rf').slice(0, -1).join(' ').includes('rm -rf'), 'path passed as argument, not interpolated')
 
 // Real extraction.
-let ffmpeg = process.env.CUPRIC_FFMPEG_PATH
+let ffmpeg = process.env.NEWBRAND_FFMPEG_PATH
 if (!ffmpeg || !existsSync(ffmpeg)) { try { ffmpeg = require('ffmpeg-static') } catch { ffmpeg = null } }
 if (ffmpeg && existsSync(ffmpeg)) {
-  const dir = mkdtempSync(path.join(os.tmpdir(), 'cupric-cap-'))
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'newbrand-cap-'))
   try {
     const src = path.join(dir, 'talk.mp4')
     assert.equal(spawnSync(ffmpeg, ['-y', '-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=25:duration=3', '-f', 'lavfi', '-i', 'sine=frequency=300:sample_rate=48000:duration=3', '-ac', '2', '-shortest', src]).status, 0)

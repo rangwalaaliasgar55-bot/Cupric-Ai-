@@ -12,7 +12,7 @@ type Row = { id: string; source: string; kind: string; badge: string; isNew: boo
  */
 export function FreeModels() {
   const [rows, setRows] = useState<Row[]>([])
-  const [freeOnly, setFreeOnly] = useState(() => { try { return localStorage.getItem('cupric.models.freeOnly') !== '0' } catch { return true } })
+  const [freeOnly, setFreeOnly] = useState(() => { try { return localStorage.getItem('newbrand.models.freeOnly') !== '0' } catch { return true } })
   const [busy, setBusy] = useState(false)
   const [fetchedAt, setFetchedAt] = useState(0)
   const load = useCallback(async (force = false) => {
@@ -31,7 +31,7 @@ export function FreeModels() {
     const off = ipc && typeof ipc.on === 'function' ? ipc.on('ai:models', () => void load(false)) : undefined
     return () => off?.()
   }, [load])
-  useEffect(() => { try { localStorage.setItem('cupric.models.freeOnly', freeOnly ? '1' : '0') } catch { /* ignore */ } }, [freeOnly])
+  useEffect(() => { try { localStorage.setItem('newbrand.models.freeOnly', freeOnly ? '1' : '0') } catch { /* ignore */ } }, [freeOnly])
   if (!getIpc()) return null
   const shown = rows.filter((r) => !freeOnly || r.badge === 'FREE' || r.badge === '$0 local').slice(0, 60)
   const newCount = rows.filter((r) => r.isNew).length
@@ -51,7 +51,7 @@ export function FreeModels() {
       ) : (
         <ul className="mt-1.5 max-h-40 space-y-0.5 overflow-auto">
           {shown.map((r) => (
-            <li key={`${r.source}|${r.id}`} className={`flex items-center justify-between gap-2 ${r.retired ? 'text-muted line-through opacity-60' : 'text-text'}`} title={r.retired ? 'Retired by its provider — Cupric falls back automatically' : r.source}>
+            <li key={`${r.source}|${r.id}`} className={`flex items-center justify-between gap-2 ${r.retired ? 'text-muted line-through opacity-60' : 'text-text'}`} title={r.retired ? 'Retired by its provider — NewBrand falls back automatically' : r.source}>
               <span className="truncate">{r.id}{r.isNew && <span className="ml-1 rounded bg-accent px-1 text-accent-ink">NEW</span>}</span>
               <span className="shrink-0 text-muted">{r.retired ? 'retired' : r.badge}</span>
             </li>

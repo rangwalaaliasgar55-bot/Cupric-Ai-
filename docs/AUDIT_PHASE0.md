@@ -1,7 +1,7 @@
-# Cupric AI — Phase 0 audit (full repository)
+# NewBrand — Phase 0 audit (full repository)
 
 **Date:** 2026-09-29
-**Repository:** `rangwalaaliasgar55-bot/Cupric-Ai-` @ `eb0fbe37` (branch `arena/01a0edd4-cupric-ai`, shallow clone, 1 commit, 0 local tags)
+**Repository:** `rangwalaaliasgar55-bot/Cupric-Ai-` @ `eb0fbe37` (branch `arena/01a0edd4-newbrand`, shallow clone, 1 commit, 0 local tags)
 **Auditor:** Arena Agent Mode session (Linux container, Node v22.22.3, npm 10.9.8)
 **Target product:** Windows 10/11 Electron desktop app
 **Rule applied throughout:** nothing is called "working" unless it was executed and observed. Anything that needs the Windows GUI is marked **UNVERIFIED**.
@@ -109,7 +109,7 @@ There is **no** "100 ms fake loading then fake success" pattern in the app's bus
 * `scripts/check-tts-languages.mjs:36-72` writes **fake `espeak-ng` and `piper` executables** (Node scripts with a shebang that emit an 80-byte WAV header) and asserts against them. Its own comment admits the real engines "aren't in CI", and the spawn half is skipped on Windows (`process.platform !== 'win32'`), i.e. exactly the platform the product ships on never runs it.
 * `scripts/check-local-voice.mjs:86-104` writes a **fake `whisper-cli` shell script** (`while [ $# -gt 0 ]…`) and asserts the discovery/args/cleanup contract against it. Same platform guard.
 * `scripts/check-automation.mjs:109+` drives the pipeline with `fakeRender` returning a canned result.
-* `scripts/check-encoders.mjs:23` builds a `fake({ listed, works })` ffmpeg runner rather than executing ffmpeg (it does fall back to the real binary when `CUPRIC_FFMPEG_PATH` is set — verified, ledger #10/#12 — but the default chain never touches a real encoder).
+* `scripts/check-encoders.mjs:23` builds a `fake({ listed, works })` ffmpeg runner rather than executing ffmpeg (it does fall back to the real binary when `NEWBRAND_FFMPEG_PATH` is set — verified, ledger #10/#12 — but the default chain never touches a real encoder).
 * Real engines **are** supported by the code (`electron/tts.cjs` Piper/System.Speech/espeak-ng; `electron/voice-engines.cjs` whisper.cpp + Windows Speech), but they are **not bundled** and no test in this repo ever runs one.
 
 ### A9. Hardcoded/canned outputs presented as generated content — mostly honest fallbacks
@@ -183,7 +183,7 @@ Legend: **Fully working** = real implementation + real verification available; *
 | Component | Where | Licence | Assessment |
 |---|---|---|---|
 | `@paper-design/shaders-react` | production dependency; used by vendored shaders `src/lab/framecn/shader-*` | **PolyForm Shield 1.0.0** (verified: `node_modules/@paper-design/shaders-react/LICENSE`) | **RESOLVED (removed).** Replaced by original CPU shaders; the 18 `fc-shader-*` components keep their names and props. Dependency and lockfile entry deleted, import ban enforced by `scripts/check-licences.mjs` and `src/tests/shaders.test.ts`. |
-| `remotion`, `@remotion/player` | production dependency; used by `src/components/MotionCompositionPlayer.tsx` (Arena Desk preview), `src/lib/sources.ts` | **Remotion License** (verified text in `node_modules/remotion/LICENSE.md`) | **RESOLVED (removed).** The one usage was an 85-line preview; it is now Cupric code with real transport controls, and both packages are out of `package.json`/`package-lock.json`. The Remotion-derived resource *catalogue* (metadata with attribution) stays, and `src/lib/sources.ts` no longer claims the app ships the runtime. |
+| `remotion`, `@remotion/player` | production dependency; used by `src/components/MotionCompositionPlayer.tsx` (Arena Desk preview), `src/lib/sources.ts` | **Remotion License** (verified text in `node_modules/remotion/LICENSE.md`) | **RESOLVED (removed).** The one usage was an 85-line preview; it is now NewBrand code with real transport controls, and both packages are out of `package.json`/`package-lock.json`. The Remotion-derived resource *catalogue* (metadata with attribution) stays, and `src/lib/sources.ts` no longer claims the app ships the runtime. |
 | `ffmpeg-static` / `ffprobe-static` (shipped in the installer via `asarUnpack`) | `package.json`, `electron/main.cjs:64-76` | GPLv3-class builds (the npm-reachable `@ffmpeg-installer` build used for the audit is `--enable-gpl`; FFmpeg static builds are GPL) | Shipping GPL binaries inside a proprietary installer is a distribution decision that must be documented (licence text, source offer, no static linking into the app — it is invoked as a separate process). **Decision recorded (Phase 5, Decision 4):** ship the FFmpeg licence text and the corresponding-source offer with the installer; FFmpeg is only ever spawned, never linked. The text is recorded in `THIRD_PARTY_NOTICES.md`; **not yet verified inside a packaged build** (Phase 4). |
 | `resources/packs/react-bits.json`, `resources/VENDOR.md:54` | catalog data | MIT **+ Commons Clause** (upstream React Bits) | Correctly handled: only metadata/links are shipped, no upstream source. Keep the rule enforced by a check. |
 | Kdenlive (`resources/kdenlive/NOTES.md`) | reference notes | GPL-2.0+ | Ideas/mapping only, no code copied — as documented. |
@@ -222,7 +222,7 @@ From `gh release list` (21 releases) intersected with the tag list (22 tags):
 ### D3. Version drift (the README/version-sync requirement in Phase 4 is genuinely unmet)
 
 * Latest release: **v0.15.0** (2026-09-29T15:36Z). Its tag carries `package.json` 0.15.0 (verified via the API) — good.
-* **The README inside v0.15.0 still advertises 0.13.0 installers** (`README.md:48-49` on that tag: `Cupric-AI-Setup-0.13.0.exe`, `Cupric-AI-0.13.0-x64-Portable.exe`). The same text is on `main` today.
+* **The README inside v0.15.0 still advertises 0.13.0 installers** (`README.md:48-49` on that tag: `NewBrand-Setup-0.13.0.exe`, `NewBrand-0.13.0-x64-Portable.exe`). The same text is on `main` today.
 * `main` (this checkout) is at `package.json` 0.13.0 while the v0.15.0 tag commit is **4 commits ahead of main** — the released tree is not on `main`.
 * Tags vs releases are inconsistent: `v0.12.0` exists as a tag with **no release** (`gh release view v0.12.0` → "release not found"); there is **no `v0.3.0` tag at all**; release notes files exist only for 0.9.0, 0.10.1 and 0.13.0 (`RELEASE_NOTES_*.md`) while 0.14/0.15 shipped with auto-generated notes.
 * Installer assets are large (~234 MB setup + ~234 MB portable per release) and the newest release has **0 downloads** on every asset.

@@ -1732,7 +1732,7 @@ export const framecnEntries: LabEntry[] = framecn.entries.map((e) => ({
 }));
 lab.push(...framecnEntries);
 
-// Cupric re-implementations of ObsidianUI ideas (MIT) — see src/lab/obsidian.
+// NewBrand re-implementations of ObsidianUI ideas (MIT) — see src/lab/obsidian.
 export const obsidianEntries: LabEntry[] = OBSIDIAN_ENTRIES.map((e) => ({
   slug: e.slug, name: e.name, category: e.category as Category, description: e.description, keywords: e.keywords, isNew: true,
 }));

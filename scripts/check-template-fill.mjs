@@ -54,23 +54,23 @@ const data = {
 // No footage in the project: the media slot is never a blocker — it gets a
 // designed placeholder panel and is reported so the dialog can say so.
 const bare = { ...mod.emptyStudioDoc(), clips: [] }
-const placeholder = mod.planTemplateFill(bare, data, { 'slot-1': { text: 'Cupric' } }, 'Demo')
+const placeholder = mod.planTemplateFill(bare, data, { 'slot-1': { text: 'NewBrand' } }, 'Demo')
 assert.deepEqual(placeholder.missing.map((slot) => slot.id), ['slot-2'])
 assert.ok(placeholder.clips.some((clip) => clip.kind === 'glass' && /drop your media/i.test(clip.label ?? '')), 'missing media becomes a placeholder panel, not a refusal')
 assert.ok(placeholder.clips.some((clip) => clip.kind === 'background'), 'templates bring a stage under the piece')
 
 // Footage in the project auto-fills the slot without being asked.
-const auto = mod.planTemplateFill(doc, data, { 'slot-1': { text: 'Cupric' } }, 'Demo')
+const auto = mod.planTemplateFill(doc, data, { 'slot-1': { text: 'NewBrand' } }, 'Demo')
 assert.equal(auto.missing.length, 0, 'project footage auto-fills media slots')
 assert.ok(auto.clips.some((clip) => clip.kind === 'image' && clip.id !== source.id), 'auto-fill clones the project footage')
 
 const plan = mod.planTemplateFill(doc, data, {
-  'slot-1': { text: 'Cupric' },
+  'slot-1': { text: 'NewBrand' },
   'slot-2': { clipId: 'footage' },
 }, 'Demo')
 assert.equal(JSON.stringify(doc), before, 'planning must not mutate the current edit')
 assert.equal(plan.missing.length, 0)
-const title = plan.clips.find((clip) => clip.kind === 'text' && clip.text === 'Cupric')
+const title = plan.clips.find((clip) => clip.kind === 'text' && clip.text === 'NewBrand')
 const media = plan.clips.find((clip) => clip.kind === 'image')
 assert.ok(title && media, 'title and media clips are planned')
 assert.equal(plan.startSec, 11, 'template must append after the current edit')

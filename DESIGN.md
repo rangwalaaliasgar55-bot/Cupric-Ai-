@@ -1,4 +1,4 @@
-# DESIGN.md — Cupric AI system
+# DESIGN.md — NewBrand system
 
 One file, one look. If a screen needs a color, font, radius, duration or
 spacing value that isn't here, the answer is **no** — extend this file first.
@@ -96,7 +96,7 @@ Kit motion uses `EASE_SOFT`; the only spring in the kit is the pill pop
 
 ### Studio (in-app editor)
 
-The Studio is Cupric's CapCut-style editor: stacked tracks of video / image /
+The Studio is NewBrand's CapCut-style editor: stacked tracks of video / image /
 text / background / overlay clips over a painted background.
 
 - **One renderer**: `src/lib/studio/renderer.ts#drawStudioFrame` draws the
@@ -119,8 +119,8 @@ text / background / overlay clips over a painted background.
 
 `src/lab/` holds the 190 components from lab.xevrion.dev (MIT). They keep their
 own neutral palette through `--lab-*` tokens mapped in `@theme inline`, scoped
-to `.lab-canvas`, so the lab never becomes a second design language in Cupric
-chrome. `muted` and `danger` deliberately fall through to Cupric tokens.
+to `.lab-canvas`, so the lab never becomes a second design language in NewBrand
+chrome. `muted` and `danger` deliberately fall through to NewBrand tokens.
 Next.js APIs are shimmed in `src/lab/shims/` (no network fonts, no optimizer).
 
 ---
@@ -138,7 +138,7 @@ helper text below (never tooltips).
 Shared: `Badge`, `Card`, `Kbd`, `Modal`, `Toasts`, `EmptyState` (**exactly one action**),
 `ProgressBar`, `Segmented`, `NoProject`.
 
-Bridge: `src/lib/bridge.ts` — prefer `window.cupric`, legacy alias `window.northframe`.
+Bridge: `src/lib/bridge.ts` — prefer `window.newbrand`, legacy alias `window.northframe`.
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * One motion language for Cupric AI.
+ * One motion language for NewBrand.
  * Spring only on the six moments listed in DESIGN.md.
  * Everyday UI uses soft ease 150–200ms.
  */

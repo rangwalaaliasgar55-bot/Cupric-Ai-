@@ -289,7 +289,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
             setMsg(`${language === 'hi' ? 'Hindi' : 'English'} voiceover generated offline with ${engine} and added at the playhead as an audio clip.`)
           } catch (err) { setMsg(err instanceof Error ? err.message : String(err)) } finally { setTtsBusy(false) }
         }}>{ttsBusy ? 'Speaking…' : 'Generate voiceover'}</Button>
-        <p className="text-[11px] text-muted">English and Hindi, fully offline: Piper (if you add a voice model), else Windows Speech, macOS voices or eSpeak NG. If a Hindi voice is missing, Cupric tells you how to add it and never reads Hindi with an English voice. Tip: “Auto-captions” can then caption it.</p>
+        <p className="text-[11px] text-muted">English and Hindi, fully offline: Piper (if you add a voice model), else Windows Speech, macOS voices or eSpeak NG. If a Hindi voice is missing, NewBrand tells you how to add it and never reads Hindi with an English voice. Tip: “Auto-captions” can then caption it.</p>
       </Block>
 
       <Block icon={Layers} title="Batch variants">
@@ -311,7 +311,7 @@ export function StudioCreativePanel({ doc, time, selectedId, onPreview, onCommit
           <Button size="sm" variant="outline" onClick={() => void copyText(`${social.caption}\n\n${social.hashtags.join(' ')}`).then((ok) => setMsg(ok ? 'Caption and hashtags copied.' : 'Clipboard is unavailable.'))}><Copy size={12} /> Copy caption + hashtags</Button>
           <Button size="sm" variant="primary" onClick={() => { const still = captureStill(doc, time); if (still) { setThumbnail(still); setMsg('Thumbnail captured from the same deterministic renderer used by preview/export.') } else setMsg('Could not capture a thumbnail at this playhead.') }}><ImageIcon size={12} /> Capture thumbnail</Button>
         </div>
-        {thumbnail && <div className="flex items-center gap-2 rounded-lg border border-line bg-panel-alt/50 p-2"><img src={thumbnail} alt="Generated video thumbnail" className="h-16 w-28 rounded object-cover" /><a href={thumbnail} download="cupric-thumbnail.png" className="cu-chip flex items-center gap-1 px-2 py-1 text-xs"><Download size={12} /> Download PNG</a></div>}
+        {thumbnail && <div className="flex items-center gap-2 rounded-lg border border-line bg-panel-alt/50 p-2"><img src={thumbnail} alt="Generated video thumbnail" className="h-16 w-28 rounded object-cover" /><a href={thumbnail} download="newbrand-thumbnail.png" className="cu-chip flex items-center gap-1 px-2 py-1 text-xs"><Download size={12} /> Download PNG</a></div>}
       </Block>
 
       <Block icon={Share2} title="Platform export preset">

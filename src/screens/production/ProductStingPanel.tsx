@@ -14,7 +14,7 @@ import { useActiveProject, useProjectStore } from '../../state/useProjectStore'
 import { DEFAULT_STING, STING, buildStingHtml, isBannedHue, paletteFor, sanitizeSting, stingProgram, type StingInputs } from '../../lib/stings/productSting'
 import { encodeWav16, renderStingAudio } from '../../lib/stings/stingAudio'
 
-const KEY = 'cupric.productSting'
+const KEY = 'newbrand.productSting'
 const inputCx = 'cu-input w-full'
 const mk = (w: number, h: number) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c }
 const FONT = "'Inter Variable', Inter, system-ui, sans-serif"

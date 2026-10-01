@@ -72,7 +72,7 @@ ok(m.pe.planToDoc(existing, plan, brief, { makeId: (i) => `d${i}` }).doc.clips.l
 const parsed = m.schema.ProjectSchema?.safeParse ? null : null
 void parsed
 
-/* Cupric AI motion + polish */
+/* NewBrand motion + polish */
 ok(r.clipIds.every((id) => { const c = r.doc.clips.find((x) => x.id === id); return Array.isArray(c.keyframes) && c.keyframes.length >= 2 && c.keyframes.every((k, i, a) => i === 0 || k.at >= a[i - 1].at) }), 'every built clip gets sorted, editable keyframes')
 ok(r.doc.clips.find((c) => c.id === 'mine').keyframes == null, 'your own clips are never re-animated')
 ok(m.pe.planToDoc(existing, plan, brief, { makeId: (i) => `z${i}`, motion: false }).doc.clips.every((c) => !c.keyframes), 'motion can be turned off')
@@ -111,9 +111,9 @@ const ui = read('src/screens/production/ProductionPlanner.tsx')
 ok(/<ProductionPlanner \/>/.test(read('src/screens/Autonomous.tsx')), 'planner is on the Autonomous screen')
 ok(/disabled=\{!session\.approved\}/.test(ui) && /replaceApproved/.test(ui), 'UI: build gated on manual approval; replace needs second consent')
 ok(!/approved: true/.test(ui), 'UI never sets approval programmatically')
-ok(/Cupric AI polish/.test(ui) && /setAskOpen\(true\)/.test(ui), 'UI: Cupric AI polish + Ask Cupric AI in review')
+ok(/NewBrand polish/.test(ui) && /setAskOpen\(true\)/.test(ui), 'UI: NewBrand polish + Ask NewBrand in review')
 const main = read('electron/main.cjs')
 ok(/CANDIDATE_DEADLINE_MS/.test(main) && /Promise\.race\(\[Promise\.allSettled/.test(main), 'candidates run in parallel under one deadline (no endless spinner)')
-ok(/const liveModel = /.test(main), 'no model → Cupric AI built-in candidates straight away')
-ok(!/is polishing it in the background/.test(main) && /Cupric AI drafted this rundown/.test(main), 'Brief credits Cupric AI, not a hidden provider')
+ok(/const liveModel = /.test(main), 'no model → NewBrand built-in candidates straight away')
+ok(!/is polishing it in the background/.test(main) && /NewBrand drafted this rundown/.test(main), 'Brief credits NewBrand, not a hidden provider')
 console.log(`production: ${n} assertions passed`)

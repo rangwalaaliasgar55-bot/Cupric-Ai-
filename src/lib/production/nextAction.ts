@@ -11,7 +11,7 @@ export type NextAction = { id: NextActionId; title: string; why: string; runnabl
 
 export function nextAction(s: ProductionSession): NextAction {
   const open = openQuestions(s.intake).filter((q) => q.required)
-  if (!s.intake.making.trim()) return { id: 'answer', title: 'Tell Cupric what you are making', why: 'Everything else (structure, pacing, copy slots) is chosen from this one answer. A format starter fills the rest.', runnable: false }
+  if (!s.intake.making.trim()) return { id: 'answer', title: 'Tell NewBrand what you are making', why: 'Everything else (structure, pacing, copy slots) is chosen from this one answer. A format starter fills the rest.', runnable: false }
   if (!s.brief) {
     return open.length
       ? { id: 'run-all', title: 'Plan it all up to the preview', why: `${open.length} key question(s) are still blank; they'll become visible assumptions you can edit.`, runnable: true }
@@ -21,7 +21,7 @@ export function nextAction(s: ProductionSession): NextAction {
   if (!s.plan) return { id: 'plan', title: 'Generate the plan', why: 'Turns the brief and research into shots with confidence levels.', runnable: true }
   if (!s.approved) {
     const low = s.plan.needsApproval.length
-    return { id: 'approve', title: 'Review the plan and approve it yourself', why: low ? `${low} item(s) are flagged for your attention. Approval is manual; Cupric never approves on your behalf.` : 'Nothing is flagged. Approval is still manual; Cupric never approves on your behalf.', runnable: false }
+    return { id: 'approve', title: 'Review the plan and approve it yourself', why: low ? `${low} item(s) are flagged for your attention. Approval is manual; NewBrand never approves on your behalf.` : 'Nothing is flagged. Approval is still manual; NewBrand never approves on your behalf.', runnable: false }
   }
   if (!s.builtClipIds.length) return { id: 'finish', title: 'Build and polish', why: 'Builds editable clips as one undo step, then runs review-and-fix rounds.', runnable: true }
   const fails = (s.review ?? []).filter((r) => r.status === 'fail')

@@ -26,8 +26,8 @@ const STEPS = [
   { id: 'voice', label: 'Voice' }, { id: 'subtitles', label: 'Subtitles' }, { id: 'music', label: 'Music' }, { id: 'compose', label: 'Timeline' },
 ] as const
 type StepId = (typeof STEPS)[number]['id']
-const HISTORY_KEY = 'cupric.quickVideo.history'
-const SETTINGS_KEY = 'cupric.quickVideo.settings'
+const HISTORY_KEY = 'newbrand.quickVideo.history'
+const SETTINGS_KEY = 'newbrand.quickVideo.settings'
 const inputCx = 'cu-input w-full'
 
 function loadSettings(): QuickVideoSettings {

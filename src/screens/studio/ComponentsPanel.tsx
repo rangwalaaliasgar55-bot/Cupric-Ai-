@@ -1,7 +1,7 @@
 /**
  * Studio → Components: every UI Lab component, one click from the timeline.
  *
- * Pick one to preview it live, choose how long to record and whether Cupric
+ * Pick one to preview it live, choose how long to record and whether NewBrand
  * should act it out, then Add. The clip lands at the playhead on a free track
  * and the recorder captures the component's real animation. Rows are also
  * draggable onto the stage, and double-click adds immediately.
@@ -72,7 +72,7 @@ export function ComponentsPanel({
           Components <span className="font-mono text-xs font-normal text-muted">{pool.length}</span>
         </h2>
         <p className="mt-1 text-xs text-muted">
-          Real UI components with their real animation. Add one and Cupric plays it, acts it out and records it onto your timeline as an
+          Real UI components with their real animation. Add one and NewBrand plays it, acts it out and records it onto your timeline as an
           editable clip.
         </p>
       </div>

@@ -184,8 +184,8 @@ function buildRequest(config, { system = '', messages = [], json = false, temper
   // llama.cpp, OpenCode Desktop) which all speak this shape.
   if (config.apiKey) headers.authorization = `Bearer ${config.apiKey}`
   if (/openrouter\.ai/i.test(config.baseUrl)) {
-    headers['HTTP-Referer'] = 'https://cupric.ai'
-    headers['X-Title'] = 'Cupric AI'
+    headers['HTTP-Referer'] = 'https://newbrand.ai'
+    headers['X-Title'] = 'NewBrand'
   }
   const openaiMessages = thread.map((message) => {
     if (message.role !== 'user' || !images.length) return message

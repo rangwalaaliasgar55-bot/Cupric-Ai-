@@ -10,7 +10,7 @@
       "id": "javis-jl",
       "kind": "source",
       "name": "Javis.jl (concepts)",
-      "description": "Julia animation framework. Cupric borrows its ideas, not its code: draw-on paths (Javis `appear(:draw_text)`), actions scheduled in frame ranges on objects, and parent/child object transforms — mapped to shape draw-on, per-clip keyframes and cursor→target linking.",
+      "description": "Julia animation framework. NewBrand borrows its ideas, not its code: draw-on paths (Javis `appear(:draw_text)`), actions scheduled in frame ranges on objects, and parent/child object transforms — mapped to shape draw-on, per-clip keyframes and cursor→target linking.",
       "data": {
         "url": "https://github.com/JuliaAnimators/Javis.jl",
         "license": "MIT",

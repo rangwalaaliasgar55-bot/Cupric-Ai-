@@ -37,7 +37,7 @@ U("browser", "Browser Window", 1280, 800, ["saas", "web", "mockup"], "Browser ch
   ctx.fillStyle = th.colors.surface2; ctx.fillRect(-w / 2, -h / 2, w, 48);
   ["#ff5f57", "#febc2e", "#28c840"].forEach((c, i) => dot(ctx, -w / 2 + 24 + i * 20, -h / 2 + 24, 6, c));
   panel(ctx, -w * 0.25, -h / 2 + 11, w * 0.5, 26, 8, th, th.colors.bg, th.colors.border, false);
-  text(ctx, typed(str(P, "url", "app.cupric.ai/dashboard"), t, 30), -w * 0.25 + 14, -h / 2 + 24, { size: 13, color: th.colors.muted });
+  text(ctx, typed(str(P, "url", "app.newbrand.ai/dashboard"), t, 30), -w * 0.25 + 14, -h / 2 + 24, { size: 13, color: th.colors.muted });
   ctx.translate(0, 24);
   UI_KINDS.dashboard.draw(ctx, w, h - 48, t - 0.3, P, th);
   ctx.restore();
@@ -47,7 +47,7 @@ U("dashboard", "Analytics Dashboard", 1280, 760, ["saas", "dashboard", "analytic
   ctx.fillStyle = th.colors.bg; ctx.fillRect(x0, y0, w, h);
   const sw = Math.min(220, w * 0.2);
   ctx.fillStyle = th.colors.surface; ctx.fillRect(x0, y0, sw, h);
-  text(ctx, str(P, "brand", "Cupric"), x0 + 24, y0 + 36, { size: 18, weight: 700, color: th.colors.text });
+  text(ctx, str(P, "brand", "NewBrand"), x0 + 24, y0 + 36, { size: 18, weight: 700, color: th.colors.text });
   ["Overview", "Analytics", "Customers", "Automations", "Settings"].forEach((it, i) => {
     const y = y0 + 90 + i * 40, act = i === Math.floor(t / 2.5) % 5;
     if (act) { rr(ctx, x0 + 12, y - 16, sw - 24, 32, 8); ctx.fillStyle = withAlpha(a, 0.14); ctx.fill(); }
@@ -97,7 +97,7 @@ U("sidebar", "Sidebar", 260, 640, ["navigation", "saas"], "Navigation sidebar wi
 });
 U("navbar", "Navbar", 1200, 72, ["navigation", "landing"], "Landing page navbar with CTA.", (ctx, w, h, t, P, th) => {
   panel(ctx, -w / 2, -h / 2, w, h, h / 2, th, withAlpha(th.colors.surface, 0.85));
-  text(ctx, str(P, "brand", "Cupric"), -w / 2 + 32, 0, { size: 20, weight: 700, color: th.colors.text });
+  text(ctx, str(P, "brand", "NewBrand"), -w / 2 + 32, 0, { size: 20, weight: 700, color: th.colors.text });
   list(P, "items", ["Product", "Solutions", "Pricing", "Docs"]).forEach((it, i) => text(ctx, it, -120 + i * 110, 0, { size: 15, color: th.colors.muted, alpha: e(t, 0.4, i * 0.08) }));
   const bw = 140; rr(ctx, w / 2 - bw - 14, -h / 2 + 14, bw, h - 28, (h - 28) / 2); ctx.fillStyle = acc(P, th); ctx.fill();
   text(ctx, str(P, "cta", "Get started"), w / 2 - bw / 2 - 14, 0, { size: 15, weight: 600, color: "#fff", align: "center" });
@@ -278,7 +278,7 @@ U("codeEditor", "Code Editor", 760, 460, ["code", "developer", "api"], "Syntax-h
   panel(ctx, -w / 2, -h / 2, w, h, 16, th, "#0b0d12", "#1f2330");
   ["#ff5f57", "#febc2e", "#28c840"].forEach((c, i) => dot(ctx, -w / 2 + 22 + i * 18, -h / 2 + 22, 5.5, c));
   text(ctx, str(P, "file", "generate.ts"), 0, -h / 2 + 22, { size: 13, color: "#8a90a2", align: "center" });
-  const code = str(P, "code", `import { generateVideo } from "@motionos/ai";\n\nconst video = await generateVideo({\n  style: "premium futuristic SaaS",\n  duration: 25,\n  brand: { name: "Cupric AI" },\n  scenes: ["hook", "problem", "product", "cta"],\n});\n\nawait renderVideo({ doc: video, format: "mp4" });`);
+  const code = str(P, "code", `import { generateVideo } from "@motionos/ai";\n\nconst video = await generateVideo({\n  style: "premium futuristic SaaS",\n  duration: 25,\n  brand: { name: "NewBrand" },\n  scenes: ["hook", "problem", "product", "cta"],\n});\n\nawait renderVideo({ doc: video, format: "mp4" });`);
   const shown = typed(code, t, 38);
   const kw = /\b(import|from|const|await|export|return|function)\b/;
   shown.split("\n").forEach((ln, i) => { const y = -h / 2 + 62 + i * 26; text(ctx, String(i + 1), -w / 2 + 34, y, { size: 13, color: "#3b4152", align: "right", family: "ui-monospace, Menlo, monospace" }); let x = -w / 2 + 52; ctx.font = "15px ui-monospace, Menlo, monospace"; ln.split(/(\s+|[{}(),:;[\]])/).forEach((tok) => { if (!tok) return; const col = kw.test(tok) ? "#c792ea" : /^["'`]/.test(tok) || /["'`]$/.test(tok) ? "#c3e88d" : /^\d+$/.test(tok) ? "#f78c6c" : /^[A-Z]/.test(tok) || /^[a-z]+[A-Z]/.test(tok) ? "#82aaff" : "#d6deeb"; text(ctx, tok, x, y, { size: 15, color: col, family: "ui-monospace, Menlo, monospace" }); x += ctx.measureText(tok).width; }); });

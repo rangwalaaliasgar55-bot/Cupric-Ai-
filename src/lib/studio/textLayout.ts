@@ -6,7 +6,7 @@
  * measurement: `drawRichText` and the gate both call `layoutRich`, so a gate can
  * never measure against a box the author was never shown.
  *
- * Ported layout maths from `src/lib/studio/renderer.ts` (Cupric's own), with the
+ * Ported layout maths from `src/lib/studio/renderer.ts` (NewBrand's own), with the
  * WCAG gate from veedstudio/open-edit as the reason to lift it out — see
  * THIRD_PARTY_NOTICES.md.
  */

@@ -212,7 +212,7 @@ export function tightenClip(doc: StudioDoc, clipId: string, opts: { maxPauseSec?
   if (clip.locked) return { doc, removedSec: 0, cuts: 0, reason: 'That clip is locked.' }
   // Explicit cuts need no transcript: a probe can measure where the silence is.
   if (!clip.words?.length && !opts.cuts?.length) {
-    return { doc, removedSec: 0, cuts: 0, reason: 'Transcribe this clip first (Auto-captions) so its word timings are known — or let Cupric measure its silence instead.' }
+    return { doc, removedSec: 0, cuts: 0, reason: 'Transcribe this clip first (Auto-captions) so its word timings are known — or let NewBrand measure its silence instead.' }
   }
   const speed = clip.kind === 'video' && clip.speed > 0 ? clip.speed : 1
   const range: [number, number] = [clip.trimInSec, clip.trimInSec + clip.durationSec * speed]

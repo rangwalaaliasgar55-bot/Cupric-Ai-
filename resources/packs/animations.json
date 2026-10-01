@@ -3,7 +3,7 @@
   "name": "Text animations",
   "description": "Caption and title animations, all pure functions of clip progress so preview and export match.",
   "version": "0.16.0",
-  "source": "Cupric Studio renderer",
+  "source": "NewBrand Studio renderer",
   "license": "MIT",
   "items": [
     {

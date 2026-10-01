@@ -1,5 +1,5 @@
 /**
- * Cupric's own stand-in for the two Editframe names framecn components use.
+ * NewBrand's own stand-in for the two Editframe names framecn components use.
  * Editframe itself is proprietary and is NOT vendored. framecn components
  * animate with CSS keyframes (which run on the browser clock) and shaders read
  * `ownCurrentTimeMs`; the Studio recorder captures both in real time.

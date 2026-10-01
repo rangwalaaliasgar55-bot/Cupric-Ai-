@@ -1,10 +1,10 @@
-# ui-lab patterns absorbed into Cupric
+# ui-lab patterns absorbed into NewBrand
 
 Source: https://lab.xevrion.dev / https://github.com/xevrion/ui-lab (MIT)
 
 ## Already mirrored in app chrome
 
-| Lab idea | Cupric location |
+| Lab idea | NewBrand location |
 |---|---|
 | Press scale ~0.96 | `Button`, DESIGN.md |
 | Skeleton matches real layout | Footage / import drop zones |

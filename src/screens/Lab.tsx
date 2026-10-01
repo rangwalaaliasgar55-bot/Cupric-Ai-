@@ -23,7 +23,7 @@ import { motionPatch } from '../lib/studio/motionDirector'
  * UI Lab — the vendored lab.xevrion.dev catalogue running locally.
  *
  * Two jobs:
- *  1. an interaction reference while building Cupric screens, and
+ *  1. an interaction reference while building NewBrand screens, and
  *  2. a source of on-brand motion stills that can be dropped straight onto the
  *     Studio timeline as overlays.
  */
@@ -103,8 +103,8 @@ export function Lab() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>(ALL)
   const [open, setOpen] = useState<LabEntry | null>(() => {
-    const slug = sessionStorage.getItem('cupric:lab-open')
-    if (slug) sessionStorage.removeItem('cupric:lab-open')
+    const slug = sessionStorage.getItem('newbrand:lab-open')
+    if (slug) sessionStorage.removeItem('newbrand:lab-open')
     return slug ? lab.find((entry) => entry.slug === slug) ?? null : null
   })
   const [capturing, setCapturing] = useState(false)

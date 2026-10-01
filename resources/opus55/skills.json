@@ -1,6 +1,6 @@
 {
- "name": "Cupric production skills",
- "license": "MIT (Cupric-authored guidance). Evidence links point to attributed Opus catalogue cases; cases are cited, not copied.",
+ "name": "NewBrand production skills",
+ "license": "MIT (NewBrand-authored guidance). Evidence links point to attributed Opus catalogue cases; cases are cited, not copied.",
  "skills": [
   {
    "id": "hook-construction",
@@ -282,7 +282,7 @@
     "real after footage"
    ],
    "avoid": [
-    "Fabricated before/after results — Cupric refuses to generate them"
+    "Fabricated before/after results — NewBrand refuses to generate them"
    ],
    "matchTags": [
     "videoType:comparison"

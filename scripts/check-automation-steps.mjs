@@ -118,7 +118,7 @@ assert.equal(locked.ok, true, `the sample rundown locks (${locked.issues.join(';
 const plan = steps.buildTimelinePlan({ rundown: draft, winnerPath: 'C:/job/candidate-1.html', footage: null, aspect: spec.aspect, fps: spec.fps, quality: 'final' })
 assert.equal(plan.valid, true, `the sample plan is valid (${plan.issues.join('; ')})`)
 
-const dir = mkdtempSync(path.join(tmpdir(), 'cupric-steps-'))
+const dir = mkdtempSync(path.join(tmpdir(), 'newbrand-steps-'))
 const { timeline, editingPlan } = steps.timelineArtifacts(plan)
 for (const [name, payload] of [['rundown.lock.json', locked.lock], ['timeline-plan.json', plan], ['timeline.json', timeline], ['editing-plan.json', editingPlan]]) {
   const file = path.join(dir, name)

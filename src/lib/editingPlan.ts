@@ -1,4 +1,4 @@
-/** Cupric AI's runtime-safe subset of the editing-agent EDL. Kept dependency-free so it works in Electron and browser preview. */
+/** NewBrand's runtime-safe subset of the editing-agent EDL. Kept dependency-free so it works in Electron and browser preview. */
 export type EditCaption = { text: string; start: number; end: number; emphasis?: string[] }
 export type EditClip = { id: string; sourceFile: string; inSec: number; outSec: number; purpose: string; transition: 'hard_cut'|'dissolve'|'flash_white'|'push_in'|'pull_out'|'blur'|'slide'; captions: EditCaption[] }
 export type EditingPlan = { schemaVersion: '1.0'; targetDurationSec: number; aspect: '16:9'|'9:16'|'1:1'; fps: 30|60; sections: { id: string; role: string; clips: EditClip[] }[]; captions: { enabled: boolean; mode: 'phrase'|'word'|'karaoke'; maxWords: number } }

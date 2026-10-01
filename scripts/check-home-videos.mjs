@@ -14,7 +14,7 @@
  *  7. export dims are even for 16:9 and 9:16 (electron targetSizeForAspect);
  *  8. agent ops: addKit/buildHomeVideo validate strictly, unknown op names
  *     and unknown kits are rejected, the plan applies atomically;
- *  9. optional real MP4 encode when CUPRIC_FFMPEG_PATH and @napi-rs/canvas
+ *  9. optional real MP4 encode when NEWBRAND_FFMPEG_PATH and @napi-rs/canvas
  *     are available (skipped with a message otherwise — never faked).
  */
 import assert from 'node:assert/strict'
@@ -271,7 +271,7 @@ for (const file of ['src/lib/studio/homeKit.ts', 'src/lib/studio/homeVideos.ts']
 
 // 9. Optional real MP4 encode.
 {
-  const ffmpeg = process.env.CUPRIC_FFMPEG_PATH
+  const ffmpeg = process.env.NEWBRAND_FFMPEG_PATH
   let Canvas = null
   try { Canvas = createRequire(import.meta.url)('@napi-rs/canvas') } catch { /* optional */ }
   if (ffmpeg && existsSync(ffmpeg) && Canvas) {
@@ -295,7 +295,7 @@ for (const file of ['src/lib/studio/homeKit.ts', 'src/lib/studio/homeVideos.ts']
     }
     console.log('  real MP4 encode: 16:9 + 9:16 valid')
   } else {
-    console.log('  real MP4 encode skipped — set CUPRIC_FFMPEG_PATH and install @napi-rs/canvas to encode for real')
+    console.log('  real MP4 encode skipped — set NEWBRAND_FFMPEG_PATH and install @napi-rs/canvas to encode for real')
   }
 }
 

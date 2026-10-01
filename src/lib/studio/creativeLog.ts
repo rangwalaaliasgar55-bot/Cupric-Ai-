@@ -20,9 +20,9 @@
  *     corrupt log is fine — history is a helper, not a gate. Writing through it is not: an
  *     empty fallback would erase the reject/accept history of every clip at once.
  *
- * Two things are Cupric's own, and both are additions rather than translations:
+ * Two things are NewBrand's own, and both are additions rather than translations:
  *
- *   - `directionId` on an attempt. Upstream's `what` is free text; Cupric's design engine
+ *   - `directionId` on an attempt. Upstream's `what` is free text; NewBrand's design engine
  *     picks one of three named directions, so an attempt that names one carries the id too
  *     and `designAll` can skip it (see `avoidedDirections`). The free text is still kept and
  *     still shown — the id is only a hint for the deterministic engine;
@@ -36,7 +36,7 @@
 import type { StudioClip, StudioDoc } from '../../types/project'
 import type { DesignDirectionId } from './design'
 
-export const CREATIVE_LOG_KEY = 'cupric.creative-log.v1'
+export const CREATIVE_LOG_KEY = 'newbrand.creative-log.v1'
 /** Above this many footage entries the oldest are dropped (a working log, not an archive). */
 export const CREATIVE_LOG_LIMIT = 60
 

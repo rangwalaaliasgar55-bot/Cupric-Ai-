@@ -8,7 +8,7 @@
  * in the renderer or FFmpeg on the desktop, so both environments measure the
  * same clip the same way.
  *
- * WHY THIS REPLACES CUPric'S OLD SILENCE CHECK. The previous browser detector
+ * WHY THIS REPLACES NEWBRAND's OLD SILENCE CHECK. The previous browser detector
  * used a fixed −35 dBFS threshold. A street sits 20 dB above a quiet room, so
  * one fixed number finds gaps in one clip and none in the other, and a
  * room-tone clip reports "no silence" while a hissy one reports "all silence".

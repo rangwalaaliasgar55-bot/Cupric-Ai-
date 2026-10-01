@@ -71,7 +71,7 @@ m.rememberRecordSec('1s')
 ok(m.preferredRecordSec() === 1, 'a remembered length round-trips')
 m.rememberRecordSec(0.2)
 ok(m.preferredRecordSec() === 0.5, 'remembered lengths are clamped')
-store.set('cupric.component.recordSec', 'junk')
+store.set('newbrand.component.recordSec', 'junk')
 ok(m.preferredRecordSec() === 4, 'corrupt storage falls back to the default')
 delete globalThis.localStorage
 {

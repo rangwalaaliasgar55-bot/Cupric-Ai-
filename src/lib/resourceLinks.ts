@@ -26,7 +26,7 @@ type Rule = { match: RegExp; source: string; license: string | null; kind: LinkV
 
 const RULES: Rule[] = [
   // Refused: closed marketplaces / terms forbid redistribution (see ARCHITECTURE licensing rules).
-  { match: /(^|\.)capcut\.(com|net)$/, source: 'CapCut', license: null, kind: 'page', status: 'blocked', reason: 'CapCut templates and assets are licensed for use inside CapCut only. Cupric never scrapes them.' },
+  { match: /(^|\.)capcut\.(com|net)$/, source: 'CapCut', license: null, kind: 'page', status: 'blocked', reason: 'CapCut templates and assets are licensed for use inside CapCut only. NewBrand never scrapes them.' },
   { match: /(^|\.)dafont\.com$/, source: 'DaFont', license: null, kind: 'font', status: 'blocked', reason: 'DaFont licences vary per font and are often personal-use only. Use Google Fonts or Fontsource instead.' },
   { match: /(^|\.)(envato|elements\.envato|videohive\.net|audiojungle\.net|motionarray|artlist\.io|epidemicsound|shutterstock|gettyimages|istockphoto|adobestock|stock\.adobe)\.com$|(^|\.)(videohive|audiojungle)\.net$/, source: 'Paid marketplace', license: null, kind: 'page', status: 'blocked', reason: 'Paid-marketplace assets are licensed to the purchaser. Download them there with your own licence and import the file.' },
   { match: /(^|\.)(tiktok|instagram|youtube|youtu|facebook|x|twitter)\.(com|be)$/, source: 'Social platform', license: null, kind: 'video', status: 'blocked', reason: 'Other people\'s social posts are copyrighted. Only import footage you own or have permission to use.' },
@@ -86,7 +86,7 @@ export function checkResourceLink(input: string): LinkVerdict {
     source: host,
     sourceLicense: null,
     attribution: `Source: ${host}`,
-    reason: 'Unknown source — Cupric cannot verify the licence. Import only if you own it or have permission.',
+    reason: 'Unknown source — NewBrand cannot verify the licence. Import only if you own it or have permission.',
     requiresConfirmation: true,
   }
 }

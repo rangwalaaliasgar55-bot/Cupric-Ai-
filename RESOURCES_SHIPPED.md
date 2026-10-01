@@ -87,7 +87,7 @@ Nothing third-party is vendored — links, licences and cues only. The Library's
 
 ```js
 window.__seek(t)                // paint second t — pure, no rAF, no CSS animation
-window.__cupricSourceManifest   // duration, fps, size, beat list, credits
+window.__newbrandSourceManifest   // duration, fps, size, beat list, credits
 ```
 
 Because `__seek` is a pure function of `t`, the desktop renderer can screenshot
@@ -128,7 +128,7 @@ the upstream behaviour notes, grouped as `components`, `ai-components`,
 `reference`. Their `theme.upstream.css` token sheet is vendored next to it.
 
 **The source code is deliberately not copied.** PanelUI is React Native / Expo
-(reanimated, expo-blur, uniwind); it cannot mount in Cupric's DOM renderer. What
+(reanimated, expo-blur, uniwind); it cannot mount in NewBrand's DOM renderer. What
 is useful — the behaviour rules, the accessibility modes, the copy — is what we
 took. See `resources/VENDOR.md`.
 
@@ -149,7 +149,7 @@ is only useful if it says what not to use:
   instead: `perspective` + `rotateX/Y/Z` + `translateZ` are pure functions of
   `t`, weigh nothing, and stay inside the deterministic `__seek(t)` contract.
 - **Pipecat / LiveKit Agents** — recorded as "not adopted, and why": they solve
-  duplex conversation (~450–600ms round trips). Cupric records one instruction
+  duplex conversation (~450–600ms round trips). NewBrand records one instruction
   and renders; the Web Speech API already covers that.
 
 ### Speak a brief, get a video
@@ -208,7 +208,7 @@ growing faster than the clip count.
 ## v0.4.4 — the last three
 
 **Editable generated output.** `src/lib/studio/importHtml.ts` reads a
-generated piece's `__cupricSourceManifest` sequence — or its `scenes` array,
+generated piece's `__newbrandSourceManifest` sequence — or its `scenes` array,
 or failing both, the copy on screen — and rebuilds it as ordinary text clips
 at their original timings, with the motion description mapped onto a real
 animation. "Open as clips" in the Arena Desk. The file is parsed as text,
@@ -241,7 +241,7 @@ when there is something to act on.
   now, and an OS toast on top of it every four hours is the nagging this is
   meant to avoid. Launch keeps the notifier, for when no window is up yet.
 - **One quiet banner.** `updater:status → downloaded` raises a sticky toast:
-  "Cupric x.y.z is ready — it installs next time you quit", with a Restart now
+  "NewBrand x.y.z is ready — it installs next time you quit", with a Restart now
   action. Keyed by version, so repeated events never stack. `checking` and
   `current` stay silent; nothing anywhere opens a dialog for them.
 - **`updater:install`.** New IPC channel (`preload.cjs` + `main.cjs`) calling

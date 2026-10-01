@@ -59,7 +59,7 @@ export async function buildDiagnosticReport(): Promise<string> {
   if (ipc) return String(await ipc.invoke('diag:report', { rendererErrors: recentRendererErrors() }))
   const bridge = getBridge()
   const lines = [
-    '=== Cupric AI diagnostic report (web build) ===',
+    '=== NewBrand diagnostic report (web build) ===',
     `Generated: ${new Date().toISOString()}`,
     `App version: ${typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : 'unknown'}`,
     `Browser: ${navigator.userAgent}`,

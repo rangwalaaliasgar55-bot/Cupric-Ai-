@@ -54,7 +54,7 @@ function downloadBrowserRender(result: { outputPath?: string; outputName?: strin
   if (!result?.outputPath || !/^(blob|data):/i.test(result.outputPath)) return
   const a = document.createElement('a')
   a.href = result.outputPath
-  a.download = result.outputName || 'cupric-render.webm'
+  a.download = result.outputName || 'newbrand-render.webm'
   document.body.appendChild(a)
   a.click()
   a.remove()
@@ -105,7 +105,7 @@ const desktopAwareStorage: StateStorage = {
     }
     // Atomic write + rolling autosave snapshots happen in the main process.
     ipc.invoke('state:save', { key: name, value }).catch((err: unknown) => {
-      console.error('[cupric] project save failed', err)
+      console.error('[newbrand] project save failed', err)
     })
   },
   removeItem: (name) => {
@@ -890,7 +890,7 @@ export const useProjectStore = create<AppState>()(
         const store = useProjectStore.getState()
         if (error) {
           rlog.error('project', 'project:load failed', { error: error instanceof Error ? error.message : String(error), ms })
-          store.pushToast('error', 'Your saved projects could not be loaded, so Cupric started empty. Earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'load-failed' })
+          store.pushToast('error', 'Your saved projects could not be loaded, so NewBrand started empty. Earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'load-failed' })
           return
         }
         rlog.info('project', 'project:load', {
@@ -902,7 +902,7 @@ export const useProjectStore = create<AppState>()(
           unreadable: loadReport.unreadable,
         })
         if (loadReport.unreadable || loadReport.readError) {
-          store.pushToast('error', 'Your saved projects file could not be read, so Cupric started empty. The damaged file was kept; earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'load-unreadable' })
+          store.pushToast('error', 'Your saved projects file could not be read, so NewBrand started empty. The damaged file was kept; earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'load-unreadable' })
         }
         if (loadReport.warnings.length) {
           rlog.warn('project', 'project:load repaired saved data', { warnings: loadReport.warnings })

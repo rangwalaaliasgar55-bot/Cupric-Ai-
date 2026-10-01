@@ -1,6 +1,6 @@
 # SaaS video templates
 
-These are Cupric-authored, editable Studio storyboards for common SaaS video jobs:
+These are NewBrand-authored, editable Studio storyboards for common SaaS video jobs:
 
 - Launch announcement
 - Feature drop

@@ -172,12 +172,12 @@ try {
   /* 6. Anthropic over the real socket: headers, system field and max_tokens */
   const anthropic = await ai.generate(
     { provider: 'anthropic', apiKey: 'sk-ant-test', baseUrl: anthropicBase, model: 'claude-sonnet-4-5' },
-    { system: 'You are Cupric.', messages: [{ role: 'user', content: 'hello anthropic' }], maxTokens: 256 },
+    { system: 'You are NewBrand.', messages: [{ role: 'user', content: 'hello anthropic' }], maxTokens: 256 },
   )
   ok(anthropic.ok === true, `anthropic round trip succeeds (${anthropic.ok ? '' : anthropic.error?.code})`)
   ok(anthropic.text === 'anthropic saw: hello anthropic', 'anthropic content blocks are joined')
   ok(seen.anthropicHeaders.at(-1).key === 'sk-ant-test' && seen.anthropicHeaders.at(-1).version === ai.ANTHROPIC_VERSION, 'anthropic received x-api-key and anthropic-version')
-  ok(seen.anthropicCalls.at(-1).system === 'You are Cupric.', 'the system prompt travelled as its own field')
+  ok(seen.anthropicCalls.at(-1).system === 'You are NewBrand.', 'the system prompt travelled as its own field')
   ok(seen.anthropicCalls.at(-1).max_tokens === 256, 'max_tokens was sent (Anthropic rejects the request without it)')
 
   /* 7. Anthropic without a key: typed, and no request */

@@ -3,8 +3,8 @@
  * pack grid. DOM-guarded: Node checks bundle this file with no localStorage.
  */
 
-const FAV_KEY = 'cupric.packs.favourites'
-const RECENT_KEY = 'cupric.packs.recent'
+const FAV_KEY = 'newbrand.packs.favourites'
+const RECENT_KEY = 'newbrand.packs.recent'
 /** How many recently-applied items are remembered. */
 export const RECENT_LIMIT = 40
 

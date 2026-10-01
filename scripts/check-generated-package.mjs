@@ -47,23 +47,23 @@ try {
   // under an uppercase name with headline/sub keys and millisecond timings.
   // This is the shape that used to fail with "no readable scene manifest".
   const film = new JSZip()
-  film.file('cupric-film/index.html', '<!doctype html><html><head><title>Cupric AI — Brand Film</title></head><body><canvas id="stage"></canvas><script src="js/scenes.js"></script><script src="js/main.js"></script></body></html>')
-  film.file('cupric-film/js/scenes.js', "export const SCENES = [\n  { headline: 'Cupric AI', sub: 'The editor that thinks in motion', start: 0, end: 3200 },\n  { headline: `Every cut, directed`, start: 3200, end: 6400, animation: 'word stagger' }, // comment\n  { headline: 'Start free today', start: 6400, end: 9000 },\n];")
-  film.file('cupric-film/js/main.js', 'const ctx = document.getElementById("stage").getContext("2d"); ctx.drawImage(new Image(), 0, 0); const src = "media/logo.png";')
-  film.file('cupric-film/media/logo.png', new Uint8Array([137, 80, 78, 71]))
-  film.file('cupric-film/node_modules/junk/index.js', 'const scenes = [{ copy: "wrong" }]')
-  const filmPkg = await readGeneratedPackage(new File([await film.generateAsync({ type: 'uint8array' })], 'Cupric-ai-cinematic-brand-film (1).zip'))
+  film.file('newbrand-film/index.html', '<!doctype html><html><head><title>NewBrand — Brand Film</title></head><body><canvas id="stage"></canvas><script src="js/scenes.js"></script><script src="js/main.js"></script></body></html>')
+  film.file('newbrand-film/js/scenes.js', "export const SCENES = [\n  { headline: 'NewBrand', sub: 'The editor that thinks in motion', start: 0, end: 3200 },\n  { headline: `Every cut, directed`, start: 3200, end: 6400, animation: 'word stagger' }, // comment\n  { headline: 'Start free today', start: 6400, end: 9000 },\n];")
+  film.file('newbrand-film/js/main.js', 'const ctx = document.getElementById("stage").getContext("2d"); ctx.drawImage(new Image(), 0, 0); const src = "media/logo.png";')
+  film.file('newbrand-film/media/logo.png', new Uint8Array([137, 80, 78, 71]))
+  film.file('newbrand-film/node_modules/junk/index.js', 'const scenes = [{ copy: "wrong" }]')
+  const filmPkg = await readGeneratedPackage(new File([await film.generateAsync({ type: 'uint8array' })], 'NewBrand-ai-cinematic-brand-film (1).zip'))
   assert.match(filmPkg.scripts, /SCENES/)
   assert.doesNotMatch(filmPkg.scripts, /wrong/, 'node_modules must be skipped')
-  assert.deepEqual(filmPkg.assets.map((a) => a.sourcePath), ['cupric-film/media/logo.png'], 'media referenced only from JS is still found')
-  const filmPiece = parseGeneratedHtml(filmPkg.html, { scripts: filmPkg.scripts, name: 'Cupric-ai-cinematic-brand-film (1).zip' })
+  assert.deepEqual(filmPkg.assets.map((a) => a.sourcePath), ['newbrand-film/media/logo.png'], 'media referenced only from JS is still found')
+  const filmPiece = parseGeneratedHtml(filmPkg.html, { scripts: filmPkg.scripts, name: 'NewBrand-ai-cinematic-brand-film (1).zip' })
   assert.equal(filmPiece.via, 'scene-array')
-  assert.deepEqual(filmPiece.scenes.filter((s) => s.role !== 'sub').map((s) => s.copy), ['Cupric AI', 'Every cut, directed', 'Start free today'])
+  assert.deepEqual(filmPiece.scenes.filter((s) => s.role !== 'sub').map((s) => s.copy), ['NewBrand', 'Every cut, directed', 'Start free today'])
   assert.equal(filmPiece.scenes.find((s) => s.role === 'sub')?.copy, 'The editor that thinks in motion')
   assert.equal(filmPiece.durationSec, 9, 'millisecond timings are converted to seconds')
 
   // Copy only inside JSX components.
-  const jsx = parseGeneratedHtml('<div id="root"></div>', { scripts: '/* src/App.tsx */\nexport default () => <main><h1 className="hero">Meet {name} Cupric</h1><p>Edit at the speed of thought</p></main>', name: 'app.zip' })
+  const jsx = parseGeneratedHtml('<div id="root"></div>', { scripts: '/* src/App.tsx */\nexport default () => <main><h1 className="hero">Meet {name} NewBrand</h1><p>Edit at the speed of thought</p></main>', name: 'app.zip' })
   assert.equal(jsx.via, 'headings')
   assert.equal(jsx.scenes.length, 2)
 
@@ -75,19 +75,19 @@ try {
   // Nothing readable at all still imports as a renameable title card.
   // Scene containers with nested divs, data-duration only, no headings.
   const blocks = parseGeneratedHtml(`<div id="stage">
-    <div class="scene s1" data-duration="3"><span class="kicker">Introducing</span><div class="big">Cupric AI</div></div>
+    <div class="scene s1" data-duration="3"><span class="kicker">Introducing</span><div class="big">NewBrand</div></div>
     <div class="scene s2" data-duration="3000ms"><div class="big">Edit at the speed of <b>thought</b></div><span class="sub">Motion, captions and color</span></div>
     <div class="scene s3" data-duration="2.5"><img src="assets/hero.png"><div class="big">Made for creators</div></div>
     <div class="scene s4"><div class="cta">Download free today</div></div></div>`, { name: 'film.zip' })
   assert.equal(blocks.via, 'scene-blocks', 'scene containers must be read scene by scene')
   const heroes = blocks.scenes.filter((s) => s.role === 'title')
-  assert.deepEqual(heroes.map((s) => s.copy), ['Cupric AI', 'Edit at the speed of thought', 'Made for creators', 'Download free today'], 'every scene keeps its hero line, inline tags merged')
+  assert.deepEqual(heroes.map((s) => s.copy), ['NewBrand', 'Edit at the speed of thought', 'Made for creators', 'Download free today'], 'every scene keeps its hero line, inline tags merged')
   assert.deepEqual(heroes.slice(0, 3).map((s) => s.to - s.from), [3, 3, 2.5], 'data-duration (s and ms) sets scene timing')
   assert.ok(blocks.scenes.some((s) => s.role === 'sub' && s.copy === 'Introducing'), 'kickers survive as supporting lines')
   assert.deepEqual(heroes[2].media, ['assets/hero.png'], 'scene media is attached to its scene')
-  const bare = parseGeneratedHtml('<canvas></canvas><script>requestAnimationFrame(()=>{})</script>', { name: 'cupric-ai-cinematic-brand-film (1).zip' })
+  const bare = parseGeneratedHtml('<canvas></canvas><script>requestAnimationFrame(()=>{})</script>', { name: 'newbrand-cinematic-brand-film (1).zip' })
   assert.equal(bare.via, 'title')
-  assert.equal(bare.scenes[0].copy, 'Cupric AI Cinematic Brand Film')
+  assert.equal(bare.scenes[0].copy, 'NewBrand Cinematic Brand Film')
   assert.equal(parseGeneratedHtml('<html></html>'), null, 'without a name an empty page is still null')
 
   // A zip with no HTML at all (just a storyboard and media) is accepted.

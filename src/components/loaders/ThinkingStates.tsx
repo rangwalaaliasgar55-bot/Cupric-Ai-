@@ -1,6 +1,6 @@
 /**
  * ThinkingStates — Transitions.dev "Thinking states" (p28) rebuilt for the
- * Cupric UI. Status copy holds, blurs up and out, and the next line slides in,
+ * NewBrand UI. Status copy holds, blurs up and out, and the next line slides in,
  * with an optional shimmer. See resources/transitions-dev/ATTRIBUTION.md.
  *
  * - Self-contained: styles are injected once (guarded by element id =
@@ -17,7 +17,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 
-const STYLE_ID = 'cupric-think-states'
+const STYLE_ID = 'newbrand-think-states'
 const CSS = `
 .cu-think { position: relative; display: inline-block; text-align: left; vertical-align: bottom; }
 .cu-think-sizer { display: block; visibility: hidden; white-space: nowrap; }

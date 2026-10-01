@@ -1,7 +1,7 @@
 /**
  * next/image shim.
  *
- * The lab components were written for Next.js. Cupric AI is a Vite + Electron
+ * The lab components were written for Next.js. NewBrand is a Vite + Electron
  * app with no image optimizer, so `Image` is a plain <img> that honours the
  * same props the lab files pass (src / alt / width / height / className).
  */

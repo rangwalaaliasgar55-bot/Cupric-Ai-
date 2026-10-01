@@ -37,8 +37,8 @@ function write(level: LogLevel, scope: string, message: string, data?: unknown) 
   } catch {
     /* fall through to console */
   }
-  if (level === 'error') console.error(`[cupric:${payload.scope}]`, payload.message, payload.data ?? '')
-  else console.debug(`[cupric:${payload.scope}]`, payload.message, payload.data ?? '')
+  if (level === 'error') console.error(`[newbrand:${payload.scope}]`, payload.message, payload.data ?? '')
+  else console.debug(`[newbrand:${payload.scope}]`, payload.message, payload.data ?? '')
 }
 
 export const rlog = {

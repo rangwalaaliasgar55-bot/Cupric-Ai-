@@ -1,4 +1,4 @@
-// Cupric original, after a motion-board reference (see src/lab/obsidian/board.tsx).
+// NewBrand original, after a motion-board reference (see src/lab/obsidian/board.tsx).
 import { MaskedType } from '../obsidian'
 import { OBSIDIAN_CONFIGS } from '../obsidian/configs'
 import { FramecnStage } from '../framecn/stage'

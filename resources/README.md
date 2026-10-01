@@ -1,4 +1,4 @@
-# Cupric AI — Resources pack
+# NewBrand — Resources pack
 
 On-disk resource bench for video generation, UI polish, and agent prompts.
 
@@ -13,7 +13,7 @@ resources/
   catalog.json              ← machine-readable index for Library + agents
   ui-lab/
     registry.json           ← full lab entry catalog (slugs, categories, keywords)
-    patterns.md             ← interaction patterns absorbed into Cupric
+    patterns.md             ← interaction patterns absorbed into NewBrand
   spectrum/
     index.json              ← Spectrum UI registry item names + categories (subset index)
     pipeline.md             ← how to pull blocks without dual-kitting chrome
@@ -53,4 +53,4 @@ curl -sL https://raw.githubusercontent.com/xevrion/ui-lab/main/src/lab/registry.
 curl -sL https://raw.githubusercontent.com/arihantcodes/spectrum-ui/main/registry.json -o resources/spectrum/registry.full.json
 ```
 
-Do **not** import Spectrum/ui-lab components into `src/components` wholesale — restyle into Cupric tokens or keep under `resources/` as reference.
+Do **not** import Spectrum/ui-lab components into `src/components` wholesale — restyle into NewBrand tokens or keep under `resources/` as reference.

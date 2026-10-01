@@ -1,7 +1,7 @@
 {
   "id": "iphone-duo",
   "name": "iPhone Duo-inspired foldable promotion skills",
-  "description": "Attribution-preserving reference source plus 10 promotion rules and one editable Cupric Studio foldable-device action. Apple reference assets are excluded.",
+  "description": "Attribution-preserving reference source plus 10 promotion rules and one editable NewBrand Studio foldable-device action. Apple reference assets are excluded.",
   "version": "0.16.0",
   "source": "https://github.com/chuspeeism/iphone-duo",
   "license": "MIT for original application code; Apple model, textures, wallpapers, screenshots and trademarks retain their owners' rights.",
@@ -253,14 +253,14 @@
       "id": "iphone-duo-native-translation",
       "kind": "skill",
       "name": "Translate into the host renderer",
-      "description": "When the target is Cupric Studio, implement the fold as a native deterministic scene that shares the preview/export renderer. Do not execute the upstream webpage or require a remote Three.js asset at render time.",
+      "description": "When the target is NewBrand Studio, implement the fold as a native deterministic scene that shares the preview/export renderer. Do not execute the upstream webpage or require a remote Three.js asset at render time.",
       "data": {
         "provider": "iphone-duo",
         "source": "https://github.com/chuspeeism/iphone-duo",
         "commit": "2662ebbeb6aa844cd4f6888f7d6f8958662249fd",
-        "instruction": "When the target is Cupric Studio, implement the fold as a native deterministic scene that shares the preview/export renderer. Do not execute the upstream webpage or require a remote Three.js asset at render time.",
+        "instruction": "When the target is NewBrand Studio, implement the fold as a native deterministic scene that shares the preview/export renderer. Do not execute the upstream webpage or require a remote Three.js asset at render time.",
         "tags": [
-          "cupric",
+          "newbrand",
           "renderer",
           "offline"
         ],
@@ -271,7 +271,7 @@
         "iphone-duo",
         "playbook",
         "agent",
-        "cupric",
+        "newbrand",
         "renderer",
         "offline"
       ]

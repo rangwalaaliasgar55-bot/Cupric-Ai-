@@ -27,9 +27,9 @@ type ReviewComment = { id: string; at: number; text: string; author: string; res
 
 function roomFromUrl() {
   try {
-    return new URLSearchParams(window.location.search).get('room') || 'cupric-review'
+    return new URLSearchParams(window.location.search).get('room') || 'newbrand-review'
   } catch {
-    return 'cupric-review'
+    return 'newbrand-review'
   }
 }
 
@@ -97,7 +97,7 @@ export function ReviewRoom() {
     const ipc = getIpc()
     if (!ipc) {
       try {
-        const raw = JSON.parse(localStorage.getItem(`cupric.review.${roomName}`) || '[]')
+        const raw = JSON.parse(localStorage.getItem(`newbrand.review.${roomName}`) || '[]')
         if (signal && !signal.alive) return
         setComments(Array.isArray(raw) ? raw : [])
         setLoadState('ready')
@@ -138,7 +138,7 @@ export function ReviewRoom() {
     } else {
       setComments((current) => {
         const next = current.map((item) => item.id === comment.id ? { ...item, resolved } : item)
-        try { localStorage.setItem(`cupric.review.${roomName}`, JSON.stringify(next)) } catch { /* private mode */ }
+        try { localStorage.setItem(`newbrand.review.${roomName}`, JSON.stringify(next)) } catch { /* private mode */ }
         return next
       })
     }
@@ -154,7 +154,7 @@ export function ReviewRoom() {
     } else {
       const comment = { id: `${roomName}-${comments.length}`, ...payload, resolved: false }
       setComments((current) => [...current, comment])
-      try { localStorage.setItem(`cupric.review.${roomName}`, JSON.stringify([...comments, comment])) } catch { /* private mode */ }
+      try { localStorage.setItem(`newbrand.review.${roomName}`, JSON.stringify([...comments, comment])) } catch { /* private mode */ }
     }
     setCommentText('')
   }
@@ -366,7 +366,7 @@ export function ReviewRoom() {
 
           <Card className="space-y-2 p-4 text-xs leading-relaxed text-muted">
             <div className="font-semibold text-text">What is implemented</div>
-            <p>Device preview, mute/camera toggles, shareable room names, and Twilio Video connection are live. Cupric AI requires a real short-lived Twilio token from your own backend for multi-party calls.</p>
+            <p>Device preview, mute/camera toggles, shareable room names, and Twilio Video connection are live. NewBrand requires a real short-lived Twilio token from your own backend for multi-party calls.</p>
           </Card>
         </div>
       </div>

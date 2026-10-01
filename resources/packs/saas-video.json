@@ -3,8 +3,8 @@
   "name": "SaaS video templates",
   "description": "Editable, local-first blueprints for product launches, feature demos and growth videos.",
   "version": "0.16.0",
-  "source": "Cupric authored templates",
-  "license": "MIT (Cupric authored blueprint)",
+  "source": "NewBrand authored templates",
+  "license": "MIT (NewBrand authored blueprint)",
   "items": [
     {
       "id": "launch-announcement",

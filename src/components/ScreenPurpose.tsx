@@ -15,7 +15,7 @@ import { Info, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cx } from '../lib/utils'
 
-const KEY_PREFIX = 'cupric.purpose.dismissed.'
+const KEY_PREFIX = 'newbrand.purpose.dismissed.'
 
 function readDismissed(id: string): boolean {
   try {

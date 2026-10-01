@@ -83,13 +83,13 @@ try {
     // An error no boundary caught means React unmounted the tree: never leave
     // the window white — draw the plain-DOM card.
     onUncaughtError: (error, info) => {
-      console.error('[cupric] uncaught render error', error)
+      console.error('[newbrand] uncaught render error', error)
       rlog.error('crash', 'uncaught render error', { error: error instanceof Error ? { message: error.message, stack: error.stack } : String(error), componentStack: info.componentStack })
       renderFatalFallback(error instanceof Error ? `${error.name}: ${error.message}` : String(error), error instanceof Error ? error.stack : undefined)
     },
     onCaughtError: (error, info) => {
       // Boundaries log with route context themselves; keep React's console output.
-      console.error('[cupric] error caught by boundary', error, info.componentStack)
+      console.error('[newbrand] error caught by boundary', error, info.componentStack)
     },
   }).render(
     <React.StrictMode>

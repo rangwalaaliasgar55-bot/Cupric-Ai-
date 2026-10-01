@@ -23,8 +23,8 @@ const ENV_KEYS = Object.freeze({
   local: [],
 })
 
-const ENV_BASE = Object.freeze({ openai: 'OPENAI_BASE_URL', anthropic: 'ANTHROPIC_BASE_URL', gemini: 'GEMINI_BASE_URL', local: 'CUPRIC_LOCAL_AI_URL' })
-const ENV_MODEL = Object.freeze({ openai: 'OPENAI_MODEL', anthropic: 'ANTHROPIC_MODEL', gemini: 'GEMINI_MODEL', local: 'CUPRIC_LOCAL_AI_MODEL' })
+const ENV_BASE = Object.freeze({ openai: 'OPENAI_BASE_URL', anthropic: 'ANTHROPIC_BASE_URL', gemini: 'GEMINI_BASE_URL', local: 'NEWBRAND_LOCAL_AI_URL' })
+const ENV_MODEL = Object.freeze({ openai: 'OPENAI_MODEL', anthropic: 'ANTHROPIC_MODEL', gemini: 'GEMINI_MODEL', local: 'NEWBRAND_LOCAL_AI_MODEL' })
 
 const LOCAL_PRESETS = Object.freeze([
   { id: 'ollama', label: 'Ollama', baseUrl: 'http://localhost:11434/v1', docs: 'https://ollama.com/download' },
@@ -100,7 +100,7 @@ function providerConfig(settings = {}, env = process.env) {
       source: chosen.source,
       error: makeError(AI_ERROR.NO_KEY_CONFIGURED, {
         detail: 'no provider is configured and no local model server is running',
-        provider: 'Cupric AI',
+        provider: 'NewBrand',
       }),
       fix: 'Open Settings → AI and add a key (OpenAI, Anthropic or Gemini) or start a local model server (Ollama / LM Studio).',
     }

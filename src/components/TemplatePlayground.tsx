@@ -12,11 +12,11 @@ export default function TemplatePlayground() {
   const ids = Object.keys(TEMPLATES).filter((k) => !k.startsWith("__"));
   const [tpl, setTpl] = useState("aiLaunch");
   const def = TEMPLATES[tpl];
-  const [f, setF] = useState({ brand: "Cupric AI", logo: "", primary: "#7c8cff", useColor: false, headline: "", subtitle: "", features: "", cta: "", duration: 0, music: 118, style: "", aspect: "" as "" | Aspect, screenshot: "" });
+  const [f, setF] = useState({ brand: "NewBrand", logo: "", primary: "#7c8cff", useColor: false, headline: "", subtitle: "", features: "", cta: "", duration: 0, music: 118, style: "", aspect: "" as "" | Aspect, screenshot: "" });
   const set = (k: keyof typeof f, v: unknown) => setF((s) => ({ ...s, [k]: v }));
   const doc = useMemo(() => {
     if (f.style && def) TEMPLATES[tpl] = { ...def, style: f.style };
-    const d = buildTemplate(tpl, { brand: { name: f.brand || "Cupric AI", ...(f.useColor ? { primary: f.primary } : {}), ...(f.logo ? { logoSrc: f.logo } : {}) }, headline: f.headline || undefined, subtitle: f.subtitle || undefined, cta: f.cta || undefined, features: f.features ? f.features.split(",").map((s) => s.trim()).filter(Boolean) : undefined, duration: f.duration || undefined, music: f.music || null, aspect: f.aspect || undefined, screenshot: f.screenshot || undefined });
+    const d = buildTemplate(tpl, { brand: { name: f.brand || "NewBrand", ...(f.useColor ? { primary: f.primary } : {}), ...(f.logo ? { logoSrc: f.logo } : {}) }, headline: f.headline || undefined, subtitle: f.subtitle || undefined, cta: f.cta || undefined, features: f.features ? f.features.split(",").map((s) => s.trim()).filter(Boolean) : undefined, duration: f.duration || undefined, music: f.music || null, aspect: f.aspect || undefined, screenshot: f.screenshot || undefined });
     if (def) TEMPLATES[tpl] = def;
     return d;
   }, [tpl, f, def]);

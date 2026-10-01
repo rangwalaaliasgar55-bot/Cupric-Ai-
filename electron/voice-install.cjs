@@ -60,7 +60,7 @@ const ENGINES = {
     label: 'Windows Hindi voice (Microsoft Heera)',
     kind: 'windows-capability',
     /** Installed through Windows itself, per the copy in tts.cjs. */
-    note: 'Windows installs speech voices through Settings, not an installer: Time & language → Speech → Add voices → Hindi (India). Cupric cannot silently add a system voice, and pretending to is how apps end up with a button that does nothing.',
+    note: 'Windows installs speech voices through Settings, not an installer: Time & language → Speech → Add voices → Hindi (India). NewBrand cannot silently add a system voice, and pretending to is how apps end up with a button that does nothing.',
   },
 }
 
@@ -70,7 +70,7 @@ function supported(platform = process.platform) {
 }
 
 function unsupportedReason(platform = process.platform) {
-  return `Cupric AI ships for Windows only; this build cannot install speech engines on ${platform}.`
+  return `NewBrand ships for Windows only; this build cannot install speech engines on ${platform}.`
 }
 
 /** A download plan for one engine, as data — so it can be tested without network. */
@@ -99,7 +99,7 @@ async function download(item, { onBytes, signal, fetchImpl, timeoutMs = 15 * 60 
     res = await (fetchImpl || fetch)(item.url, {
       redirect: 'follow',
       signal: controller.signal,
-      headers: { 'user-agent': 'Cupric-AI/voice-install' },
+      headers: { 'user-agent': 'NewBrand/voice-install' },
     })
   } catch (error) {
     clearTimeout(timer)
@@ -266,7 +266,7 @@ function describe(res) {
   if (res.reason === 'truncated') return `The download of ${res.url} was cut short (${res.error}). Try again.`
   if (res.reason === 'stream') return `Writing the download failed: ${res.error}`
   if (res.reason === 'http') {
-    if (res.status === 404) return `${res.url} returned 404 — the published file has moved. This is a bug in Cupric, not in your setup; the built-in engines still work.`
+    if (res.status === 404) return `${res.url} returned 404 — the published file has moved. This is a bug in NewBrand, not in your setup; the built-in engines still work.`
     if (res.status === 403 || res.status === 429) return `${res.url} refused the download (HTTP ${res.status}). Waiting a few minutes usually clears it.`
     return `${res.url} returned ${res.error}.`
   }

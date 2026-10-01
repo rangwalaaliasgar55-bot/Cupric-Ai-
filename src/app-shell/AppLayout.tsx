@@ -64,8 +64,8 @@ export function AppLayout() {
   const onboarding = useOnboarding({ projectsExist: projectCount > 0 })
   useEffect(() => {
     const open = () => onboarding.open()
-    window.addEventListener('cupric:onboarding', open)
-    return () => window.removeEventListener('cupric:onboarding', open)
+    window.addEventListener('newbrand:onboarding', open)
+    return () => window.removeEventListener('newbrand:onboarding', open)
   }, [onboarding])
 
   // Crash recovery (2.26): say so when the last session ended badly or the
@@ -73,11 +73,11 @@ export function AppLayout() {
   useEffect(() => {
     void recoveryInfo().then((info) => {
       if (info.unreadable) {
-        pushToast('error', 'Your projects file could not be read and no autosave was usable, so Cupric started empty. The damaged file was kept next to it as projects.corrupt-….json.', { sticky: true, id: 'state-unreadable' })
+        pushToast('error', 'Your projects file could not be read and no autosave was usable, so NewBrand started empty. The damaged file was kept next to it as projects.corrupt-….json.', { sticky: true, id: 'state-unreadable' })
       } else if (info.recoveredFrom) {
-        pushToast('info', 'Your project file was damaged, so Cupric restored the most recent autosave. Earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'state-recovered' })
+        pushToast('info', 'Your project file was damaged, so NewBrand restored the most recent autosave. Earlier versions are in Ask → Settings → Version history.', { sticky: true, id: 'state-recovered' })
       } else if (info.previousSessionCrashed) {
-        pushToast('info', 'Cupric did not close cleanly last time. Your work was autosaved — if anything is missing, restore an earlier version from Ask → Settings → Version history.', { sticky: true, id: 'unclean-exit' })
+        pushToast('info', 'NewBrand did not close cleanly last time. Your work was autosaved — if anything is missing, restore an earlier version from Ask → Settings → Version history.', { sticky: true, id: 'unclean-exit' })
       }
     })
   }, [pushToast])

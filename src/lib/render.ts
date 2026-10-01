@@ -51,7 +51,7 @@ type BrowserRenderContext = {
 }
 
 function mediaPathFromSource(source: RenderSource): string | null {
-  if (source.sourceType === 'rundown' || source.type === 'rundown') return 'cupric-generated-rundown'
+  if (source.sourceType === 'rundown' || source.type === 'rundown') return 'newbrand-generated-rundown'
   return source.videoPath || source.footagePath || source.htmlPath || source.arenaPath || source.localPath || null
 }
 
@@ -116,7 +116,7 @@ function drawSlate(ctx: CanvasRenderingContext2D, width: number, height: number,
   ctx.fillStyle = '#C8F542'
   ctx.font = `700 ${Math.max(16, Math.round(width * 0.022))}px Inter, Arial, sans-serif`
   ctx.letterSpacing = '3px'
-  ctx.fillText('CUPRIC AI', width * 0.07, height * 0.16)
+  ctx.fillText('NEWBRAND', width * 0.07, height * 0.16)
   ctx.letterSpacing = '0px'
   ctx.fillStyle = '#F4F1EA'
   ctx.font = `800 ${Math.max(30, Math.round(width * 0.058))}px Inter, Arial, sans-serif`
@@ -255,8 +255,8 @@ function drawRundownFrame(source: RenderSource, context: BrowserRenderContext, t
   const width = context.width
   const height = context.height
   const ctx = context.ctx
-  const title = scene?.copy || rundown?.title || source.label || 'Cupric AI video'
-  const detail = scene?.motion || rundown?.style || 'Generated Cupric AI motion video'
+  const title = scene?.copy || rundown?.title || source.label || 'NewBrand video'
+  const detail = scene?.motion || rundown?.style || 'Generated NewBrand motion video'
 
   const gradient = ctx.createLinearGradient(0, 0, width, height)
   gradient.addColorStop(0, '#0B0B10')
@@ -279,7 +279,7 @@ function drawRundownFrame(source: RenderSource, context: BrowserRenderContext, t
 
   ctx.fillStyle = '#C8F542'
   ctx.font = `800 ${Math.max(18, Math.round(width * 0.026))}px Inter, Arial, sans-serif`
-  ctx.fillText('CUPRIC AI', width * 0.07, height * 0.12)
+  ctx.fillText('NEWBRAND', width * 0.07, height * 0.12)
 
   ctx.save()
   ctx.translate(width * 0.07, height * 0.36)
@@ -402,7 +402,7 @@ function browserRender(job: RenderJobInput, onUpdate: RenderUpdate, onDone: (res
       await stopped
       const blob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' })
       const outputPath = URL.createObjectURL(blob)
-      const outputName = (job.outputName || 'cupric-render.mp4').replace(/\.mp4$/i, '.webm')
+      const outputName = (job.outputName || 'newbrand-render.mp4').replace(/\.mp4$/i, '.webm')
       onUpdate(100)
       onDone({ outputPath, outputName })
     } catch (err) {

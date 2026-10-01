@@ -7,7 +7,7 @@
  * utterance) and main transcribes it locally, trying in order:
  *
  *   1. Whisper (whisper.cpp CLI + a ggml model) — fully offline, any OS.
- *      Looked for in CUPRIC_WHISPER_PATH / CUPRIC_WHISPER_MODEL, then the
+ *      Looked for in NEWBRAND_WHISPER_PATH / NEWBRAND_WHISPER_MODEL, then the
  *      app's bundled `whisper/` resources folder, then `<userData>/whisper/`,
  *      then `vendor/whisper/` in a dev checkout. `npm run whisper:fetch`
  *      downloads a quantized English model and the Windows binary there.
@@ -41,8 +41,8 @@ function exeNames(platform) {
  * injected (fs.existsSync / fs.readdirSync) so this is testable.
  */
 function findWhisper({ env = {}, dirs = [], platform = process.platform, exists, list }) {
-  const envBin = env.CUPRIC_WHISPER_PATH && exists(env.CUPRIC_WHISPER_PATH) ? env.CUPRIC_WHISPER_PATH : null
-  const envModel = env.CUPRIC_WHISPER_MODEL && exists(env.CUPRIC_WHISPER_MODEL) ? env.CUPRIC_WHISPER_MODEL : null
+  const envBin = env.NEWBRAND_WHISPER_PATH && exists(env.NEWBRAND_WHISPER_PATH) ? env.NEWBRAND_WHISPER_PATH : null
+  const envModel = env.NEWBRAND_WHISPER_MODEL && exists(env.NEWBRAND_WHISPER_MODEL) ? env.NEWBRAND_WHISPER_MODEL : null
   let bin = envBin
   let model = envModel
   for (const dir of dirs) {

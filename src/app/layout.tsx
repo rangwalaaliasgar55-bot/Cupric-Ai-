@@ -4,7 +4,7 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MotionOS — React motion, 3D & video design engine",
+  title: "NewBrand — motion, 3D & video design engine",
   description: "A deterministic motion graphics, 3D, typography, effects and video composition engine with a schema-driven editor and AI-ready registry.",
 };
 

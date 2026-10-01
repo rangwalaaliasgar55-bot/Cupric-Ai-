@@ -7,7 +7,7 @@
     "license": "Remotion License (package-specific; metadata links only; verify eligibility before use)"
   },
   "integration": {
-    "purpose": "Capability catalog for Cupric autonomous video planning. Cupric uses its own renderer and only adopts compatible Remotion APIs; upstream packages are not copied into the app.",
+    "purpose": "Capability catalog for NewBrand autonomous video planning. NewBrand uses its own renderer and only adopts compatible Remotion APIs; upstream packages are not copied into the app.",
     "preview": "@remotion/player already powers MotionCompositionPlayer.",
     "autonomy": "The planner selects a template, font, skill, fps, aspect and render policy before the desktop automation pipeline runs."
   },

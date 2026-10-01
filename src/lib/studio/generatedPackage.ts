@@ -137,6 +137,6 @@ export async function readGeneratedPackage(file: File): Promise<GeneratedPackage
       notes.push(`Could not read ${entry.name}.`)
     }
   }
-  if (!primary && !corpus && !assets.length) throw new Error(`${file.name} contains no HTML, code or media that Cupric can edit`)
+  if (!primary && !corpus && !assets.length) throw new Error(`${file.name} contains no HTML, code or media that NewBrand can edit`)
   return { html, name: primary?.name.split('/').pop() || file.name, assets, scripts: corpus, sources, notes }
 }

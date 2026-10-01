@@ -59,7 +59,7 @@ function installBridge(respond: (channel: string, payload: unknown) => unknown) 
   // The module polls a cancel signal with `window.setInterval`, so the stub
   // needs the timer functions a browser window has — pointed at the real ones.
   ;(globalThis as Record<string, unknown>).window = {
-    cupric: bridge,
+    newbrand: bridge,
     setInterval: (handler: () => void, ms: number) => setInterval(handler, ms),
     clearInterval: (handle: unknown) => clearInterval(handle as ReturnType<typeof setInterval>),
   }

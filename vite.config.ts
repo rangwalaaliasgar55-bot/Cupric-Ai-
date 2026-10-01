@@ -48,7 +48,7 @@ function serveResources() {
     createReadStream(file).pipe(res)
   }
   return {
-    name: 'cupric-serve-resources',
+    name: 'newbrand-serve-resources',
     configureServer(server: any) {
       server.middlewares.use(handler)
     },

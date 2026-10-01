@@ -81,7 +81,7 @@ export function Autonomous() {
     const st = useProjectStore.getState()
     st.updateAutomationJob(j.id, { status: 'running', errorMessage: null, waitingMessage: null })
     st.runAutomationLocally(j.id)
-    pushToast('info', 'Finishing this run in the app: Cupric re-plans from the same brief, runs the design battle and renders with the Studio renderer.')
+    pushToast('info', 'Finishing this run in the app: NewBrand re-plans from the same brief, runs the design battle and renders with the Studio renderer.')
   }
   const approve = useProjectStore(s => s.approveAutomationStep)
   const reject = useProjectStore(s => s.rejectAutomationStep)
@@ -202,7 +202,7 @@ export function Autonomous() {
       setHeard('Listening\u2026 describe the video you want.')
       if (settingsRef.current.speakBack) speak('Listening. Describe the video you want.', { interrupt: true })
     } else {
-      pushToast('error', 'Voice recognition is unavailable. Check Windows microphone privacy permission and install the latest Web Speech components, then restart Cupric AI.')
+      pushToast('error', 'Voice recognition is unavailable. Check Windows microphone privacy permission and install the latest Web Speech components, then restart NewBrand.')
     }
   }
 
@@ -231,7 +231,7 @@ export function Autonomous() {
         <div>
           <p className="cu-eyebrow !text-accent-text">Autonomous production</p>
           <h1 className="mt-2 text-h1 font-semibold">One brief. Finished MP4.</h1>
-          <p className="mt-2 text-sm text-muted">Cupric AI runs the creative pipeline while keeping review gates visible.</p>
+          <p className="mt-2 text-sm text-muted">NewBrand runs the creative pipeline while keeping review gates visible.</p>
         </div>
 
         <ProductionPlanner />
@@ -296,7 +296,7 @@ export function Autonomous() {
               </select>
             </label>
             <label className="text-xs text-muted">Design
-              <select value={designDirection} onChange={e => setDesignDirection(e.target.value as NonNullable<AutomationJob['designDirection']>)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text" title="Cupric designs the plan in three directions and keeps the best, or pin the one you want.">
+              <select value={designDirection} onChange={e => setDesignDirection(e.target.value as NonNullable<AutomationJob['designDirection']>)} className="mt-2 block w-full rounded border border-line bg-bg p-2 text-text" title="NewBrand designs the plan in three directions and keeps the best, or pin the one you want.">
                 <option value="auto">Auto — best of {DESIGN_DIRECTIONS.length} directions</option>
                 {DESIGN_DIRECTIONS.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
@@ -335,7 +335,7 @@ export function Autonomous() {
                 </h2>
                 <p className="text-xs text-muted">
                   {job.votingMode === 'manual-arena'
-                    ? 'Manual Arena is a required review gate; Cupric never automates public voting.'
+                    ? 'Manual Arena is a required review gate; NewBrand never automates public voting.'
                     : 'Local scoring stays private and never automates public voting.'}
                 </p>
                 {job.outputPath && <p className="mt-1 font-mono text-[11px] text-muted">MP4: {job.outputPath}</p>}
@@ -374,7 +374,7 @@ export function Autonomous() {
                   </Button>
                 )}
                 {job.outputPath && <Button variant="outline" onClick={() => openOutput(job.outputPath)}>Reveal MP4</Button>}
-                {job.rundown?.scenes?.length ? <Button variant="outline" onClick={() => openEditable(job)} title="Rebuild this run's scenes as editable Studio clips with Cupric AI keyframe motion (one undo step)">Edit in Studio</Button> : null}
+                {job.rundown?.scenes?.length ? <Button variant="outline" onClick={() => openEditable(job)} title="Rebuild this run's scenes as editable Studio clips with NewBrand keyframe motion (one undo step)">Edit in Studio</Button> : null}
               </div>
             </div>
 
@@ -428,7 +428,7 @@ export function Autonomous() {
               <div className="mt-4 rounded-xl border border-line bg-bg/40 p-3" data-testid="run-output">
                 <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-text">
                   <CheckCircle2 size={13} className="text-accent-text" /> Rendered with the Studio renderer — what you watched is what was recorded
-                  <Button size="sm" variant="outline" className="ml-auto" onClick={() => { const a = document.createElement('a'); a.href = job.outputUrl!; a.download = job.outputPath?.split('/').pop() ?? 'cupric-run.webm'; a.click() }}>
+                  <Button size="sm" variant="outline" className="ml-auto" onClick={() => { const a = document.createElement('a'); a.href = job.outputUrl!; a.download = job.outputPath?.split('/').pop() ?? 'newbrand-run.webm'; a.click() }}>
                     <Download size={12} /> Download
                   </Button>
                   {job.reviewReport && (

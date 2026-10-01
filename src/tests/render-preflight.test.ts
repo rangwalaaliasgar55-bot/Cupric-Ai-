@@ -136,7 +136,7 @@ describe('encoder selection', () => {
     const missing = preflight.checkEncoder({ container: 'mp4', codec: 'h264', encoders: new Set(['libvpx-vp9', 'aac']) })
     expect(missing.ok).toBe(false)
     expect(codes(missing)).toEqual(['ENCODER_MISSING'])
-    expect(missing.failures[0].action).toMatch(/CUPRIC_FFMPEG_PATH/)
+    expect(missing.failures[0].action).toMatch(/NEWBRAND_FFMPEG_PATH/)
   })
 
   it('treats an unreadable encoder list as unknown, not as missing', () => {

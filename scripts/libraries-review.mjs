@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// `libraries review`: a read-only scan of the Cupric repo for places where each
+// `libraries review`: a read-only scan of the NewBrand repo for places where each
 // Libraries.dev library fits. The signals come from the skill's own
 // "Detecting a fit in a codebase" tables (resources/libraries-dev/references/*).
 // Nothing is edited. The report goes to resources/libraries-dev/review.json and
@@ -49,7 +49,7 @@ const SIGNALS = [
   { pkg: 'metal-fx', target: 'Primary button', re: /Upgrade|Get Pro|Go Pro|variant="primary"[^\n]*(Render|Export)|<Badge[^>]*>\s*(New|Beta|Pro)\b/, variant: 'MetalFx button variant on ONE selling CTA, or MetalBadge on a New/Pro badge', why: 'Selling CTAs and New/Pro badges get Liquid metal, one per page.' },
   { pkg: 'liquid-gooey', target: 'Plus menu / segmented control', re: /aria-expanded=\{[^}]*(shapeOpen|loaderOpen|menu)|role="tablist"|layoutId=/, variant: "Liquid 'morph' plus menu or 'move' indicator/thumb", why: 'Plus menus, sliding indicators and slider thumbs match Gooey signals.' },
 ]
-// Cupric-specific UI surfaces the user asked about, with the honest verdict.
+// NewBrand-specific UI surfaces the user asked about, with the honest verdict.
 const SURFACE_HINTS = [
   { file: 'src/screens/studio/StudioTimeline.tsx', target: 'Studio timeline controls', pkg: null, why: 'Scrubbing and trimming are sub-2 s direct-manipulation interactions. The skill says to add nothing under 2 s.' },
   { file: 'src/screens/library/PackBrowser.tsx', target: 'Resource cards', pkg: 'img-fx', why: 'Remote uselayouts posters load lazily; an Image placeholder could replace the blank area. Watch the WebGL cost across many cards.' },

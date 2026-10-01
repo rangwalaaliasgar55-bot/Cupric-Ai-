@@ -64,7 +64,7 @@ export function buildReport(a: RunArtefacts): { markdown: string; evaluation: Re
   const candidates = a.candidates.map((c) => `- ${c.name}: ${c.score}/100 — ${c.reasons.join(' ')}`)
   const checks = a.review.map((c) => `- ${c.status.toUpperCase()} ${c.label}: ${c.detail}${c.fix ? ` → ${c.fix}` : ''}`)
   const fatal = evaluation.checks.filter((c) => !c.ok && c.fatal)
-  const markdown = `# Cupric AI review report
+  const markdown = `# NewBrand review report
 
 ## Brief
 ${a.job.brief}
@@ -117,6 +117,6 @@ Generated ${a.generatedAt} · engine: studio-canvas (preview/export parity) · $
 
 /** A downloadable file for the report, when the browser can make one. */
 export function reportFileName(job: Pick<AutomationJob, 'id' | 'brief'>): string {
-  const slug = job.brief.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'cupric-run'
+  const slug = job.brief.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'newbrand-run'
   return `${slug}-review.md`
 }

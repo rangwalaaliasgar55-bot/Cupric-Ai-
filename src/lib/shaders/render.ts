@@ -1,5 +1,5 @@
 /**
- * Cupric's shader renderer — 18 effects, drawn by our own code.
+ * NewBrand's shader renderer — 18 effects, drawn by our own code.
  *
  * The Lab's `fc-shader-*` components previously rendered through
  * `@paper-design/shaders-react` (PolyForm Shield 1.0.0, commercial-use

@@ -17,11 +17,11 @@ import {
 } from '../lib/crashGuard'
 import { rlog } from '../lib/log'
 
-const FORCE_THROW_KEY = 'cupric:debug:forceThrow'
+const FORCE_THROW_KEY = 'newbrand:debug:forceThrow'
 
 /**
  * Test hook for check:boot and manual QA: with
- * `sessionStorage['cupric:debug:forceThrow'] = '<route>'` that route throws
+ * `sessionStorage['newbrand:debug:forceThrow'] = '<route>'` that route throws
  * during render, so the fallback path can be verified in a packaged build.
  */
 function ForceThrow({ route }: { route: string }) {
@@ -97,11 +97,11 @@ export function FallbackCard({ kind, route, error, componentStack, onRetry, onLi
   const report = buildErrorReport(error, { ...ctx, route: route ?? ctx.route ?? null, componentStack })
   const message = error instanceof Error ? error.message : String(error)
   const title =
-    kind === 'global' ? 'Something went wrong in the background' : kind === 'app' ? 'Cupric hit an error' : `The ${route ?? 'current'} screen hit an error`
+    kind === 'global' ? 'Something went wrong in the background' : kind === 'app' ? 'NewBrand hit an error' : `The ${route ?? 'current'} screen hit an error`
 
   const body = (
     <div
-      data-cupric-fallback={kind}
+      data-newbrand-fallback={kind}
       role="alert"
       className="w-full max-w-lg rounded-2xl border border-danger/40 bg-panel/95 p-5 text-text shadow-[0_24px_80px_rgb(0_0_0/0.45)] backdrop-blur"
     >

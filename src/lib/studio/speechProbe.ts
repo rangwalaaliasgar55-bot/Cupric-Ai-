@@ -2,7 +2,7 @@
  * Measure a clip's own audio, then cut where it is actually quiet.
  *
  * Speech tightening used to need word timings, which need a transcription, which
- * needs a model — so a clip Cupric had never transcribed could not be tightened
+ * needs a model — so a clip NewBrand had never transcribed could not be tightened
  * at all. The probe removes that dependency: decode the clip's audio with
  * WebAudio, measure the noise floor and the gaps above it (`speech/probe.ts`),
  * and hand the gaps to the existing cut machinery as source-second cuts.
@@ -100,7 +100,7 @@ export async function tightenWithProbe(
   if (!clip || (clip.kind !== 'video' && clip.kind !== 'audio')) return { doc, removedSec: 0, cuts: 0, reason: 'Select a video or audio clip.' }
   if (clip.locked) return { doc, removedSec: 0, cuts: 0, reason: 'That clip is locked.' }
   const measured = await probeClip(clip, opts)
-  if (!measured) return { doc, removedSec: 0, cuts: 0, reason: 'Cupric cannot read this clip’s audio — relink the file, or transcribe it instead.' }
+  if (!measured) return { doc, removedSec: 0, cuts: 0, reason: 'NewBrand cannot read this clip’s audio — relink the file, or transcribe it instead.' }
   if (!measured.probe.speechFound) {
     return { doc, removedSec: 0, cuts: 0, reason: 'No speech to find here: the level never rises 6 dB above its own floor, so there is no gap that is safe to cut.', probe: measured.probe }
   }

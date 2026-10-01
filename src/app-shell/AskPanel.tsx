@@ -92,7 +92,7 @@ export function AskPanel() {
   const [msgs, setMsgs] = useState<ChatMsg[]>([
     {
       role: 'ai',
-      text: "Hey — I'm Cupric AI. Ask me anything. I use the provider you set in Settings, or a local model if one is running. With neither, I answer from the offline planner and say so.",
+      text: "Hey — I'm NewBrand. Ask me anything. I use the provider you set in Settings, or a local model if one is running. With neither, I answer from the offline planner and say so.",
     },
   ])
   const [input, setInput] = useState('')
@@ -427,7 +427,7 @@ export function AskPanel() {
   async function installUpdate() {
     const ipc = getIpc()
     if (!ipc) return
-    setUpdateStatus('installing · Cupric AI will restart')
+    setUpdateStatus('installing · NewBrand will restart')
     const result = await ipc.invoke('updater:install')
     if (result?.status !== 'installing') setUpdateStatus(result?.message || result?.status || 'Update could not start')
   }
@@ -478,7 +478,7 @@ export function AskPanel() {
       {open && (
         <motion.aside
           key="ask-panel"
-          aria-label="Ask Cupric AI"
+          aria-label="Ask NewBrand"
           initial={{ x: 48, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 48, opacity: 0 }}
@@ -491,7 +491,7 @@ export function AskPanel() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                Ask Cupric AI
+                Ask NewBrand
                 <span className={cx('h-2 w-2 rounded-full', aiMode === 'auto' ? (autoPick?.kind === 'template' ? 'bg-muted' : 'bg-accent') : providerStatus[aiProvider].state === 'ok' ? 'bg-accent' : providerStatus[aiProvider].state === 'error' ? 'bg-danger' : providerStatus[aiProvider].state === 'testing' ? 'bg-info' : 'bg-muted')} title={aiMode === 'auto' ? autoPick?.reason || 'Auto-discovering available providers' : providerStatus[aiProvider].message} />
                 <span className="rounded-full border border-line px-1.5 py-0.5 text-xs text-muted">{aiMode === 'template' || autoPick?.kind === 'template' ? 'OFFLINE' : hasKey ? 'LIVE' : 'FREE'}</span>
               </div>
@@ -543,7 +543,7 @@ export function AskPanel() {
                 {aiMode === 'auto' && (
                   <div className="rounded-lg border border-accent/25 bg-accent/5 p-2 text-xs">
                     <div className="flex items-center justify-between gap-2"><span className="font-semibold text-text">Auto-using: {autoPick?.label || 'discovering…'}</span><button type="button" onClick={() => void refreshDiscovery()} className="text-accent-text underline">Change / refresh</button></div>
-                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'Cupric uses the provider you configured, else a local model server it can see, else the offline planner — and it names which one answered.'}</div>
+                    <div className="mt-1 text-muted">Why: {autoPick?.reason || 'NewBrand uses the provider you configured, else a local model server it can see, else the offline planner — and it names which one answered.'}</div>
                   </div>
                 )}
                 <FreeModels />
@@ -571,8 +571,8 @@ export function AskPanel() {
                 </label>}
                 {aiMode === 'gemini' && <label className="block text-xs text-muted">
                   <span className="flex items-center justify-between">Gemini model <button type="button" onClick={() => void refreshGeminiModels()} className="text-accent-text underline">Refresh</button></span>
-                  <input list="cupric-gemini-models" value={geminiModel} onChange={(e) => setGeminiModel(e.target.value)} placeholder="gemini-2.5-flash" className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs" />
-                  <datalist id="cupric-gemini-models">{geminiModels.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}</datalist>
+                  <input list="newbrand-gemini-models" value={geminiModel} onChange={(e) => setGeminiModel(e.target.value)} placeholder="gemini-2.5-flash" className="mt-1 h-8 w-full rounded-lg border border-line bg-bg px-2 text-xs" />
+                  <datalist id="newbrand-gemini-models">{geminiModels.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}</datalist>
                 </label>}
                 <div className="flex items-center justify-between gap-2 rounded-lg border border-line bg-bg/40 px-2 py-1.5 text-xs">
                   <span className="flex min-w-0 items-center gap-2 text-muted" title={providerStatus.gemini.message}>
@@ -662,7 +662,7 @@ export function AskPanel() {
                 <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
                   <div className="mb-1 font-semibold text-muted">Provider status</div>
                   <div className="grid grid-cols-3 gap-1.5 text-[10px]">
-                    <span className="flex items-center gap-1 rounded bg-panel px-1.5 py-1" title="Built-in Cupric AI engine, fully offline"><span className="h-2 w-2 rounded-full bg-accent" />Cupric AI · ready</span>{([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local model']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1 rounded bg-panel px-1.5 py-1"><span className={cx('h-2 w-2 rounded-full', statusDots[key] === 'ok' ? 'bg-accent' : statusDots[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label} · {statusDots[key]}</span>)}
+                    <span className="flex items-center gap-1 rounded bg-panel px-1.5 py-1" title="Built-in NewBrand engine, fully offline"><span className="h-2 w-2 rounded-full bg-accent" />NewBrand · ready</span>{([['gemini', 'Gemini'], ['zen', 'Zen'], ['local', 'Local model']] as const).map(([key, label]) => <span key={key} className="flex items-center gap-1 rounded bg-panel px-1.5 py-1"><span className={cx('h-2 w-2 rounded-full', statusDots[key] === 'ok' ? 'bg-accent' : statusDots[key] === 'error' ? 'bg-danger' : 'bg-muted')} />{label} · {statusDots[key]}</span>)}
                   </div>
                 </div>
                 <div className="rounded-lg border border-line bg-bg/40 p-2 text-xs">
@@ -689,7 +689,7 @@ export function AskPanel() {
                 Media engine: <span className={mediaReady ? 'text-accent-text' : 'text-danger'}>{mediaReady === null ? 'checking' : mediaReady ? 'ready' : 'FFmpeg missing'}</span>
               </div>
               <label className="flex items-center justify-between gap-3 rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
-                <span>Open Cupric AI on login</span>
+                <span>Open NewBrand on login</span>
                 <input type="checkbox" checked={autoLaunch} onChange={(e) => toggleAutoLaunch(e.target.checked)} />
               </label>
               {/*
@@ -701,7 +701,7 @@ export function AskPanel() {
                 */}
               <div className="rounded-lg border border-line bg-bg/40 px-3 py-2 text-xs text-muted">
                 <div className="flex items-center justify-between gap-3">
-                  <span>Cupric AI version</span>
+                  <span>NewBrand version</span>
                   <span className="font-mono text-[11px] text-text">
                     {appInfo?.version ? `v${appInfo.version}` : appInfo?.error ? 'unavailable' : 'reading…'}
                     {appInfo?.packaged === false && appInfo?.version ? ' (development)' : ''}
@@ -874,7 +874,7 @@ export function AskPanel() {
                   }
                 }}
                 placeholder="Ask anything, or paste an image…"
-                aria-label="Ask Cupric AI"
+                aria-label="Ask NewBrand"
                 className="max-h-32 min-h-9 flex-1 resize-none rounded-lg border border-line bg-panel-alt px-3 py-2 text-sm leading-snug placeholder:text-muted/70 [field-sizing:content]"
               />
               <button

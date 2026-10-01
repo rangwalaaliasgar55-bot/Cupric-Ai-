@@ -65,7 +65,7 @@ globalThis.document = {
 }
 
 const root = process.cwd()
-const out = path.join(root, 'node_modules', '.cache', 'cupric-check-gates.mjs')
+const out = path.join(root, 'node_modules', '.cache', 'newbrand-check-gates.mjs')
 rmSync(out, { force: true })
 await build({
   stdin: {

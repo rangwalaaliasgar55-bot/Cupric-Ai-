@@ -1,6 +1,6 @@
 {
   "version": "0.16.0",
-  "updated": "2026-09-30",
+  "updated": "2026-10-01",
   "repo": "rangwalaaliasgar55-bot/Cupric-Ai-",
   "packs": [
     {
@@ -8,70 +8,70 @@
       "name": "Liquid Glass",
       "description": "Refracting glass materials for the app chrome and for the Studio canvas. One parameter set drives the DOM (backdrop-filter + SVG displacement) and the exported video (canvas).",
       "itemCount": 6,
-      "bytes": 3465
+      "bytes": 3467
     },
     {
       "id": "transitions",
       "name": "Transitions",
       "description": "Every transition the Studio renderer implements, including the glass and liquid families.",
       "itemCount": 10,
-      "bytes": 2982
+      "bytes": 2984
     },
     {
       "id": "animations",
       "name": "Text animations",
       "description": "Caption and title animations, all pure functions of clip progress so preview and export match.",
       "itemCount": 10,
-      "bytes": 2972
+      "bytes": 2974
     },
     {
       "id": "backgrounds",
       "name": "Backgrounds & gradients",
       "description": "Studio stage backgrounds — gradients, mesh gradients and patterns — with the CSS twin used by the app and by Arena HTML.",
       "itemCount": 42,
-      "bytes": 20004
+      "bytes": 20006
     },
     {
       "id": "effects",
       "name": "Effects",
       "description": "Effect cues shared by the Arena prompt builder and the local renderer.",
       "itemCount": 10,
-      "bytes": 4337
+      "bytes": 4339
     },
     {
       "id": "voice",
       "name": "Voice commands",
       "description": "The Studio voice grammar. Each entry is a phrase the parser in src/lib/voice.ts accepts.",
       "itemCount": 14,
-      "bytes": 2936
+      "bytes": 2938
     },
     {
       "id": "sources",
       "name": "Sources",
-      "description": "The external libraries, generators and galleries Cupric draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
+      "description": "The external libraries, generators and galleries NewBrand draws on — for the app interface and for the local HTML → MP4 generator. Each entry carries a prompt cue the brief builder can paste verbatim.",
       "itemCount": 77,
-      "bytes": 51147
+      "bytes": 51167
     },
     {
       "id": "templates",
       "name": "Video templates",
       "description": "Self-contained HTML scenes under resources/effects. Each exposes window.__seek(t) and a source manifest, so the desktop renderer can capture it frame by frame into an MP4 with no network.",
       "itemCount": 6,
-      "bytes": 3935
+      "bytes": 3937
     },
     {
       "id": "panelui",
       "name": "PanelUI catalogue",
-      "description": "All 135 PanelUI components and 21 chart visualisations as editable Cupric-native Studio storyboards. React Native source stays upstream; Cupric uses its own deterministic renderer.",
+      "description": "All 135 PanelUI components and 21 chart visualisations as editable NewBrand-native Studio storyboards. React Native source stays upstream; NewBrand uses its own deterministic renderer.",
       "itemCount": 172,
-      "bytes": 191656
+      "bytes": 192004
     },
     {
       "id": "saas-video",
       "name": "SaaS video templates",
       "description": "Editable, local-first blueprints for product launches, feature demos and growth videos.",
       "itemCount": 8,
-      "bytes": 7874
+      "bytes": 7878
     },
     {
       "id": "external-ui",
@@ -83,16 +83,16 @@
     {
       "id": "remotion",
       "name": "Remotion toolkit",
-      "description": "Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.",
+      "description": "Remotion templates, skills and package capabilities are usable as editable NewBrand-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.",
       "itemCount": 2080,
-      "bytes": 1161737
+      "bytes": 1161923
     },
     {
       "id": "react-bits",
       "name": "React Bits storyboards",
-      "description": "All 209 current React Bits ideas as attributed references plus original, editable Cupric-native storyboards. No upstream component source is redistributed.",
+      "description": "All 209 current React Bits ideas as attributed references plus original, editable NewBrand-native storyboards. No upstream component source is redistributed.",
       "itemCount": 209,
-      "bytes": 233084
+      "bytes": 233504
     },
     {
       "id": "skiper-ui",
@@ -104,23 +104,23 @@
     {
       "id": "ui-libraries",
       "name": "UI libraries (Mantine · Pixel Perfect · Sora UI)",
-      "description": "Indexed component libraries used as pattern references by the agent, the generation prompt and Cupric's own chrome. Mantine is MIT; Pixel Perfect and Sora UI declare no license, so they are linked and attributed, never copied.",
+      "description": "Indexed component libraries used as pattern references by the agent, the generation prompt and NewBrand's own chrome. Mantine is MIT; Pixel Perfect and Sora UI declare no license, so they are linked and attributed, never copied.",
       "itemCount": 436,
-      "bytes": 404390
+      "bytes": 404392
     },
     {
       "id": "essentials",
       "name": "Essentials — libraries, fonts, icons, media",
       "description": "Hand-picked free resources: animation libraries (Framer Motion, GSAP), fonts (Inter, Geist, Satoshi, Fontsource), icons and logos (Simple Icons, Logo.dev, Lucide, Phosphor, Tabler), illustrations, Lottie, stock media and palettes. Each entry links to the original with its license.",
       "itemCount": 16,
-      "bytes": 12593
+      "bytes": 12607
     },
     {
       "id": "motion-kit",
       "name": "Motion kit — fonts, shapes, cursor, 3D",
       "description": "Fonts, shapes, cursor, 3D: bundled OFL video fonts, 21 Fontshare families (link-only — download them yourself, then Add fonts), and the Javis.jl ideas (MIT).",
       "itemCount": 29,
-      "bytes": 25659
+      "bytes": 25661
     },
     {
       "id": "framecn",
@@ -141,35 +141,35 @@
       "name": "uselayouts — premium micro-interactions",
       "description": "64 MIT-licensed React micro-interactions from uselayouts (complete upstream catalogue, audited by scripts/audit-uselayouts.mjs). 63 apply as native editable storyboards; 1 stay reference-only because their source uses unsafe patterns. Upstream code is never executed.",
       "itemCount": 64,
-      "bytes": 126413
+      "bytes": 126543
     },
     {
       "id": "dashi-motion",
       "name": "dashi-motion native production skills",
-      "description": "10 attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; Cupric applies the principles through its own deterministic renderer.",
+      "description": "10 attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; NewBrand applies the principles through its own deterministic renderer.",
       "itemCount": 10,
-      "bytes": 11357
+      "bytes": 11363
     },
     {
       "id": "iphone-duo",
       "name": "iPhone Duo-inspired foldable promotion skills",
-      "description": "Attribution-preserving reference source plus 10 promotion rules and one editable Cupric Studio foldable-device action. Apple reference assets are excluded.",
+      "description": "Attribution-preserving reference source plus 10 promotion rules and one editable NewBrand Studio foldable-device action. Apple reference assets are excluded.",
       "itemCount": 11,
-      "bytes": 12426
+      "bytes": 12436
     },
     {
       "id": "opus55",
       "name": "Opus 5.5 video cases & production playbook",
-      "description": "300 attributed case studies plus 12 Cupric-native production rules. Linked media remains external; the autonomous agent uses the playbook as craft guidance for deterministic editable scenes.",
+      "description": "300 attributed case studies plus 12 NewBrand-native production rules. Linked media remains external; the autonomous agent uses the playbook as craft guidance for deterministic editable scenes.",
       "itemCount": 312,
-      "bytes": 437636
+      "bytes": 438242
     },
     {
       "id": "transitions-dev",
       "name": "Transitions.dev — thinking states & matrix loader",
       "description": "14 loader presets rebuilt as native, export-exact Studio clips with editable text, timing, colour, easing, loop and reduced-motion props.",
       "itemCount": 14,
-      "bytes": 15589
+      "bytes": 15623
     }
   ]
 }

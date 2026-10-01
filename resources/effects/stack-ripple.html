@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Cupric effect — stack ripple</title>
+<title>NewBrand effect — stack ripple</title>
 <!--
   Notification stack that fans open, after the Forge UI "Stack Ripple"
   component. Dependency-free so the local renderer can seek it per frame.
@@ -37,21 +37,21 @@
     <div class="note" id="n3">
       <div class="left">
         <div class="icon" style="background:#22c55e">$</div>
-        <div><div class="title">Billing Reminder</div><div class="desc">Cupric AI</div></div>
+        <div><div class="title">Billing Reminder</div><div class="desc">NewBrand</div></div>
       </div>
       <div class="time">9 hrs ago</div>
     </div>
     <div class="note" id="n2">
       <div class="left">
         <div class="icon" style="background:#eab308">&#128100;</div>
-        <div><div class="title">User Signed Up</div><div class="desc">Cupric AI</div></div>
+        <div><div class="title">User Signed Up</div><div class="desc">NewBrand</div></div>
       </div>
       <div class="time">7 hrs ago</div>
     </div>
     <div class="note" id="n1">
       <div class="left">
         <div class="icon" style="background:#FF3D71">&#128172;</div>
-        <div><div class="title">New Message</div><div class="desc">Cupric AI</div></div>
+        <div><div class="title">New Message</div><div class="desc">NewBrand</div></div>
       </div>
       <div class="time">3 hrs ago</div>
     </div>
@@ -78,7 +78,7 @@ window.__seek = function (t) {
   set('n2', 0, 0.95 + 0.05 * p);
   set('n3', 150 * p, 0.9 + 0.1 * p);
 };
-window.__cupricSourceManifest = {
+window.__newbrandSourceManifest = {
   sources: ['forge-ui'],
   sequence: [
     { from: 0, to: 0.8, type: 'hold', copy: 'stacked notifications' },

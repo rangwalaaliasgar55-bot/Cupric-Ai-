@@ -52,7 +52,7 @@ function topicOf(t: string): string {
     )
     .replace(/\s+/g, ' ')
     .trim()
-  if (!cleaned) return 'Cupric AI'
+  if (!cleaned) return 'NewBrand'
   return cleaned
     .split(' ')
     .slice(0, 4)
@@ -105,8 +105,8 @@ function buildScenes(dur: number, flavor: Flavor, topic: string): SceneRundown['
   if (flavor === 'quote') {
     return [
       mk(0, hookEnd, 'quote', `“${topic}.”`, 'word-by-word reveal, 9 words/s'),
-      mk(hookEnd, bodyEnd, 'attribution', '— Cupric AI', 'fade up, letter-spacing settles'),
-      mk(bodyEnd, dur, 'mark', 'CUPRIC AI', 'scale 0.96 -> 1 spring, hold'),
+      mk(hookEnd, bodyEnd, 'attribution', '— NewBrand', 'fade up, letter-spacing settles'),
+      mk(bodyEnd, dur, 'mark', 'NEWBRAND', 'scale 0.96 -> 1 spring, hold'),
     ]
   }
 
@@ -126,7 +126,7 @@ function buildScenes(dur: number, flavor: Flavor, topic: string): SceneRundown['
   } else {
     scenes.push(mk(hookEnd, bodyEnd, 'body', `${topic} — in motion.`, 'mask wipe left-to-right, ease-out'))
   }
-  scenes.push(mk(bodyEnd, dur, 'cta', 'cupric.ai — Oct 2', 'counter ticks up, fade to logo'))
+  scenes.push(mk(bodyEnd, dur, 'cta', 'newbrand.ai — Oct 2', 'counter ticks up, fade to logo'))
   return scenes
 }
 
@@ -143,7 +143,7 @@ function arenaPromptOf(
   r: Pick<SceneRundown, 'durationSec' | 'fps' | 'size' | 'style' | 'scenes'>,
   effectIds: string[] = [],
 ): string {
-  return `Build a SINGLE FILE index.html motion-graphics piece for Cupric AI to capture as video.
+  return `Build a SINGLE FILE index.html motion-graphics piece for NewBrand to capture as video.
 
 HARD CONSTRAINTS:
 - Return only the final index.html code.
@@ -158,7 +158,7 @@ SOURCE / ASSET PLAN:
 - Visual sources are generated inside this HTML: typography, CSS/SVG shapes, gradients, grids, counters, masks, and light texture.
 - Text source is the scene copy below; keep spelling exact unless making tiny line-break changes for layout.
 - If you need icons or marks, draw them with inline SVG/CSS only.
-- Include window.__cupricSourceManifest = { sources, sequence, renderSpec } so Cupric AI can inspect how the video was generated.
+- Include window.__newbrandSourceManifest = { sources, sequence, renderSpec } so NewBrand can inspect how the video was generated.
 
 STYLE:
 ${r.style}
@@ -235,7 +235,7 @@ export async function geminiChatLocal(
     return `Captions live on the Footage Desk. Pick a style per clip — Hormozi (big, punched, one lime word), Standard (clean white), or Minimal (quiet chip) — mark the silence cuts to drop, then Apply. The edit shows up on the Timeline.`
   }
   if (/render|export|mp4/.test(t)) {
-    return `Rendering uses the desktop seek-and-FFmpeg pipeline when you run Cupric AI in Electron: Arena pieces are captured frame by frame, footage is trimmed/cropped, and progress streams back into the Render queue. Web preview keeps a local fallback.`
+    return `Rendering uses the desktop seek-and-FFmpeg pipeline when you run NewBrand in Electron: Arena pieces are captured frame by frame, footage is trimmed/cropped, and progress streams back into the Render queue. Web preview keeps a local fallback.`
   }
   if (/effect|gradient|background|resource/.test(t)) {
     return `Open Library → Effects / Backgrounds. Those packs feed Arena prompts and local generation — soft grid, lime haze, Hormozi captions, mask wipes, tabular counters. App chrome stays flat; stage backgrounds are for the piece only.`
@@ -254,7 +254,7 @@ export async function askGemini(userText: string, askCount: number, projectId?: 
       // Swallowing this was the bug: the app looked like it had answered with a
       // model when it had quietly used the canned planner.
       fallbackReason = err instanceof Error ? err.message : String(err)
-      console.warn('[cupric] live rundown failed, using the local planner:', fallbackReason)
+      console.warn('[newbrand] live rundown failed, using the local planner:', fallbackReason)
     }
   }
   const local = await askGeminiLocal(userText, askCount)
@@ -304,7 +304,7 @@ export async function askGeminiChat(
         {
           role: 'system',
           content:
-            'You are the assistant inside Cupric AI, a desktop short-form video editor with a Brief screen, an Arena import flow, a Footage desk, a CapCut-style Studio editor and a Render queue. Answer briefly and concretely about making and editing video in this app.',
+            'You are the assistant inside NewBrand, a desktop short-form video editor with a Brief screen, an Arena import flow, a Footage desk, a CapCut-style Studio editor and a Render queue. Answer briefly and concretely about making and editing video in this app.',
         },
         ...history.map((turn) => ({ role: turn.role === 'ai' ? ('assistant' as const) : ('user' as const), content: turn.text })),
         {
@@ -325,7 +325,7 @@ export async function askGeminiChat(
 
   // 3. Nothing configured: the deterministic local planner, clearly labelled.
   const planned = await geminiChatLocal(text, ctx)
-  return `${planned}\n\nNo live model is connected. Click the settings icon in this panel to point Cupric AI at a free OpenCode / Ollama / LM Studio endpoint.`
+  return `${planned}\n\nNo live model is connected. Click the settings icon in this panel to point NewBrand at a free OpenCode / Ollama / LM Studio endpoint.`
 }
 
 export { arenaPromptOf, slugify }

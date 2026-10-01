@@ -66,7 +66,7 @@ export async function generateVideo(o: GenerateVideoOptions): Promise<{ doc: Vid
   const req = o.scenes ?? o.structure;
   if (req?.length) a.scenes = req.map((s) => SCENE_ALIASES[s.toLowerCase()] ?? s).filter((s) => SCENE_BUILDERS[s]);
   const r = recommend(a, prompt);
-  const brandName = o.brand?.name ?? a.brandName ?? "Cupric AI";
+  const brandName = o.brand?.name ?? a.brandName ?? "NewBrand";
   const input: TemplateInput & { style: string } = {
     aspect: a.aspect, duration: a.duration, style: a.style,
     brand: { name: brandName, primary: o.brand?.primaryColor ?? o.brand?.colors?.[0], logoSrc: o.brand?.logoSrc, url: o.brand?.url },

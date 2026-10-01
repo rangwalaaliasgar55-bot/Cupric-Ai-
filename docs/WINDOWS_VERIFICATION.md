@@ -83,7 +83,7 @@ about rendering.
   *visible* and then fails the click — the window it printed was
   `…intercepts pointer events`. A fresh profile always shows the tour, so the
   suite now closes it the way a person does (`dismissOnboarding`).
-- The restart test looked for the project in `localStorage['cupric-projects']`
+- The restart test looked for the project in `localStorage['newbrand-projects']`
   and in `document.body.innerText`. Neither can work: the desktop app persists
   through the main process (`electron/main.cjs:1067` `state:save` →
   `projects.json`, `src/state/useProjectStore.ts:98-120`, and the storage key is
@@ -139,7 +139,7 @@ the renderer). The next run printed the answer:
 
 ```
 [render-queue-error] Error invoking remote method 'arena:previewPath':
-  Error: Preview path is outside Cupric AI project data
+  Error: Preview path is outside NewBrand project data
   { jobId: 'studio-export-munjn1xx-89i4u6' }
 ```
 
@@ -159,7 +159,7 @@ Two defects behind one line:
    `electron/main.cjs:4313`); the Studio did not.
 
 2. **The failure was reported as main-process jargon.** The toast really did
-   appear, immediately, saying *"Preview path is outside Cupric AI project
+   appear, immediately, saying *"Preview path is outside NewBrand project
    data."* — a sentence about containment rules shown to somebody who just
    pressed Render. It also matched none of the words the E2E was waiting for
    (`Saved|failed|could not|Refusing|error`), which is why the suite blamed a

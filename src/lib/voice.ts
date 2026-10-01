@@ -100,7 +100,7 @@ export function parseVoiceCommand(rawInput: string): VoiceCommand | null {
   const raw = rawInput.trim().toLowerCase().replace(/[.!,?]+$/g, '')
   if (!raw) return null
   // Optional wake word.
-  const text = raw.replace(/^(hey |ok |cupric,? |hey cupric,? )+/g, '').trim()
+  const text = raw.replace(/^(hey |ok |newbrand,? |hey newbrand,? )+/g, '').trim()
 
   if (/^(play|resume|go)$/.test(text)) return { type: 'play' }
   if (/^(pause|hold)$/.test(text)) return { type: 'pause' }
@@ -251,7 +251,7 @@ export function voiceErrorMessage(code: string): string {
     case 'service-not-allowed':
       return 'Voice input needs an online speech service that isn’t reachable from this app right now. Type your brief instead — everything else keeps working.'
     case 'not-allowed':
-      return 'Microphone access is blocked. Allow Cupric AI in your system’s microphone privacy settings, then try again.'
+      return 'Microphone access is blocked. Allow NewBrand in your system’s microphone privacy settings, then try again.'
     case 'audio-capture':
       return 'No microphone was found. Plug one in or pick an input device in your system sound settings, then try again.'
     case 'language-not-supported':
@@ -261,7 +261,7 @@ export function voiceErrorMessage(code: string): string {
     case 'engine-failed':
       return 'The offline speech engine couldn’t transcribe that. Type your brief instead, or copy a diagnostic report from Settings if it keeps happening.'
     case 'restart-loop':
-      return 'Voice input keeps stopping on its own, so Cupric turned it off. Type your brief instead, or try the mic again later.'
+      return 'Voice input keeps stopping on its own, so NewBrand turned it off. Type your brief instead, or try the mic again later.'
     default:
       return 'Voice input stopped unexpectedly. Try the mic again, or type your brief instead.'
   }
@@ -440,7 +440,7 @@ const TRAILING_INCOMPLETE =
   /\b(a|an|the|and|or|but|so|then|with|without|for|to|of|in|on|at|about|that|this|like|plus|because|while|where|which|who|if|when|um|uh|erm|hmm)$/i
 
 /** Phrases that are a request to start, not a brief worth starting. */
-const BARE_REQUEST = /^(ok(ay)?\s+)?(hey\s+)?(cupric\s+)?(please\s+)?(make|create|build|generate|do)\s+(me\s+)?(a|an|the)?\s*(short|quick|new)?\s*(video|clip|promo|reel|ad)?\s*$/i
+const BARE_REQUEST = /^(ok(ay)?\s+)?(hey\s+)?(newbrand\s+)?(please\s+)?(make|create|build|generate|do)\s+(me\s+)?(a|an|the)?\s*(short|quick|new)?\s*(video|clip|promo|reel|ad)?\s*$/i
 
 /**
  * Gate for hands-free dictation: should this settled phrase start a job?

@@ -7,7 +7,7 @@
  * never be overwritten by a fresh alignment of the source, because that silently
  * restores exactly the drift the retime removed.
  *
- * Cupric's equivalent has the same two jobs, and one difference worth stating:
+ * NewBrand's equivalent has the same two jobs, and one difference worth stating:
  * a clip's word timings are kept in SOURCE seconds on purpose, so a trim, a
  * split or a shot cut does not invalidate them. What a fresh transcription can
  * still do is disagree — Whisper is not perfectly deterministic across runs, and
@@ -23,7 +23,7 @@
  */
 import type { TimedWord, Transcription } from './autoCaptions'
 
-export const TRANSCRIPT_STORE_KEY = 'cupric.transcripts.v1'
+export const TRANSCRIPT_STORE_KEY = 'newbrand.transcripts.v1'
 /** Above this many files, the oldest entries are dropped (a caption cache, not an archive). */
 export const TRANSCRIPT_CACHE_LIMIT = 40
 

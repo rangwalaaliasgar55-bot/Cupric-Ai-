@@ -32,14 +32,14 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
     // what happened on the first run that reached this test.
     test.setTimeout(8 * 60_000)
     const { ffmpeg, ffprobe } = mediaBinaries()
-    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-e2e-media-'))
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-e2e-media-'))
     const source = makeFixtureVideo(ffmpeg, workspace, { seconds: 3 })
     const sourceProbe = probeFile(ffprobe, source)
     expect(sourceProbe.ok, `the fixture video is not readable: ${sourceProbe.raw}`).toBe(true)
     expect(sourceProbe.video, 'the fixture has no video stream').toBeTruthy()
     expect(sourceProbe.audio, 'the fixture has no audio stream').toBeTruthy()
 
-    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-e2e-export-'))
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-e2e-export-'))
     seedState(userDataDir, {
       projects: [{
         id: 'e2e-export',
@@ -100,7 +100,7 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
       const savedToast = await test.step('render MP4 and wait for the app to report the result', async () => {
         // Whatever the app says next in a toast is the result — success or
         // failure. Matching on wording is how this test missed a real failure
-        // report once ("Preview path is outside Cupric AI project data" matched
+        // report once ("Preview path is outside NewBrand project data" matched
         // none of the words it looked for) and then blamed a 4-minute timeout.
         try {
           return await waitForNewToast(app.page, { timeoutMs: 240_000 })
@@ -161,7 +161,7 @@ test.describe('Studio: import a real clip and render a real MP4', () => {
   })
 
   test('refuses to export an empty timeline instead of writing an empty file', async () => {
-    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-e2e-empty-'))
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-e2e-empty-'))
     seedState(userDataDir, {
       projects: [{ id: 'e2e-empty', name: 'E2E empty', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), doc: null }],
       activeProjectId: 'e2e-empty',

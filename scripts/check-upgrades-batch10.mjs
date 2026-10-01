@@ -13,7 +13,7 @@ const ok = (c, msg) => { assert.ok(c, msg); n++ }
 const read = (p) => readFileSync(p, 'utf8')
 const s0 = m.pe.emptySession()
 ok(m.na.nextAction(s0).id === 'answer' && !m.na.nextAction(s0).runnable, 'empty intake → ask, nothing runnable')
-const intake = { ...m.pe.emptyIntake(), making: 'A 40 second brand film for Cupric AI', audience: 'builders', platform: 'YouTube', assets: 'none' }
+const intake = { ...m.pe.emptyIntake(), making: 'A 40 second brand film for NewBrand', audience: 'builders', platform: 'YouTube', assets: 'none' }
 const s1 = { ...s0, intake }
 ok(m.na.nextAction(s1).id === 'run-all' && m.na.nextAction(s1).runnable, 'answered → run to approval')
 const index = JSON.parse(read('resources/opus55/data/index.json'))

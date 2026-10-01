@@ -107,8 +107,8 @@ what is asserted is that the failure is *legible*:
 
 ```
 engines tried: eSpeak NG: spawn espeak ENOENT
-message: Cupric could not start the speech engine (espeak-ng). Install it, or add
-         Piper plus a voice model in the Cupric "piper" folder.
+message: NewBrand could not start the speech engine (espeak-ng). Install it, or add
+         Piper plus a voice model in the NewBrand "piper" folder.
 whisper: not installed
 ```
 

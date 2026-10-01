@@ -3,8 +3,8 @@
  *
  * Adapted from veedstudio/open-edit's `cli/src/commands/measure-placement.ts`
  * (Apache-2.0 — see THIRD_PARTY_NOTICES.md), whose case for measuring rather
- * than eye-balling is exactly Cupric's: placement is decided against the picture,
- * and nothing measured the picture. Cupric had a caption default (`y` in the
+ * than eye-balling is exactly NewBrand's: placement is decided against the picture,
+ * and nothing measured the picture. NewBrand had a caption default (`y` in the
  * middle of the frame) and a hand-drag, so a caption could sit across the
  * speaker's mouth in every clip of a run and nothing said so.
  *

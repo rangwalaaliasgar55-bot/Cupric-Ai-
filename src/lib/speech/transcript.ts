@@ -8,7 +8,7 @@
  * renderer (a file the user drops in), on the desktop (whisper.cpp through IPC)
  * and in the headless check.
  *
- * WHY THE PORT MATTERS. Cupric already transcribed on the desktop, but each
+ * WHY THE PORT MATTERS. NewBrand already transcribed on the desktop, but each
  * caller got whatever shape its engine produced: whisper.cpp words here, a
  * pasted paragraph there, and captions that had to guess at timing. Downstream
  * could not tell which provider ran, so it could not be right for all of them.
@@ -288,7 +288,7 @@ export class NoWordTimingsError extends Error {
       'No per-word timings in this transcript. Re-run the transcription with word timestamps ' +
       '(WhisperX emits them by default · openai-whisper / mlx-whisper: --word_timestamps True · ' +
       'whisper.cpp: -oj -ml 1 · OpenAI API: timestamp_granularities=["word"]). ' +
-      'Without them the caption animation would guess, so Cupric will not pretend it knows.',
+      'Without them the caption animation would guess, so NewBrand will not pretend it knows.',
     )
     this.name = 'NoWordTimingsError'
   }

@@ -45,7 +45,7 @@ export const EVIDENCE_BRIEFS = [
  * repo already excludes, so repeated runs do not re-bundle.
  */
 export async function loadAutomationModules(root = process.cwd()) {
-  const out = path.join(root, 'node_modules', '.cache', 'cupric-pipeline-evidence.mjs')
+  const out = path.join(root, 'node_modules', '.cache', 'newbrand-pipeline-evidence.mjs')
   mkdirSync(path.dirname(out), { recursive: true })
   rmSync(out, { force: true })
   await build({

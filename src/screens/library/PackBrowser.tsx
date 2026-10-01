@@ -322,7 +322,7 @@ export function PackBrowser() {
             )}
           </h2>
           <p className="mt-0.5 text-xs text-muted">
-            Bundled with this Cupric AI release so every installed resource is available offline. The stable repository
+            Bundled with this NewBrand release so every installed resource is available offline. The stable repository
             ({PACKS_BASE.replace('https://', '')}) is used only as a fallback.
           </p>
         </div>
@@ -558,7 +558,7 @@ const PackCard = memo(function PackCard({ item, index: i, reduced, isUsed, isFav
                     />
                   ) : null}
                   {typeof item.data?.audit === 'object' && item.data.audit && (
-                    <p className="text-xs text-muted" title={String((item.data.audit as { cupricEquivalent?: string }).cupricEquivalent ?? '')}>
+                    <p className="text-xs text-muted" title={String((item.data.audit as { newbrandEquivalent?: string }).newbrandEquivalent ?? '')}>
                       {(item.data.audit as { interaction?: string }).interaction} · {(item.data.audit as { animation?: string }).animation} · {String(item.data.license ?? '')}
                     </p>
                   )}

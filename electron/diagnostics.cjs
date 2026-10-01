@@ -49,7 +49,7 @@ function hostOnly(url) {
 function buildReport(info) {
   const lines = []
   const push = (k, v) => lines.push(`${k}: ${v}`)
-  lines.push('=== Cupric AI diagnostic report ===')
+  lines.push('=== NewBrand diagnostic report ===')
   push('Generated', info.now || new Date().toISOString())
   push('App version', info.appVersion || 'unknown')
   push('Packaged', info.packaged ? 'yes' : 'no (dev)')

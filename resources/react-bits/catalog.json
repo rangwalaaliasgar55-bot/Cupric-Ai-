@@ -8,7 +8,7 @@
     "license": "MIT + Commons Clause v1.0",
     "licenseUrl": "https://github.com/DavidHDev/react-bits/blob/main/LICENSE.md"
   },
-  "policy": "Metadata links only. Commons Clause prohibits redistributing the component collection itself, including bundled or ported versions. Cupric does not vendor upstream source; users can open the attributed source and use it under its terms.",
+  "policy": "Metadata links only. Commons Clause prohibits redistributing the component collection itself, including bundled or ported versions. NewBrand does not vendor upstream source; users can open the attributed source and use it under its terms.",
   "items": [
     {
       "id": "gradual-blur",

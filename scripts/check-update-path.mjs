@@ -10,7 +10,7 @@
  *      the version Windows reports on the installed executable is read back;
  *   2. the NEW release directory (a real electron-builder output, with its
  *      `latest.yml`) is served over real HTTP from 127.0.0.1;
- *   3. the installed OLD app is launched with `CUPRIC_UPDATE_FEED` pointing at
+ *   3. the installed OLD app is launched with `NEWBRAND_UPDATE_FEED` pointing at
  *      that server and an isolated userData directory;
  *   4. the app's own log is watched until it records `updater-downloaded` — the
  *      moment the update exists on disk and is installable, which is the only
@@ -23,7 +23,7 @@
  *   7. the new installation is uninstalled and the feed server shut down.
  *
  * Usage:
- *   node scripts/check-update-path.mjs --from release/Cupric-AI-Setup-0.13.0.exe \
+ *   node scripts/check-update-path.mjs --from release/NewBrand-Setup-0.13.0.exe \
  *                                      --to release-next/
  *
  * Windows only, on purpose: it installs and launches the real product. On any
@@ -83,7 +83,7 @@ if (!fromInstaller || !toDir) {
   process.exit(1)
 }
 
-const oldVersionFromName = path.basename(fromInstaller).match(/Cupric-AI-Setup-(.+)\.exe$/)?.[1] ?? null
+const oldVersionFromName = path.basename(fromInstaller).match(/NewBrand-Setup-(.+)\.exe$/)?.[1] ?? null
 const latestYml = path.join(toDir, 'latest.yml')
 if (!fs.existsSync(fromInstaller)) {
   fail('FROM_MISSING', `no installer at ${fromInstaller}`)
@@ -123,7 +123,7 @@ try {
   /* ── 1. install the old build ─────────────────────────────────────────── */
   installDir = freshInstallDir('update-path')
   installSilently(fromInstaller, installDir)
-  const exePath = path.join(installDir, 'Cupric AI.exe')
+  const exePath = path.join(installDir, 'NewBrand.exe')
   const before = readFileVersion(exePath)
   const versionNow = () => {
     try {
@@ -149,7 +149,7 @@ try {
   const userData = tempDir('update-path-data')
   launchApp(exePath, {
     userDataDir: userData,
-    env: { CUPRIC_UPDATE_FEED: `http://127.0.0.1:${served.port}` },
+    env: { NEWBRAND_UPDATE_FEED: `http://127.0.0.1:${served.port}` },
   })
   await waitFor(() => isRunning(), { timeoutMs: 60_000, describe: 'the app to start' })
   step('launched the installed app', `userData ${userData}`)

@@ -4,7 +4,7 @@
   "description": "14 loader presets rebuilt as native, export-exact Studio clips with editable text, timing, colour, easing, loop and reduced-motion props.",
   "version": "0.16.0",
   "source": "https://transitions.dev",
-  "license": "Original Cupric re-implementation; upstream snippets kept for reference with attribution (resources/transitions-dev/ATTRIBUTION.md).",
+  "license": "Original NewBrand re-implementation; upstream snippets kept for reference with attribution (resources/transitions-dev/ATTRIBUTION.md).",
   "items": [
     {
       "id": "transitions-dev-thinking-states",
@@ -16,7 +16,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p28",
         "referencePath": "resources/transitions-dev/thinking-states.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "thinking-states",
         "loader": {
@@ -46,7 +46,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p28",
         "referencePath": "resources/transitions-dev/thinking-states.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "thinking-states-agent",
         "loader": {
@@ -82,7 +82,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-scan",
         "loader": {
@@ -113,7 +113,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-twinkle",
         "loader": {
@@ -144,7 +144,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-orbit",
         "loader": {
@@ -175,7 +175,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-pulse",
         "loader": {
@@ -206,7 +206,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-rounded",
         "loader": {
@@ -232,13 +232,13 @@
       "id": "transitions-dev-matrix-monochrome",
       "kind": "component",
       "name": "Matrix loader · monochrome",
-      "description": "Neutral greys from the Cupric palette.",
+      "description": "Neutral greys from the NewBrand palette.",
       "data": {
         "provider": "transitions.dev",
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-monochrome",
         "loader": {
@@ -265,13 +265,13 @@
       "id": "transitions-dev-matrix-lime",
       "kind": "component",
       "name": "Matrix loader · lime accent",
-      "description": "Cupric lime active cells — use once per frame.",
+      "description": "NewBrand lime active cells — use once per frame.",
       "data": {
         "provider": "transitions.dev",
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-lime",
         "loader": {
@@ -304,7 +304,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-reduced",
         "loader": {
@@ -336,7 +336,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-compact",
         "loader": {
@@ -368,7 +368,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-large",
         "loader": {
@@ -400,7 +400,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-inline",
         "loader": {
@@ -433,7 +433,7 @@
         "source": "https://transitions.dev",
         "upstreamPattern": "p33",
         "referencePath": "resources/transitions-dev/matrix-loader.reference.jsx",
-        "license": "Snippet published by Transitions.dev for copy-paste use; Cupric ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
+        "license": "Snippet published by Transitions.dev for copy-paste use; NewBrand ships an original native re-implementation. See resources/transitions-dev/ATTRIBUTION.md.",
         "nativeAction": "loader",
         "loaderPreset": "matrix-fullscreen",
         "loader": {

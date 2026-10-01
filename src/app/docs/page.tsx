@@ -10,7 +10,7 @@ const doc = buildTemplate("aiLaunch", { brand: { name: "Acme", primary: "#22d3ee
 import { generateVideo } from "@/ai/generate";
 const { doc: video, recommendation } = await generateVideo({
   prompt: "25-second premium futuristic AI SaaS advertisement",
-  brand: { name: "Cupric AI", primaryColor: "#7c8cff" },
+  brand: { name: "NewBrand", primaryColor: "#7c8cff" },
   structure: ["hook", "problem", "ai visualization", "product ui", "features", "stats", "cta"],
 });
 

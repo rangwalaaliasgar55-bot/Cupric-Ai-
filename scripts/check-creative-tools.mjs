@@ -95,7 +95,7 @@ ok(m.si.simpleIconUrl('stripe', 'C8F542') === 'https://cdn.simpleicons.org/strip
   for (const plat of ['win32', 'darwin', 'linux']) {
     const c = tts.ttsCommand(plat, '/tmp/o.wav', { rate: 99, voice: 'Alex; rm -rf /' })
     ok(!c.args.join(' ').includes('rm -rf'), `${plat}: nothing user-typed can become a command`)
-    ok(plat === 'win32' ? c.args.join(' ').includes('$env:CUPRIC_TTS_TEXT') && c.args.join(' ').includes('Rate = 10') : c.stdinText, `${plat}: text via env/stdin, rate clamped`)
+    ok(plat === 'win32' ? c.args.join(' ').includes('$env:NEWBRAND_TTS_TEXT') && c.args.join(' ').includes('Rate = 10') : c.stdinText, `${plat}: text via env/stdin, rate clamped`)
   }
   ok((await tts.synthesize({ text: '  ' })).error.includes('script'), 'empty script explained')
   ok((await tts.synthesize({ text: 'x'.repeat(tts.MAX_CHARS + 1) })).error.includes('under'), 'over-long script explained')

@@ -172,7 +172,7 @@ function style2(c: Ctx, f: HomeFill) {
   // Light panel beat.
   stage(c, 14, 16, VIDEO_TOKENS.paper, 'Light panel')
   textClip(c, 3, 14.2, 15.6, f.supporting ?? 'make it yours.', { fontSizePct: 7, color: CORE_TOKENS.lightText, x: L(c, 0.17, 0.5), y: L(c, 0.5, 0.12), anim: 'word-reveal', highlightWord: 'yours', emphasisColor: VIDEO_TOKENS.orange, name: 'Kinetic headline' })
-  kit(c, 1, 14.4, 15.4, { kit: 'browser-mockup', variant: 'composer', theme: 'light', accent: VIDEO_TOKENS.orange, x: 0.5, y: L(c, 0.52, 0.42), w: L(c, 0.34, 0.8), title: f.brand ?? 'Your name', items: [f.cta ?? 'Write your post here.', 'Cupric fills this from your brief.', ''], subtitle: 'Ready to post' })
+  kit(c, 1, 14.4, 15.4, { kit: 'browser-mockup', variant: 'composer', theme: 'light', accent: VIDEO_TOKENS.orange, x: 0.5, y: L(c, 0.52, 0.42), w: L(c, 0.34, 0.8), title: f.brand ?? 'Your name', items: [f.cta ?? 'Write your post here.', 'NewBrand fills this from your brief.', ''], subtitle: 'Ready to post' })
   const ratings = f.ratings?.length ? f.ratings : null
   kit(c, 2, 14.8, 15, {
     kit: 'rating-bars', theme: 'light', accent: VIDEO_TOKENS.orange, x: L(c, 0.84, 0.5), y: L(c, 0.52, 0.8), w: L(c, 0.24, 0.7), title: 'POST RATING',

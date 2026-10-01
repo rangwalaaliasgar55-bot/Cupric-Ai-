@@ -1,6 +1,6 @@
 /**
  * Kinetic brand film: the production recipe learned from the six reference
- * films in PR #20 (cupric-ai-brand-film*.zip, cupric-ai-cinematic-brand-film*.zip).
+ * films in PR #20 (newbrand-brand-film*.zip, newbrand-cinematic-brand-film*.zip).
  *
  * Every one of them shares the same grammar, measured with sourceFilm.ts:
  *   - 40 s, 14 chapters: twelve 3 s beats, then two 2 s beats (statement, end card)
@@ -20,7 +20,7 @@ import type { PlanShot, ProductionBrief } from './types'
 
 export const BRAND_FILM_SOURCE = {
   pr: 'https://github.com/rangwalaaliasgar55-bot/Cupric-Ai-/pull/20',
-  files: ['cupric-ai-brand-film.zip', 'cupric-ai-brand-film (1).zip', 'cupric-ai-brand-film (2).zip', 'cupric-ai-brand-film (3).zip', 'cupric-ai-cinematic-brand-film.zip', 'cupric-ai-cinematic-brand-film (1).zip'],
+  files: ['newbrand-brand-film.zip', 'newbrand-brand-film (1).zip', 'newbrand-brand-film (2).zip', 'newbrand-brand-film (3).zip', 'newbrand-cinematic-brand-film.zip', 'newbrand-cinematic-brand-film (1).zip'],
 }
 
 type Beat = { name: string; share: number; label: string; layout: NonNullable<PlanShot['typeShot']>['layout']; lines: string[] | null; purpose: string; transition: string }

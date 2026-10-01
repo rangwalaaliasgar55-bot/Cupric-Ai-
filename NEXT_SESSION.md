@@ -160,7 +160,7 @@ right-click menu. `scripts/check-decompose.mjs` (96 assertions, including the sc
 
 The open-edit port (`veedstudio/open-edit`, Apache-2.0 — see
 `THIRD_PARTY_NOTICES.md`) landed as four pieces, each wired into a real path in
-Cupric rather than parked beside it.
+NewBrand rather than parked beside it.
 
 ### Speech layer (`src/lib/speech/`)
 - `transcript.ts` — every Whisper family output (WhisperX/openai-whisper/mlx
@@ -275,7 +275,7 @@ longer paints a fallback face while claiming a font was applied.
 - Covered in MOTION_KIT.md. Check: `check:shapes-cursor-3d` (221 assertions, in the build).
 - Not verified in a real browser yet (no headless browser in the sandbox). Eyeball the 3D projection seams, the rich-caption line heights, and the cursor on a recorded component.
 
-# NEXT_SESSION.md — Cupric AI implementation status
+# NEXT_SESSION.md — NewBrand implementation status
 
 ## Current status (v0.4.0)
 
@@ -352,7 +352,7 @@ packaging, effects + gradient packs, design tokens.
 
 - [ ] Autonomous queue → full rundown / import / render orchestration
 - [ ] Autonomous queue → full rundown / import / render orchestration
-- [ ] Electron main: standardize env overrides to `CUPRIC_FFMPEG_PATH` / `CUPRIC_FFPROBE_PATH`
+- [ ] Electron main: standardize env overrides to `NEWBRAND_FFMPEG_PATH` / `NEWBRAND_FFPROBE_PATH`
 - [ ] Clean Windows 11 installer smoke test outside the sandbox
 - [ ] Per-clip audio track UI (volume automation, music bed)
 - [ ] WebGL path for the DOM glass (current DOM path is SVG filters only)
@@ -367,8 +367,8 @@ Unchanged: generate prompt → user pastes into arena.ai/code → vote → impor
 If `ffmpeg-static` fails to download, set:
 
 ```bash
-CUPRIC_FFMPEG_PATH=C:\path\to\ffmpeg.exe
-CUPRIC_FFPROBE_PATH=C:\path\to\ffprobe.exe
+NEWBRAND_FFMPEG_PATH=C:\path\to\ffmpeg.exe
+NEWBRAND_FFPROBE_PATH=C:\path\to\ffprobe.exe
 ```
 
 ## Master-prompt progress (2026-09-27 session)
@@ -435,11 +435,11 @@ Windows hardware pass for 1.10/2.24; web-only Arena capture paths still use same
 - The real-machine checklist is in `HARDWARE_TEST_PLAN.md`.
 
 ## Editor upgrades batch (formats · context menu · scenes/variables · events/API · auto-edit · Phone Studio)
-Studied openvideodev/react-video-editor and sambowenhughes/a-react-video-editor (no code copied; ideas re-implemented on Cupric's pure doc model).
+Studied openvideodev/react-video-editor and sambowenhughes/a-react-video-editor (no code copied; ideas re-implemented on NewBrand's pure doc model).
 - Formats: 4:5 feed, 720p–2160p (Ultra HD), channel presets (`formats.ts`) with length warnings.
 - Per-clip context menu + hotkeys (copy/cut/paste/duplicate/split/arrange/flip/hide/mute/lock) — `clipActions.ts`, `ClipContextMenu.tsx`. Locked clips refuse with a reason.
 - Output pass `resolve.ts` (hidden, muted, `{{variables}}`) shared by preview + export.
-- Scenes + Variables panels (`scenes.ts`); event bus `studioEvents.ts`; scripting API `window.cupricStudio` (`studioApi.ts`), mutations go through validated ops.
+- Scenes + Variables panels (`scenes.ts`); event bus `studioEvents.ts`; scripting API `window.newbrandStudio` (`studioApi.ts`), mutations go through validated ops.
 - Auto-edit (`autoEdit.ts`, pure): beat detection + snap cuts, tighten speech (fillers/pauses), smart reframe, pacing. Analysis via WebAudio/canvas in `autoEditAnalysis.ts`.
 - Phone Studio (`phone.ts`): coloured frame/bezel/island mockup, 6 motions, product/lock-screen/social animated screens, screenshot scroll; ProPanel section + `phoneDesign` agent op. Ratings/likes are blank unless typed by the user.
 - Check: `npm run check:editor-upgrades` (141 assertions).
@@ -514,14 +514,14 @@ Hardware follow-up: verify beat analysis on long MP3s and reframe on real 4K foo
 - **Scene batch:** the "Export every scene" batch renders one scene after another in the renderer.
 
 ## Agent kit (ObsidianUI + smarter component use)
-- `src/lab/obsidian/`: `ob-flip-text`, `ob-text-stream`, `ob-click-spark`, `ob-marquee-band` — Cupric re-implementations of ObsidianUI (MIT, gitlab.com/Atharvsinh-codez/ObsidianUI) ideas, pure functions of the stage clock. V-Prism / Liquid Metal were skipped (three.js + postprocessing + GLTF; framecn shaders already cover the look). The rest of ObsidianUI is shadcn UI or web-only interaction (hover, drag, scroll).
+- `src/lab/obsidian/`: `ob-flip-text`, `ob-text-stream`, `ob-click-spark`, `ob-marquee-band` — NewBrand re-implementations of ObsidianUI (MIT, gitlab.com/Atharvsinh-codez/ObsidianUI) ideas, pure functions of the stage clock. V-Prism / Liquid Metal were skipped (three.js + postprocessing + GLTF; framecn shaders already cover the look). The rest of ObsidianUI is shadcn UI or web-only interaction (hover, drag, scroll).
 - `src/lab/propConfigs.ts`: the ONE prop registry (framecn + ob). Every non-shader component gets a universal `fontFamily` prop; `FramecnStage` applies it with scoped CSS that keeps monospace text mono.
 - Agent: `setComponentProps` op (edit words/colours/font inside a placed component, re-records); `addComponent.track`; category-aware default motion (self-animating components only fade); `addText` without motion eases on/off; `INTENT_PICKS` + `COMPONENT_USE` lead the catalogue by intent; prompt has COMPONENT PLAYBOOK, TYPOGRAPHY & COLOUR, SMOOTHNESS sections.
 - Check: `npm run check:agent-kit`.
 
 ## v0.10.0 — motion-board set
 - `src/lab/obsidian/board.tsx`: mb-chart-morph, mb-masked-type, mb-elastic-type, mb-shutter-reveal, mb-search-results.
-  These are Cupric originals written after a user-pasted motion board. That board had no licence, so no code, fonts or images were copied.
+  These are NewBrand originals written after a user-pasted motion board. That board had no licence, so no code, fonts or images were copied.
   All share `cycleAt(t)` (forward 2.2 s → hold 4.4 s → return 1.4 s, pure).
 - The agent prompt (main.cjs) now teaches that timing grammar. Intent picks include the mb-* slugs, and check-agent-kit covers them.
 - Not yet built from the board: button→player, card→workspace, tabs, dashboard zoom, dock, glass lens, spring stack, text reflow, perspective, flowing paths, particle logo.

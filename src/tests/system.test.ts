@@ -64,7 +64,7 @@ describe("AI generation", () => {
   });
   it("detects vertical platforms and structures", async () => {
     expect(M.ai.analyzePrompt("15 second TikTok for a fintech app").aspect).toBe("9:16");
-    const { doc } = await M.ai.generateVideo({ format: "1:1", duration: 12, brand: { name: "Cupric AI", primaryColor: "#22d3ee" }, scenes: ["hook", "problem", "solution", "cta"] });
+    const { doc } = await M.ai.generateVideo({ format: "1:1", duration: 12, brand: { name: "NewBrand", primaryColor: "#22d3ee" }, scenes: ["hook", "problem", "solution", "cta"] });
     expect(doc.width).toBe(1080); expect(doc.scenes.map((s) => s.type)).toEqual(["hook", "problem", "product", "cta"]);
   });
   it("auto-selects libraries", () => {

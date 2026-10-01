@@ -47,9 +47,9 @@ export function clampRecordSec(value: unknown, fallback = DEFAULT_RECORD_SEC): n
   return Math.round(Math.min(MAX_RECORD_SEC, Math.max(MIN_RECORD_SEC, n)) * 100) / 100
 }
 
-const RECORD_SEC_KEY = 'cupric.component.recordSec'
+const RECORD_SEC_KEY = 'newbrand.component.recordSec'
 /** Fired on window when the remembered length changes (e.g. from the inspector). */
-export const RECORD_SEC_EVENT = 'cupric:record-sec'
+export const RECORD_SEC_EVENT = 'newbrand:record-sec'
 
 /**
  * The record length the user last chose, shared by every route into the one

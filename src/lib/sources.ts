@@ -2,7 +2,7 @@
  * External resource sources.
  *
  * This is the catalogue of the third-party libraries, generators and galleries
- * Cupric draws on — for two different jobs:
+ * NewBrand draws on — for two different jobs:
  *
  *   • `ui`    — patterns we mirror in the app's own interface (Lab components,
  *               glass chrome, Library cards, Studio panels).
@@ -42,7 +42,7 @@ export type SourceEntry = {
   description: string
   /** Pasted into generation prompts and into the Arena brief. */
   promptCue: string
-  /** How the material reaches Cupric: copy-paste, CLI registry, or reference only. */
+  /** How the material reaches NewBrand: copy-paste, CLI registry, or reference only. */
   intake: 'copy' | 'registry' | 'reference' | 'export'
   /** Free / open-source unless noted. */
   license: string
@@ -205,7 +205,7 @@ export const SOURCES: SourceEntry[] = [
     kind: 'components',
     use: 'ui',
     description: 'Component registry that plugs in over MCP — the fastest way to pull one more block into the app.',
-    promptCue: 'Registry install: shadcn add <item>, then restyle to Cupric tokens (near-black #0B0B10, lime #C8F542).',
+    promptCue: 'Registry install: shadcn add <item>, then restyle to NewBrand tokens (near-black #0B0B10, lime #C8F542).',
     intake: 'registry',
     license: 'Mixed, per item',
     tags: ['registry', 'mcp'],
@@ -526,7 +526,7 @@ export const SOURCES: SourceEntry[] = [
     url: 'https://designmd.ai',
     kind: 'prompts',
     use: 'ui',
-    description: 'Design systems expressed as markdown an agent can read — the format Cupric briefs should follow.',
+    description: 'Design systems expressed as markdown an agent can read — the format NewBrand briefs should follow.',
     promptCue: 'Give the agent the system as markdown: tokens, spacing scale, component rules, then the task.',
     intake: 'reference',
     license: 'Free tier',
@@ -815,7 +815,7 @@ export const SOURCES: SourceEntry[] = [
     kind: 'generators',
     use: 'both',
     description:
-      'Google Fonts as npm packages — self-hosted, so generated HTML stays inside the no-CDN rule. Cupric already ships Inter and JetBrains Mono this way.',
+      'Google Fonts as npm packages — self-hosted, so generated HTML stays inside the no-CDN rule. NewBrand already ships Inter and JetBrains Mono this way.',
     promptCue: 'Type: self-hosted variable font only; never reference fonts.googleapis.com from a generated file.',
     intake: 'registry',
     license: 'Per font (mostly OFL)',
@@ -931,7 +931,7 @@ export const SOURCES: SourceEntry[] = [
     kind: 'templates',
     use: 'video',
     description:
-      'Free Remotion video templates — reference structure only. Cupric does not ship or depend on the Remotion runtime (see docs/PHASE1_LICENSING.md), so these are mined as ideas and layout metadata, not as embeddable packages.',
+      'Free Remotion video templates — reference structure only. NewBrand does not ship or depend on the Remotion runtime (see docs/PHASE1_LICENSING.md), so these are mined as ideas and layout metadata, not as embeddable packages.',
     promptCue: 'Remotion pattern: every animation is interpolate(frame, …) — a pure function of the frame, like __seek(t).',
     intake: 'copy',
     license: 'MIT',
@@ -944,7 +944,7 @@ export const SOURCES: SourceEntry[] = [
     kind: 'inspiration',
     use: 'ui',
     description:
-      'React + Remotion CapCut/Canva-style editor — the closest architectural sibling to Cupric. Read for timeline state shape and effect-registry structure.',
+      'React + Remotion CapCut/Canva-style editor — the closest architectural sibling to NewBrand. Read for timeline state shape and effect-registry structure.',
     promptCue: 'Editor architecture: one normalised timeline store, effects registered by id, preview and export share the renderer.',
     intake: 'reference',
     license: 'MIT',
@@ -970,7 +970,7 @@ export const SOURCES: SourceEntry[] = [
     kind: 'inspiration',
     use: 'video',
     description:
-      'Long-to-short repurposing with content-aware clipping, dynamic captions and AI reframing — the reference if Cupric adds a "drop in raw footage, get a short" mode.',
+      'Long-to-short repurposing with content-aware clipping, dynamic captions and AI reframing — the reference if NewBrand adds a "drop in raw footage, get a short" mode.',
     promptCue: 'Repurposing pass: find the hook, cut to the payoff, reframe to 9:16 keeping the speaker on the thirds.',
     intake: 'reference',
     license: 'Commercial (reference only)',
@@ -985,7 +985,7 @@ export const SOURCES: SourceEntry[] = [
     kind: 'generators',
     use: 'ui',
     description:
-      'Built-in speech recognition and synthesis. Cupric uses it for voice commands and for speak-a-brief; no dependency, no audio leaves the machine.',
+      'Built-in speech recognition and synthesis. NewBrand uses it for voice commands and for speak-a-brief; no dependency, no audio leaves the machine.',
     promptCue: 'Voice: one utterance in, one job out. Speak status back with SpeechSynthesisUtterance, never block on it.',
     intake: 'reference',
     license: 'Web standard',
@@ -998,7 +998,7 @@ export const SOURCES: SourceEntry[] = [
     kind: 'inspiration',
     use: 'ui',
     description:
-      'Frame-based realtime voice-agent pipeline (VAD → STT → LLM → TTS). Deliberately not adopted: Cupric records one instruction and renders, it does not hold a conversation.',
+      'Frame-based realtime voice-agent pipeline (VAD → STT → LLM → TTS). Deliberately not adopted: NewBrand records one instruction and renders, it does not hold a conversation.',
     promptCue: 'Only worth its weight once mid-render conversation ("make the intro punchier") is a real requirement.',
     intake: 'reference',
     license: 'BSD-2-Clause',
@@ -1011,7 +1011,7 @@ export const SOURCES: SourceEntry[] = [
     kind: 'inspiration',
     use: 'ui',
     description: 'WebRTC voice agents with ~450–600ms end-to-end targets — same verdict as Pipecat: a different problem than one-shot briefs.',
-    promptCue: 'Reference only until Cupric needs duplex audio.',
+    promptCue: 'Reference only until NewBrand needs duplex audio.',
     intake: 'reference',
     license: 'Apache-2.0',
     tags: ['voice', 'webrtc', 'agent'],

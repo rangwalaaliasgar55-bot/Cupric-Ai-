@@ -76,7 +76,7 @@ export function StudioNotices({ doc }: { doc: StudioDoc }) {
       {notices.map((text) => (
         <p
           key={text}
-          data-cupric-notice
+          data-newbrand-notice
           className="pointer-events-auto flex max-w-full items-center gap-1.5 truncate rounded-md border border-line bg-panel/90 px-2.5 py-1 text-[11px] text-muted shadow backdrop-blur"
           title={text}
         >

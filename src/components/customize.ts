@@ -7,7 +7,7 @@ export function customizePreview(asset: AssetDef, values: Record<string, unknown
   switch (asset.kind) {
     case "template": {
       const id = asset.id.replace("template:", "");
-      return buildTemplate(id, { brand: { name: "Cupric AI" }, headline: values.headline as string, subtitle: values.subtitle as string, cta: values.cta as string, duration: values.duration as number });
+      return buildTemplate(id, { brand: { name: "NewBrand" }, headline: values.headline as string, subtitle: values.subtitle as string, cta: values.cta as string, duration: values.duration as number });
     }
     case "effect": return { ...base, effects: [{ type: asset.id.replace("effect:", ""), params: values }] };
     case "transition": return { ...base, scenes: base.scenes.map((s, i) => (i === 1 ? { ...s, transition: { type: asset.id.replace("transition:", ""), duration: Number(values.duration ?? 18), params: { ease: values.ease } } } : s)) };

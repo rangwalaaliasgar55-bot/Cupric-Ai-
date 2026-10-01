@@ -1,7 +1,7 @@
 {
   "id": "dashi-motion",
   "name": "dashi-motion native production skills",
-  "description": "10 attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; Cupric applies the principles through its own deterministic renderer.",
+  "description": "10 attributed production rules distilled from dashi-motion. The original AE/Rive/Cavalry references are preserved for review; NewBrand applies the principles through its own deterministic renderer.",
   "version": "0.16.0",
   "source": "https://github.com/chuspeeism/dashi-motion",
   "license": "No upstream license declared — reference-only attribution; see resources/dashi-motion/UPSTREAM-NOTICE.md",
@@ -10,12 +10,12 @@
       "id": "dashi-motion-software-route",
       "kind": "skill",
       "name": "Route by delivery software",
-      "description": "Identify whether the task is an AE project, Rive state machine, Cavalry node scene, or Cupric native scene before choosing techniques. Do not silently replace an editable native deliverable with a flattened video.",
+      "description": "Identify whether the task is an AE project, Rive state machine, Cavalry node scene, or NewBrand native scene before choosing techniques. Do not silently replace an editable native deliverable with a flattened video.",
       "data": {
         "provider": "dashi-motion",
         "source": "https://github.com/chuspeeism/dashi-motion",
         "commit": "44ba9176ae3f925f3082c5639ef09ca60309eaa6",
-        "instruction": "Identify whether the task is an AE project, Rive state machine, Cavalry node scene, or Cupric native scene before choosing techniques. Do not silently replace an editable native deliverable with a flattened video.",
+        "instruction": "Identify whether the task is an AE project, Rive state machine, Cavalry node scene, or NewBrand native scene before choosing techniques. Do not silently replace an editable native deliverable with a flattened video.",
         "tags": [
           "routing",
           "editable",

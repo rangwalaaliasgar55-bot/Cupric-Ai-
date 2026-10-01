@@ -46,12 +46,12 @@ const hb = m.pe.planToDoc(doc, hi.plan, hi.brief, { makeId: () => `h${k++}` })
 ok(hb.doc.clips.filter((c) => c.kind === 'text').every((c) => c.fontFamily === 'Noto Sans Devanagari'), 'Hindi build uses the Devanagari font')
 
 /* palette */
-const items = [{ label: 'Go to Studio' }, { label: 'Go to Library', keywords: 'resources packs' }, { label: 'Undo' }, { label: 'Ask Cupric AI', keywords: 'keyframes' }]
+const items = [{ label: 'Go to Studio' }, { label: 'Go to Library', keywords: 'resources packs' }, { label: 'Undo' }, { label: 'Ask NewBrand', keywords: 'keyframes' }]
 ok(m.rankCommands(items, 'und')[0].label === 'Undo', 'palette: prefix wins')
 ok(m.rankCommands(items, 'packs')[0].label === 'Go to Library', 'palette: keywords searchable')
 ok(m.rankCommands(items, 'gtst')[0].label === 'Go to Studio', 'palette: subsequence fallback')
 ok(m.rankCommands(items, 'zzz').length === 0 && m.rankCommands(items, '').length === 4, 'palette: no match / empty query')
 ok(/<CommandPalette \/>/.test(read('src/app-shell/AppLayout.tsx')), 'palette mounted app-wide')
 const ui = read('src/screens/production/ProductionPlanner.tsx')
-ok(/Run to approval/.test(ui) && /Build \+ Cupric AI polish/.test(ui) && /Cut on music beats/.test(ui), 'planner UI exposes run-to-approval, auto-finish and beat cut')
+ok(/Run to approval/.test(ui) && /Build \+ NewBrand polish/.test(ui) && /Cut on music beats/.test(ui), 'planner UI exposes run-to-approval, auto-finish and beat cut')
 console.log(`upgrades batch 1: ${n} assertions passed`)

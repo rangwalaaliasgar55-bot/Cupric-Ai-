@@ -17,7 +17,7 @@ existed or was missing for a specific reason.
 | --- | --- | --- |
 | Design tokens already existed and were coherent: palette, type scale, radii, shadows, easings | `src/styles.css:45–91` | Phase 3 is *adoption* here, not invention. Inventing a second system would have been the actual bug. |
 | A real focus ring already existed (box-shadow, not outline) | `src/styles.css:233` | The problem was not the ring, it was controls that never received it. |
-| **No first-run explanation of anything existed** | the whole app shell; only `src/screens/GettingStarted.tsx`, a project checklist keyed `cupric.gettingStarted.dismissed` | A new person met twelve sidebar entries with no statement of what the app is for. |
+| **No first-run explanation of anything existed** | the whole app shell; only `src/screens/GettingStarted.tsx`, a project checklist keyed `newbrand.gettingStarted.dismissed` | A new person met twelve sidebar entries with no statement of what the app is for. |
 | **The timeline's seek slider was unreachable by keyboard** | `src/screens/Timeline.tsx:203` — `role="slider"`, `tabIndex={-1}` | ARIA present, keyboard absent: the worst combination, because it looks accessible in a tree dump. |
 | Clips were `role="button"` with only Delete bound | `src/screens/Timeline.tsx:492–505` | No reorder without a pointer; no announcement of anything. |
 | The timeline had no live region at all | `src/screens/Timeline.tsx` (whole file) | The screen's entire content is a picture: a ruler, coloured blocks, a playhead. |
@@ -91,7 +91,7 @@ deleted").
   launch with no way to stop it is worse than one that never appears.
 * a real modal: focus moved in, Tab held inside, Escape closes, backdrop closes,
   and **dismissal is never blocked**.
-* reachable again any time from the command palette ("Quick tour of Cupric").
+* reachable again any time from the command palette ("Quick tour of NewBrand").
 
 ### 2.4 The timeline without a mouse
 
@@ -114,7 +114,7 @@ Desk with copy that names the difference between them.
 
 ### 2.6 Navigation and dead ends
 
-* the palette gains "Quick tour of Cupric" under Help.
+* the palette gains "Quick tour of NewBrand" under Help.
 * `check-phase3-ui.mjs` asserts `HomeProject` still confirms before deleting and
   that the readiness panel branches on `result.ok`.
 

@@ -42,7 +42,7 @@ export type MediaHandle = {
 
 /* ——— 2.7 proxy preference ——— */
 export type ProxyMode = 'auto' | 'always' | 'off'
-const PROXY_KEY = 'cupric.proxyMode'
+const PROXY_KEY = 'newbrand.proxyMode'
 export function proxyMode(): ProxyMode {
   try {
     const v = globalThis.localStorage?.getItem(PROXY_KEY)
@@ -205,7 +205,7 @@ function loadImage(url: string): Promise<HTMLImageElement> {
  *
  * A file the user picked sits wherever they keep it. Everything that needs to
  * read it again — the offscreen renderer during an export, above all — is
- * contained to Cupric's own project data (`arena:previewPath` in
+ * contained to NewBrand's own project data (`arena:previewPath` in
  * electron/main.cjs), so a clip that keeps its original path previews fine and
  * then fails to export. Asking the main process to adopt it (`media:import`)
  * copies it in once, and the answer is stable from then on.
@@ -222,7 +222,7 @@ async function adoptImportedFile(file: File): Promise<{ localPath: string | null
   if (!result?.localPath) {
     // Never fall back to the original silently: that is the state that used to
     // break exports much later, with a message about paths.
-    throw new Error(`Cupric could not adopt "${file.name}" into the project store.`)
+    throw new Error(`NewBrand could not adopt "${file.name}" into the project store.`)
   }
   if (result.copied) rlog.info('studio', 'media:adopted', { name: file.name, bytes: file.size })
   return { localPath: result.localPath, copied: Boolean(result.copied) }

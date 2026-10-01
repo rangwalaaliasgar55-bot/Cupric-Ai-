@@ -31,5 +31,5 @@ export async function writeAgentAnimation(instruction: string, durationSec: numb
       previous = { code: String(value.code || '').slice(0, 16_000), problems: (e as Error).message }
     }
   }
-  return { ok: false, message: `Cupric could not write an animation that passes its safety rules after ${MAX_REPAIR_ROUNDS} repairs, so nothing was added.\n${previous?.problems ?? ''}` }
+  return { ok: false, message: `NewBrand could not write an animation that passes its safety rules after ${MAX_REPAIR_ROUNDS} repairs, so nothing was added.\n${previous?.problems ?? ''}` }
 }

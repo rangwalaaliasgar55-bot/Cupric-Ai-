@@ -6,8 +6,8 @@
  * its effort on — the scene copy, the timings, the order — was locked inside
  * an HTML file the canvas cannot execute.
  *
- * Every piece Cupric generates is required to declare
- * `window.__cupricSourceManifest = { sources, sequence, renderSpec }`, and the
+ * Every piece NewBrand generates is required to declare
+ * `window.__newbrandSourceManifest = { sources, sequence, renderSpec }`, and the
  * scene list is the sequence. So the output is not a black box: it is a
  * storyboard with a renderer attached, and this reads the storyboard back out
  * as real text clips the user can retime, rewrite and restyle.
@@ -332,7 +332,7 @@ function timedMarkup(markup: string): ImportedScene[] {
 
 /**
  * Copy hiding in JavaScript strings — `typeText("Built for creators")`,
- * `const lines = ['Meet Cupric', ...]` without a recognisable key. Only
+ * `const lines = ['Meet NewBrand', ...]` without a recognisable key. Only
  * sentence-like strings survive: words and spaces, no code, CSS or URLs.
  */
 function scriptCopy(corpus: string): string[] {
@@ -363,7 +363,11 @@ function titleCard(name: string): string {
     .replace(/\s+/g, ' ')
     .trim()
   if (!base) return 'Untitled film'
-  return base.replace(/\b([a-z])/g, (c) => c.toUpperCase()).replace(/\bAi\b/g, 'AI').replace(/\bUi\b/g, 'UI')
+  return base
+    .replace(/\b([a-z])/g, (c) => c.toUpperCase())
+    .replace(/\bAi\b/g, 'AI')
+    .replace(/\bUi\b/g, 'UI')
+    .replace(/\bNewbrand\b/g, 'NewBrand')
 }
 
 /** Even-ish timings that respect how long each line takes to read. */
@@ -399,7 +403,7 @@ export function parseGeneratedHtml(html: string, opts: ParseOptions = {}): Impor
   const corpus = `${text}\n${scripts}`
   if (!corpus.trim() && !opts.name) return null
 
-  const manifestLiteral = literalAfter(corpus, /__cupricSourceManifest\s*=\s*/)
+  const manifestLiteral = literalAfter(corpus, /__newbrandSourceManifest\s*=\s*/)
   const manifest = manifestLiteral
     ? looseParse<{ sequence?: unknown[]; sources?: unknown[]; renderSpec?: Record<string, unknown> }>(manifestLiteral)
     : null
@@ -481,7 +485,7 @@ function normaliseScenes(input: unknown, fps = 30): ImportedScene[] {
   })
   const unit = numbers.length && Math.max(...numbers) > 600 ? 1000 : 1
   for (const raw of input.slice(0, 80)) {
-    // "Just a line" lists: ["Meet Cupric", "Edit at the speed of thought"].
+    // "Just a line" lists: ["Meet NewBrand", "Edit at the speed of thought"].
     if (typeof raw === 'string') {
       const copy = cleanLine(raw)
       if (!copy || copy.length > 300) continue

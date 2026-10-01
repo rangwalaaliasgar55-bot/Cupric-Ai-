@@ -62,11 +62,11 @@ export const SCENE_CSP = "default-src 'none'; script-src 'unsafe-inline'; style-
 
 /** Runs inside the sandboxed frame: seek, serialize, post the markup back. */
 const AGENT = `(() => {
-  const reply = (msg) => parent.postMessage(Object.assign({ __cupricScene: true }, msg), '*');
+  const reply = (msg) => parent.postMessage(Object.assign({ __newbrandScene: true }, msg), '*');
   const raf = () => new Promise((r) => requestAnimationFrame(() => r()));
   window.addEventListener('message', async (event) => {
     const msg = event.data;
-    if (!msg || msg.__cupricHost !== true) return;
+    if (!msg || msg.__newbrandHost !== true) return;
     try {
       if (msg.type === 'probe') {
         if (document.fonts && document.fonts.ready) { try { await document.fonts.ready } catch (e) {} }
@@ -109,7 +109,7 @@ export function sandboxedSceneDoc(html: string, csp: string = SCENE_CSP): string
   return `<!doctype html><html><head>${inject}</head><body>${html}</body></html>`
 }
 
-type AgentReply = { __cupricScene: true; id: number; type: 'probe' | 'frame' | 'error'; hasSeek?: boolean; markup?: string; message?: string }
+type AgentReply = { __newbrandScene: true; id: number; type: 'probe' | 'frame' | 'error'; hasSeek?: boolean; markup?: string; message?: string }
 
 /**
  * Arena exports may fetch their own bundled JSON (inlined as data: URLs by
@@ -145,7 +145,7 @@ export async function openSandboxedScene(html: string, sceneW: number, sceneH: n
     // Only the frame we created may answer, and only in the agent's format.
     if (event.source !== frame.contentWindow) return
     const data = event.data as AgentReply
-    if (!data || data.__cupricScene !== true || typeof data.id !== 'number') return
+    if (!data || data.__newbrandScene !== true || typeof data.id !== 'number') return
     const entry = waiting.get(data.id)
     if (!entry) return
     waiting.delete(data.id)
@@ -160,7 +160,7 @@ export async function openSandboxedScene(html: string, sceneW: number, sceneH: n
         reject(new Error(msg.type === 'probe' ? 'The scene took too long to load.' : 'The scene stopped responding while being captured.'))
       }, timeoutMs)
       waiting.set(id, { resolve, reject, timer })
-      frame.contentWindow?.postMessage({ __cupricHost: true, id, ...msg }, '*')
+      frame.contentWindow?.postMessage({ __newbrandHost: true, id, ...msg }, '*')
     })
   const close = () => {
     window.removeEventListener('message', onMessage)

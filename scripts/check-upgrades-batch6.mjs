@@ -22,7 +22,7 @@ ok(!('making' in r2.patch) && !('durationSec' in r2.patch), 'starter never overw
 ok(m.st.applyStarter(empty, 'nope').filled.length === 0, 'unknown starter is a no-op')
 ok(m.st.FORMAT_STARTERS.every((f) => !/\d+%|\d+x|best|#1|guarantee/i.test(JSON.stringify(f.fill))), 'starters contain no claims')
 const index = JSON.parse(read('resources/opus55/data/index.json'))
-const plan = m.pe.runToApproval(index, { ...empty, ...r.patch, making: r.patch.making.replace('[Your brand]', 'Cupric AI'), audience: 'builders' }).plan
+const plan = m.pe.runToApproval(index, { ...empty, ...r.patch, making: r.patch.making.replace('[Your brand]', 'NewBrand'), audience: 'builders' }).plan
 ok(plan.skillId === 'kinetic-brand-film', 'brand-film starter routes to the kinetic brand film recipe')
 
 const T = (id, start, text, extra = {}) => ({ ...m.docm.defaultTextClip(start, 1), id, startSec: start, text, ...extra })

@@ -2,7 +2,7 @@
  * Break a clip into editable pieces — the "import a finished video and take it
  * apart" half of the Studio.
  *
- * A video dropped into Cupric used to arrive as one indivisible block: the only
+ * A video dropped into NewBrand used to arrive as one indivisible block: the only
  * ways to change it were to trim its edges or tighten it (which throws the
  * pauses away). Editing someone else's cut means the opposite — every phrase,
  * every pause and every shot boundary has to become something you can select,
@@ -319,7 +319,7 @@ export async function decomposeClip(doc: StudioDoc, clipId: string, opts: Decomp
     notes.push(`Broke at ${cuts.length} pause${cuts.length === 1 ? '' : 's'} of ${maxPauseSec.toFixed(2)} s or more in the word timings.`)
   } else {
     const measured = await probeClip(target)
-    if (!measured) return fail(doc, mode, 'Cupric cannot read this clip’s audio — relink the file, or transcribe it and break at the pauses in the words.')
+    if (!measured) return fail(doc, mode, 'NewBrand cannot read this clip’s audio — relink the file, or transcribe it and break at the pauses in the words.')
     if (!measured.probe.speechFound) return fail(doc, mode, 'No speech in this clip: the level never rises 6 dB above its own floor. Use “split evenly” for footage like this.')
     cuts = probeCuts(measured)
     if (!cuts.length) return fail(doc, mode, 'Every pause in this clip is shorter than the safe minimum — breaking there would slice the speech.')

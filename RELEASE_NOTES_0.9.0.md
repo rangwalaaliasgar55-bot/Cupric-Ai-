@@ -1,13 +1,13 @@
-# Cupric AI 0.9.0
+# NewBrand 0.9.0
 
 ## New: Studio → Components
 
 Every UI Lab component (190 of them) can now be added from inside the Studio, with its real animation.
 
 - **Components button** in the Studio toolbar opens a searchable panel with category filters and a live preview.
-  - Choose a length (2–8 s) and whether Cupric should **act it out**: hover, move over, press and long-press its controls.
+  - Choose a length (2–8 s) and whether NewBrand should **act it out**: hover, move over, press and long-press its controls.
   - Then press **Add at playhead**. You can also double-click a row, press its **+** button, or drag it onto the stage.
-- **Recorded live, not frozen.** Cupric plays the real React component on screen and records it in real time. It then resamples the recording to steady 12 fps frames and crops it to the component.
+- **Recorded live, not frozen.** NewBrand plays the real React component on screen and records it in real time. It then resamples the recording to steady 12 fps frames and crops it to the component.
   - Animations play at their real speed, even when the OS has "reduce motion" turned on.
   - Clips go on a free track (new tracks are created when needed), get sized to read well in the frame, and get a rise-in / fade-out.
 - **Editable.** The inspector's new Component section lets you:

@@ -37,7 +37,7 @@ const installer = require('../../electron/voice-install.cjs') as {
 
 const temps: string[] = []
 const tempDir = () => {
-  const dir = mkdtempSync(path.join(os.tmpdir(), 'cupric-voice-test-'))
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'newbrand-voice-test-'))
   temps.push(dir)
   return dir
 }
@@ -131,7 +131,7 @@ describe('download — the real thing, failing for real', () => {
     // branch without pretending anything succeeded.
     const dir = tempDir()
     const result = await installer.download({
-      url: 'https://registry.npmjs.org/definitely-not-a-package-cupric-9f3/',
+      url: 'https://registry.npmjs.org/definitely-not-a-package-newbrand-9f3/',
       name: 'x.json',
       to: path.join(dir, 'x.json'),
     })
@@ -220,12 +220,12 @@ describe('extractZip', () => {
     // writer chooses to normalise.
     const hostile = ['../x', '..\\x', 'piper/../../x', '/etc/passwd', 'C:/Windows/x', '\\\\server\\share', 'a/./b']
     for (const entry of hostile) {
-      const verdict = installer.safeEntryTarget('C:\\Users\\me\\AppData\\Cupric\\piper', entry)
+      const verdict = installer.safeEntryTarget('C:\\Users\\me\\AppData\\NewBrand\\piper', entry)
       expect(verdict.ok, `${entry} must be refused`).toBe(false)
       expect(String(verdict.error)).toMatch(/escapes the install folder|absolute path/)
     }
     for (const entry of ['piper.exe', 'espeak-ng-data/en_dict', 'lib/onnxruntime.dll']) {
-      const safe = installer.safeEntryTarget('C:\\Users\\me\\AppData\\Cupric\\piper', entry)
+      const safe = installer.safeEntryTarget('C:\\Users\\me\\AppData\\NewBrand\\piper', entry)
       expect(safe.ok, `${entry} must be allowed`).toBe(true)
       expect(safe.target).toContain('piper')
     }

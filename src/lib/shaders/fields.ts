@@ -1,5 +1,5 @@
 /**
- * Shader field math — the pure half of Cupric's own shader kit.
+ * Shader field math — the pure half of NewBrand's own shader kit.
  *
  * Why this exists: the Lab's 18 `fc-shader-*` components used to render through
  * `@paper-design/shaders-react`, which is licensed PolyForm Shield 1.0.0 — a

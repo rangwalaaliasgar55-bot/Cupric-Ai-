@@ -157,7 +157,7 @@ Negative evidence (things that really fail, so the green is not vacuous):
    2. Launch the app, open the Ask panel, click the gear: the provider panel must show
       **"No AI provider configured"** with the fix line (no key, no Ollama running).
    3. Ask a question: the answer must be labelled as the offline planner (`source: 'local'`), and
-      `%APPDATA%\Cupric AI\logs` must contain no request to a third-party service.
+      `%APPDATA%\NewBrand\logs` must contain no request to a third-party service.
    4. Paste a real OpenAI key → **Save** → **Test connection**: expect "... answered in <ms> ms" and
       the model's reply; then **Load models** must list the account's models.
    5. Test a **wrong** key: expect `UNAUTHORIZED` and "Check the key in Settings"; test with the

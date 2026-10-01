@@ -1,8 +1,8 @@
 {
-  "name": "cupric-ai",
+  "name": "newbrand",
   "private": true,
   "version": "0.16.0",
-  "description": "Cupric AI — desktop creator tool for short-form video: in-app Studio editor with liquid-glass effects, Gemini and free-model chat, Arena import, footage analysis, offline UI resource catalogs, and Electron packaging.",
+  "description": "NewBrand is a desktop studio for planning, editing, and exporting short-form video with local media tools and configurable AI providers.",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -164,8 +164,8 @@
     "vitest": "^3.2.7"
   },
   "build": {
-    "appId": "app.cupric-ai.studio",
-    "productName": "Cupric AI",
+    "appId": "com.newbrand.app",
+    "productName": "NewBrand",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -195,7 +195,7 @@
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "Cupric-AI-${version}-${arch}-Portable.${ext}",
+      "artifactName": "NewBrand-${version}-${arch}-Portable.${ext}",
       "signtoolOptions": {
         "signingHashAlgorithms": [
           "sha256"
@@ -207,13 +207,13 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "Cupric-AI-Setup-${version}.${ext}",
+      "artifactName": "NewBrand-Setup-${version}.${ext}",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "installerHeaderIcon": "build/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Cupric AI"
+      "shortcutName": "NewBrand"
     },
     "publish": {
       "provider": "github",

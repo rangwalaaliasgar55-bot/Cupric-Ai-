@@ -1995,7 +1995,7 @@
       "previewScale": 0.8,
       "vendored": true,
       "file": "src/lab/components/bento-grid.tsx",
-      "origin": "cupric"
+      "origin": "newbrand"
     },
     {
       "slug": "mesh-gradient",
@@ -2006,7 +2006,7 @@
       "previewScale": 0.8,
       "vendored": true,
       "file": "src/lab/components/mesh-gradient.tsx",
-      "origin": "cupric"
+      "origin": "newbrand"
     }
   ]
 }

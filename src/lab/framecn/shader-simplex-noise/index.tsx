@@ -1,5 +1,5 @@
 // Vendored from framecn (MIT) — https://github.com/shadcn-labs/framecn/tree/main/registry/bases/editframe/components/shader-simplex-noise
-// Import paths changed, and the shader component comes from Cupric's own kit
+// Import paths changed, and the shader component comes from NewBrand's own kit
 // (../shader-kit) instead of the PolyForm-licensed upstream package. See src/lab/framecn/LICENSE
 // and docs/PHASE1_LICENSING.md.
 

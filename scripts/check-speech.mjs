@@ -2,7 +2,7 @@
 /**
  * check:speech — the speech layer, executed for real.
  *
- * Cupric's captions used to be guessed from the clip's own timing: a fixed
+ * NewBrand's captions used to be guessed from the clip's own timing: a fixed
  * even split of the block, so a word could appear a full second before it was
  * spoken. The ported speech layer fixes that, and this check proves each half of
  * it without a browser or a recording:
@@ -19,7 +19,7 @@ import path from 'node:path'
 import { build } from 'esbuild'
 
 const root = process.cwd()
-const out = path.join(root, 'node_modules', '.cache', 'cupric-check-speech.mjs')
+const out = path.join(root, 'node_modules', '.cache', 'newbrand-check-speech.mjs')
 rmSync(out, { force: true })
 await build({
   stdin: {

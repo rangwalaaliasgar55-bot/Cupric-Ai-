@@ -8,7 +8,7 @@ import { PHYSICS_PRESETS, paintPhysics } from './physics'
  *              pixel-identical to the preview instead of "close enough".
  *
  * Gradients follow the ibelick-style catalogue referenced in DESIGN.md but are
- * re-expressed in Cupric tokens: near-black base, one lime accent, blue informs.
+ * re-expressed in NewBrand tokens: near-black base, one lime accent, blue informs.
  */
 
 export type StudioBackground = {

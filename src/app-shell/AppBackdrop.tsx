@@ -41,7 +41,7 @@ export function AppBackdrop() {
       />
       {!reduced && (
         <div
-          className={`absolute -inset-1/4 opacity-60 ${light ? 'mix-blend-multiply' : 'mix-blend-screen'} [animation:cupric-drift_46s_ease-in-out_infinite]`}
+          className={`absolute -inset-1/4 opacity-60 ${light ? 'mix-blend-multiply' : 'mix-blend-screen'} [animation:newbrand-drift_46s_ease-in-out_infinite]`}
           style={{
             backgroundImage:
               'radial-gradient(closest-side, rgba(200,245,66,0.07), transparent 70%), radial-gradient(closest-side, rgba(79,182,232,0.07), transparent 70%)',

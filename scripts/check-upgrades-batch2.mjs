@@ -54,7 +54,7 @@ const r = m.fr.rundownToDoc(base, rundown, () => `r${k++}`)
 ok(r.clipIds.length === 2, 'invalid scenes skipped')
 ok(r.doc.clips.find((c) => c.id === 'mine') && r.doc.clips.filter((c) => r.clipIds.includes(c.id)).every((c) => c.startSec >= 2), 'appended after the current timeline, your clips untouched')
 ok(r.placeholders === 1 && r.doc.clips.some((c) => c.text === '[cta line]'), 'empty scene → labelled placeholder, no invented copy')
-ok(r.doc.clips.filter((c) => r.clipIds.includes(c.id)).every((c) => c.keyframes?.length >= 2), 'scene clips get Cupric AI keyframes')
+ok(r.doc.clips.filter((c) => r.clipIds.includes(c.id)).every((c) => c.keyframes?.length >= 2), 'scene clips get NewBrand keyframes')
 k = 0
 ok(JSON.stringify(m.fr.rundownToDoc(base, rundown, () => `r${k++}`)) === JSON.stringify(r), 'deterministic')
 ok(/Edit in Studio/.test(read('src/screens/Autonomous.tsx')), 'Auto job card offers Edit in Studio')

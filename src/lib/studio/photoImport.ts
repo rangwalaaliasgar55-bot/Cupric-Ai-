@@ -6,7 +6,7 @@
  *    converted to JPEG on import. The converter (heic2any, MIT, which bundles
  *    libheif under LGPL-3.0) is a separate lazily loaded chunk, fetched only
  *    when a HEIC file is actually imported.
- *  - EXIF orientation is honoured: Chromium (the only engine Cupric runs in)
+ *  - EXIF orientation is honoured: Chromium (the only engine NewBrand runs in)
  *    applies it when decoding an image (`image-orientation: from-image`, the
  *    default since M81), so naturalWidth/Height and every drawImage are
  *    already upright — including the proxy, which is drawn from the decoded

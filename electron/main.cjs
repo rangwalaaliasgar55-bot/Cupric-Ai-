@@ -76,7 +76,7 @@ function findOnPath(binName) {
 
 function resolveMediaTool(kind) {
   const envName = kind === 'ffmpeg' ? 'FFMPEG_PATH' : 'FFPROBE_PATH'
-  const envCandidate = candidateBinaryPath(process.env[`CUPRIC_${envName}`] || process.env[`NORTHFRAME_${envName}`] || process.env[envName])
+  const envCandidate = candidateBinaryPath(process.env[`NEWBRAND_${envName}`] || process.env[`NORTHFRAME_${envName}`] || process.env[envName])
   if (envCandidate) return envCandidate
   try {
     const moduleCandidate = kind === 'ffmpeg' ? require('ffmpeg-static') : require('ffprobe-static').path
@@ -90,7 +90,7 @@ let ffmpegPath = resolveMediaTool('ffmpeg')
 let ffprobePath = resolveMediaTool('ffprobe')
 
 const DEV_URL = process.env.ELECTRON_START_URL
-const APP_ID = 'app.cupric-ai.studio'
+const APP_ID = 'com.newbrand.app'
 const MAX_RENDER_DURATION_SEC = 180
 const DEFAULT_SILENCE_NOISE_DB = -35
 const DEFAULT_SILENCE_MIN_DURATION = 0.8
@@ -129,10 +129,10 @@ let rundownQueueRunning = false
 // (scripts/check-boot.mjs). Must run before anything reads userData — the
 // single-instance lock below is keyed on it, so a test never collides with a
 // running copy of the app.
-if (process.env.CUPRIC_USER_DATA_DIR) {
+if (process.env.NEWBRAND_USER_DATA_DIR) {
   try {
-    fs.mkdirSync(process.env.CUPRIC_USER_DATA_DIR, { recursive: true })
-    app.setPath('userData', process.env.CUPRIC_USER_DATA_DIR)
+    fs.mkdirSync(process.env.NEWBRAND_USER_DATA_DIR, { recursive: true })
+    app.setPath('userData', process.env.NEWBRAND_USER_DATA_DIR)
   } catch {}
 }
 
@@ -167,8 +167,8 @@ function stockService() {
 // the paid path useful without putting a shared secret in the app.
 function stockSettings() {
   const settings = readSettings()
-  if (!String(settings.stockProxyUrl || '').trim() && String(process.env.CUPRIC_STOCK_PROXY_URL || '').trim()) {
-    settings.stockProxyUrl = String(process.env.CUPRIC_STOCK_PROXY_URL).trim()
+  if (!String(settings.stockProxyUrl || '').trim() && String(process.env.NEWBRAND_STOCK_PROXY_URL || '').trim()) {
+    settings.stockProxyUrl = String(process.env.NEWBRAND_STOCK_PROXY_URL).trim()
   }
   return settings
 }
@@ -192,13 +192,13 @@ function logFile() {
 
 /**
  * File logging (0.10.1): electron-log writes main + renderer lines to
- * userData/logs/cupric.log (rotated at 5 MB). The dated JSON-lines files that
+ * userData/logs/newbrand.log (rotated at 5 MB). The dated JSON-lines files that
  * logLine has always written stay, because the diagnostic report reads them.
  */
-const VERBOSE_LOGGING = process.argv.includes('--enable-logging') || process.env.CUPRIC_VERBOSE_LOG === '1'
+const VERBOSE_LOGGING = process.argv.includes('--enable-logging') || process.env.NEWBRAND_VERBOSE_LOG === '1'
 if (elog) {
   try {
-    elog.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'logs', 'cupric.log')
+    elog.transports.file.resolvePathFn = () => path.join(app.getPath('userData'), 'logs', 'newbrand.log')
     elog.transports.file.maxSize = 5 * 1024 * 1024
     elog.transports.file.level = VERBOSE_LOGGING ? 'debug' : 'info'
     elog.transports.console.level = VERBOSE_LOGGING ? 'debug' : 'warn'
@@ -251,7 +251,7 @@ function appEntryUrl() {
 function showRendererCrashedScreen(win, details) {
   logLine('renderer-gone', details?.reason || 'renderer gone', details)
   const restartUrl = appEntryUrl()
-  const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Cupric AI recovered</title><style>body{margin:0;height:100vh;display:grid;place-items:center;background:#0B0B10;color:#F4F1EA;font-family:Inter,Segoe UI,Arial,sans-serif}.card{max-width:520px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:#15151B;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.35)}h1{font-size:20px;margin:0 0 8px}p{color:#9CA3AF;line-height:1.55}.btn{border:0;border-radius:12px;background:#C8F542;color:#10130A;font-weight:800;padding:10px 14px;cursor:pointer}.muted{font-size:12px;color:#6B7280}</style></head><body><main class="card"><h1>Renderer recovered</h1><p>Cupric AI's interface crashed, but your desktop process stayed alive and wrote a crash log. Reload the workspace to continue.</p><button class="btn" onclick="location.href=${JSON.stringify(restartUrl)}">Reload Cupric AI</button><p class="muted">Logs live in ${escapeHtml(userDataPath('logs'))}</p></main></body></html>`
+  const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>NewBrand recovered</title><style>body{margin:0;height:100vh;display:grid;place-items:center;background:#0B0B10;color:#F4F1EA;font-family:Inter,Segoe UI,Arial,sans-serif}.card{max-width:520px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:#15151B;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.35)}h1{font-size:20px;margin:0 0 8px}p{color:#9CA3AF;line-height:1.55}.btn{border:0;border-radius:12px;background:#C8F542;color:#10130A;font-weight:800;padding:10px 14px;cursor:pointer}.muted{font-size:12px;color:#6B7280}</style></head><body><main class="card"><h1>Renderer recovered</h1><p>NewBrand's interface crashed, but your desktop process stayed alive and wrote a crash log. Reload the workspace to continue.</p><button class="btn" onclick="location.href=${JSON.stringify(restartUrl)}">Reload NewBrand</button><p class="muted">Logs live in ${escapeHtml(userDataPath('logs'))}</p></main></body></html>`
   if (!win.isDestroyed()) win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`).catch(() => {})
 }
 
@@ -405,7 +405,7 @@ function opencodeConfigFiles() {
   addDesktopProfiles(path.join(process.env.LOCALAPPDATA || '', 'ai.opencode.desktop'))
   addDir(path.join(process.env.XDG_CONFIG_HOME || '', 'opencode'))
   addDir(path.join(process.env.XDG_DATA_HOME || '', 'opencode'))
-  // Project-local OpenCode config is useful when Cupric AI is launched from a workspace.
+  // Project-local OpenCode config is useful when NewBrand is launched from a workspace.
   files.push(path.join(process.cwd(), 'opencode.json'), path.join(process.cwd(), 'opencode.jsonc'))
   return uniqueExistingFiles(files)
 }
@@ -483,7 +483,7 @@ function discoverOpenCodeConfiguredModels() {
         label,
         baseUrl,
         model,
-        note: `Imported from OpenCode Desktop/config (${path.basename(file)}). API keys stay in OpenCode/env or Cupric settings.`,
+        note: `Imported from OpenCode Desktop/config (${path.basename(file)}). API keys stay in OpenCode/env or NewBrand settings.`,
         source: 'opencode-desktop',
       })
     }
@@ -762,12 +762,12 @@ function publicSettings() {
     updateChannel: settings.updateChannel || 'latest',
     hardwareEncoding: settings.hardwareEncoding === 'off' ? 'off' : 'auto',
     stock: {
-      proxyUrl: String(settings.stockProxyUrl || process.env.CUPRIC_STOCK_PROXY_URL || '').trim(),
+      proxyUrl: String(settings.stockProxyUrl || process.env.NEWBRAND_STOCK_PROXY_URL || '').trim(),
       pixabayConfigured: Boolean(settings.pixabayApiKey || process.env.PIXABAY_API_KEY),
       pexelsConfigured: Boolean(settings.pexelsApiKey || process.env.PEXELS_API_KEY),
       keylessAvailable: true,
       quota: { pixabay: '100 requests/min', pexels: '200 requests/hour', openverse: 'anonymous limits apply', picsum: 'placeholder service' },
-      proxyConfigured: Boolean(String(settings.stockProxyUrl || process.env.CUPRIC_STOCK_PROXY_URL || '').trim()),
+      proxyConfigured: Boolean(String(settings.stockProxyUrl || process.env.NEWBRAND_STOCK_PROXY_URL || '').trim()),
     },
   }
 }
@@ -908,7 +908,7 @@ ipcMain.handle('ai:testProvider', async (_event, payload = {}) => {
   const config = overrideKind && aiProviderConfig.KNOWN_KINDS.includes(overrideKind)
     ? aiProviderConfig.providerConfig({ ...settings, aiKind: overrideKind, ...(payload?.baseUrl ? { [`${overrideKind}BaseUrl`]: String(payload.baseUrl) } : {}), ...(payload?.model ? { [`${overrideKind}Model`]: String(payload.model) } : {}), ...(payload?.apiKey ? { [`${overrideKind === 'gemini' ? 'gemini' : overrideKind}ApiKey`]: String(payload.apiKey) } : {}) })
     : base
-  if (config.error) return { ok: false, code: config.error.code, message: config.error.message, fix: config.fix || null, label: config.label || 'Cupric AI' }
+  if (config.error) return { ok: false, code: config.error.code, message: config.error.message, fix: config.fix || null, label: config.label || 'NewBrand' }
   const started = Date.now()
   const result = await aiProviders.generate(config, {
     system: 'You are a connection test. Reply with the single word: ready',
@@ -1106,7 +1106,7 @@ ipcMain.handle('media:proxy', async (event, payload) => {
   const sourcePath = payload?.path
   const stat = proxies.validateSource(sourcePath)
   ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
-  if (!ffmpegPath) throw new Error('FFmpeg is unavailable, so proxies cannot be made. Set CUPRIC_FFMPEG_PATH or reinstall.')
+  if (!ffmpegPath) throw new Error('FFmpeg is unavailable, so proxies cannot be made. Set NEWBRAND_FFMPEG_PATH or reinstall.')
   const dir = userDataPath('proxies')
   ensureDir(dir)
   const outPath = path.join(dir, `${proxies.proxyKey(sourcePath, stat)}.mp4`)
@@ -1184,7 +1184,7 @@ ipcMain.handle('app:info', () => {
       electron: process.versions.electron,
       chrome: process.versions.chrome,
       node: process.versions.node,
-      updateFeedOverride: updateFeedOverride() ? 'CUPRIC_UPDATE_FEED' : null,
+      updateFeedOverride: updateFeedOverride() ? 'NEWBRAND_UPDATE_FEED' : null,
     }
   } catch (err) {
     const message = err?.message || String(err)
@@ -1241,7 +1241,7 @@ function tidyWarning(raw) {
     const model = text.match(/models\/([\w.-]+)|model[:\s]+([\w.-]*gemini[\w.-]*)/i)
     const name = model ? (model[1] || model[2]) : ''
     const lead = text.match(/^[^.:(]*?(?:unavailable|fell back|failed)[^.:(]*[.:]?/i)?.[0]?.replace(/[.:]$/, '') || 'Live AI was rate-limited'
-    text = `${lead}: ${name ? `${name} ` : 'the AI provider '}is out of free quota${daily ? ' for today' : ' for now'}. Cupric used the next available model or its built-in fallback.`
+    text = `${lead}: ${name ? `${name} ` : 'the AI provider '}is out of free quota${daily ? ' for today' : ' for now'}. NewBrand used the next available model or its built-in fallback.`
   }
   return text.length > 420 ? `${text.slice(0, 417).trimEnd()}…` : text
 }
@@ -1346,11 +1346,11 @@ function ensureAutomationActive(jobId, state) {
 }
 function fallbackRundownForJob(job) {
   return normalizeRundown({
-    title: String(job.brief || 'Cupric AI').slice(0, 48),
+    title: String(job.brief || 'NewBrand').slice(0, 48),
     durationSec: /\b(\d{1,3})\s*(?:s|sec|second)/i.test(job.brief || '') ? Number((job.brief || '').match(/\b(\d{1,3})\s*(?:s|sec|second)/i)?.[1]) : 12,
     fps: job.fps,
     size: job.aspect === '9:16' ? [1080, 1920] : job.aspect === '1:1' ? [1080, 1080] : [1920, 1080],
-    style: 'Cupric AI deterministic kinetic type, near-black canvas, lime accent, clean editorial motion',
+    style: 'NewBrand deterministic kinetic type, near-black canvas, lime accent, clean editorial motion',
   }, job.brief)
 }
 function candidateHtmlForRundown(rundown, variant = 0) {
@@ -1359,7 +1359,7 @@ function candidateHtmlForRundown(rundown, variant = 0) {
   const safeJson = JSON.stringify(rundown).replace(/</g, '\\u003c')
   const sourceManifest = {
     sources: [
-      { id: 'copy', type: 'text', description: 'Scene copy from the locked Cupric AI rundown' },
+      { id: 'copy', type: 'text', description: 'Scene copy from the locked NewBrand rundown' },
       { id: 'procedural-visuals', type: 'generated', description: 'Inline CSS/JS typography, gradients, grids, masks, counters, and SVG/CSS shapes' },
     ],
     sequence: (rundown.scenes || []).map((s, index) => ({ index: index + 1, from: s.from, to: s.to, type: s.type, copy: s.copy, motion: s.motion })),
@@ -1377,12 +1377,12 @@ html,body{margin:0;width:100%;height:100%;overflow:hidden;background:${palette.b
 #scene{position:relative;width:${width}px;height:${height}px;overflow:hidden;background:radial-gradient(circle at 18% 20%,${palette.accent}33,transparent 28%),radial-gradient(circle at 88% 82%,${palette.alt}2e,transparent 34%),linear-gradient(135deg,${palette.bg},#171820 58%,#0f1016);transform-origin:top left}
 .grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.055) 1px,transparent 1px);background-size:${Math.round(width/16)}px ${Math.round(height/12)}px;mask-image:linear-gradient(180deg,transparent,black 22%,black 78%,transparent);opacity:.38}
 .brand{position:absolute;left:7%;top:9%;font-weight:900;letter-spacing:.22em;color:${palette.accent};font-size:${Math.max(22, Math.round(width*.026))}px}.badge{position:absolute;right:7%;top:9%;border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:.7em 1em;color:${palette.fg};font-weight:800;font-size:${Math.max(16, Math.round(width*.014))}px;background:rgba(255,255,255,.06)}
-.copy{position:absolute;left:7%;right:8%;top:32%;font-weight:950;line-height:.92;letter-spacing:-.06em;text-wrap:balance;font-size:${Math.max(48, Math.round(width*.075))}px}.motion{position:absolute;left:7%;right:19%;top:66%;color:rgba(244,241,234,.72);font-size:${Math.max(22, Math.round(width*.026))}px;line-height:1.25}.bar{position:absolute;left:7%;bottom:9%;height:${Math.max(8, Math.round(height*.01))}px;border-radius:999px;background:${palette.accent};width:0}.orb{position:absolute;width:${Math.round(Math.min(width,height)*.28)}px;height:${Math.round(Math.min(width,height)*.28)}px;border-radius:50%;filter:blur(4px);background:${palette.accent};opacity:.16;right:6%;bottom:16%}</style></head><body><div id="scene"><div class="grid"></div><div class="orb"></div><div class="brand">CUPRIC AI</div><div class="badge" id="badge"></div><div class="copy" id="copy"></div><div class="motion" id="motion"></div><div class="bar" id="bar"></div></div><script>
-const rundown=${safeJson}; const sourceManifest=${safeManifest}; window.__cupricSourceManifest=sourceManifest; const variant=${variant}; const duration=Math.max(.1, Number(rundown.durationSec)||12);
+.copy{position:absolute;left:7%;right:8%;top:32%;font-weight:950;line-height:.92;letter-spacing:-.06em;text-wrap:balance;font-size:${Math.max(48, Math.round(width*.075))}px}.motion{position:absolute;left:7%;right:19%;top:66%;color:rgba(244,241,234,.72);font-size:${Math.max(22, Math.round(width*.026))}px;line-height:1.25}.bar{position:absolute;left:7%;bottom:9%;height:${Math.max(8, Math.round(height*.01))}px;border-radius:999px;background:${palette.accent};width:0}.orb{position:absolute;width:${Math.round(Math.min(width,height)*.28)}px;height:${Math.round(Math.min(width,height)*.28)}px;border-radius:50%;filter:blur(4px);background:${palette.accent};opacity:.16;right:6%;bottom:16%}</style></head><body><div id="scene"><div class="grid"></div><div class="orb"></div><div class="brand">NEWBRAND</div><div class="badge" id="badge"></div><div class="copy" id="copy"></div><div class="motion" id="motion"></div><div class="bar" id="bar"></div></div><script>
+const rundown=${safeJson}; const sourceManifest=${safeManifest}; window.__newbrandSourceManifest=sourceManifest; const variant=${variant}; const duration=Math.max(.1, Number(rundown.durationSec)||12);
 const copy=document.getElementById('copy'), motion=document.getElementById('motion'), bar=document.getElementById('bar'), badge=document.getElementById('badge'), orb=document.querySelector('.orb'), grid=document.querySelector('.grid');
 function clamp(n,a,b){return Math.max(a,Math.min(b,n))} function ease(x){x=clamp(x,0,1);return 1-Math.pow(1-x,3)}
 function sceneAt(t){return (rundown.scenes||[]).find(s=>t>=Number(s.from||0)&&t<Number(s.to||duration)) || (rundown.scenes||[])[(rundown.scenes||[]).length-1] || {from:0,to:duration,type:'hook',copy:rundown.title,motion:rundown.style}}
-window.__seek=function(t){t=clamp(Number(t)||0,0,duration); const s=sceneAt(t); const from=Number(s.from||0), to=Math.max(from+.1,Number(s.to||duration)); const local=clamp((t-from)/(to-from),0,1); const e=ease(local*2.4); copy.textContent=String(s.copy||rundown.title||'Cupric AI').toUpperCase(); motion.textContent=String(s.motion||rundown.style||'deterministic motion'); badge.textContent=String(s.type||'scene')+' · '+t.toFixed(1)+'s'; copy.style.opacity=e; copy.style.transform='translateY('+((1-e)*70)+'px) scale('+(0.96+e*.04)+')'; motion.style.opacity=clamp((local-.12)*2.2,0,1); motion.style.transform='translateX('+((1-e)*(variant%2?-40:40))+'px)'; bar.style.width=(7+86*(t/duration))+'%'; orb.style.transform='translate('+(Math.sin(t*.9+variant)*60)+'px,'+(Math.cos(t*.7+variant)*50)+'px) scale('+(1+Math.sin(t*1.1)*.08)+')'; grid.style.transform='translateY('+(-t*18)+'px)';}; window.__seek(0);
+window.__seek=function(t){t=clamp(Number(t)||0,0,duration); const s=sceneAt(t); const from=Number(s.from||0), to=Math.max(from+.1,Number(s.to||duration)); const local=clamp((t-from)/(to-from),0,1); const e=ease(local*2.4); copy.textContent=String(s.copy||rundown.title||'NewBrand').toUpperCase(); motion.textContent=String(s.motion||rundown.style||'deterministic motion'); badge.textContent=String(s.type||'scene')+' · '+t.toFixed(1)+'s'; copy.style.opacity=e; copy.style.transform='translateY('+((1-e)*70)+'px) scale('+(0.96+e*.04)+')'; motion.style.opacity=clamp((local-.12)*2.2,0,1); motion.style.transform='translateX('+((1-e)*(variant%2?-40:40))+'px)'; bar.style.width=(7+86*(t/duration))+'%'; orb.style.transform='translate('+(Math.sin(t*.9+variant)*60)+'px,'+(Math.cos(t*.7+variant)*50)+'px) scale('+(1+Math.sin(t*1.1)*.08)+')'; grid.style.transform='translateY('+(-t*18)+'px)';}; window.__seek(0);
 </script></body></html>`
 }
 /**
@@ -1420,7 +1420,7 @@ function validateCandidateHtml(html, rundown) {
     { id: 'html-doc', ok: /<html[\s>]/i.test(text) && /<\/html>/i.test(text), fatal: true, points: 10, why: 'complete HTML document' },
     { id: 'scene-root', ok: /id=["']scene["']/.test(text), fatal: true, points: 15, why: 'has the #scene root the renderer captures' },
     { id: 'seek', ok: /window\.__seek\s*=/.test(text), fatal: true, points: 25, why: 'defines window.__seek(t)' },
-    { id: 'manifest', ok: /__cupricSourceManifest/.test(text), fatal: false, points: 8, why: 'declares its source manifest' },
+    { id: 'manifest', ok: /__newbrandSourceManifest/.test(text), fatal: false, points: 8, why: 'declares its source manifest' },
     { id: 'initial-frame', ok: /__seek\s*\(\s*0\s*\)/.test(text), fatal: false, points: 8, why: 'paints a valid frame at t=0' },
     { id: 'self-contained', ok: !/<script[^>]+src=|<link[^>]+href=["']https?:/i.test(text), fatal: true, points: 12, why: 'no remote scripts or stylesheets' },
     { id: 'no-wall-clock', ok: !/requestAnimationFrame|setInterval|setTimeout|Date\.now\(\)|performance\.now\(\)/.test(text), fatal: false, points: 12, why: 'frames depend only on t, not on wall-clock time' },
@@ -1497,7 +1497,7 @@ async function critiqueAndRepair(html, verdict, rundown, label) {
     if (bestVerdict.valid && !bestVerdict.failures.length) break
 
     const critique = [
-      'You wrote this single-file motion-graphics HTML for Cupric AI. It did not pass the renderer contract.',
+      'You wrote this single-file motion-graphics HTML for NewBrand. It did not pass the renderer contract.',
       '',
       'FAILED CHECKS — every one of these must be fixed:',
       ...bestVerdict.failures.map((f) => `- ${f}`),
@@ -1557,13 +1557,13 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
   const resources = automationResourceContext(job?.brief, rundown)
   const basePrompt = rundown.arenaPrompt || arenaPromptOf(rundown)
   const prompt = resources.prompt
-    ? `${basePrompt}\n\nCOMPOSE WITH CUPRIC'S OWN RESOURCE LIBRARY:\n${resources.prompt}\n\nFollow the scene-by-scene direction: give each scene the motion its beat calls for and layer its background/main/accent resources, re-implemented in inline HTML/CSS/SVG.`
+    ? `${basePrompt}\n\nCOMPOSE WITH NEWBRAND'S OWN RESOURCE LIBRARY:\n${resources.prompt}\n\nFollow the scene-by-scene direction: give each scene the motion its beat calls for and layer its background/main/accent resources, re-implemented in inline HTML/CSS/SVG.`
     : basePrompt
 
   const candidates = []
   const attempts = []
   let fallbackUsed = false
-  // With no model at all, don't sit on a spinner: Cupric AI's built-in
+  // With no model at all, don't sit on a spinner: NewBrand's built-in
   // deterministic candidates (below) are the honest answer straight away.
   const liveModel = aiSettings().provider !== 'template' || Boolean(geminiApiKey()) || hasOpenCodeAccess()
   const progress = (done, note) => {
@@ -1632,11 +1632,11 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
     clearTimeout(timer)
     closed = true
     if (outcome === 'timeout') {
-      warnings.push(`The AI model took longer than ${Math.round(CANDIDATE_DEADLINE_MS / 1000)}s, so Cupric kept the ${candidates.length} candidate(s) that finished in time.`)
+      warnings.push(`The AI model took longer than ${Math.round(CANDIDATE_DEADLINE_MS / 1000)}s, so NewBrand kept the ${candidates.length} candidate(s) that finished in time.`)
       attempts.push({ generated: false, error: 'deadline reached' })
     }
   } else {
-    attempts.push({ generated: false, error: 'no AI model configured, so Cupric AI built-in candidates were used' })
+    attempts.push({ generated: false, error: 'no AI model configured, so NewBrand built-in candidates were used' })
   }
 
   if (!candidates.length) {
@@ -1644,7 +1644,7 @@ async function writeAutomationCandidates(root, rundown, job, warnings) {
     fallbackUsed = true
     const reason = attempts.map((a) => a.error || (a.failures || []).join('; ')).filter(Boolean)[0] || 'unknown model error'
     warnings.push(
-      `No AI candidate passed the render contract (${reason}). Cupric fell back to its built-in deterministic template — this render was NOT chosen by a model battle.`,
+      `No AI candidate passed the render contract (${reason}). NewBrand fell back to its built-in deterministic template — this render was NOT chosen by a model battle.`,
     )
     for (let i = 0; i < CANDIDATE_COUNT; i += 1) {
       const file = path.join(root, `candidate-${i + 1}.html`)
@@ -1743,7 +1743,7 @@ async function openArenaBuilderForPrompt(prompt, extra = {}) {
  */
 async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, warnings, state, plan = null) {
   ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
-  if (!ffmpegPath) throw new Error('FFmpeg is unavailable in this build, so Cupric AI cannot render MP4. Set CUPRIC_FFMPEG_PATH or install a build with ffmpeg-static unpacked.')
+  if (!ffmpegPath) throw new Error('FFmpeg is unavailable in this build, so NewBrand cannot render MP4. Set NEWBRAND_FFMPEG_PATH or install a build with ffmpeg-static unpacked.')
   const outDir = path.join(userDataPath('renders'), job.id)
   const workDir = path.join(outDir, 'work')
   fs.rmSync(workDir, { recursive: true, force: true })
@@ -1800,7 +1800,7 @@ async function renderAutomationMp4(job, root, rundown, winnerPath, footageMeta, 
     const delivered = segments.reduce((sum, segment) => sum + (Number(segment.duration) || 0), 0)
     job = patchAutomation(job.id, { renderedSegments: segments.length, renderedDurationSec: Math.round(delivered * 100) / 100 }) || job
   }
-  const outputPath = path.join(outDir, `${safeFileName(rundown.title, 'cupric-ai')}.mp4`)
+  const outputPath = path.join(outDir, `${safeFileName(rundown.title, 'newbrand')}.mp4`)
   await concatSegments(state, segments, outputPath, { workDir })
   fs.rmSync(workDir, { recursive: true, force: true })
   if (job.outputFolder) {
@@ -1881,15 +1881,15 @@ function generationGuideFor(job, rundown) {
   return {
     renderSpec: { aspect: job.aspect, fps: job.fps, quality: job.quality, durationSec: rundown.durationSec, size: rundown.size },
     sources: [
-      { id: 'rundown-copy', type: 'text', description: 'Locked Cupric AI scene copy and timing' },
+      { id: 'rundown-copy', type: 'text', description: 'Locked NewBrand scene copy and timing' },
       { id: 'arena-html', type: 'generated-motion-html', description: 'Single-file HTML with inline CSS/JS and deterministic window.__seek(t)' },
-      { id: 'opus55-playbook', type: 'craft-guidance', description: 'Attributed case-study catalogue patterns translated into Cupric-native timing, editability, iteration and QA rules; not model training' },
+      { id: 'opus55-playbook', type: 'craft-guidance', description: 'Attributed case-study catalogue patterns translated into NewBrand-native timing, editability, iteration and QA rules; not model training' },
       ...(job.footageMeta ? [{ id: 'footage', type: 'video', description: 'User-selected footage folder clip analyzed with FFprobe/FFmpeg silence detection' }] : []),
     ],
     sequence: (rundown.scenes || []).map((s, index) => ({ index: index + 1, from: s.from, to: s.to, type: s.type, copy: s.copy, motion: s.motion })),
     generationSteps: [
       'Generate/lock the creative rundown from the brief.',
-      'Ask the configured model (Gemini or OpenCode) for several independent single-file HTML motion pieces, each given a different creative direction and the matching entries from the Cupric resource catalogue.',
+      'Ask the configured model (Gemini or OpenCode) for several independent single-file HTML motion pieces, each given a different creative direction and the matching entries from the NewBrand resource catalogue.',
       'Validate every candidate against the renderer contract (#scene root, deterministic window.__seek(t), self-contained, scene copy present) and score the survivors.',
       'Optionally ingest footage, detect silences, and add captions/crop metadata.',
       'Render HTML frames and footage segments with FFmpeg, then concatenate into the final MP4.',
@@ -1913,7 +1913,7 @@ function writeAutomationReview(job, root, rundown, rawWarnings) {
   const planMd = job.timelinePlan
     ? `## Edit plan\n\nLocked rundown ${job.rundownLock?.hash || 'unhashed'} (${job.rundownLock?.sceneCount ?? '?'} scenes). ${job.timelinePlan.segments.length} planned segments totalling ${job.timelinePlan.totalDurationSec}s; delivered ${job.renderedSegments ?? '?'} segments totalling ${job.renderedDurationSec ?? '?'}s.\n\n${job.timelinePlan.segments.map((segment, index) => `${index + 1}. ${segment.kind} · ${segment.durationSec}s · ${segment.source} · ${segment.purpose}`).join('\n')}`
     : '## Edit plan\n\n- Not available.'
-  fs.writeFileSync(path.join(root, 'review-report.md'), `# Cupric AI review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath || 'Not rendered yet'}\n\n${planMd}\n\n## Sources\n${sourcesMd}\n\n## Generation sequence\n${sequenceMd}\n\n## How the video is generated\n${generationGuide.generationSteps.map(step => `- ${step}`).join('\n')}\n\n${qaMd}\n\nWarnings:\n${warnings.length ? warnings.map(w => `- ${w}`).join('\n') : '- None'}\n`, 'utf8')
+  fs.writeFileSync(path.join(root, 'review-report.md'), `# NewBrand review report\n\n## Brief\n${job.brief}\n\n## Rundown\n${rundown.title}\n\nVoting mode: ${job.votingMode}\n\nOutput: ${job.outputPath || 'Not rendered yet'}\n\n${planMd}\n\n## Sources\n${sourcesMd}\n\n## Generation sequence\n${sequenceMd}\n\n## How the video is generated\n${generationGuide.generationSteps.map(step => `- ${step}`).join('\n')}\n\n${qaMd}\n\nWarnings:\n${warnings.length ? warnings.map(w => `- ${w}`).join('\n') : '- None'}\n`, 'utf8')
   return reviewReportPath
 }
 async function runAutomationPipeline(jobId) {
@@ -2000,7 +2000,7 @@ async function runAutomationPipeline(jobId) {
       sendAutomation('automation:progress', job)
     }
     if (isManualArenaGateBlocked(job)) {
-      const message = 'Manual Arena review gate: Cupric opened arena.ai/code in your browser and copied the Arena prompt. Paste it there, run the battle/build, vote yourself, download the winning ZIP, then approve this gate to continue. Public voting is never automated.'
+      const message = 'Manual Arena review gate: NewBrand opened arena.ai/code in your browser and copied the Arena prompt. Paste it there, run the battle/build, vote yourself, download the winning ZIP, then approve this gate to continue. Public voting is never automated.'
       if (!job.arenaOpenedAt) {
         try {
           await openArenaBuilderForPrompt(rundown.arenaPrompt || arenaPromptOf(rundown), { jobId: job.id, source: 'automation' })
@@ -2080,7 +2080,7 @@ async function runAutomationPipeline(jobId) {
       if (!renderEvaluation) {
         renderEvaluation = await evaluateAutomationRender(job.outputPath, job, rundown, timelinePlan)
         if (!renderEvaluation.valid && renderEvaluation.retryable) {
-          warnings.push(`The delivered MP4 failed the mechanical render gate (${renderEvaluation.failures.join('; ')}); Cupric performed one bounded re-render before reporting the result.`)
+          warnings.push(`The delivered MP4 failed the mechanical render gate (${renderEvaluation.failures.join('; ')}); NewBrand performed one bounded re-render before reporting the result.`)
           const retryOutputPath = await renderAutomationMp4(job, root, rundown, job.winnerPath, footageMeta, warnings, state, timelinePlan)
           job = patchAutomation(job.id, { outputPath: retryOutputPath }) || job
           renderEvaluation = await evaluateAutomationRender(retryOutputPath, job, rundown, timelinePlan)
@@ -2234,7 +2234,7 @@ function sceneSequenceLines(rundown) {
 }
 
 function arenaPromptOf(rundown) {
-  return `Build a SINGLE FILE index.html motion-graphics piece for Cupric AI to capture as video.
+  return `Build a SINGLE FILE index.html motion-graphics piece for NewBrand to capture as video.
 
 HARD CONSTRAINTS:
 - Return only the final index.html code.
@@ -2249,12 +2249,12 @@ SOURCE / ASSET PLAN:
 - Visual sources are generated inside this HTML: typography, CSS/SVG shapes, gradients, grids, counters, masks, and light texture.
 - Text source is the scene copy below; keep spelling exact unless making tiny line-break changes for layout.
 - If you need icons or marks, draw them with inline SVG/CSS only.
-- Include window.__cupricSourceManifest = { sources, sequence, renderSpec } so Cupric AI can inspect how the video was generated.
+- Include window.__newbrandSourceManifest = { sources, sequence, renderSpec } so NewBrand can inspect how the video was generated.
 
 STYLE:
 ${rundown.style}
 
-OPUS CASE-STUDY CRAFT POLICY — apply these production heuristics to the scene while obeying the HTML-only contract above. This is a local Cupric playbook, not model training and not evidence about the original case authors:
+OPUS CASE-STUDY CRAFT POLICY — apply these production heuristics to the scene while obeying the HTML-only contract above. This is a local NewBrand playbook, not model training and not evidence about the original case authors:
 ${ADVANCED_VIDEO_PLAYBOOK_PROMPT}
 
 SEQUENCE / TIMELINE:
@@ -2289,15 +2289,15 @@ function normalizeRundown(candidate, briefText) {
         from: Math.round(clampNumber(scene?.from, 0, durationSec, index === 0 ? 0 : (durationSec / 3) * index) * 10) / 10,
         to: Math.round(clampNumber(scene?.to, 0.1, durationSec, durationSec) * 10) / 10,
         type: String(scene?.type || (index === 0 ? 'hook' : 'beat')).slice(0, 40),
-        copy: String(scene?.copy || briefText || 'Cupric AI').slice(0, 180),
+        copy: String(scene?.copy || briefText || 'NewBrand').slice(0, 180),
         motion: String(scene?.motion || 'ease-out type reveal').slice(0, 220),
       }))
     : []
   const safeScenes = scenes.length
     ? scenes.map((s) => ({ ...s, to: Math.max(s.from + 0.1, s.to) }))
-    : [{ id: uid('scene'), from: 0, to: durationSec, type: 'hook', copy: briefText || 'Cupric AI', motion: 'bold type reveal, subtle parallax' }]
+    : [{ id: uid('scene'), from: 0, to: durationSec, type: 'hook', copy: briefText || 'NewBrand', motion: 'bold type reveal, subtle parallax' }]
   const rundown = {
-    title: String(candidate?.title || `${String(briefText || 'Cupric AI').slice(0, 48)} — ${durationSec}s motion piece`),
+    title: String(candidate?.title || `${String(briefText || 'NewBrand').slice(0, 48)} — ${durationSec}s motion piece`),
     durationSec,
     fps,
     size,
@@ -2310,7 +2310,7 @@ function normalizeRundown(candidate, briefText) {
 }
 
 function geminiRundownPrompt(prompt, history, rundownContext) {
-  return `You are Cupric AI's creative director. Return STRICT JSON only, no markdown, matching exactly this TypeScript shape:
+  return `You are NewBrand's creative director. Return STRICT JSON only, no markdown, matching exactly this TypeScript shape:
 {"title":string,"durationSec":number,"fps":30|60,"size":[number,number],"style":string,"scenes":[{"id":string,"from":number,"to":number,"type":string,"copy":string,"motion":string}],"arenaPrompt":string}
 
 Rules:
@@ -2344,8 +2344,8 @@ async function listOpenCodeModels(payload = {}) {
   const headers = {}
   if (apiKey) headers.authorization = `Bearer ${apiKey}`
   if (/openrouter\.ai/i.test(baseUrl)) {
-    headers['HTTP-Referer'] = 'https://cupric.ai'
-    headers['X-Title'] = 'Cupric AI'
+    headers['HTTP-Referer'] = 'https://newbrand.ai'
+    headers['X-Title'] = 'NewBrand'
   }
   const result = await fetch(`${baseUrl.replace(/\/$/, '')}/models`, { headers })
   if (!result.ok) throw new Error(`Model list failed (${result.status}): ${(await result.text()).slice(0, 500)}`)
@@ -2382,8 +2382,8 @@ function classifyGeminiError(err) {
   const message = String(err?.message || err || '')
   if (/401|403|api key|unauthorized|permission denied|invalid argument/i.test(message)) return { category: 'wrong-key', message: 'Gemini rejected this key. Check that it is a Google AI Studio key with Generative Language API access.' }
   if (/429|quota|resource_exhausted|rate.?limit/i.test(message)) return { category: 'quota', message: 'The key is valid, but this Gemini model is out of quota for now.' }
-  if (/503|overload|high demand|unavailable/i.test(message)) return { category: 'high-demand', message: 'Gemini is temporarily at high demand. Cupric will retry, then use the next provider.' }
-  if (/404|not found|deprecated|no longer available/i.test(message)) return { category: 'model-missing', message: 'That Gemini model is no longer available. Cupric will use gemini-2.5-flash.' }
+  if (/503|overload|high demand|unavailable/i.test(message)) return { category: 'high-demand', message: 'Gemini is temporarily at high demand. NewBrand will retry, then use the next provider.' }
+  if (/404|not found|deprecated|no longer available/i.test(message)) return { category: 'model-missing', message: 'That Gemini model is no longer available. NewBrand will use gemini-2.5-flash.' }
   return { category: 'network', message: message.slice(0, 360) || 'Gemini could not be reached.' }
 }
 
@@ -2435,7 +2435,7 @@ ipcMain.handle('ai:testConnection', async (_event, payload = {}) => {
 /**
  * Why a fetch failed, in words. Node's fetch throws a bare "fetch failed" and
  * hides ECONNREFUSED / ENOTFOUND in `cause`, which is why a stopped local
- * OpenCode server used to be reported as "Cupric could not reach the network".
+ * OpenCode server used to be reported as "NewBrand could not reach the network".
  */
 async function fetchOrExplain(url, init) {
   try {
@@ -2465,8 +2465,8 @@ async function callOpenCode(messages, options = {}) {
   const url = `${baseUrl}/chat/completions`
   const headers = { 'content-type': 'application/json' }
   if (/openrouter\.ai/i.test(cfg.openCodeBaseUrl)) {
-    headers['HTTP-Referer'] = 'https://cupric.ai'
-    headers['X-Title'] = 'Cupric AI'
+    headers['HTTP-Referer'] = 'https://newbrand.ai'
+    headers['X-Title'] = 'NewBrand'
   }
   if (apiKey) headers.authorization = `Bearer ${apiKey}`
   const body = {
@@ -3000,7 +3000,7 @@ async function generateRundown(prompt, history, context) {
     return memory
   }
   const reply = await completeWithFallback({
-    system: 'You are Cupric AI creative director. Return STRICT JSON only, no markdown.',
+    system: 'You are NewBrand creative director. Return STRICT JSON only, no markdown.',
     user: geminiRundownPrompt(prompt, history, context),
     json: true,
     temperature: 0.6,
@@ -3017,7 +3017,7 @@ async function generateRundown(prompt, history, context) {
 }
 
 async function generateStudioEditPlan(instruction, studioContext) {
-  const schemaPrompt = `${ADVANCED_VIDEO_PLAYBOOK_PROMPT}\nYou are the edit-planning agent inside Cupric AI Studio — a senior motion designer and editor. Return STRICT JSON only.
+  const schemaPrompt = `${ADVANCED_VIDEO_PLAYBOOK_PROMPT}\nYou are the edit-planning agent inside NewBrand Studio — a senior motion designer and editor. Return STRICT JSON only.
 The user instruction must become a batch of allowlisted, non-destructive edit operations. Never invent clip IDs.
 
 OUTPUT:
@@ -3025,7 +3025,7 @@ OUTPUT:
 
 OPERATIONS:
 - {"type":"applyMotion","clipId":string,"motion":{"entrance"?:E,"emphasis"?:M,"exit"?:X,"camera"?:C,"intensity"?:number}}
-  PREFERRED way to animate. Cupric's motion engine writes the keyframes with correct timing for the clip length,
+  PREFERRED way to animate. NewBrand's motion engine writes the keyframes with correct timing for the clip length,
   relative to the clip's resting position/size, with professional eases. intensity 0.5 subtle · 1 standard · 1.5 punchy.
   E entrance: fade-in, rise-in, drop-in, slide-in-left, slide-in-right, scale-pop, zoom-in, spin-in, whip-in, blur-focus
   M while on screen: pulse, heartbeat, shake, wiggle, float, breathe
@@ -3038,7 +3038,7 @@ OPERATIONS:
   Also allowed: tiltX/turnY (-89..89 degrees, 3D on ANY clip), perspective (200..8000), and for text emphasisColor, boxColor, accentColor ("#rrggbb"), textGlow (0..1).
   Fonts (video-grade): Geist Variable, Inter Variable, Montserrat Variable (bold captions), Poppins, Outfit Variable, Manrope Variable, DM Sans Variable, Space Grotesk Variable, Bebas Neue / Anton (condensed hype titles, uppercase), Instrument Serif / Playfair Display Variable (italic emphasis), JetBrains Mono Variable (code/stats).
   Also any family in STUDIO CONTEXT.fonts (source "yours" = fonts the user added, e.g. Satoshi / Clash Display from Fontshare — prefer them when they fit the mood). Pair ONE headline/caption family with ONE emphasis family (emphasisFont); never use more than two families in a video. Pick colours from the brand kit and in-between tints; keep text contrast >= 4.5:1 on its background.
-  Fontshare fonts NOT in STUDIO CONTEXT.fonts cannot be used: say which one would suit and that it is free at fontshare.com (download and drop the zip into Cupric).
+  Fontshare fonts NOT in STUDIO CONTEXT.fonts cannot be used: say which one would suit and that it is free at fontshare.com (download and drop the zip into NewBrand).
   RICH CAPTIONS inside text: *word* = serif italic emphasis, ==words== = colour highlight box, {words} = accent colour, ^30^ = big number, newline = stacked lines. Emphasise 1–2 words per caption, never whole sentences.
   Text animations (content-level): none, fade-up, pop, typewriter, word-reveal, shimmer, slide-left, glass-rise, liquid-wave.
   Transitions: none, fade, wipe-left, zoom-in, blur, iris, push-up, glass-wipe, liquid-dissolve, lens-sweep.
@@ -3075,7 +3075,7 @@ OPERATIONS:
 - {"type":"addTestimonialGrid","count":1..4,"startSec":number}  (EMPTY placeholders — never write testimonials)
 - {"type":"phoneDesign","clipId":"...","design":"product-launch"|"hero-product"|"app-scroll"|"notification"|"social-post"|"minimal"|"iphone-duo"}  (animated phone or foldable duo mockup; copy stays placeholder for the user to edit)
 - {"type":"addCaptions","transcript":string,"startSec":number,"durationSec":number}  (only the user's own words)
-  Places a real animated UI component (buttons, toggles, counters, cards, loaders, charts…). Cupric plays the actual component,
+  Places a real animated UI component (buttons, toggles, counters, cards, loaders, charts…). NewBrand plays the actual component,
   acts it out (hover, clicks) and records its genuine animation into an editable overlay clip. slug MUST be one of
   STUDIO CONTEXT.components[].slug. Use one when the user asks for a UI element, a product/app demo moment, or a named component.
   fc-* slugs are framecn video components: captions (karaoke, neon, editorial emphasis), kinetic typography, transitions, full scenes (browser flow, dashboard populate, device assemble) and WebGL shader backgrounds. Always pass props with the user's real words and brand colours instead of leaving demo text.
@@ -3125,7 +3125,7 @@ ${JSON.stringify(studioContext)}
 USER INSTRUCTION:
 ${instruction}`
   const reply = await completeWithFallback({
-    system: 'You are the senior motion designer and editor inside Cupric AI Studio. Return only one valid JSON object of edit operations.',
+    system: 'You are the senior motion designer and editor inside NewBrand Studio. Return only one valid JSON object of edit operations.',
     user: schemaPrompt,
     json: true,
     temperature: 0.25,
@@ -3149,7 +3149,7 @@ ipcMain.handle('agent:generateAnimation', async (_event, payload = {}) => {
     ? `\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED. Fix exactly these problems and return the whole corrected JSON:\n${String(payload.previous.problems || '').slice(0, 1500)}\nPREVIOUS CODE:\n${String(payload.previous.code || '').slice(0, 15_500)}`
     : ''
   const reply = await completeWithFallback({
-    system: 'You write small, original, deterministic animation components for Cupric AI Studio. Return ONLY one JSON object: {"name","kind","durationSec","ease","props","code"}. The code is one plain JavaScript function (no JSX, no TypeScript types) exactly like the examples. Write project-original code; never copy third-party source.',
+    system: 'You write small, original, deterministic animation components for NewBrand Studio. Return ONLY one JSON object: {"name","kind","durationSec","ease","props","code"}. The code is one plain JavaScript function (no JSX, no TypeScript types) exactly like the examples. Write project-original code; never copy third-party source.',
     user: `RULES (every one is enforced; violations are rejected):\n${rules}\n\nEXAMPLES (fewShots):\n${fewShots}\n\nREQUEST: ${instruction}\nLength: ${durationSec}s (t goes 0→1 over this length).${previous}`,
     json: true,
     temperature: 0.2,
@@ -3183,7 +3183,7 @@ async function liveAiChat(text, ctx, extra = {}) {
   const history = Array.isArray(extra.history) ? extra.history.slice(-8).map((h) => ({ role: h?.role === 'ai' ? 'ai' : 'user', text: String(h?.text || '').slice(0, 4000) })) : []
   try {
     const reply = await completeWithFallback({
-      system: "You are Cupric AI's desktop creative copilot: a senior video editor and motion designer. Be concise, practical and specific. Help with video creation, keyframe animation, typography, transitions, rendering, resources, prompts and edits. When images are attached, look at them carefully and refer to what is actually in them.",
+      system: "You are NewBrand's desktop creative copilot: a senior video editor and motion designer. Be concise, practical and specific. Help with video creation, keyframe animation, typography, transitions, rendering, resources, prompts and edits. When images are attached, look at them carefully and refer to what is actually in them.",
       user: `Context: ${JSON.stringify(ctx || {})}\nUser: ${text}`,
       images,
       history,
@@ -3232,8 +3232,8 @@ async function handleGeminiAsk(payload) {
     queued: shouldPolish,
     requestId,
     text: shouldPolish
-      ? `Cupric AI drafted this rundown instantly. It's asking ${providerLabel} to refine it in the background, and the timeline is usable now.`
-      : 'Cupric AI drafted this rundown offline. The timeline is fully editable now. Add an OpenAI, Anthropic or Gemini key in Settings (or start Ollama / LM Studio) to refine it with a live model.',
+      ? `NewBrand drafted this rundown instantly. It's asking ${providerLabel} to refine it in the background, and the timeline is usable now.`
+      : 'NewBrand drafted this rundown offline. The timeline is fully editable now. Add an OpenAI, Anthropic or Gemini key in Settings (or start Ollama / LM Studio) to refine it with a live model.',
     rundownPatch: instant,
     }
   } catch (err) {
@@ -3242,7 +3242,7 @@ async function handleGeminiAsk(payload) {
     const aspect = context.aspect === '16:9' || context.aspect === '1:1' ? context.aspect : '9:16'
     const rundownPatch = fallbackRundownForJob({ brief: String(payload?.prompt || ''), aspect, fps: context.fps === 60 ? 60 : 30 })
     logLine('interactive-rundown-fallback', fallbackReason, { provider: configuredProvider().kind })
-    return { source: 'local', fallbackReason: 'Live AI was unavailable; the offline template is ready.', text: 'Live AI was unavailable, so Cupric built an editable offline template instead.', rundownPatch }
+    return { source: 'local', fallbackReason: 'Live AI was unavailable; the offline template is ready.', text: 'Live AI was unavailable, so NewBrand built an editable offline template instead.', rundownPatch }
   }
 }
 ipcMain.handle('gemini:ask', (_event, payload) => handleGeminiAsk(payload))
@@ -3444,7 +3444,7 @@ ipcMain.handle('arena:import', async (_event, payload) => {
 ipcMain.handle('arena:previewPath', async (_event, localPath) => {
   if (!localPath) throw new Error('No preview path provided')
   const root = userDataPath('projects')
-  if (!isSubPath(localPath, root)) throw new Error('Preview path is outside Cupric AI project data')
+  if (!isSubPath(localPath, root)) throw new Error('Preview path is outside NewBrand project data')
   return pathToFileURL(localPath).toString()
 })
 
@@ -3452,7 +3452,7 @@ ipcMain.handle('arena:previewPath', async (_event, localPath) => {
  * Read a generated HTML file back as text, so the Studio can take it apart
  * into editable clips.
  *
- * Same containment rule as the preview path — only files inside Cupric's own
+ * Same containment rule as the preview path — only files inside NewBrand's own
  * project data — and a size cap, because this is parsed in the renderer.
  */
 /**
@@ -3479,7 +3479,7 @@ ipcMain.handle('capture:rect', async (event, rect) => {
 ipcMain.handle('arena:readHtml', async (_event, localPath) => {
   if (!localPath) throw new Error('No file path provided')
   const root = userDataPath('projects')
-  if (!isSubPath(localPath, root)) throw new Error('That file is outside Cupric AI project data')
+  if (!isSubPath(localPath, root)) throw new Error('That file is outside NewBrand project data')
   const stat = fs.statSync(localPath)
   const MAX_BYTES = 8 * 1024 * 1024
   if (stat.size > MAX_BYTES) throw new Error('That file is larger than 8 MB, which is too big to be a single-file scene')
@@ -3519,7 +3519,7 @@ function mediaToolStatus() {
 function assertMediaTools() {
   const status = mediaToolStatus()
   if (!status.ready) {
-    throw new Error('FFmpeg/FFprobe binaries are unavailable in this build. Run a clean install so ffmpeg-static and ffprobe-static can download their native binaries, or set CUPRIC_FFMPEG_PATH and CUPRIC_FFPROBE_PATH.')
+    throw new Error('FFmpeg/FFprobe binaries are unavailable in this build. Run a clean install so ffmpeg-static and ffprobe-static can download their native binaries, or set NEWBRAND_FFMPEG_PATH and NEWBRAND_FFPROBE_PATH.')
   }
 }
 
@@ -3802,7 +3802,7 @@ async function executeStudioWebmJob(state, payload) {
   if (!bytes || !bytes.byteLength) throw new Error('No recording was received from the Studio.')
   const outDir = userDataPath('renders', state.id)
   ensureDir(outDir)
-  const base = safeFileName(String(payload?.fileName || 'cupric-studio'), 'cupric-studio').replace(/\.(webm|mp4)$/i, '')
+  const base = safeFileName(String(payload?.fileName || 'newbrand-studio'), 'newbrand-studio').replace(/\.(webm|mp4)$/i, '')
   const outputPath = path.join(outDir, `${base}.webm`)
   await ensureNotCancelled(state)
   await fsp.writeFile(outputPath, Buffer.from(bytes))
@@ -3817,12 +3817,12 @@ async function executeStudioMp4Job(state, payload) {
 
   ffmpegPath = candidateBinaryPath(ffmpegPath) || resolveMediaTool('ffmpeg')
   if (!ffmpegPath) {
-    throw new Error('FFmpeg is unavailable in this build, so the WebM cannot be converted. Set CUPRIC_FFMPEG_PATH or install a build with ffmpeg-static unpacked.')
+    throw new Error('FFmpeg is unavailable in this build, so the WebM cannot be converted. Set NEWBRAND_FFMPEG_PATH or install a build with ffmpeg-static unpacked.')
   }
 
   const outDir = userDataPath('renders', state.id)
   ensureDir(outDir)
-  const base = safeFileName(String(payload?.fileName || 'cupric-studio'), 'cupric-studio').replace(/\.(webm|mp4)$/i, '')
+  const base = safeFileName(String(payload?.fileName || 'newbrand-studio'), 'newbrand-studio').replace(/\.(webm|mp4)$/i, '')
   const source = path.join(outDir, `${base}.webm`)
   const outputPath = path.join(outDir, `${base}.mp4`)
 
@@ -4180,7 +4180,7 @@ ipcMain.handle('voice:engines', async () => {
       {
         id: 'voice-hi',
         label: 'Windows Hindi voice',
-        detail: 'Windows installs system voices itself; Cupric opens the right Settings page instead of pretending to install one.',
+        detail: 'Windows installs system voices itself; NewBrand opens the right Settings page instead of pretending to install one.',
         installed: false,
         manual: true,
       },
@@ -4327,14 +4327,14 @@ ipcMain.handle('dialog:pickFootage', async () => {
 })
 
 /**
- * Adopt a file the user picked into Cupric's own project data.
+ * Adopt a file the user picked into NewBrand's own project data.
  *
  * Why this exists: the Studio used to keep the *original* path of an imported
  * file (electron/preload.cjs `filePathFor` → `webUtils.getPathForFile`). Every
  * other part of the app is contained to `userData/projects` — most importantly
  * `arena:previewPath`, which the offscreen renderer needs to load a clip's media
  * — so exporting a clip imported straight from the user's disk failed with
- * "Preview path is outside Cupric AI project data", which is nobody's idea of an
+ * "Preview path is outside NewBrand project data", which is nobody's idea of an
  * export error. The Footage Desk has always copied on import (`footage:analyze`
  * below); the Studio now does too.
  *
@@ -4363,7 +4363,7 @@ ipcMain.handle('media:import', async (_event, payload) => {
   } catch (err) {
     // Distinct and actionable: out of space, no permission, or gone.
     logLine('media-import-failed', err?.message || String(err), { srcPath, dest, code: err?.code || null })
-    throw new Error(`Cupric could not copy "${path.basename(String(srcPath))}" into its project folder (${err?.code || err?.message || 'unknown reason'}). Free some space or move the file somewhere Cupric can read, then import again.`)
+    throw new Error(`NewBrand could not copy "${path.basename(String(srcPath))}" into its project folder (${err?.code || err?.message || 'unknown reason'}). Free some space or move the file somewhere NewBrand can read, then import again.`)
   }
   logLine('media-import', 'copied an imported file into the project store', { name: path.basename(String(srcPath)), bytes: stat.size })
   return { localPath: dest, bytes: stat.size, copied: true }
@@ -4486,7 +4486,7 @@ async function runEncode(state, quality, build, options) {
 }
 
 function renderOutputName(name) {
-  const safe = safeFileName(name || 'cupric-render.mp4', 'cupric-render.mp4')
+  const safe = safeFileName(name || 'newbrand-render.mp4', 'newbrand-render.mp4')
   return /\.mp4$/i.test(safe) ? safe : `${safe}.mp4`
 }
 
@@ -4800,7 +4800,7 @@ async function executeRenderJob(event, job, queuedState = null) {
 
   const nominalDuration = usableSources.reduce((sum, source) => sum + durationOfSource(source), 0)
   if (nominalDuration > MAX_RENDER_DURATION_SEC) {
-    throw new Error(`Timeline is ${Math.round(nominalDuration)}s. Cupric AI currently limits desktop renders to ${MAX_RENDER_DURATION_SEC}s.`)
+    throw new Error(`Timeline is ${Math.round(nominalDuration)}s. NewBrand currently limits desktop renders to ${MAX_RENDER_DURATION_SEC}s.`)
   }
 
   fs.rmSync(workDir, { recursive: true, force: true })
@@ -5037,14 +5037,14 @@ ipcMain.handle('render:resume', (_event, payload) => {
 ipcMain.handle('render:preview', (_event, outputPath) => {
   if (!outputPath || !fs.existsSync(outputPath)) throw new Error('Render output does not exist yet')
   const rendersRoot = userDataPath('renders')
-  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
+  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside NewBrand renders')
   return pathToFileURL(outputPath).toString()
 })
 
 ipcMain.handle('render:reveal', (_event, outputPath) => {
   if (!outputPath || !fs.existsSync(outputPath)) throw new Error('Render output does not exist yet')
   const rendersRoot = userDataPath('renders')
-  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
+  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside NewBrand renders')
   shell.showItemInFolder(outputPath)
   return true
 })
@@ -5052,9 +5052,9 @@ ipcMain.handle('render:reveal', (_event, outputPath) => {
 ipcMain.handle('render:copyToDownloads', async (_event, outputPath) => {
   if (!outputPath || !fs.existsSync(outputPath)) throw new Error('Render output does not exist yet')
   const rendersRoot = userDataPath('renders')
-  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside Cupric AI renders')
+  if (!isSubPath(outputPath, rendersRoot)) throw new Error('Render output is outside NewBrand renders')
   const downloads = app.getPath('downloads')
-  const dest = path.join(downloads, safeFileName(path.basename(outputPath), 'cupric-render.mp4'))
+  const dest = path.join(downloads, safeFileName(path.basename(outputPath), 'newbrand-render.mp4'))
   await fsp.copyFile(outputPath, dest)
   shell.showItemInFolder(dest)
   return { outputPath: dest }
@@ -5069,22 +5069,22 @@ ipcMain.handle('render:copyToDownloads', async (_event, outputPath) => {
  *
  * electron-updater reads `resources/app-update.yml`, which points at this
  * repository's releases — correct for users and useless for a test, because a
- * test must serve a fake newer release from localhost. `CUPRIC_UPDATE_FEED`
+ * test must serve a fake newer release from localhost. `NEWBRAND_UPDATE_FEED`
  * exists for `scripts/check-update-path.mjs`; it is logged loudly when set so a
  * user's report can never leave it a mystery.
  */
 function updateFeedOverride() {
-  const url = process.env.CUPRIC_UPDATE_FEED
+  const url = process.env.NEWBRAND_UPDATE_FEED
   if (!url) return null
   try {
     const parsed = new URL(url)
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      logLine('updater-feed-rejected', `CUPRIC_UPDATE_FEED must be http(s); ignoring ${url}`)
+      logLine('updater-feed-rejected', `NEWBRAND_UPDATE_FEED must be http(s); ignoring ${url}`)
       return null
     }
     return parsed.origin
   } catch (err) {
-    logLine('updater-feed-rejected', `CUPRIC_UPDATE_FEED is not a URL; ignoring ${url}`, err?.message)
+    logLine('updater-feed-rejected', `NEWBRAND_UPDATE_FEED is not a URL; ignoring ${url}`, err?.message)
     return null
   }
 }
@@ -5198,7 +5198,7 @@ ipcMain.handle('updater:install', async () => {
 // ---------------------------------------------------------------------------
 
 function createWindow() {
-  // Cupric AI ships for Windows 10/11 only: no per-platform window options, no
+  // NewBrand ships for Windows 10/11 only: no per-platform window options, no
   // platform-specific material, no other-OS branches. The window is opaque and
   // dark from the first paint.
   const win = new BrowserWindow({
@@ -5210,7 +5210,7 @@ function createWindow() {
     // scripts/build-icons.mjs from the same mark the sidebar shows.
     icon: path.join(__dirname, 'assets', 'icon.png'),
     backgroundColor: '#0B0B10',
-    title: 'Cupric AI',
+    title: 'NewBrand',
     autoHideMenuBar: true,
     show: false,
     webPreferences: {
@@ -5251,7 +5251,7 @@ function createWindow() {
     if (!wantsDevTools) return
     event.preventDefault()
     if (devToolsAllowed()) win.webContents.toggleDevTools()
-    else logLine('devtools-blocked', 'DevTools are disabled in stable builds. Relaunch with --cupric-devtools (or CUPRIC_DEVTOOLS=1) to enable them.')
+    else logLine('devtools-blocked', 'DevTools are disabled in stable builds. Relaunch with --newbrand-devtools (or NEWBRAND_DEVTOOLS=1) to enable them.')
   })
   if (DEV_URL) win.loadURL(DEV_URL)
   else win.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
@@ -5267,11 +5267,12 @@ function devToolsAllowed() {
   return (
     !app.isPackaged ||
     /-(alpha|beta|rc|canary|dev)/i.test(app.getVersion()) ||
-    process.env.CUPRIC_DEVTOOLS === '1' ||
-    process.argv.includes('--cupric-devtools')
+    process.env.NEWBRAND_DEVTOOLS === '1' ||
+    process.argv.includes('--newbrand-devtools')
   )
 }
 
+app.setName('NewBrand')
 app.setAppUserModelId(APP_ID)
 wireUpdater()
 
@@ -5301,7 +5302,7 @@ app.on('child-process-gone', (_event, details) => {
   }
 })
 
-logLine('app-start', `Cupric AI ${app.getVersion()} starting`, {
+logLine('app-start', `NewBrand ${app.getVersion()} starting`, {
   packaged: app.isPackaged,
   platform: process.platform,
   electron: process.versions.electron,

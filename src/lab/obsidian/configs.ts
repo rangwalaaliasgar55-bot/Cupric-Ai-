@@ -59,7 +59,7 @@ export const OBSIDIAN_CONFIGS: Record<string, ComponentConfig> = {
     uppercase: { type: 'boolean', default: true, label: 'Uppercase' },
     background: bg('#0b0b10'),
   }),
-  // Motion-board set (Cupric originals; forward → hold → return cycle, see ./board.tsx)
+  // Motion-board set (NewBrand originals; forward → hold → return cycle, see ./board.tsx)
   'mb-chart-morph': base('ChartMorph', 8, {
     title: { type: 'text', default: 'Weekly reach', label: 'Title' },
     values: { type: 'text', default: '40,58,49,74,63,92', label: 'Values (comma separated)' },

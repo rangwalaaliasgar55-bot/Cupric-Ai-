@@ -319,12 +319,12 @@ ok(/farm\.loudness && farm\.loudness\.mode !== 'none' \? ` \\u2014 \$\{farm\.lou
 const exists = (p) => Boolean(p) && fs.existsSync(p)
 const safeRequire = (id) => { try { return require(id) } catch { return null } }
 const onPath = (name) => (process.env.PATH || '').split(path.delimiter).map((dir) => path.join(dir, name)).find(exists)
-const ffmpeg = [process.env.CUPRIC_FFMPEG_PATH, process.env.FFMPEG_PATH, safeRequire('ffmpeg-static'), safeRequire('@ffmpeg-installer/ffmpeg')?.path, onPath('ffmpeg')].find(exists)
-const ffprobe = [process.env.CUPRIC_FFPROBE_PATH, process.env.FFPROBE_PATH, safeRequire('ffprobe-static')?.path, onPath('ffprobe')].find(exists)
+const ffmpeg = [process.env.NEWBRAND_FFMPEG_PATH, process.env.FFMPEG_PATH, safeRequire('ffmpeg-static'), safeRequire('@ffmpeg-installer/ffmpeg')?.path, onPath('ffmpeg')].find(exists)
+const ffprobe = [process.env.NEWBRAND_FFPROBE_PATH, process.env.FFPROBE_PATH, safeRequire('ffprobe-static')?.path, onPath('ffprobe')].find(exists)
 
 const skipped = (why) => console.log(`SKIP — ${why}\nthe plan, graph and argv assertions above ran (${n} assertions); the real FFmpeg pass did not.`)
 if (!exists(ffmpeg) || !exists(ffprobe)) {
-  skipped(`no FFmpeg/ffprobe found (ffmpeg ${ffmpeg ?? 'missing'}, ffprobe ${ffprobe ?? 'missing'}). Set CUPRIC_FFMPEG_PATH / CUPRIC_FFPROBE_PATH, or install ffmpeg-static.`)
+  skipped(`no FFmpeg/ffprobe found (ffmpeg ${ffmpeg ?? 'missing'}, ffprobe ${ffprobe ?? 'missing'}). Set NEWBRAND_FFMPEG_PATH / NEWBRAND_FFPROBE_PATH, or install ffmpeg-static.`)
   console.log(`assembly check passed — ${n} assertions, real pass skipped`)
   process.exit(0)
 }
@@ -358,7 +358,7 @@ if (!graphSupport || !edlSupport || !duckSupport) {
   process.exit(0)
 }
 
-const work = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-assembly-'))
+const work = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-assembly-'))
 const at = (name) => path.join(work, name)
 const built = (name, args) => {
   const result = ff('-y', '-hide_banner', '-loglevel', 'error', ...args, at(name))

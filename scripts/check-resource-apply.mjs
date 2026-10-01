@@ -206,8 +206,8 @@ assert.equal(onEmpty.type, 'doc')
 assert.ok(onEmpty.doc.clips.some((c) => c.kind === 'glass' && /drop your media/i.test(c.label ?? '')), 'empty project → placeholder panel')
 const onBusy = mod.applyResource(busyDoc(), recorder, { atSec: 0 })
 assert.ok(onBusy.doc.clips.some((c) => c.kind === 'image' && c.id !== 'footage'), 'busy project → media slot filled from footage')
-const briefed = mod.applyResource(emptyDoc(), audiogram, { atSec: 0, brief: ['Cupric Weekly', 'We tried one habit for 30 days'] })
-assert.ok(briefed.doc.clips.some((c) => c.kind === 'text' && c.text === 'Cupric Weekly'), 'brief copy fills the first text slot')
+const briefed = mod.applyResource(emptyDoc(), audiogram, { atSec: 0, brief: ['NewBrand Weekly', 'We tried one habit for 30 days'] })
+assert.ok(briefed.doc.clips.some((c) => c.kind === 'text' && c.text === 'NewBrand Weekly'), 'brief copy fills the first text slot')
 
 // A font applies to the selected text.
 const fontItem = { kind: 'font', id: 'font-x', name: 'Sora', data: { family: 'Sora', weights: [400, 700] } }

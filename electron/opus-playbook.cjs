@@ -4,7 +4,7 @@
  * Opus 5.5 case-study learnings, distilled from the MIT catalog in
  * resources/opus55. This is a prompt policy, not model training and not a
  * claim that the catalog authors used every step below. It keeps the useful
- * recurring production patterns while preserving Cupric's local, deterministic
+ * recurring production patterns while preserving NewBrand's local, deterministic
  * renderer and its manual-review safeguards.
  */
 const OPUS_PLAYBOOK = Object.freeze([
@@ -42,7 +42,7 @@ const OPUS_PLAYBOOK = Object.freeze([
   },
   {
     id: 'multi-tool-adapters',
-    rule: 'When a brief calls for a 3D, particle, shader, character or UI treatment, translate the intent into a Cupric-native component or sandboxed source scene. Do not execute arbitrary MCP, After Effects, Blender or remote code inside the desktop app.',
+    rule: 'When a brief calls for a 3D, particle, shader, character or UI treatment, translate the intent into a NewBrand-native component or sandboxed source scene. Do not execute arbitrary MCP, After Effects, Blender or remote code inside the desktop app.',
   },
   {
     id: 'real-copy-real-data',
@@ -71,11 +71,11 @@ const DUO_PLAYBOOK = Object.freeze([
   'Keep browser, SaaS dashboard, product page or campaign artwork in one front-view coordinate system while folding; project the outer panel rather than stretching UI with the mesh.',
   'Use bounded progressive edge blur and darkening on the receding panel, while preserving copy safe areas and a stable CTA.',
   'Make screen modes intentional and replaceable: browser flow, SaaS launch, product page, social post, wallpaper or custom media; use only verified user copy and values.',
-  'Use a native deterministic Canvas/Three-like projection in Cupric so the same editable scene drives preview and export; never require the upstream webpage, remote model or Apple asset.',
+  'Use a native deterministic Canvas/Three-like projection in NewBrand so the same editable scene drives preview and export; never require the upstream webpage, remote model or Apple asset.',
   'Professional promo structure: closed hook → hinge opens → product/browser interaction plays → outer panel carries the concise CTA → clean lockup and credits.',
 ])
 
 const OPUS_PLAYBOOK_PROMPT = `\n\nOPUS CASE-STUDY PRODUCTION POLICY (informed by the MIT catalog at resources/opus55; use as craft guidance, never as fabricated evidence):\n${OPUS_PLAYBOOK.map((entry, index) => `${index + 1}. ${entry.rule}`).join('\\n')}\n\nQUALITY BAR: output a concrete beat sheet and an editable, deterministic, reviewable plan. Do not claim that Opus, a case-study author, or a reference asset produced anything unless the user supplied that fact.\n`
-const ADVANCED_VIDEO_PLAYBOOK_PROMPT = `${OPUS_PLAYBOOK_PROMPT}\nDASHI-MOTION NATIVE PRODUCTION RULES (distilled reference guidance; do not claim AE/Rive/Cavalry execution unless the user supplied that evidence):\n${DASHI_PLAYBOOK.map((rule, index) => `${index + 1}. ${rule}`).join('\\n')}\n\nIPHONE-DUO-INSPIRED FOLDABLE PROMOTION RULES (original Cupric translation; Apple model/assets are not bundled):\n${DUO_PLAYBOOK.map((rule, index) => `${index + 1}. ${rule}`).join('\\n')}\n`
+const ADVANCED_VIDEO_PLAYBOOK_PROMPT = `${OPUS_PLAYBOOK_PROMPT}\nDASHI-MOTION NATIVE PRODUCTION RULES (distilled reference guidance; do not claim AE/Rive/Cavalry execution unless the user supplied that evidence):\n${DASHI_PLAYBOOK.map((rule, index) => `${index + 1}. ${rule}`).join('\\n')}\n\nIPHONE-DUO-INSPIRED FOLDABLE PROMOTION RULES (original NewBrand translation; Apple model/assets are not bundled):\n${DUO_PLAYBOOK.map((rule, index) => `${index + 1}. ${rule}`).join('\\n')}\n`
 
 module.exports = { OPUS_PLAYBOOK, DASHI_PLAYBOOK, DUO_PLAYBOOK, OPUS_PLAYBOOK_PROMPT, ADVANCED_VIDEO_PLAYBOOK_PROMPT }

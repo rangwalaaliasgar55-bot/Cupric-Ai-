@@ -50,7 +50,7 @@
         "pages",
         "flip"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/3d-book/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/3d-book/video.mp4",
@@ -60,7 +60,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-accessible-action",
@@ -96,7 +96,7 @@
         "stack",
         "swipe"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/accessible-action/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/accessible-action/video.mp4",
@@ -106,7 +106,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-accordionos",
@@ -143,7 +143,7 @@
         "accordion",
         "image"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/accordionos/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/accordionos/video.mp4",
@@ -156,8 +156,8 @@
       "sourceNondeterminism": [
         "setInterval timers"
       ],
-      "refusal": "Source uses raw HTML injection. Cupric will not adapt it automatically; it stays reference-only.",
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "refusal": "Source uses raw HTML injection. NewBrand will not adapt it automatically; it stays reference-only.",
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-analog-stick",
@@ -192,7 +192,7 @@
         "stick",
         "press"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/analog-stick/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/analog-stick/video.mp4",
@@ -202,7 +202,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-animated-collection",
@@ -239,7 +239,7 @@
         "list",
         "collection"
       ],
-      "cupricEquivalent": "Native list scene: stacked text rows with staggered rise-in",
+      "newbrandEquivalent": "Native list scene: stacked text rows with staggered rise-in",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/animated-collection/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/animated-collection/video.mp4",
@@ -249,7 +249,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-bento-card",
@@ -287,7 +287,7 @@
         "card",
         "tabs"
       ],
-      "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+      "newbrandEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/bento-card/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/bento-card/video.mp4",
@@ -297,7 +297,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-bottom-menu",
@@ -336,7 +336,7 @@
         "menu",
         "dock"
       ],
-      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "newbrandEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/bottom-menu/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/bottom-menu/video.mp4",
@@ -346,7 +346,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-bucket",
@@ -385,7 +385,7 @@
         "chips",
         "bucket"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/bucket/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/bucket/video.mp4",
@@ -397,7 +397,7 @@
         "setInterval timers"
       ],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-card-folder",
@@ -432,7 +432,7 @@
         "folder",
         "card"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/card-folder/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/card-folder/video.mp4",
@@ -442,7 +442,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-client-card",
@@ -490,7 +490,7 @@
         "card",
         "crm"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/client-card/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/client-card/video.mp4",
@@ -502,7 +502,7 @@
         "wall clock"
       ],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-confidential-folder",
@@ -536,7 +536,7 @@
         "folder",
         "letter"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/confidential-folder/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/confidential-folder/video.mp4",
@@ -546,7 +546,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-corner-video",
@@ -581,7 +581,7 @@
         "video",
         "player"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/corner-video/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/corner-video/video.mp4",
@@ -591,7 +591,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-coverflow-drag",
@@ -626,7 +626,7 @@
         "slider",
         "drag"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/coverflow-drag/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/coverflow-drag/video.mp4",
@@ -636,7 +636,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-create-menu",
@@ -672,7 +672,7 @@
         "menu",
         "create"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/create-menu/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/create-menu/video.mp4",
@@ -682,7 +682,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-curve-drawer",
@@ -721,7 +721,7 @@
         "drawer",
         "sidebar"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/curve-drawer/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/curve-drawer/video.mp4",
@@ -731,7 +731,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-day-picker",
@@ -770,7 +770,7 @@
         "picker",
         "input"
       ],
-      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "newbrandEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/day-picker/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/day-picker/video.mp4",
@@ -780,7 +780,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-delete-button",
@@ -819,7 +819,7 @@
         "delete",
         "confirm"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/delete-button/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/delete-button/video.mp4",
@@ -829,7 +829,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-discover-button",
@@ -866,7 +866,7 @@
         "button",
         "discover"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/discover-button/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/discover-button/video.mp4",
@@ -876,7 +876,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-discrete-tabs",
@@ -911,7 +911,7 @@
         "tabs",
         "nav"
       ],
-      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "newbrandEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/discrete-tabs/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/discrete-tabs/video.mp4",
@@ -921,7 +921,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-drawer-buttons",
@@ -972,7 +972,7 @@
         "cart",
         "payment"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/drawer-buttons/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/drawer-buttons/video.mp4",
@@ -982,7 +982,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-dynamic-grid-gallery",
@@ -1020,7 +1020,7 @@
         "grid",
         "photos"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/dynamic-grid-gallery/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/dynamic-grid-gallery/video.mp4",
@@ -1030,7 +1030,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-dynamic-toolbar",
@@ -1069,7 +1069,7 @@
         "toolbar",
         "nav"
       ],
-      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "newbrandEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/dynamic-toolbar/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/dynamic-toolbar/video.mp4",
@@ -1079,7 +1079,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-editorial-deck",
@@ -1118,7 +1118,7 @@
         "deck",
         "swipe"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/editorial-deck/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/editorial-deck/video.mp4",
@@ -1130,7 +1130,7 @@
         "wall clock"
       ],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-empty-testimonial",
@@ -1167,7 +1167,7 @@
         "testimonial",
         "empty"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/empty-testimonial/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/empty-testimonial/video.mp4",
@@ -1177,7 +1177,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-expandable-gallery",
@@ -1216,7 +1216,7 @@
         "gallery",
         "photos"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/expandable-gallery/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/expandable-gallery/video.mp4",
@@ -1226,7 +1226,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-feature-carousel",
@@ -1263,7 +1263,7 @@
         "carousel",
         "slider"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/feature-carousel/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/feature-carousel/video.mp4",
@@ -1275,7 +1275,7 @@
         "setInterval timers"
       ],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-filter-interaction",
@@ -1312,7 +1312,7 @@
         "list",
         "filter"
       ],
-      "cupricEquivalent": "Native list scene: stacked text rows with staggered rise-in",
+      "newbrandEquivalent": "Native list scene: stacked text rows with staggered rise-in",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/filter-interaction/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/filter-interaction/video.mp4",
@@ -1322,7 +1322,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-fluid-expanding-grid",
@@ -1362,7 +1362,7 @@
         "grid",
         "layout"
       ],
-      "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+      "newbrandEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/fluid-expanding-grid/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/fluid-expanding-grid/video.mp4",
@@ -1372,7 +1372,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-focus-testimonials",
@@ -1406,7 +1406,7 @@
       "tags": [
         "testimonial"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/focus-testimonials/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/focus-testimonials/video.mp4",
@@ -1416,7 +1416,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-folder-interaction",
@@ -1453,7 +1453,7 @@
         "folder",
         "files"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/folder-interaction/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/folder-interaction/video.mp4",
@@ -1463,7 +1463,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-get-in-touch",
@@ -1505,7 +1505,7 @@
         "button",
         "contact"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/get-in-touch/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/get-in-touch/video.mp4",
@@ -1515,7 +1515,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-holographic-referral-card",
@@ -1564,7 +1564,7 @@
         "card",
         "referral"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/holographic-referral-card/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/holographic-referral-card/video.mp4",
@@ -1574,7 +1574,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-gooey-navbar",
@@ -1633,7 +1633,7 @@
         "nav",
         "navbar"
       ],
-      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "newbrandEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/gooey-navbar/poster-a23f8deef0.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/gooey-navbar/video-32facfe716.mp4",
@@ -1643,7 +1643,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-infinite-grid",
@@ -1679,7 +1679,7 @@
         "grid",
         "drag"
       ],
-      "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+      "newbrandEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/infinite-grid/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/infinite-grid/video.mp4",
@@ -1689,7 +1689,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-inline-edit",
@@ -1728,7 +1728,7 @@
         "input",
         "edit"
       ],
-      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "newbrandEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/inline-edit/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/inline-edit/video.mp4",
@@ -1738,7 +1738,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-liquid-index",
@@ -1779,7 +1779,7 @@
         "list",
         "index"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/liquid-index/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/liquid-index/video.mp4",
@@ -1789,7 +1789,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-magnified-bento",
@@ -1828,7 +1828,7 @@
         "bento",
         "magnify"
       ],
-      "cupricEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
+      "newbrandEquivalent": "Native layout scene: glass panels arranged by the storyboard grid",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/magnified-bento/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/magnified-bento/video.mp4",
@@ -1838,7 +1838,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-morphing-input",
@@ -1879,7 +1879,7 @@
         "input",
         "search"
       ],
-      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "newbrandEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/morphing-input/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/morphing-input/video.mp4",
@@ -1889,7 +1889,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-multi-step-form",
@@ -1940,7 +1940,7 @@
         "form",
         "input"
       ],
-      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "newbrandEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/multi-step-form/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/multi-step-form/video.mp4",
@@ -1950,7 +1950,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-overlapping-slider",
@@ -1985,7 +1985,7 @@
         "carousel",
         "slider"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/overlapping-slider/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/overlapping-slider/video.mp4",
@@ -1995,7 +1995,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-perspective-text-scroll",
@@ -2031,7 +2031,7 @@
         "text",
         "scroll"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/perspective-text-scroll/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/perspective-text-scroll/video.mp4",
@@ -2041,7 +2041,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-photo-albums",
@@ -2079,7 +2079,7 @@
         "photos",
         "stack"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/photo-albums/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/photo-albums/video.mp4",
@@ -2089,7 +2089,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-paper-shred-button",
@@ -2125,7 +2125,7 @@
         "delete",
         "shred"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/paper-shred-button/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/paper-shred-button/video.mp4",
@@ -2135,7 +2135,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-polaroid-drag",
@@ -2172,7 +2172,7 @@
         "drag",
         "stack"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/polaroid-drag/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/polaroid-drag/video.mp4",
@@ -2184,7 +2184,7 @@
         "Math.random"
       ],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-polaroid-stack",
@@ -2219,7 +2219,7 @@
         "polaroid",
         "stack"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/polaroid-stack/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/polaroid-stack/video.mp4",
@@ -2229,7 +2229,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-pop-tilt-cards",
@@ -2265,7 +2265,7 @@
         "cards",
         "tilt"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/pop-tilt-cards/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/pop-tilt-cards/video.mp4",
@@ -2275,7 +2275,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-pricing-card",
@@ -2314,7 +2314,7 @@
         "card",
         "pricing"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/pricing-card/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/pricing-card/video.mp4",
@@ -2324,7 +2324,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-prompt-box",
@@ -2372,7 +2372,7 @@
         "prompt",
         "ai"
       ],
-      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "newbrandEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/prompt-box/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/prompt-box/video.mp4",
@@ -2382,7 +2382,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-rolling-card-stack",
@@ -2417,7 +2417,7 @@
         "cards",
         "stack"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/rolling-card-stack/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/rolling-card-stack/video.mp4",
@@ -2429,7 +2429,7 @@
         "setInterval timers"
       ],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-save-button",
@@ -2468,7 +2468,7 @@
         "status",
         "loading"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/save-button/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/save-button/video.mp4",
@@ -2478,7 +2478,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-scan-document",
@@ -2515,7 +2515,7 @@
         "scan",
         "document"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/scan-document/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/scan-document/video.mp4",
@@ -2525,7 +2525,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-scroll-split-cards",
@@ -2565,7 +2565,7 @@
         "scroll",
         "split"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/scroll-split-cards/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/scroll-split-cards/video.mp4",
@@ -2575,7 +2575,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-scroll-stack-deck",
@@ -2623,7 +2623,7 @@
         "stack",
         "scroll"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/scroll-stack-deck/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/scroll-stack-deck/video.mp4",
@@ -2633,7 +2633,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-set-timer",
@@ -2669,7 +2669,7 @@
         "timer",
         "input"
       ],
-      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "newbrandEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/set-timer/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/set-timer/video.mp4",
@@ -2682,7 +2682,7 @@
         "setInterval timers"
       ],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-shake-testimonial-card",
@@ -2719,7 +2719,7 @@
         "card",
         "testimonial"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/shake-testimonial-card/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/shake-testimonial-card/video.mp4",
@@ -2731,7 +2731,7 @@
         "setInterval timers"
       ],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-slide-subscribe",
@@ -2779,7 +2779,7 @@
         "slider",
         "input"
       ],
-      "cupricEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
+      "newbrandEquivalent": "Native form scene: glass field + typed text (word-reveal) + cursor I-beam",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/slide-subscribe/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/slide-subscribe/video.mp4",
@@ -2789,7 +2789,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-smooth-dropdown",
@@ -2827,7 +2827,7 @@
         "menu",
         "nav"
       ],
-      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "newbrandEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/smooth-dropdown/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/smooth-dropdown/video.mp4",
@@ -2837,7 +2837,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-stack-scroll-reveal",
@@ -2875,7 +2875,7 @@
         "stack",
         "scroll"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/stack-scroll-reveal/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/stack-scroll-reveal/video.mp4",
@@ -2885,7 +2885,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-stacked-list",
@@ -2928,7 +2928,7 @@
         "list",
         "stack"
       ],
-      "cupricEquivalent": "Native list scene: stacked text rows with staggered rise-in",
+      "newbrandEquivalent": "Native list scene: stacked text rows with staggered rise-in",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/stacked-list/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/stacked-list/video.mp4",
@@ -2938,7 +2938,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-stacked-outline-text",
@@ -2980,7 +2980,7 @@
         "text",
         "drag"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/stacked-outline-text/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/stacked-outline-text/video.mp4",
@@ -2990,7 +2990,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-theme-toggle",
@@ -3023,7 +3023,7 @@
         "toggle",
         "dark"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/theme-toggle/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/theme-toggle/video.mp4",
@@ -3033,7 +3033,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-tactile-button",
@@ -3066,7 +3066,7 @@
         "button",
         "press"
       ],
-      "cupricEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
+      "newbrandEquivalent": "Native button scene: shape (pill) + label text + cursor click; press-in on click",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/tactile-button/poster-445352537e.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/tactile-button/video-afb6c148d5.mp4",
@@ -3076,7 +3076,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-vertical-tabs",
@@ -3113,7 +3113,7 @@
         "tabs",
         "nav"
       ],
-      "cupricEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
+      "newbrandEquivalent": "Native navigation scene: glass bar + text items + cursor; active-indicator keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/vertical-tabs/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/vertical-tabs/video.mp4",
@@ -3125,7 +3125,7 @@
         "setInterval timers"
       ],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     },
     {
       "id": "uselayouts-wheel-carousel",
@@ -3162,7 +3162,7 @@
         "wheel",
         "slider"
       ],
-      "cupricEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
+      "newbrandEquivalent": "Native card/display scene: glass panel + title/body text + entrance keyframes",
       "previewable": true,
       "posterUrl": "https://cdn.uselayouts.com/components/wheel-carousel/poster.avif",
       "videoUrl": "https://cdn.uselayouts.com/components/wheel-carousel/video.mp4",
@@ -3172,7 +3172,7 @@
       "unsafePatterns": [],
       "sourceNondeterminism": [],
       "refusal": null,
-      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only Cupric native clips."
+      "fallback": "If motion/clsx/tailwind-merge are unavailable nothing changes: the adapter uses only NewBrand native clips."
     }
   ]
 }

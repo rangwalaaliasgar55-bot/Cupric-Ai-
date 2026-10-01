@@ -13,7 +13,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-const dir = await mkdtemp(path.join(tmpdir(), 'cupric-voice-'))
+const dir = await mkdtemp(path.join(tmpdir(), 'newbrand-voice-'))
 const outfile = path.join(dir, 'voice.mjs')
 await build({
   entryPoints: ['src/lib/voice.ts'],
@@ -45,7 +45,7 @@ const mustNotStart = [
   'I was thinking we should make a video and',      // trailing conjunction
   'um',                                             // filler
   'so I want a',                                    // trailing article
-  'hey cupric make me a short video',               // still only a request
+  'hey newbrand make me a short video',               // still only a request
   'and then make a video for the',                  // mid-thought
   'create a promo,',                                // recogniser heard a comma
   'let us make a video um',                         // hesitation at the end
@@ -60,7 +60,7 @@ for (const phrase of mustNotStart) check(`no-start: "${phrase}"`, shouldAutoStar
 // --- must auto-start -------------------------------------------------------
 const mustStart = [
   'make a video about our new pricing page for small teams',
-  'a thirty second promo for the Cupric AI launch with bold captions',
+  'a thirty second promo for the NewBrand launch with bold captions',
   'short reel showing the studio timeline and the glass effects',
   'explain how liquid glass backgrounds work in under twenty seconds',
 ]

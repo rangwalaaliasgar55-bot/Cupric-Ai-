@@ -419,7 +419,7 @@ export async function exportStudio(editDoc: StudioDoc, options: ExportOptions = 
   options.onProgress?.(100)
 
   const extension = (mimeType || 'video/webm').includes('mp4') ? 'mp4' : 'webm'
-  const fileName = options.fileName ? `${options.fileName}.${extension}` : `cupric-studio.${extension}`
+  const fileName = options.fileName ? `${options.fileName}.${extension}` : `newbrand-studio.${extension}`
 
   return { blob, url: URL.createObjectURL(blob), fileName, durationSec: duration, mimeType: mimeType || 'video/webm', cancelled }
 }

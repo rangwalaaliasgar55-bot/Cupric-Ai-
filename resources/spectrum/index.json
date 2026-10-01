@@ -20,5 +20,5 @@
     { "name": "invite-teammates", "category": "Empty States" },
     { "name": "connect-source", "category": "Empty States" }
   ],
-  "installHint": "npx shadcn@latest add @spectrumui/<name> then map to Cupric tokens"
+  "installHint": "npx shadcn@latest add @spectrumui/<name> then map to NewBrand tokens"
 }

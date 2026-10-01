@@ -117,8 +117,8 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "from: $env:FROM_REF"
-          git worktree add ../cupric-from $env:FROM_REF
-          Push-Location ../cupric-from
+          git worktree add ../newbrand-from $env:FROM_REF
+          Push-Location ../newbrand-from
           npm ci
           # The installer this job builds must contain working media tools, or
           # the "update" it proves would be an update to an app that cannot
@@ -130,7 +130,7 @@ jobs:
           npm run build
           npx electron-builder --win --publish never
           Pop-Location
-          Copy-Item ../cupric-from/release -Destination ./release-from -Recurse
+          Copy-Item ../newbrand-from/release -Destination ./release-from -Recurse
           Get-ChildItem ./release-from | Format-Table Name, Length
 
       - name: Build the version the app must update itself to
@@ -149,15 +149,15 @@ jobs:
             New-Item -ItemType Directory -Force -Path ./release-to | Out-Null
             Copy-Item ./release/* -Destination ./release-to -Recurse -Force
           } else {
-            git worktree add ../cupric-to $env:TO_REF
-            Push-Location ../cupric-to
+            git worktree add ../newbrand-to $env:TO_REF
+            Push-Location ../newbrand-to
             npm ci
             npm run media:ensure --if-present
             if ($LASTEXITCODE -ne 0) { throw "media:ensure failed while building $env:TO_REF" }
             npm run build
             npx electron-builder --win --publish never
             Pop-Location
-            Copy-Item ../cupric-to/release -Destination ./release-to -Recurse
+            Copy-Item ../newbrand-to/release -Destination ./release-to -Recurse
           }
           Get-ChildItem ./release-to | Format-Table Name, Length
 
@@ -173,7 +173,7 @@ jobs:
       - name: Install the old build, update it, and verify the result
         shell: pwsh
         run: |
-          $setup = (Get-ChildItem -Path ./release-from -Filter 'Cupric-AI-Setup-*.exe' -File).FullName
+          $setup = (Get-ChildItem -Path ./release-from -Filter 'NewBrand-Setup-*.exe' -File).FullName
           if (-not $setup) { throw 'No setup installer in release-from.' }
           node scripts/check-update-path.mjs --from $setup --to ./release-to
 
@@ -192,8 +192,8 @@ jobs:
         shell: pwsh
         run: |
           Write-Host '--- installed app directories ---'
-          Get-ChildItem 'C:\cupric-*' -ErrorAction SilentlyContinue | Format-Table FullName, Length
+          Get-ChildItem 'C:\newbrand-*' -ErrorAction SilentlyContinue | Format-Table FullName, Length
           Write-Host '--- update cache ---'
-          Get-ChildItem "$env:LOCALAPPDATA\Cupric AI-updater" -Recurse -ErrorAction SilentlyContinue | Format-Table FullName, Length
+          Get-ChildItem "$env:LOCALAPPDATA\NewBrand-updater" -Recurse -ErrorAction SilentlyContinue | Format-Table FullName, Length
           Write-Host '--- the app log from the update run (throwaway userData dir) ---'
-          Get-ChildItem "$env:TEMP\cupric-update-path-data-*" -Recurse -Filter '*.log' -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName; Get-Content $_.FullName -Tail 80 }
+          Get-ChildItem "$env:TEMP\newbrand-update-path-data-*" -Recurse -Filter '*.log' -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName; Get-Content $_.FullName -Tail 80 }

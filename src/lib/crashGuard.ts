@@ -99,7 +99,7 @@ function pushGlobal(kind: GlobalCrash['kind'], value: unknown, fallbackMessage?:
 function scheduleBlankCheck() {
   window.setTimeout(() => {
     const root = document.getElementById('root')
-    if (root && root.childElementCount === 0 && !document.getElementById('cupric-fatal')) {
+    if (root && root.childElementCount === 0 && !document.getElementById('newbrand-fatal')) {
       renderFatalFallback(crashes.at(-1)?.message ?? 'The interface stopped rendering.', crashes.at(-1)?.stack)
     }
   }, 50)
@@ -128,7 +128,7 @@ export function buildErrorReport(error: unknown, ctx: CrashContext & { component
     recent = recentRendererErrors().slice(-12)
   } catch {}
   return [
-    `Cupric AI ${version} — ${ctx.route ? `"${ctx.route}" screen crashed` : 'error'}`,
+    `NewBrand ${version} — ${ctx.route ? `"${ctx.route}" screen crashed` : 'error'}`,
     `Project: ${ctx.projectId ?? '(none)'}`,
     `View: ${ctx.view ?? '(unknown)'}`,
     `Bridge: ${bridge}`,
@@ -139,7 +139,7 @@ export function buildErrorReport(error: unknown, ctx: CrashContext & { component
     ctx.componentStack ? `\nComponent stack:${ctx.componentStack.split('\n').slice(0, 20).join('\n')}` : '',
     recent.length ? `\nRecent renderer errors:\n${recent.join('\n')}` : '',
     '',
-    'Stuck on a blank screen after restarting? Quit Cupric, open projects.json in the app data folder and change "view":"studio" to "view":"library".',
+    'Stuck on a blank screen after restarting? Quit NewBrand, open projects.json in the app data folder and change "view":"studio" to "view":"library".',
   ]
     .filter((line) => line !== '')
     .join('\n')
@@ -171,19 +171,19 @@ export async function copyText(text: string): Promise<boolean> {
  * Plain-DOM fallback. Inline styles only: the CSS bundle may be what failed.
  */
 export function renderFatalFallback(message: string, stack?: string) {
-  if (typeof document === 'undefined' || document.getElementById('cupric-fatal')) return
+  if (typeof document === 'undefined' || document.getElementById('newbrand-fatal')) return
   const ctx = crashContext()
   const report = buildErrorReport(stack ? Object.assign(new Error(message), { stack }) : message, ctx)
   rlog.error('crash', 'fatal fallback shown', { message, ...ctx })
   const host = document.createElement('div')
-  host.id = 'cupric-fatal'
-  host.setAttribute('data-cupric-fallback', 'fatal')
+  host.id = 'newbrand-fatal'
+  host.setAttribute('data-newbrand-fallback', 'fatal')
   host.setAttribute('role', 'alert')
   host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#0B0B10;color:#F4F1EA;font:14px/1.5 system-ui,Segoe UI,Arial,sans-serif;padding:24px'
   const card = document.createElement('div')
   card.style.cssText = 'max-width:560px;width:100%;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#15151B;padding:24px'
   const h = document.createElement('h1')
-  h.textContent = 'Cupric hit an error'
+  h.textContent = 'NewBrand hit an error'
   h.style.cssText = 'font-size:18px;margin:0 0 6px'
   const p = document.createElement('p')
   p.textContent = `Your work is saved. Project: ${ctx.projectId ?? '(none)'} · View: ${ctx.view ?? '(unknown)'}`

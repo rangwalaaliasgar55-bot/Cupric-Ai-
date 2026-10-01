@@ -8,10 +8,10 @@ import { generateVideo, type Recommendation } from "@/ai/generate";
 import type { VideoDoc } from "@/core/types";
 import { sendToEditor } from "./customize";
 
-const EXAMPLES = ["Create a 25-second premium futuristic AI SaaS advertisement for Cupric AI", "15 second TikTok for a fintech app called Ledger", "Cinematic logo reveal for Aurora", "30 second corporate explainer with 3D glass product"];
+const EXAMPLES = ["Create a 25-second premium futuristic AI SaaS advertisement for NewBrand", "15 second TikTok for a fintech app called Ledger", "Cinematic logo reveal for Aurora", "30 second corporate explainer with 3D glass product"];
 
 export default function HomeHero() {
-  const initial = useMemo(() => buildTemplate("futuristicAd", { brand: { name: "Cupric AI" } }), []);
+  const initial = useMemo(() => buildTemplate("futuristicAd", { brand: { name: "NewBrand" } }), []);
   const [doc, setDoc] = useState<VideoDoc>(initial);
   const [prompt, setPrompt] = useState(EXAMPLES[0]);
   const [rec, setRec] = useState<Recommendation | null>(null);

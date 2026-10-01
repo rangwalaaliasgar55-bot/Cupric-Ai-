@@ -1,6 +1,6 @@
 /**
  * MatrixLoader — Transitions.dev "Matrix dot loader" (p33) rebuilt for the
- * Cupric UI. 16 cells pulse base → active with the upstream delay tables
+ * NewBrand UI. 16 cells pulse base → active with the upstream delay tables
  * (shared with the Studio renderer via matrixDelay). See
  * resources/transitions-dev/ATTRIBUTION.md.
  *
@@ -13,7 +13,7 @@ import type { CSSProperties } from 'react'
 import { matrixDelay } from '../../lib/studio/loaders'
 import type { StudioLoaderVariant } from '../../types/project'
 
-const STYLE_ID = 'cupric-matrix-loader'
+const STYLE_ID = 'newbrand-matrix-loader'
 const CSS = `
 .cu-matrix { display: inline-grid; grid-template-columns: repeat(4, var(--matrix-cell, 2px)); grid-auto-rows: var(--matrix-cell, 2px); gap: var(--matrix-cell, 2px); vertical-align: middle; }
 .cu-matrix i { display: block; border-radius: 0; background: var(--matrix-base, var(--color-panel-alt)); animation: cu-matrix-pulse var(--matrix-cycle, 1200ms) var(--matrix-ease, ease-in-out) infinite; animation-delay: calc(var(--d, 0) * 1ms); }

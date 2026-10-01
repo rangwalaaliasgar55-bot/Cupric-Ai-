@@ -819,7 +819,7 @@ function drawComposer(ctx: CanvasRenderingContext2D, clip: StudioKitClip, b: Box
   ctx.fillStyle = clip.accent
   ctx.fill()
   text(ctx, clip.title ?? 'Your name', b.x0 + pad + b.H * 0.14, b.y0 + pad + b.H * 0.05, b.H * 0.045, b.s.text, 700, 'left', SANS, b.W * 0.5)
-  const lines = clip.items?.length ? clip.items : ['Write your post here.', 'Cupric fills this from your brief.', '']
+  const lines = clip.items?.length ? clip.items : ['Write your post here.', 'NewBrand fills this from your brief.', '']
   lines.slice(0, 3).forEach((l, i) => {
     const lk = soft(win(b.e, 0.2 + i * 0.1, 0.35))
     ctx.save(); ctx.globalAlpha *= lk

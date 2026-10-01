@@ -1,6 +1,6 @@
 /**
  * Loader clips — Transitions.dev "Thinking states" and "Matrix dot loader"
- * rebuilt as Cupric-native, deterministic Studio primitives.
+ * rebuilt as NewBrand-native, deterministic Studio primitives.
  *
  * Upstream: https://transitions.dev (patterns p28 "Thinking states" and p33
  * "Matrix dot loader"; see resources/transitions-dev/ATTRIBUTION.md). The CSS
@@ -39,7 +39,7 @@ export const LOADER_EASES: Record<StudioLoaderEase, { label: string; bezier: Bez
   'ease-out': { label: 'Ease out', bezier: [0, 0, 0.58, 1] },
   'ease-in': { label: 'Ease in', bezier: [0.42, 0, 1, 1] },
   linear: { label: 'Linear', bezier: [0, 0, 1, 1] },
-  soft: { label: 'Cupric soft', bezier: [0.22, 1, 0.36, 1] },
+  soft: { label: 'NewBrand soft', bezier: [0.22, 1, 0.36, 1] },
 }
 
 export const MATRIX_VARIANTS: StudioLoaderVariant[] = ['scan', 'twinkle', 'orbit', 'pulse']
@@ -289,8 +289,8 @@ export const LOADER_PRESETS: LoaderPreset[] = [
   M('orbit', 'orbit', 'A light runs around the outer ring; the centre stays still.', { variant: 'orbit' }),
   M('pulse', 'pulse', 'The inner square pulses, then the outer cells answer.', { variant: 'pulse' }),
   M('rounded', 'rounded', 'Scan with the four corners removed for a softer silhouette.', { variant: 'scan', rounded: true }),
-  M('monochrome', 'monochrome', 'Neutral greys from the Cupric palette.', { variant: 'twinkle', baseColor: LOADER_TOKENS.panelAlt, activeColor: LOADER_TOKENS.text }),
-  M('lime', 'lime accent', 'Cupric lime active cells — use once per frame.', { variant: 'orbit', baseColor: LOADER_TOKENS.line, activeColor: LOADER_TOKENS.accent }),
+  M('monochrome', 'monochrome', 'Neutral greys from the NewBrand palette.', { variant: 'twinkle', baseColor: LOADER_TOKENS.panelAlt, activeColor: LOADER_TOKENS.text }),
+  M('lime', 'lime accent', 'NewBrand lime active cells — use once per frame.', { variant: 'orbit', baseColor: LOADER_TOKENS.line, activeColor: LOADER_TOKENS.accent }),
   M('reduced', 'reduced motion', 'Static grid: the honest still state for reduced-motion exports or disabled UI.', { variant: 'scan', reducedMotion: true }),
   M('compact', 'compact', 'Small, for a corner status or a lower third.', { variant: 'scan', size: 0.006 }),
   M('large', 'large', 'A hero-sized grid for a loading beat.', { variant: 'pulse', size: 0.03 }),

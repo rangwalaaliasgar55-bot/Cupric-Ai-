@@ -1,4 +1,4 @@
-# Cupric AI 0.13.0 — release build unblocked
+# NewBrand 0.13.0 — release build unblocked
 
 Three separate defects stopped the Windows release build. All three were
 invisible locally and only appeared on `windows-latest`, which is why
@@ -111,8 +111,8 @@ The Windows run is green end to end — all 12 steps:
 
 ## Download
 
-- `Cupric-AI-Setup-0.13.0.exe` — NSIS installer (224 MB)
-- `Cupric-AI-0.13.0-x64-Portable.exe` — portable executable (223 MB)
-- `Cupric-AI-Setup-0.13.0.exe.blockmap`, `latest.yml` — for the in-app updater
+- `NewBrand-Setup-0.13.0.exe` — NSIS installer (224 MB)
+- `NewBrand-0.13.0-x64-Portable.exe` — portable executable (223 MB)
+- `NewBrand-Setup-0.13.0.exe.blockmap`, `latest.yml` — for the in-app updater
 
 0.12.0 was never published; move straight to 0.13.0.

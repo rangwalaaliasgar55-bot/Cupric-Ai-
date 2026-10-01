@@ -7,7 +7,7 @@
  * second copy is how a gate ends up measuring against a zone the author was
  * never told about.
  *
- * Cupric's own `safeArea()` (studio/design.ts) expresses the same idea as
+ * NewBrand's own `safeArea()` (studio/design.ts) expresses the same idea as
  * per-edge insets; `safeZoneFor` is the single source both of them — and the
  * gate — now read.
  */

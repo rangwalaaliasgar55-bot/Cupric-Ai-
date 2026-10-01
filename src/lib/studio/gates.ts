@@ -1,10 +1,10 @@
 /**
- * The gate chain Cupric runs before it calls an edit delivered.
+ * The gate chain NewBrand runs before it calls an edit delivered.
  *
  * Ported from veedstudio/open-edit — `cli/src/wcag/policy.ts`, `windows.ts`,
  * `treat.ts`, `cli/src/safe-zone.ts` and `cli/src/commands/gates.ts`
- * (Apache-2.0, see THIRD_PARTY_NOTICES.md) — and adapted to Cupric's document
- * model: the background statistics come from frames Cupric itself renders, so the
+ * (Apache-2.0, see THIRD_PARTY_NOTICES.md) — and adapted to NewBrand's document
+ * model: the background statistics come from frames NewBrand itself renders, so the
  * gate measures the edit that will be exported rather than a model's opinion of
  * it.
  *
@@ -672,7 +672,7 @@ function safeZoneGate(doc: StudioDoc, frames: GateInput['frames']): { findings: 
             over.top > 0 ? `${Math.round(over.top * 100)}% past the top` : null,
             over.bottom > 0 ? `${Math.round(over.bottom * 100)}% under the bottom` : null,
           ].filter(Boolean).join(', ')}. Feeds and players cover that band with their own UI.`,
-          hint: 'Nudge the block inside, or let Cupric do it — the fix moves it to the nearest inside position at the same size.',
+          hint: 'Nudge the block inside, or let NewBrand do it — the fix moves it to the nearest inside position at the same size.',
           detail: { left: over.left, right: over.right, top: over.top, bottom: over.bottom },
           fix: {
             label: 'Move it inside the safe area',
@@ -739,7 +739,7 @@ function contrastGate(
       clipId,
       message: `“${clip.name}” falls below WCAG ${level} where it sits over the picture: worst ${verdict.worstRatio}:1 against a required ${verdict.threshold}:1${worstSecond ? ` (${worstSecond.from.toFixed(1)}–${worstSecond.to.toFixed(1)}s)` : ''}.`,
       hint: fix
-        ? `Cupric measured the pixels behind the text and can fix it without guessing: ${fix.kind === 'recolor' ? `move the ink to ${fix.color}` : `paint a ${Math.round((fix.plateAlpha ?? 0) * 100)}% plate behind it`} (${fix.guaranteedRatio}:1 against every sampled colour).`
+        ? `NewBrand measured the pixels behind the text and can fix it without guessing: ${fix.kind === 'recolor' ? `move the ink to ${fix.color}` : `paint a ${Math.round((fix.plateAlpha ?? 0) * 100)}% plate behind it`} (${fix.guaranteedRatio}:1 against every sampled colour).`
         : 'Every sampled colour failed: raise the scrim, or put the text on a plate of its own.',
       detail: {
         worstRatio: verdict.worstRatio,
@@ -781,7 +781,7 @@ function deliveryGate(delivery: DeliveryFindings | undefined): GateFinding[] {
         id: 'deliver:loudness',
         severity: 'warning',
         message: `Delivered loudness is ${loudness.integratedLufs.toFixed(1)} LUFS; the social target is ${LOUDNESS_TARGET.integratedLufs} LUFS ±1.`,
-        hint: 'Cupric normalises on mux when the desktop pipeline produces the file — this report means it was skipped or overridden.',
+        hint: 'NewBrand normalises on mux when the desktop pipeline produces the file — this report means it was skipped or overridden.',
         detail: { integratedLufs: loudness.integratedLufs, target: LOUDNESS_TARGET.integratedLufs },
       })
     }

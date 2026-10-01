@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Cupric effect — logo sting</title>
+<title>NewBrand effect — logo sting</title>
 <style>
   html, body { margin: 0; background: #000; overflow: hidden; }
   #scene {
@@ -20,7 +20,7 @@
 </head>
 <body>
 <div id="scene">
-  <div id="mark">CUPRIC AI</div>
+  <div id="mark">NEWBRAND</div>
 </div>
 <script>
 const DUR = 3, FPS = 30;
@@ -36,9 +36,9 @@ window.__seek = function (t) {
   el.style.transform = 'scale(' + s + ')';
   el.style.opacity = String(clamp(p * 4, 0, 1));
 };
-window.__cupricSourceManifest = {
+window.__newbrandSourceManifest = {
   sources: ['typography', 'radial-gradient'],
-  sequence: [{ from: 0, to: DUR, type: 'logo', copy: 'CUPRIC AI' }],
+  sequence: [{ from: 0, to: DUR, type: 'logo', copy: 'NEWBRAND' }],
   renderSpec: { durationSec: DUR, fps: FPS, size: [1080, 1080] }
 };
 window.__seek(0);

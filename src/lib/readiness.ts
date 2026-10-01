@@ -9,7 +9,7 @@
  * *not runnable* rather than as absent, because "install it" is the wrong advice
  * for a binary that is already there.
  *
- * The reason it matters in Cupric: the app degrades quietly by design. MP4 export
+ * The reason it matters in NewBrand: the app degrades quietly by design. MP4 export
  * falls back to a WebM draft, auto-captions say the desktop engine is needed,
  * stock search runs keyless, and the AI layer falls back to a local model — all
  * correct, and all easy to mistake for the app being broken. Nothing told the
@@ -113,12 +113,12 @@ export function describeReadiness(facts: ReadinessFacts): ReadinessReport {
             ok: false,
             broken: true,
             detail: `Found, but not both halves are runnable${facts.ffmpeg ? ' (FFprobe is missing)' : ' (FFmpeg is missing)'} — export would start and fail at the first file.`,
-            remedy: 'Set CUPRIC_FFMPEG_PATH and CUPRIC_FFPROBE_PATH, or reinstall so the bundled binaries unpack.',
+            remedy: 'Set NEWBRAND_FFMPEG_PATH and NEWBRAND_FFPROBE_PATH, or reinstall so the bundled binaries unpack.',
           }
         : {
             ok: false,
             detail: 'Not found, so the Studio records a WebM draft in the browser instead of writing an MP4.',
-            remedy: 'Reinstall so ffmpeg-static and ffprobe-static unpack their binaries, or set CUPRIC_FFMPEG_PATH.',
+            remedy: 'Reinstall so ffmpeg-static and ffprobe-static unpack their binaries, or set NEWBRAND_FFMPEG_PATH.',
           }),
   })
 

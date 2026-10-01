@@ -57,8 +57,8 @@ checks += 1
 
 /* ── 2. the README describes this version ───────────────────────────────── */
 const readme = read('README.md')
-const setupVersions = [...readme.matchAll(/Cupric-AI-Setup-([0-9][0-9A-Za-z.-]*)\.exe/g)].map((m) => m[1])
-const portableVersions = [...readme.matchAll(/Cupric-AI-([0-9][0-9A-Za-z.-]*)-x64-Portable\.exe/g)].map((m) => m[1])
+const setupVersions = [...readme.matchAll(/NewBrand-Setup-([0-9][0-9A-Za-z.-]*)\.exe/g)].map((m) => m[1])
+const portableVersions = [...readme.matchAll(/NewBrand-([0-9][0-9A-Za-z.-]*)-x64-Portable\.exe/g)].map((m) => m[1])
 ok(setupVersions.length > 0, 'README names the NSIS installer it produces')
 ok(portableVersions.length > 0, 'README names the portable build it produces')
 assert.deepEqual([...new Set(setupVersions)], [version], `FAIL: README installer names disagree with package.json ${version}`)

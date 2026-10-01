@@ -163,9 +163,9 @@ isn't" pattern this project is removing.
    container at all (no Electron binary, see `docs/PHASE1_AUTONOMOUS.md` §4).
    *Verification required on Windows:* export to `C:\Program Files\` (permission),
    to a nearly-full drive (space), with a name like `launch|final.mp4` (name
-   rules), and with `CUPRIC_FFMPEG_PATH` pointing at a non-existent file (missing
+   rules), and with `NEWBRAND_FFMPEG_PATH` pointing at a non-existent file (missing
    FFmpeg) — each must produce its own message and its own action line.
-2. **UNVERIFIED: a real end-to-end export of a real project.** No Cupric render
+2. **UNVERIFIED: a real end-to-end export of a real project.** No NewBrand render
    has been produced: the timeline render needs the Electron hidden window, and
    the Studio export needs MediaRecorder. The gate that would catch a bad export
    is now in place and verified with real ffmpeg output, but the exports it will

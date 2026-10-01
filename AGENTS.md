@@ -1,6 +1,6 @@
 # AGENTS.md — the contract for working in this repository
 
-Written for an agent (or a person) picking this repo up cold. It is Cupric's own contract, in the spirit
+Written for an agent (or a person) picking this repo up cold. It is NewBrand's own contract, in the spirit
 of open-edit's `.claude/skills/**` and `docs/FLOW.md` — the *patterns*, not their engine syntax or their
 files. Read `NEXT_SESSION.md` first for what shipped last; this file is what must stay true while you
 change it.

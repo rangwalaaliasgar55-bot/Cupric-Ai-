@@ -1,5 +1,5 @@
 /**
- * V-2 background polish pass. While the user pauses, Cupric quietly plans an
+ * V-2 background polish pass. While the user pauses, NewBrand quietly plans an
  * auto-polish of the whole timeline with the same local planner the agent uses.
  * It never touches the doc: the result is only *offered*, then goes through the
  * normal preview diff → Accept/Reject → one atomic undo step.
@@ -9,7 +9,7 @@ import { localStudioEditPlan, validateStudioEditPlan, type StudioEditPlan } from
 
 /** How long the timeline must sit unchanged before the pass runs (ms). */
 export const POLISH_IDLE_MS = 4000
-const ENABLED_KEY = 'cupric.studio.backgroundPolish'
+const ENABLED_KEY = 'newbrand.studio.backgroundPolish'
 
 /** Cheap, order-stable fingerprint so an offer is tied to one exact timeline. */
 export function docSignature(doc: StudioDoc): string {

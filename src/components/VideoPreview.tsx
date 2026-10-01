@@ -12,7 +12,7 @@ export type LocalMediaUrl = { url: string | null; error: string | null; loading:
 /**
  * Turn a local media path into something a `<video>` can open: browser URLs pass
  * through, Electron project files go to the main process, which checks the path
- * is inside Cupric's own project data before handing back a `file://` URL.
+ * is inside NewBrand's own project data before handing back a `file://` URL.
  *
  * Exported because the Timeline screen drives its own `<video>` element from the
  * playhead (Video.js owns the element it creates, so a scrub-following preview
@@ -111,7 +111,7 @@ export function VideoPreview({ path, poster, className }: { path?: string | null
   return (
     <div className={`overflow-hidden rounded-lg bg-black ${className ?? ''}`}>
       <div data-vjs-player>
-        <video ref={videoRef} className="video-js vjs-big-play-centered vjs-theme-cupric aspect-video w-full" playsInline />
+        <video ref={videoRef} className="video-js vjs-big-play-centered vjs-theme-newbrand aspect-video w-full" playsInline />
       </div>
     </div>
   )

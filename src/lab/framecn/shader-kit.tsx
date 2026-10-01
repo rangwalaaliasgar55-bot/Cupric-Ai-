@@ -1,5 +1,5 @@
 /**
- * Cupric's shader kit — the 18 Lab effects, drawn by our own renderer.
+ * NewBrand's shader kit — the 18 Lab effects, drawn by our own renderer.
  *
  * These components replace `@paper-design/shaders-react`, which the vendored
  * framecn wrappers imported until Phase 5. That package is licensed PolyForm
@@ -179,7 +179,7 @@ export function ShaderCanvas({ kind, ...props }: ShaderKitProps & { kind: Shader
       // Never a silently blank box: say what happened in the console for the
       // developer and leave the canvas transparent for the caller's own error
       // handling (the Lab's stage draws its own frame around it).
-      console.error(`[cupric:shader] no 2D context for the "${kind}" effect — the canvas cannot be painted`)
+      console.error(`[newbrand:shader] no 2D context for the "${kind}" effect — the canvas cannot be painted`)
       return
     }
     canvas.width = bufferWidth

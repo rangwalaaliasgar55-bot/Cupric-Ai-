@@ -52,7 +52,7 @@ export function lintStudioDoc(doc: StudioDoc, opts: { hasMedia?: (mediaId: strin
         severity: 'warning',
         clipId: clip.id,
         message: `“${clip.name}” is still a placeholder.`,
-        hint: 'Paste a real quote you have permission to use, or delete the card. Cupric never writes testimonials.',
+        hint: 'Paste a real quote you have permission to use, or delete the card. NewBrand never writes testimonials.',
       })
     }
   }

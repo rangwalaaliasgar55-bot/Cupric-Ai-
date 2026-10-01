@@ -118,10 +118,10 @@ test('the first-run tour explains the four screens and goes somewhere', async ()
     // A profile that already has projects is deliberately not greeted. Say so,
     // and check the tour is still reachable, rather than passing vacuously.
     await launched.page.keyboard.press('Control+k')
-    await launched.page.getByText('Quick tour of Cupric').first().click()
+    await launched.page.getByText('Quick tour of NewBrand').first().click()
     await expect(dialog).toBeVisible()
   }
-  await expect(dialog.getByRole('heading', { name: 'Welcome to Cupric AI' })).toBeVisible()
+  await expect(dialog.getByRole('heading', { name: 'Welcome to NewBrand' })).toBeVisible()
 
   const cards = dialog.locator('[data-onboarding-card]')
   await expect(cards).toHaveCount(4)
@@ -142,7 +142,7 @@ test('the first-run tour explains the four screens and goes somewhere', async ()
 })
 
 test('the tour does not come back after it has been seen', async () => {
-  const stored = await launched.page.evaluate(() => localStorage.getItem('cupric.onboarding.seen'))
+  const stored = await launched.page.evaluate(() => localStorage.getItem('newbrand.onboarding.seen'))
   expect(stored, 'the dismissal is recorded with a date').toMatch(/^\d{4}-\d{2}-\d{2}T/)
   await launched.page.reload()
   await launched.page.waitForSelector('main[data-view]')
@@ -181,7 +181,7 @@ test('the timeline playhead moves from the keyboard and says where it is', async
   // something real to seek. That also covers two Phase 1 features nothing else
   // touches — footage import and the silence scan behind "Apply edit".
   const { ffmpeg } = mediaBinaries()
-  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-e2e-playhead-'))
+  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-e2e-playhead-'))
   const source = makeFixtureVideo(ffmpeg, workspace, { seconds: 3 })
 
   await openNav(launched.page, 'footage')
@@ -233,7 +233,7 @@ test('a missing speech engine offers a real download, not just a sentence', asyn
   await dismissOnboarding(launched.page)
   await ensureProjectOpen(launched.page)
   const status = await launched.page.evaluate(async () => {
-    const bridge = (window as unknown as { cupric?: { ipc: { invoke: (c: string, p?: unknown) => Promise<unknown> } } }).cupric
+    const bridge = (window as unknown as { newbrand?: { ipc: { invoke: (c: string, p?: unknown) => Promise<unknown> } } }).newbrand
     if (!bridge) return null
     return bridge.ipc.invoke('voice:engines')
   })
@@ -250,7 +250,7 @@ test('a missing speech engine offers a real download, not just a sentence', asyn
   // The panel lives in the Ask drawer's settings (src/app-shell/AskPanel.tsx),
   // which is where a person would look for it. Open it the way they would.
   await launched.page.keyboard.press('Control+k')
-  await launched.page.getByText('Ask Cupric AI').first().click()
+  await launched.page.getByText('Ask NewBrand').first().click()
   const settings = launched.page.getByRole('button', { name: 'AI settings' })
   await expect(settings).toBeVisible()
   await settings.click()

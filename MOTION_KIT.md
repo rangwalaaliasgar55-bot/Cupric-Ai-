@@ -21,7 +21,7 @@ Keyframes carry Tilt/Turn, so card flips and swings animate. Rendered by strip p
 Select a clip and click **Cursor**. The pointer travels in, clicks (ripple), and the target presses in.
 On hover the target lifts instead. Recorded components switch to *interact*, so they really react.
 **When to use it:** buttons, toggles, inputs, menus, sliders, app/website walkthroughs.
-**When not to:** backgrounds, text reveals, loaders, charts, logos. Cupric refuses these and says why;
+**When not to:** backgrounds, text reveals, loaders, charts, logos. NewBrand refuses these and says why;
 Shift-click forces one anyway. The component director adds cursors to interactive CTA/control components automatically.
 
 ## Fonts (all bundled, OFL; export works offline)
@@ -45,7 +45,7 @@ Draw-on stroke reveals, actions scheduled on frame ranges, and parent→child li
 ## framecn (MIT): 112 video components in the Components tab
 Categories: Captions (15), Text (27), Transitions (14), Scenes (23), Shaders & backgrounds (21), Motion primitives (10).
 - Vendored verbatim into `src/lab/framecn` by `scripts/vendor-framecn.mjs <clone>`; only import paths change.
-- Editframe is proprietary and is **not** included. Cupric's own `editframe-shim.tsx` provides the only two names the components use.
+- Editframe is proprietary and is **not** included. NewBrand's own `editframe-shim.tsx` provides the only two names the components use.
 - Shaders use `@paper-design/shaders-react` (Apache-2.0).
 - Each component has its own settings (text, colours, sizes) in the inspector. **Apply & re-record** records it again through the single component recorder.
 - The agent passes `props` on `addComponent`; they are validated against the component's controls.
@@ -54,7 +54,7 @@ Categories: Captions (15), Text (27), Transitions (14), Scenes (23), Shaders & b
 ## Fonts: bundled, yours, and Fontshare
 - 20 bundled OFL families. New this round: Plus Jakarta Sans, Bricolage Grotesque, Syne, Unbounded, Archivo Black, Fraunces, DM Serif Display.
 - **Your fonts:** Text inspector → Add fonts takes a .zip, .woff2, .otf or .ttf. Family, weight and italic are read from the font's own tables. Fonts are stored in IndexedDB on this computer and embedded in exports.
-- **Fontshare:** Satoshi, Clash Display, General Sans, Cabinet Grotesk, Switzer, Zodiak and others are ITF Free Font License fonts. That licence forbids apps from offering them to users, even via the API. So Cupric lists 21 verified families with links; the user downloads one and adds the zip. The agent only uses Fontshare fonts the user has added and otherwise suggests them.
+- **Fontshare:** Satoshi, Clash Display, General Sans, Cabinet Grotesk, Switzer, Zodiak and others are ITF Free Font License fonts. That licence forbids apps from offering them to users, even via the API. So NewBrand lists 21 verified families with links; the user downloads one and adds the zip. The agent only uses Fontshare fonts the user has added and otherwise suggests them.
 - **Suggested looks:** reads the mood of the words (tech, luxury, hype, fitness, education, story, friendly) and builds complete looks: headline and emphasis pairing, weight, animation, and colours from the Brand Kit plus in-between tones, all readable on dark.
 
 ## Cursor v2

@@ -8,7 +8,7 @@
  *
  * Two rules learned from the rest of this codebase:
  *   - **Say what the thing is for, not what it is called.** "Autonomous Mode" is
- *     a name; "paste a brief and Cupric edits the video for you" is the feature.
+ *     a name; "paste a brief and NewBrand edits the video for you" is the feature.
  *   - **Every card goes somewhere.** The `action` view is where the button lands,
  *     so a card can never be a dead end.
  */
@@ -46,7 +46,7 @@ export const ONBOARDING_CONCEPTS: OnboardingConcept[] = [
   {
     id: 'autonomous',
     title: 'Autonomous Mode',
-    what: 'Paste a brief and Cupric plans the edit, picks the shots and renders a first cut on its own.',
+    what: 'Paste a brief and NewBrand plans the edit, picks the shots and renders a first cut on its own.',
     when: 'When you want a rough cut to react to instead of building one from nothing.',
     action: 'auto',
     actionLabel: 'Try a brief',
@@ -55,7 +55,7 @@ export const ONBOARDING_CONCEPTS: OnboardingConcept[] = [
     id: 'arena',
     title: 'Arena Desk',
     what: 'Where generated scenes land — animations, HTML pages and ZIP packages you can preview, keep, or import as editable clips.',
-    when: 'When you have something generated elsewhere (or by Cupric) and want it in the video.',
+    when: 'When you have something generated elsewhere (or by NewBrand) and want it in the video.',
     action: 'arena',
     actionLabel: 'Open Arena Desk',
   },
@@ -70,7 +70,7 @@ export const ONBOARDING_CONCEPTS: OnboardingConcept[] = [
 ]
 
 /** Where "have they seen it" lives. One key, so it is easy to reset by hand. */
-export const ONBOARDING_KEY = 'cupric.onboarding.seen'
+export const ONBOARDING_KEY = 'newbrand.onboarding.seen'
 
 /** Minimal storage surface, so the rule below is testable without a browser. */
 export type OnboardingStorage = {

@@ -66,7 +66,7 @@ export function electronBinary(): string {
  */
 function resolveMediaTool(kind: 'ffmpeg' | 'ffprobe'): string {
   const tried: string[] = []
-  const envNames = kind === 'ffmpeg' ? ['CUPRIC_FFMPEG_PATH', 'FFMPEG_PATH'] : ['CUPRIC_FFPROBE_PATH', 'FFPROBE_PATH']
+  const envNames = kind === 'ffmpeg' ? ['NEWBRAND_FFMPEG_PATH', 'FFMPEG_PATH'] : ['NEWBRAND_FFPROBE_PATH', 'FFPROBE_PATH']
   for (const name of envNames) {
     const value = process.env[name]
     if (!value) {
@@ -133,7 +133,7 @@ export type LaunchOptions = {
  */
 export async function launchApp(options: LaunchOptions = {}): Promise<LaunchedApp> {
   const binary = electronBinary()
-  const userDataDir = options.userDataDir ?? fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-e2e-'))
+  const userDataDir = options.userDataDir ?? fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-e2e-'))
   const errors: string[] = []
 
   const app = await electron.launch({
@@ -145,10 +145,10 @@ export async function launchApp(options: LaunchOptions = {}): Promise<LaunchedAp
       // No dev server: the app loads dist/index.html from disk, exactly as the
       // packaged build does.
       ELECTRON_START_URL: '',
-      CUPRIC_USER_DATA_DIR: userDataDir,
+      NEWBRAND_USER_DATA_DIR: userDataDir,
       // Kept for parity with scripts/check-boot.mjs, which launches the packaged
       // app the same way. It is a marker only: nothing in electron/ reads it.
-      CUPRIC_BOOT_CHECK: '1',
+      NEWBRAND_BOOT_CHECK: '1',
       ...options.env,
     } as Record<string, string>,
   })
@@ -230,23 +230,23 @@ export async function waitForToast(page: Page, pattern: RegExp, timeoutMs = 120_
  * Start recording the render IPC the renderer receives.
  *
  * The export hangs this suite twice, and both times the question was the same:
- * did the app hear anything at all? `window.cupric.ipc.on` is the app's own
+ * did the app hear anything at all? `window.newbrand.ipc.on` is the app's own
  * channel — subscribing from the test adds nothing the product does not already
  * do, and the answer goes into the failure message.
  */
 export async function recordRenderEvents(page: Page): Promise<void> {
   await page.evaluate(() => {
     const w = window as unknown as {
-      cupric?: { ipc: { on: (channel: string, handler: (payload: unknown) => void) => () => void } }
-      __cupricRenderEvents?: Array<{ channel: string; payload: unknown; at: number }>
+      newbrand?: { ipc: { on: (channel: string, handler: (payload: unknown) => void) => () => void } }
+      __newbrandRenderEvents?: Array<{ channel: string; payload: unknown; at: number }>
     }
-    if (!w.cupric || w.__cupricRenderEvents) return
-    w.__cupricRenderEvents = []
+    if (!w.newbrand || w.__newbrandRenderEvents) return
+    w.__newbrandRenderEvents = []
     for (const channel of ['render:progress', 'render:done', 'render:error']) {
-      w.cupric.ipc.on(channel, (payload) => {
+      w.newbrand.ipc.on(channel, (payload) => {
         const entry = { channel, payload, at: Date.now() }
         // Progress arrives per frame; keep the last few so the list stays short.
-        const list = w.__cupricRenderEvents!
+        const list = w.__newbrandRenderEvents!
         if (channel === 'render:progress') list.push(entry)
         else list.push(entry)
       })
@@ -257,8 +257,8 @@ export async function recordRenderEvents(page: Page): Promise<void> {
 /** The render IPC the renderer has received so far, as readable lines. */
 export async function renderEventLines(page: Page, max = 6): Promise<string> {
   const events = await page.evaluate(() => {
-    const w = window as unknown as { __cupricRenderEvents?: Array<{ channel: string; payload: unknown; at: number }> }
-    return w.__cupricRenderEvents ?? []
+    const w = window as unknown as { __newbrandRenderEvents?: Array<{ channel: string; payload: unknown; at: number }> }
+    return w.__newbrandRenderEvents ?? []
   })
   if (!events.length) return '(the renderer received no render:* event at all)'
   const progress = events.filter((event) => event.channel === 'render:progress')
@@ -276,7 +276,7 @@ export async function renderEventLines(page: Page, max = 6): Promise<string> {
  * Wait for a toast that was not already on screen.
  *
  * The previous version waited for text matching a regex I invented, and the app
- * answered "Preview path is outside Cupric AI project data." — a real, visible
+ * answered "Preview path is outside NewBrand project data." — a real, visible
  * failure report that matched none of my words, so the test sat there for four
  * minutes while the app had already told the user what was wrong. Toasts are the
  * product's own channel; anything new appearing in one is the answer, whatever

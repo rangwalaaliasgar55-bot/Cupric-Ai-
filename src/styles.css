@@ -35,7 +35,7 @@
 @import 'tailwindcss';
 
 /*
- * Cupric AI design tokens — see DESIGN.md (source of truth).
+ * NewBrand design tokens — see DESIGN.md (source of truth).
  * Layer 1: Open Props-inspired scales + Utopia-fixed type at desktop midpoint.
  * No raw hex / magic spacing in JSX after this file.
  */
@@ -131,10 +131,10 @@
 /*
  * Vendored UI Lab surface tokens (github.com/xevrion/ui-lab, lab.xevrion.dev).
  * The 190 lab demos are written against `background / foreground / surface /
- * border / marker` and a `dark:` variant. Cupric AI drives its theme from the
+ * border / marker` and a `dark:` variant. NewBrand drives its theme from the
  * `data-theme` attribute, so the variant is remapped here instead of relying
  * on `prefers-color-scheme`. `muted` and `danger` deliberately fall through to
- * the Cupric tokens above so the lab never introduces a second palette.
+ * the NewBrand tokens above so the lab never introduces a second palette.
  */
 @custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
 
@@ -319,38 +319,38 @@
     background-image: radial-gradient(color-mix(in srgb, var(--color-text) 9%, transparent) 1px, transparent 1px);
     background-size: 16px 16px;
   }
-  .vjs-theme-cupric.video-js {
+  .vjs-theme-newbrand.video-js {
     font-family: var(--font-sans);
     background-color: #000;
     color: var(--color-text);
   }
-  .vjs-theme-cupric .vjs-control-bar,
-  .vjs-theme-cupric .vjs-menu-button-popup .vjs-menu .vjs-menu-content {
+  .vjs-theme-newbrand .vjs-control-bar,
+  .vjs-theme-newbrand .vjs-menu-button-popup .vjs-menu .vjs-menu-content {
     background: rgb(21 21 27 / 0.9);
     backdrop-filter: blur(12px);
   }
-  .vjs-theme-cupric .vjs-big-play-button {
+  .vjs-theme-newbrand .vjs-big-play-button {
     border: 1px solid rgb(255 255 255 / 0.18);
     border-radius: 999px;
     background: var(--color-accent);
     color: var(--color-accent-ink);
   }
-  .vjs-theme-cupric:hover .vjs-big-play-button,
-  .vjs-theme-cupric .vjs-big-play-button:focus {
+  .vjs-theme-newbrand:hover .vjs-big-play-button,
+  .vjs-theme-newbrand .vjs-big-play-button:focus {
     background: var(--color-accent-hover);
     color: var(--color-accent-ink);
   }
-  .vjs-theme-cupric .vjs-play-progress,
-  .vjs-theme-cupric .vjs-volume-level {
+  .vjs-theme-newbrand .vjs-play-progress,
+  .vjs-theme-newbrand .vjs-volume-level {
     background-color: var(--color-accent);
   }
-  .vjs-theme-cupric .vjs-slider {
+  .vjs-theme-newbrand .vjs-slider {
     background-color: rgb(255 255 255 / 0.18);
   }
 
   /*
    * Lab canvas: the surface the vendored demos live on. Scoped so the lab's
-   * neutral palette never leaks into Cupric chrome.
+   * neutral palette never leaks into NewBrand chrome.
    */
   .lab-canvas {
     /* framecn components read these (Geist is bundled). */
@@ -466,7 +466,7 @@
 
 /* Ambient app backdrop (src/app-shell/AppBackdrop.tsx). Transform-only so it
    stays on the compositor, and disabled wholesale under reduced motion. */
-@keyframes cupric-drift {
+@keyframes newbrand-drift {
   0%,
   100% {
     transform: translate3d(0, 0, 0) scale(1);
@@ -480,8 +480,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [style*='cupric-drift'],
-  .\[animation\:cupric-drift_46s_ease-in-out_infinite\] {
+  [style*='newbrand-drift'],
+  .\[animation\:newbrand-drift_46s_ease-in-out_infinite\] {
     animation: none !important;
   }
 }

@@ -42,7 +42,7 @@ export default function App() {
     return ipc.on('updater:status', (event: { status?: string; version?: string }) => {
       if (event?.status !== 'downloaded') return
       const version = event.version ? ` ${event.version}` : ''
-      useProjectStore.getState().pushToast('info', `Cupric${version} is ready — it installs next time you quit.`, {
+      useProjectStore.getState().pushToast('info', `NewBrand${version} is ready — it installs next time you quit.`, {
         // One banner per version, however many times the event arrives.
         id: `update-${event.version ?? 'ready'}`,
         sticky: true,

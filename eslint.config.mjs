@@ -6,12 +6,12 @@
  * TS/TSX/CJS source and enforces the bridge rule that 0.10.0 broke; it runs as
  * part of `npm run check:bridge`.
  *
- * Bridge rule: `window.cupric` / `window.northframe` are defined by
+ * Bridge rule: `window.newbrand` / `window.northframe` are defined by
  * contextBridge as READ-ONLY. Assigning to them, to anything under them,
  * deleting from them or redefining them throws in the packaged app ("Cannot
- * assign to read only property 'cupric' of object '#<Window>'") — in 0.10.0
+ * assign to read only property 'newbrand' of object '#<Window>'") — in 0.10.0
  * that blanked the Studio. Renderer-owned globals get their own names
- * (e.g. window.__cupricStudio).
+ * (e.g. window.__newbrandStudio).
  */
 import tsParser from '@typescript-eslint/parser'
 import { BRIDGE_RESTRICTED_SYNTAX } from './scripts/eslint-bridge-rule.mjs'

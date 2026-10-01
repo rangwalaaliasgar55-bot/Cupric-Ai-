@@ -52,7 +52,7 @@ test.describe('the app launches', () => {
         }
         await button.click()
         await app.page.waitForSelector(`main[data-view="${view}"]`, { timeout: 60_000 })
-        const fallback = await app.page.locator('[data-cupric-fallback]').count()
+        const fallback = await app.page.locator('[data-newbrand-fallback]').count()
         expect(fallback, `${view} rendered an error card instead of the view`).toBe(0)
       }
       expectNoAppErrors(app)
@@ -66,13 +66,13 @@ test.describe('the app launches', () => {
     const { tmpdir } = await import('node:os')
     const nodePath = await import('node:path')
     const { writeFileSync } = await import('node:fs')
-    const userDataDir = await mkdtemp(nodePath.join(tmpdir(), 'cupric-e2e-corrupt-'))
+    const userDataDir = await mkdtemp(nodePath.join(tmpdir(), 'newbrand-e2e-corrupt-'))
     writeFileSync(nodePath.join(userDataDir, 'projects.json'), '{"projects": [ this is not json', 'utf8')
     const app = await launchApp({ userDataDir })
     try {
       // The app must still paint something with a way forward, whatever it
       // decided to do with the unreadable file.
-      await expect(app.page.locator('main[data-view], [data-cupric-fallback]')).toBeVisible({ timeout: 60_000 })
+      await expect(app.page.locator('main[data-view], [data-newbrand-fallback]')).toBeVisible({ timeout: 60_000 })
       const rootChildren = await app.page.evaluate(() => document.getElementById('root')?.childElementCount ?? 0)
       expect(rootChildren, 'the window went blank on a corrupt project file').toBeGreaterThan(0)
     } finally {
@@ -89,7 +89,7 @@ test.describe('the app launches', () => {
       // Settings is the app's own surface for the version the release gate
       // (scripts/check-version-sync.mjs) ties to package.json.
       const version = await app.page.evaluate(async () => {
-        const bridge = (window as unknown as { cupric?: { ipc: { invoke: (channel: string) => Promise<unknown> } } }).cupric
+        const bridge = (window as unknown as { newbrand?: { ipc: { invoke: (channel: string) => Promise<unknown> } } }).newbrand
         return bridge ? await bridge.ipc.invoke('app:info') : null
       })
       expect(version, 'no desktop bridge: app:info could not be reached').not.toBeNull()
@@ -114,7 +114,7 @@ test.describe('the app launches', () => {
     // What it does now: create the project through the app, rename it through
     // the same field a person uses, wait for the write to land on disk, restart,
     // and assert what is on screen and on disk.
-    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cupric-e2e-persist-'))
+    const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'newbrand-e2e-persist-'))
     const stateFile = path.join(userDataDir, 'projects.json')
     const name = 'E2E persistence'
 

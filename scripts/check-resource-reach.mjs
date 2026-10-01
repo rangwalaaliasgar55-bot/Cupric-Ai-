@@ -22,7 +22,7 @@ const rundown = { style: 'premium saas launch', scenes: [
   { type: 'gallery', copy: 'Every product shot, one infinite scroll', motion: 'scroll' },
   { type: 'cta', copy: 'Start free today' },
 ] }
-const c = automationResourceContext('Launch video for Cupric AI editor', rundown, dir)
+const c = automationResourceContext('Launch video for NewBrand editor', rundown, dir)
 
 // 1. Full surface.
 const expected = index.packs.reduce((sum, p) => sum + JSON.parse(readFileSync(path.join(dir, `${p.id}.json`), 'utf8')).items.filter((i) => i.kind !== 'font' && i.kind !== 'voice').length, 0)
@@ -47,7 +47,7 @@ ok(by.cta.layers.background && by.cta.layers.main && by.cta.layers.accent, 'CTA 
 ok(c.scenes.filter((s) => Object.keys(s.layers).length >= 2).length >= 4, 'most scenes are layered, not one resource each')
 const ids = c.scenes.flatMap((s) => Object.values(s.layers).map((v) => v.id))
 ok(new Set(ids).size === ids.length, 'no resource reused across scenes')
-ok(JSON.stringify(automationResourceContext('Launch video for Cupric AI editor', rundown, dir).scenes.map((s) => Object.values(s.layers).map((v) => v.id))) === JSON.stringify(c.scenes.map((s) => Object.values(s.layers).map((v) => v.id))), 'deterministic')
+ok(JSON.stringify(automationResourceContext('Launch video for NewBrand editor', rundown, dir).scenes.map((s) => Object.values(s.layers).map((v) => v.id))) === JSON.stringify(c.scenes.map((s) => Object.values(s.layers).map((v) => v.id))), 'deterministic')
 
 // Classifier edge cases.
 ok(classifyBeat({ copy: 'Download now' }, 2, 5) === 'cta' && classifyBeat({ copy: 'Our logo' }, 4, 5) === 'social-proof' && classifyBeat({ copy: 'Thanks' }, 4, 5) === 'close', 'classifier')

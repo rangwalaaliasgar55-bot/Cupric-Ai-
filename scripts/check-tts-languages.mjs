@@ -43,11 +43,11 @@ ok(tts.resolveLanguage(undefined, '') === 'en', 'no language and no text still r
 const win = tts.ttsCommand('win32', 'C:\\out.wav', { language: 'hi', rate: 3 })
 ok(win.cmd === 'powershell.exe' && win.args.includes('-NoProfile') && win.args.includes('-NonInteractive'), 'Windows synthesis runs PowerShell without a profile')
 const winScript = win.args[win.args.length - 1]
-ok(/Add-Type -AssemblyName System\.Speech/.test(winScript) && /SetOutputToWaveFile\(\$env:CUPRIC_TTS_OUT\)/.test(winScript), 'Windows writes a real WAV through System.Speech')
+ok(/Add-Type -AssemblyName System\.Speech/.test(winScript) && /SetOutputToWaveFile\(\$env:NEWBRAND_TTS_OUT\)/.test(winScript), 'Windows writes a real WAV through System.Speech')
 ok(/Culture\.Name -like/.test(winScript), 'Windows picks a voice by culture, not by guessing a name')
 ok(/\$s\.Rate = 3/.test(winScript), 'rate is applied')
 ok(/exit 3/.test(winScript) && /no-voice-for-language/.test(winScript), 'Windows refuses to read Hindi with an English voice (exit 3, explicit reason)')
-ok(/Speak\(\$env:CUPRIC_TTS_TEXT\)/.test(winScript), 'the script speaks the environment variable, so the text never reaches a command line')
+ok(/Speak\(\$env:NEWBRAND_TTS_TEXT\)/.test(winScript), 'the script speaks the environment variable, so the text never reaches a command line')
 ok(win.args[2] === '-Command' && win.args.length === 4, 'the script is one argument after -Command, handed to PowerShell as an argv entry')
 ok(!/shell:\s*true/.test(ttsSource()), 'processes are spawned with an argument array and no shell, so no string is re-parsed')
 ok(win.args[win.args.length - 1].length > 200, 'the script is a real statement list, not a stub')
@@ -63,7 +63,7 @@ ok(withDetail.includes('Access denied'), 'a real engine error is carried into th
 ok(tts.blockerFor('win32', 'en') === 'The system voice could not speak.', 'with no detail the copy stays plain')
 
 // ── Piper discovery: real filesystem, real rules ─────────────────────────────
-const dir = mkdtempSync(path.join(os.tmpdir(), 'cupric-tts-'))
+const dir = mkdtempSync(path.join(os.tmpdir(), 'newbrand-tts-'))
 try {
   ok(tts.piperSetup({ platform: 'win32', dirs: [] }) === null, 'no folder → no Piper, rather than a hopeful guess')
 
@@ -88,7 +88,7 @@ try {
   ok(withModels.models.en && withModels.models.hi, 'both language models are seen once their .onnx and .json exist')
   writeFileSync(path.join(pdir, 'fr_FR-upmc-medium.onnx'), '')
   writeFileSync(path.join(pdir, 'fr_FR-upmc-medium.json'), '{}')
-  ok(!('fr' in tts.piperSetup({ platform: 'win32', dirs: [pdir] }).models), 'a language Cupric does not offer is not invented')
+  ok(!('fr' in tts.piperSetup({ platform: 'win32', dirs: [pdir] }).models), 'a language NewBrand does not offer is not invented')
 
   // piperCommand is the argv a real Piper receives.
   const cmd = tts.piperCommand(withModels, 'hi', 'C:\\hi.wav', { rate: 0 })

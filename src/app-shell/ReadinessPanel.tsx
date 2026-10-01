@@ -2,7 +2,7 @@
  * Readiness, as a panel: what this machine can do, and what is missing.
  *
  * Adapted from open-edit's `readiness` command (Apache-2.0, see
- * THIRD_PARTY_NOTICES.md) — see `src/lib/readiness.ts` for why Cupric needs it:
+ * THIRD_PARTY_NOTICES.md) — see `src/lib/readiness.ts` for why NewBrand needs it:
  * the app degrades quietly by design, so "no offline recogniser found" and "a
  * WebM draft instead of an MP4" are easy to mistake for the app being broken.
  *
@@ -209,7 +209,7 @@ function InstallAction({
         type="button"
         onClick={() => onInstall(offer.engine)}
         disabled={Boolean(installing) || (engines ? !engines.supported : false)}
-        title={blockedReason ?? `Download ${info?.label ?? offer.engine} and install it into your Cupric folder`}
+        title={blockedReason ?? `Download ${info?.label ?? offer.engine} and install it into your NewBrand folder`}
         aria-describedby={blockedReason ? reasonId : undefined}
         className="rounded-md border border-line bg-panel-alt/60 px-2 py-1 text-[11px] font-medium text-text transition-colors duration-150 hover:border-text/20 hover:bg-panel-alt disabled:opacity-50"
       >

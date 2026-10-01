@@ -21,7 +21,7 @@ import path from 'node:path'
 import { build } from 'esbuild'
 
 const root = process.cwd()
-const out = path.join(root, 'node_modules', '.cache', 'cupric-check-automation.mjs')
+const out = path.join(root, 'node_modules', '.cache', 'newbrand-check-automation.mjs')
 rmSync(out, { force: true })
 await build({
   stdin: {
@@ -108,7 +108,7 @@ ok(a.plan.shots.length >= 3, 'the plan has shots')
 /* ── 4. the runner: eight steps, artefacts, no fabricated pass ─────── */
 const fakeRender = async (doc, options = {}) => ({
   blob: { size: 812_345 },
-  url: 'blob:cupric-test',
+  url: 'blob:newbrand-test',
   fileName: options.fileName ?? 'run.webm',
   durationSec: m.docm.docDuration(doc),
   mimeType: 'video/webm;codecs=vp9',
@@ -166,7 +166,7 @@ function harness(job) {
   const done = h.patches.filter((p) => p.status === 'done')
   eq(done.length, 1, 'the job ends in exactly one done patch')
   ok(done[0].outputPath?.endsWith('.webm'), 'the delivered path is a real file name')
-  ok(done[0].outputUrl === 'blob:cupric-test', 'the recorded file is handed to the UI')
+  ok(done[0].outputUrl === 'blob:newbrand-test', 'the recorded file is handed to the UI')
   ok(done[0].reviewReport?.includes('## Candidate battle'), 'the review report is written')
   ok(done[0].renderEvaluation?.valid, 'the mechanical gate passes on a real recording')
   ok(done[0].candidateBattle.length === 3, 'the battle is recorded on the job')

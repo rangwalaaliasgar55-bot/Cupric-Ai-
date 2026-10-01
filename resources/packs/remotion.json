@@ -1,7 +1,7 @@
 {
   "id": "remotion",
   "name": "Remotion toolkit",
-  "description": "Remotion templates, skills and package capabilities are usable as editable Cupric-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.",
+  "description": "Remotion templates, skills and package capabilities are usable as editable NewBrand-native storyboards; every Google font applies to Studio text and downloads once for offline use. No upstream source is vendored.",
   "version": "0.16.0",
   "source": "https://github.com/remotion-dev/remotion",
   "license": "Remotion License (package-specific; metadata links only; verify eligibility before use)",
@@ -10,7 +10,7 @@
       "id": "template-audiogram",
       "kind": "saas-template",
       "name": "Audiogram",
-      "description": "Editable Cupric-native storyboard for the Audiogram workflow · upstream template-audiogram",
+      "description": "Editable NewBrand-native storyboard for the Audiogram workflow · upstream template-audiogram",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -51,7 +51,7 @@
       "id": "template-blank",
       "kind": "saas-template",
       "name": "Blank",
-      "description": "Editable Cupric-native storyboard for the Blank workflow · upstream template-empty",
+      "description": "Editable NewBrand-native storyboard for the Blank workflow · upstream template-empty",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -68,7 +68,7 @@
             "text"
           ],
           [
-            "Made with Cupric",
+            "Made with NewBrand",
             2.5,
             "shimmer",
             "text"
@@ -92,7 +92,7 @@
       "id": "template-code-hike",
       "kind": "saas-template",
       "name": "Code Hike",
-      "description": "Editable Cupric-native storyboard for the Code Hike workflow · upstream template-code-hike",
+      "description": "Editable NewBrand-native storyboard for the Code Hike workflow · upstream template-code-hike",
       "data": {
         "durationSec": 9.5,
         "scenes": [
@@ -133,7 +133,7 @@
       "id": "template-electron",
       "kind": "saas-template",
       "name": "Electron",
-      "description": "Editable Cupric-native storyboard for the Electron workflow · upstream template-electron",
+      "description": "Editable NewBrand-native storyboard for the Electron workflow · upstream template-electron",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -174,7 +174,7 @@
       "id": "template-helloworld",
       "kind": "saas-template",
       "name": "Helloworld",
-      "description": "Editable Cupric-native storyboard for the Helloworld workflow · upstream template-helloworld",
+      "description": "Editable NewBrand-native storyboard for the Helloworld workflow · upstream template-helloworld",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -215,7 +215,7 @@
       "id": "template-music-visualization",
       "kind": "saas-template",
       "name": "Music Visualization",
-      "description": "Editable Cupric-native storyboard for the Music Visualization workflow · upstream template-music-visualization",
+      "description": "Editable NewBrand-native storyboard for the Music Visualization workflow · upstream template-music-visualization",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -256,7 +256,7 @@
       "id": "template-next-app-tailwind",
       "kind": "saas-template",
       "name": "Next App Tailwind",
-      "description": "Editable Cupric-native storyboard for the Next App Tailwind workflow · upstream template-next-app-tailwind",
+      "description": "Editable NewBrand-native storyboard for the Next App Tailwind workflow · upstream template-next-app-tailwind",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -297,7 +297,7 @@
       "id": "template-overlay",
       "kind": "saas-template",
       "name": "Overlay",
-      "description": "Editable Cupric-native storyboard for the Overlay workflow · upstream template-overlay",
+      "description": "Editable NewBrand-native storyboard for the Overlay workflow · upstream template-overlay",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -338,7 +338,7 @@
       "id": "template-prompt-to-motion-graphics",
       "kind": "saas-template",
       "name": "Prompt To Motion Graphics",
-      "description": "Editable Cupric-native storyboard for the Prompt To Motion Graphics workflow · upstream template-prompt-to-motion-graphics",
+      "description": "Editable NewBrand-native storyboard for the Prompt To Motion Graphics workflow · upstream template-prompt-to-motion-graphics",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -379,7 +379,7 @@
       "id": "template-prompt-to-video",
       "kind": "saas-template",
       "name": "Prompt To Video",
-      "description": "Editable Cupric-native storyboard for the Prompt To Video workflow · upstream template-ai-video",
+      "description": "Editable NewBrand-native storyboard for the Prompt To Video workflow · upstream template-ai-video",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -420,7 +420,7 @@
       "id": "template-react-router",
       "kind": "saas-template",
       "name": "React Router",
-      "description": "Editable Cupric-native storyboard for the React Router workflow · upstream template-react-router",
+      "description": "Editable NewBrand-native storyboard for the React Router workflow · upstream template-react-router",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -461,7 +461,7 @@
       "id": "template-recorder",
       "kind": "saas-template",
       "name": "Recorder",
-      "description": "Editable Cupric-native storyboard for the Recorder workflow · upstream template-recorder",
+      "description": "Editable NewBrand-native storyboard for the Recorder workflow · upstream template-recorder",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -502,7 +502,7 @@
       "id": "template-render-server",
       "kind": "saas-template",
       "name": "Render Server",
-      "description": "Editable Cupric-native storyboard for the Render Server workflow · upstream template-render-server",
+      "description": "Editable NewBrand-native storyboard for the Render Server workflow · upstream template-render-server",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -543,7 +543,7 @@
       "id": "template-skia",
       "kind": "saas-template",
       "name": "Skia",
-      "description": "Editable Cupric-native storyboard for the Skia workflow · upstream template-skia",
+      "description": "Editable NewBrand-native storyboard for the Skia workflow · upstream template-skia",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -584,7 +584,7 @@
       "id": "template-stargazer",
       "kind": "saas-template",
       "name": "Stargazer",
-      "description": "Editable Cupric-native storyboard for the Stargazer workflow · upstream template-stargazer",
+      "description": "Editable NewBrand-native storyboard for the Stargazer workflow · upstream template-stargazer",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -625,7 +625,7 @@
       "id": "template-still",
       "kind": "saas-template",
       "name": "Still",
-      "description": "Editable Cupric-native storyboard for the Still workflow · upstream template-still",
+      "description": "Editable NewBrand-native storyboard for the Still workflow · upstream template-still",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -666,7 +666,7 @@
       "id": "template-three",
       "kind": "saas-template",
       "name": "Three",
-      "description": "Editable Cupric-native storyboard for the Three workflow · upstream template-three",
+      "description": "Editable NewBrand-native storyboard for the Three workflow · upstream template-three",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -707,7 +707,7 @@
       "id": "template-tiktok",
       "kind": "saas-template",
       "name": "Tiktok",
-      "description": "Editable Cupric-native storyboard for the Tiktok workflow · upstream template-tiktok",
+      "description": "Editable NewBrand-native storyboard for the Tiktok workflow · upstream template-tiktok",
       "data": {
         "durationSec": 9,
         "scenes": [
@@ -748,7 +748,7 @@
       "id": "template-vercel",
       "kind": "saas-template",
       "name": "Vercel",
-      "description": "Editable Cupric-native storyboard for the Vercel workflow · upstream template-vercel",
+      "description": "Editable NewBrand-native storyboard for the Vercel workflow · upstream template-vercel",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -789,7 +789,7 @@
       "id": "template-vibe-code",
       "kind": "saas-template",
       "name": "Vibe Code",
-      "description": "Editable Cupric-native storyboard for the Vibe Code workflow · upstream template-vibe-code",
+      "description": "Editable NewBrand-native storyboard for the Vibe Code workflow · upstream template-vibe-code",
       "data": {
         "durationSec": 10,
         "scenes": [
@@ -38106,7 +38106,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38146,7 +38146,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38186,7 +38186,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38226,7 +38226,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38266,7 +38266,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38306,7 +38306,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38346,7 +38346,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38386,7 +38386,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38426,7 +38426,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38466,7 +38466,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38506,7 +38506,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38546,7 +38546,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38586,7 +38586,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38626,7 +38626,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38666,7 +38666,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38706,7 +38706,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38746,7 +38746,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38786,7 +38786,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38826,7 +38826,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38866,7 +38866,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38906,7 +38906,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38946,7 +38946,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -38986,7 +38986,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39026,7 +39026,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39066,7 +39066,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39106,7 +39106,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39146,7 +39146,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39186,7 +39186,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39226,7 +39226,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39266,7 +39266,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39306,7 +39306,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39346,7 +39346,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39386,7 +39386,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39426,7 +39426,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39466,7 +39466,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39506,7 +39506,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39546,7 +39546,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39586,7 +39586,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39626,7 +39626,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39666,7 +39666,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39706,7 +39706,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39746,7 +39746,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39786,7 +39786,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39826,7 +39826,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39866,7 +39866,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39906,7 +39906,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39946,7 +39946,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -39986,7 +39986,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40026,7 +40026,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40066,7 +40066,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40106,7 +40106,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40146,7 +40146,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40186,7 +40186,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40226,7 +40226,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40266,7 +40266,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40306,7 +40306,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40346,7 +40346,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40386,7 +40386,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40426,7 +40426,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40466,7 +40466,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40506,7 +40506,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40546,7 +40546,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40586,7 +40586,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40626,7 +40626,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40666,7 +40666,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40706,7 +40706,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40746,7 +40746,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40786,7 +40786,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40826,7 +40826,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40866,7 +40866,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"
@@ -40906,7 +40906,7 @@
             "text"
           ],
           [
-            "Automated with Cupric",
+            "Automated with NewBrand",
             2.5,
             "fade-up",
             "text"

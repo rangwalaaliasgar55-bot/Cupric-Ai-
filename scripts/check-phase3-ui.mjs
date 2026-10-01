@@ -139,7 +139,7 @@ const layout = read('src/app-shell/AppLayout.tsx')
 ok(/<Onboarding /.test(layout), 'the tour is mounted in the shell')
 ok(/useOnboarding\(/.test(layout), 'the shell decides whether to show it')
 const palette = read('src/app-shell/CommandPalette.tsx')
-ok(/Quick tour of Cupric/.test(palette), 'the tour can be reopened from the command palette')
+ok(/Quick tour of NewBrand/.test(palette), 'the tour can be reopened from the command palette')
 
 // ── 5. the desks explain themselves ──────────────────────────────────────────
 const purpose = read('src/components/ScreenPurpose.tsx')
@@ -163,6 +163,6 @@ const installer = read('electron/voice-install.cjs')
 ok(/\.part`/.test(installer) || /\.part'/.test(installer) || /partial/.test(installer), 'a download writes to a partial file and renames it when complete')
 ok(/expect/.test(installer) && /existsSync/.test(installer), 'the installer verifies the files it claims to have installed')
 ok(/safeEntryTarget/.test(installer), 'archive extraction validates every entry path')
-ok(!/process\.env\.CUPRIC_FAKE|simulate|mockSuccess/i.test(installer), 'the installer contains no simulated-success path')
+ok(!/process\.env\.NEWBRAND_FAKE|simulate|mockSuccess/i.test(installer), 'the installer contains no simulated-success path')
 
 console.log(`phase3 ui: ${n} assertions passed`)

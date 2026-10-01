@@ -144,15 +144,15 @@ function automationResourceContext(brief, rundown, dir) {
   }
   const nativeActions = items.filter((it) => it.data?.nativeAction)
   if (nativeActions.length) {
-    lines.push('', 'NATIVE CUPRIC ACTIONS — when the final result is an editable Studio project, prefer these allowlisted actions over an opaque approximation; when the current job is standalone HTML, reproduce only the behaviour with deterministic inline geometry:')
+    lines.push('', 'NATIVE NEWBRAND ACTIONS — when the final result is an editable Studio project, prefer these allowlisted actions over an opaque approximation; when the current job is standalone HTML, reproduce only the behaviour with deterministic inline geometry:')
     lines.push(...nativeActions.map((action) => `- ${action.name}: ${action.data.nativeAction}(${action.data.design || action.id}) — ${String(action.description || '').slice(0, 180)}`))
   }
   if (templates.length) {
-    lines.push('', 'EXISTING CUPRIC SCENE TEMPLATES whose structure is already proven to render (mirror their timing shape):')
+    lines.push('', 'EXISTING NEWBRAND SCENE TEMPLATES whose structure is already proven to render (mirror their timing shape):')
     lines.push(...templates.map((t) => `- ${t.name} (${t.data?.durationSec ?? '?'}s): ${t.description}`))
   }
   if (sources.length) {
-    lines.push('', 'HOUSE STYLE CUES from the Cupric sources catalogue:')
+    lines.push('', 'HOUSE STYLE CUES from the NewBrand sources catalogue:')
     lines.push(...sources.map((s) => `- ${s.name}: ${s.data?.promptCue || s.description}`))
   }
   return { components, templates, sources, scenes: scenePlans, searched: { total, packs: perPack }, prompt: lines.join('\n') }

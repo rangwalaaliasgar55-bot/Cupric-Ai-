@@ -7,7 +7,7 @@
  *   window.__seek(t)               — paint the scene at t seconds (pure; no rAF,
  *                                    no CSS animation, so frame N is always the
  *                                    same pixels)
- *   window.__cupricSourceManifest  — duration, fps, size, beat list, credits
+ *   window.__newbrandSourceManifest  — duration, fps, size, beat list, credits
  *
  * That contract is what lets the desktop renderer screenshot a template frame
  * by frame into an MP4 without a headless animation clock, and what lets the

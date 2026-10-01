@@ -17,7 +17,7 @@
  *
  *   - `concat-chapters` refuses to stream-copy parts that do not match, because a mismatch
  *     produces a file that plays for one chapter and then glitches — a defect nobody sees
- *     until the whole thing is watched. Cupric's rundown render does have a legitimate
+ *     until the whole thing is watched. NewBrand's rundown render does have a legitimate
  *     re-encode fallback (a hardware encoder that failed part-way), so the plan RE-ENCODES
  *     and states why instead of refusing; the silent `-c copy` glitch is gone either way.
  *   - `mix-audio` never guesses a duck: the narration bus itself opens the gap, `amix` runs
@@ -33,14 +33,14 @@
  *     linear fades that sum to unity, and refuses a source whose colour tags contradict the
  *     bt709 assumption rather than stamping bt709 over it.
  *
- * Two deliberate departures from upstream, both because Cupric's binaries and callers differ:
+ * Two deliberate departures from upstream, both because NewBrand's binaries and callers differ:
  *
  *   - EDL audio delay is written per channel (`adelay=48000S|48000S`) instead of upstream's
  *     `adelay=48000S:all=1`. The `all` option needs ffmpeg ≥ 4.2; every input in this graph
  *     is forced to stereo by `aformat`, so spelling both channels out is the same result on
  *     any build — and it is what made this graph runnable in the sandbox at all, on 7.0.2.
  *   - the loudness target is a parameter (`loudnessPlan({ target })`) rather than a constant,
- *     because Cupric's Studio document already carries `loudnessTarget` (LUFS). The default
+ *     because NewBrand's Studio document already carries `loudnessTarget` (LUFS). The default
  *     is upstream's delivery target: -14 LUFS integrated, -1 dBTP true peak, 11 LU range.
  *
  * `main.cjs` runs the concat plan (render path) and the loudness plan (Studio MP4 export).
@@ -126,7 +126,7 @@ function planConcat({ shapes, encoderSwitched = false } = {}) {
 }
 
 /**
- * The ffmpeg argv for a concat plan. `reencodeArgs` is the caller's encoder chain (Cupric
+ * The ffmpeg argv for a concat plan. `reencodeArgs` is the caller's encoder chain (NewBrand
  * keeps its own software/hardware choice); the stream-copy branch takes no codec arguments
  * at all, which is the point of it.
  */
@@ -421,7 +421,7 @@ function trimToTimelineArgs(payload) {
   return sec ? ['-t', sec.toFixed(3)] : []
 }
 
-/** `loudnorm=I=…` needs a target; Cupric's document stores the integrated value in LUFS. */
+/** `loudnorm=I=…` needs a target; NewBrand's document stores the integrated value in LUFS. */
 function targetFromLufs(lufs) {
   const i = Number(lufs)
   if (!Number.isFinite(i) || i < -30 || i > -8) return null

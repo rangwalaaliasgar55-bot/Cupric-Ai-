@@ -90,7 +90,7 @@ function classifyOutputPath(outputPath, options = {}) {
   }
   const ext = path.extname(value).toLowerCase()
   if (!OUTPUT_EXTENSIONS.includes(ext)) {
-    issues.push(failure(RENDER_FAILURES.PATH_BAD_EXTENSION, `Cupric AI writes ${OUTPUT_EXTENSIONS.join(', ')} files, not “${ext || 'no extension'}”.`, `Rename the export so it ends in ${OUTPUT_EXTENSIONS[0]}.`, value))
+    issues.push(failure(RENDER_FAILURES.PATH_BAD_EXTENSION, `NewBrand writes ${OUTPUT_EXTENSIONS.join(', ')} files, not “${ext || 'no extension'}”.`, `Rename the export so it ends in ${OUTPUT_EXTENSIONS[0]}.`, value))
   }
   if (platform === 'win32') {
     const withoutDrive = value.replace(/^[a-zA-Z]:/, '')
@@ -183,7 +183,7 @@ function checkWritable({ dir, probe, mkdir = (target) => fs.mkdirSync(target, { 
     }
   }
   const writeProbe = probe || ((target) => {
-    const file = path.join(target, `.cupric-write-probe-${process.pid}-${Date.now()}`)
+    const file = path.join(target, `.newbrand-write-probe-${process.pid}-${Date.now()}`)
     fs.writeFileSync(file, 'ok')
     fs.rmSync(file, { force: true })
   })
@@ -235,7 +235,7 @@ function checkEncoder({ container, codec, encoders }) {
     failures: [failure(
       RENDER_FAILURES.ENCODER_MISSING,
       `This build of FFmpeg has no ${wanted[0]} encoder, so it cannot write the ${container.toUpperCase()} you asked for.`,
-      'Install the full FFmpeg build (or point CUPRIC_FFMPEG_PATH at one) and export again.',
+      'Install the full FFmpeg build (or point NEWBRAND_FFMPEG_PATH at one) and export again.',
       wanted.join(' / '),
     )],
   }
@@ -272,13 +272,13 @@ function buildPreflight(options = {}) {
   failures.push(...pathVerdict.failures)
 
   if (!ffmpegPath) {
-    failures.push(failure(RENDER_FAILURES.FFMPEG_MISSING, 'FFmpeg is not available, so nothing can be encoded.', 'Install the full build, or set CUPRIC_FFMPEG_PATH to ffmpeg.exe and restart Cupric AI.'))
+    failures.push(failure(RENDER_FAILURES.FFMPEG_MISSING, 'FFmpeg is not available, so nothing can be encoded.', 'Install the full build, or set NEWBRAND_FFMPEG_PATH to ffmpeg.exe and restart NewBrand.'))
     checks.push({ id: 'ffmpeg', ok: false, detail: 'missing' })
   } else {
     checks.push({ id: 'ffmpeg', ok: true, detail: ffmpegPath })
   }
   if (!ffprobePath) {
-    failures.push(failure(RENDER_FAILURES.FFPROBE_MISSING, 'FFprobe is not available, so the finished file could not be verified.', 'Install the full build, or set CUPRIC_FFPROBE_PATH to ffprobe.exe and restart Cupric AI.'))
+    failures.push(failure(RENDER_FAILURES.FFPROBE_MISSING, 'FFprobe is not available, so the finished file could not be verified.', 'Install the full build, or set NEWBRAND_FFPROBE_PATH to ffprobe.exe and restart NewBrand.'))
     checks.push({ id: 'ffprobe', ok: false, detail: 'missing' })
   } else {
     checks.push({ id: 'ffprobe', ok: true, detail: ffprobePath })

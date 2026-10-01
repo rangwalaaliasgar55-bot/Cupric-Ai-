@@ -23,7 +23,7 @@ import { planTemplateFill, templateSlots, type TemplateFillData } from './templa
 import { findComponent, preferredRecordSec, withComponent } from './components'
 
 /** Custom MIME so a drag from the Library can never be confused with a file. */
-export const RESOURCE_MIME = 'application/x-cupric-resource'
+export const RESOURCE_MIME = 'application/x-newbrand-resource'
 
 export type ResourceDragPayload = {
   /** Pack item kind: glass, background, animation, transition, effect, component… */
@@ -277,6 +277,6 @@ export function resourceToStudio(doc: StudioDoc, payload: ResourceDragPayload, a
       return { ok: false, reason: `“${payload.name}” is a voice-command phrase. Copy it and use the Studio Voice control; it is not an audio clip.` }
 
     default:
-      return { ok: false, reason: `Cupric does not know how to place a “${payload.kind}” item on the stage yet.` }
+      return { ok: false, reason: `NewBrand does not know how to place a “${payload.kind}” item on the stage yet.` }
   }
 }

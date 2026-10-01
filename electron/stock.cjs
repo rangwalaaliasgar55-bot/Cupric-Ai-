@@ -87,7 +87,7 @@ function openverseUrl(options) {
 function picsumItems(options = {}) {
   const o = normalizeOptions(options)
   const count = Math.min(20, o.perPage)
-  const seed = text(options.seed, o.query || 'cupric')
+  const seed = text(options.seed, o.query || 'newbrand')
   return Array.from({ length: count }, (_, index) => {
     const id = `${seed}-${(o.page - 1) * count + index}`
     const imageId = Math.abs(hash(id).split('').reduce((n, c) => n + c.charCodeAt(0), 0)) % 1000

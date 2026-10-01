@@ -141,7 +141,7 @@ the Windows column marks what still needs the runner.
 | `node scripts/check-studio-surfaces.mjs` | initially **failed**: `AssertionError: S must split the selected clip` — the check matched the literal call `splitStudioClip`. Rewritten to assert the routing (the shortcut reaches a `kind: 'split'` command), which is a stronger claim; passes. |
 | `node scripts/check-upgrades-batch3.mjs` | initially **failed**: `timeline drags route through group move` (grep on the moved call site). Rewritten as above; `23 assertions passed`. |
 | `node scripts/check-encode-dims.mjs` | initially **failed** on `3e00874` (see T6). Now asserts the produced argv; passes, including `['-t', '3.000']` and the even-size filter. |
-| `CUPRIC_FFMPEG_PATH=… CUPRIC_FFPROBE_PATH=… node scripts/run-checks.mjs` | `BUILD PASSED: all 87 checks` — with the real FFmpeg and ffprobe, so `check:studio-trim` (32 assertions, 3 real encodes) ran in full rather than in its no-FFmpeg half. |
+| `NEWBRAND_FFMPEG_PATH=… NEWBRAND_FFPROBE_PATH=… node scripts/run-checks.mjs` | `BUILD PASSED: all 87 checks` — with the real FFmpeg and ffprobe, so `check:studio-trim` (32 assertions, 3 real encodes) ran in full rather than in its no-FFmpeg half. |
 | `node scripts/check-speech-live.mjs` (this container) | **exits 1 by design**: `check:speech-live FAILED — this check installs and runs the Windows speech engines… running on linux`. Reported as the honest outcome; it is wired into the Windows workflow below. |
 
 ### What the Windows run for this commit has to prove (queued, not yet observed)

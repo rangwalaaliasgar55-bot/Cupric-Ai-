@@ -4,7 +4,7 @@
  *
  *   1. Piper (offline neural TTS, MIT CLI) when a binary and a matching voice
  *      model (`en_*.onnx` / `hi_*.onnx`) are found. Lookup order:
- *      CUPRIC_PIPER_PATH / CUPRIC_PIPER_DIR, the bundled `piper/` resources
+ *      NEWBRAND_PIPER_PATH / NEWBRAND_PIPER_DIR, the bundled `piper/` resources
  *      folder, `<userData>/piper/`, then `vendor/piper/`. Models are NOT
  *      bundled: they're 60 MB+ each and every voice has its own licence, so
  *      the user adds the ones they want.
@@ -38,8 +38,8 @@ function resolveLanguage(language, text) {
 /* ——— Piper discovery (pure; exists/list injected for tests) ——— */
 function piperSetup({ platform = process.platform, env = process.env, dirs = [], exists = fs.existsSync, isFile = safeIsFile, list = safeList } = {}) {
   const exe = platform === 'win32' ? 'piper.exe' : 'piper'
-  const roots = [env.CUPRIC_PIPER_DIR, ...dirs].filter(Boolean)
-  const bin = [env.CUPRIC_PIPER_PATH, ...roots.flatMap((d) => [path.join(d, 'piper', exe), path.join(d, exe)])].find((p) => p && exists(p) && isFile(p)) || null
+  const roots = [env.NEWBRAND_PIPER_DIR, ...dirs].filter(Boolean)
+  const bin = [env.NEWBRAND_PIPER_PATH, ...roots.flatMap((d) => [path.join(d, 'piper', exe), path.join(d, exe)])].find((p) => p && exists(p) && isFile(p)) || null
   if (!bin) return null
   const models = {}
   for (const d of [...roots, path.dirname(bin)]) {
@@ -74,12 +74,12 @@ function ttsCommand(platform, outPath, { rate = 0, voice = '', language = 'en' }
       'Add-Type -AssemblyName System.Speech',
       '$s = New-Object System.Speech.Synthesis.SpeechSynthesizer',
       '$picked = $false',
-      'if ($env:CUPRIC_TTS_VOICE) { try { $s.SelectVoice($env:CUPRIC_TTS_VOICE); $picked = $true } catch {} }',
-      'if (-not $picked) { $v = $s.GetInstalledVoices() | Where-Object { $_.Enabled -and $_.VoiceInfo.Culture.Name -like ($env:CUPRIC_TTS_LANG + "*") } | Select-Object -First 1; if ($v) { $s.SelectVoice($v.VoiceInfo.Name); $picked = $true } }',
-      'if (-not $picked -and $env:CUPRIC_TTS_LANG -ne "en") { [Console]::Error.WriteLine("no-voice-for-language"); exit 3 }',
+      'if ($env:NEWBRAND_TTS_VOICE) { try { $s.SelectVoice($env:NEWBRAND_TTS_VOICE); $picked = $true } catch {} }',
+      'if (-not $picked) { $v = $s.GetInstalledVoices() | Where-Object { $_.Enabled -and $_.VoiceInfo.Culture.Name -like ($env:NEWBRAND_TTS_LANG + "*") } | Select-Object -First 1; if ($v) { $s.SelectVoice($v.VoiceInfo.Name); $picked = $true } }',
+      'if (-not $picked -and $env:NEWBRAND_TTS_LANG -ne "en") { [Console]::Error.WriteLine("no-voice-for-language"); exit 3 }',
       `$s.Rate = ${r}`,
-      '$s.SetOutputToWaveFile($env:CUPRIC_TTS_OUT)',
-      '$s.Speak($env:CUPRIC_TTS_TEXT)',
+      '$s.SetOutputToWaveFile($env:NEWBRAND_TTS_OUT)',
+      '$s.Speak($env:NEWBRAND_TTS_TEXT)',
       '$s.Dispose()',
     ].join('; ')
     return { cmd: 'powershell.exe', args: ['-NoProfile', '-NonInteractive', '-Command', script], ext: 'wav', stdinText: false, engine: 'Windows Speech' }
@@ -107,15 +107,15 @@ function ttsCommand(platform, outPath, { rate = 0, voice = '', language = 'en' }
 function engineMissingFor(platform, engine, detail = '') {
   const suffix = detail ? ` (${detail})` : ''
   if (platform === 'win32') {
-    return `Cupric could not start Windows Speech (${engine})${suffix}. Windows always ships it, so something local is stopping it: a PowerShell execution policy, an antivirus block, or a broken System.Speech install. Try \`powershell.exe -Command "Add-Type -AssemblyName System.Speech"\` in a terminal — if that fails, that is the problem to fix. Piper — installable from Cupric — is the offline alternative.`
+    return `NewBrand could not start Windows Speech (${engine})${suffix}. Windows always ships it, so something local is stopping it: a PowerShell execution policy, an antivirus block, or a broken System.Speech install. Try \`powershell.exe -Command "Add-Type -AssemblyName System.Speech"\` in a terminal — if that fails, that is the problem to fix. Piper — installable from NewBrand — is the offline alternative.`
   }
-  return `Cupric could not start the speech engine (${engine})${suffix}. Install it, or add Piper plus a voice model in the Cupric "piper" folder.`
+  return `NewBrand could not start the speech engine (${engine})${suffix}. Install it, or add Piper plus a voice model in the NewBrand "piper" folder.`
 }
 
 /** Plain-language fix for a missing language/engine, per platform. */
 function blockerFor(platform, lang, detail = '') {
   if (lang === 'hi') {
-    if (platform === 'win32') return 'No Hindi voice is installed for Windows Speech. Add a Hindi voice (Settings → Time & language → Speech → Add voices → Hindi), or put Piper plus a hi_IN voice model in the Cupric "piper" folder. Some Windows Hindi voices are OneCore-only and hidden from System.Speech, and Piper avoids that.'
+    if (platform === 'win32') return 'No Hindi voice is installed for Windows Speech. Add a Hindi voice (Settings → Time & language → Speech → Add voices → Hindi), or put Piper plus a hi_IN voice model in the NewBrand "piper" folder. Some Windows Hindi voices are OneCore-only and hidden from System.Speech, and Piper avoids that.'
     if (platform === 'darwin') return 'The Hindi voice "Lekha" is not downloaded. Get it in System Settings → Accessibility → Spoken Content → System voice → Manage Voices → Hindi, or add Piper plus a hi_IN model.'
     return 'eSpeak NG could not speak Hindi. Install espeak-ng (it includes Hindi), or add Piper plus a hi_IN model.'
   }
@@ -151,8 +151,8 @@ async function synthesize(payload, platform = process.platform, opts = {}) {
   if (!text) return { ok: false, error: 'Write the voiceover script first.' }
   if (text.length > MAX_CHARS) return { ok: false, error: `Keep a voiceover under ${MAX_CHARS} characters. Split longer scripts into parts.` }
   const lang = resolveLanguage(payload?.language, text)
-  const out = path.join(os.tmpdir(), `cupric-tts-${process.pid}-${Date.now()}.wav`)
-  const env = { ...process.env, CUPRIC_TTS_TEXT: text, CUPRIC_TTS_OUT: out, CUPRIC_TTS_VOICE: String(payload?.voice ?? ''), CUPRIC_TTS_LANG: lang }
+  const out = path.join(os.tmpdir(), `newbrand-tts-${process.pid}-${Date.now()}.wav`)
+  const env = { ...process.env, NEWBRAND_TTS_TEXT: text, NEWBRAND_TTS_OUT: out, NEWBRAND_TTS_VOICE: String(payload?.voice ?? ''), NEWBRAND_TTS_LANG: lang }
   const tried = []
 
   const piper = piperCommand(opts.piper !== undefined ? opts.piper : piperSetup({ platform, dirs: opts.piperDirs || [] }), lang, out, payload)

@@ -174,7 +174,7 @@ export function rundownFromPlan(plan: ProductionPlan, brief: ProductionBrief, fp
   }))
   const durationSec = scenes.length ? scenes[scenes.length - 1].to : Math.max(1, brief.durationSec)
   return {
-    title: brief.title || 'Cupric AI run',
+    title: brief.title || 'NewBrand run',
     durationSec,
     fps: fps === 60 ? 60 : 30,
     size,
@@ -202,7 +202,7 @@ export function arenaPromptOf(brief: ProductionBrief, scenes: SceneRundown['scen
     `- Structure exactly these ${scenes.length} scenes in order:`,
     lines,
     `Style: ${brief.tone} tone, ${brief.referenceStyle || 'clean editorial motion'}, colours ${brief.brandColors.join(' ') || '#0B0B10 #C8F542 #F4F1EA'}.`,
-    'Set window.__cupricSourceManifest = { scenes: [...], renderSpec: { width, height, fps } }.',
+    'Set window.__newbrandSourceManifest = { scenes: [...], renderSpec: { width, height, fps } }.',
     'Ship only the HTML.',
   ].join('\n')
 }

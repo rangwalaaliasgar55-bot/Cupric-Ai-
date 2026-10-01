@@ -1,5 +1,5 @@
-// REFERENCE ONLY — Transitions.dev "Matrix dot loader" (p33), as supplied. Not imported by Cupric.
-// See ATTRIBUTION.md. Cupric's implementation: src/lib/studio/loaders.ts, src/components/loaders/MatrixLoader.tsx
+// REFERENCE ONLY — Transitions.dev "Matrix dot loader" (p33), as supplied. Not imported by NewBrand.
+// See ATTRIBUTION.md. NewBrand's implementation: src/lib/studio/loaders.ts, src/components/loaders/MatrixLoader.tsx
 
 // Transitions.dev — Matrix dot loader (React, self-contained)
 // Drop into any React project — no extra CSS file needed.

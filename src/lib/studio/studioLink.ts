@@ -31,7 +31,7 @@ export function studioPlayhead(): number | null {
   return mounted ? playhead : null
 }
 
-export const FOCUS_NOW_EVENT = 'cupric:studio-focus-now'
+export const FOCUS_NOW_EVENT = 'newbrand:studio-focus-now'
 export type FocusNowDetail = { clipId: string | null; atSec: number }
 
 /** Select a clip and park the playhead on `atSec` — now if the Studio is up, else when it opens. */
@@ -43,8 +43,8 @@ export function requestStudioFocus(clipId: string | null, atSec: number): void {
   focusStudioClip(clipId)
 }
 
-export const VOICE_RUN_EVENT = 'cupric:voice-run'
-const VOICE_PENDING = 'cupric:voice-pending'
+export const VOICE_RUN_EVENT = 'newbrand:voice-run'
+const VOICE_PENDING = 'newbrand:voice-pending'
 
 /**
  * Run a voice-command phrase as if it had been spoken. When the Studio is not
@@ -75,7 +75,7 @@ export function takePendingVoicePhrase(): string | null {
 
 /* ——— Lab auto-capture hand-over ———————————————————————————————— */
 
-const LAB_AUTOCAPTURE = 'cupric:lab-autocapture'
+const LAB_AUTOCAPTURE = 'newbrand:lab-autocapture'
 export type LabAutocapture = { slug: string; atSec: number; returnTo: 'studio' | 'library' }
 
 export function requestLabAutocapture(request: LabAutocapture): void {

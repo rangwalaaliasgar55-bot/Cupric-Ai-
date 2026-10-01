@@ -5,7 +5,7 @@ Scope: **Autonomous Mode only** (the eight-step unattended pipeline). Phase 1.1
 touches Studio, the speech stack, or export.
 
 Baseline commit this phase started from: `3c223e6` (head of
-`arena/01a0edd4-cupric-ai` after Phase 1.1).
+`arena/01a0edd4-newbrand` after Phase 1.1).
 
 ---
 
@@ -214,7 +214,7 @@ alone.
    no real video rendered. Ten end-to-end desktop runs on Windows are still owed.
 3. **UNVERIFIED: `evaluateMechanicalRender` against a real encode.** Its rules are
    tested on synthetic probe payloads (`check-automation-steps.mjs` group 5) and by
-   the 17 unit tests. It has never seen ffprobe output from a real Cupric render.
+   the 17 unit tests. It has never seen ffprobe output from a real NewBrand render.
 4. **Partially verified: the bounded retry.** The retry path is exercised only by
    reading its call site (the check pins the plan argument it passes). A real
    retryable failure (missing output file) has not been induced on Windows.

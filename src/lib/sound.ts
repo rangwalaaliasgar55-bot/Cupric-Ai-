@@ -2,7 +2,7 @@
  * Two sounds, and no more.
  *
  * A sound cue earns its place by telling you something you would otherwise
- * have to watch for. There are exactly two moments like that in Cupric: an
+ * have to watch for. There are exactly two moments like that in NewBrand: an
  * export finishing (you looked away — it takes real time, because it records
  * in real time) and an export failing. Everything else is visible on screen
  * already, and a click on every button is an app that people mute.

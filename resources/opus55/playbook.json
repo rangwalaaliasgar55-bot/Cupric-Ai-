@@ -1,6 +1,6 @@
 {
-  "name": "Cupric autonomous video production playbook",
-  "purpose": "A Cupric-native craft policy distilled from recurring patterns in the attributed Opus 5.5 video case catalogue. It is not model training and does not imply that every case used every rule.",
+  "name": "NewBrand autonomous video production playbook",
+  "purpose": "A NewBrand-native craft policy distilled from recurring patterns in the attributed Opus 5.5 video case catalogue. It is not model training and does not imply that every case used every rule.",
   "license": "MIT for this catalogue/playbook text; third-party references and media retain their own rights.",
   "source": "https://github.com/chuspeeism/awesome-opus-5-5-videos",
   "rules": [
@@ -12,7 +12,7 @@
     {"id":"layered-production","name":"Layered production","rule":"Build in layers: background or atmosphere, subject/media, typography, accents, captions, then audio. Keep every layer editable and leave safe areas around faces, products and titles.","tags":["layers","safe-area","editable"]},
     {"id":"audio-as-structure","name":"Audio as structure","rule":"Treat music, narration and sound effects as timing structure: mark beats, duck music under speech, land key reveals on changes, and keep audio optional when no local source exists.","tags":["audio","narration","beats"]},
     {"id":"iterative-review","name":"Iterative review passes","rule":"Use staged passes instead of one opaque generation: composition pass, motion pass, typography and caption pass, audio pass, then an export QA pass for overflow, contrast, timing, missing media and even dimensions.","tags":["iteration","qa","review"]},
-    {"id":"multi-tool-adapters","name":"Safe multi-tool adapters","rule":"When a brief calls for a 3D, particle, shader, character or UI treatment, translate the intent into a Cupric-native component or sandboxed source scene. Do not execute arbitrary MCP, After Effects, Blender or remote code inside the desktop app.","tags":["3d","components","security"]},
+    {"id":"multi-tool-adapters","name":"Safe multi-tool adapters","rule":"When a brief calls for a 3D, particle, shader, character or UI treatment, translate the intent into a NewBrand-native component or sandboxed source scene. Do not execute arbitrary MCP, After Effects, Blender or remote code inside the desktop app.","tags":["3d","components","security"]},
     {"id":"real-copy-real-data","name":"Real copy and data","rule":"Use the user brief, imported media and verified values. Never fabricate testimonials, statistics, reviews, before/after claims, credits or source ownership to make a case study look finished.","tags":["accuracy","attribution","claims"]},
     {"id":"social-reframe","name":"Social reframe","rule":"Design the hero for the requested aspect ratio, then reframe with safe title/action areas. Keep text on the short-side safe zone and create separate queued variants rather than squeezing one composition.","tags":["aspect-ratio","social","safe-area"]},
     {"id":"deliverable-check","name":"Deliverable check","rule":"Before declaring success, make a playable MP4, preserve the editable project, report any missing provider or media honestly, and show the exact source/credit trail for borrowed references.","tags":["export","delivery","credits"]}

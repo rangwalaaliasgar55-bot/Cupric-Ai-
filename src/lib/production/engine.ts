@@ -179,7 +179,7 @@ export function buildBrief(intake: ProductionIntake): ProductionBrief {
   if (!intake.assets.trim()) missing.push('Footage/assets: every visual shot will be an honest placeholder')
 
   const brandColors = (intake.brandColors.match(/#[0-9a-f]{6}\b/gi) ?? []).map((c) => c.toUpperCase())
-  if (!brandColors.length) assume('brandColors', 'Brand colours', '#F4F1EA text, #C8F542 accent', 'Cupric defaults until you give brand colours')
+  if (!brandColors.length) assume('brandColors', 'Brand colours', '#F4F1EA text, #C8F542 accent', 'NewBrand defaults until you give brand colours')
   else user('brandColors', 'Brand colours', brandColors.join(', '))
   const brandFonts = lines(intake.brandFonts)
   brandFonts.length ? user('brandFonts', 'Brand fonts', brandFonts.join(', ')) : assume('brandFonts', 'Brand fonts', 'Inter Variable', 'bundled locally, so export never depends on a network font')
@@ -299,9 +299,9 @@ export function research(index: OpusIndex, brief: ProductionBrief, resources: Re
   const cases = retrieveCases(index, brief)
   const skills = selectSkills(index, brief, cases)
   const notes: string[] = []
-  if (!cases.length) notes.push('No catalogue case matched this brief closely; the plan relies on Cupric craft skills alone.')
+  if (!cases.length) notes.push('No catalogue case matched this brief closely; the plan relies on NewBrand craft skills alone.')
   const lowEvidence = skills.filter((s) => s.evidenceCount === 0)
-  for (const s of lowEvidence) notes.push(`“${s.name}” is Cupric craft guidance with no catalogue case that directly demonstrates it.`)
+  for (const s of lowEvidence) notes.push(`“${s.name}” is NewBrand craft guidance with no catalogue case that directly demonstrates it.`)
   notes.push('Cases are cited for structure only. Nothing is copied: copy, claims and media come from your intake.')
   return { cases, skills, resources: searchResources(resources, brief), notes }
 }
@@ -361,7 +361,7 @@ export function buildPlan(index: OpusIndex, brief: ProductionBrief, found: Produ
     { area: 'Structure', decision: `${skill.name}: ${skill.beats.map((b) => b.name).join(' → ')}`, why: `${skill.when} Picked because: ${found.skills.find((s) => s.id === skill.id)?.why || 'best available match'}.`, confidence: found.skills[0]?.score >= 5 ? 'high' : 'medium', cites },
     { area: 'Pacing', decision: `${shotCount} shots, about ${avgShot.toFixed(1)}s each (range ${lo}–${hi}s)`, why: `${brief.tone} tone within the skill's shot-length range.`, confidence: 'medium', cites },
     { area: 'Hook', decision: shots[0]?.onScreenText ?? '', why: 'First frame states the goal in ≤ 7 words, taken from your own words.', confidence: brief.goal ? 'medium' : 'low', cites: [] },
-    { area: 'Transitions', decision: [...new Set(transitions)].join(', '), why: `Skill recipe (${skill.transitions.join(', ')}), mapped to native Cupric transitions. The first shot is a hard cut.`, confidence: 'high', cites },
+    { area: 'Transitions', decision: [...new Set(transitions)].join(', '), why: `Skill recipe (${skill.transitions.join(', ')}), mapped to native NewBrand transitions. The first shot is a hard cut.`, confidence: 'high', cites },
     { area: 'Typography', decision: `Inter Variable · ${skill.text}`, why: brief.brandFonts.length ? `Built with the bundled Inter so export never depends on the network. To use ${brief.brandFonts[0]}, add it in Studio → Fonts and apply it to the text clips.` : 'Bundled font, so export never depends on the network.', confidence: brief.brandFonts.length ? 'low' : 'medium', cites: [] },
     { area: 'Captions', decision: brief.narration === 'none' ? 'Off' : `${brief.language === 'hi' ? 'Hindi' : brief.language === 'en+hi' ? 'English + Hindi' : 'English'} captions, max 2 lines`, why: brief.narration === 'captions' ? 'Caption-first: feeds autoplay muted.' : 'Captions follow the voiceover transcript once it is recorded.', confidence: 'medium', cites: [] },
     { area: 'Audio', decision: skill.audio, why: brief.avoid.some((a) => /music|lyric/i.test(a)) ? 'Respecting your "avoid" list for music.' : 'Skill recipe.', confidence: 'medium', cites: [] },
@@ -491,7 +491,7 @@ export function planToDoc(doc: StudioDoc, plan: ProductionPlan, brief: Productio
   return { doc: opts.motion === false ? built : directProduction(built, clipIds, brief), clipIds, placeholders, reused, destructive }
 }
 
-/* ——— Cupric AI: motion direction + polish (deterministic, never touches copy) ——— */
+/* ——— NewBrand: motion direction + polish (deterministic, never touches copy) ——— */
 
 export function styleForBrief(brief: ProductionBrief): DirectionStyle {
   if (brief.tone === 'high') return 'bold-social'
@@ -524,7 +524,7 @@ export function directProduction(doc: StudioDoc, clipIds: string[], brief: Produ
 export type PolishResult = { doc: StudioDoc; fixes: string[]; leftForYou: string[] }
 
 /**
- * "Cupric AI polish": fixes what the review can fix safely and lists the rest.
+ * "NewBrand polish": fixes what the review can fix safely and lists the rest.
  * It never writes copy, never swaps placeholders for fake media, and never
  * changes the aspect ratio (that needs your say-so).
  */
@@ -564,7 +564,7 @@ export function polishEdit(doc: StudioDoc, brief: ProductionBrief, plan: Product
   const copyPh = scoped.filter((c) => c.kind === 'text' && c.text.trim().startsWith('[')).length
   const mediaPh = scoped.filter((c) => (c.kind === 'video' || c.kind === 'image') && !(c as StudioMediaClip).mediaId).length
   const fast = scoped.filter((c) => c.kind === 'text' && c.text.split(/\s+/).length / Math.max(0.1, c.durationSec) > 3.5).length
-  if (copyPh) leftForYou.push(`Write ${copyPh} bracketed line(s). Cupric AI won't invent claims or quotes.`)
+  if (copyPh) leftForYou.push(`Write ${copyPh} bracketed line(s). NewBrand won't invent claims or quotes.`)
   if (mediaPh) leftForYou.push(`Replace ${mediaPh} placeholder shot(s) with your footage.`)
   if (fast) leftForYou.push(`Shorten ${fast} line(s) that read faster than 3.5 words per second.`)
   if (doc.aspect !== brief.aspect) leftForYou.push(`Switch the Studio aspect to ${brief.aspect} if you want the brief's format. That changes framing, so it's your call.`)
@@ -611,7 +611,7 @@ export function reviewEdit(doc: StudioDoc, brief: ProductionBrief, plan: Product
   const ph = visuals.filter((v) => !(v as StudioMediaClip).mediaId)
   add('placeholders', 'Placeholder usage', ph.length ? 'fail' : 'pass', ph.length ? `${ph.length} shot(s) still placeholders: ${ph.slice(0, 3).map((p) => p.name).join('; ')}` : 'Every shot has real media', ph.length ? 'Import the named footage and replace each placeholder (select the clip, then Replace media).' : null)
   const copyPh = texts.filter((t) => t.text.trim().startsWith('['))
-  add('missing-copy', 'Missing copy', copyPh.length ? 'fail' : 'pass', copyPh.length ? `${copyPh.length} placeholder line(s)` : 'All copy is real', copyPh.length ? 'Write the bracketed lines. Cupric will not invent claims, stats or quotes.' : null)
+  add('missing-copy', 'Missing copy', copyPh.length ? 'fail' : 'pass', copyPh.length ? `${copyPh.length} placeholder line(s)` : 'All copy is real', copyPh.length ? 'Write the bracketed lines. NewBrand will not invent claims, stats or quotes.' : null)
   add('missing-footage', 'Missing footage', plan && plan.unresolved.some((u) => /footage/.test(u)) ? 'warn' : 'pass', plan ? `${plan.unresolved.filter((u) => /footage/.test(u)).length} shot(s) planned without footage` : 'No plan', plan && plan.unresolved.some((u) => /footage/.test(u)) ? 'List your assets in Intake, one per line, and rebuild.' : null)
   return checks
 }
@@ -648,7 +648,7 @@ export function autoFinish(doc: StudioDoc, plan: ProductionPlan, brief: Producti
   let beatsSnapped = 0
   let beatNote: string | null = null
   if (opts.snapToBeats) {
-    if (!timelineBeats(cur).length) beatNote = 'No analysed music on the timeline. Add music and run Beats in the audio inspector, then Cupric AI can cut on the beat.'
+    if (!timelineBeats(cur).length) beatNote = 'No analysed music on the timeline. Add music and run Beats in the audio inspector, then NewBrand can cut on the beat.'
     else {
       const snapped = snapCutsToBeats(cur, 0.3)
       cur = snapped.doc

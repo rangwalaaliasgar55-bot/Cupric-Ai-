@@ -9,7 +9,7 @@
  * well as one that did not. So the check is a diff with an allow-list, not a
  * render.
  *
- * In Cupric every edit path replaces a whole document — a gate fix, an agent
+ * In NewBrand every edit path replaces a whole document — a gate fix, an agent
  * edit, an autonomous stage, a group move — so "only what was asked" is not
  * something the edit can be trusted to have done. This compares the document
  * before and after and names everything that changed, flagging the changes that

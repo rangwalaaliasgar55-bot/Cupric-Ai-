@@ -31,12 +31,12 @@ import { fileURLToPath } from 'node:url'
 const require = createRequire(import.meta.url)
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const asJson = process.argv.includes('--json')
-const TMP = mkdtempSync(path.join(os.tmpdir(), 'cupric-walkthrough-'))
+const TMP = mkdtempSync(path.join(os.tmpdir(), 'newbrand-walkthrough-'))
 
 /** Where ffmpeg lives: PATH, the repo's own static build, or the phase tooling. */
 function findFfmpeg() {
   const candidates = [
-    process.env.CUPRIC_FFMPEG_PATH,
+    process.env.NEWBRAND_FFMPEG_PATH,
     process.env.FFMPEG_PATH,
     // The repo ships ffmpeg-static for the app; it is the same binary the
     // renderer uses, so it is the right one to walk through with.
@@ -65,7 +65,7 @@ function findFfprobe() {
     darwin: ['bin', 'darwin', 'x64', 'ffprobe'],
   }[process.platform]
   const candidates = [
-    process.env.CUPRIC_FFPROBE_PATH,
+    process.env.NEWBRAND_FFPROBE_PATH,
     perPlatform ? path.join(root, 'node_modules', 'ffprobe-static', ...perPlatform) : null,
     path.join(root, 'node_modules', 'ffprobe-static', 'bin', 'win32', 'x64', 'ffprobe.exe'),
     path.join(root, 'node_modules', 'ffprobe-static', 'bin', 'linux', 'x64', 'ffprobe'),
@@ -157,10 +157,10 @@ const ai = await guard('AI provider: taxonomy, retryability and message quality'
 if (ai) step('AI provider: taxonomy, retryability and message quality', 'pass', 'ten codes, each with a retry decision and a sentence; HTTP statuses map onto codes without guessing', ai)
 
 const aiLive = await guard('AI provider: a real request to a real endpoint', async () => {
-  const local = process.env.CUPRIC_LOCAL_AI_URL
+  const local = process.env.NEWBRAND_LOCAL_AI_URL
   const key = process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
   if (!local && !key) {
-    step('AI provider: a real request to a real endpoint', 'unavailable', 'No provider is configured on this machine: no OPENAI_API_KEY / ANTHROPIC_API_KEY and no CUPRIC_LOCAL_AI_URL. The adapter paths are exercised by scripts/check-ai-providers.mjs against a real HTTP server; a call to a real vendor needs a key, which this environment does not have.')
+    step('AI provider: a real request to a real endpoint', 'unavailable', 'No provider is configured on this machine: no OPENAI_API_KEY / ANTHROPIC_API_KEY and no NEWBRAND_LOCAL_AI_URL. The adapter paths are exercised by scripts/check-ai-providers.mjs against a real HTTP server; a call to a real vendor needs a key, which this environment does not have.')
     return null
   }
   const providers = require('../electron/ai-providers.cjs')
@@ -169,7 +169,7 @@ const aiLive = await guard('AI provider: a real request to a real endpoint', asy
     provider: local ? 'local' : process.env.ANTHROPIC_API_KEY && !process.env.OPENAI_API_KEY ? 'anthropic' : 'openai',
     apiKey: key,
     baseUrl: local || undefined,
-    model: process.env.CUPRIC_AI_MODEL || (local ? 'local-model' : 'gpt-4o-mini'),
+    model: process.env.NEWBRAND_MODEL || (local ? 'local-model' : 'gpt-4o-mini'),
     prompt: 'Reply with the single word: ok',
     timeoutMs: 30_000,
   })
@@ -315,7 +315,7 @@ if (exportStep) step('Export: a real MP4 is encoded, probed, and verified', 'pas
 
 const voice = await guard('Voice: the offline chain on this machine', async () => {
   const tts = require('../electron/tts.cjs')
-  const result = await tts.synthesize({ text: 'Save smarter with Cupric', language: 'en' })
+  const result = await tts.synthesize({ text: 'Save smarter with NewBrand', language: 'en' })
   const engines = require('../electron/voice-engines.cjs')
   const whisper = engines.findWhisper({ dirs: [] })
   if (result.ok) {

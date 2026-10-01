@@ -132,7 +132,7 @@ export function buildTemplate(id: string, input: TemplateInput = {}): VideoDoc {
   const fps = input.fps ?? 30;
   const L = layoutFor(w, h);
   const I = { ...def.defaults, ...input, headline: input.headline ?? def.defaults.headline ?? "Built for what's next.", subtitle: input.subtitle ?? def.defaults.subtitle ?? "", cta: input.cta ?? def.defaults.cta ?? "Get started" };
-  const brand = input.brand?.name ?? "Cupric AI";
+  const brand = input.brand?.name ?? "NewBrand";
   const baseFrames = def.scenes.reduce((a, s) => a + (SCENE_BUILDERS[s]?.frames ?? 90), 0);
   const targetFrames = Math.round((input.duration ?? def.duration) * fps);
   const k = targetFrames / baseFrames;

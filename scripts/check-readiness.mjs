@@ -97,8 +97,8 @@ const report = m.describeReadiness(ideal)
   const absent = m.describeReadiness({ ...ideal, ffmpeg: false, ffprobe: false })
   const gone = absent.checks.find((c) => c.id === 'ffmpeg')
   ok(/Not found/.test(gone.detail) && gone.broken === undefined, 'a tool that is absent is diagnosed differently from one that is present')
-  ok(/ffmpeg-static|CUPRIC_FFMPEG_PATH/.test(gone.remedy), 'with the remedy for the absence')
-  ok(/CUPRIC_FFMPEG_PATH/.test(check.remedy) && !/Not found/.test(check.detail), 'and a different remedy for the broken case')
+  ok(/ffmpeg-static|NEWBRAND_FFMPEG_PATH/.test(gone.remedy), 'with the remedy for the absence')
+  ok(/NEWBRAND_FFMPEG_PATH/.test(check.remedy) && !/Not found/.test(check.detail), 'and a different remedy for the broken case')
 }
 
 /* ——— optional is not blocking, and blocking is not optional ——— */

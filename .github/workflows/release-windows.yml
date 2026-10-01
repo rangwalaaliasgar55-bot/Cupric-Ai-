@@ -156,8 +156,8 @@ jobs:
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
         run: |
-          $setups = Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe' -File
-          $portables = Get-ChildItem -Path release -Filter 'Cupric-AI-*-Portable.exe' -File
+          $setups = Get-ChildItem -Path release -Filter 'NewBrand-Setup-*.exe' -File
+          $portables = Get-ChildItem -Path release -Filter 'NewBrand-*-Portable.exe' -File
           if ($setups.Count -ne 1) { throw "Expected exactly one setup; found $($setups.Count)." }
           if ($portables.Count -ne 1) { throw "Expected exactly one portable build; found $($portables.Count)." }
           $signing = "${{ steps.signing.outputs.enabled }}" -eq "true"
@@ -202,13 +202,13 @@ jobs:
       - name: Boot check packaged app (every view, zero Uncaught)
         shell: pwsh
         env:
-          CUPRIC_BOOT_EXE: ${{ github.workspace }}\release\win-unpacked\Cupric AI.exe
+          NEWBRAND_BOOT_EXE: ${{ github.workspace }}\release\win-unpacked\NewBrand.exe
         run: npm run check:boot -- --no-build
 
       - name: Verify installer artifacts
         shell: pwsh
         run: |
-          $setup = Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe' -File
+          $setup = Get-ChildItem -Path release -Filter 'NewBrand-Setup-*.exe' -File
           if ($setup.Count -ne 1) {
             throw "Expected exactly one NSIS setup executable; found $($setup.Count)."
           }
@@ -220,12 +220,12 @@ jobs:
       - name: Preserve release artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Cupric-AI-Windows-${{ inputs.tag || github.ref_name }}
+          name: NewBrand-Windows-${{ inputs.tag || github.ref_name }}
           if-no-files-found: error
           path: |
-            release/Cupric-AI-Setup-*.exe
-            release/Cupric-AI-Setup-*.exe.blockmap
-            release/Cupric-AI-*-Portable.exe
+            release/NewBrand-Setup-*.exe
+            release/NewBrand-Setup-*.exe.blockmap
+            release/NewBrand-*-Portable.exe
             release/latest.yml
 
       - name: Publish GitHub release assets
@@ -247,12 +247,12 @@ jobs:
           if ($LASTEXITCODE -eq 0) {
             Write-Host "Release $tag already exists; uploading the verified assets from this run only."
           } else {
-            gh release create $tag --repo $repo --title "Cupric AI $tag" --generate-notes --latest --target ${{ github.sha }}
+            gh release create $tag --repo $repo --title "NewBrand $tag" --generate-notes --latest --target ${{ github.sha }}
           }
           $files = @(
-            (Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe' -File).FullName
-            (Get-ChildItem -Path release -Filter 'Cupric-AI-Setup-*.exe.blockmap' -File).FullName
-            (Get-ChildItem -Path release -Filter 'Cupric-AI-*-Portable.exe' -File).FullName
+            (Get-ChildItem -Path release -Filter 'NewBrand-Setup-*.exe' -File).FullName
+            (Get-ChildItem -Path release -Filter 'NewBrand-Setup-*.exe.blockmap' -File).FullName
+            (Get-ChildItem -Path release -Filter 'NewBrand-*-Portable.exe' -File).FullName
             (Join-Path (Get-Location) 'release/latest.yml')
           )
           foreach ($f in $files) { if (-not (Test-Path $f)) { throw "Missing release file: $f" } }

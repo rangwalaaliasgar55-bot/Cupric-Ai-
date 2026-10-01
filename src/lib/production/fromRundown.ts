@@ -1,7 +1,7 @@
 /**
  * Auto pipeline → editable Studio timeline. The pipeline's MP4 is a flat
  * render. This turns its rundown (scenes with copy and timing) into real
- * Studio text clips with Cupric AI keyframe motion. They go after your
+ * Studio text clips with NewBrand keyframe motion. They go after your
  * current timeline, and the caller commits them as one undo step. Pure and
  * deterministic. It never invents copy: empty scenes become labelled
  * placeholders.

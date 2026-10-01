@@ -1,6 +1,6 @@
 /**
  * Every settable component prop in one place: framecn (vendored, generated
- * configs) plus Cupric's ObsidianUI-inspired components. The inspector, prop
+ * configs) plus NewBrand's ObsidianUI-inspired components. The inspector, prop
  * validation and the agent read this, never the two sources separately.
  *
  * Every component that draws DOM text (all but the WebGL shaders) also gets a

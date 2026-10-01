@@ -10,7 +10,7 @@
       "id": "framer-motion",
       "kind": "source",
       "name": "Framer Motion (Motion)",
-      "description": "Best-in-class React animation library: springs, layout animation, gestures, scroll-linked motion. Already powers Cupric's own UI.",
+      "description": "Best-in-class React animation library: springs, layout animation, gestures, scroll-linked motion. Already powers NewBrand's own UI.",
       "data": {
         "url": "https://www.framer.com/motion/",
         "license": "MIT",
@@ -60,7 +60,7 @@
       "id": "font-inter",
       "kind": "source",
       "name": "Inter",
-      "description": "Neutral, highly legible UI sans with variable weight. Bundled in Cupric (Inter Variable).",
+      "description": "Neutral, highly legible UI sans with variable weight. Bundled in NewBrand (Inter Variable).",
       "data": {
         "url": "https://fonts.google.com/specimen/Inter",
         "license": "SIL OFL 1.1",
@@ -85,7 +85,7 @@
       "id": "font-geist",
       "kind": "source",
       "name": "Geist",
-      "description": "Vercel's modern geometric sans — Cupric's UI face (Geist Variable, bundled).",
+      "description": "Vercel's modern geometric sans — NewBrand's UI face (Geist Variable, bundled).",
       "data": {
         "url": "https://vercel.com/font",
         "license": "SIL OFL 1.1",
@@ -136,7 +136,7 @@
       "id": "simple-icons",
       "kind": "source",
       "name": "Simple Icons",
-      "description": "3,000+ free SVG brand logos (GitHub, Stripe, Figma…). Cupric can drop any of them into Studio from the Brand Kit panel.",
+      "description": "3,000+ free SVG brand logos (GitHub, Stripe, Figma…). NewBrand can drop any of them into Studio from the Brand Kit panel.",
       "data": {
         "url": "https://simpleicons.org/",
         "license": "CC0-1.0 (logos remain their owners’ trademarks)",
@@ -189,7 +189,7 @@
       "id": "lucide",
       "kind": "source",
       "name": "Lucide Icons",
-      "description": "Clean, consistent open-source icon set — already bundled in Cupric and used across the app.",
+      "description": "Clean, consistent open-source icon set — already bundled in NewBrand and used across the app.",
       "data": {
         "url": "https://lucide.dev/",
         "license": "ISC",
@@ -214,7 +214,7 @@
       "id": "fontsource",
       "kind": "source",
       "name": "Fontsource",
-      "description": "Self-hosted npm packages for 1,500+ open fonts — how Cupric bundles fonts so preview and export never need the network.",
+      "description": "Self-hosted npm packages for 1,500+ open fonts — how NewBrand bundles fonts so preview and export never need the network.",
       "data": {
         "url": "https://fontsource.org/",
         "license": "MIT (fonts under their own open licenses)",
@@ -310,7 +310,7 @@
       "id": "lottiefiles",
       "kind": "source",
       "name": "LottieFiles (free animations)",
-      "description": "Huge library of free Lottie animations — Cupric imports .json Lottie files into Studio.",
+      "description": "Huge library of free Lottie animations — NewBrand imports .json Lottie files into Studio.",
       "data": {
         "url": "https://lottiefiles.com/free-animations",
         "license": "Lottie Simple License (free animations)",

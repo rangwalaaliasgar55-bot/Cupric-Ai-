@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>Cupric effect — mesh drift</title>
+<title>NewBrand effect — mesh drift</title>
 <!--
   Full-bleed animated mesh-gradient atmosphere, after the shader backgrounds on
   23rd.dev and backgrounds.supply/gradient-lab. Canvas blobs instead of WebGL:
@@ -25,7 +25,7 @@
 <div id="scene">
   <canvas id="c" width="1080" height="1920"></canvas>
   <div id="grain"></div>
-  <div id="title">Cupric AI</div>
+  <div id="title">NewBrand</div>
 </div>
 <script>
 var DUR = 8, FPS = 30;
@@ -58,11 +58,11 @@ window.__seek = function (t) {
   ctx.globalAlpha = 1;
   document.getElementById('title').style.opacity = String(clamp((t - 0.6) / 1.2, 0, 1));
 };
-window.__cupricSourceManifest = {
+window.__newbrandSourceManifest = {
   sources: ['23rd-dev', 'gradient-lab', 'gradientool'],
   sequence: [
     { from: 0, to: 8, type: 'background', copy: 'drifting mesh gradient' },
-    { from: 0.6, to: 8, type: 'title', copy: 'Cupric AI' }
+    { from: 0.6, to: 8, type: 'title', copy: 'NewBrand' }
   ],
   renderSpec: { durationSec: DUR, fps: FPS, size: [1080, 1920], loops: true }
 };
