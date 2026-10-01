@@ -72,8 +72,8 @@ export function installSilently(installerPath, installDir) {
   return result
 }
 
-export function uninstallSilently(installDir) {
-  const uninstaller = path.join(installDir, UNINSTALLER_NAME)
+export function uninstallSilently(installDir, uninstallerName = UNINSTALLER_NAME) {
+  const uninstaller = path.join(installDir, uninstallerName)
   if (!fs.existsSync(uninstaller)) throw new Error(`UNINSTALLER_MISSING: ${uninstaller}`)
   // Exactly what the installer registered as `QuietUninstallString`:
   // `"Uninstall NewBrand.exe" /currentuser /S`. `/currentuser` is not cosmetic

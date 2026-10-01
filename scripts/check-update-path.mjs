@@ -83,7 +83,7 @@ if (!fromInstaller || !toDir) {
   process.exit(1)
 }
 
-const oldVersionFromName = path.basename(fromInstaller).match(/NewBrand-Setup-(.+)\.exe$/)?.[1] ?? null
+const oldVersionFromName = path.basename(fromInstaller).match(/(?:NewBrand|Cupric-AI)-Setup-(.+)\.exe$/)?.[1] ?? null
 const latestYml = path.join(toDir, 'latest.yml')
 if (!fs.existsSync(fromInstaller)) {
   fail('FROM_MISSING', `no installer at ${fromInstaller}`)
@@ -117,16 +117,33 @@ if (failures.length) {
 
 console.log(`check:update-path — updating ${oldVersionFromName} → ${newVersion} through the real updater`)
 
+const EXE_NAMES = ['NewBrand.exe', 'Cupric AI.exe']
+const UNINSTALLER_NAMES = ['Uninstall NewBrand.exe', 'Uninstall Cupric AI.exe']
+/**
+ * A product rename must still update existing installs. Before NewBrand, the
+ * installer and process were named Cupric AI; after the update they are named
+ * NewBrand. Resolve the executable from disk on every read so this test covers
+ * that migration rather than assuming either side of the rename.
+ */
+function installedExe(installDir) {
+  return EXE_NAMES.map((name) => path.join(installDir, name)).find((file) => fs.existsSync(file)) ?? null
+}
+function installedUninstaller(installDir) {
+  return UNINSTALLER_NAMES.find((name) => fs.existsSync(path.join(installDir, name))) ?? null
+}
+
 let installDir = null
 let feedServer = null
 try {
   /* ── 1. install the old build ─────────────────────────────────────────── */
   installDir = freshInstallDir('update-path')
   installSilently(fromInstaller, installDir)
-  const exePath = path.join(installDir, 'NewBrand.exe')
-  const before = readFileVersion(exePath)
+  const oldExePath = installedExe(installDir)
+  if (!oldExePath) throw new Error(`EXE_MISSING: expected one of ${EXE_NAMES.join(', ')} in ${installDir}`)
   const versionNow = () => {
     try {
+      const exePath = installedExe(installDir)
+      if (!exePath) return null // mid-update, momentarily absent
       const info = readFileVersion(exePath)
       return (info.FileVersion || info.ProductVersion || '').trim()
     } catch (err) {
@@ -147,11 +164,20 @@ try {
 
   /* ── 3. launch the old app against that feed ──────────────────────────── */
   const userData = tempDir('update-path-data')
-  launchApp(exePath, {
+  launchApp(oldExePath, {
     userDataDir: userData,
-    env: { NEWBRAND_UPDATE_FEED: `http://127.0.0.1:${served.port}` },
+    // The installed release may predate the namespace rename. Supply both
+    // names so the old process receives the test feed and writes its log to
+    // this isolated profile; current builds use the NEWBRAND names.
+    env: {
+      NEWBRAND_USER_DATA_DIR: userData,
+      CUPRIC_USER_DATA_DIR: userData,
+      NEWBRAND_UPDATE_FEED: `http://127.0.0.1:${served.port}`,
+      CUPRIC_UPDATE_FEED: `http://127.0.0.1:${served.port}`,
+    },
   })
-  await waitFor(() => isRunning(), { timeoutMs: 60_000, describe: 'the app to start' })
+  const oldProcessName = path.basename(oldExePath)
+  await waitFor(() => isRunning(oldProcessName), { timeoutMs: 60_000, describe: 'the app to start' })
   step('launched the installed app', `userData ${userData}`)
 
   const kinds = () => readLog(userData).map((record) => record.kind)
@@ -197,8 +223,8 @@ try {
   )
 
   /* ── 5. quit politely: that is what installs the update ───────────────── */
-  closeApp()
-  await waitFor(() => !isRunning(), { timeoutMs: 120_000, describe: 'the app to exit so the update installs on quit' })
+  closeApp(oldProcessName)
+  await waitFor(() => !isRunning(oldProcessName), { timeoutMs: 120_000, describe: 'the app to exit so the update installs on quit' })
   const startedAt = Date.now()
   step('closed the app, letting it install on quit')
 
@@ -216,10 +242,14 @@ try {
   step('the app relaunched as the new version', `log records an app-start for ${newVersion}`)
 
   /* ── 7. clean up after ourselves ──────────────────────────────────────── */
-  if (isRunning()) closeApp()
-  await waitFor(() => !isRunning(), { timeoutMs: 60_000, describe: 'the updated app to exit' })
-  uninstallSilently(installDir)
-  await waitFor(() => !fs.existsSync(exePath), { timeoutMs: 120_000, describe: 'the uninstaller to remove the executable' })
+  const updatedExe = installedExe(installDir)
+  const updatedProcessName = updatedExe ? path.basename(updatedExe) : 'NewBrand.exe'
+  if (isRunning(updatedProcessName)) closeApp(updatedProcessName)
+  await waitFor(() => !isRunning(updatedProcessName), { timeoutMs: 60_000, describe: 'the updated app to exit' })
+  const uninstallerName = installedUninstaller(installDir)
+  if (!uninstallerName) throw new Error(`UNINSTALLER_MISSING: expected one of ${UNINSTALLER_NAMES.join(', ')} in ${installDir}`)
+  uninstallSilently(installDir, uninstallerName)
+  await waitFor(() => !installedExe(installDir), { timeoutMs: 120_000, describe: 'the uninstaller to remove the executable' })
   step('uninstalled the updated build', installDir)
 
   console.log(`\ncheck:update-path observed ${steps} real steps: ${oldVersionFromName} → ${newVersion}`)
@@ -227,7 +257,8 @@ try {
   if (!failures.length) fail(err?.code ?? 'CHECK_THREW', err?.message || String(err))
 } finally {
   if (feedServer) feedServer.close()
-  if (isRunning()) closeApp()
+  const runningExe = installedExe(installDir)
+  if (isRunning(runningExe ? path.basename(runningExe) : 'NewBrand.exe')) closeApp(runningExe ? path.basename(runningExe) : 'NewBrand.exe')
 }
 
 if (failures.length) {
